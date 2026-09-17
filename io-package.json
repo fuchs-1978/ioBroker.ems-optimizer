@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.2.7",
+    "version": "0.2.8",
     "titleLang": {"en": "EMS Optimizer", "de": "EMS-Optimierer"},
     "desc": {"en": "Forecast-based energy management observer", "de": "Prognosebasierter Energiemanagement-Beobachter"},
     "authors": ["fuchs-1978"],
@@ -16,10 +16,26 @@
     "adminUI": {"config": "json"},
     "loglevel": "info",
     "readme": "https://github.com/fuchs-1978/ioBroker.ems-optimizer/blob/main/README.md",
+    "icon": "ems-optimizer.png",
+    "extIcon": "https://raw.githubusercontent.com/fuchs-1978/ioBroker.ems-optimizer/main/admin/ems-optimizer.png",
     "dependencies": [{"js-controller": ">=5.0.19"}],
     "globalDependencies": [{"admin": ">=6.13.16"}]
   },
   "native": {"observerOnly": true, "dataPointMapJson": "{}"},
   "objects": [],
-  "instanceObjects": []
+  "instanceObjects": [
+    {
+      "_id": "info.connection",
+      "type": "state",
+      "common": {
+        "name": "Connection status",
+        "type": "boolean",
+        "role": "indicator.connected",
+        "read": true,
+        "write": false,
+        "def": false
+      },
+      "native": {}
+    }
+  ]
 }
