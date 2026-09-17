@@ -1,0 +1,31 @@
+{
+  "name": "iobroker.ems-optimizer",
+  "version": "0.2.7",
+  "description": "Forecast-based energy management observer for ioBroker",
+  "author": {"name": "fuchs-1978"},
+  "homepage": "https://github.com/fuchs-1978/ioBroker.ems-optimizer",
+  "license": "MIT",
+  "keywords": [
+    "iobroker",
+    "energy-management",
+    "photovoltaics",
+    "battery",
+    "wallbox",
+    "forecast"
+  ],
+  "main": "main.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --check main.js && node --check lib/observer-engine.js",
+    "test:package": "node -e \"JSON.parse(require('fs').readFileSync('io-package.json')); JSON.parse(require('fs').readFileSync('admin/jsonConfig.json'));\""
+  },
+  "dependencies": {
+    "@iobroker/adapter-core": "^3.2.3",
+    "node-schedule": "^2.1.1"
+  },
+  "devDependencies": {
+    "@iobroker/testing": "^5.0.0"
+  }
+}
