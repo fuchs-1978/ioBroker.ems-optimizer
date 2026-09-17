@@ -1,0 +1,25 @@
+{
+  "common": {
+    "name": "ems-optimizer",
+    "version": "0.2.7",
+    "titleLang": {"en": "EMS Optimizer", "de": "EMS-Optimierer"},
+    "desc": {"en": "Forecast-based energy management observer", "de": "Prognosebasierter Energiemanagement-Beobachter"},
+    "authors": ["fuchs-1978"],
+    "license": "MIT",
+    "platform": "Javascript/Node.js",
+    "mode": "daemon",
+    "type": "energy",
+    "compact": true,
+    "enabled": true,
+    "connectionType": "local",
+    "dataSource": "push",
+    "adminUI": {"config": "json"},
+    "loglevel": "info",
+    "readme": "https://github.com/fuchs-1978/ioBroker.ems-optimizer/blob/main/README.md",
+    "dependencies": [{"js-controller": ">=5.0.19"}],
+    "globalDependencies": [{"admin": ">=6.13.16"}]
+  },
+  "native": {"observerOnly": true, "dataPointMapJson": "{}"},
+  "objects": [],
+  "instanceObjects": []
+}
