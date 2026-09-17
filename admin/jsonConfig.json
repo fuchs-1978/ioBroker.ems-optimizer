@@ -1,0 +1,28 @@
+{
+  "i18n": true,
+  "type": "panel",
+  "items": {
+    "safety": {
+      "type": "staticText",
+      "text": "Version 0.2.7 runs the complete EMS observer and 48-hour planner. It never writes to devices.",
+      "newLine": true
+    },
+    "parallel": {
+      "type": "staticText",
+      "text": "Keep the existing JavaScript observer active during comparison. Adapter outputs are created below ems-optimizer.0.",
+      "newLine": true
+    },
+    "observerOnly": {
+      "type": "checkbox",
+      "label": "Observer only (permanently enabled in this version)",
+      "disabled": true,
+      "newLine": true
+    },
+    "dataPointMapJson": {
+      "type": "text",
+      "label": "Data-point mapping as JSON",
+      "help": "Use the keys documented in config.example.json. Values remain in your ioBroker configuration and are not uploaded to GitHub.",
+      "newLine": true
+    }
+  }
+}
