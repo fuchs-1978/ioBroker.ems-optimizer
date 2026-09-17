@@ -26,7 +26,7 @@ class EmsOptimizer extends utils.Adapter {
         await this.preloadStates();
         await this.startEngine();
         await this.setStateAsync("info.connection", true, true);
-        this.log.info("EMS Optimizer 0.2.8 started in observer-only compatibility mode");
+        this.log.info("EMS Optimizer 0.2.9 started in observer-only compatibility mode");
     }
 
     async preloadStates() {
@@ -132,9 +132,17 @@ class EmsOptimizer extends utils.Adapter {
     }
 
     compatSendTo(instance, command, message, callback) {
-        this.sendTo(instance, command, message, response => {
+        const send = () => this.sendTo(instance, command, message, response => {
             if (typeof callback === "function") callback(response);
         });
+        const pending = command === "enableHistory" && message?.id
+            ? this.objectPromises.get(message.id) : null;
+        if (pending) {
+            void pending.then(send).catch(error =>
+                this.log.warn(`Cannot enable history for ${message.id}: ${error.message}`));
+        } else {
+            send();
+        }
     }
 
     async startEngine() {
