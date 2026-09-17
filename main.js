@@ -26,7 +26,7 @@ class EmsOptimizer extends utils.Adapter {
         await this.preloadStates();
         await this.startEngine();
         await this.setStateAsync("info.connection", true, true);
-        this.log.info("EMS Optimizer 0.2.10 started in observer-only compatibility mode");
+        this.log.info("EMS Optimizer 0.3.0 started in modular observer-only mode");
     }
 
     async preloadStates() {
@@ -146,16 +146,15 @@ class EmsOptimizer extends utils.Adapter {
     }
 
     async startEngine() {
-        const enginePath = path.join(__dirname, "lib", "observer-engine.js");
-        let source = fs.readFileSync(enginePath, "utf8")
-            .replaceAll("__ADAPTER_ROOT__", this.namespace);
+        const enginePaths = [
+            "core.js",
+            "history.js",
+            "forecast.js",
+            "planner.js",
+            "observer.js",
+            "bootstrap.js"
+        ].map(file => path.join(__dirname, "lib", "engine", file));
         const mapping = this.readMapping();
-        for (const token of source.match(/__[A-Z0-9_]+__/g) || []) {
-            const key = token.slice(2, -2);
-            const raw = mapping[key] ?? "";
-            const escaped = String(raw).replaceAll("\\", "\\\\").replaceAll("'", "\\'");
-            source = source.replaceAll(token, escaped);
-        }
         const adapter = this;
         const sandbox = {
             console,
@@ -202,7 +201,17 @@ class EmsOptimizer extends utils.Adapter {
             }
         };
         this.engineContext = vm.createContext(sandbox, {name: "ems-observer-engine"});
-        new vm.Script(source, {filename: enginePath}).runInContext(this.engineContext);
+        for (const enginePath of enginePaths) {
+            let source = fs.readFileSync(enginePath, "utf8")
+                .replaceAll("__ADAPTER_ROOT__", this.namespace);
+            for (const token of source.match(/__[A-Z0-9_]+__/g) || []) {
+                const key = token.slice(2, -2);
+                const raw = mapping[key] ?? "";
+                const escaped = String(raw).replaceAll("\\", "\\\\").replaceAll("'", "\\'");
+                source = source.replaceAll(token, escaped);
+            }
+            new vm.Script(source, {filename: enginePath}).runInContext(this.engineContext);
+        }
     }
 
     onStateChange(id, state) {

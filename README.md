@@ -222,6 +222,7 @@ Der aktuelle Adapter schreibt ausschließlich in seinen eigenen Namespace
 
 | Version | Änderung |
 |---|---|
+| 0.3.0 | EMS-Logik ohne Funktionsänderung in Module für Kern, Historie, Prognose, Planung, Beobachtung und Start getrennt. |
 | 0.2.10 | Aufbewahrung der EMS-eigenen SQL-Ausgänge auf 90 Tage begrenzt. |
 | 0.2.9 | SQL-Historie speicherschonend nacheinander und in Sieben-Tage-Blöcken. |
 | 0.2.8 | Adapter-Icon und Objekt `info.connection` ergänzt. |

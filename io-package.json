@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.2.10",
+    "version": "0.3.0",
     "titleLang": {"en": "EMS Optimizer", "de": "EMS-Optimierer"},
     "desc": {"en": "Forecast-based energy management observer", "de": "Prognosebasierter Energiemanagement-Beobachter"},
     "authors": ["fuchs-1978"],
