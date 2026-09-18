@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.12.3**
+Aktuelle Version: **0.12.4**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -443,7 +443,23 @@ ems-optimizer.0.Devices.MyPV_DHW.OutputActive
 ems-optimizer.0.Devices.MyPV_DHW.OutputCommand_W
 ems-optimizer.0.Devices.MyPV_DHW.OutputStatus
 ems-optimizer.0.Devices.MyPV_DHW.OutputLastWrite
+ems-optimizer.0.Devices.MyPV_DHW.DirectGridPower_W
+ems-optimizer.0.Devices.MyPV_DHW.ActuatorSettled
+ems-optimizer.0.Devices.MyPV_DHW.ActuatorDifference_W
+ems-optimizer.0.Devices.MyPV_DHW.CommandAge_s
+ems-optimizer.0.Devices.MyPV_DHW.EffectiveStep_W
+ems-optimizer.0.Devices.MyPV_DHW.ProductionRemainingError_W
+ems-optimizer.0.Devices.MyPV_DHW.ControlReason
 ```
+
+Seit Version 0.12.4 nutzt der produktive EHZ-Regler die aktuellen Import- und
+Exportwerte direkt vom Netzverknüpfungspunkt. Nach einer Leistungserhöhung
+wartet er, bis die gemessene AC-THOR-Leistung höchstens 300 W vom letzten
+Befehl abweicht; nach spätestens 15 Sekunden darf er vorsichtig erneut
+erhöhen. Bei Netzbezug reduziert er ohne diese Wartezeit. Die Schrittweite
+wird nahe dem NVP-Ziel automatisch von maximal 1.000 W auf 500 W bzw. 200 W
+verkleinert. Dadurch werden mehrere noch nicht umgesetzte Erhöhungen und das
+beim Inbetriebnahmetest beobachtete Pendeln vermieden.
 
 ## Zweistufige Echtzeit-Simulation ab 0.8.0
 
@@ -540,6 +556,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.12.4 | Produktive NVP-Regelung des Trinkwasser-EHZ auf direkte SMA-Netzwerte umgestellt; Rückmelde-/Beruhigungslogik für den AC THOR, sofortige Reduktion bei Netzbezug, adaptive 1.000-/500-/200-W-Schritte und zusätzliche Diagnoseobjekte ergänzt. |
 | 0.12.3 | Zeitüberwachung an Sensorverhalten angepasst: unveränderte Tanktemperaturen bis 60 Minuten gültig, dynamische Ausgangstemperatur und Regler weiterhin eng überwacht. Produktiver Trinkwasser-Heizstab und langsame Zielverteilung standardmäßig alle 5 Sekunden. |
 | 0.12.2 | Hausanschlussbegrenzung des EHZ auf aktuelle SMA-Phasenströme umgestellt; statische `FreieAmpere`-Werte dürfen unverändert bleiben, ohne den Watchdog auszulösen. |
 | 0.12.1 | Watchdog ergänzt: produktiver EHZ fällt auf 0 W, wenn EMS- oder Echtzeitregelung nicht mehr innerhalb ihrer zulässigen Zeit aktualisiert werden. |

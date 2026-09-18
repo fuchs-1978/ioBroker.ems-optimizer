@@ -2,7 +2,7 @@
   "i18n": true,
   "type": "panel",
   "items": {
-    "safety": {"type":"staticText","text":"Version 0.12.3: guarded DHW output with sensor-aware watchdog and direct SMA phase-current monitoring.","newLine":true},
+    "safety": {"type":"staticText","text":"Version 0.12.4: guarded DHW output with feedback-aware NVP control and direct SMA monitoring.","newLine":true},
     "generalHeader": {"type":"header","text":"General and history","size":2,"newLine":true},
     "observerOnly": {"type":"checkbox","label":"Observer only (permanently enabled)","disabled":true,"newLine":true},
     "globalWriteEnabled": {"type":"checkbox","label":"Master release for future real outputs (no actuation in this version)","default":false,"newLine":true},
@@ -84,6 +84,8 @@
     "dhwCurve74PowerW": {"type":"number","label":"Curve point 4 maximum","unit":"W","default":3000,"sm":3},
     "dhwOutletProtectionC": {"type":"number","label":"Outlet protection temperature","unit":"°C","default":76,"sm":3,"newLine":true},
     "dhwMaxStepW": {"type":"number","label":"Maximum change per cycle","unit":"W","default":1000,"sm":3},
+    "dhwSettleToleranceW": {"type":"number","label":"Actual-power settling tolerance","unit":"W","default":300,"min":50,"max":2000,"sm":3,"newLine":true},
+    "dhwSettleTimeoutS": {"type":"number","label":"Maximum wait for AC THOR feedback","unit":"s","default":15,"min":5,"max":60,"sm":3},
     "dhwHaL1FreeCurrentId": {"type":"text","label":"HA L1 free current data point","default":"","sm":4,"newLine":true},
     "dhwHaL2FreeCurrentId": {"type":"text","label":"HA L2 free current data point","default":"","sm":4},
     "dhwHaL3FreeCurrentId": {"type":"text","label":"HA L3 free current data point","default":"","sm":4},

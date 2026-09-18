@@ -33,7 +33,7 @@ class EmsOptimizer extends utils.Adapter {
         await this.applyNativeVehicleSettings();
         await this.applyNativeEmsSettings();
         await this.setStateAsync("info.connection", true, true);
-        this.log.info("EMS Optimizer 0.12.3 started with guarded DHW output and sensor-aware watchdog");
+        this.log.info("EMS Optimizer 0.12.4 started with guarded, feedback-aware DHW NVP control");
     }
 
     async preloadStates() {
@@ -173,6 +173,8 @@ class EmsOptimizer extends utils.Adapter {
             DHWCurve4Temperature_C: ["dhwCurve4TempC", 74],
             DHWCurve74Power_W: ["dhwCurve74PowerW", 3000],
             DHWMaxStep_W: ["dhwMaxStepW", 1000],
+            DHWSettleTolerance_W: ["dhwSettleToleranceW", 300],
+            DHWSettleTimeout_s: ["dhwSettleTimeoutS", 15],
             DHWCommissioningMaxPower_W: ["dhwCommissioningMaxW", 1000],
             DHWHouseConnectionLimit_A: ["dhwHaLimitA", 50],
             DHWTemperatureMaxAge_min: ["dhwTemperatureMaxAgeMin", 60],
