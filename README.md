@@ -1,22 +1,131 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.12.4**
+Aktuelle Version: **0.13.0**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
 Verbraucher in einem rollierenden 48-Stunden-Fahrplan zusammen.
 
 Der aktuelle Entwicklungsstand arbeitet grundsätzlich im Beobachtermodus. Ab
-Version 0.12.0 kann ausschließlich der Trinkwasser-EHZ nach einer dreifachen
-Freigabe produktiv angesteuert werden. Wallboxen, Batterie, Heizpuffer und
-Wärmepumpe bleiben reine Simulation.
+Version 0.12.0 kann der Trinkwasser-EHZ nach ausdrücklicher Freigabe produktiv
+angesteuert werden. Version 0.13.0 ergänzt alternativ den gesicherten Einzeltest
+einer Wallbox. Batterie, Heizpuffer, Wärmepumpe und automatische reale
+Phasenumschaltung bleiben Simulation. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.13.0 – Issue #4
+
+### Fahrzeugbedarf und Admin-Konfiguration
+
+- Jede Wallbox lässt sich mit **Wallbox … present / include in planning** abwählen.
+  Ihr Fahrplan und ihre Freigabe bleiben dann null; die bisherigen Objekte bleiben erhalten.
+- **SoC limits source** legt pro Fahrzeug fest, ob die bisherigen gemappten
+  Min-/Max-Datenpunkte oder die neuen Admin-Felder gelten. Standard bleibt
+  **Existing mapped data points**; das vorhandene JSON kann unverändert bleiben.
+- **Minimum SoC**: sofortiger Ladebedarf, auch ohne PV. **Target SoC**: darüber
+  nur PV-Laden bis zum Ziel. Netzladung bis zum Ziel aufgrund einer Abfahrtszeit
+  erfordert jetzt ausdrücklich **Allow grid charging to target before departure**
+  (standardmäßig aus). Diese Änderung betrifft auch die Simulation.
+- **Preferred wallbox**: externes Prioritätsobjekt, automatisch oder Wallbox 0/1/2.
+  Unter Mindest-SoC hat ein Fahrzeug Vorrang vor der manuellen Auswahl und vor
+  einem früheren Fahrplan. Nach Erreichen der Mindestgrenze wird neu priorisiert.
+- **Reduce current near target SoC** aktiviert zwei Stufen je Fahrzeug.
+  Abstand zum Ziel wird in Prozentpunkten, die Stromgrenze in A je Phase eingegeben.
+  Beispiel aus dem aktiven Mii-Skript: Ziel minus 5 Punkte → höchstens 13 A;
+  Ziel minus 2 Punkte → höchstens 8 A. Für EQV/EQE separat einstellbar;
+  standardmäßig bei allen aus, damit keine Fahrzeuggrenze ungefragt geändert wird.
+  Beide Stufen wirken in Prognose, Echtzeitsimulation und Produktivausgang.
+  Der Fahrplan berechnet sie aus dem fortgeschriebenen Fahrzeug-SoC.
+
+Bei einer kurzen Restladung ist `valueW` im Fahrplan die mittlere Leistung des
+15-Minuten-Fensters. `currentA` und `chargingMinutes` beschreiben den dazugehörigen
+Ladestrom und die Dauer; real werden niemals 1–5 A angefordert.
+Eine nicht vorhandene Hausbatterie gleicht in der Echtzeitsimulation keine Last mehr aus.
+
+### Gesicherter Wallbox-Einzeltest
+
+Die neue Ausgangsstufe benötigt **globale Schreibfreigabe**, **Wallbox vorhanden**,
+**Wallbox control release** und die zusätzliche Bestätigung **Arm SINGLE wallbox test**.
+Die zusätzliche Bestätigung ist standardmäßig aus, auch bei bestehenden Installationen.
+Das anfängliche Produktionslimit beträgt **6 A**. Alle Ausgangs- und Rückmelde-IDs
+werden pro Wallbox in der Admin-Oberfläche eingegeben; es gibt keine fest verdrahteten Geräte-IDs.
+
+| Admin-Feld | Wallbox 0 / Mii | Wallbox 1 / EQV | Wallbox 2 / EQE |
+|---|---|---|---|
+| Writable go-e current | `go-e.0.amperePV` | `go-e.1.amperePV` | `go-e.2.amperePV` |
+| Writable go-e release | `go-e.0.allow_charging` | `go-e.1.allow_charging` | `go-e.2.allow_charging` |
+| Confirmed go-e current | `go-e.0.ampere` | `go-e.1.ampere` | `go-e.2.ampere` |
+| go-e connection state | `go-e.0.info.connection` | `go-e.1.info.connection` | `go-e.2.info.connection` |
+| go-e error code | `go-e.0.error` | `go-e.1.error` | `go-e.2.error` |
+
+**Optional available current** bleibt leer, solange `go-e.0.avail_ampere`,
+`go-e.1.avail_ampere` beziehungsweise `go-e.2.avail_ampere` keine gültigen Werte
+liefern. Wird das Feld belegt, ist der Wert verpflichtend und begrenzt den Strom;
+fehlende/veraltete Werte sperren dann den Ausgang. Die Fehlercodes werden gelesen,
+aber niemals automatisch quittiert. Eine Stromreduktion lässt sich nicht allein
+aus geringer Stromaufnahme eindeutig als Temperaturproblem erkennen.
+
+Die Schreibfolge lautet: Ladefreigabe 0 bestätigen lassen, Mindeststrom schreiben,
+bestätigte Ampere-Rückmeldung abwarten, erst dann Ladefreigabe 1. Ein eigener
+Schreibauftrag (`ack=false`) zählt nicht als Rückmeldung. Bei Schreibfehler oder
+Rückmelde-Timeout wird abgeschaltet und bis zum Adapter-Neustart gesperrt.
+Der Regler erhöht nicht weiter, wenn das Auto den angeforderten Strom noch nicht
+abnimmt. Er nutzt direkte NVP-Werte und ganze Ampere; normale Erhöhungen beachten
+Regelintervall und Rampe, Abschaltungen und kleinere Schutzgrenzen wirken sofort
+beim nächsten 2-Sekunden-Prüflauf.
+
+Die Hausanschlussprüfung verwendet die drei konfigurierten SMA-Phasenströme
+aus dem gemeinsamen Messaufbau (Admin-Felder **SMA L1/L2/L3 measured current**).
+Wallbox-Grenze: standardmäßig 50 A, keine Erhöhung oberhalb 46 A.
+Die Strombeträge werden konservativ ausgewertet; auch bei hoher Einspeisung
+kann dadurch ein Test begrenzt werden. Die Zuordnung **Grid phase used by wallbox L1**
+muss der tatsächlichen Verdrahtung entsprechen. Bei aktivem/unklarem §14a- oder
+LPC-Signal pausiert der Einzeltest vollständig; eine gemeinsame Verteilung der
+Netzbetreibergrenze ist noch nicht produktiv freigegeben.
+
+**Bewusste Grenze dieser Version:** genau eine Wallbox produktiv und die
+EHZ-Steuerfreigabe im Adapter aus. Die Phasenzahl wird für den Test physisch fest
+eingestellt und unter **Verified fixed phases** bestätigt. Der Adapter schaltet
+keine Phasenschütze. Seine 1-/3-Phasen-Prognose bleibt eine Empfehlung; der Ausgang
+rechnet das Wattbudget auf die feste Test-Phasenzahl um. Der kombinierte Test
+mit EHZ sowie automatische reale Phasenwechsel folgen nach erfolgreichem Einzeltest.
+
+Vor dem Test müssen die aktiven Ampere-/Freigabe-Schreibskripte **der ausgewählten
+Wallbox** und deren automatische Phasenumschaltung aus sein. Für den Mii ist der
+geprüfte Schreiber `script.js.EV-Charge.Werte_schreiben_0_V2`; für die anderen
+Wallboxen vor dem Umschalten die tatsächlichen aktiven Schreiber prüfen.
+RFID-/Benutzerfreigabe, SoC-Zulieferung, `PV_Sicherung` und Netzbetreibersignale
+bleiben erforderlich. Der EHZ bleibt während des isolierten Tests ebenfalls
+aus bzw. ohne Leistungsanforderung, damit die NVP-Reaktion eindeutig messbar ist.
+Das Update selbst schaltet kein Skript ab.
+
+Zur Rückgabe an das alte Skript zuerst die Wallbox-Steuerfreigabe entziehen und
+auf bestätigte Ladefreigabe 0 sowie `OutputOwned=false` warten. Erst danach den
+alten Schreiber einschalten. Bei Kommunikationsverlust kann der Adapter eine
+Abschaltung anfordern, aber deren physische Ausführung nicht garantieren;
+Geräteschutz und lokale Schutzfunktionen bleiben notwendig.
+
+### Neue Diagnoseobjekte (vollständige IDs)
+
+| Zweck | Wallbox 0 | Wallbox 1 | Wallbox 2 |
+|---|---|---|---|
+| Bestätigter Produktionsstrom | `ems-optimizer.0.Devices.Wallbox0.OutputCommand_A` | `ems-optimizer.0.Devices.Wallbox1.OutputCommand_A` | `ems-optimizer.0.Devices.Wallbox2.OutputCommand_A` |
+| Begründung / Wartezustand | `ems-optimizer.0.Devices.Wallbox0.OutputStatus` | `ems-optimizer.0.Devices.Wallbox1.OutputStatus` | `ems-optimizer.0.Devices.Wallbox2.OutputStatus` |
+| Ausgang aktiv | `ems-optimizer.0.Devices.Wallbox0.OutputActive` | `ems-optimizer.0.Devices.Wallbox1.OutputActive` | `ems-optimizer.0.Devices.Wallbox2.OutputActive` |
+| Steuerung noch übernommen | `ems-optimizer.0.Devices.Wallbox0.OutputOwned` | `ems-optimizer.0.Devices.Wallbox1.OutputOwned` | `ems-optimizer.0.Devices.Wallbox2.OutputOwned` |
+| Schreib-/Rückmeldefehler | `ems-optimizer.0.Devices.Wallbox0.OutputFault` | `ems-optimizer.0.Devices.Wallbox1.OutputFault` | `ems-optimizer.0.Devices.Wallbox2.OutputFault` |
+| Unter Mindest-SoC | `ems-optimizer.0.Vehicles.Wallbox0.BelowMinimum` | `ems-optimizer.0.Vehicles.Wallbox1.BelowMinimum` | `ems-optimizer.0.Vehicles.Wallbox2.BelowMinimum` |
+| SoC-bedingte Stromgrenze | `ems-optimizer.0.Vehicles.Wallbox0.TaperCurrentLimit_A` | `ems-optimizer.0.Vehicles.Wallbox1.TaperCurrentLimit_A` | `ems-optimizer.0.Vehicles.Wallbox2.TaperCurrentLimit_A` |
+
+Weitere neue Diagnosefelder je Wallbox: `OutputPhases`, `OutputLastWrite`,
+`FeedbackCurrent_A`, `AvailableCurrent_A` sowie beim Fahrzeug `SocLimitsSource`.
+**Keine Objekte entfallen in 0.13.0. Bestehende Diagramme funktionieren weiter.**
 
 ## Funktionen
 
 ### Simulierter my-PV-Trinkwasser-Controller (ab 0.6.0)
 
 Der Trinkwasser-Heizstab wird als erstes Geraet mit seiner realen
-Leistungskennlinie simuliert. Der Adapter schreibt weiterhin weder
+Leistungskennlinie simuliert. Im Beobachtermodus schreibt der Adapter weder
 `modbus.4.holdingRegisters.1000_Power` noch `javascript.0.ehz.power_vorgabe`
 oder einen anderen Aktorwert.
 
@@ -400,8 +509,9 @@ müssen weiterhin durch geeignete lokale und deterministische Funktionen
 gewährleistet werden.
 
 Ohne ausdrückliche globale und gerätespezifische Freigabe schreibt der Adapter
-ausschließlich in seinen eigenen Namespace `ems-optimizer.0`. Der einzige
-vorbereitete Fremdschreibzugriff ist der konfigurierte Trinkwasser-Sollwert.
+ausschließlich in seinen eigenen Namespace `ems-optimizer.0`. Freigegebene
+Fremdschreibzugriffe sind der konfigurierte Trinkwasser-Sollwert mit optionalem
+Istwert-Spiegel oder die beiden konfigurierten Ausgänge der einzeln getesteten Wallbox.
 
 ## Gerätefreigaben ab 0.11.0
 
@@ -411,10 +521,11 @@ Konfigurationsseite:
 - **Vorhanden / in Planung berücksichtigen** nimmt das Gerät in Fahrplan und
   Simulation auf. Ist der Schalter aus, bleibt seine geplante Leistung null.
 - **Steuerfreigabe** erlaubt beim Trinkwasser-EHZ zusammen mit dem globalen
-  Hauptschalter die produktive Ansteuerung. Bei allen anderen Geräten bleibt
-  sie in Version 0.12.0 ohne Aktorzugriff.
+  Hauptschalter die produktive Ansteuerung. Ab 0.13.0 kann alternativ eine Wallbox
+  mit zusätzlicher Einzeltest-Bestätigung produktiv arbeiten. Die übrigen Geräte
+  bleiben ohne Aktorzugriff.
 
-Darüber liegt die globale Freigabe **Master release for future real outputs**.
+Darüber liegt die globale Freigabe **Master release for configured real outputs**.
 Sie ist standardmäßig aus. Der EHZ-Ausgang wird erst freigegeben, wenn
 alle drei Bedingungen gleichzeitig erfüllt sind: globaler Schalter,
 gerätespezifische Steuerfreigabe und gültige Sicherheits-/Messwerte vorliegen.
@@ -513,7 +624,7 @@ deaktivierte Altversionen wurden nicht übernommen.
 | Hysterese dreiphasig | EIN über 9.000 W, AUS unter 8.000 W | Konfigurierbar unter `Config.DHWParallelStartPower3P_W` und `Config.DHWParallelStopPower3P_W` |
 | E-Heizer-Schutz | 9-kW-Maximum und bestehende Temperaturkennlinie | Adapter simuliert den sicheren Sollwert |
 | NVP-Ausregelung | Alle 2 Sekunden innerhalb des aktuellen Fahrplans | Adapter simuliert; Batterie schließt die verbleibende Lücke |
-| Ampere-/Freigabeschreiben, Hausanschlussschutz | Nicht doppelt implementiert | Aktive `Werte_schreiben_0/1/2_V2`-Skripte |
+| Ampere-/Freigabeschreiben, Hausanschlussschutz | Ab 0.13.0 gesicherter Einzeltest mit Rückmeldung und konfigurierbarer Hausanschlussgrenze | Je Wallbox entweder EMS-Test oder bisheriges Schreibskript |
 | Phasenumschaltung | 1-/3-phasige Empfehlung mit fahrzeugspezifischen Grenzen; noch kein Aktorzugriff | Bestehende lokale Skripte schalten real |
 | RFID und Fehlerquittierung | Nicht doppelt implementiert | Bestehende lokale Skripte |
 | EHZ-Pumpe und Raum-PV-Boost | Nicht doppelt implementiert | `EHZ-Pumpe_V2` und `EHZ-P2FBH` |
@@ -524,12 +635,12 @@ Version keine Adapter-Objekte entfernt.
 
 ### Skriptumschaltung
 
-Solange die produktive EHZ-Freigabe ausgeschaltet ist, bleiben
+Solange alle produktiven Gerätefreigaben ausgeschaltet sind, bleiben
 **alle derzeit aktiven Wallbox- und E-Heizer-Skripte eingeschaltet**. Insbesondere
 bleiben `PV_Sicherung`, `Werte_schreiben_0_V2`, `Werte_schreiben_1_V2`,
 `Werte_schreiben_2_V2`, `EHZ-Pumpe_V2` und `EHZ-P2FBH` aktiv. Ein Abschalten der
-Schreibskripte wäre jetzt falsch, weil der Adapter ihre reale Funktion noch
-nicht übernimmt.
+Schreibskripte wäre ohne gezielte Übernahme falsch. Für den Wallbox-Einzeltest
+ab 0.13.0 gilt die konkrete Übergabeanleitung oben.
 
 Erst mit einer späteren, ausdrücklich produktiv freigegebenen Adapterversion
 werden wegen doppelter Entscheidungslogik zunächst folgende Skripte abgelöst:
@@ -556,6 +667,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.13.0 | Issue #4: Min-/Ziel-SoC und Fahrzeugpriorität im Admin, Mindest-SoC vor manueller Priorität, zwei konfigurierbare SoC-Reduktionsstufen in Prognose/Simulation/Output; gesicherter Wallbox-Einzeltest mit 6-A-Start, bestätigter Rückmeldung, Fehler-/NVP-/Hausanschlussprüfung. Neue Ausgänge bleiben aus; keine Objekte entfernt. |
 | 0.12.4 | Produktive NVP-Regelung des Trinkwasser-EHZ auf direkte SMA-Netzwerte umgestellt; Rückmelde-/Beruhigungslogik für den AC THOR, sofortige Reduktion bei Netzbezug, adaptive 1.000-/500-/200-W-Schritte und zusätzliche Diagnoseobjekte ergänzt. |
 | 0.12.3 | Zeitüberwachung an Sensorverhalten angepasst: unveränderte Tanktemperaturen bis 60 Minuten gültig, dynamische Ausgangstemperatur und Regler weiterhin eng überwacht. Produktiver Trinkwasser-Heizstab und langsame Zielverteilung standardmäßig alle 5 Sekunden. |
 | 0.12.2 | Hausanschlussbegrenzung des EHZ auf aktuelle SMA-Phasenströme umgestellt; statische `FreieAmpere`-Werte dürfen unverändert bleiben, ohne den Watchdog auszulösen. |

@@ -5,6 +5,7 @@ const path = require("path");
 const vm = require("vm");
 const schedule = require("node-schedule");
 const utils = require("@iobroker/adapter-core");
+const WallboxOutput = require("./lib/wallbox-output");
 
 class EmsOptimizer extends utils.Adapter {
     constructor(options = {}) {
@@ -17,6 +18,7 @@ class EmsOptimizer extends utils.Adapter {
         this.timers = new Set();
         this.engineContext = null;
         this.allowedForeignWriteIds = new Set();
+        this.wallboxOutput = new WallboxOutput(this);
         this.on("ready", this.onReady.bind(this));
         this.on("stateChange", this.onStateChange.bind(this));
         this.on("unload", this.onUnload.bind(this));
@@ -32,8 +34,9 @@ class EmsOptimizer extends utils.Adapter {
         await this.startEngine();
         await this.applyNativeVehicleSettings();
         await this.applyNativeEmsSettings();
+        await this.wallboxOutput.initialize();
         await this.setStateAsync("info.connection", true, true);
-        this.log.info("EMS Optimizer 0.12.4 started with guarded, feedback-aware DHW NVP control");
+        this.log.info("EMS Optimizer 0.13.0 started; real outputs require explicit device release");
     }
 
     async preloadStates() {
@@ -347,6 +350,7 @@ class EmsOptimizer extends utils.Adapter {
             Number,
             String,
             Boolean,
+            nativeConfig: Object.freeze({...this.config}),
             Array,
             Object,
             Map,
@@ -362,6 +366,7 @@ class EmsOptimizer extends utils.Adapter {
             createState(id, value, common) { void adapter.queueCompatState(id, value, common); },
             setState(id, value, ack) { adapter.setCompatState(id, value, ack); },
             writeForeignState(id, value) { return adapter.writeForeignStateGuarded(id, value); },
+            updateWallboxProductionOutput() { void adapter.wallboxOutput.tick(); },
             sendTo(instance, command, message, callback) {
                 adapter.compatSendTo(instance, command, message, callback);
             },
@@ -416,6 +421,7 @@ class EmsOptimizer extends utils.Adapter {
 
     onUnload(callback) {
         try {
+            this.wallboxOutput.stopping = true;
             for (const job of this.jobs) job.cancel();
             for (const timer of this.timers) clearTimeout(timer);
             this.jobs = [];
@@ -423,11 +429,14 @@ class EmsOptimizer extends utils.Adapter {
             const globalEnabled = Boolean(this.stateCache.get(`${this.namespace}.System.RealOutputsEnabled`)?.val);
             const dhwEnabled = Boolean(this.stateCache.get(`${this.namespace}.Devices.MyPV_DHW.ControlEnabled`)?.val);
             const setpointId = String(this.config.dhwSetpointId || "").trim();
+            const stops = [this.wallboxOutput.stopAll()];
             if (globalEnabled && dhwEnabled && setpointId && this.allowedForeignWriteIds.has(setpointId)) {
-                void this.setForeignStateAsync(setpointId, 0, false)
-                    .catch(error => this.log.error(`Cannot stop DHW output on unload: ${error.message}`))
-                    .finally(callback);
-            } else callback();
+                stops.push(this.setForeignStateAsync(setpointId, 0, false));
+            }
+            void Promise.allSettled(stops).then(results => {
+                for (const result of results) if (result.status === "rejected")
+                    this.log.error(`Cannot stop output on unload: ${result.reason}`);
+            }).finally(callback);
         } catch {
             callback();
         }
