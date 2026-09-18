@@ -19,6 +19,7 @@
   "DP_DHW_POWER1": "", "DP_DHW_POWER2": "", "DP_DHW_POWER3": "",
   "DP_HEAT_POWER1": "", "DP_HEAT_POWER2": "", "DP_HEAT_POWER3": "",
   "DP_DHW_HISTORY": "", "DP_HEAT_HISTORY": "",
+  "DP_DHW_RELEASE": "", "DP_DHW_OUTLET_TEMP": "", "DP_DHW_CONNECTION": "",
   "PV_AREA1_NAME": "area1", "PV_AREA1_KWP": "0",
   "PV_AREA2_NAME": "area2", "PV_AREA2_KWP": "0",
   "PV_AREA3_NAME": "area3", "PV_AREA3_KWP": "0",

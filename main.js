@@ -26,7 +26,7 @@ class EmsOptimizer extends utils.Adapter {
         await this.preloadStates();
         await this.startEngine();
         await this.setStateAsync("info.connection", true, true);
-        this.log.info("EMS Optimizer 0.5.0 started with vehicle manager in observer/simulation mode");
+        this.log.info("EMS Optimizer 0.6.0 started with vehicle and DHW simulation controllers");
     }
 
     async preloadStates() {
@@ -64,7 +64,10 @@ class EmsOptimizer extends utils.Adapter {
                 DP_WB2_ALLOW: "javascript.0.ev.alw2",
                 DP_WB0_PHASES: "javascript.0.ev.pha0",
                 DP_WB1_PHASES: "javascript.0.ev.pha1",
-                DP_WB2_PHASES: "javascript.0.ev.pha2"
+                DP_WB2_PHASES: "javascript.0.ev.pha2",
+                DP_DHW_RELEASE: "javascript.0.ehz.freigabe",
+                DP_DHW_OUTLET_TEMP: "modbus.4.holdingRegisters.1001_Temp1",
+                DP_DHW_CONNECTION: "modbus.4.info.connection"
             };
             for (const [key, fallback] of Object.entries(defaults)) {
                 if (!mapping[key]) mapping[key] = fallback;
@@ -166,6 +169,7 @@ class EmsOptimizer extends utils.Adapter {
             "history.js",
             "forecast.js",
             "vehicles.js",
+            "dhw-controller.js",
             "planner.js",
             "observer.js",
             "realtime.js",

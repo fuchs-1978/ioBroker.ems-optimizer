@@ -4,7 +4,7 @@
   "items": {
     "safety": {
       "type": "staticText",
-      "text": "Version 0.5.0 includes the observer, 48-hour planner, vehicle manager and simulated NVP controller. It never writes to devices.",
+      "text": "Version 0.6.0 includes observer, planner, vehicle manager and simulated NVP/DHW controllers. It never writes to devices.",
       "newLine": true
     },
     "parallel": {

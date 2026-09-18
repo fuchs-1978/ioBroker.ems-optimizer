@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.5.0**
+Aktuelle Version: **0.6.0**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -11,6 +11,46 @@ Es werden Prognosen, Fahrpläne und Empfehlungen erzeugt, aber keine Wallbox,
 kein Heizstab, keine Batterie und keine Wärmepumpe direkt angesteuert.
 
 ## Funktionen
+
+### Simulierter my-PV-Trinkwasser-Controller (ab 0.6.0)
+
+Der Trinkwasser-Heizstab wird als erstes Geraet mit seiner realen
+Leistungskennlinie simuliert. Der Adapter schreibt weiterhin weder
+`modbus.4.holdingRegisters.1000_Power` noch `javascript.0.ehz.power_vorgabe`
+oder einen anderen Aktorwert.
+
+Aus dem vorhandenen Skript wurden folgende Grenzen uebernommen:
+
+- maximal 9.000 W
+- Abschaltung ab 76,0 °C am unteren Speichersensor
+- Wiedereinschaltung unterhalb 75,5 °C
+- maximal 7.500 W von 70 bis 71 °C
+- maximal 6.000 W von 71 bis 73 °C
+- maximal 4.000 W von 73 bis 74 °C
+- maximal 3.000 W von 74 bis 76 °C
+- die temperaturabhaengigen Stufen greifen wie bisher bei mehr als 60 °C
+  AC-THOR-Ausgangstemperatur
+- maximal 3.000 W ab 76 °C AC-THOR-Ausgangstemperatur
+- Sicherheitsabschaltung bei 82 °C am oberen Speichersensor
+- Schichtungsgrenzen von 900 beziehungsweise 500 W
+- simulierte Aenderungsbegrenzung von 1.000 W je zehn Sekunden
+
+Die wichtigsten vollstaendigen Diagnoseobjekte sind:
+
+- `ems-optimizer.0.Devices.MyPV_DHW.Available`
+- `ems-optimizer.0.Devices.MyPV_DHW.Release`
+- `ems-optimizer.0.Devices.MyPV_DHW.MustHeat`
+- `ems-optimizer.0.Devices.MyPV_DHW.BottomTemperature_C`
+- `ems-optimizer.0.Devices.MyPV_DHW.MiddleLowerTemperature_C`
+- `ems-optimizer.0.Devices.MyPV_DHW.MiddleUpperTemperature_C`
+- `ems-optimizer.0.Devices.MyPV_DHW.TopTemperature_C`
+- `ems-optimizer.0.Devices.MyPV_DHW.OutletTemperature_C`
+- `ems-optimizer.0.Devices.MyPV_DHW.RemainingCapacity_kWh`
+- `ems-optimizer.0.Devices.MyPV_DHW.ActualPower_W`
+- `ems-optimizer.0.Devices.MyPV_DHW.PlannedPower_W`
+- `ems-optimizer.0.Devices.MyPV_DHW.TemperaturePowerLimit_W`
+- `ems-optimizer.0.Devices.MyPV_DHW.SimulatedTargetPower_W`
+- `ems-optimizer.0.Devices.MyPV_DHW.Status`
 
 ### SoC- und Fahrzeugverwaltung (ab 0.5.0)
 
