@@ -4,12 +4,7 @@
   "items": {
     "safety": {
       "type": "staticText",
-      "text": "Version 0.8.0 uses dynamic surplus, integer wallbox amps and separate 2 s / 10 s simulation loops. It never writes to devices.",
-      "newLine": true
-    },
-    "parallel": {
-      "type": "staticText",
-      "text": "Keep the existing JavaScript observer active during comparison. Adapter outputs are created below ems-optimizer.0.",
+      "text": "Version 0.9.0: structured vehicle assignment and parallel charging simulation. No device outputs are written.",
       "newLine": true
     },
     "observerOnly": {
@@ -18,10 +13,57 @@
       "disabled": true,
       "newLine": true
     },
+    "historyInstance": {
+      "type": "text",
+      "label": "History adapter instance",
+      "help": "Example: sql.0. The value is read only from this adapter configuration.",
+      "default": "",
+      "sm": 4,
+      "newLine": true
+    },
+    "wb0Header": {"type": "header", "text": "Wallbox 0", "size": 2, "newLine": true},
+    "wb0Name": {"type": "text", "label": "Vehicle name", "default": "Vehicle 0", "sm": 3, "newLine": true},
+    "wb0SocId": {"type": "text", "label": "SoC data point", "default": "", "sm": 9},
+    "wb0CapacityKWh": {"type": "number", "label": "Battery capacity", "unit": "kWh", "default": 50, "min": 1, "max": 200, "sm": 3, "newLine": true},
+    "wb0MaxPowerW": {"type": "number", "label": "Maximum charging power", "unit": "W", "default": 11000, "min": 1380, "max": 23000, "sm": 3},
+    "wb0PhaseSwitchEnabled": {"type": "checkbox", "label": "Allow 1-/3-phase switching", "default": false, "sm": 3},
+    "wb0MinCurrent1pA": {"type": "number", "label": "Minimum current 1-phase", "unit": "A", "default": 6, "min": 6, "max": 32, "sm": 3},
+    "wb0MaxCurrent1pA": {"type": "number", "label": "Maximum current 1-phase", "unit": "A", "default": 16, "min": 6, "max": 32, "sm": 3},
+    "wb0MinCurrent3pA": {"type": "number", "label": "Minimum current 3-phase", "unit": "A", "default": 6, "min": 0, "max": 32, "sm": 3},
+    "wb0MaxCurrent3pA": {"type": "number", "label": "Maximum current 3-phase", "unit": "A", "default": 16, "min": 0, "max": 32, "sm": 3},
+
+    "wb1Header": {"type": "header", "text": "Wallbox 1", "size": 2, "newLine": true},
+    "wb1Name": {"type": "text", "label": "Vehicle name", "default": "Vehicle 1", "sm": 3, "newLine": true},
+    "wb1SocId": {"type": "text", "label": "SoC data point", "default": "", "sm": 9},
+    "wb1CapacityKWh": {"type": "number", "label": "Battery capacity", "unit": "kWh", "default": 50, "min": 1, "max": 200, "sm": 3, "newLine": true},
+    "wb1MaxPowerW": {"type": "number", "label": "Maximum charging power", "unit": "W", "default": 11000, "min": 1380, "max": 23000, "sm": 3},
+    "wb1PhaseSwitchEnabled": {"type": "checkbox", "label": "Allow 1-/3-phase switching", "default": false, "sm": 3},
+    "wb1MinCurrent1pA": {"type": "number", "label": "Minimum current 1-phase", "unit": "A", "default": 6, "min": 6, "max": 32, "sm": 3},
+    "wb1MaxCurrent1pA": {"type": "number", "label": "Maximum current 1-phase", "unit": "A", "default": 16, "min": 6, "max": 32, "sm": 3},
+    "wb1MinCurrent3pA": {"type": "number", "label": "Minimum current 3-phase", "unit": "A", "default": 6, "min": 6, "max": 32, "sm": 3},
+    "wb1MaxCurrent3pA": {"type": "number", "label": "Maximum current 3-phase", "unit": "A", "default": 16, "min": 6, "max": 32, "sm": 3},
+
+    "wb2Header": {"type": "header", "text": "Wallbox 2", "size": 2, "newLine": true},
+    "wb2Name": {"type": "text", "label": "Vehicle name", "default": "Vehicle 2", "sm": 3, "newLine": true},
+    "wb2SocId": {"type": "text", "label": "SoC data point", "default": "", "sm": 9},
+    "wb2CapacityKWh": {"type": "number", "label": "Battery capacity", "unit": "kWh", "default": 50, "min": 1, "max": 200, "sm": 3, "newLine": true},
+    "wb2MaxPowerW": {"type": "number", "label": "Maximum charging power", "unit": "W", "default": 11000, "min": 1380, "max": 23000, "sm": 3},
+    "wb2PhaseSwitchEnabled": {"type": "checkbox", "label": "Allow 1-/3-phase switching", "default": false, "sm": 3},
+    "wb2MinCurrent1pA": {"type": "number", "label": "Minimum current 1-phase", "unit": "A", "default": 6, "min": 6, "max": 32, "sm": 3},
+    "wb2MaxCurrent1pA": {"type": "number", "label": "Maximum current 1-phase", "unit": "A", "default": 16, "min": 6, "max": 32, "sm": 3},
+    "wb2MinCurrent3pA": {"type": "number", "label": "Minimum current 3-phase", "unit": "A", "default": 6, "min": 6, "max": 32, "sm": 3},
+    "wb2MaxCurrent3pA": {"type": "number", "label": "Maximum current 3-phase", "unit": "A", "default": 16, "min": 6, "max": 32, "sm": 3},
+
+    "advancedHeader": {"type": "header", "text": "Advanced compatibility mapping", "size": 2, "newLine": true},
+    "advancedHelp": {
+      "type": "staticText",
+      "text": "The visible vehicle fields override the corresponding SoC entries in the legacy JSON. The JSON remains available for all other data points and import/export.",
+      "newLine": true
+    },
     "dataPointMapJson": {
       "type": "text",
       "label": "Data-point mapping as JSON",
-      "help": "Use the keys documented in config.example.json. Values remain in your ioBroker configuration and are not uploaded to GitHub.",
+      "help": "Use the keys documented in config.example.json. Values remain in your ioBroker configuration.",
       "newLine": true
     }
   }

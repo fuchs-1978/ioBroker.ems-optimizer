@@ -25,8 +25,9 @@ class EmsOptimizer extends utils.Adapter {
         await this.setStateAsync("info.connection", false, true);
         await this.preloadStates();
         await this.startEngine();
+        await this.applyNativeVehicleSettings();
         await this.setStateAsync("info.connection", true, true);
-        this.log.info("EMS Optimizer 0.8.0 started with dynamic two-speed simulation controllers");
+        this.log.info("EMS Optimizer 0.9.0 started with structured vehicle config and parallel EV simulation");
     }
 
     async preloadStates() {
@@ -55,33 +56,56 @@ class EmsOptimizer extends utils.Adapter {
         try {
             const value = JSON.parse(String(this.config.dataPointMapJson || "{}"));
             const mapping = value && typeof value === "object" && !Array.isArray(value) ? value : {};
-            const defaults = {
-                DP_WB0_MIN_SOC: "javascript.0.ev.socmin0",
-                DP_WB1_MIN_SOC: "javascript.0.ev.socmin1",
-                DP_WB2_MIN_SOC: "javascript.0.ev.socmin2",
-                DP_WB0_ALLOW: "javascript.0.ev.alw0",
-                DP_WB1_ALLOW: "javascript.0.ev.alw1",
-                DP_WB2_ALLOW: "javascript.0.ev.alw2",
-                DP_WB0_PHASES: "javascript.0.ev.pha0",
-                DP_WB1_PHASES: "javascript.0.ev.pha1",
-                DP_WB2_PHASES: "javascript.0.ev.pha2",
-                DP_DHW_RELEASE: "javascript.0.ehz.freigabe",
-                DP_DHW_OUTLET_TEMP: "modbus.4.holdingRegisters.1001_Temp1",
-                DP_DHW_CONNECTION: "modbus.4.info.connection",
-                DP_WB_PRIORITY: "javascript.0.ev.prio"
-            };
-            for (let wb = 0; wb < 3; wb++) {
-                for (let phase = 1; phase <= 3; phase++) {
-                    defaults[`DP_WB${wb}_L${phase}_A`] = `go-e.${wb}.energy.phase${phase}.ampere`;
-                }
-            }
-            for (const [key, fallback] of Object.entries(defaults)) {
-                if (!mapping[key]) mapping[key] = fallback;
-            }
+            const historyInstance = String(this.config.historyInstance || "").trim();
+            if (historyInstance) mapping.DP_SQL_INSTANCE = historyInstance;
+            [0, 1, 2].forEach(wb => {
+                const configuredSoc = String(this.config[`wb${wb}SocId`] || "").trim();
+                if (configuredSoc) mapping[`DP_WB${wb}_SOC`] = configuredSoc;
+            });
             return mapping;
         } catch (error) {
             this.log.error(`Invalid dataPointMapJson: ${error.message}`);
             return {};
+        }
+    }
+
+    async applyNativeVehicleSettings() {
+        await Promise.all([...this.objectPromises.values()]);
+        const defaults = [0, 1, 2].map(wb => ({
+            name: `Vehicle ${wb}`, capacity: 50, maxPower: 11000,
+            switchPhases: false, min1p: 6, max1p: 16, min3p: 6, max3p: 16
+        }));
+        for (let wb = 0; wb < 3; wb++) {
+            const name = String(this.config[`wb${wb}Name`] || defaults[wb].name);
+            const capacity = Number(this.config[`wb${wb}CapacityKWh`] ?? defaults[wb].capacity);
+            const maxPower = Number(this.config[`wb${wb}MaxPowerW`] ?? defaults[wb].maxPower);
+            const phaseSwitchEnabled = Boolean(this.config[`wb${wb}PhaseSwitchEnabled`] ?? defaults[wb].switchPhases);
+            const minCurrent1p = Number(this.config[`wb${wb}MinCurrent1pA`] ?? defaults[wb].min1p);
+            const maxCurrent1p = Number(this.config[`wb${wb}MaxCurrent1pA`] ?? defaults[wb].max1p);
+            const minCurrent3p = Number(this.config[`wb${wb}MinCurrent3pA`] ?? defaults[wb].min3p);
+            const maxCurrent3p = Number(this.config[`wb${wb}MaxCurrent3pA`] ?? defaults[wb].max3p);
+            const definitions = [
+                [`Vehicles.Wallbox${wb}.VehicleName`, name, {type: "string", role: "text"}],
+                [`Vehicles.Wallbox${wb}.MaximumPhases`, phaseSwitchEnabled ? 3 : 1, {type: "number", role: "value"}],
+                [`Vehicles.Wallbox${wb}.PhaseSwitchEnabled`, phaseSwitchEnabled, {type: "boolean", role: "indicator"}],
+                [`Vehicles.Wallbox${wb}.MinCurrent1P_A`, minCurrent1p, {type: "number", role: "value.current", unit: "A"}],
+                [`Vehicles.Wallbox${wb}.MaxCurrent1P_A`, maxCurrent1p, {type: "number", role: "value.current", unit: "A"}],
+                [`Vehicles.Wallbox${wb}.MinCurrent3P_A`, minCurrent3p, {type: "number", role: "value.current", unit: "A"}],
+                [`Vehicles.Wallbox${wb}.MaxCurrent3P_A`, maxCurrent3p, {type: "number", role: "value.current", unit: "A"}],
+                [`Vehicles.Wallbox${wb}.RecommendedPhases`, 1, {type: "number", role: "value"}],
+                [`Control.Targets.Wallbox${wb}_Phases`, 1, {type: "number", role: "value"}]
+            ];
+            await Promise.all(definitions.map(([id, value, common]) =>
+                this.queueCompatState(`${this.namespace}.${id}`, value, common)));
+            this.setCompatState(`${this.namespace}.Vehicles.Wallbox${wb}.VehicleName`, name, true);
+            this.setCompatState(`${this.namespace}.Config.Wallbox${wb}VehicleCapacity_kWh`, capacity, true);
+            this.setCompatState(`${this.namespace}.Config.Wallbox${wb}MaxPower_W`, maxPower, true);
+            this.setCompatState(`${this.namespace}.Vehicles.Wallbox${wb}.MaximumPhases`, phaseSwitchEnabled ? 3 : 1, true);
+            this.setCompatState(`${this.namespace}.Vehicles.Wallbox${wb}.PhaseSwitchEnabled`, phaseSwitchEnabled, true);
+            this.setCompatState(`${this.namespace}.Vehicles.Wallbox${wb}.MinCurrent1P_A`, minCurrent1p, true);
+            this.setCompatState(`${this.namespace}.Vehicles.Wallbox${wb}.MaxCurrent1P_A`, maxCurrent1p, true);
+            this.setCompatState(`${this.namespace}.Vehicles.Wallbox${wb}.MinCurrent3P_A`, minCurrent3p, true);
+            this.setCompatState(`${this.namespace}.Vehicles.Wallbox${wb}.MaxCurrent3P_A`, maxCurrent3p, true);
         }
     }
 
@@ -172,6 +196,7 @@ class EmsOptimizer extends utils.Adapter {
     async startEngine() {
         const enginePaths = [
             "core.js",
+            "config-mapping.js",
             "history.js",
             "forecast.js",
             "vehicles.js",
