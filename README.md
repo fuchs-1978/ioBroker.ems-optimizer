@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.10.0**
+Aktuelle Version: **0.11.0**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -401,6 +401,29 @@ gewährleistet werden.
 Der aktuelle Adapter schreibt ausschließlich in seinen eigenen Namespace
 `ems-optimizer.0` und niemals auf konfigurierte Geräteausgänge.
 
+## Gerätefreigaben ab 0.11.0
+
+Jedes geplante Gerät besitzt zwei getrennte Schalter auf der
+Konfigurationsseite:
+
+- **Vorhanden / in Planung berücksichtigen** nimmt das Gerät in Fahrplan und
+  Simulation auf. Ist der Schalter aus, bleibt seine geplante Leistung null.
+- **Steuerfreigabe** ist die vorbereitete Freigabe für eine spätere produktive
+  Ansteuerung. Sie bewirkt in Version 0.11.0 noch keinen Geräteschreibzugriff.
+
+Darüber liegt die globale Freigabe **Master release for future real outputs**.
+Sie ist standardmäßig aus. Reale Ausgänge wären erst freigegeben, wenn später
+alle drei Bedingungen gleichzeitig erfüllt sind: globaler Schalter,
+gerätespezifische Steuerfreigabe und gültige Sicherheits-/Messwerte. Version
+0.11.0 bleibt unabhängig von den Schalterstellungen vollständig im
+Beobachtermodus.
+
+Für den ersten Ausbau sollten nur Wallbox 0, Wallbox 1, Wallbox 2 und der
+Trinkwasser-Heizstab als vorhanden markiert sein. Heizpuffer-Heizstab,
+Hausbatterie und Wärmepumpe bleiben bis zur realen Inbetriebnahme ausgeschaltet.
+Die vier Punkte der Trinkwasser-Temperaturkennlinie bestehen nun jeweils aus
+einer frei einstellbaren Temperatur und der dazugehörigen maximalen Leistung.
+
 ## Zweistufige Echtzeit-Simulation ab 0.8.0
 
 Der 48-Stunden-Fahrplan ist eine strategische Freigabe und kein starrer
@@ -462,10 +485,41 @@ Der aktuelle Abgleich ist außerdem maschinenlesbar unter
 `ems-optimizer.0.System.ActiveScriptAudit_JSON` abgelegt. Es werden mit dieser
 Version keine Adapter-Objekte entfernt.
 
+### Skriptumschaltung
+
+In Version 0.11.0 werden noch keine realen Geräte angesteuert. Deshalb bleiben
+**alle derzeit aktiven Wallbox- und E-Heizer-Skripte eingeschaltet**. Insbesondere
+bleiben `PV_Sicherung`, `Werte_schreiben_0_V2`, `Werte_schreiben_1_V2`,
+`Werte_schreiben_2_V2`, `EHZ-Pumpe_V2` und `EHZ-P2FBH` aktiv. Ein Abschalten der
+Schreibskripte wäre jetzt falsch, weil der Adapter ihre reale Funktion noch
+nicht übernimmt.
+
+Erst mit einer späteren, ausdrücklich produktiv freigegebenen Adapterversion
+werden wegen doppelter Entscheidungslogik zunächst folgende Skripte abgelöst:
+
+- `PV_Fahrplan`
+- `PV_Nacht`
+- `PV_Ueberschuss_Freigabe`
+- `PV_Ueberschuss_Stufen`
+- `PV_Ueberschuss_Verteilung`
+- `EHZ-Aufteilen_V5`
+- `EHZ-Leistung_V2`
+
+Die drei Skripte `Werte_schreiben_0_V2`, `Werte_schreiben_1_V2` und
+`Werte_schreiben_2_V2` dürfen erst abgeschaltet werden, wenn der Adapter die
+go-e-Ausgänge einschließlich Hausanschlussgrenze, §14a, Rampen und Rückmeldung
+nachweislich selbst übernimmt. `PV_Sicherung`, die übergeordneten
+§14a-/EEBUS-Funktionen, `EHZ-Pumpe_V2`, `EHZ-P2FBH`, Geräte- und
+Temperaturschutz sowie Notabschaltungen bleiben auch dann als unabhängige
+Sicherheitsebene aktiv. `PV_Ueberschuss_SOCmin` und `PV_min_max` bleiben in der
+ersten Übergangsstufe ebenfalls aktiv, solange ihre Zustände noch Eingänge des
+Adapters sind.
+
 ## Entwicklungshistorie
 
 | Version | Änderung |
 |---|---|
+| 0.11.0 | Globale und gerätespezifische Freigaben ergänzt; nicht vorhandene Geräte werden aus Planung und Simulation entfernt. Trinkwasserkennlinie auf vier konfigurierbare Temperatur-/Leistungspaare umgestellt und sichere Skript-Umschaltfolge dokumentiert. |
 | 0.10.0 | Konfigurationsseite fuer Fahrzeuge, beide Heizstaebe, Batterie, NVP-Regelung sowie Preise/Netzentgelte gegliedert; Trinkwasser-Temperaturkennlinie konfigurierbar. |
 | 0.9.0 | Sichtbare Fahrzeugkonfiguration, eigener Haken fuer 1-/3-phasige Umschaltung, getrennte Stromgrenzen und parallele Nutzung mehrerer Wallboxen bei Restueberschuss. |
 | 0.8.0 | Fahrplan als Freigabe statt starrem Leistungsdeckel; zusätzliche reale PV-Leistung wird verteilt. Wallboxen in ganzen Ampere ab 6 A, langsame Verbraucher alle 10 s und Batterieausregelung alle 2 s. |

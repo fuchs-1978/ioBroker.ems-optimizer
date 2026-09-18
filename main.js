@@ -28,7 +28,7 @@ class EmsOptimizer extends utils.Adapter {
         await this.applyNativeVehicleSettings();
         await this.applyNativeEmsSettings();
         await this.setStateAsync("info.connection", true, true);
-        this.log.info("EMS Optimizer 0.10.0 started with structured EMS configuration");
+        this.log.info("EMS Optimizer 0.11.0 started with device gates and configurable DHW curve");
     }
 
     async preloadStates() {
@@ -109,6 +109,10 @@ class EmsOptimizer extends utils.Adapter {
                 [`Vehicles.Wallbox${wb}.RecommendedPhases`, 1, {type: "number", role: "value"}],
                 [`Control.Targets.Wallbox${wb}_Phases`, 1, {type: "number", role: "value"}]
             ];
+            definitions.push(
+                [`Devices.Wallbox${wb}.Present`, Boolean(this.config[`wb${wb}Present`] ?? true), {type: "boolean", role: "indicator"}],
+                [`Devices.Wallbox${wb}.ControlEnabled`, Boolean(this.config[`wb${wb}ControlEnabled`] ?? false), {type: "boolean", role: "indicator"}]
+            );
             await Promise.all(definitions.map(([id, value, common]) =>
                 this.queueCompatState(`${this.namespace}.${id}`, value, common)));
             this.setCompatState(`${this.namespace}.Vehicles.Wallbox${wb}.VehicleName`, name, true);
@@ -120,6 +124,8 @@ class EmsOptimizer extends utils.Adapter {
             this.setCompatState(`${this.namespace}.Vehicles.Wallbox${wb}.MaxCurrent1P_A`, maxCurrent1p, true);
             this.setCompatState(`${this.namespace}.Vehicles.Wallbox${wb}.MinCurrent3P_A`, minCurrent3p, true);
             this.setCompatState(`${this.namespace}.Vehicles.Wallbox${wb}.MaxCurrent3P_A`, maxCurrent3p, true);
+            this.setCompatState(`${this.namespace}.Devices.Wallbox${wb}.Present`, Boolean(this.config[`wb${wb}Present`] ?? true), true);
+            this.setCompatState(`${this.namespace}.Devices.Wallbox${wb}.ControlEnabled`, Boolean(this.config[`wb${wb}ControlEnabled`] ?? false), true);
         }
     }
 
@@ -147,9 +153,13 @@ class EmsOptimizer extends utils.Adapter {
             DHWControllerOutletDerating_C: ["dhwOutletDeratingC", 60],
             DHWControllerOutletProtection_C: ["dhwOutletProtectionC", 76],
             DHWControllerTopEmergencyStop_C: ["dhwTopEmergencyC", 82],
+            DHWCurve1Temperature_C: ["dhwCurve1TempC", 70],
             DHWCurve70Power_W: ["dhwCurve70PowerW", 7500],
+            DHWCurve2Temperature_C: ["dhwCurve2TempC", 71],
             DHWCurve71Power_W: ["dhwCurve71PowerW", 6000],
+            DHWCurve3Temperature_C: ["dhwCurve3TempC", 73],
             DHWCurve73Power_W: ["dhwCurve73PowerW", 4000],
+            DHWCurve4Temperature_C: ["dhwCurve4TempC", 74],
             DHWCurve74Power_W: ["dhwCurve74PowerW", 3000],
             DHWMaxStep_W: ["dhwMaxStepW", 1000],
             HeatingBufferVolume_l: ["heatingVolumeL", 400],
@@ -183,6 +193,23 @@ class EmsOptimizer extends utils.Adapter {
             const configured = this.config[nativeName];
             this.setCompatState(`${this.namespace}.Control.${stateName}`,
                 configured === undefined || configured === null ? fallback : configured, true);
+        }
+        const gates = {
+            "System.RealOutputsEnabled": ["globalWriteEnabled", false],
+            "Devices.MyPV_DHW.Present": ["dhwPresent", true],
+            "Devices.MyPV_DHW.ControlEnabled": ["dhwControlEnabled", false],
+            "Devices.MyPV_Heating.Present": ["heatingPresent", false],
+            "Devices.MyPV_Heating.ControlEnabled": ["heatingControlEnabled", false],
+            "Devices.Battery.Present": ["batteryPresent", false],
+            "Devices.Battery.ControlEnabled": ["batteryControlEnabled", false],
+            "Devices.HeatPump.Present": ["heatPumpPresent", false],
+            "Devices.HeatPump.ControlEnabled": ["heatPumpControlEnabled", false]
+        };
+        for (const [relativeId, [nativeName, fallback]] of Object.entries(gates)) {
+            const value = Boolean(this.config[nativeName] ?? fallback);
+            await this.queueCompatState(`${this.namespace}.${relativeId}`, fallback,
+                {type: "boolean", role: "indicator"});
+            this.setCompatState(`${this.namespace}.${relativeId}`, value, true);
         }
     }
 
