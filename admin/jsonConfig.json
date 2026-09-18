@@ -4,7 +4,7 @@
   "items": {
     "safety": {
       "type": "staticText",
-      "text": "Version 0.7.0 aligns active EV/DHW scripts including priority and 50/50 hysteresis. It never writes to devices.",
+      "text": "Version 0.8.0 uses dynamic surplus, integer wallbox amps and separate 2 s / 10 s simulation loops. It never writes to devices.",
       "newLine": true
     },
     "parallel": {

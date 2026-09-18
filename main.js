@@ -26,7 +26,7 @@ class EmsOptimizer extends utils.Adapter {
         await this.preloadStates();
         await this.startEngine();
         await this.setStateAsync("info.connection", true, true);
-        this.log.info("EMS Optimizer 0.7.0 started with aligned EV/DHW simulation controllers");
+        this.log.info("EMS Optimizer 0.8.0 started with dynamic two-speed simulation controllers");
     }
 
     async preloadStates() {

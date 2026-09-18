@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.7.0**
+Aktuelle Version: **0.8.0**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -342,6 +342,37 @@ gewährleistet werden.
 Der aktuelle Adapter schreibt ausschließlich in seinen eigenen Namespace
 `ems-optimizer.0` und niemals auf konfigurierte Geräteausgänge.
 
+## Zweistufige Echtzeit-Simulation ab 0.8.0
+
+Der 48-Stunden-Fahrplan ist eine strategische Freigabe und kein starrer
+Leistungsdeckel. Wenn real mehr PV als prognostiziert zur Verfügung steht,
+dürfen eine freigegebene Wallbox und der Trinkwasser-Heizstab bis zu ihren
+technischen, SoC- und Temperaturgrenzen mehr Leistung aufnehmen.
+
+- Die Batterie regelt die NVP-Abweichung alle 2 Sekunden aus.
+- Wallboxen und Heizstäbe ändern ihre Sollwerte standardmäßig alle 10 Sekunden.
+- Wallboxen arbeiten nur mit ganzen Ampere und mindestens 6 A.
+- Wallboxänderungen sind auf 6 A je langsamem Zyklus begrenzt.
+- Der Trinkwasser-Heizstab ändert sich um höchstens 1.000 W je langsamem Zyklus.
+- Bei der Ampere-Abrundung freie Leistung wird dem stufenlosen Heizstab angeboten.
+- Beim Wechsel der Fahrzeugpriorität wird zuerst die bisherige Wallbox
+  heruntergefahren; zwei Fahrzeuge werden nicht gleichzeitig geplant.
+- Erreicht ein Gerät seine SoC-, Temperatur- oder Sicherheitsgrenze, bleibt es
+  auch bei zusätzlicher PV-Leistung gesperrt.
+
+Die unmittelbar simulierten Werte stehen vollständig unter:
+
+```text
+ems-optimizer.0.Control.Targets.Battery_W
+ems-optimizer.0.Control.Targets.MyPV_DHW_W
+ems-optimizer.0.Control.Targets.Wallbox0_W
+ems-optimizer.0.Control.Targets.Wallbox0_A
+ems-optimizer.0.Control.Targets.Wallbox1_W
+ems-optimizer.0.Control.Targets.Wallbox1_A
+ems-optimizer.0.Control.Targets.Wallbox2_W
+ems-optimizer.0.Control.Targets.Wallbox2_A
+```
+
 ## Abgleich der aktiven Wallbox- und E-Heizer-Skripte
 
 Version 0.7.0 berücksichtigt ausschließlich die aktuell aktiven Skripte;
@@ -369,6 +400,7 @@ Version keine Adapter-Objekte entfernt.
 
 | Version | Änderung |
 |---|---|
+| 0.8.0 | Fahrplan als Freigabe statt starrem Leistungsdeckel; zusätzliche reale PV-Leistung wird verteilt. Wallboxen in ganzen Ampere ab 6 A, langsame Verbraucher alle 10 s und Batterieausregelung alle 2 s. |
 | 0.7.0 | Aktive Wallbox-/E-Heizer-Skripte abgeglichen: vollständige Fahrzeugpriorität, direkte Phasenerkennung und 50/50-Verteilung mit 4/3-kW- bzw. 9/8-kW-Hysterese in Prognose und 2-s-Simulation. |
 | 0.6.0 | Trinkwasser-Heizstab mit Temperaturkennlinie, 9-kW-Grenze und reiner Sollwertsimulation ergänzt. |
 | 0.3.2 | Versionsmeldungen des Adapters vereinheitlicht; keine Änderung der EMS-Logik oder Objekte. |
