@@ -26,8 +26,9 @@ class EmsOptimizer extends utils.Adapter {
         await this.preloadStates();
         await this.startEngine();
         await this.applyNativeVehicleSettings();
+        await this.applyNativeEmsSettings();
         await this.setStateAsync("info.connection", true, true);
-        this.log.info("EMS Optimizer 0.9.0 started with structured vehicle config and parallel EV simulation");
+        this.log.info("EMS Optimizer 0.10.0 started with structured EMS configuration");
     }
 
     async preloadStates() {
@@ -58,6 +59,19 @@ class EmsOptimizer extends utils.Adapter {
             const mapping = value && typeof value === "object" && !Array.isArray(value) ? value : {};
             const historyInstance = String(this.config.historyInstance || "").trim();
             if (historyInstance) mapping.DP_SQL_INSTANCE = historyInstance;
+            const visibleMappings = {
+                batterySocId: "DP_BATTERY_SOC", batteryPowerId: "DP_BATTERY_POWER",
+                dhwPowerId: "DP_DHW_POWER1", dhwTemp1Id: "DP_DHW_TEMP1",
+                dhwTemp2Id: "DP_DHW_TEMP2", dhwTemp3Id: "DP_DHW_TEMP3",
+                dhwTemp4Id: "DP_DHW_TEMP4", dhwReleaseId: "DP_DHW_RELEASE",
+                dhwOutletTempId: "DP_DHW_OUTLET_TEMP", dhwConnectionId: "DP_DHW_CONNECTION",
+                dhwHysteresisId: "DP_DHW_HYSTERESIS", heatingPowerId: "DP_HEAT_POWER1",
+                heatingHistoryId: "DP_HEAT_HISTORY", heatingTempId: "DP_HEAT_TEMP"
+            };
+            for (const [nativeId, mappingId] of Object.entries(visibleMappings)) {
+                const configuredId = String(this.config[nativeId] || "").trim();
+                if (configuredId) mapping[mappingId] = configuredId;
+            }
             [0, 1, 2].forEach(wb => {
                 const configuredSoc = String(this.config[`wb${wb}SocId`] || "").trim();
                 if (configuredSoc) mapping[`DP_WB${wb}_SOC`] = configuredSoc;
@@ -106,6 +120,69 @@ class EmsOptimizer extends utils.Adapter {
             this.setCompatState(`${this.namespace}.Vehicles.Wallbox${wb}.MaxCurrent1P_A`, maxCurrent1p, true);
             this.setCompatState(`${this.namespace}.Vehicles.Wallbox${wb}.MinCurrent3P_A`, minCurrent3p, true);
             this.setCompatState(`${this.namespace}.Vehicles.Wallbox${wb}.MaxCurrent3P_A`, maxCurrent3p, true);
+        }
+    }
+
+    async applyNativeEmsSettings() {
+        await Promise.all([...this.objectPromises.values()]);
+        const settings = {
+            BatteryCapacity_kWh: ["batteryCapacityKWh", 10],
+            BatteryMaxCharge_W: ["batteryMaxChargeW", 2400],
+            BatteryMaxDischarge_W: ["batteryMaxDischargeW", 2400],
+            BatteryMinSoC_pct: ["batteryMinSocPct", 0],
+            BatteryMaxSoC_pct: ["batteryMaxSocPct", 100],
+            BatteryMorningTargetSoC_pct: ["batteryMorningTargetPct", 70],
+            BatteryAfternoonTargetSoC_pct: ["batteryAfternoonTargetPct", 90],
+            BatteryLateTargetSoC_pct: ["batteryLateTargetPct", 100],
+            BatteryFinalChargeReserve_min: ["batteryReserveMin", 45],
+            BatteryForecastSafetyFactor_pct: ["batterySafetyPct", 80],
+            BatteryEfficiency_pct: ["batteryEfficiencyPct", 92],
+            BatterySelfConsumptionEnabled: ["batterySelfConsumption", true],
+            DHWVolume_l: ["dhwVolumeL", 500],
+            DHWMinTemperature_C: ["dhwMinTempC", 48],
+            DHWTargetTemperature_C: ["dhwTargetTempC", 60],
+            DHWControllerMaxPower_W: ["dhwMaxPowerW", 9000],
+            DHWControllerStopTemperature_C: ["dhwStopTempC", 76],
+            DHWControllerResumeTemperature_C: ["dhwResumeTempC", 75.5],
+            DHWControllerOutletDerating_C: ["dhwOutletDeratingC", 60],
+            DHWControllerOutletProtection_C: ["dhwOutletProtectionC", 76],
+            DHWControllerTopEmergencyStop_C: ["dhwTopEmergencyC", 82],
+            DHWCurve70Power_W: ["dhwCurve70PowerW", 7500],
+            DHWCurve71Power_W: ["dhwCurve71PowerW", 6000],
+            DHWCurve73Power_W: ["dhwCurve73PowerW", 4000],
+            DHWCurve74Power_W: ["dhwCurve74PowerW", 3000],
+            DHWMaxStep_W: ["dhwMaxStepW", 1000],
+            HeatingBufferVolume_l: ["heatingVolumeL", 400],
+            HeatingBufferTemperature_C: ["heatingTempC", 40],
+            HeatingBufferMinTemperature_C: ["heatingMinTempC", 35],
+            HeatingBufferTargetTemperature_C: ["heatingTargetTempC", 50],
+            HeatingControllerMaxPower_W: ["heatingMaxPowerW", 6000],
+            SlowControlCycle_s: ["slowCycleS", 10],
+            WallboxMaxStep_A: ["wallboxMaxStepA", 6],
+            DynamicEnergyPriceEnabled: ["dynamicEnergyPrice", false],
+            DynamicGridFeeEnabled: ["dynamicGridFee", false],
+            FixedEnergyComponent_ct_kWh: ["fixedEnergyCt", 22.85],
+            FixedGridFee_ct_kWh: ["fixedGridFeeCt", 6.04],
+            DynamicEnergyAdders_ct_kWh: ["dynamicEnergyAddersCt", 9.301]
+        };
+        for (const [stateName, [nativeName, fallback]] of Object.entries(settings)) {
+            const configured = this.config[nativeName];
+            const value = configured === undefined || configured === null ? fallback : configured;
+            await this.queueCompatState(`${this.namespace}.Config.${stateName}`, fallback, {
+                type: typeof fallback, role: typeof fallback === "boolean" ? "switch.enable" : "value",
+                write: true
+            });
+            this.setCompatState(`${this.namespace}.Config.${stateName}`, value, true);
+        }
+        const controls = {
+            Enabled: ["controlEnabled", true],
+            TargetGridPower_W: ["targetGridPowerW", -100],
+            Deadband_W: ["deadbandW", 100]
+        };
+        for (const [stateName, [nativeName, fallback]] of Object.entries(controls)) {
+            const configured = this.config[nativeName];
+            this.setCompatState(`${this.namespace}.Control.${stateName}`,
+                configured === undefined || configured === null ? fallback : configured, true);
         }
     }
 

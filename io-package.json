@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.9.0",
+    "version": "0.10.0",
     "titleLang": {"en": "EMS Optimizer", "de": "EMS-Optimierer"},
     "desc": {"en": "Forecast-based energy management observer", "de": "Prognosebasierter Energiemanagement-Beobachter"},
     "authors": ["fuchs-1978"],
@@ -24,6 +24,11 @@
   "native": {
     "observerOnly": true,
     "historyInstance": "",
+    "batterySocId": "", "batteryPowerId": "", "batteryCapacityKWh": 10, "batteryMaxChargeW": 2400, "batteryMaxDischargeW": 2400, "batteryMinSocPct": 0, "batteryMaxSocPct": 100, "batteryMorningTargetPct": 70, "batteryAfternoonTargetPct": 90, "batteryLateTargetPct": 100, "batteryReserveMin": 45, "batterySafetyPct": 80, "batteryEfficiencyPct": 92, "batterySelfConsumption": true,
+    "dhwPowerId": "", "dhwTemp1Id": "", "dhwTemp2Id": "", "dhwTemp3Id": "", "dhwTemp4Id": "", "dhwReleaseId": "", "dhwOutletTempId": "", "dhwConnectionId": "", "dhwHysteresisId": "", "dhwVolumeL": 500, "dhwMinTempC": 48, "dhwTargetTempC": 60, "dhwMaxPowerW": 9000, "dhwStopTempC": 76, "dhwResumeTempC": 75.5, "dhwOutletDeratingC": 60, "dhwOutletProtectionC": 76, "dhwTopEmergencyC": 82, "dhwCurve70PowerW": 7500, "dhwCurve71PowerW": 6000, "dhwCurve73PowerW": 4000, "dhwCurve74PowerW": 3000, "dhwMaxStepW": 1000,
+    "heatingPowerId": "", "heatingHistoryId": "", "heatingTempId": "", "heatingVolumeL": 400, "heatingTempC": 40, "heatingMinTempC": 35, "heatingTargetTempC": 50, "heatingMaxPowerW": 6000,
+    "controlEnabled": true, "targetGridPowerW": -100, "deadbandW": 100, "slowCycleS": 10, "wallboxMaxStepA": 6,
+    "dynamicEnergyPrice": false, "dynamicGridFee": false, "fixedEnergyCt": 22.85, "fixedGridFeeCt": 6.04, "dynamicEnergyAddersCt": 9.301,
     "wb0Name": "Vehicle 0", "wb0SocId": "", "wb0CapacityKWh": 50, "wb0MaxPowerW": 11000, "wb0PhaseSwitchEnabled": false, "wb0MinCurrent1pA": 6, "wb0MaxCurrent1pA": 16, "wb0MinCurrent3pA": 6, "wb0MaxCurrent3pA": 16,
     "wb1Name": "Vehicle 1", "wb1SocId": "", "wb1CapacityKWh": 50, "wb1MaxPowerW": 11000, "wb1PhaseSwitchEnabled": false, "wb1MinCurrent1pA": 6, "wb1MaxCurrent1pA": 16, "wb1MinCurrent3pA": 6, "wb1MaxCurrent3pA": 16,
     "wb2Name": "Vehicle 2", "wb2SocId": "", "wb2CapacityKWh": 50, "wb2MaxPowerW": 11000, "wb2PhaseSwitchEnabled": false, "wb2MinCurrent1pA": 6, "wb2MaxCurrent1pA": 16, "wb2MinCurrent3pA": 6, "wb2MaxCurrent3pA": 16,
