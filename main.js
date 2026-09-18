@@ -26,7 +26,7 @@ class EmsOptimizer extends utils.Adapter {
         await this.preloadStates();
         await this.startEngine();
         await this.setStateAsync("info.connection", true, true);
-        this.log.info("EMS Optimizer 0.3.2 started in modular observer-only mode");
+        this.log.info("EMS Optimizer 0.4.0 started in observer/simulation mode");
     }
 
     async preloadStates() {
@@ -152,6 +152,7 @@ class EmsOptimizer extends utils.Adapter {
             "forecast.js",
             "planner.js",
             "observer.js",
+            "realtime.js",
             "bootstrap.js"
         ].map(file => path.join(__dirname, "lib", "engine", file));
         const mapping = this.readMapping();

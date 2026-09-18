@@ -1,5 +1,7 @@
 # ioBroker EMS Optimizer
 
+Aktuelle Version: **0.4.0**
+
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
 Verbraucher in einem rollierenden 48-Stunden-Fahrplan zusammen.
@@ -9,6 +11,41 @@ Es werden Prognosen, Fahrpläne und Empfehlungen erzeugt, aber keine Wallbox,
 kein Heizstab, keine Batterie und keine Wärmepumpe direkt angesteuert.
 
 ## Funktionen
+
+### Simulierte NVP-Echtzeitregelung (ab 0.4.0)
+
+Zusätzlich zum rollierenden 15-Minuten-Fahrplan berechnet der Adapter alle zwei
+Sekunden eine schnelle Ausregelung am Netzverknüpfungspunkt (NVP). Der Fahrplan
+entscheidet, welche Verbraucher im aktuellen Zeitfenster freigegeben sind und
+welche Leistung sie höchstens erhalten. Die Echtzeitebene reduziert diese
+Sollwerte bei einer Wolke und verteilt realen Überschuss innerhalb der
+Fahrplangrenzen. Mehrere freigegebene Verbraucher bleiben dabei parallel aktiv;
+die Batterie übernimmt die schnelle verbleibende Differenz.
+
+Version 0.4.0 arbeitet ausschließlich als Simulation. Alle Ergebnisse werden
+nur unter `ems-optimizer.0.Control` ausgegeben. Es wird kein Datenpunkt einer
+Batterie, Wallbox, eines my-PV oder einer Wärmepumpe beschrieben.
+
+Wichtige vollständige Objekte:
+
+- `ems-optimizer.0.Control.Enabled`
+- `ems-optimizer.0.Control.TargetGridPower_W`
+- `ems-optimizer.0.Control.Deadband_W`
+- `ems-optimizer.0.Control.ActualGridPower_W`
+- `ems-optimizer.0.Control.PredictedGridPower_W`
+- `ems-optimizer.0.Control.RemainingError_W`
+- `ems-optimizer.0.Control.Targets.Battery_W`
+- `ems-optimizer.0.Control.Targets.MyPV_DHW_W`
+- `ems-optimizer.0.Control.Targets.MyPV_Heating_W`
+- `ems-optimizer.0.Control.Targets.Wallbox0_W`
+- `ems-optimizer.0.Control.Targets.Wallbox1_W`
+- `ems-optimizer.0.Control.Targets.Wallbox2_W`
+- `ems-optimizer.0.Control.Targets.PVBoostRelease`
+
+Vorzeichen: `ems-optimizer.0.Control.TargetGridPower_W` ist bei Netzbezug
+positiv und bei Einspeisung negativ. Der Standardwert `-100 W` hält eine kleine
+Einspeisereserve. Für `ems-optimizer.0.Control.Targets.Battery_W` bedeutet ein
+positiver Wert Laden und ein negativer Wert Entladen.
 
 - rollierende 48-Stunden-Prognose in 15-Minuten-Schritten
 - PV-Prognose für bis zu fünf getrennte PV-Flächen
