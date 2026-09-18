@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.4.0**
+Aktuelle Version: **0.5.0**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -11,6 +11,53 @@ Es werden Prognosen, Fahrpläne und Empfehlungen erzeugt, aber keine Wallbox,
 kein Heizstab, keine Batterie und keine Wärmepumpe direkt angesteuert.
 
 ## Funktionen
+
+### SoC- und Fahrzeugverwaltung (ab 0.5.0)
+
+Der `vehicle-manager` verwaltet alle drei Wallboxen getrennt. Er uebernimmt die
+Semantik der vorhandenen EV-Skripte: Ziel-SoC erreicht bedeutet Sperre,
+zwischen Mindest- und Ziel-SoC ist das Fahrzeug PV-flexibel und unterhalb des
+Mindest-SoC besteht Pflichtladebedarf. Zusaetzlich werden `alw0…2`,
+`socmin0…2`, `socmax0…2`, die
+go-e-Anschlusszustaende und die konfigurierten SoC-Quellen ausgewertet. Beim Mii
+kann damit der vorhandene geschaetzte SoC verwendet werden. `socfrei0…2` wird
+als Vergleichswert angezeigt, die EMS-Freigabe jedoch aus den korrekt gemappten
+SoC-Quellen neu berechnet. Damit wird die alte, teilweise nicht mehr passende
+Fahrzeugzuordnung nicht ungeprueft uebernommen.
+
+Pro Wallbox werden fehlende Fahrzeugenergie, Ladeenergie inklusive Verlusten,
+naechste Abfahrt und spaetester sicherer Ladebeginn berechnet. Vor diesem
+Zeitpunkt bleibt das Fahrzeug PV-flexibel. Danach plant der Adapter bei Bedarf
+eine Pflichtladung bis zum Ziel-SoC. Wie in der bisherigen Anlage wird nur eine
+Wallbox gleichzeitig geplant; Pflichtladung, frueheste Deadline und Prioritaet
+bestimmen die Reihenfolge.
+
+Die Abfahrtszeit wird hier eingestellt:
+
+- `ems-optimizer.0.Vehicles.Wallbox0.DepartureTime`
+- `ems-optimizer.0.Vehicles.Wallbox1.DepartureTime`
+- `ems-optimizer.0.Vehicles.Wallbox2.DepartureTime`
+
+Format: `HH:MM`, Standard `06:00`. Die Prioritaet steht in:
+
+- `ems-optimizer.0.Vehicles.Wallbox0.Priority`
+- `ems-optimizer.0.Vehicles.Wallbox1.Priority`
+- `ems-optimizer.0.Vehicles.Wallbox2.Priority`
+
+Je Fahrzeug sind unter anderem folgende vollstaendige Objekte vorhanden
+(entsprechend auch fuer `Wallbox1` und `Wallbox2`):
+
+- `ems-optimizer.0.Vehicles.Wallbox0.Connected`
+- `ems-optimizer.0.Vehicles.Wallbox0.SoC_pct`
+- `ems-optimizer.0.Vehicles.Wallbox0.MinimumSoC_pct`
+- `ems-optimizer.0.Vehicles.Wallbox0.TargetSoC_pct`
+- `ems-optimizer.0.Vehicles.Wallbox0.Release`
+- `ems-optimizer.0.Vehicles.Wallbox0.MustCharge`
+- `ems-optimizer.0.Vehicles.Wallbox0.EnergyRequired_kWh`
+- `ems-optimizer.0.Vehicles.Wallbox0.GridEnergyRequired_kWh`
+- `ems-optimizer.0.Vehicles.Wallbox0.DepartureTimestamp`
+- `ems-optimizer.0.Vehicles.Wallbox0.LatestStartTimestamp`
+- `ems-optimizer.0.Vehicles.Wallbox0.Status`
 
 ### Simulierte NVP-Echtzeitregelung (ab 0.4.0)
 

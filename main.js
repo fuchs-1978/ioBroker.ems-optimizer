@@ -26,7 +26,7 @@ class EmsOptimizer extends utils.Adapter {
         await this.preloadStates();
         await this.startEngine();
         await this.setStateAsync("info.connection", true, true);
-        this.log.info("EMS Optimizer 0.4.0 started in observer/simulation mode");
+        this.log.info("EMS Optimizer 0.5.0 started with vehicle manager in observer/simulation mode");
     }
 
     async preloadStates() {
@@ -54,7 +54,22 @@ class EmsOptimizer extends utils.Adapter {
     readMapping() {
         try {
             const value = JSON.parse(String(this.config.dataPointMapJson || "{}"));
-            return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+            const mapping = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+            const defaults = {
+                DP_WB0_MIN_SOC: "javascript.0.ev.socmin0",
+                DP_WB1_MIN_SOC: "javascript.0.ev.socmin1",
+                DP_WB2_MIN_SOC: "javascript.0.ev.socmin2",
+                DP_WB0_ALLOW: "javascript.0.ev.alw0",
+                DP_WB1_ALLOW: "javascript.0.ev.alw1",
+                DP_WB2_ALLOW: "javascript.0.ev.alw2",
+                DP_WB0_PHASES: "javascript.0.ev.pha0",
+                DP_WB1_PHASES: "javascript.0.ev.pha1",
+                DP_WB2_PHASES: "javascript.0.ev.pha2"
+            };
+            for (const [key, fallback] of Object.entries(defaults)) {
+                if (!mapping[key]) mapping[key] = fallback;
+            }
+            return mapping;
         } catch (error) {
             this.log.error(`Invalid dataPointMapJson: ${error.message}`);
             return {};
@@ -150,6 +165,7 @@ class EmsOptimizer extends utils.Adapter {
             "core.js",
             "history.js",
             "forecast.js",
+            "vehicles.js",
             "planner.js",
             "observer.js",
             "realtime.js",
