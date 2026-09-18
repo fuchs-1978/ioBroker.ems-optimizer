@@ -26,7 +26,7 @@ class EmsOptimizer extends utils.Adapter {
         await this.preloadStates();
         await this.startEngine();
         await this.setStateAsync("info.connection", true, true);
-        this.log.info("EMS Optimizer 0.3.0 started in modular observer-only mode");
+        this.log.info("EMS Optimizer 0.3.2 started in modular observer-only mode");
     }
 
     async preloadStates() {
