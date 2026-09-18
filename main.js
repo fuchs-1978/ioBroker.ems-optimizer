@@ -16,6 +16,7 @@ class EmsOptimizer extends utils.Adapter {
         this.jobs = [];
         this.timers = new Set();
         this.engineContext = null;
+        this.allowedForeignWriteIds = new Set();
         this.on("ready", this.onReady.bind(this));
         this.on("stateChange", this.onStateChange.bind(this));
         this.on("unload", this.onUnload.bind(this));
@@ -24,11 +25,15 @@ class EmsOptimizer extends utils.Adapter {
     async onReady() {
         await this.setStateAsync("info.connection", false, true);
         await this.preloadStates();
+        const dhwSetpointId = String(this.config.dhwSetpointId || "").trim();
+        if (dhwSetpointId) this.allowedForeignWriteIds.add(dhwSetpointId);
+        const dhwActualMirrorId = String(this.config.dhwActualMirrorId || "").trim();
+        if (dhwActualMirrorId) this.allowedForeignWriteIds.add(dhwActualMirrorId);
         await this.startEngine();
         await this.applyNativeVehicleSettings();
         await this.applyNativeEmsSettings();
         await this.setStateAsync("info.connection", true, true);
-        this.log.info("EMS Optimizer 0.11.0 started with device gates and configurable DHW curve");
+        this.log.info("EMS Optimizer 0.12.0 started with guarded DHW production output");
     }
 
     async preloadStates() {
@@ -66,7 +71,11 @@ class EmsOptimizer extends utils.Adapter {
                 dhwTemp4Id: "DP_DHW_TEMP4", dhwReleaseId: "DP_DHW_RELEASE",
                 dhwOutletTempId: "DP_DHW_OUTLET_TEMP", dhwConnectionId: "DP_DHW_CONNECTION",
                 dhwHysteresisId: "DP_DHW_HYSTERESIS", heatingPowerId: "DP_HEAT_POWER1",
-                heatingHistoryId: "DP_HEAT_HISTORY", heatingTempId: "DP_HEAT_TEMP"
+                dhwSetpointId: "DP_DHW_SETPOINT", heatingHistoryId: "DP_HEAT_HISTORY", heatingTempId: "DP_HEAT_TEMP",
+                dhwActualMirrorId: "DP_DHW_ACTUAL_MIRROR",
+                dhwOutput1Id: "DP_DHW_OUTPUT1", dhwOutput2Id: "DP_DHW_OUTPUT2", dhwOutput3Id: "DP_DHW_OUTPUT3",
+                dhwHaL1FreeCurrentId: "DP_DHW_HA_L1_FREE_A", dhwHaL2FreeCurrentId: "DP_DHW_HA_L2_FREE_A",
+                dhwHaL3FreeCurrentId: "DP_DHW_HA_L3_FREE_A"
             };
             for (const [nativeId, mappingId] of Object.entries(visibleMappings)) {
                 const configuredId = String(this.config[nativeId] || "").trim();
@@ -162,6 +171,7 @@ class EmsOptimizer extends utils.Adapter {
             DHWCurve4Temperature_C: ["dhwCurve4TempC", 74],
             DHWCurve74Power_W: ["dhwCurve74PowerW", 3000],
             DHWMaxStep_W: ["dhwMaxStepW", 1000],
+            DHWCommissioningMaxPower_W: ["dhwCommissioningMaxW", 1000],
             HeatingBufferVolume_l: ["heatingVolumeL", 400],
             HeatingBufferTemperature_C: ["heatingTempC", 40],
             HeatingBufferMinTemperature_C: ["heatingMinTempC", 35],
@@ -270,6 +280,16 @@ class EmsOptimizer extends utils.Adapter {
         void promise.catch(error => this.log.warn(`Cannot write ${id}: ${error.message}`));
     }
 
+    writeForeignStateGuarded(id, value) {
+        if (!id || !this.allowedForeignWriteIds.has(id)) {
+            this.log.error(`Blocked unconfigured foreign write to ${id || '<empty>'}`);
+            return false;
+        }
+        void this.setForeignStateAsync(id, value, false).catch(error =>
+            this.log.error(`Cannot write production output ${id}: ${error.message}`));
+        return true;
+    }
+
     registerListener(options, callback) {
         const ids = Array.isArray(options?.id) ? options.id : [options?.id].filter(Boolean);
         this.listeners.push({ids: new Set(ids), change: options?.change || "any", callback});
@@ -308,6 +328,7 @@ class EmsOptimizer extends utils.Adapter {
             "planner.js",
             "observer.js",
             "realtime.js",
+            "dhw-output.js",
             "bootstrap.js"
         ].map(file => path.join(__dirname, "lib", "engine", file));
         const mapping = this.readMapping();
@@ -334,6 +355,7 @@ class EmsOptimizer extends utils.Adapter {
             existsState(id) { return adapter.knownObjects.has(id) || adapter.stateCache.has(id); },
             createState(id, value, common) { void adapter.queueCompatState(id, value, common); },
             setState(id, value, ack) { adapter.setCompatState(id, value, ack); },
+            writeForeignState(id, value) { return adapter.writeForeignStateGuarded(id, value); },
             sendTo(instance, command, message, callback) {
                 adapter.compatSendTo(instance, command, message, callback);
             },
@@ -392,7 +414,14 @@ class EmsOptimizer extends utils.Adapter {
             for (const timer of this.timers) clearTimeout(timer);
             this.jobs = [];
             this.timers.clear();
-            callback();
+            const globalEnabled = Boolean(this.stateCache.get(`${this.namespace}.System.RealOutputsEnabled`)?.val);
+            const dhwEnabled = Boolean(this.stateCache.get(`${this.namespace}.Devices.MyPV_DHW.ControlEnabled`)?.val);
+            const setpointId = String(this.config.dhwSetpointId || "").trim();
+            if (globalEnabled && dhwEnabled && setpointId && this.allowedForeignWriteIds.has(setpointId)) {
+                void this.setForeignStateAsync(setpointId, 0, false)
+                    .catch(error => this.log.error(`Cannot stop DHW output on unload: ${error.message}`))
+                    .finally(callback);
+            } else callback();
         } catch {
             callback();
         }

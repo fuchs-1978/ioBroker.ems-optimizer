@@ -1,14 +1,15 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.11.0**
+Aktuelle Version: **0.12.0**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
 Verbraucher in einem rollierenden 48-Stunden-Fahrplan zusammen.
 
-Der aktuelle Entwicklungsstand arbeitet ausschließlich im **Beobachtermodus**:
-Es werden Prognosen, Fahrpläne und Empfehlungen erzeugt, aber keine Wallbox,
-kein Heizstab, keine Batterie und keine Wärmepumpe direkt angesteuert.
+Der aktuelle Entwicklungsstand arbeitet grundsätzlich im Beobachtermodus. Ab
+Version 0.12.0 kann ausschließlich der Trinkwasser-EHZ nach einer dreifachen
+Freigabe produktiv angesteuert werden. Wallboxen, Batterie, Heizpuffer und
+Wärmepumpe bleiben reine Simulation.
 
 ## Funktionen
 
@@ -398,8 +399,9 @@ Temperaturgrenzen, §14a-Vorgaben, Geräteschutz, Schütze und Notabschaltungen
 müssen weiterhin durch geeignete lokale und deterministische Funktionen
 gewährleistet werden.
 
-Der aktuelle Adapter schreibt ausschließlich in seinen eigenen Namespace
-`ems-optimizer.0` und niemals auf konfigurierte Geräteausgänge.
+Ohne ausdrückliche globale und gerätespezifische Freigabe schreibt der Adapter
+ausschließlich in seinen eigenen Namespace `ems-optimizer.0`. Der einzige
+vorbereitete Fremdschreibzugriff ist der konfigurierte Trinkwasser-Sollwert.
 
 ## Gerätefreigaben ab 0.11.0
 
@@ -408,21 +410,40 @@ Konfigurationsseite:
 
 - **Vorhanden / in Planung berücksichtigen** nimmt das Gerät in Fahrplan und
   Simulation auf. Ist der Schalter aus, bleibt seine geplante Leistung null.
-- **Steuerfreigabe** ist die vorbereitete Freigabe für eine spätere produktive
-  Ansteuerung. Sie bewirkt in Version 0.11.0 noch keinen Geräteschreibzugriff.
+- **Steuerfreigabe** erlaubt beim Trinkwasser-EHZ zusammen mit dem globalen
+  Hauptschalter die produktive Ansteuerung. Bei allen anderen Geräten bleibt
+  sie in Version 0.12.0 ohne Aktorzugriff.
 
 Darüber liegt die globale Freigabe **Master release for future real outputs**.
-Sie ist standardmäßig aus. Reale Ausgänge wären erst freigegeben, wenn später
+Sie ist standardmäßig aus. Der EHZ-Ausgang wird erst freigegeben, wenn
 alle drei Bedingungen gleichzeitig erfüllt sind: globaler Schalter,
-gerätespezifische Steuerfreigabe und gültige Sicherheits-/Messwerte. Version
-0.11.0 bleibt unabhängig von den Schalterstellungen vollständig im
-Beobachtermodus.
+gerätespezifische Steuerfreigabe und gültige Sicherheits-/Messwerte vorliegen.
 
 Für den ersten Ausbau sollten nur Wallbox 0, Wallbox 1, Wallbox 2 und der
 Trinkwasser-Heizstab als vorhanden markiert sein. Heizpuffer-Heizstab,
 Hausbatterie und Wärmepumpe bleiben bis zur realen Inbetriebnahme ausgeschaltet.
 Die vier Punkte der Trinkwasser-Temperaturkennlinie bestehen nun jeweils aus
 einer frei einstellbaren Temperatur und der dazugehörigen maximalen Leistung.
+
+### Produktiver Trinkwasser-EHZ ab 0.12.0
+
+Der Ausgang ist im Auslieferungszustand gesperrt und zunächst auf 1.000 W
+begrenzt. Vor jedem Schreiben prüft der Adapter die drei Freigaben, EMS- und
+Reglergültigkeit, AC-THOR-Verbindung, vier Speichertemperaturen,
+Ausgangstemperatur, Temperaturkennlinie, Hausanschlussschutz und die freie
+Stromstärke jeder Phase. Die harten Stufen 2 und 3 besitzen wie im bisherigen
+Skript eine Wiederzuschaltverzögerung von 30 Sekunden. Bei Verlust einer
+Freigabe oder eines gültigen Messwerts sowie beim Adapterstopp wird ein zuvor
+aktiver Ausgang auf 0 W gesetzt.
+
+```text
+ems-optimizer.0.System.RealOutputsEnabled
+ems-optimizer.0.Devices.MyPV_DHW.ControlEnabled
+ems-optimizer.0.Devices.MyPV_DHW.OutputActive
+ems-optimizer.0.Devices.MyPV_DHW.OutputCommand_W
+ems-optimizer.0.Devices.MyPV_DHW.OutputStatus
+ems-optimizer.0.Devices.MyPV_DHW.OutputLastWrite
+```
 
 ## Zweistufige Echtzeit-Simulation ab 0.8.0
 
@@ -487,7 +508,7 @@ Version keine Adapter-Objekte entfernt.
 
 ### Skriptumschaltung
 
-In Version 0.11.0 werden noch keine realen Geräte angesteuert. Deshalb bleiben
+Solange die produktive EHZ-Freigabe ausgeschaltet ist, bleiben
 **alle derzeit aktiven Wallbox- und E-Heizer-Skripte eingeschaltet**. Insbesondere
 bleiben `PV_Sicherung`, `Werte_schreiben_0_V2`, `Werte_schreiben_1_V2`,
 `Werte_schreiben_2_V2`, `EHZ-Pumpe_V2` und `EHZ-P2FBH` aktiv. Ein Abschalten der
@@ -519,6 +540,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.12.0 | Dreifach gesperrter Produktivausgang ausschließlich für den Trinkwasser-EHZ; konfigurierbarer Sollwert, 1-kW-Inbetriebnahmegrenze, Temperatur-/Daten-/HA-Prüfung, Stufenverzögerung und sichere Abschaltung. |
 | 0.11.0 | Globale und gerätespezifische Freigaben ergänzt; nicht vorhandene Geräte werden aus Planung und Simulation entfernt. Trinkwasserkennlinie auf vier konfigurierbare Temperatur-/Leistungspaare umgestellt und sichere Skript-Umschaltfolge dokumentiert. |
 | 0.10.0 | Konfigurationsseite fuer Fahrzeuge, beide Heizstaebe, Batterie, NVP-Regelung sowie Preise/Netzentgelte gegliedert; Trinkwasser-Temperaturkennlinie konfigurierbar. |
 | 0.9.0 | Sichtbare Fahrzeugkonfiguration, eigener Haken fuer 1-/3-phasige Umschaltung, getrennte Stromgrenzen und parallele Nutzung mehrerer Wallboxen bei Restueberschuss. |

@@ -1,6 +1,6 @@
 {
   "name": "iobroker.ems-optimizer",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "description": "Forecast-based energy management observer for ioBroker",
   "author": {"name": "fuchs-1978"},
   "homepage": "https://github.com/fuchs-1978/ioBroker.ems-optimizer",
@@ -18,7 +18,7 @@
     "node": ">=18"
   },
   "scripts": {
-    "test": "node --check main.js && node --check lib/engine/core.js && node --check lib/engine/config-mapping.js && node --check lib/engine/history.js && node --check lib/engine/forecast.js && node --check lib/engine/vehicles.js && node --check lib/engine/dhw-controller.js && node --check lib/engine/planner.js && node --check lib/engine/observer.js && node --check lib/engine/realtime.js && node --check lib/engine/bootstrap.js",
+    "test": "node --check main.js && node --check lib/engine/core.js && node --check lib/engine/config-mapping.js && node --check lib/engine/history.js && node --check lib/engine/forecast.js && node --check lib/engine/vehicles.js && node --check lib/engine/dhw-controller.js && node --check lib/engine/planner.js && node --check lib/engine/observer.js && node --check lib/engine/realtime.js && node --check lib/engine/dhw-output.js && node --check lib/engine/bootstrap.js",
     "test:package": "node -e \"JSON.parse(require('fs').readFileSync('io-package.json')); JSON.parse(require('fs').readFileSync('admin/jsonConfig.json'));\""
   },
   "dependencies": {
