@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.8.0**
+Aktuelle Version: **0.10.0**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -52,7 +52,7 @@ Die wichtigsten vollstaendigen Diagnoseobjekte sind:
 - `ems-optimizer.0.Devices.MyPV_DHW.SimulatedTargetPower_W`
 - `ems-optimizer.0.Devices.MyPV_DHW.Status`
 
-### SoC- und Fahrzeugverwaltung (ab 0.5.0)
+### SoC-, Phasen- und Fahrzeugverwaltung (ab 0.5.0)
 
 Der `vehicle-manager` verwaltet alle drei Wallboxen getrennt. Er uebernimmt die
 Semantik der vorhandenen EV-Skripte: Ziel-SoC erreicht bedeutet Sperre,
@@ -68,9 +68,32 @@ Fahrzeugzuordnung nicht ungeprueft uebernommen.
 Pro Wallbox werden fehlende Fahrzeugenergie, Ladeenergie inklusive Verlusten,
 naechste Abfahrt und spaetester sicherer Ladebeginn berechnet. Vor diesem
 Zeitpunkt bleibt das Fahrzeug PV-flexibel. Danach plant der Adapter bei Bedarf
-eine Pflichtladung bis zum Ziel-SoC. Wie in der bisherigen Anlage wird nur eine
-Wallbox gleichzeitig geplant; Pflichtladung, frueheste Deadline und Prioritaet
-bestimmen die Reihenfolge.
+eine Pflichtladung bis zum Ziel-SoC. Pflichtladung, frueheste Deadline und
+Prioritaet bestimmen die Reihenfolge. Seit Version 0.9.0 kann verbleibender
+PV-Ueberschuss danach an weitere angeschlossene Fahrzeuge verteilt werden.
+Damit bleibt die Prioritaet erhalten, ohne ungenutzte Leistung nur wegen einer
+bereits ausgereizten ersten Wallbox einzuspeisen.
+
+Die Fahrzeugdaten werden direkt auf der Konfigurationsseite eingestellt. Pro
+Wallbox stehen Fahrzeugname, SoC-Datenpunkt, Batteriekapazitaet, maximale
+Ladeleistung sowie die Stromgrenzen fuer ein- und dreiphasiges Laden bereit.
+Der Haken **1-/3-phasige Umschaltung erlauben** entscheidet, ob der Planer
+ueberhaupt dreiphasiges Laden empfehlen darf. Ohne Haken werden die
+dreiphasigen Felder ignoriert.
+
+Beispiel einer moeglichen Zuordnung:
+
+| Wallbox | Fahrzeug | Phasenumschaltung | 1-phasig | 3-phasig |
+|---|---|---:|---:|---:|
+| 0 | Vehicle 0 | nein | 6–16 A | wird ignoriert |
+| 1 | Vehicle 1 | ja | 6–16 A | 6–16 A |
+| 2 | Vehicle 2 | ja | 6–16 A | 6–16 A |
+
+Der Planer bevorzugt einphasiges Laden, wenn die benoetigte Energie bis zur
+Abfahrt damit sicher erreicht werden kann. Bei grossem PV-Fenster oder wenn die
+einphasige Leistung zeitlich nicht ausreicht, empfiehlt er fuer freigegebene
+Fahrzeuge dreiphasiges Laden. Die eigentliche Umschaltung bleibt in dieser
+Version simuliert.
 
 Die Abfahrtszeit wird hier eingestellt:
 
@@ -97,6 +120,8 @@ Je Fahrzeug sind unter anderem folgende vollstaendige Objekte vorhanden
 - `ems-optimizer.0.Vehicles.Wallbox0.GridEnergyRequired_kWh`
 - `ems-optimizer.0.Vehicles.Wallbox0.DepartureTimestamp`
 - `ems-optimizer.0.Vehicles.Wallbox0.LatestStartTimestamp`
+- `ems-optimizer.0.Vehicles.Wallbox0.PhaseSwitchEnabled`
+- `ems-optimizer.0.Vehicles.Wallbox0.RecommendedPhases`
 - `ems-optimizer.0.Vehicles.Wallbox0.Status`
 
 ### Simulierte NVP-Echtzeitregelung (ab 0.4.0)
@@ -127,6 +152,12 @@ Wichtige vollständige Objekte:
 - `ems-optimizer.0.Control.Targets.Wallbox0_W`
 - `ems-optimizer.0.Control.Targets.Wallbox1_W`
 - `ems-optimizer.0.Control.Targets.Wallbox2_W`
+- `ems-optimizer.0.Control.Targets.Wallbox0_A`
+- `ems-optimizer.0.Control.Targets.Wallbox1_A`
+- `ems-optimizer.0.Control.Targets.Wallbox2_A`
+- `ems-optimizer.0.Control.Targets.Wallbox0_Phases`
+- `ems-optimizer.0.Control.Targets.Wallbox1_Phases`
+- `ems-optimizer.0.Control.Targets.Wallbox2_Phases`
 - `ems-optimizer.0.Control.Targets.PVBoostRelease`
 
 Vorzeichen: `ems-optimizer.0.Control.TargetGridPower_W` ist bei Netzbezug
@@ -190,9 +221,37 @@ Instanz neu starten.
 
 ## Konfiguration
 
-Die Zuordnung der vorhandenen ioBroker-Datenpunkte erfolgt in der
-Adapterkonfiguration über `dataPointMapJson`. Das Repository enthält mit
-`config.example.json` eine neutrale Vorlage.
+### Strukturierte Konfigurationsseite ab 0.10.0
+
+Die wichtigsten Einstellungen werden nicht mehr nur ueber EMS-Objekte oder das
+erweiterte JSON gepflegt. Die Adapterseite ist in folgende Bereiche gegliedert:
+
+- Allgemein und Historie
+- Wallbox 0, Wallbox 1 und Wallbox 2
+- my-PV Trinkwasser
+- my-PV Heizpuffer
+- Hausspeicher
+- NVP-Echtzeitsimulation
+- Preise und Netzentgelte
+- erweiterte Datenpunktzuordnung
+
+Je Fahrzeug werden Name, SoC-Datenpunkt, Kapazitaet, maximale Ladeleistung,
+Freigabe der 1-/3-phasigen Umschaltung und die getrennten Stromgrenzen
+eingestellt. Beim Trinkwasser-Heizstab sind die Temperaturdatenpunkte,
+Speichergrenzen, Leistungskennlinie und Leistungsrampe sichtbar. Fuer Batterie
+und Heizpuffer stehen Kapazitaet, Leistung und relevante Zielwerte bereit.
+
+Sichtbare Datenpunktfelder ueberschreiben den entsprechenden Eintrag aus dem
+erweiterten JSON. Bleibt ein sichtbares Datenpunktfeld leer, wird die vorhandene
+JSON-Zuordnung weiterverwendet. Alle externen Objekt-IDs werden aus der
+Adapterkonfiguration gelesen; die Auslieferung enthaelt keine anlagenspezifischen
+Zuordnungen.
+
+Fahrzeugname, SoC-Datenpunkt, Batteriekapazitaet, maximale Ladeleistung,
+Phasenfreigabe und Stromgrenzen werden direkt in den sichtbaren Feldern der
+Adapterkonfiguration gepflegt. Die Zuordnung der weiteren vorhandenen
+ioBroker-Datenpunkte erfolgt weiterhin ueber `dataPointMapJson`. Das Repository
+enthaelt mit `config.example.json` eine neutrale Vorlage.
 
 Beispiel:
 
@@ -346,17 +405,20 @@ Der aktuelle Adapter schreibt ausschließlich in seinen eigenen Namespace
 
 Der 48-Stunden-Fahrplan ist eine strategische Freigabe und kein starrer
 Leistungsdeckel. Wenn real mehr PV als prognostiziert zur Verfügung steht,
-dürfen eine freigegebene Wallbox und der Trinkwasser-Heizstab bis zu ihren
+duerfen freigegebene Wallboxen und der Trinkwasser-Heizstab bis zu ihren
 technischen, SoC- und Temperaturgrenzen mehr Leistung aufnehmen.
 
 - Die Batterie regelt die NVP-Abweichung alle 2 Sekunden aus.
 - Wallboxen und Heizstäbe ändern ihre Sollwerte standardmäßig alle 10 Sekunden.
-- Wallboxen arbeiten nur mit ganzen Ampere und mindestens 6 A.
+- Wallboxen arbeiten nur mit ganzen Ampere und mindestens dem je Fahrzeug
+  konfigurierten Mindeststrom.
 - Wallboxänderungen sind auf 6 A je langsamem Zyklus begrenzt.
 - Der Trinkwasser-Heizstab ändert sich um höchstens 1.000 W je langsamem Zyklus.
 - Bei der Ampere-Abrundung freie Leistung wird dem stufenlosen Heizstab angeboten.
-- Beim Wechsel der Fahrzeugpriorität wird zuerst die bisherige Wallbox
-  heruntergefahren; zwei Fahrzeuge werden nicht gleichzeitig geplant.
+- Nach Versorgung des priorisierten Fahrzeugs wird verbleibender Ueberschuss
+  auf weitere freigegebene Fahrzeuge verteilt.
+- Die 1-/3-phasige Empfehlung beachtet den Umschalthaken und die getrennten
+  Stromgrenzen jedes Fahrzeugs.
 - Erreicht ein Gerät seine SoC-, Temperatur- oder Sicherheitsgrenze, bleibt es
   auch bei zusätzlicher PV-Leistung gesperrt.
 
@@ -371,6 +433,9 @@ ems-optimizer.0.Control.Targets.Wallbox1_W
 ems-optimizer.0.Control.Targets.Wallbox1_A
 ems-optimizer.0.Control.Targets.Wallbox2_W
 ems-optimizer.0.Control.Targets.Wallbox2_A
+ems-optimizer.0.Control.Targets.Wallbox0_Phases
+ems-optimizer.0.Control.Targets.Wallbox1_Phases
+ems-optimizer.0.Control.Targets.Wallbox2_Phases
 ```
 
 ## Abgleich der aktiven Wallbox- und E-Heizer-Skripte
@@ -380,7 +445,7 @@ deaktivierte Altversionen wurden nicht übernommen.
 
 | Funktion | Umsetzung im Adapter | Zuständigkeit bis zur Produktivfreigabe |
 |---|---|---|
-| Fahrzeugpriorität | Grundrang Wallbox 0/1/2, `socfrei`, `alw`, Fahrzeugstatus und `javascript.0.ev.prio` | Adapter plant genau eine priorisierte Wallbox |
+| Fahrzeugpriorität | Grundrang Wallbox 0/1/2, `socfrei`, `alw`, Fahrzeugstatus und `javascript.0.ev.prio` | Erst priorisiertes Fahrzeug, danach weitere Fahrzeuge mit Restueberschuss |
 | SoC-Verwaltung | Mindest-SoC, Ziel-SoC, fehlende kWh und Abfahrtszeit | Adapter-Simulation |
 | Phasenerkennung | Direkte Auswertung von L1/L2/L3 mit mehr als 5 A; alter Phasenwert nur als Rückfall | Adapter-Simulation |
 | Wallbox + Trinkwasser | 50/50-Verteilung, ungenutzter Anteil wird dem anderen Gerät angeboten | Prognose und 2-s-Regler |
@@ -389,7 +454,8 @@ deaktivierte Altversionen wurden nicht übernommen.
 | E-Heizer-Schutz | 9-kW-Maximum und bestehende Temperaturkennlinie | Adapter simuliert den sicheren Sollwert |
 | NVP-Ausregelung | Alle 2 Sekunden innerhalb des aktuellen Fahrplans | Adapter simuliert; Batterie schließt die verbleibende Lücke |
 | Ampere-/Freigabeschreiben, Hausanschlussschutz | Nicht doppelt implementiert | Aktive `Werte_schreiben_0/1/2_V2`-Skripte |
-| Phasenumschaltung, RFID, Fehlerquittierung | Nicht doppelt implementiert | Bestehende lokale Skripte |
+| Phasenumschaltung | 1-/3-phasige Empfehlung mit fahrzeugspezifischen Grenzen; noch kein Aktorzugriff | Bestehende lokale Skripte schalten real |
+| RFID und Fehlerquittierung | Nicht doppelt implementiert | Bestehende lokale Skripte |
 | EHZ-Pumpe und Raum-PV-Boost | Nicht doppelt implementiert | `EHZ-Pumpe_V2` und `EHZ-P2FBH` |
 
 Der aktuelle Abgleich ist außerdem maschinenlesbar unter
@@ -400,6 +466,8 @@ Version keine Adapter-Objekte entfernt.
 
 | Version | Änderung |
 |---|---|
+| 0.10.0 | Konfigurationsseite fuer Fahrzeuge, beide Heizstaebe, Batterie, NVP-Regelung sowie Preise/Netzentgelte gegliedert; Trinkwasser-Temperaturkennlinie konfigurierbar. |
+| 0.9.0 | Sichtbare Fahrzeugkonfiguration, eigener Haken fuer 1-/3-phasige Umschaltung, getrennte Stromgrenzen und parallele Nutzung mehrerer Wallboxen bei Restueberschuss. |
 | 0.8.0 | Fahrplan als Freigabe statt starrem Leistungsdeckel; zusätzliche reale PV-Leistung wird verteilt. Wallboxen in ganzen Ampere ab 6 A, langsame Verbraucher alle 10 s und Batterieausregelung alle 2 s. |
 | 0.7.0 | Aktive Wallbox-/E-Heizer-Skripte abgeglichen: vollständige Fahrzeugpriorität, direkte Phasenerkennung und 50/50-Verteilung mit 4/3-kW- bzw. 9/8-kW-Hysterese in Prognose und 2-s-Simulation. |
 | 0.6.0 | Trinkwasser-Heizstab mit Temperaturkennlinie, 9-kW-Grenze und reiner Sollwertsimulation ergänzt. |
