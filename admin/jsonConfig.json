@@ -2,7 +2,7 @@
   "i18n": true,
   "type": "panel",
   "items": {
-    "safety": {"type":"staticText","text":"Version 0.12.0: guarded production output for DHW only. Keep the master and device control releases off until the legacy writer is stopped.","newLine":true},
+    "safety": {"type":"staticText","text":"Version 0.12.1: guarded production output for DHW only, including EMS/control watchdog. Keep both releases off until the legacy writer is stopped.","newLine":true},
     "generalHeader": {"type":"header","text":"General and history","size":2,"newLine":true},
     "observerOnly": {"type":"checkbox","label":"Observer only (permanently enabled)","disabled":true,"newLine":true},
     "globalWriteEnabled": {"type":"checkbox","label":"Master release for future real outputs (no actuation in this version)","default":false,"newLine":true},

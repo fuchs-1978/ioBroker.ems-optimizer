@@ -33,7 +33,7 @@ class EmsOptimizer extends utils.Adapter {
         await this.applyNativeVehicleSettings();
         await this.applyNativeEmsSettings();
         await this.setStateAsync("info.connection", true, true);
-        this.log.info("EMS Optimizer 0.12.0 started with guarded DHW production output");
+        this.log.info("EMS Optimizer 0.12.1 started with guarded DHW production output and watchdog");
     }
 
     async preloadStates() {

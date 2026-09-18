@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.12.0**
+Aktuelle Version: **0.12.1**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -540,6 +540,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.12.1 | Watchdog ergänzt: produktiver EHZ fällt auf 0 W, wenn EMS- oder Echtzeitregelung nicht mehr innerhalb ihrer zulässigen Zeit aktualisiert werden. |
 | 0.12.0 | Dreifach gesperrter Produktivausgang ausschließlich für den Trinkwasser-EHZ; konfigurierbarer Sollwert, 1-kW-Inbetriebnahmegrenze, Temperatur-/Daten-/HA-Prüfung, Stufenverzögerung und sichere Abschaltung. |
 | 0.11.0 | Globale und gerätespezifische Freigaben ergänzt; nicht vorhandene Geräte werden aus Planung und Simulation entfernt. Trinkwasserkennlinie auf vier konfigurierbare Temperatur-/Leistungspaare umgestellt und sichere Skript-Umschaltfolge dokumentiert. |
 | 0.10.0 | Konfigurationsseite fuer Fahrzeuge, beide Heizstaebe, Batterie, NVP-Regelung sowie Preise/Netzentgelte gegliedert; Trinkwasser-Temperaturkennlinie konfigurierbar. |
