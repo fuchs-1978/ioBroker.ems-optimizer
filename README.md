@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.12.2**
+Aktuelle Version: **0.12.3**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -453,7 +453,7 @@ duerfen freigegebene Wallboxen und der Trinkwasser-Heizstab bis zu ihren
 technischen, SoC- und Temperaturgrenzen mehr Leistung aufnehmen.
 
 - Die Batterie regelt die NVP-Abweichung alle 2 Sekunden aus.
-- Wallboxen und Heizstäbe ändern ihre Sollwerte standardmäßig alle 10 Sekunden.
+- Wallboxen und Heizstäbe ändern ihre Sollwerte standardmäßig alle 5 Sekunden. Damit kann der Trinkwasser-Heizstab den NVP ohne vorhandene Batterie zeitnah ausregeln.
 - Wallboxen arbeiten nur mit ganzen Ampere und mindestens dem je Fahrzeug
   konfigurierten Mindeststrom.
 - Wallboxänderungen sind auf 6 A je langsamem Zyklus begrenzt.
@@ -540,6 +540,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.12.3 | Zeitüberwachung an Sensorverhalten angepasst: unveränderte Tanktemperaturen bis 60 Minuten gültig, dynamische Ausgangstemperatur und Regler weiterhin eng überwacht. Produktiver Trinkwasser-Heizstab und langsame Zielverteilung standardmäßig alle 5 Sekunden. |
 | 0.12.2 | Hausanschlussbegrenzung des EHZ auf aktuelle SMA-Phasenströme umgestellt; statische `FreieAmpere`-Werte dürfen unverändert bleiben, ohne den Watchdog auszulösen. |
 | 0.12.1 | Watchdog ergänzt: produktiver EHZ fällt auf 0 W, wenn EMS- oder Echtzeitregelung nicht mehr innerhalb ihrer zulässigen Zeit aktualisiert werden. |
 | 0.12.0 | Dreifach gesperrter Produktivausgang ausschließlich für den Trinkwasser-EHZ; konfigurierbarer Sollwert, 1-kW-Inbetriebnahmegrenze, Temperatur-/Daten-/HA-Prüfung, Stufenverzögerung und sichere Abschaltung. |

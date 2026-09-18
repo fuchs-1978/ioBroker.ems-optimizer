@@ -2,7 +2,7 @@
   "i18n": true,
   "type": "panel",
   "items": {
-    "safety": {"type":"staticText","text":"Version 0.12.2: guarded DHW production output with watchdog and direct SMA phase-current monitoring.","newLine":true},
+    "safety": {"type":"staticText","text":"Version 0.12.3: guarded DHW output with sensor-aware watchdog and direct SMA phase-current monitoring.","newLine":true},
     "generalHeader": {"type":"header","text":"General and history","size":2,"newLine":true},
     "observerOnly": {"type":"checkbox","label":"Observer only (permanently enabled)","disabled":true,"newLine":true},
     "globalWriteEnabled": {"type":"checkbox","label":"Master release for future real outputs (no actuation in this version)","default":false,"newLine":true},
@@ -72,6 +72,7 @@
     "dhwResumeTempC": {"type":"number","label":"Resume below","unit":"°C","default":75.5,"sm":3,"newLine":true},
     "dhwStopTempC": {"type":"number","label":"Stop at","unit":"°C","default":76,"sm":3},
     "dhwTopEmergencyC": {"type":"number","label":"Top emergency stop","unit":"°C","default":82,"sm":3},
+    "dhwTemperatureMaxAgeMin": {"type":"number","label":"Maximum age of unchanged tank temperatures","unit":"min","default":60,"min":5,"max":240,"sm":4,"newLine":true},
     "dhwOutletDeratingC": {"type":"number","label":"Curve active above outlet","unit":"°C","default":60,"sm":3},
     "dhwCurve1TempC": {"type":"number","label":"Curve point 1 temperature","unit":"°C","default":70,"sm":3,"newLine":true},
     "dhwCurve70PowerW": {"type":"number","label":"Curve point 1 maximum","unit":"W","default":7500,"sm":3},
@@ -129,7 +130,7 @@
     "controlEnabled": {"type":"checkbox","label":"Enable simulation","default":true,"sm":3,"newLine":true},
     "targetGridPowerW": {"type":"number","label":"Grid target (+ import / - export)","unit":"W","default":-100,"sm":3},
     "deadbandW": {"type":"number","label":"Deadband","unit":"W","default":100,"min":0,"sm":3},
-    "slowCycleS": {"type":"number","label":"Slow control cycle","unit":"s","default":10,"min":2,"sm":3},
+    "slowCycleS": {"type":"number","label":"Slow control cycle","unit":"s","default":5,"min":2,"sm":3},
     "wallboxMaxStepA": {"type":"number","label":"Wallbox maximum step","unit":"A","default":6,"min":1,"max":32,"sm":3,"newLine":true},
 
     "priceHeader": {"type":"header","text":"Prices and grid fees","size":2,"newLine":true},

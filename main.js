@@ -33,7 +33,7 @@ class EmsOptimizer extends utils.Adapter {
         await this.applyNativeVehicleSettings();
         await this.applyNativeEmsSettings();
         await this.setStateAsync("info.connection", true, true);
-        this.log.info("EMS Optimizer 0.12.1 started with guarded DHW production output and watchdog");
+        this.log.info("EMS Optimizer 0.12.3 started with guarded DHW output and sensor-aware watchdog");
     }
 
     async preloadStates() {
@@ -175,12 +175,13 @@ class EmsOptimizer extends utils.Adapter {
             DHWMaxStep_W: ["dhwMaxStepW", 1000],
             DHWCommissioningMaxPower_W: ["dhwCommissioningMaxW", 1000],
             DHWHouseConnectionLimit_A: ["dhwHaLimitA", 50],
+            DHWTemperatureMaxAge_min: ["dhwTemperatureMaxAgeMin", 60],
             HeatingBufferVolume_l: ["heatingVolumeL", 400],
             HeatingBufferTemperature_C: ["heatingTempC", 40],
             HeatingBufferMinTemperature_C: ["heatingMinTempC", 35],
             HeatingBufferTargetTemperature_C: ["heatingTargetTempC", 50],
             HeatingControllerMaxPower_W: ["heatingMaxPowerW", 6000],
-            SlowControlCycle_s: ["slowCycleS", 10],
+            SlowControlCycle_s: ["slowCycleS", 5],
             WallboxMaxStep_A: ["wallboxMaxStepA", 6],
             DynamicEnergyPriceEnabled: ["dynamicEnergyPrice", false],
             DynamicGridFeeEnabled: ["dynamicGridFee", false],
