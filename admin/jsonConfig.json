@@ -2,7 +2,7 @@
   "i18n": true,
   "type": "panel",
   "items": {
-    "safety": {"type":"staticText","text":"Version 0.12.1: guarded production output for DHW only, including EMS/control watchdog. Keep both releases off until the legacy writer is stopped.","newLine":true},
+    "safety": {"type":"staticText","text":"Version 0.12.2: guarded DHW production output with watchdog and direct SMA phase-current monitoring.","newLine":true},
     "generalHeader": {"type":"header","text":"General and history","size":2,"newLine":true},
     "observerOnly": {"type":"checkbox","label":"Observer only (permanently enabled)","disabled":true,"newLine":true},
     "globalWriteEnabled": {"type":"checkbox","label":"Master release for future real outputs (no actuation in this version)","default":false,"newLine":true},
@@ -86,6 +86,10 @@
     "dhwHaL1FreeCurrentId": {"type":"text","label":"HA L1 free current data point","default":"","sm":4,"newLine":true},
     "dhwHaL2FreeCurrentId": {"type":"text","label":"HA L2 free current data point","default":"","sm":4},
     "dhwHaL3FreeCurrentId": {"type":"text","label":"HA L3 free current data point","default":"","sm":4},
+    "dhwHaL1CurrentId": {"type":"text","label":"SMA L1 measured current","default":"","sm":4,"newLine":true},
+    "dhwHaL2CurrentId": {"type":"text","label":"SMA L2 measured current","default":"","sm":4},
+    "dhwHaL3CurrentId": {"type":"text","label":"SMA L3 measured current","default":"","sm":4},
+    "dhwHaLimitA": {"type":"number","label":"EHZ house-connection control limit per phase","unit":"A","default":50,"min":1,"max":63,"sm":4,"newLine":true},
 
     "heatingHeader": {"type":"header","text":"my-PV heating buffer","size":2,"newLine":true},
     "heatingPresent": {"type":"checkbox","label":"Heating-buffer heater present / include in planning","default":false,"sm":4,"newLine":true},

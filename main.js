@@ -75,7 +75,9 @@ class EmsOptimizer extends utils.Adapter {
                 dhwActualMirrorId: "DP_DHW_ACTUAL_MIRROR",
                 dhwOutput1Id: "DP_DHW_OUTPUT1", dhwOutput2Id: "DP_DHW_OUTPUT2", dhwOutput3Id: "DP_DHW_OUTPUT3",
                 dhwHaL1FreeCurrentId: "DP_DHW_HA_L1_FREE_A", dhwHaL2FreeCurrentId: "DP_DHW_HA_L2_FREE_A",
-                dhwHaL3FreeCurrentId: "DP_DHW_HA_L3_FREE_A"
+                dhwHaL3FreeCurrentId: "DP_DHW_HA_L3_FREE_A",
+                dhwHaL1CurrentId: "DP_DHW_HA_L1_CURRENT_A", dhwHaL2CurrentId: "DP_DHW_HA_L2_CURRENT_A",
+                dhwHaL3CurrentId: "DP_DHW_HA_L3_CURRENT_A"
             };
             for (const [nativeId, mappingId] of Object.entries(visibleMappings)) {
                 const configuredId = String(this.config[nativeId] || "").trim();
@@ -172,6 +174,7 @@ class EmsOptimizer extends utils.Adapter {
             DHWCurve74Power_W: ["dhwCurve74PowerW", 3000],
             DHWMaxStep_W: ["dhwMaxStepW", 1000],
             DHWCommissioningMaxPower_W: ["dhwCommissioningMaxW", 1000],
+            DHWHouseConnectionLimit_A: ["dhwHaLimitA", 50],
             HeatingBufferVolume_l: ["heatingVolumeL", 400],
             HeatingBufferTemperature_C: ["heatingTempC", 40],
             HeatingBufferMinTemperature_C: ["heatingMinTempC", 35],

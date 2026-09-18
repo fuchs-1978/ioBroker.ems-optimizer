@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.12.1",
+    "version": "0.12.2",
     "titleLang": {"en": "EMS Optimizer", "de": "EMS-Optimierer"},
     "desc": {"en": "Forecast-based energy management observer", "de": "Prognosebasierter Energiemanagement-Beobachter"},
     "authors": ["fuchs-1978"],
@@ -26,7 +26,7 @@
     "globalWriteEnabled": false,
     "historyInstance": "",
     "batteryPresent": false, "batteryControlEnabled": false, "batterySocId": "", "batteryPowerId": "", "batteryCapacityKWh": 10, "batteryMaxChargeW": 2400, "batteryMaxDischargeW": 2400, "batteryMinSocPct": 0, "batteryMaxSocPct": 100, "batteryMorningTargetPct": 70, "batteryAfternoonTargetPct": 90, "batteryLateTargetPct": 100, "batteryReserveMin": 45, "batterySafetyPct": 80, "batteryEfficiencyPct": 92, "batterySelfConsumption": true,
-    "dhwPresent": true, "dhwControlEnabled": false, "dhwSetpointId": "", "dhwActualMirrorId": "", "dhwOutput1Id": "", "dhwOutput2Id": "", "dhwOutput3Id": "", "dhwPowerId": "", "dhwTemp1Id": "", "dhwTemp2Id": "", "dhwTemp3Id": "", "dhwTemp4Id": "", "dhwReleaseId": "", "dhwOutletTempId": "", "dhwConnectionId": "", "dhwHysteresisId": "", "dhwHaL1FreeCurrentId": "", "dhwHaL2FreeCurrentId": "", "dhwHaL3FreeCurrentId": "", "dhwVolumeL": 500, "dhwMinTempC": 48, "dhwTargetTempC": 60, "dhwMaxPowerW": 9000, "dhwCommissioningMaxW": 1000, "dhwStopTempC": 76, "dhwResumeTempC": 75.5, "dhwOutletDeratingC": 60, "dhwOutletProtectionC": 76, "dhwTopEmergencyC": 82, "dhwCurve1TempC": 70, "dhwCurve70PowerW": 7500, "dhwCurve2TempC": 71, "dhwCurve71PowerW": 6000, "dhwCurve3TempC": 73, "dhwCurve73PowerW": 4000, "dhwCurve4TempC": 74, "dhwCurve74PowerW": 3000, "dhwMaxStepW": 1000,
+    "dhwPresent": true, "dhwControlEnabled": false, "dhwSetpointId": "", "dhwActualMirrorId": "", "dhwOutput1Id": "", "dhwOutput2Id": "", "dhwOutput3Id": "", "dhwPowerId": "", "dhwTemp1Id": "", "dhwTemp2Id": "", "dhwTemp3Id": "", "dhwTemp4Id": "", "dhwReleaseId": "", "dhwOutletTempId": "", "dhwConnectionId": "", "dhwHysteresisId": "", "dhwHaL1FreeCurrentId": "", "dhwHaL2FreeCurrentId": "", "dhwHaL3FreeCurrentId": "", "dhwHaL1CurrentId": "", "dhwHaL2CurrentId": "", "dhwHaL3CurrentId": "", "dhwHaLimitA": 50, "dhwVolumeL": 500, "dhwMinTempC": 48, "dhwTargetTempC": 60, "dhwMaxPowerW": 9000, "dhwCommissioningMaxW": 1000, "dhwStopTempC": 76, "dhwResumeTempC": 75.5, "dhwOutletDeratingC": 60, "dhwOutletProtectionC": 76, "dhwTopEmergencyC": 82, "dhwCurve1TempC": 70, "dhwCurve70PowerW": 7500, "dhwCurve2TempC": 71, "dhwCurve71PowerW": 6000, "dhwCurve3TempC": 73, "dhwCurve73PowerW": 4000, "dhwCurve4TempC": 74, "dhwCurve74PowerW": 3000, "dhwMaxStepW": 1000,
     "heatingPresent": false, "heatingControlEnabled": false, "heatingPowerId": "", "heatingHistoryId": "", "heatingTempId": "", "heatingVolumeL": 400, "heatingTempC": 40, "heatingMinTempC": 35, "heatingTargetTempC": 50, "heatingMaxPowerW": 6000,
     "heatPumpPresent": false, "heatPumpControlEnabled": false,
     "controlEnabled": true, "targetGridPowerW": -100, "deadbandW": 100, "slowCycleS": 10, "wallboxMaxStepA": 6,
