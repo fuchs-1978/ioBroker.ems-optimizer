@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.6.0**
+Aktuelle Version: **0.7.0**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -342,10 +342,35 @@ gewährleistet werden.
 Der aktuelle Adapter schreibt ausschließlich in seinen eigenen Namespace
 `ems-optimizer.0` und niemals auf konfigurierte Geräteausgänge.
 
+## Abgleich der aktiven Wallbox- und E-Heizer-Skripte
+
+Version 0.7.0 berücksichtigt ausschließlich die aktuell aktiven Skripte;
+deaktivierte Altversionen wurden nicht übernommen.
+
+| Funktion | Umsetzung im Adapter | Zuständigkeit bis zur Produktivfreigabe |
+|---|---|---|
+| Fahrzeugpriorität | Grundrang Wallbox 0/1/2, `socfrei`, `alw`, Fahrzeugstatus und `javascript.0.ev.prio` | Adapter plant genau eine priorisierte Wallbox |
+| SoC-Verwaltung | Mindest-SoC, Ziel-SoC, fehlende kWh und Abfahrtszeit | Adapter-Simulation |
+| Phasenerkennung | Direkte Auswertung von L1/L2/L3 mit mehr als 5 A; alter Phasenwert nur als Rückfall | Adapter-Simulation |
+| Wallbox + Trinkwasser | 50/50-Verteilung, ungenutzter Anteil wird dem anderen Gerät angeboten | Prognose und 2-s-Regler |
+| Hysterese einphasig | EIN über 4.000 W, AUS unter 3.000 W | Konfigurierbar unter `Config.DHWParallelStartPower1P_W` und `Config.DHWParallelStopPower1P_W` |
+| Hysterese dreiphasig | EIN über 9.000 W, AUS unter 8.000 W | Konfigurierbar unter `Config.DHWParallelStartPower3P_W` und `Config.DHWParallelStopPower3P_W` |
+| E-Heizer-Schutz | 9-kW-Maximum und bestehende Temperaturkennlinie | Adapter simuliert den sicheren Sollwert |
+| NVP-Ausregelung | Alle 2 Sekunden innerhalb des aktuellen Fahrplans | Adapter simuliert; Batterie schließt die verbleibende Lücke |
+| Ampere-/Freigabeschreiben, Hausanschlussschutz | Nicht doppelt implementiert | Aktive `Werte_schreiben_0/1/2_V2`-Skripte |
+| Phasenumschaltung, RFID, Fehlerquittierung | Nicht doppelt implementiert | Bestehende lokale Skripte |
+| EHZ-Pumpe und Raum-PV-Boost | Nicht doppelt implementiert | `EHZ-Pumpe_V2` und `EHZ-P2FBH` |
+
+Der aktuelle Abgleich ist außerdem maschinenlesbar unter
+`ems-optimizer.0.System.ActiveScriptAudit_JSON` abgelegt. Es werden mit dieser
+Version keine Adapter-Objekte entfernt.
+
 ## Entwicklungshistorie
 
 | Version | Änderung |
 |---|---|
+| 0.7.0 | Aktive Wallbox-/E-Heizer-Skripte abgeglichen: vollständige Fahrzeugpriorität, direkte Phasenerkennung und 50/50-Verteilung mit 4/3-kW- bzw. 9/8-kW-Hysterese in Prognose und 2-s-Simulation. |
+| 0.6.0 | Trinkwasser-Heizstab mit Temperaturkennlinie, 9-kW-Grenze und reiner Sollwertsimulation ergänzt. |
 | 0.3.2 | Versionsmeldungen des Adapters vereinheitlicht; keine Änderung der EMS-Logik oder Objekte. |
 | 0.3.1 | Konfigurierbare Mindestgrundlast verhindert unplausible Nullwerte nach Abzug historischer flexibler Verbraucher. Standard: 500 W über `ems-optimizer.0.Config.MinimumBaseload_W`. |
 | 0.3.0 | EMS-Logik ohne Funktionsänderung in Module für Kern, Historie, Prognose, Planung, Beobachtung und Start getrennt. |

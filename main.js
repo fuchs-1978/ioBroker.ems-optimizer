@@ -26,7 +26,7 @@ class EmsOptimizer extends utils.Adapter {
         await this.preloadStates();
         await this.startEngine();
         await this.setStateAsync("info.connection", true, true);
-        this.log.info("EMS Optimizer 0.6.0 started with vehicle and DHW simulation controllers");
+        this.log.info("EMS Optimizer 0.7.0 started with aligned EV/DHW simulation controllers");
     }
 
     async preloadStates() {
@@ -67,8 +67,14 @@ class EmsOptimizer extends utils.Adapter {
                 DP_WB2_PHASES: "javascript.0.ev.pha2",
                 DP_DHW_RELEASE: "javascript.0.ehz.freigabe",
                 DP_DHW_OUTLET_TEMP: "modbus.4.holdingRegisters.1001_Temp1",
-                DP_DHW_CONNECTION: "modbus.4.info.connection"
+                DP_DHW_CONNECTION: "modbus.4.info.connection",
+                DP_WB_PRIORITY: "javascript.0.ev.prio"
             };
+            for (let wb = 0; wb < 3; wb++) {
+                for (let phase = 1; phase <= 3; phase++) {
+                    defaults[`DP_WB${wb}_L${phase}_A`] = `go-e.${wb}.energy.phase${phase}.ampere`;
+                }
+            }
             for (const [key, fallback] of Object.entries(defaults)) {
                 if (!mapping[key]) mapping[key] = fallback;
             }

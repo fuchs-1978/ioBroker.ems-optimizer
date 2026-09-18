@@ -4,7 +4,7 @@
   "items": {
     "safety": {
       "type": "staticText",
-      "text": "Version 0.6.0 includes observer, planner, vehicle manager and simulated NVP/DHW controllers. It never writes to devices.",
+      "text": "Version 0.7.0 aligns active EV/DHW scripts including priority and 50/50 hysteresis. It never writes to devices.",
       "newLine": true
     },
     "parallel": {
