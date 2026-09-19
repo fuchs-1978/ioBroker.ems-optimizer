@@ -13,7 +13,10 @@
     "authors": [
       "fuchs-1978"
     ],
-    "license": "MIT",
+    "licenseInformation": {
+      "type": "free",
+      "license": "MIT"
+    },
     "platform": "Javascript/Node.js",
     "mode": "daemon",
     "type": "energy",
