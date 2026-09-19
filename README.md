@@ -114,12 +114,20 @@ Wallbox-Einzeltest erfolgen.
 
 ### Neue Diagnoseobjekte in 0.14.0
 
-Je Wallbox `0`, `1` und `2` werden ergänzt:
+Für die Wallboxen werden ergänzt:
 
-- `ems-optimizer.0.Vehicles.WallboxX.ManualMinimumCurrent_A`
-- `ems-optimizer.0.Vehicles.WallboxX.LowSocMinimumCurrent_A`
-- `ems-optimizer.0.Vehicles.WallboxX.RequestedMinimumCurrent_A`
-- `ems-optimizer.0.Vehicles.WallboxX.CurrentConstraintStatus`
+- `ems-optimizer.0.Vehicles.Wallbox0.ManualMinimumCurrent_A`
+- `ems-optimizer.0.Vehicles.Wallbox0.LowSocMinimumCurrent_A`
+- `ems-optimizer.0.Vehicles.Wallbox0.RequestedMinimumCurrent_A`
+- `ems-optimizer.0.Vehicles.Wallbox0.CurrentConstraintStatus`
+- `ems-optimizer.0.Vehicles.Wallbox1.ManualMinimumCurrent_A`
+- `ems-optimizer.0.Vehicles.Wallbox1.LowSocMinimumCurrent_A`
+- `ems-optimizer.0.Vehicles.Wallbox1.RequestedMinimumCurrent_A`
+- `ems-optimizer.0.Vehicles.Wallbox1.CurrentConstraintStatus`
+- `ems-optimizer.0.Vehicles.Wallbox2.ManualMinimumCurrent_A`
+- `ems-optimizer.0.Vehicles.Wallbox2.LowSocMinimumCurrent_A`
+- `ems-optimizer.0.Vehicles.Wallbox2.RequestedMinimumCurrent_A`
+- `ems-optimizer.0.Vehicles.Wallbox2.CurrentConstraintStatus`
 
 Für die gemeinsame Verteilung werden ergänzt:
 
