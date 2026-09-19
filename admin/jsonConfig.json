@@ -1,1883 +1,2039 @@
 {
   "i18n": true,
-  "type": "panel",
+  "type": "tabs",
   "items": {
-    "safety": {
-      "type": "staticText",
-      "text": "Version 0.14.0: one guarded wallbox test or explicitly armed wallbox + DHW combination. Battery, heating buffer and phase switching remain simulated.",
-      "newLine": true
-    },
-    "generalHeader": {
-      "type": "header",
-      "text": "General and history",
-      "size": 2,
-      "newLine": true
-    },
-    "globalWriteEnabled": {
-      "type": "checkbox",
-      "label": "Master release for configured real outputs",
-      "default": false,
-      "newLine": true
-    },
-    "historyInstance": {
-      "type": "text",
-      "label": "History adapter instance",
-      "default": "",
-      "sm": 4,
-      "newLine": true
-    },
-    "wb0Header": {
-      "type": "header",
-      "text": "Wallbox 0 / vehicle",
-      "size": 2,
-      "newLine": true
-    },
-    "wb0Present": {
-      "type": "checkbox",
-      "label": "Wallbox 0 present / include in planning",
-      "default": true,
-      "sm": 4,
-      "newLine": true
-    },
-    "wb0ControlEnabled": {
-      "type": "checkbox",
-      "label": "Wallbox 0 control release",
-      "default": false,
-      "sm": 4
-    },
-    "wb0Name": {
-      "type": "text",
-      "label": "Vehicle name",
-      "default": "Vehicle 0",
-      "sm": 3,
-      "newLine": true
-    },
-    "wb0SocId": {
-      "type": "text",
-      "label": "SoC data point",
-      "default": "",
-      "sm": 9
-    },
-    "wb0CapacityKWh": {
-      "type": "number",
-      "label": "Battery capacity",
-      "unit": "kWh",
-      "default": 50,
-      "min": 1,
-      "max": 200,
-      "sm": 3,
-      "newLine": true
-    },
-    "wb0MaxPowerW": {
-      "type": "number",
-      "label": "Maximum charging power",
-      "unit": "W",
-      "default": 11000,
-      "min": 1380,
-      "max": 23000,
-      "sm": 3
-    },
-    "wb0PhaseSwitchEnabled": {
-      "type": "checkbox",
-      "label": "Allow 1-/3-phase switching",
-      "default": false,
-      "sm": 3
-    },
-    "wb0MinCurrent1pA": {
-      "type": "number",
-      "label": "Minimum 1-phase",
-      "unit": "A",
-      "default": 6,
-      "min": 6,
-      "max": 32,
-      "sm": 3,
-      "newLine": true
-    },
-    "wb0MaxCurrent1pA": {
-      "type": "number",
-      "label": "Maximum 1-phase",
-      "unit": "A",
-      "default": 16,
-      "min": 6,
-      "max": 32,
-      "sm": 3
-    },
-    "wb0MinCurrent3pA": {
-      "type": "number",
-      "label": "Minimum 3-phase",
-      "unit": "A",
-      "default": 6,
-      "min": 0,
-      "max": 32,
-      "sm": 3
-    },
-    "wb0MaxCurrent3pA": {
-      "type": "number",
-      "label": "Maximum 3-phase",
-      "unit": "A",
-      "default": 16,
-      "min": 0,
-      "max": 32,
-      "sm": 3
-    },
-    "wb0SocLimitsSource": {
-      "type": "select",
-      "label": "SoC limits source",
-      "default": "external",
-      "options": [
-        {
-          "value": "external",
-          "label": "Existing mapped data points"
+    "generalTab": {
+      "type": "panel",
+      "label": "General",
+      "items": {
+        "safety": {
+          "type": "staticText",
+          "text": "Version 0.14.0: one guarded wallbox test or explicitly armed wallbox + DHW combination. Battery, heating buffer and phase switching remain simulated.",
+          "newLine": true
         },
-        {
-          "value": "admin",
-          "label": "Values entered here"
+        "generalHeader": {
+          "type": "header",
+          "text": "General and history",
+          "size": 2,
+          "newLine": true
+        },
+        "globalWriteEnabled": {
+          "type": "checkbox",
+          "label": "Master release for configured real outputs",
+          "default": false,
+          "newLine": true
+        },
+        "historyInstance": {
+          "type": "text",
+          "label": "History adapter instance",
+          "default": "",
+          "sm": 4,
+          "newLine": true
         }
-      ],
-      "sm": 6,
-      "newLine": true
+      }
     },
-    "wb0MinSocPct": {
-      "type": "number",
-      "label": "Minimum SoC: charge immediately",
-      "default": 20,
-      "min": 0,
-      "max": 100,
-      "unit": "%",
-      "sm": 6,
-      "newLine": true
-    },
-    "wb0TargetSocPct": {
-      "type": "number",
-      "label": "Target SoC: PV charging above minimum",
-      "default": 80,
-      "min": 0,
-      "max": 100,
-      "unit": "%",
-      "sm": 6,
-      "newLine": true
-    },
-    "wb0DeadlineEnabled": {
-      "type": "checkbox",
-      "label": "Allow grid charging to target before departure",
-      "default": false,
-      "sm": 6,
-      "newLine": true
-    },
-    "wb0TaperEnabled": {
-      "type": "checkbox",
-      "label": "Reduce current near target SoC",
-      "default": false,
-      "sm": 6,
-      "newLine": true
-    },
-    "wb0Taper1DeltaPct": {
-      "type": "number",
-      "label": "Stage 1: distance below target",
-      "default": 5,
-      "min": 0,
-      "max": 100,
-      "unit": "percentage points",
-      "sm": 6,
-      "newLine": true
-    },
-    "wb0Taper1MaxA": {
-      "type": "number",
-      "label": "Stage 1: maximum current per phase",
-      "default": 13,
-      "min": 6,
-      "max": 32,
-      "unit": "A",
-      "sm": 6,
-      "newLine": true
-    },
-    "wb0Taper2DeltaPct": {
-      "type": "number",
-      "label": "Stage 2: distance below target",
-      "default": 2,
-      "min": 0,
-      "max": 100,
-      "unit": "percentage points",
-      "sm": 6,
-      "newLine": true
-    },
-    "wb0Taper2MaxA": {
-      "type": "number",
-      "label": "Stage 2: maximum current per phase",
-      "default": 8,
-      "min": 6,
-      "max": 32,
-      "unit": "A",
-      "sm": 6,
-      "newLine": true
-    },
-    "wb0ManualMinCurrentId": {
-      "type": "text",
-      "label": "Existing manual minimum-current data point",
-      "default": "javascript.0.ev.amin0",
-      "sm": 12,
-      "newLine": true
-    },
-    "wb0LowSocStepsEnabled": {
-      "type": "checkbox",
-      "label": "Use minimum-current stages when socfrei = 2",
-      "default": true,
-      "sm": 12,
-      "newLine": true
-    },
-    "wb0LowSoc1ThresholdPct": {
-      "type": "number",
-      "label": "Low-SoC stage 1: at or below",
-      "default": 30,
-      "min": 0,
-      "max": 100,
-      "unit": "%",
-      "sm": 6,
-      "newLine": true
-    },
-    "wb0LowSoc1MinA": {
-      "type": "number",
-      "label": "Low-SoC stage 1: minimum current",
-      "default": 10,
-      "min": 0,
-      "max": 32,
-      "unit": "A",
-      "sm": 6
-    },
-    "wb0LowSoc2ThresholdPct": {
-      "type": "number",
-      "label": "Low-SoC stage 2: at or below",
-      "default": 10,
-      "min": 0,
-      "max": 100,
-      "unit": "%",
-      "sm": 6,
-      "newLine": true
-    },
-    "wb0LowSoc2MinA": {
-      "type": "number",
-      "label": "Low-SoC stage 2: minimum current",
-      "default": 16,
-      "min": 0,
-      "max": 32,
-      "unit": "A",
-      "sm": 6
-    },
-    "wb0LowSoc3ThresholdPct": {
-      "type": "number",
-      "label": "Low-SoC stage 3: at or below",
-      "default": 0,
-      "min": 0,
-      "max": 100,
-      "unit": "%",
-      "sm": 6,
-      "newLine": true
-    },
-    "wb0LowSoc3MinA": {
-      "type": "number",
-      "label": "Low-SoC stage 3: minimum current (0 = disabled)",
-      "default": 0,
-      "min": 0,
-      "max": 32,
-      "unit": "A",
-      "sm": 6
-    },
-    "wb0ProductionArmed": {
-      "type": "checkbox",
-      "label": "Arm SINGLE wallbox test: competing scripts stopped and fixed phases verified",
-      "default": false,
-      "sm": 6,
-      "newLine": true
-    },
-    "wb0ProductionPhases": {
-      "type": "select",
-      "label": "Verified fixed phases during production test (no automatic switching)",
-      "default": 1,
-      "options": [
-        {
-          "value": 1,
-          "label": "1 phase"
+    "wallbox0Tab": {
+      "type": "panel",
+      "label": "Wallbox 0 – Mii/e-Up",
+      "items": {
+        "wb0Header": {
+          "type": "header",
+          "text": "Wallbox 0 / vehicle",
+          "size": 2,
+          "newLine": true
         },
-        {
-          "value": 3,
-          "label": "3 phases"
+        "wb0Present": {
+          "type": "checkbox",
+          "label": "Wallbox 0 present / include in planning",
+          "default": true,
+          "sm": 4,
+          "newLine": true
+        },
+        "wb0ControlEnabled": {
+          "type": "checkbox",
+          "label": "Wallbox 0 control release",
+          "default": false,
+          "sm": 4
+        },
+        "wb0Name": {
+          "type": "text",
+          "label": "Vehicle name",
+          "default": "Vehicle 0",
+          "sm": 3,
+          "newLine": true
+        },
+        "wb0SocId": {
+          "type": "text",
+          "label": "SoC data point",
+          "default": "",
+          "sm": 9
+        },
+        "wb0CapacityKWh": {
+          "type": "number",
+          "label": "Battery capacity",
+          "unit": "kWh",
+          "default": 50,
+          "min": 1,
+          "max": 200,
+          "sm": 3,
+          "newLine": true
+        },
+        "wb0MaxPowerW": {
+          "type": "number",
+          "label": "Maximum charging power",
+          "unit": "W",
+          "default": 11000,
+          "min": 1380,
+          "max": 23000,
+          "sm": 3
+        },
+        "wb0PhaseSwitchEnabled": {
+          "type": "checkbox",
+          "label": "Allow 1-/3-phase switching",
+          "default": false,
+          "sm": 3
+        },
+        "_wb0CurrentHeader": {
+          "type": "header",
+          "text": "Current and phase limits",
+          "size": 3,
+          "newLine": true
+        },
+        "wb0MinCurrent1pA": {
+          "type": "number",
+          "label": "Minimum 1-phase",
+          "unit": "A",
+          "default": 6,
+          "min": 6,
+          "max": 32,
+          "sm": 3,
+          "newLine": true
+        },
+        "wb0MaxCurrent1pA": {
+          "type": "number",
+          "label": "Maximum 1-phase",
+          "unit": "A",
+          "default": 16,
+          "min": 6,
+          "max": 32,
+          "sm": 3
+        },
+        "wb0MinCurrent3pA": {
+          "type": "number",
+          "label": "Minimum 3-phase",
+          "unit": "A",
+          "default": 6,
+          "min": 0,
+          "max": 32,
+          "sm": 3
+        },
+        "wb0MaxCurrent3pA": {
+          "type": "number",
+          "label": "Maximum 3-phase",
+          "unit": "A",
+          "default": 16,
+          "min": 0,
+          "max": 32,
+          "sm": 3
+        },
+        "_wb0SocHeader": {
+          "type": "header",
+          "text": "SoC and charging strategy",
+          "size": 3,
+          "newLine": true
+        },
+        "wb0SocLimitsSource": {
+          "type": "select",
+          "label": "SoC limits source",
+          "default": "external",
+          "options": [
+            {
+              "value": "external",
+              "label": "Existing mapped data points"
+            },
+            {
+              "value": "admin",
+              "label": "Values entered here"
+            }
+          ],
+          "sm": 6,
+          "newLine": true
+        },
+        "wb0MinSocPct": {
+          "type": "number",
+          "label": "Minimum SoC: charge immediately",
+          "default": 20,
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb0TargetSocPct": {
+          "type": "number",
+          "label": "Target SoC: PV charging above minimum",
+          "default": 80,
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb0DeadlineEnabled": {
+          "type": "checkbox",
+          "label": "Allow grid charging to target before departure",
+          "default": false,
+          "sm": 6,
+          "newLine": true
+        },
+        "wb0TaperEnabled": {
+          "type": "checkbox",
+          "label": "Reduce current near target SoC",
+          "default": false,
+          "sm": 6,
+          "newLine": true
+        },
+        "wb0Taper1DeltaPct": {
+          "type": "number",
+          "label": "Stage 1: distance below target",
+          "default": 5,
+          "min": 0,
+          "max": 100,
+          "unit": "percentage points",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb0Taper1MaxA": {
+          "type": "number",
+          "label": "Stage 1: maximum current per phase",
+          "default": 13,
+          "min": 6,
+          "max": 32,
+          "unit": "A",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb0Taper2DeltaPct": {
+          "type": "number",
+          "label": "Stage 2: distance below target",
+          "default": 2,
+          "min": 0,
+          "max": 100,
+          "unit": "percentage points",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb0Taper2MaxA": {
+          "type": "number",
+          "label": "Stage 2: maximum current per phase",
+          "default": 8,
+          "min": 6,
+          "max": 32,
+          "unit": "A",
+          "sm": 6,
+          "newLine": true
+        },
+        "_wb0MinimumHeader": {
+          "type": "header",
+          "text": "Manual and low-SoC minimum current",
+          "size": 3,
+          "newLine": true
+        },
+        "wb0ManualMinCurrentId": {
+          "type": "text",
+          "label": "Existing manual minimum-current data point",
+          "default": "javascript.0.ev.amin0",
+          "sm": 12,
+          "newLine": true
+        },
+        "wb0LowSocStepsEnabled": {
+          "type": "checkbox",
+          "label": "Use minimum-current stages when socfrei = 2",
+          "default": true,
+          "sm": 12,
+          "newLine": true
+        },
+        "wb0LowSoc1ThresholdPct": {
+          "type": "number",
+          "label": "Low-SoC stage 1: at or below",
+          "default": 30,
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb0LowSoc1MinA": {
+          "type": "number",
+          "label": "Low-SoC stage 1: minimum current",
+          "default": 10,
+          "min": 0,
+          "max": 32,
+          "unit": "A",
+          "sm": 6
+        },
+        "wb0LowSoc2ThresholdPct": {
+          "type": "number",
+          "label": "Low-SoC stage 2: at or below",
+          "default": 10,
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb0LowSoc2MinA": {
+          "type": "number",
+          "label": "Low-SoC stage 2: minimum current",
+          "default": 16,
+          "min": 0,
+          "max": 32,
+          "unit": "A",
+          "sm": 6
+        },
+        "wb0LowSoc3ThresholdPct": {
+          "type": "number",
+          "label": "Low-SoC stage 3: at or below",
+          "default": 0,
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb0LowSoc3MinA": {
+          "type": "number",
+          "label": "Low-SoC stage 3: minimum current (0 = disabled)",
+          "default": 0,
+          "min": 0,
+          "max": 32,
+          "unit": "A",
+          "sm": 6
+        },
+        "_wb0ProductionHeader": {
+          "type": "header",
+          "text": "Productive single-wallbox test",
+          "size": 3,
+          "newLine": true
+        },
+        "wb0ProductionArmed": {
+          "type": "checkbox",
+          "label": "Arm SINGLE wallbox test: competing scripts stopped and fixed phases verified",
+          "default": false,
+          "sm": 6,
+          "newLine": true
+        },
+        "wb0ProductionPhases": {
+          "type": "select",
+          "label": "Verified fixed phases during production test (no automatic switching)",
+          "default": 1,
+          "options": [
+            {
+              "value": 1,
+              "label": "1 phase"
+            },
+            {
+              "value": 3,
+              "label": "3 phases"
+            }
+          ],
+          "sm": 6,
+          "newLine": true
+        },
+        "wb0SinglePhaseGridPhase": {
+          "type": "select",
+          "label": "Grid phase used by wallbox L1",
+          "default": 1,
+          "options": [
+            {
+              "value": 1,
+              "label": "L1"
+            },
+            {
+              "value": 2,
+              "label": "L2"
+            },
+            {
+              "value": 3,
+              "label": "L3"
+            }
+          ],
+          "sm": 6,
+          "newLine": true
+        },
+        "wb0CommissioningMaxA": {
+          "type": "number",
+          "label": "Production commissioning current limit",
+          "default": 6,
+          "min": 6,
+          "max": 32,
+          "unit": "A",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb0FeedbackTimeoutS": {
+          "type": "number",
+          "label": "Command acknowledgement timeout",
+          "default": 20,
+          "min": 5,
+          "max": 120,
+          "unit": "s",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb0AmpereOutputId": {
+          "type": "text",
+          "label": "Writable go-e current (amperePV)",
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "wb0AllowOutputId": {
+          "type": "text",
+          "label": "Writable go-e release (allow_charging, numeric 0/1)",
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "wb0AmpereFeedbackId": {
+          "type": "text",
+          "label": "Confirmed go-e current (ampere)",
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "wb0ConnectionId": {
+          "type": "text",
+          "label": "go-e connection state",
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "wb0ErrorId": {
+          "type": "text",
+          "label": "go-e error code (0 = OK)",
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "wb0AvailableCurrentId": {
+          "type": "text",
+          "label": "Optional available current (leave empty if go-e provides no value)",
+          "default": "",
+          "sm": 12,
+          "newLine": true
         }
-      ],
-      "sm": 6,
-      "newLine": true
+      }
     },
-    "wb0SinglePhaseGridPhase": {
-      "type": "select",
-      "label": "Grid phase used by wallbox L1",
-      "default": 1,
-      "options": [
-        {
-          "value": 1,
-          "label": "L1"
+    "wallbox1Tab": {
+      "type": "panel",
+      "label": "Wallbox 1 – EQV",
+      "items": {
+        "wb1Header": {
+          "type": "header",
+          "text": "Wallbox 1 / vehicle",
+          "size": 2,
+          "newLine": true
         },
-        {
-          "value": 2,
-          "label": "L2"
+        "wb1Present": {
+          "type": "checkbox",
+          "label": "Wallbox 1 present / include in planning",
+          "default": true,
+          "sm": 4,
+          "newLine": true
         },
-        {
-          "value": 3,
-          "label": "L3"
+        "wb1ControlEnabled": {
+          "type": "checkbox",
+          "label": "Wallbox 1 control release",
+          "default": false,
+          "sm": 4
+        },
+        "wb1Name": {
+          "type": "text",
+          "label": "Vehicle name",
+          "default": "Vehicle 1",
+          "sm": 3,
+          "newLine": true
+        },
+        "wb1SocId": {
+          "type": "text",
+          "label": "SoC data point",
+          "default": "",
+          "sm": 9
+        },
+        "wb1CapacityKWh": {
+          "type": "number",
+          "label": "Battery capacity",
+          "unit": "kWh",
+          "default": 50,
+          "min": 1,
+          "max": 200,
+          "sm": 3,
+          "newLine": true
+        },
+        "wb1MaxPowerW": {
+          "type": "number",
+          "label": "Maximum charging power",
+          "unit": "W",
+          "default": 11000,
+          "min": 1380,
+          "max": 23000,
+          "sm": 3
+        },
+        "wb1PhaseSwitchEnabled": {
+          "type": "checkbox",
+          "label": "Allow 1-/3-phase switching",
+          "default": false,
+          "sm": 3
+        },
+        "_wb1CurrentHeader": {
+          "type": "header",
+          "text": "Current and phase limits",
+          "size": 3,
+          "newLine": true
+        },
+        "wb1MinCurrent1pA": {
+          "type": "number",
+          "label": "Minimum 1-phase",
+          "unit": "A",
+          "default": 6,
+          "min": 6,
+          "max": 32,
+          "sm": 3,
+          "newLine": true
+        },
+        "wb1MaxCurrent1pA": {
+          "type": "number",
+          "label": "Maximum 1-phase",
+          "unit": "A",
+          "default": 16,
+          "min": 6,
+          "max": 32,
+          "sm": 3
+        },
+        "wb1MinCurrent3pA": {
+          "type": "number",
+          "label": "Minimum 3-phase",
+          "unit": "A",
+          "default": 6,
+          "min": 6,
+          "max": 32,
+          "sm": 3
+        },
+        "wb1MaxCurrent3pA": {
+          "type": "number",
+          "label": "Maximum 3-phase",
+          "unit": "A",
+          "default": 16,
+          "min": 6,
+          "max": 32,
+          "sm": 3
+        },
+        "_wb1SocHeader": {
+          "type": "header",
+          "text": "SoC and charging strategy",
+          "size": 3,
+          "newLine": true
+        },
+        "wb1SocLimitsSource": {
+          "type": "select",
+          "label": "SoC limits source",
+          "default": "external",
+          "options": [
+            {
+              "value": "external",
+              "label": "Existing mapped data points"
+            },
+            {
+              "value": "admin",
+              "label": "Values entered here"
+            }
+          ],
+          "sm": 6,
+          "newLine": true
+        },
+        "wb1MinSocPct": {
+          "type": "number",
+          "label": "Minimum SoC: charge immediately",
+          "default": 20,
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb1TargetSocPct": {
+          "type": "number",
+          "label": "Target SoC: PV charging above minimum",
+          "default": 80,
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb1DeadlineEnabled": {
+          "type": "checkbox",
+          "label": "Allow grid charging to target before departure",
+          "default": false,
+          "sm": 6,
+          "newLine": true
+        },
+        "wb1TaperEnabled": {
+          "type": "checkbox",
+          "label": "Reduce current near target SoC",
+          "default": false,
+          "sm": 6,
+          "newLine": true
+        },
+        "wb1Taper1DeltaPct": {
+          "type": "number",
+          "label": "Stage 1: distance below target",
+          "default": 5,
+          "min": 0,
+          "max": 100,
+          "unit": "percentage points",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb1Taper1MaxA": {
+          "type": "number",
+          "label": "Stage 1: maximum current per phase",
+          "default": 13,
+          "min": 6,
+          "max": 32,
+          "unit": "A",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb1Taper2DeltaPct": {
+          "type": "number",
+          "label": "Stage 2: distance below target",
+          "default": 2,
+          "min": 0,
+          "max": 100,
+          "unit": "percentage points",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb1Taper2MaxA": {
+          "type": "number",
+          "label": "Stage 2: maximum current per phase",
+          "default": 8,
+          "min": 6,
+          "max": 32,
+          "unit": "A",
+          "sm": 6,
+          "newLine": true
+        },
+        "_wb1MinimumHeader": {
+          "type": "header",
+          "text": "Manual and low-SoC minimum current",
+          "size": 3,
+          "newLine": true
+        },
+        "wb1ManualMinCurrentId": {
+          "type": "text",
+          "label": "Existing manual minimum-current data point",
+          "default": "javascript.0.ev.amin1",
+          "sm": 12,
+          "newLine": true
+        },
+        "wb1LowSocStepsEnabled": {
+          "type": "checkbox",
+          "label": "Use minimum-current stages when socfrei = 2",
+          "default": true,
+          "sm": 12,
+          "newLine": true
+        },
+        "wb1LowSoc1ThresholdPct": {
+          "type": "number",
+          "label": "Low-SoC stage 1: at or below",
+          "default": 50,
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb1LowSoc1MinA": {
+          "type": "number",
+          "label": "Low-SoC stage 1: minimum current",
+          "default": 10,
+          "min": 0,
+          "max": 32,
+          "unit": "A",
+          "sm": 6
+        },
+        "wb1LowSoc2ThresholdPct": {
+          "type": "number",
+          "label": "Low-SoC stage 2: at or below",
+          "default": 30,
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb1LowSoc2MinA": {
+          "type": "number",
+          "label": "Low-SoC stage 2: minimum current",
+          "default": 16,
+          "min": 0,
+          "max": 32,
+          "unit": "A",
+          "sm": 6
+        },
+        "wb1LowSoc3ThresholdPct": {
+          "type": "number",
+          "label": "Low-SoC stage 3: at or below",
+          "default": 10,
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb1LowSoc3MinA": {
+          "type": "number",
+          "label": "Low-SoC stage 3: minimum current (0 = disabled)",
+          "default": 25,
+          "min": 0,
+          "max": 32,
+          "unit": "A",
+          "sm": 6
+        },
+        "_wb1ProductionHeader": {
+          "type": "header",
+          "text": "Productive single-wallbox test",
+          "size": 3,
+          "newLine": true
+        },
+        "wb1ProductionArmed": {
+          "type": "checkbox",
+          "label": "Arm SINGLE wallbox test: competing scripts stopped and fixed phases verified",
+          "default": false,
+          "sm": 6,
+          "newLine": true
+        },
+        "wb1ProductionPhases": {
+          "type": "select",
+          "label": "Verified fixed phases during production test (no automatic switching)",
+          "default": 1,
+          "options": [
+            {
+              "value": 1,
+              "label": "1 phase"
+            },
+            {
+              "value": 3,
+              "label": "3 phases"
+            }
+          ],
+          "sm": 6,
+          "newLine": true
+        },
+        "wb1SinglePhaseGridPhase": {
+          "type": "select",
+          "label": "Grid phase used by wallbox L1",
+          "default": 1,
+          "options": [
+            {
+              "value": 1,
+              "label": "L1"
+            },
+            {
+              "value": 2,
+              "label": "L2"
+            },
+            {
+              "value": 3,
+              "label": "L3"
+            }
+          ],
+          "sm": 6,
+          "newLine": true
+        },
+        "wb1CommissioningMaxA": {
+          "type": "number",
+          "label": "Production commissioning current limit",
+          "default": 6,
+          "min": 6,
+          "max": 32,
+          "unit": "A",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb1FeedbackTimeoutS": {
+          "type": "number",
+          "label": "Command acknowledgement timeout",
+          "default": 20,
+          "min": 5,
+          "max": 120,
+          "unit": "s",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb1AmpereOutputId": {
+          "type": "text",
+          "label": "Writable go-e current (amperePV)",
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "wb1AllowOutputId": {
+          "type": "text",
+          "label": "Writable go-e release (allow_charging, numeric 0/1)",
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "wb1AmpereFeedbackId": {
+          "type": "text",
+          "label": "Confirmed go-e current (ampere)",
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "wb1ConnectionId": {
+          "type": "text",
+          "label": "go-e connection state",
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "wb1ErrorId": {
+          "type": "text",
+          "label": "go-e error code (0 = OK)",
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "wb1AvailableCurrentId": {
+          "type": "text",
+          "label": "Optional available current (leave empty if go-e provides no value)",
+          "default": "",
+          "sm": 12,
+          "newLine": true
         }
-      ],
-      "sm": 6,
-      "newLine": true
+      }
     },
-    "wb0CommissioningMaxA": {
-      "type": "number",
-      "label": "Production commissioning current limit",
-      "default": 6,
-      "min": 6,
-      "max": 32,
-      "unit": "A",
-      "sm": 6,
-      "newLine": true
-    },
-    "wb0FeedbackTimeoutS": {
-      "type": "number",
-      "label": "Command acknowledgement timeout",
-      "default": 20,
-      "min": 5,
-      "max": 120,
-      "unit": "s",
-      "sm": 6,
-      "newLine": true
-    },
-    "wb0AmpereOutputId": {
-      "type": "text",
-      "label": "Writable go-e current (amperePV)",
-      "default": "",
-      "sm": 12,
-      "newLine": true
-    },
-    "wb0AllowOutputId": {
-      "type": "text",
-      "label": "Writable go-e release (allow_charging, numeric 0/1)",
-      "default": "",
-      "sm": 12,
-      "newLine": true
-    },
-    "wb0AmpereFeedbackId": {
-      "type": "text",
-      "label": "Confirmed go-e current (ampere)",
-      "default": "",
-      "sm": 12,
-      "newLine": true
-    },
-    "wb0ConnectionId": {
-      "type": "text",
-      "label": "go-e connection state",
-      "default": "",
-      "sm": 12,
-      "newLine": true
-    },
-    "wb0ErrorId": {
-      "type": "text",
-      "label": "go-e error code (0 = OK)",
-      "default": "",
-      "sm": 12,
-      "newLine": true
-    },
-    "wb0AvailableCurrentId": {
-      "type": "text",
-      "label": "Optional available current (leave empty if go-e provides no value)",
-      "default": "",
-      "sm": 12,
-      "newLine": true
-    },
-    "wb1Header": {
-      "type": "header",
-      "text": "Wallbox 1 / vehicle",
-      "size": 2,
-      "newLine": true
-    },
-    "wb1Present": {
-      "type": "checkbox",
-      "label": "Wallbox 1 present / include in planning",
-      "default": true,
-      "sm": 4,
-      "newLine": true
-    },
-    "wb1ControlEnabled": {
-      "type": "checkbox",
-      "label": "Wallbox 1 control release",
-      "default": false,
-      "sm": 4
-    },
-    "wb1Name": {
-      "type": "text",
-      "label": "Vehicle name",
-      "default": "Vehicle 1",
-      "sm": 3,
-      "newLine": true
-    },
-    "wb1SocId": {
-      "type": "text",
-      "label": "SoC data point",
-      "default": "",
-      "sm": 9
-    },
-    "wb1CapacityKWh": {
-      "type": "number",
-      "label": "Battery capacity",
-      "unit": "kWh",
-      "default": 50,
-      "min": 1,
-      "max": 200,
-      "sm": 3,
-      "newLine": true
-    },
-    "wb1MaxPowerW": {
-      "type": "number",
-      "label": "Maximum charging power",
-      "unit": "W",
-      "default": 11000,
-      "min": 1380,
-      "max": 23000,
-      "sm": 3
-    },
-    "wb1PhaseSwitchEnabled": {
-      "type": "checkbox",
-      "label": "Allow 1-/3-phase switching",
-      "default": false,
-      "sm": 3
-    },
-    "wb1MinCurrent1pA": {
-      "type": "number",
-      "label": "Minimum 1-phase",
-      "unit": "A",
-      "default": 6,
-      "min": 6,
-      "max": 32,
-      "sm": 3,
-      "newLine": true
-    },
-    "wb1MaxCurrent1pA": {
-      "type": "number",
-      "label": "Maximum 1-phase",
-      "unit": "A",
-      "default": 16,
-      "min": 6,
-      "max": 32,
-      "sm": 3
-    },
-    "wb1MinCurrent3pA": {
-      "type": "number",
-      "label": "Minimum 3-phase",
-      "unit": "A",
-      "default": 6,
-      "min": 6,
-      "max": 32,
-      "sm": 3
-    },
-    "wb1MaxCurrent3pA": {
-      "type": "number",
-      "label": "Maximum 3-phase",
-      "unit": "A",
-      "default": 16,
-      "min": 6,
-      "max": 32,
-      "sm": 3
-    },
-    "wb1SocLimitsSource": {
-      "type": "select",
-      "label": "SoC limits source",
-      "default": "external",
-      "options": [
-        {
-          "value": "external",
-          "label": "Existing mapped data points"
+    "wallbox2Tab": {
+      "type": "panel",
+      "label": "Wallbox 2 – EQE",
+      "items": {
+        "wb2Header": {
+          "type": "header",
+          "text": "Wallbox 2 / vehicle",
+          "size": 2,
+          "newLine": true
         },
-        {
-          "value": "admin",
-          "label": "Values entered here"
+        "wb2Present": {
+          "type": "checkbox",
+          "label": "Wallbox 2 present / include in planning",
+          "default": true,
+          "sm": 4,
+          "newLine": true
+        },
+        "wb2ControlEnabled": {
+          "type": "checkbox",
+          "label": "Wallbox 2 control release",
+          "default": false,
+          "sm": 4
+        },
+        "wb2Name": {
+          "type": "text",
+          "label": "Vehicle name",
+          "default": "Vehicle 2",
+          "sm": 3,
+          "newLine": true
+        },
+        "wb2SocId": {
+          "type": "text",
+          "label": "SoC data point",
+          "default": "",
+          "sm": 9
+        },
+        "wb2CapacityKWh": {
+          "type": "number",
+          "label": "Battery capacity",
+          "unit": "kWh",
+          "default": 50,
+          "min": 1,
+          "max": 200,
+          "sm": 3,
+          "newLine": true
+        },
+        "wb2MaxPowerW": {
+          "type": "number",
+          "label": "Maximum charging power",
+          "unit": "W",
+          "default": 11000,
+          "min": 1380,
+          "max": 23000,
+          "sm": 3
+        },
+        "wb2PhaseSwitchEnabled": {
+          "type": "checkbox",
+          "label": "Allow 1-/3-phase switching",
+          "default": false,
+          "sm": 3
+        },
+        "_wb2CurrentHeader": {
+          "type": "header",
+          "text": "Current and phase limits",
+          "size": 3,
+          "newLine": true
+        },
+        "wb2MinCurrent1pA": {
+          "type": "number",
+          "label": "Minimum 1-phase",
+          "unit": "A",
+          "default": 6,
+          "min": 6,
+          "max": 32,
+          "sm": 3,
+          "newLine": true
+        },
+        "wb2MaxCurrent1pA": {
+          "type": "number",
+          "label": "Maximum 1-phase",
+          "unit": "A",
+          "default": 16,
+          "min": 6,
+          "max": 32,
+          "sm": 3
+        },
+        "wb2MinCurrent3pA": {
+          "type": "number",
+          "label": "Minimum 3-phase",
+          "unit": "A",
+          "default": 6,
+          "min": 6,
+          "max": 32,
+          "sm": 3
+        },
+        "wb2MaxCurrent3pA": {
+          "type": "number",
+          "label": "Maximum 3-phase",
+          "unit": "A",
+          "default": 16,
+          "min": 6,
+          "max": 32,
+          "sm": 3
+        },
+        "_wb2SocHeader": {
+          "type": "header",
+          "text": "SoC and charging strategy",
+          "size": 3,
+          "newLine": true
+        },
+        "wb2SocLimitsSource": {
+          "type": "select",
+          "label": "SoC limits source",
+          "default": "external",
+          "options": [
+            {
+              "value": "external",
+              "label": "Existing mapped data points"
+            },
+            {
+              "value": "admin",
+              "label": "Values entered here"
+            }
+          ],
+          "sm": 6,
+          "newLine": true
+        },
+        "wb2MinSocPct": {
+          "type": "number",
+          "label": "Minimum SoC: charge immediately",
+          "default": 20,
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb2TargetSocPct": {
+          "type": "number",
+          "label": "Target SoC: PV charging above minimum",
+          "default": 80,
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb2DeadlineEnabled": {
+          "type": "checkbox",
+          "label": "Allow grid charging to target before departure",
+          "default": false,
+          "sm": 6,
+          "newLine": true
+        },
+        "wb2TaperEnabled": {
+          "type": "checkbox",
+          "label": "Reduce current near target SoC",
+          "default": false,
+          "sm": 6,
+          "newLine": true
+        },
+        "wb2Taper1DeltaPct": {
+          "type": "number",
+          "label": "Stage 1: distance below target",
+          "default": 5,
+          "min": 0,
+          "max": 100,
+          "unit": "percentage points",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb2Taper1MaxA": {
+          "type": "number",
+          "label": "Stage 1: maximum current per phase",
+          "default": 13,
+          "min": 6,
+          "max": 32,
+          "unit": "A",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb2Taper2DeltaPct": {
+          "type": "number",
+          "label": "Stage 2: distance below target",
+          "default": 2,
+          "min": 0,
+          "max": 100,
+          "unit": "percentage points",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb2Taper2MaxA": {
+          "type": "number",
+          "label": "Stage 2: maximum current per phase",
+          "default": 8,
+          "min": 6,
+          "max": 32,
+          "unit": "A",
+          "sm": 6,
+          "newLine": true
+        },
+        "_wb2MinimumHeader": {
+          "type": "header",
+          "text": "Manual and low-SoC minimum current",
+          "size": 3,
+          "newLine": true
+        },
+        "wb2ManualMinCurrentId": {
+          "type": "text",
+          "label": "Existing manual minimum-current data point",
+          "default": "javascript.0.ev.amin2",
+          "sm": 12,
+          "newLine": true
+        },
+        "wb2LowSocStepsEnabled": {
+          "type": "checkbox",
+          "label": "Use minimum-current stages when socfrei = 2",
+          "default": true,
+          "sm": 12,
+          "newLine": true
+        },
+        "wb2LowSoc1ThresholdPct": {
+          "type": "number",
+          "label": "Low-SoC stage 1: at or below",
+          "default": 50,
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb2LowSoc1MinA": {
+          "type": "number",
+          "label": "Low-SoC stage 1: minimum current",
+          "default": 10,
+          "min": 0,
+          "max": 32,
+          "unit": "A",
+          "sm": 6
+        },
+        "wb2LowSoc2ThresholdPct": {
+          "type": "number",
+          "label": "Low-SoC stage 2: at or below",
+          "default": 30,
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb2LowSoc2MinA": {
+          "type": "number",
+          "label": "Low-SoC stage 2: minimum current",
+          "default": 16,
+          "min": 0,
+          "max": 32,
+          "unit": "A",
+          "sm": 6
+        },
+        "wb2LowSoc3ThresholdPct": {
+          "type": "number",
+          "label": "Low-SoC stage 3: at or below",
+          "default": 10,
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb2LowSoc3MinA": {
+          "type": "number",
+          "label": "Low-SoC stage 3: minimum current (0 = disabled)",
+          "default": 25,
+          "min": 0,
+          "max": 32,
+          "unit": "A",
+          "sm": 6
+        },
+        "_wb2ProductionHeader": {
+          "type": "header",
+          "text": "Productive single-wallbox test",
+          "size": 3,
+          "newLine": true
+        },
+        "wb2ProductionArmed": {
+          "type": "checkbox",
+          "label": "Arm SINGLE wallbox test: competing scripts stopped and fixed phases verified",
+          "default": false,
+          "sm": 6,
+          "newLine": true
+        },
+        "wb2ProductionPhases": {
+          "type": "select",
+          "label": "Verified fixed phases during production test (no automatic switching)",
+          "default": 1,
+          "options": [
+            {
+              "value": 1,
+              "label": "1 phase"
+            },
+            {
+              "value": 3,
+              "label": "3 phases"
+            }
+          ],
+          "sm": 6,
+          "newLine": true
+        },
+        "wb2SinglePhaseGridPhase": {
+          "type": "select",
+          "label": "Grid phase used by wallbox L1",
+          "default": 1,
+          "options": [
+            {
+              "value": 1,
+              "label": "L1"
+            },
+            {
+              "value": 2,
+              "label": "L2"
+            },
+            {
+              "value": 3,
+              "label": "L3"
+            }
+          ],
+          "sm": 6,
+          "newLine": true
+        },
+        "wb2CommissioningMaxA": {
+          "type": "number",
+          "label": "Production commissioning current limit",
+          "default": 6,
+          "min": 6,
+          "max": 32,
+          "unit": "A",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb2FeedbackTimeoutS": {
+          "type": "number",
+          "label": "Command acknowledgement timeout",
+          "default": 20,
+          "min": 5,
+          "max": 120,
+          "unit": "s",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb2AmpereOutputId": {
+          "type": "text",
+          "label": "Writable go-e current (amperePV)",
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "wb2AllowOutputId": {
+          "type": "text",
+          "label": "Writable go-e release (allow_charging, numeric 0/1)",
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "wb2AmpereFeedbackId": {
+          "type": "text",
+          "label": "Confirmed go-e current (ampere)",
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "wb2ConnectionId": {
+          "type": "text",
+          "label": "go-e connection state",
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "wb2ErrorId": {
+          "type": "text",
+          "label": "go-e error code (0 = OK)",
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "wb2AvailableCurrentId": {
+          "type": "text",
+          "label": "Optional available current (leave empty if go-e provides no value)",
+          "default": "",
+          "sm": 12,
+          "newLine": true
         }
-      ],
-      "sm": 6,
-      "newLine": true
+      }
     },
-    "wb1MinSocPct": {
-      "type": "number",
-      "label": "Minimum SoC: charge immediately",
-      "default": 20,
-      "min": 0,
-      "max": 100,
-      "unit": "%",
-      "sm": 6,
-      "newLine": true
-    },
-    "wb1TargetSocPct": {
-      "type": "number",
-      "label": "Target SoC: PV charging above minimum",
-      "default": 80,
-      "min": 0,
-      "max": 100,
-      "unit": "%",
-      "sm": 6,
-      "newLine": true
-    },
-    "wb1DeadlineEnabled": {
-      "type": "checkbox",
-      "label": "Allow grid charging to target before departure",
-      "default": false,
-      "sm": 6,
-      "newLine": true
-    },
-    "wb1TaperEnabled": {
-      "type": "checkbox",
-      "label": "Reduce current near target SoC",
-      "default": false,
-      "sm": 6,
-      "newLine": true
-    },
-    "wb1Taper1DeltaPct": {
-      "type": "number",
-      "label": "Stage 1: distance below target",
-      "default": 5,
-      "min": 0,
-      "max": 100,
-      "unit": "percentage points",
-      "sm": 6,
-      "newLine": true
-    },
-    "wb1Taper1MaxA": {
-      "type": "number",
-      "label": "Stage 1: maximum current per phase",
-      "default": 13,
-      "min": 6,
-      "max": 32,
-      "unit": "A",
-      "sm": 6,
-      "newLine": true
-    },
-    "wb1Taper2DeltaPct": {
-      "type": "number",
-      "label": "Stage 2: distance below target",
-      "default": 2,
-      "min": 0,
-      "max": 100,
-      "unit": "percentage points",
-      "sm": 6,
-      "newLine": true
-    },
-    "wb1Taper2MaxA": {
-      "type": "number",
-      "label": "Stage 2: maximum current per phase",
-      "default": 8,
-      "min": 6,
-      "max": 32,
-      "unit": "A",
-      "sm": 6,
-      "newLine": true
-    },
-    "wb1ManualMinCurrentId": {
-      "type": "text",
-      "label": "Existing manual minimum-current data point",
-      "default": "javascript.0.ev.amin1",
-      "sm": 12,
-      "newLine": true
-    },
-    "wb1LowSocStepsEnabled": {
-      "type": "checkbox",
-      "label": "Use minimum-current stages when socfrei = 2",
-      "default": true,
-      "sm": 12,
-      "newLine": true
-    },
-    "wb1LowSoc1ThresholdPct": {
-      "type": "number",
-      "label": "Low-SoC stage 1: at or below",
-      "default": 50,
-      "min": 0,
-      "max": 100,
-      "unit": "%",
-      "sm": 6,
-      "newLine": true
-    },
-    "wb1LowSoc1MinA": {
-      "type": "number",
-      "label": "Low-SoC stage 1: minimum current",
-      "default": 10,
-      "min": 0,
-      "max": 32,
-      "unit": "A",
-      "sm": 6
-    },
-    "wb1LowSoc2ThresholdPct": {
-      "type": "number",
-      "label": "Low-SoC stage 2: at or below",
-      "default": 30,
-      "min": 0,
-      "max": 100,
-      "unit": "%",
-      "sm": 6,
-      "newLine": true
-    },
-    "wb1LowSoc2MinA": {
-      "type": "number",
-      "label": "Low-SoC stage 2: minimum current",
-      "default": 16,
-      "min": 0,
-      "max": 32,
-      "unit": "A",
-      "sm": 6
-    },
-    "wb1LowSoc3ThresholdPct": {
-      "type": "number",
-      "label": "Low-SoC stage 3: at or below",
-      "default": 10,
-      "min": 0,
-      "max": 100,
-      "unit": "%",
-      "sm": 6,
-      "newLine": true
-    },
-    "wb1LowSoc3MinA": {
-      "type": "number",
-      "label": "Low-SoC stage 3: minimum current (0 = disabled)",
-      "default": 25,
-      "min": 0,
-      "max": 32,
-      "unit": "A",
-      "sm": 6
-    },
-    "wb1ProductionArmed": {
-      "type": "checkbox",
-      "label": "Arm SINGLE wallbox test: competing scripts stopped and fixed phases verified",
-      "default": false,
-      "sm": 6,
-      "newLine": true
-    },
-    "wb1ProductionPhases": {
-      "type": "select",
-      "label": "Verified fixed phases during production test (no automatic switching)",
-      "default": 1,
-      "options": [
-        {
-          "value": 1,
-          "label": "1 phase"
+    "dhwTab": {
+      "type": "panel",
+      "label": "DHW heater",
+      "items": {
+        "dhwHeader": {
+          "type": "header",
+          "text": "my-PV domestic hot water",
+          "size": 2,
+          "newLine": true
         },
-        {
-          "value": 3,
-          "label": "3 phases"
+        "dhwPresent": {
+          "type": "checkbox",
+          "label": "DHW heater present / include in planning",
+          "default": true,
+          "sm": 4,
+          "newLine": true
+        },
+        "dhwControlEnabled": {
+          "type": "checkbox",
+          "label": "DHW heater control release",
+          "default": false,
+          "sm": 4
+        },
+        "_dhwDataPointsHeader": {
+          "type": "header",
+          "text": "Device data points and feedback",
+          "size": 3,
+          "newLine": true
+        },
+        "dhwSetpointId": {
+          "type": "text",
+          "label": "Writable DHW power setpoint",
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "dhwActualMirrorId": {
+          "type": "text",
+          "label": "Optional legacy actual-power mirror (for pump script)",
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "dhwOutput1Id": {
+          "type": "text",
+          "label": "AC THOR output 1 actual power",
+          "default": "",
+          "sm": 4,
+          "newLine": true
+        },
+        "dhwOutput2Id": {
+          "type": "text",
+          "label": "AC THOR output 2 actual power",
+          "default": "",
+          "sm": 4
+        },
+        "dhwOutput3Id": {
+          "type": "text",
+          "label": "AC THOR output 3 actual power",
+          "default": "",
+          "sm": 4
+        },
+        "dhwPowerId": {
+          "type": "text",
+          "label": "Total power data point",
+          "default": "",
+          "sm": 6,
+          "newLine": true
+        },
+        "dhwConnectionId": {
+          "type": "text",
+          "label": "Connection data point",
+          "default": "",
+          "sm": 6
+        },
+        "dhwTemp1Id": {
+          "type": "text",
+          "label": "Temperature 1 / bottom",
+          "default": "",
+          "sm": 6,
+          "newLine": true
+        },
+        "dhwTemp2Id": {
+          "type": "text",
+          "label": "Temperature 2",
+          "default": "",
+          "sm": 6
+        },
+        "dhwTemp3Id": {
+          "type": "text",
+          "label": "Temperature 3",
+          "default": "",
+          "sm": 6,
+          "newLine": true
+        },
+        "dhwTemp4Id": {
+          "type": "text",
+          "label": "Temperature 4 / top",
+          "default": "",
+          "sm": 6
+        },
+        "dhwReleaseId": {
+          "type": "text",
+          "label": "Release data point",
+          "default": "",
+          "sm": 6,
+          "newLine": true
+        },
+        "dhwHysteresisId": {
+          "type": "text",
+          "label": "Hysteresis data point",
+          "default": "",
+          "sm": 6
+        },
+        "parallelHeader": {
+          "type": "header",
+          "text": "Wallbox / DHW distribution",
+          "size": 3,
+          "newLine": true
+        },
+        "dhwParallelReleaseId": {
+          "type": "text",
+          "label": "Existing distribution switch data point",
+          "default": "javascript.0.ehz.aufteilen",
+          "sm": 12,
+          "newLine": true
+        },
+        "dhwParallelDistributionEnabled": {
+          "type": "checkbox",
+          "label": "Use common wallbox / DHW allocator",
+          "default": true,
+          "sm": 6,
+          "newLine": true
+        },
+        "combinedProductionArmed": {
+          "type": "checkbox",
+          "label": "Arm COMBINED wallbox + DHW production test",
+          "default": false,
+          "sm": 6
+        },
+        "dhwParallelSharePct": {
+          "type": "number",
+          "label": "DHW share during parallel distribution",
+          "default": 50,
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "sm": 4,
+          "newLine": true
+        },
+        "dhwParallelStartPower1PW": {
+          "type": "number",
+          "label": "1-phase distribution ON above",
+          "default": 4000,
+          "min": 0,
+          "unit": "W",
+          "sm": 4
+        },
+        "dhwParallelStopPower1PW": {
+          "type": "number",
+          "label": "1-phase distribution OFF below",
+          "default": 3000,
+          "min": 0,
+          "unit": "W",
+          "sm": 4
+        },
+        "dhwParallelStartPower3PW": {
+          "type": "number",
+          "label": "3-phase distribution ON above",
+          "default": 9000,
+          "min": 0,
+          "unit": "W",
+          "sm": 6,
+          "newLine": true
+        },
+        "dhwParallelStopPower3PW": {
+          "type": "number",
+          "label": "3-phase distribution OFF below",
+          "default": 8000,
+          "min": 0,
+          "unit": "W",
+          "sm": 6
+        },
+        "_dhwStorageHeader": {
+          "type": "header",
+          "text": "Storage and temperature control",
+          "size": 3,
+          "newLine": true
+        },
+        "dhwOutletTempId": {
+          "type": "text",
+          "label": "AC THOR outlet temperature",
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "dhwVolumeL": {
+          "type": "number",
+          "label": "Storage volume",
+          "unit": "l",
+          "default": 500,
+          "sm": 3,
+          "newLine": true
+        },
+        "dhwMinTempC": {
+          "type": "number",
+          "label": "Minimum temperature",
+          "unit": "°C",
+          "default": 48,
+          "sm": 3
+        },
+        "dhwTargetTempC": {
+          "type": "number",
+          "label": "Target temperature",
+          "unit": "°C",
+          "default": 60,
+          "sm": 3
+        },
+        "dhwMaxPowerW": {
+          "type": "number",
+          "label": "Maximum power",
+          "unit": "W",
+          "default": 9000,
+          "sm": 3
+        },
+        "dhwCommissioningMaxW": {
+          "type": "number",
+          "label": "Production commissioning limit",
+          "unit": "W",
+          "default": 1000,
+          "min": 0,
+          "max": 9000,
+          "sm": 3
+        },
+        "dhwResumeTempC": {
+          "type": "number",
+          "label": "Resume below",
+          "unit": "°C",
+          "default": 75.5,
+          "sm": 3,
+          "newLine": true
+        },
+        "dhwStopTempC": {
+          "type": "number",
+          "label": "Stop at",
+          "unit": "°C",
+          "default": 76,
+          "sm": 3
+        },
+        "dhwTopEmergencyC": {
+          "type": "number",
+          "label": "Top emergency stop",
+          "unit": "°C",
+          "default": 82,
+          "sm": 3
+        },
+        "dhwTemperatureMaxAgeMin": {
+          "type": "number",
+          "label": "Maximum age of unchanged tank temperatures",
+          "unit": "min",
+          "default": 60,
+          "min": 5,
+          "max": 240,
+          "sm": 4,
+          "newLine": true
+        },
+        "dhwOutletDeratingC": {
+          "type": "number",
+          "label": "Curve active above outlet",
+          "unit": "°C",
+          "default": 60,
+          "sm": 3
+        },
+        "dhwCurve1TempC": {
+          "type": "number",
+          "label": "Curve point 1 temperature",
+          "unit": "°C",
+          "default": 70,
+          "sm": 3,
+          "newLine": true
+        },
+        "dhwCurve70PowerW": {
+          "type": "number",
+          "label": "Curve point 1 maximum",
+          "unit": "W",
+          "default": 7500,
+          "sm": 3
+        },
+        "dhwCurve2TempC": {
+          "type": "number",
+          "label": "Curve point 2 temperature",
+          "unit": "°C",
+          "default": 71,
+          "sm": 3
+        },
+        "dhwCurve71PowerW": {
+          "type": "number",
+          "label": "Curve point 2 maximum",
+          "unit": "W",
+          "default": 6000,
+          "sm": 3
+        },
+        "dhwCurve3TempC": {
+          "type": "number",
+          "label": "Curve point 3 temperature",
+          "unit": "°C",
+          "default": 73,
+          "sm": 3,
+          "newLine": true
+        },
+        "dhwCurve73PowerW": {
+          "type": "number",
+          "label": "Curve point 3 maximum",
+          "unit": "W",
+          "default": 4000,
+          "sm": 3
+        },
+        "dhwCurve4TempC": {
+          "type": "number",
+          "label": "Curve point 4 temperature",
+          "unit": "°C",
+          "default": 74,
+          "sm": 3
+        },
+        "dhwCurve74PowerW": {
+          "type": "number",
+          "label": "Curve point 4 maximum",
+          "unit": "W",
+          "default": 3000,
+          "sm": 3
+        },
+        "dhwOutletProtectionC": {
+          "type": "number",
+          "label": "Outlet protection temperature",
+          "unit": "°C",
+          "default": 76,
+          "sm": 3,
+          "newLine": true
+        },
+        "_dhwResponseHeader": {
+          "type": "header",
+          "text": "Output response",
+          "size": 3,
+          "newLine": true
+        },
+        "dhwMaxStepW": {
+          "type": "number",
+          "label": "Maximum change per cycle",
+          "unit": "W",
+          "default": 1000,
+          "sm": 3
+        },
+        "dhwSettleToleranceW": {
+          "type": "number",
+          "label": "Actual-power settling tolerance",
+          "unit": "W",
+          "default": 300,
+          "min": 50,
+          "max": 2000,
+          "sm": 3,
+          "newLine": true
+        },
+        "dhwSettleTimeoutS": {
+          "type": "number",
+          "label": "Maximum wait for AC THOR feedback",
+          "unit": "s",
+          "default": 15,
+          "min": 5,
+          "max": 60,
+          "sm": 3
+        },
+        "_dhwHouseConnectionHeader": {
+          "type": "header",
+          "text": "House-connection protection",
+          "size": 3,
+          "newLine": true
+        },
+        "dhwHaL1FreeCurrentId": {
+          "type": "text",
+          "label": "HA L1 free current data point",
+          "default": "",
+          "sm": 4,
+          "newLine": true
+        },
+        "dhwHaL2FreeCurrentId": {
+          "type": "text",
+          "label": "HA L2 free current data point",
+          "default": "",
+          "sm": 4
+        },
+        "dhwHaL3FreeCurrentId": {
+          "type": "text",
+          "label": "HA L3 free current data point",
+          "default": "",
+          "sm": 4
+        },
+        "dhwHaL1CurrentId": {
+          "type": "text",
+          "label": "SMA L1 measured current",
+          "default": "",
+          "sm": 4,
+          "newLine": true
+        },
+        "dhwHaL2CurrentId": {
+          "type": "text",
+          "label": "SMA L2 measured current",
+          "default": "",
+          "sm": 4
+        },
+        "dhwHaL3CurrentId": {
+          "type": "text",
+          "label": "SMA L3 measured current",
+          "default": "",
+          "sm": 4
+        },
+        "dhwHaLimitA": {
+          "type": "number",
+          "label": "EHZ house-connection control limit per phase",
+          "unit": "A",
+          "default": 50,
+          "min": 1,
+          "max": 63,
+          "sm": 4,
+          "newLine": true
         }
-      ],
-      "sm": 6,
-      "newLine": true
+      }
     },
-    "wb1SinglePhaseGridPhase": {
-      "type": "select",
-      "label": "Grid phase used by wallbox L1",
-      "default": 1,
-      "options": [
-        {
-          "value": 1,
-          "label": "L1"
+    "heatingTab": {
+      "type": "panel",
+      "label": "Heating buffer",
+      "items": {
+        "heatingHeader": {
+          "type": "header",
+          "text": "my-PV heating buffer",
+          "size": 2,
+          "newLine": true
         },
-        {
-          "value": 2,
-          "label": "L2"
+        "heatingPresent": {
+          "type": "checkbox",
+          "label": "Heating-buffer heater present / include in planning",
+          "default": false,
+          "sm": 4,
+          "newLine": true
         },
-        {
-          "value": 3,
-          "label": "L3"
+        "heatingControlEnabled": {
+          "type": "checkbox",
+          "label": "Heating-buffer control release",
+          "default": false,
+          "sm": 4
+        },
+        "heatingPowerId": {
+          "type": "text",
+          "label": "Current power data point",
+          "default": "",
+          "sm": 6,
+          "newLine": true
+        },
+        "heatingHistoryId": {
+          "type": "text",
+          "label": "Historized total power data point",
+          "default": "",
+          "sm": 6
+        },
+        "heatingTempId": {
+          "type": "text",
+          "label": "Buffer temperature data point",
+          "default": "",
+          "sm": 6,
+          "newLine": true
+        },
+        "heatingVolumeL": {
+          "type": "number",
+          "label": "Buffer volume",
+          "unit": "l",
+          "default": 400,
+          "sm": 3,
+          "newLine": true
+        },
+        "heatingTempC": {
+          "type": "number",
+          "label": "Current/manual temperature",
+          "unit": "°C",
+          "default": 40,
+          "sm": 3
+        },
+        "heatingMinTempC": {
+          "type": "number",
+          "label": "Minimum temperature",
+          "unit": "°C",
+          "default": 35,
+          "sm": 3
+        },
+        "heatingTargetTempC": {
+          "type": "number",
+          "label": "Target temperature",
+          "unit": "°C",
+          "default": 50,
+          "sm": 3
+        },
+        "heatingMaxPowerW": {
+          "type": "number",
+          "label": "Maximum heater power",
+          "unit": "W",
+          "default": 6000,
+          "sm": 3,
+          "newLine": true
         }
-      ],
-      "sm": 6,
-      "newLine": true
+      }
     },
-    "wb1CommissioningMaxA": {
-      "type": "number",
-      "label": "Production commissioning current limit",
-      "default": 6,
-      "min": 6,
-      "max": 32,
-      "unit": "A",
-      "sm": 6,
-      "newLine": true
-    },
-    "wb1FeedbackTimeoutS": {
-      "type": "number",
-      "label": "Command acknowledgement timeout",
-      "default": 20,
-      "min": 5,
-      "max": 120,
-      "unit": "s",
-      "sm": 6,
-      "newLine": true
-    },
-    "wb1AmpereOutputId": {
-      "type": "text",
-      "label": "Writable go-e current (amperePV)",
-      "default": "",
-      "sm": 12,
-      "newLine": true
-    },
-    "wb1AllowOutputId": {
-      "type": "text",
-      "label": "Writable go-e release (allow_charging, numeric 0/1)",
-      "default": "",
-      "sm": 12,
-      "newLine": true
-    },
-    "wb1AmpereFeedbackId": {
-      "type": "text",
-      "label": "Confirmed go-e current (ampere)",
-      "default": "",
-      "sm": 12,
-      "newLine": true
-    },
-    "wb1ConnectionId": {
-      "type": "text",
-      "label": "go-e connection state",
-      "default": "",
-      "sm": 12,
-      "newLine": true
-    },
-    "wb1ErrorId": {
-      "type": "text",
-      "label": "go-e error code (0 = OK)",
-      "default": "",
-      "sm": 12,
-      "newLine": true
-    },
-    "wb1AvailableCurrentId": {
-      "type": "text",
-      "label": "Optional available current (leave empty if go-e provides no value)",
-      "default": "",
-      "sm": 12,
-      "newLine": true
-    },
-    "wb2Header": {
-      "type": "header",
-      "text": "Wallbox 2 / vehicle",
-      "size": 2,
-      "newLine": true
-    },
-    "wb2Present": {
-      "type": "checkbox",
-      "label": "Wallbox 2 present / include in planning",
-      "default": true,
-      "sm": 4,
-      "newLine": true
-    },
-    "wb2ControlEnabled": {
-      "type": "checkbox",
-      "label": "Wallbox 2 control release",
-      "default": false,
-      "sm": 4
-    },
-    "wb2Name": {
-      "type": "text",
-      "label": "Vehicle name",
-      "default": "Vehicle 2",
-      "sm": 3,
-      "newLine": true
-    },
-    "wb2SocId": {
-      "type": "text",
-      "label": "SoC data point",
-      "default": "",
-      "sm": 9
-    },
-    "wb2CapacityKWh": {
-      "type": "number",
-      "label": "Battery capacity",
-      "unit": "kWh",
-      "default": 50,
-      "min": 1,
-      "max": 200,
-      "sm": 3,
-      "newLine": true
-    },
-    "wb2MaxPowerW": {
-      "type": "number",
-      "label": "Maximum charging power",
-      "unit": "W",
-      "default": 11000,
-      "min": 1380,
-      "max": 23000,
-      "sm": 3
-    },
-    "wb2PhaseSwitchEnabled": {
-      "type": "checkbox",
-      "label": "Allow 1-/3-phase switching",
-      "default": false,
-      "sm": 3
-    },
-    "wb2MinCurrent1pA": {
-      "type": "number",
-      "label": "Minimum 1-phase",
-      "unit": "A",
-      "default": 6,
-      "min": 6,
-      "max": 32,
-      "sm": 3,
-      "newLine": true
-    },
-    "wb2MaxCurrent1pA": {
-      "type": "number",
-      "label": "Maximum 1-phase",
-      "unit": "A",
-      "default": 16,
-      "min": 6,
-      "max": 32,
-      "sm": 3
-    },
-    "wb2MinCurrent3pA": {
-      "type": "number",
-      "label": "Minimum 3-phase",
-      "unit": "A",
-      "default": 6,
-      "min": 6,
-      "max": 32,
-      "sm": 3
-    },
-    "wb2MaxCurrent3pA": {
-      "type": "number",
-      "label": "Maximum 3-phase",
-      "unit": "A",
-      "default": 16,
-      "min": 6,
-      "max": 32,
-      "sm": 3
-    },
-    "wb2SocLimitsSource": {
-      "type": "select",
-      "label": "SoC limits source",
-      "default": "external",
-      "options": [
-        {
-          "value": "external",
-          "label": "Existing mapped data points"
+    "batteryTab": {
+      "type": "panel",
+      "label": "Battery",
+      "items": {
+        "batteryHeader": {
+          "type": "header",
+          "text": "Home battery",
+          "size": 2,
+          "newLine": true
         },
-        {
-          "value": "admin",
-          "label": "Values entered here"
+        "batteryPresent": {
+          "type": "checkbox",
+          "label": "Battery present / include in planning",
+          "default": false,
+          "sm": 4,
+          "newLine": true
+        },
+        "batteryControlEnabled": {
+          "type": "checkbox",
+          "label": "Battery control release",
+          "default": false,
+          "sm": 4
+        },
+        "batterySocId": {
+          "type": "text",
+          "label": "SoC data point",
+          "default": "",
+          "sm": 6,
+          "newLine": true
+        },
+        "batteryPowerId": {
+          "type": "text",
+          "label": "Power data point",
+          "default": "",
+          "sm": 6
+        },
+        "batteryCapacityKWh": {
+          "type": "number",
+          "label": "Capacity",
+          "unit": "kWh",
+          "default": 10,
+          "sm": 3,
+          "newLine": true
+        },
+        "batteryMaxChargeW": {
+          "type": "number",
+          "label": "Maximum charge",
+          "unit": "W",
+          "default": 2400,
+          "sm": 3
+        },
+        "batteryMaxDischargeW": {
+          "type": "number",
+          "label": "Maximum discharge",
+          "unit": "W",
+          "default": 2400,
+          "sm": 3
+        },
+        "batteryEfficiencyPct": {
+          "type": "number",
+          "label": "Efficiency",
+          "unit": "%",
+          "default": 92,
+          "sm": 3
+        },
+        "batteryMinSocPct": {
+          "type": "number",
+          "label": "Minimum SoC",
+          "unit": "%",
+          "default": 0,
+          "min": 0,
+          "max": 100,
+          "sm": 3,
+          "newLine": true
+        },
+        "batteryMaxSocPct": {
+          "type": "number",
+          "label": "Maximum SoC",
+          "unit": "%",
+          "default": 100,
+          "min": 0,
+          "max": 100,
+          "sm": 3
+        },
+        "batteryMorningTargetPct": {
+          "type": "number",
+          "label": "Morning target",
+          "unit": "%",
+          "default": 70,
+          "sm": 3
+        },
+        "batteryAfternoonTargetPct": {
+          "type": "number",
+          "label": "Afternoon target",
+          "unit": "%",
+          "default": 90,
+          "sm": 3
+        },
+        "batteryLateTargetPct": {
+          "type": "number",
+          "label": "Late target",
+          "unit": "%",
+          "default": 100,
+          "sm": 3,
+          "newLine": true
+        },
+        "batteryReserveMin": {
+          "type": "number",
+          "label": "Final charge reserve",
+          "unit": "min",
+          "default": 45,
+          "sm": 3
+        },
+        "batterySafetyPct": {
+          "type": "number",
+          "label": "Forecast safety factor",
+          "unit": "%",
+          "default": 80,
+          "sm": 3
+        },
+        "batterySelfConsumption": {
+          "type": "checkbox",
+          "label": "Discharge for self-consumption",
+          "default": true,
+          "sm": 3
         }
-      ],
-      "sm": 6,
-      "newLine": true
+      }
     },
-    "wb2MinSocPct": {
-      "type": "number",
-      "label": "Minimum SoC: charge immediately",
-      "default": 20,
-      "min": 0,
-      "max": 100,
-      "unit": "%",
-      "sm": 6,
-      "newLine": true
-    },
-    "wb2TargetSocPct": {
-      "type": "number",
-      "label": "Target SoC: PV charging above minimum",
-      "default": 80,
-      "min": 0,
-      "max": 100,
-      "unit": "%",
-      "sm": 6,
-      "newLine": true
-    },
-    "wb2DeadlineEnabled": {
-      "type": "checkbox",
-      "label": "Allow grid charging to target before departure",
-      "default": false,
-      "sm": 6,
-      "newLine": true
-    },
-    "wb2TaperEnabled": {
-      "type": "checkbox",
-      "label": "Reduce current near target SoC",
-      "default": false,
-      "sm": 6,
-      "newLine": true
-    },
-    "wb2Taper1DeltaPct": {
-      "type": "number",
-      "label": "Stage 1: distance below target",
-      "default": 5,
-      "min": 0,
-      "max": 100,
-      "unit": "percentage points",
-      "sm": 6,
-      "newLine": true
-    },
-    "wb2Taper1MaxA": {
-      "type": "number",
-      "label": "Stage 1: maximum current per phase",
-      "default": 13,
-      "min": 6,
-      "max": 32,
-      "unit": "A",
-      "sm": 6,
-      "newLine": true
-    },
-    "wb2Taper2DeltaPct": {
-      "type": "number",
-      "label": "Stage 2: distance below target",
-      "default": 2,
-      "min": 0,
-      "max": 100,
-      "unit": "percentage points",
-      "sm": 6,
-      "newLine": true
-    },
-    "wb2Taper2MaxA": {
-      "type": "number",
-      "label": "Stage 2: maximum current per phase",
-      "default": 8,
-      "min": 6,
-      "max": 32,
-      "unit": "A",
-      "sm": 6,
-      "newLine": true
-    },
-    "wb2ManualMinCurrentId": {
-      "type": "text",
-      "label": "Existing manual minimum-current data point",
-      "default": "javascript.0.ev.amin2",
-      "sm": 12,
-      "newLine": true
-    },
-    "wb2LowSocStepsEnabled": {
-      "type": "checkbox",
-      "label": "Use minimum-current stages when socfrei = 2",
-      "default": true,
-      "sm": 12,
-      "newLine": true
-    },
-    "wb2LowSoc1ThresholdPct": {
-      "type": "number",
-      "label": "Low-SoC stage 1: at or below",
-      "default": 50,
-      "min": 0,
-      "max": 100,
-      "unit": "%",
-      "sm": 6,
-      "newLine": true
-    },
-    "wb2LowSoc1MinA": {
-      "type": "number",
-      "label": "Low-SoC stage 1: minimum current",
-      "default": 10,
-      "min": 0,
-      "max": 32,
-      "unit": "A",
-      "sm": 6
-    },
-    "wb2LowSoc2ThresholdPct": {
-      "type": "number",
-      "label": "Low-SoC stage 2: at or below",
-      "default": 30,
-      "min": 0,
-      "max": 100,
-      "unit": "%",
-      "sm": 6,
-      "newLine": true
-    },
-    "wb2LowSoc2MinA": {
-      "type": "number",
-      "label": "Low-SoC stage 2: minimum current",
-      "default": 16,
-      "min": 0,
-      "max": 32,
-      "unit": "A",
-      "sm": 6
-    },
-    "wb2LowSoc3ThresholdPct": {
-      "type": "number",
-      "label": "Low-SoC stage 3: at or below",
-      "default": 10,
-      "min": 0,
-      "max": 100,
-      "unit": "%",
-      "sm": 6,
-      "newLine": true
-    },
-    "wb2LowSoc3MinA": {
-      "type": "number",
-      "label": "Low-SoC stage 3: minimum current (0 = disabled)",
-      "default": 25,
-      "min": 0,
-      "max": 32,
-      "unit": "A",
-      "sm": 6
-    },
-    "wb2ProductionArmed": {
-      "type": "checkbox",
-      "label": "Arm SINGLE wallbox test: competing scripts stopped and fixed phases verified",
-      "default": false,
-      "sm": 6,
-      "newLine": true
-    },
-    "wb2ProductionPhases": {
-      "type": "select",
-      "label": "Verified fixed phases during production test (no automatic switching)",
-      "default": 1,
-      "options": [
-        {
-          "value": 1,
-          "label": "1 phase"
+    "heatPumpTab": {
+      "type": "panel",
+      "label": "Heat pump",
+      "items": {
+        "heatPumpHeader": {
+          "type": "header",
+          "text": "Heat pump (prepared)",
+          "size": 2,
+          "newLine": true
         },
-        {
-          "value": 3,
-          "label": "3 phases"
+        "heatPumpPresent": {
+          "type": "checkbox",
+          "label": "Heat pump present",
+          "default": false,
+          "sm": 4,
+          "newLine": true
+        },
+        "heatPumpControlEnabled": {
+          "type": "checkbox",
+          "label": "Heat pump control release",
+          "default": false,
+          "sm": 4
         }
-      ],
-      "sm": 6,
-      "newLine": true
+      }
     },
-    "wb2SinglePhaseGridPhase": {
-      "type": "select",
-      "label": "Grid phase used by wallbox L1",
-      "default": 1,
-      "options": [
-        {
-          "value": 1,
-          "label": "L1"
+    "controlTab": {
+      "type": "panel",
+      "label": "Control and prices",
+      "items": {
+        "controlHeader": {
+          "type": "header",
+          "text": "NVP realtime simulation",
+          "size": 2,
+          "newLine": true
         },
-        {
-          "value": 2,
-          "label": "L2"
+        "controlEnabled": {
+          "type": "checkbox",
+          "label": "Enable simulation",
+          "default": true,
+          "sm": 3,
+          "newLine": true
         },
-        {
-          "value": 3,
-          "label": "L3"
+        "targetGridPowerW": {
+          "type": "number",
+          "label": "Grid target (+ import / - export)",
+          "unit": "W",
+          "default": -100,
+          "sm": 3
+        },
+        "deadbandW": {
+          "type": "number",
+          "label": "Deadband",
+          "unit": "W",
+          "default": 100,
+          "min": 0,
+          "sm": 3
+        },
+        "slowCycleS": {
+          "type": "number",
+          "label": "Slow control cycle",
+          "unit": "s",
+          "default": 5,
+          "min": 2,
+          "sm": 3
+        },
+        "wallboxMaxStepA": {
+          "type": "number",
+          "label": "Wallbox maximum step",
+          "unit": "A",
+          "default": 6,
+          "min": 1,
+          "max": 32,
+          "sm": 3,
+          "newLine": true
+        },
+        "priceHeader": {
+          "type": "header",
+          "text": "Prices and grid fees",
+          "size": 2,
+          "newLine": true
+        },
+        "dynamicEnergyPrice": {
+          "type": "checkbox",
+          "label": "Use dynamic energy price",
+          "default": false,
+          "sm": 3,
+          "newLine": true
+        },
+        "dynamicGridFee": {
+          "type": "checkbox",
+          "label": "Use dynamic grid fee",
+          "default": false,
+          "sm": 3
+        },
+        "fixedEnergyCt": {
+          "type": "number",
+          "label": "Fixed energy component",
+          "unit": "ct/kWh",
+          "default": 22.85,
+          "sm": 3,
+          "newLine": true
+        },
+        "fixedGridFeeCt": {
+          "type": "number",
+          "label": "Fixed grid fee",
+          "unit": "ct/kWh",
+          "default": 6.04,
+          "sm": 3
+        },
+        "dynamicEnergyAddersCt": {
+          "type": "number",
+          "label": "Dynamic energy adders",
+          "unit": "ct/kWh",
+          "default": 9.301,
+          "sm": 3
         }
-      ],
-      "sm": 6,
-      "newLine": true
-    },
-    "wb2CommissioningMaxA": {
-      "type": "number",
-      "label": "Production commissioning current limit",
-      "default": 6,
-      "min": 6,
-      "max": 32,
-      "unit": "A",
-      "sm": 6,
-      "newLine": true
-    },
-    "wb2FeedbackTimeoutS": {
-      "type": "number",
-      "label": "Command acknowledgement timeout",
-      "default": 20,
-      "min": 5,
-      "max": 120,
-      "unit": "s",
-      "sm": 6,
-      "newLine": true
-    },
-    "wb2AmpereOutputId": {
-      "type": "text",
-      "label": "Writable go-e current (amperePV)",
-      "default": "",
-      "sm": 12,
-      "newLine": true
-    },
-    "wb2AllowOutputId": {
-      "type": "text",
-      "label": "Writable go-e release (allow_charging, numeric 0/1)",
-      "default": "",
-      "sm": 12,
-      "newLine": true
-    },
-    "wb2AmpereFeedbackId": {
-      "type": "text",
-      "label": "Confirmed go-e current (ampere)",
-      "default": "",
-      "sm": 12,
-      "newLine": true
-    },
-    "wb2ConnectionId": {
-      "type": "text",
-      "label": "go-e connection state",
-      "default": "",
-      "sm": 12,
-      "newLine": true
-    },
-    "wb2ErrorId": {
-      "type": "text",
-      "label": "go-e error code (0 = OK)",
-      "default": "",
-      "sm": 12,
-      "newLine": true
-    },
-    "wb2AvailableCurrentId": {
-      "type": "text",
-      "label": "Optional available current (leave empty if go-e provides no value)",
-      "default": "",
-      "sm": 12,
-      "newLine": true
-    },
-    "dhwHeader": {
-      "type": "header",
-      "text": "my-PV domestic hot water",
-      "size": 2,
-      "newLine": true
-    },
-    "dhwPresent": {
-      "type": "checkbox",
-      "label": "DHW heater present / include in planning",
-      "default": true,
-      "sm": 4,
-      "newLine": true
-    },
-    "dhwControlEnabled": {
-      "type": "checkbox",
-      "label": "DHW heater control release",
-      "default": false,
-      "sm": 4
-    },
-    "dhwSetpointId": {
-      "type": "text",
-      "label": "Writable DHW power setpoint",
-      "default": "",
-      "sm": 12,
-      "newLine": true
-    },
-    "dhwActualMirrorId": {
-      "type": "text",
-      "label": "Optional legacy actual-power mirror (for pump script)",
-      "default": "",
-      "sm": 12,
-      "newLine": true
-    },
-    "dhwOutput1Id": {
-      "type": "text",
-      "label": "AC THOR output 1 actual power",
-      "default": "",
-      "sm": 4,
-      "newLine": true
-    },
-    "dhwOutput2Id": {
-      "type": "text",
-      "label": "AC THOR output 2 actual power",
-      "default": "",
-      "sm": 4
-    },
-    "dhwOutput3Id": {
-      "type": "text",
-      "label": "AC THOR output 3 actual power",
-      "default": "",
-      "sm": 4
-    },
-    "dhwPowerId": {
-      "type": "text",
-      "label": "Total power data point",
-      "default": "",
-      "sm": 6,
-      "newLine": true
-    },
-    "dhwConnectionId": {
-      "type": "text",
-      "label": "Connection data point",
-      "default": "",
-      "sm": 6
-    },
-    "dhwTemp1Id": {
-      "type": "text",
-      "label": "Temperature 1 / bottom",
-      "default": "",
-      "sm": 6,
-      "newLine": true
-    },
-    "dhwTemp2Id": {
-      "type": "text",
-      "label": "Temperature 2",
-      "default": "",
-      "sm": 6
-    },
-    "dhwTemp3Id": {
-      "type": "text",
-      "label": "Temperature 3",
-      "default": "",
-      "sm": 6,
-      "newLine": true
-    },
-    "dhwTemp4Id": {
-      "type": "text",
-      "label": "Temperature 4 / top",
-      "default": "",
-      "sm": 6
-    },
-    "dhwReleaseId": {
-      "type": "text",
-      "label": "Release data point",
-      "default": "",
-      "sm": 6,
-      "newLine": true
-    },
-    "dhwHysteresisId": {
-      "type": "text",
-      "label": "Hysteresis data point",
-      "default": "",
-      "sm": 6
-    },
-    "parallelHeader": {
-      "type": "header",
-      "text": "Wallbox / DHW distribution",
-      "size": 3,
-      "newLine": true
-    },
-    "dhwParallelReleaseId": {
-      "type": "text",
-      "label": "Existing distribution switch data point",
-      "default": "javascript.0.ehz.aufteilen",
-      "sm": 12,
-      "newLine": true
-    },
-    "dhwParallelDistributionEnabled": {
-      "type": "checkbox",
-      "label": "Use common wallbox / DHW allocator",
-      "default": true,
-      "sm": 6,
-      "newLine": true
-    },
-    "combinedProductionArmed": {
-      "type": "checkbox",
-      "label": "Arm COMBINED wallbox + DHW production test",
-      "default": false,
-      "sm": 6
-    },
-    "dhwParallelSharePct": {
-      "type": "number",
-      "label": "DHW share during parallel distribution",
-      "default": 50,
-      "min": 0,
-      "max": 100,
-      "unit": "%",
-      "sm": 4,
-      "newLine": true
-    },
-    "dhwParallelStartPower1PW": {
-      "type": "number",
-      "label": "1-phase distribution ON above",
-      "default": 4000,
-      "min": 0,
-      "unit": "W",
-      "sm": 4
-    },
-    "dhwParallelStopPower1PW": {
-      "type": "number",
-      "label": "1-phase distribution OFF below",
-      "default": 3000,
-      "min": 0,
-      "unit": "W",
-      "sm": 4
-    },
-    "dhwParallelStartPower3PW": {
-      "type": "number",
-      "label": "3-phase distribution ON above",
-      "default": 9000,
-      "min": 0,
-      "unit": "W",
-      "sm": 6,
-      "newLine": true
-    },
-    "dhwParallelStopPower3PW": {
-      "type": "number",
-      "label": "3-phase distribution OFF below",
-      "default": 8000,
-      "min": 0,
-      "unit": "W",
-      "sm": 6
-    },
-    "dhwOutletTempId": {
-      "type": "text",
-      "label": "AC THOR outlet temperature",
-      "default": "",
-      "sm": 12,
-      "newLine": true
-    },
-    "dhwVolumeL": {
-      "type": "number",
-      "label": "Storage volume",
-      "unit": "l",
-      "default": 500,
-      "sm": 3,
-      "newLine": true
-    },
-    "dhwMinTempC": {
-      "type": "number",
-      "label": "Minimum temperature",
-      "unit": "°C",
-      "default": 48,
-      "sm": 3
-    },
-    "dhwTargetTempC": {
-      "type": "number",
-      "label": "Target temperature",
-      "unit": "°C",
-      "default": 60,
-      "sm": 3
-    },
-    "dhwMaxPowerW": {
-      "type": "number",
-      "label": "Maximum power",
-      "unit": "W",
-      "default": 9000,
-      "sm": 3
-    },
-    "dhwCommissioningMaxW": {
-      "type": "number",
-      "label": "Production commissioning limit",
-      "unit": "W",
-      "default": 1000,
-      "min": 0,
-      "max": 9000,
-      "sm": 3
-    },
-    "dhwResumeTempC": {
-      "type": "number",
-      "label": "Resume below",
-      "unit": "°C",
-      "default": 75.5,
-      "sm": 3,
-      "newLine": true
-    },
-    "dhwStopTempC": {
-      "type": "number",
-      "label": "Stop at",
-      "unit": "°C",
-      "default": 76,
-      "sm": 3
-    },
-    "dhwTopEmergencyC": {
-      "type": "number",
-      "label": "Top emergency stop",
-      "unit": "°C",
-      "default": 82,
-      "sm": 3
-    },
-    "dhwTemperatureMaxAgeMin": {
-      "type": "number",
-      "label": "Maximum age of unchanged tank temperatures",
-      "unit": "min",
-      "default": 60,
-      "min": 5,
-      "max": 240,
-      "sm": 4,
-      "newLine": true
-    },
-    "dhwOutletDeratingC": {
-      "type": "number",
-      "label": "Curve active above outlet",
-      "unit": "°C",
-      "default": 60,
-      "sm": 3
-    },
-    "dhwCurve1TempC": {
-      "type": "number",
-      "label": "Curve point 1 temperature",
-      "unit": "°C",
-      "default": 70,
-      "sm": 3,
-      "newLine": true
-    },
-    "dhwCurve70PowerW": {
-      "type": "number",
-      "label": "Curve point 1 maximum",
-      "unit": "W",
-      "default": 7500,
-      "sm": 3
-    },
-    "dhwCurve2TempC": {
-      "type": "number",
-      "label": "Curve point 2 temperature",
-      "unit": "°C",
-      "default": 71,
-      "sm": 3
-    },
-    "dhwCurve71PowerW": {
-      "type": "number",
-      "label": "Curve point 2 maximum",
-      "unit": "W",
-      "default": 6000,
-      "sm": 3
-    },
-    "dhwCurve3TempC": {
-      "type": "number",
-      "label": "Curve point 3 temperature",
-      "unit": "°C",
-      "default": 73,
-      "sm": 3,
-      "newLine": true
-    },
-    "dhwCurve73PowerW": {
-      "type": "number",
-      "label": "Curve point 3 maximum",
-      "unit": "W",
-      "default": 4000,
-      "sm": 3
-    },
-    "dhwCurve4TempC": {
-      "type": "number",
-      "label": "Curve point 4 temperature",
-      "unit": "°C",
-      "default": 74,
-      "sm": 3
-    },
-    "dhwCurve74PowerW": {
-      "type": "number",
-      "label": "Curve point 4 maximum",
-      "unit": "W",
-      "default": 3000,
-      "sm": 3
-    },
-    "dhwOutletProtectionC": {
-      "type": "number",
-      "label": "Outlet protection temperature",
-      "unit": "°C",
-      "default": 76,
-      "sm": 3,
-      "newLine": true
-    },
-    "dhwMaxStepW": {
-      "type": "number",
-      "label": "Maximum change per cycle",
-      "unit": "W",
-      "default": 1000,
-      "sm": 3
-    },
-    "dhwSettleToleranceW": {
-      "type": "number",
-      "label": "Actual-power settling tolerance",
-      "unit": "W",
-      "default": 300,
-      "min": 50,
-      "max": 2000,
-      "sm": 3,
-      "newLine": true
-    },
-    "dhwSettleTimeoutS": {
-      "type": "number",
-      "label": "Maximum wait for AC THOR feedback",
-      "unit": "s",
-      "default": 15,
-      "min": 5,
-      "max": 60,
-      "sm": 3
-    },
-    "dhwHaL1FreeCurrentId": {
-      "type": "text",
-      "label": "HA L1 free current data point",
-      "default": "",
-      "sm": 4,
-      "newLine": true
-    },
-    "dhwHaL2FreeCurrentId": {
-      "type": "text",
-      "label": "HA L2 free current data point",
-      "default": "",
-      "sm": 4
-    },
-    "dhwHaL3FreeCurrentId": {
-      "type": "text",
-      "label": "HA L3 free current data point",
-      "default": "",
-      "sm": 4
-    },
-    "dhwHaL1CurrentId": {
-      "type": "text",
-      "label": "SMA L1 measured current",
-      "default": "",
-      "sm": 4,
-      "newLine": true
-    },
-    "dhwHaL2CurrentId": {
-      "type": "text",
-      "label": "SMA L2 measured current",
-      "default": "",
-      "sm": 4
-    },
-    "dhwHaL3CurrentId": {
-      "type": "text",
-      "label": "SMA L3 measured current",
-      "default": "",
-      "sm": 4
-    },
-    "dhwHaLimitA": {
-      "type": "number",
-      "label": "EHZ house-connection control limit per phase",
-      "unit": "A",
-      "default": 50,
-      "min": 1,
-      "max": 63,
-      "sm": 4,
-      "newLine": true
-    },
-    "heatingHeader": {
-      "type": "header",
-      "text": "my-PV heating buffer",
-      "size": 2,
-      "newLine": true
-    },
-    "heatingPresent": {
-      "type": "checkbox",
-      "label": "Heating-buffer heater present / include in planning",
-      "default": false,
-      "sm": 4,
-      "newLine": true
-    },
-    "heatingControlEnabled": {
-      "type": "checkbox",
-      "label": "Heating-buffer control release",
-      "default": false,
-      "sm": 4
-    },
-    "heatingPowerId": {
-      "type": "text",
-      "label": "Current power data point",
-      "default": "",
-      "sm": 6,
-      "newLine": true
-    },
-    "heatingHistoryId": {
-      "type": "text",
-      "label": "Historized total power data point",
-      "default": "",
-      "sm": 6
-    },
-    "heatingTempId": {
-      "type": "text",
-      "label": "Buffer temperature data point",
-      "default": "",
-      "sm": 6,
-      "newLine": true
-    },
-    "heatingVolumeL": {
-      "type": "number",
-      "label": "Buffer volume",
-      "unit": "l",
-      "default": 400,
-      "sm": 3,
-      "newLine": true
-    },
-    "heatingTempC": {
-      "type": "number",
-      "label": "Current/manual temperature",
-      "unit": "°C",
-      "default": 40,
-      "sm": 3
-    },
-    "heatingMinTempC": {
-      "type": "number",
-      "label": "Minimum temperature",
-      "unit": "°C",
-      "default": 35,
-      "sm": 3
-    },
-    "heatingTargetTempC": {
-      "type": "number",
-      "label": "Target temperature",
-      "unit": "°C",
-      "default": 50,
-      "sm": 3
-    },
-    "heatingMaxPowerW": {
-      "type": "number",
-      "label": "Maximum heater power",
-      "unit": "W",
-      "default": 6000,
-      "sm": 3,
-      "newLine": true
-    },
-    "batteryHeader": {
-      "type": "header",
-      "text": "Home battery",
-      "size": 2,
-      "newLine": true
-    },
-    "batteryPresent": {
-      "type": "checkbox",
-      "label": "Battery present / include in planning",
-      "default": false,
-      "sm": 4,
-      "newLine": true
-    },
-    "batteryControlEnabled": {
-      "type": "checkbox",
-      "label": "Battery control release",
-      "default": false,
-      "sm": 4
-    },
-    "batterySocId": {
-      "type": "text",
-      "label": "SoC data point",
-      "default": "",
-      "sm": 6,
-      "newLine": true
-    },
-    "batteryPowerId": {
-      "type": "text",
-      "label": "Power data point",
-      "default": "",
-      "sm": 6
-    },
-    "batteryCapacityKWh": {
-      "type": "number",
-      "label": "Capacity",
-      "unit": "kWh",
-      "default": 10,
-      "sm": 3,
-      "newLine": true
-    },
-    "batteryMaxChargeW": {
-      "type": "number",
-      "label": "Maximum charge",
-      "unit": "W",
-      "default": 2400,
-      "sm": 3
-    },
-    "batteryMaxDischargeW": {
-      "type": "number",
-      "label": "Maximum discharge",
-      "unit": "W",
-      "default": 2400,
-      "sm": 3
-    },
-    "batteryEfficiencyPct": {
-      "type": "number",
-      "label": "Efficiency",
-      "unit": "%",
-      "default": 92,
-      "sm": 3
-    },
-    "batteryMinSocPct": {
-      "type": "number",
-      "label": "Minimum SoC",
-      "unit": "%",
-      "default": 0,
-      "min": 0,
-      "max": 100,
-      "sm": 3,
-      "newLine": true
-    },
-    "batteryMaxSocPct": {
-      "type": "number",
-      "label": "Maximum SoC",
-      "unit": "%",
-      "default": 100,
-      "min": 0,
-      "max": 100,
-      "sm": 3
-    },
-    "batteryMorningTargetPct": {
-      "type": "number",
-      "label": "Morning target",
-      "unit": "%",
-      "default": 70,
-      "sm": 3
-    },
-    "batteryAfternoonTargetPct": {
-      "type": "number",
-      "label": "Afternoon target",
-      "unit": "%",
-      "default": 90,
-      "sm": 3
-    },
-    "batteryLateTargetPct": {
-      "type": "number",
-      "label": "Late target",
-      "unit": "%",
-      "default": 100,
-      "sm": 3,
-      "newLine": true
-    },
-    "batteryReserveMin": {
-      "type": "number",
-      "label": "Final charge reserve",
-      "unit": "min",
-      "default": 45,
-      "sm": 3
-    },
-    "batterySafetyPct": {
-      "type": "number",
-      "label": "Forecast safety factor",
-      "unit": "%",
-      "default": 80,
-      "sm": 3
-    },
-    "batterySelfConsumption": {
-      "type": "checkbox",
-      "label": "Discharge for self-consumption",
-      "default": true,
-      "sm": 3
-    },
-    "heatPumpHeader": {
-      "type": "header",
-      "text": "Heat pump (prepared)",
-      "size": 2,
-      "newLine": true
-    },
-    "heatPumpPresent": {
-      "type": "checkbox",
-      "label": "Heat pump present",
-      "default": false,
-      "sm": 4,
-      "newLine": true
-    },
-    "heatPumpControlEnabled": {
-      "type": "checkbox",
-      "label": "Heat pump control release",
-      "default": false,
-      "sm": 4
-    },
-    "controlHeader": {
-      "type": "header",
-      "text": "NVP realtime simulation",
-      "size": 2,
-      "newLine": true
-    },
-    "controlEnabled": {
-      "type": "checkbox",
-      "label": "Enable simulation",
-      "default": true,
-      "sm": 3,
-      "newLine": true
-    },
-    "targetGridPowerW": {
-      "type": "number",
-      "label": "Grid target (+ import / - export)",
-      "unit": "W",
-      "default": -100,
-      "sm": 3
-    },
-    "deadbandW": {
-      "type": "number",
-      "label": "Deadband",
-      "unit": "W",
-      "default": 100,
-      "min": 0,
-      "sm": 3
-    },
-    "slowCycleS": {
-      "type": "number",
-      "label": "Slow control cycle",
-      "unit": "s",
-      "default": 5,
-      "min": 2,
-      "sm": 3
-    },
-    "wallboxMaxStepA": {
-      "type": "number",
-      "label": "Wallbox maximum step",
-      "unit": "A",
-      "default": 6,
-      "min": 1,
-      "max": 32,
-      "sm": 3,
-      "newLine": true
-    },
-    "priceHeader": {
-      "type": "header",
-      "text": "Prices and grid fees",
-      "size": 2,
-      "newLine": true
-    },
-    "dynamicEnergyPrice": {
-      "type": "checkbox",
-      "label": "Use dynamic energy price",
-      "default": false,
-      "sm": 3,
-      "newLine": true
-    },
-    "dynamicGridFee": {
-      "type": "checkbox",
-      "label": "Use dynamic grid fee",
-      "default": false,
-      "sm": 3
-    },
-    "fixedEnergyCt": {
-      "type": "number",
-      "label": "Fixed energy component",
-      "unit": "ct/kWh",
-      "default": 22.85,
-      "sm": 3,
-      "newLine": true
-    },
-    "fixedGridFeeCt": {
-      "type": "number",
-      "label": "Fixed grid fee",
-      "unit": "ct/kWh",
-      "default": 6.04,
-      "sm": 3
-    },
-    "dynamicEnergyAddersCt": {
-      "type": "number",
-      "label": "Dynamic energy adders",
-      "unit": "ct/kWh",
-      "default": 9.301,
-      "sm": 3
-    },
-    "advancedHeader": {
-      "type": "header",
-      "text": "Advanced data-point mapping",
-      "size": 2,
-      "newLine": true
-    },
-    "advancedHelp": {
-      "type": "staticText",
-      "text": "Visible fields override matching JSON entries. Keep JSON for all remaining mappings.",
-      "newLine": true
-    },
-    "dataPointMapJson": {
-      "type": "text",
-      "label": "Data-point mapping as JSON",
-      "newLine": true
-    },
-    "wallboxPriority": {
-      "type": "select",
-      "label": "Preferred wallbox (below minimum SoC always wins)",
-      "default": -2,
-      "newLine": true,
-      "options": [
-        {
-          "value": -2,
-          "label": "Existing mapped priority data point"
+      }
+    },
+    "advancedTab": {
+      "type": "panel",
+      "label": "Advanced data points",
+      "items": {
+        "advancedHeader": {
+          "type": "header",
+          "text": "Advanced data-point mapping",
+          "size": 2,
+          "newLine": true
         },
-        {
-          "value": -1,
-          "label": "Automatic"
+        "advancedHelp": {
+          "type": "staticText",
+          "text": "Visible fields override matching JSON entries. Keep JSON for all remaining mappings.",
+          "newLine": true
         },
-        {
-          "value": 0,
-          "label": "Wallbox 0"
+        "dataPointMapJson": {
+          "type": "text",
+          "label": "Data-point mapping as JSON",
+          "newLine": true
         },
-        {
-          "value": 1,
-          "label": "Wallbox 1"
+        "wallboxPriority": {
+          "type": "select",
+          "label": "Preferred wallbox (below minimum SoC always wins)",
+          "default": -2,
+          "newLine": true,
+          "options": [
+            {
+              "value": -2,
+              "label": "Existing mapped priority data point"
+            },
+            {
+              "value": -1,
+              "label": "Automatic"
+            },
+            {
+              "value": 0,
+              "label": "Wallbox 0"
+            },
+            {
+              "value": 1,
+              "label": "Wallbox 1"
+            },
+            {
+              "value": 2,
+              "label": "Wallbox 2"
+            }
+          ]
         },
-        {
-          "value": 2,
-          "label": "Wallbox 2"
+        "wallboxHaLimitA": {
+          "type": "number",
+          "label": "Wallbox house-connection limit per phase",
+          "default": 50,
+          "min": 6,
+          "max": 63,
+          "unit": "A",
+          "sm": 6,
+          "newLine": true
+        },
+        "wallboxHaIncreaseLimitA": {
+          "type": "number",
+          "label": "No wallbox current increase above",
+          "default": 46,
+          "min": 0,
+          "max": 63,
+          "unit": "A",
+          "sm": 6
         }
-      ]
-    },
-    "wallboxHaLimitA": {
-      "type": "number",
-      "label": "Wallbox house-connection limit per phase",
-      "default": 50,
-      "min": 6,
-      "max": 63,
-      "unit": "A",
-      "sm": 6,
-      "newLine": true
-    },
-    "wallboxHaIncreaseLimitA": {
-      "type": "number",
-      "label": "No wallbox current increase above",
-      "default": 46,
-      "min": 0,
-      "max": 63,
-      "unit": "A",
-      "sm": 6
+      }
     }
   }
 }
