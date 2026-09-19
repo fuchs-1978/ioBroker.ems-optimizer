@@ -6,6 +6,7 @@ const vm = require("vm");
 const schedule = require("node-schedule");
 const utils = require("@iobroker/adapter-core");
 const WallboxOutput = require("./lib/wallbox-output");
+const PhaseOutput = require("./lib/phase-output");
 
 class EmsOptimizer extends utils.Adapter {
     constructor(options = {}) {
@@ -19,6 +20,7 @@ class EmsOptimizer extends utils.Adapter {
         this.engineContext = null;
         this.allowedForeignWriteIds = new Set();
         this.wallboxOutput = new WallboxOutput(this);
+        this.phaseOutput = new PhaseOutput(this);
         this.on("ready", this.onReady.bind(this));
         this.on("stateChange", this.onStateChange.bind(this));
         this.on("unload", this.onUnload.bind(this));
@@ -34,6 +36,7 @@ class EmsOptimizer extends utils.Adapter {
         await this.startEngine();
         await this.applyNativeVehicleSettings();
         await this.applyNativeEmsSettings();
+        await this.phaseOutput.initialize();
         await this.wallboxOutput.initialize();
         await this.setStateAsync("info.connection", true, true);
         this.log.info("EMS Optimizer 0.14.0 started; real outputs require explicit device release");
@@ -92,6 +95,8 @@ class EmsOptimizer extends utils.Adapter {
                 if (configuredSoc) mapping[`DP_WB${wb}_SOC`] = configuredSoc;
                 const manualMinimum = String(this.config[`wb${wb}ManualMinCurrentId`] || "").trim();
                 if (manualMinimum) mapping[`DP_WB${wb}_AMIN`] = manualMinimum;
+                const phaseOutput = String(this.config[`wb${wb}PhaseOutputId`] || "").trim();
+                if (phaseOutput) mapping[`DP_WB${wb}_PHASES`] = phaseOutput;
             });
             return mapping;
         } catch (error) {
@@ -376,7 +381,10 @@ class EmsOptimizer extends utils.Adapter {
             createState(id, value, common) { void adapter.queueCompatState(id, value, common); },
             setState(id, value, ack) { adapter.setCompatState(id, value, ack); },
             writeForeignState(id, value) { return adapter.writeForeignStateGuarded(id, value); },
-            updateWallboxProductionOutput() { void adapter.wallboxOutput.tick(); },
+            updateWallboxProductionOutput() {
+                void adapter.wallboxOutput.tick();
+                void adapter.phaseOutput.tick();
+            },
             sendTo(instance, command, message, callback) {
                 adapter.compatSendTo(instance, command, message, callback);
             },
