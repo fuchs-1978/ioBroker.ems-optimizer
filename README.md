@@ -827,3 +827,5 @@ Adapters sind.
 ## Lizenz
 
 MIT
+
+[Older changelogs can be found there](CHANGELOG_OLD.md)
