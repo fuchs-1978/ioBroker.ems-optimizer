@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.15.0",
+    "version": "0.15.1",
     "titleLang": {
       "en": "EMS Optimizer",
       "de": "EMS-Optimierer"
@@ -96,6 +96,8 @@
     "haL2ExportPowerId": "",
     "haL3ExportPowerId": "",
     "par14aId": "",
+    "par14aActiveHigh": true,
+    "par14aLimitW": 4200,
     "lpcStateId": "",
     "lpcLimitId": "",
     "dhwHaLimitA": 50,

@@ -16,7 +16,8 @@ function setup() {
         wb0ProductionArmed: true, wb0CommissioningMaxA: 32, wb0MaxCurrent1pA: 32,
         wb0MaxPowerW: 7360, wb0AmpereOutputId: 'cmd', wb0AllowOutputId: 'allow',
         wb0AmpereFeedbackId: 'feedback', wb0ConnectionId: 'connection', wb0ErrorId: 'error',
-        dhwHaL1CurrentId: 'h1', dhwHaL2CurrentId: 'h2', dhwHaL3CurrentId: 'h3', slowCycleS: 5};
+        dhwHaL1CurrentId: 'h1', dhwHaL2CurrentId: 'h2', dhwHaL3CurrentId: 'h3', slowCycleS: 5,
+        par14aActiveHigh: true, par14aLimitW: 4200};
     const adapter = {namespace: 'ems.0', config, stateCache: states,
         getCachedState: id => states.get(id), readMapping: () => mapping,
         setCompatState: (id, val) => put(id, val),
@@ -88,7 +89,6 @@ for (const [name, change] of [
     ['invalid quality', h => h.put('export', 8000, {q:0x40})],
     ['unknown curtailment', h => h.put('lpc', 'unexpected')],
     ['limited without budget', h => {h.put('lpc', 'limited'); h.put('lpcLimit', null);}],
-    ['14a active', h => h.put('par14a', true)],
     ['user release off', h => h.put('userAllow', false)],
     ['unexpected phases', h => h.put('i2', 6)],
     ['no PV', h => h.put('export', 0)],
@@ -112,6 +112,19 @@ test('valid LPC limit permits charging but caps current to its power budget', as
     h.put('i1',6); h.put('power',1.38); h.writes.length=0;
     await h.output.tick();
     assert.deepEqual(h.writes,[{id:'cmd',val:12}]);
+});
+test('old but valid binary contact uses fixed budget and does not time out', async () => {
+    const h = setup(); h.put('par14a', true, {ts: Date.now() - 86400000});
+    h.put('lpc', 'unlimitedAutonomous');
+    await h.start(); h.output.devices[0].lastAt -= 10000;
+    h.put('i1',6); h.put('power',1.38); h.writes.length=0;
+    await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'cmd',val:12}]);
+    assert.equal(h.output.gridOperatorLimit(h.mapping).budgetW, 4200);
+});
+test('simultaneous binary and LPC limitations use the lower budget', () => {
+    const h = setup(); h.put('par14a', true); h.put('lpc', 'limited'); h.put('lpcLimit', 3000);
+    assert.equal(h.output.gridOperatorLimit(h.mapping).budgetW, 3000);
 });
 test('heat-pump consumption is deducted from the shared LPC budget', async () => {
     const h = setup(); h.mapping.DP_HEAT_PUMP_POWER='heatPump';

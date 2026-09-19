@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.15.0**
+Aktuelle Version: **0.15.1**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -11,10 +11,32 @@ Version 0.12.0 kann der Trinkwasser-EHZ nach ausdrücklicher Freigabe produktiv
 angesteuert werden. Version 0.13.0 ergänzte alternativ den gesicherten Einzeltest
 einer Wallbox. Version 0.14.0 gleicht die Stromuntergrenzen der aktiven Skripte
 ab und bereitet den gemeinsamen Betrieb einer Wallbox mit dem EHZ vor. Version
-0.15.0 ergänzt das gemeinsame §14a-/LPC-Leistungsbudget und eine richtungsrichtige
-Hausanschlussprüfung. Batterie, Heizpuffer und Wärmepumpe bleiben Simulation.
+0.15.0 ergänzte das gemeinsame §14a-/LPC-Leistungsbudget und eine richtungsrichtige
+Hausanschlussprüfung. Version 0.15.1 unterstützt zusätzlich einen statischen
+§14a-Binärkontakt mit festem Leistungsbudget. Batterie, Heizpuffer und Wärmepumpe bleiben Simulation.
 Reale Phasenwechsel führt ausschließlich das vorhandene externe Skript aus; der
 Adapter stellt dafür nur Empfehlungen bereit. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.15.1 – Issue #8
+
+### Automatische Auswahl der §14a-Quelle
+
+- Ist nur der optionale Binärkontakt konfiguriert, bedeutet der aktive Zustand
+  ein festes gemeinsames Leistungsbudget. Standard sind **4.200 W**.
+- Ist nur EEBUS-LPC konfiguriert, bestimmt weiterhin `LPC.state` zusammen mit
+  `LPC.limit` das Budget.
+- Sind beide Quellen konfiguriert, werden sie unabhängig ausgewertet. Begrenzen
+  beide gleichzeitig, gilt automatisch das kleinere und damit strengere Limit.
+- Ein unveränderter Binärkontakt bleibt gültig und wird nicht allein aufgrund
+  seines alten Zeitstempels verworfen. Wert, Bestätigung und Qualität müssen
+  weiterhin gültig sein. Dynamische EEBUS-Werte bleiben zeitüberwacht.
+- Die Wirkrichtung des Kontakts und das feste Limit sind im Reiter **General**
+  unter **§14a / EEBUS LPC** einstellbar. Voreinstellung: `true/1` ist aktiv,
+  festes Limit 4.200 W.
+- Mindeststrom und Pflichtladung können auch das feste Binärlimit nicht übersteuern.
+
+**In Version 0.15.1 werden keine Objekte angelegt oder entfernt.** Produktive
+Ausgänge bleiben nach dem Update ausgeschaltet; vorhandene Skripte werden nicht verändert.
 
 ## Neu in 0.15.0 – Issues #8 und #27
 
@@ -24,7 +46,7 @@ Adapter stellt dafür nur Empfehlungen bereit. Ein Update aktiviert keine neuen 
   §14a-Verbraucher. Die aktuell gemessene elektrische Wärmepumpenleistung wird
   zuerst abgezogen; nur der Rest steht den Wallboxen zur Verfügung.
 - `unlimitedAutonomous` und `unlimitedControlled` bedeuten kein aktives Limit.
-  Fehlende, veraltete, unbekannte oder widersprüchliche Signale sowie `failsafe`
+  Fehlende, veraltete oder unbekannte dynamische LPC-Signale sowie `failsafe`
   sperren die Wallboxleistung sicher auf null.
 - Solange die Wärmepumpe als nicht vorhanden konfiguriert ist, wird nichts für sie
   abgezogen. Wird sie als vorhanden markiert, ist ihr Leistungsdatenpunkt für ein
@@ -32,8 +54,9 @@ Adapter stellt dafür nur Empfehlungen bereit. Ein Update aktiviert keine neuen 
 - Mindeststrom und Pflichtladung dürfen das Budget nicht übersteuern.
 
 Die Datenpunkte werden im Reiter **General** unter **§14a / EEBUS LPC** eingetragen.
-Der optionale alte §14a-Aktivdatenpunkt darf leer bleiben, wenn allein
-`LPC.state` und `LPC.limit` verwendet werden.
+Der optionale §14a-Binärkontakt darf leer bleiben, wenn allein `LPC.state` und
+`LPC.limit` verwendet werden. Umgekehrt dürfen die LPC-Felder leer bleiben,
+wenn nur der Binärkontakt mit festem Limit verwendet wird.
 
 Neue Diagnoseobjekte:
 
@@ -815,7 +838,7 @@ bleiben `PV_Sicherung`, `Werte_schreiben_0_V2`, `Werte_schreiben_1_V2`,
 `Werte_schreiben_2_V2`, `EHZ-Pumpe_V2` und `EHZ-P2FBH` aktiv. Ein Abschalten der
 Schreibskripte wäre ohne gezielte Übernahme falsch. Für den Wallbox-Einzeltest
 und die spätere gemeinsame Inbetriebnahme gilt die konkrete Übergabeanleitung
-oben. Version 0.15.0 schaltet kein Skript automatisch ab. Bei einer ausdrücklich
+oben. Version 0.15.1 schaltet kein Skript automatisch ab. Bei einer ausdrücklich
 produktiv freigegebenen Übernahme werden wegen doppelter Entscheidungslogik
 schrittweise folgende Skripte abgelöst:
 
@@ -841,6 +864,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.15.1 | Issue #8: statischen §14a-Binärkontakt mit konfigurierbarem Festlimit ergänzt. Binärkontakt und EEBUS-LPC werden automatisch anhand der angegebenen Datenpunkte ausgewertet; bei zwei aktiven Begrenzungen gilt das kleinere Limit. Statische Kontakte verfallen nicht wegen eines unveränderten Zeitstempels. Keine Objekte ergänzt oder entfernt und keine produktiven Ausgänge aktiviert. |
 | 0.15.0 | Issues #8/#27: EEBUS-LPC als gemeinsames Budget von Wärmepumpe und Wallboxen umgesetzt; ungültige Signale sperren sicher. Phasenweisen Hausanschlussschutz um optionale getrennte Bezugs-/Einspeiseleistungen ergänzt und die zugehörigen Admin-Felder nach General verschoben. Der Adapter gibt weiterhin nur Phasenempfehlungen aus; reale Umschaltung bleibt beim externen Skript. Vier Diagnoseobjekte ergänzt, keine Objekte entfernt und keine produktiven Ausgänge aktiviert. |
 | 0.14.0 | Issues #6/#7: manuelle Mindestströme `amin0..2` und nur bei `socfrei == 2` wirksame niedrige SoC-Stromstufen ergänzt; zentralen NVP-Regler für 50/50-Verteilung vorbereitet, Wallbox grob und EHZ stufenlos als Feinregler. Vorhandenes `javascript.0.ehz.aufteilen` als konfigurierbaren, nur gelesenen Laufzeitschalter übernommen; separater standardmäßig ausgeschalteter Kombinations-Arming-Schalter, Diagnose und sichere Übergabereihenfolge ergänzt. Keine Objekte entfernt. |
 | 0.13.0 | Issue #4: Min-/Ziel-SoC und Fahrzeugpriorität im Admin, Mindest-SoC vor manueller Priorität, zwei konfigurierbare SoC-Reduktionsstufen in Prognose/Simulation/Output; gesicherter Wallbox-Einzeltest mit 6-A-Start, bestätigter Rückmeldung, Fehler-/NVP-/Hausanschlussprüfung. Neue Ausgänge bleiben aus; keine Objekte entfernt. |

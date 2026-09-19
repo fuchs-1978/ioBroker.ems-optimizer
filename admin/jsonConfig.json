@@ -8,7 +8,7 @@
       "items": {
         "safety": {
           "type": "staticText",
-          "text": "Version 0.15.0: one guarded wallbox test or explicitly armed wallbox + DHW combination. LPC limits the shared §14a budget. Real phase switching remains external.",
+          "text": "Version 0.15.1: one guarded wallbox test or explicitly armed wallbox + DHW combination. Binary §14a contact and EEBUS LPC automatically limit the shared budget. Real phase switching remains external.",
           "newLine": true
         },
         "generalHeader": {
@@ -148,16 +148,32 @@
         },
         "par14aId": {
           "type": "text",
-          "label": "Optional legacy §14a active data point",
+          "label": "Optional §14a binary contact data point",
           "default": "",
           "sm": 4,
           "newLine": true
+        },
+        "par14aActiveHigh": {
+          "type": "checkbox",
+          "label": "Binary contact: true/1 means limitation active",
+          "default": true,
+          "sm": 4
+        },
+        "par14aLimitW": {
+          "type": "number",
+          "label": "Fixed binary-contact limit",
+          "default": 4200,
+          "min": 0,
+          "max": 50000,
+          "unit": "W",
+          "sm": 4
         },
         "lpcStateId": {
           "type": "text",
           "label": "EEBUS LPC.state data point",
           "default": "",
-          "sm": 4
+          "sm": 4,
+          "newLine": true
         },
         "lpcLimitId": {
           "type": "text",
