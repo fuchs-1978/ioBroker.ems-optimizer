@@ -9,6 +9,7 @@ function engine(config={}) {
     const states=new Map();
     const put=(id,val)=>states.set(id,{val,ts:Date.now(),ack:true});
     const ctx=vm.createContext({nativeConfig:config,Date,console,
+        gridConstraints:require('../lib/grid-constraints'),
         getState:id=>states.get(id),existsState:id=>states.has(id),
         createState:(id,val)=>{if(!states.has(id))put(id,val);},setState:put,
         log:()=>{},sendTo:()=>{}});
@@ -78,6 +79,11 @@ test('mandatory minimum charging receives realtime budget without PV',()=>{
     const h=engine();h.put('DP_WB0_SOC',10);h.run('updateVehicles()');
     h.run('updateSlowTargets(0,[{valueW:0},{valueW:0},{valueW:0}],{valueW:0})');
     assert.ok(h.run('slowTargets.wallboxA[0]')>=6);
+});
+test('LPC budget caps the combined simulated wallbox targets',()=>{
+    const h=engine();h.put('DP_DHW_PARALLEL_RELEASE',0);h.run('updateVehicles()');
+    h.run('updateSlowTargets(12000,[{valueW:7000},{valueW:7000},{valueW:7000}],{valueW:0},4200)');
+    assert.ok(h.run('slowTargets.wallboxW.reduce((sum,value)=>sum+value,0)')<=4200);
 });
 test('default PV-only above minimum does not force charging at departure deadline',()=>{
     const h=engine();h.put('ems.0.Config.Wallbox0VehicleCapacity_kWh',100000);

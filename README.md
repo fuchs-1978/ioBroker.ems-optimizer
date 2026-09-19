@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.14.0**
+Aktuelle Version: **0.15.0**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -10,9 +10,57 @@ Der aktuelle Entwicklungsstand arbeitet grundsätzlich im Beobachtermodus. Ab
 Version 0.12.0 kann der Trinkwasser-EHZ nach ausdrücklicher Freigabe produktiv
 angesteuert werden. Version 0.13.0 ergänzte alternativ den gesicherten Einzeltest
 einer Wallbox. Version 0.14.0 gleicht die Stromuntergrenzen der aktiven Skripte
-ab und bereitet den gemeinsamen Betrieb einer Wallbox mit dem EHZ vor. Batterie,
-Heizpuffer, Wärmepumpe und automatische reale Phasenumschaltung bleiben Simulation.
-Ein Update aktiviert keine neuen Ausgänge.
+ab und bereitet den gemeinsamen Betrieb einer Wallbox mit dem EHZ vor. Version
+0.15.0 ergänzt das gemeinsame §14a-/LPC-Leistungsbudget und eine richtungsrichtige
+Hausanschlussprüfung. Batterie, Heizpuffer und Wärmepumpe bleiben Simulation.
+Reale Phasenwechsel führt ausschließlich das vorhandene externe Skript aus; der
+Adapter stellt dafür nur Empfehlungen bereit. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.15.0 – Issues #8 und #27
+
+### §14a / EEBUS LPC
+
+- `LPC.state = limited` aktiviert `LPC.limit` als gemeinsames Leistungsbudget der
+  §14a-Verbraucher. Die aktuell gemessene elektrische Wärmepumpenleistung wird
+  zuerst abgezogen; nur der Rest steht den Wallboxen zur Verfügung.
+- `unlimitedAutonomous` und `unlimitedControlled` bedeuten kein aktives Limit.
+  Fehlende, veraltete, unbekannte oder widersprüchliche Signale sowie `failsafe`
+  sperren die Wallboxleistung sicher auf null.
+- Solange die Wärmepumpe als nicht vorhanden konfiguriert ist, wird nichts für sie
+  abgezogen. Wird sie als vorhanden markiert, ist ihr Leistungsdatenpunkt für ein
+  aktives LPC-Limit verpflichtend.
+- Mindeststrom und Pflichtladung dürfen das Budget nicht übersteuern.
+
+Die Datenpunkte werden im Reiter **General** unter **§14a / EEBUS LPC** eingetragen.
+Der optionale alte §14a-Aktivdatenpunkt darf leer bleiben, wenn allein
+`LPC.state` und `LPC.limit` verwendet werden.
+
+Neue Diagnoseobjekte:
+
+- `ems-optimizer.0.Control.GridOperatorLimitActive`
+- `ems-optimizer.0.Control.GridOperatorBudget_W` (`-1` bedeutet unbegrenzt)
+- `ems-optimizer.0.Control.GridOperatorStatus`
+- `ems-optimizer.0.Actual.HeatPump_W`
+
+### Hausanschluss und Admin-Struktur
+
+Die vollständige Konfiguration **House-connection protection** liegt nun im Reiter
+**General**. Für eine richtungsrichtige Prüfung können Bezug und Einspeisung je
+Phase als sechs SMA-Leistungsdatenpunkte angegeben werden. Nur ein vollständiger
+Satz wird akzeptiert. Bleiben alle sechs Felder leer, verwendet der Adapter weiter
+die drei Strombeträge als konservativen Rückfall. Dadurch ändert ein Update keine
+bisherige Schutzkonfiguration; mit den Richtungswerten wird hohe Einspeisung aber
+nicht mehr fälschlich als Bezug begrenzt.
+
+### Phasenumschaltung
+
+Der Adapter beschreibt keinen Phasenumschalter. Er liefert ausschließlich
+`Vehicles.WallboxX.RecommendedPhases` und das stabilisierte Ziel
+`Control.Targets.WallboxX_Phases`. Die reale Umschaltung einschließlich Stop,
+Rückmeldung und Verriegelungszeit bleibt vollständig beim externen Skript.
+
+**In Version 0.15.0 entfallen keine Objekte.** Produktive Ausgänge und
+Phasenumschaltung bleiben nach dem Update unverändert bzw. ausgeschaltet.
 
 ## Neu in 0.14.0 – Issues #6 und #7
 
@@ -199,21 +247,21 @@ abnimmt. Er nutzt direkte NVP-Werte und ganze Ampere; normale Erhöhungen beacht
 Regelintervall und Rampe, Abschaltungen und kleinere Schutzgrenzen wirken sofort
 beim nächsten 2-Sekunden-Prüflauf.
 
-Die Hausanschlussprüfung verwendet die drei konfigurierten SMA-Phasenströme
-aus dem gemeinsamen Messaufbau (Admin-Felder **SMA L1/L2/L3 measured current**).
-Wallbox-Grenze: standardmäßig 50 A, keine Erhöhung oberhalb 46 A.
-Die Strombeträge werden konservativ ausgewertet; auch bei hoher Einspeisung
-kann dadurch ein Test begrenzt werden. Die Zuordnung **Grid phase used by wallbox L1**
-muss der tatsächlichen Verdrahtung entsprechen. Bei aktivem/unklarem §14a- oder
-LPC-Signal pausiert der Einzeltest vollständig; eine gemeinsame Verteilung der
-Netzbetreibergrenze ist noch nicht produktiv freigegeben.
+Die Hausanschlussprüfung verwendet bevorzugt die phasenweisen SMA-Leistungen für
+Bezug und Einspeisung. Ohne diese optionalen Richtungswerte werden die drei
+konfigurierten SMA-Phasenströme weiterhin konservativ ausgewertet. Wallbox-Grenze:
+standardmäßig 50 A, keine Erhöhung oberhalb 46 A. Die Zuordnung **Grid phase used
+by wallbox L1** muss der tatsächlichen Verdrahtung entsprechen. Ein gültiges
+begrenztes LPC-Signal reduziert die Wallbox auf das verbleibende §14a-Budget;
+ungültige oder veraltete Signale stoppen sie.
 
 **Bewusste Grenze dieser Version:** genau eine Wallbox produktiv und die
 EHZ-Steuerfreigabe im Adapter aus. Die Phasenzahl wird für den Test physisch fest
 eingestellt und unter **Verified fixed phases** bestätigt. Der Adapter schaltet
 keine Phasenschütze. Seine 1-/3-Phasen-Prognose bleibt eine Empfehlung; der Ausgang
 rechnet das Wattbudget auf die feste Test-Phasenzahl um. Der kombinierte Test
-mit EHZ sowie automatische reale Phasenwechsel folgen nach erfolgreichem Einzeltest.
+mit EHZ folgt nach erfolgreichem Einzeltest. Reale Phasenwechsel verbleiben
+dauerhaft beim externen Skript und nutzen nur die EMS-Empfehlungen.
 
 Vor dem Test müssen die aktiven Ampere-/Freigabe-Schreibskripte **der ausgewählten
 Wallbox** und deren automatische Phasenumschaltung aus sein. Für den Mii ist der
@@ -462,7 +510,7 @@ Instanz neu starten.
 Die wichtigsten Einstellungen werden nicht mehr nur ueber EMS-Objekte oder das
 erweiterte JSON gepflegt. Die Adapterseite ist in folgende Bereiche gegliedert:
 
-- Allgemein und Historie
+- Allgemein, Historie, Hausanschlussschutz und §14a/LPC
 - Wallbox 0, Wallbox 1 und Wallbox 2
 - my-PV Trinkwasser
 - my-PV Heizpuffer
@@ -751,7 +799,7 @@ deaktivierte Altversionen wurden nicht übernommen.
 | E-Heizer-Schutz | 9-kW-Maximum und bestehende Temperaturkennlinie | Adapter simuliert den sicheren Sollwert |
 | NVP-Ausregelung | Ein gemeinsamer Regler: Wallbox grob, stufenloser EHZ als Feinregler; später Batterie für den verbleibenden Fehler | Simulation; produktiv einzeln ab 0.12/0.13, Kombination ab 0.14.0 zur Abnahme vorbereitet |
 | Ampere-/Freigabeschreiben, Hausanschlussschutz | Gesicherter Einzeltest mit Rückmeldung; ab 0.14.0 sichere gemeinsame Freigabekette | Je Aktor genau ein Schreiber; niemals Adapter und Bestandsskript gleichzeitig |
-| Phasenumschaltung | 1-/3-phasige Empfehlung mit fahrzeugspezifischen Grenzen; noch kein Aktorzugriff | Bestehende lokale Skripte schalten real |
+| Phasenumschaltung | rohe und stabilisierte 1-/3-phasige Empfehlung mit fahrzeugspezifischen Grenzen; kein Aktorzugriff | Ausschließlich bestehende lokale Skripte schalten real |
 | RFID und Fehlerquittierung | Nicht doppelt implementiert | Bestehende lokale Skripte |
 | EHZ-Pumpe und Raum-PV-Boost | Nicht doppelt implementiert | `EHZ-Pumpe_V2` und `EHZ-P2FBH` |
 
@@ -767,7 +815,7 @@ bleiben `PV_Sicherung`, `Werte_schreiben_0_V2`, `Werte_schreiben_1_V2`,
 `Werte_schreiben_2_V2`, `EHZ-Pumpe_V2` und `EHZ-P2FBH` aktiv. Ein Abschalten der
 Schreibskripte wäre ohne gezielte Übernahme falsch. Für den Wallbox-Einzeltest
 und die spätere gemeinsame Inbetriebnahme gilt die konkrete Übergabeanleitung
-oben. Version 0.14.0 schaltet kein Skript automatisch ab. Bei einer ausdrücklich
+oben. Version 0.15.0 schaltet kein Skript automatisch ab. Bei einer ausdrücklich
 produktiv freigegebenen Übernahme werden wegen doppelter Entscheidungslogik
 schrittweise folgende Skripte abgelöst:
 
@@ -793,6 +841,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.15.0 | Issues #8/#27: EEBUS-LPC als gemeinsames Budget von Wärmepumpe und Wallboxen umgesetzt; ungültige Signale sperren sicher. Phasenweisen Hausanschlussschutz um optionale getrennte Bezugs-/Einspeiseleistungen ergänzt und die zugehörigen Admin-Felder nach General verschoben. Der Adapter gibt weiterhin nur Phasenempfehlungen aus; reale Umschaltung bleibt beim externen Skript. Vier Diagnoseobjekte ergänzt, keine Objekte entfernt und keine produktiven Ausgänge aktiviert. |
 | 0.14.0 | Issues #6/#7: manuelle Mindestströme `amin0..2` und nur bei `socfrei == 2` wirksame niedrige SoC-Stromstufen ergänzt; zentralen NVP-Regler für 50/50-Verteilung vorbereitet, Wallbox grob und EHZ stufenlos als Feinregler. Vorhandenes `javascript.0.ehz.aufteilen` als konfigurierbaren, nur gelesenen Laufzeitschalter übernommen; separater standardmäßig ausgeschalteter Kombinations-Arming-Schalter, Diagnose und sichere Übergabereihenfolge ergänzt. Keine Objekte entfernt. |
 | 0.13.0 | Issue #4: Min-/Ziel-SoC und Fahrzeugpriorität im Admin, Mindest-SoC vor manueller Priorität, zwei konfigurierbare SoC-Reduktionsstufen in Prognose/Simulation/Output; gesicherter Wallbox-Einzeltest mit 6-A-Start, bestätigter Rückmeldung, Fehler-/NVP-/Hausanschlussprüfung. Neue Ausgänge bleiben aus; keine Objekte entfernt. |
 | 0.12.4 | Produktive NVP-Regelung des Trinkwasser-EHZ auf direkte SMA-Netzwerte umgestellt; Rückmelde-/Beruhigungslogik für den AC THOR, sofortige Reduktion bei Netzbezug, adaptive 1.000-/500-/200-W-Schritte und zusätzliche Diagnoseobjekte ergänzt. |

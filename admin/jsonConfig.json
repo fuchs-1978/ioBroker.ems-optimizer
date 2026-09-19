@@ -8,7 +8,7 @@
       "items": {
         "safety": {
           "type": "staticText",
-          "text": "Version 0.14.0: one guarded wallbox test or explicitly armed wallbox + DHW combination. Battery, heating buffer and phase switching remain simulated.",
+          "text": "Version 0.15.0: one guarded wallbox test or explicitly armed wallbox + DHW combination. LPC limits the shared §14a budget. Real phase switching remains external.",
           "newLine": true
         },
         "generalHeader": {
@@ -29,6 +29,141 @@
           "default": "",
           "sm": 4,
           "newLine": true
+        },
+        "_houseConnectionHeader": {
+          "type": "header",
+          "text": "House-connection protection",
+          "size": 3,
+          "newLine": true
+        },
+        "dhwHaL1CurrentId": {
+          "type": "text",
+          "label": "SMA L1 measured current (safe fallback without direction)",
+          "default": "",
+          "sm": 4,
+          "newLine": true
+        },
+        "dhwHaL2CurrentId": {
+          "type": "text",
+          "label": "SMA L2 measured current (safe fallback without direction)",
+          "default": "",
+          "sm": 4
+        },
+        "dhwHaL3CurrentId": {
+          "type": "text",
+          "label": "SMA L3 measured current (safe fallback without direction)",
+          "default": "",
+          "sm": 4
+        },
+        "haL1ImportPowerId": {
+          "type": "text",
+          "label": "SMA L1 import power",
+          "default": "",
+          "sm": 4,
+          "newLine": true
+        },
+        "haL2ImportPowerId": {
+          "type": "text",
+          "label": "SMA L2 import power",
+          "default": "",
+          "sm": 4
+        },
+        "haL3ImportPowerId": {
+          "type": "text",
+          "label": "SMA L3 import power",
+          "default": "",
+          "sm": 4
+        },
+        "haL1ExportPowerId": {
+          "type": "text",
+          "label": "SMA L1 export power",
+          "default": "",
+          "sm": 4,
+          "newLine": true
+        },
+        "haL2ExportPowerId": {
+          "type": "text",
+          "label": "SMA L2 export power",
+          "default": "",
+          "sm": 4
+        },
+        "haL3ExportPowerId": {
+          "type": "text",
+          "label": "SMA L3 export power",
+          "default": "",
+          "sm": 4
+        },
+        "dhwHaL1FreeCurrentId": {
+          "type": "text",
+          "label": "HA L1 free current data point (legacy)",
+          "default": "",
+          "sm": 4,
+          "newLine": true
+        },
+        "dhwHaL2FreeCurrentId": {
+          "type": "text",
+          "label": "HA L2 free current data point (legacy)",
+          "default": "",
+          "sm": 4
+        },
+        "dhwHaL3FreeCurrentId": {
+          "type": "text",
+          "label": "HA L3 free current data point (legacy)",
+          "default": "",
+          "sm": 4
+        },
+        "dhwHaLimitA": {
+          "type": "number",
+          "label": "EHZ house-connection control limit per phase",
+          "unit": "A",
+          "default": 50,
+          "min": 1,
+          "max": 63,
+          "sm": 4,
+          "newLine": true
+        },
+        "wallboxHaLimitA": {
+          "type": "number",
+          "label": "Wallbox house-connection limit per phase",
+          "default": 50,
+          "min": 6,
+          "max": 63,
+          "unit": "A",
+          "sm": 4
+        },
+        "wallboxHaIncreaseLimitA": {
+          "type": "number",
+          "label": "No wallbox current increase above",
+          "default": 46,
+          "min": 0,
+          "max": 63,
+          "unit": "A",
+          "sm": 4
+        },
+        "_gridOperatorHeader": {
+          "type": "header",
+          "text": "§14a / EEBUS LPC",
+          "size": 3,
+          "newLine": true
+        },
+        "par14aId": {
+          "type": "text",
+          "label": "Optional legacy §14a active data point",
+          "default": "",
+          "sm": 4,
+          "newLine": true
+        },
+        "lpcStateId": {
+          "type": "text",
+          "label": "EEBUS LPC.state data point",
+          "default": "",
+          "sm": 4
+        },
+        "lpcLimitId": {
+          "type": "text",
+          "label": "EEBUS LPC.limit data point",
+          "default": "",
+          "sm": 4
         }
       }
     },
@@ -89,7 +224,7 @@
         },
         "wb0PhaseSwitchEnabled": {
           "type": "checkbox",
-          "label": "Allow 1-/3-phase switching",
+          "label": "Allow EMS 1-/3-phase recommendation (external script switches)",
           "default": false,
           "sm": 3
         },
@@ -482,7 +617,7 @@
         },
         "wb1PhaseSwitchEnabled": {
           "type": "checkbox",
-          "label": "Allow 1-/3-phase switching",
+          "label": "Allow EMS 1-/3-phase recommendation (external script switches)",
           "default": false,
           "sm": 3
         },
@@ -875,7 +1010,7 @@
         },
         "wb2PhaseSwitchEnabled": {
           "type": "checkbox",
-          "label": "Allow 1-/3-phase switching",
+          "label": "Allow EMS 1-/3-phase recommendation (external script switches)",
           "default": false,
           "sm": 3
         },
@@ -1581,60 +1716,6 @@
           "min": 5,
           "max": 60,
           "sm": 3
-        },
-        "_dhwHouseConnectionHeader": {
-          "type": "header",
-          "text": "House-connection protection",
-          "size": 3,
-          "newLine": true
-        },
-        "dhwHaL1FreeCurrentId": {
-          "type": "text",
-          "label": "HA L1 free current data point",
-          "default": "",
-          "sm": 4,
-          "newLine": true
-        },
-        "dhwHaL2FreeCurrentId": {
-          "type": "text",
-          "label": "HA L2 free current data point",
-          "default": "",
-          "sm": 4
-        },
-        "dhwHaL3FreeCurrentId": {
-          "type": "text",
-          "label": "HA L3 free current data point",
-          "default": "",
-          "sm": 4
-        },
-        "dhwHaL1CurrentId": {
-          "type": "text",
-          "label": "SMA L1 measured current",
-          "default": "",
-          "sm": 4,
-          "newLine": true
-        },
-        "dhwHaL2CurrentId": {
-          "type": "text",
-          "label": "SMA L2 measured current",
-          "default": "",
-          "sm": 4
-        },
-        "dhwHaL3CurrentId": {
-          "type": "text",
-          "label": "SMA L3 measured current",
-          "default": "",
-          "sm": 4
-        },
-        "dhwHaLimitA": {
-          "type": "number",
-          "label": "EHZ house-connection control limit per phase",
-          "unit": "A",
-          "default": 50,
-          "min": 1,
-          "max": 63,
-          "sm": 4,
-          "newLine": true
         }
       }
     },
@@ -1870,6 +1951,13 @@
           "label": "Heat pump control release",
           "default": false,
           "sm": 4
+        },
+        "heatPumpPowerId": {
+          "type": "text",
+          "label": "Current electrical heat-pump power for §14a budget",
+          "default": "",
+          "sm": 8,
+          "newLine": true
         }
       }
     },
@@ -2031,25 +2119,6 @@
               "label": "Wallbox 2"
             }
           ]
-        },
-        "wallboxHaLimitA": {
-          "type": "number",
-          "label": "Wallbox house-connection limit per phase",
-          "default": 50,
-          "min": 6,
-          "max": 63,
-          "unit": "A",
-          "sm": 6,
-          "newLine": true
-        },
-        "wallboxHaIncreaseLimitA": {
-          "type": "number",
-          "label": "No wallbox current increase above",
-          "default": 46,
-          "min": 0,
-          "max": 63,
-          "unit": "A",
-          "sm": 6
         }
       }
     }

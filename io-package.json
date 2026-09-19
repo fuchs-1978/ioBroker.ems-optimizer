@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.14.0",
+    "version": "0.15.0",
     "titleLang": {
       "en": "EMS Optimizer",
       "de": "EMS-Optimierer"
@@ -89,6 +89,15 @@
     "dhwHaL1CurrentId": "",
     "dhwHaL2CurrentId": "",
     "dhwHaL3CurrentId": "",
+    "haL1ImportPowerId": "",
+    "haL2ImportPowerId": "",
+    "haL3ImportPowerId": "",
+    "haL1ExportPowerId": "",
+    "haL2ExportPowerId": "",
+    "haL3ExportPowerId": "",
+    "par14aId": "",
+    "lpcStateId": "",
+    "lpcLimitId": "",
     "dhwHaLimitA": 50,
     "dhwVolumeL": 500,
     "dhwMinTempC": 48,
@@ -124,6 +133,7 @@
     "heatingMaxPowerW": 6000,
     "heatPumpPresent": false,
     "heatPumpControlEnabled": false,
+    "heatPumpPowerId": "",
     "controlEnabled": true,
     "targetGridPowerW": -100,
     "deadbandW": 100,

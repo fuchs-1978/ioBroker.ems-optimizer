@@ -10,7 +10,8 @@ function setup() {
     const mapping = {DP_WB0_CAR: 'car', DP_WB0_SOC: 'soc', DP_WB0_ALLOW: 'userAllow',
         DP_WB0_POWER: 'power', DP_WB0_L1_A: 'i1', DP_WB0_L2_A: 'i2', DP_WB0_L3_A: 'i3',
         DP_GRID_IMPORT: 'import', DP_GRID_EXPORT: 'export', DP_HA_CRITICAL: 'critical',
-        DP_PAR14A: 'par14a', DP_LPC_STATE: 'lpc', DP_DHW_PARALLEL_RELEASE: 'split'};
+        DP_PAR14A: 'par14a', DP_LPC_STATE: 'lpc', DP_LPC_LIMIT: 'lpcLimit',
+        DP_DHW_PARALLEL_RELEASE: 'split'};
     const config = {globalWriteEnabled: true, wb0Present: true, wb0ControlEnabled: true,
         wb0ProductionArmed: true, wb0CommissioningMaxA: 32, wb0MaxCurrent1pA: 32,
         wb0MaxPowerW: 7360, wb0AmpereOutputId: 'cmd', wb0AllowOutputId: 'allow',
@@ -35,7 +36,7 @@ function setup() {
     put('ems.0.Vehicles.Wallbox0.MinimumSoC_pct', 20);
     for (const [id, val] of Object.entries({car: 2, soc: 50, userAllow: true, power: 0,
         i1: 0, i2: 0, i3: 0, h1: 10, h2: 10, h3: 10, import: 0, export: 8000,
-        critical: false, par14a: false, lpc: 'unlimitedAutonomous', connection: true,
+        critical: false, par14a: false, lpc: 'unlimitedAutonomous', lpcLimit: 0, connection: true,
         error: 0, allow: 0, feedback: 6, split: 0})) put(id, val);
     const output = new WallboxOutput(adapter);
     const ack = (id, value) => put(id, value, {ts: Date.now() + 1});
@@ -85,7 +86,8 @@ for (const [name, change] of [
     ['HA trip', h => h.put('critical', true)],
     ['stale meter', h => h.put('import', 0, {ts:Date.now()-60000})],
     ['invalid quality', h => h.put('export', 8000, {q:0x40})],
-    ['unknown curtailment', h => h.put('lpc', 'limited')],
+    ['unknown curtailment', h => h.put('lpc', 'unexpected')],
+    ['limited without budget', h => {h.put('lpc', 'limited'); h.put('lpcLimit', null);}],
     ['14a active', h => h.put('par14a', true)],
     ['user release off', h => h.put('userAllow', false)],
     ['unexpected phases', h => h.put('i2', 6)],
@@ -103,6 +105,32 @@ test('below minimum SoC can start without solar power', async () => {
 test('HA cap cannot be defeated by minimum-SoC charging', async () => {
     const h = setup(); h.put('soc',10); h.put('h1',49); await h.output.initialize(); await h.output.tick();
     assert.equal(h.writes.length, 0);
+});
+test('valid LPC limit permits charging but caps current to its power budget', async () => {
+    const h = setup(); h.put('par14a', true); h.put('lpc', 'limited'); h.put('lpcLimit', 3220);
+    await h.start(); h.output.devices[0].lastAt -= 10000;
+    h.put('i1',6); h.put('power',1.38); h.writes.length=0;
+    await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'cmd',val:12}]);
+});
+test('heat-pump consumption is deducted from the shared LPC budget', async () => {
+    const h = setup(); h.mapping.DP_HEAT_PUMP_POWER='heatPump';
+    h.put('ems.0.Devices.HeatPump.Present',true); h.put('heatPump',2000);
+    h.put('par14a',true); h.put('lpc','limited'); h.put('lpcLimit',4000);
+    await h.start(); h.output.devices[0].lastAt -= 10000;
+    h.put('i1',6); h.put('power',1.38); h.writes.length=0;
+    await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'cmd',val:8}]);
+});
+test('directional phase power prevents export current from being mistaken for import', async () => {
+    const h = setup();
+    Object.assign(h.mapping, {DP_HA_L1_IMPORT_W:'pi1',DP_HA_L2_IMPORT_W:'pi2',DP_HA_L3_IMPORT_W:'pi3',
+        DP_HA_L1_EXPORT_W:'pe1',DP_HA_L2_EXPORT_W:'pe2',DP_HA_L3_EXPORT_W:'pe3'});
+    for (const id of ['pi1','pi2','pi3']) h.put(id,0);
+    for (const id of ['pe1','pe2','pe3']) h.put(id,11270);
+    h.put('h1',49);
+    await h.start();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,true);
 });
 test('no current ramp-up while device takes less than commanded', async () => {
     const h = setup(); await h.start(); h.output.devices[0].lastAt -= 10000;

@@ -6,6 +6,7 @@ const vm = require("vm");
 const schedule = require("node-schedule");
 const utils = require("@iobroker/adapter-core");
 const WallboxOutput = require("./lib/wallbox-output");
+const gridConstraints = require("./lib/grid-constraints");
 
 class EmsOptimizer extends utils.Adapter {
     constructor(options = {}) {
@@ -36,7 +37,7 @@ class EmsOptimizer extends utils.Adapter {
         await this.applyNativeEmsSettings();
         await this.wallboxOutput.initialize();
         await this.setStateAsync("info.connection", true, true);
-        this.log.info("EMS Optimizer 0.14.0 started; real outputs require explicit device release");
+        this.log.info("EMS Optimizer 0.15.0 started; real outputs require explicit device release");
     }
 
     async preloadStates() {
@@ -75,13 +76,18 @@ class EmsOptimizer extends utils.Adapter {
                 dhwParallelReleaseId: "DP_DHW_PARALLEL_RELEASE",
                 dhwOutletTempId: "DP_DHW_OUTLET_TEMP", dhwConnectionId: "DP_DHW_CONNECTION",
                 dhwHysteresisId: "DP_DHW_HYSTERESIS", heatingPowerId: "DP_HEAT_POWER1",
+                heatPumpPowerId: "DP_HEAT_PUMP_POWER",
                 dhwSetpointId: "DP_DHW_SETPOINT", heatingHistoryId: "DP_HEAT_HISTORY", heatingTempId: "DP_HEAT_TEMP",
                 dhwActualMirrorId: "DP_DHW_ACTUAL_MIRROR",
                 dhwOutput1Id: "DP_DHW_OUTPUT1", dhwOutput2Id: "DP_DHW_OUTPUT2", dhwOutput3Id: "DP_DHW_OUTPUT3",
                 dhwHaL1FreeCurrentId: "DP_DHW_HA_L1_FREE_A", dhwHaL2FreeCurrentId: "DP_DHW_HA_L2_FREE_A",
                 dhwHaL3FreeCurrentId: "DP_DHW_HA_L3_FREE_A",
                 dhwHaL1CurrentId: "DP_DHW_HA_L1_CURRENT_A", dhwHaL2CurrentId: "DP_DHW_HA_L2_CURRENT_A",
-                dhwHaL3CurrentId: "DP_DHW_HA_L3_CURRENT_A"
+                dhwHaL3CurrentId: "DP_DHW_HA_L3_CURRENT_A",
+                haL1ImportPowerId: "DP_HA_L1_IMPORT_W", haL2ImportPowerId: "DP_HA_L2_IMPORT_W",
+                haL3ImportPowerId: "DP_HA_L3_IMPORT_W", haL1ExportPowerId: "DP_HA_L1_EXPORT_W",
+                haL2ExportPowerId: "DP_HA_L2_EXPORT_W", haL3ExportPowerId: "DP_HA_L3_EXPORT_W",
+                par14aId: "DP_PAR14A", lpcStateId: "DP_LPC_STATE", lpcLimitId: "DP_LPC_LIMIT"
             };
             for (const [nativeId, mappingId] of Object.entries(visibleMappings)) {
                 const configuredId = String(this.config[nativeId] || "").trim();
@@ -366,6 +372,7 @@ class EmsOptimizer extends utils.Adapter {
             Map,
             Set,
             Promise,
+            gridConstraints,
             Infinity,
             NaN,
             parseInt,
