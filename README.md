@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.13.0**
+Aktuelle Version: **0.14.0**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -8,9 +8,127 @@ Verbraucher in einem rollierenden 48-Stunden-Fahrplan zusammen.
 
 Der aktuelle Entwicklungsstand arbeitet grundsätzlich im Beobachtermodus. Ab
 Version 0.12.0 kann der Trinkwasser-EHZ nach ausdrücklicher Freigabe produktiv
-angesteuert werden. Version 0.13.0 ergänzt alternativ den gesicherten Einzeltest
-einer Wallbox. Batterie, Heizpuffer, Wärmepumpe und automatische reale
-Phasenumschaltung bleiben Simulation. Ein Update aktiviert keine neuen Ausgänge.
+angesteuert werden. Version 0.13.0 ergänzte alternativ den gesicherten Einzeltest
+einer Wallbox. Version 0.14.0 gleicht die Stromuntergrenzen der aktiven Skripte
+ab und bereitet den gemeinsamen Betrieb einer Wallbox mit dem EHZ vor. Batterie,
+Heizpuffer, Wärmepumpe und automatische reale Phasenumschaltung bleiben Simulation.
+Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.14.0 – Issues #6 und #7
+
+### Mindestströme aus den aktiven Wallboxskripten
+
+- Die vorhandenen Objekte `javascript.0.ev.amin0`, `javascript.0.ev.amin1` und
+  `javascript.0.ev.amin2` werden als manuelle Mindestströme gelesen. Ihre IDs sind
+  pro Wallbox in der Admin-Oberfläche einstellbar; der Adapter beschreibt sie nicht.
+- Nur bei `socfrei == 2` gelten zusätzlich die konfigurierbaren niedrigen SoC-Stufen:
+  Mii standardmäßig bis 30 % mindestens 10 A und bis 10 % mindestens 16 A;
+  EQV/EQE bis 50 % mindestens 10 A, bis 30 % mindestens 16 A und bis 10 %
+  mindestens 25 A.
+- Fahrzeug-, Phasen-, Leistungs-, Taper-, Hausanschluss- und
+  Inbetriebnahmegrenzen bleiben vorrangig. Eine Forderung von 25 A wird zum Beispiel
+  bei einer dreiphasig auf 16 A begrenzten EQV-Ladung sicher auf 16 A begrenzt.
+- Die Regeln wirken konsistent in 48-h-Fahrplan, Echtzeitverteilung und
+  Produktivausgang. Reale Befehle bleiben ganzzahlig und niemals zwischen 1 und 5 A.
+
+### Ein zentraler NVP-Regler für Wallbox und EHZ
+
+Zwei unabhängige Nullregler sind ausdrücklich ausgeschlossen. Der Echtzeitregler
+berechnet zuerst die gesamte flexible Leistung und verteilt sie anschließend:
+
+- Wallbox: grobe Leistungsstufe in ganzen Ampere
+- Trinkwasser-EHZ: stufenloser Feinregler auf den NVP-Sollwert
+- Standardverteilung: 50 % EHZ / 50 % Wallbox
+- einphasig EIN oberhalb 4.000 W, AUS unterhalb 3.000 W
+- dreiphasig EIN oberhalb 9.000 W, AUS unterhalb 8.000 W
+- nicht nutzbare oder durch Ampere-Rundung verbleibende Leistung geht an das andere Gerät
+
+Vor einer Erhöhung der Wallbox wartet der Produktivausgang, bis der EHZ seinen
+neuen niedrigeren Anteil erreicht hat. Dadurch entsteht beim Umschichten kein
+zusätzlicher Netzbezug; eine kurze zusätzliche Einspeisung ist sicherer und zulässig.
+Bei einer notwendigen Reduzierung wird die Wallbox sofort zurückgenommen, der EHZ
+füllt den verbleibenden Überschuss anschließend stufenlos auf.
+
+Als Laufzeitschalter dient ausschließlich das vorhandene Objekt
+`javascript.0.ehz.aufteilen`. Das Admin-Feld **Existing distribution switch data
+point** ist mit dieser ID vorbelegt und kann auf eine andere ID gelegt werden.
+Akzeptiert werden `true`/`false` sowie `1`/`0`; fehlende oder ungültige Werte
+deaktivieren die gemeinsame Verteilung. Der Adapter beschreibt dieses Objekt nicht.
+
+Für einen gemeinsamen Produktivtest müssen zusätzlich alle folgenden Sperren
+bewusst freigegeben sein:
+
+1. globale Schreibfreigabe,
+2. genau eine Wallbox-Steuerfreigabe,
+3. **Arm SINGLE wallbox test** dieser Wallbox,
+4. EHZ-Steuerfreigabe,
+5. **Arm COMBINED wallbox + DHW production test**,
+6. gültiges und eingeschaltetes Aufteilungsobjekt.
+
+Der zusätzliche Kombinationsschalter ist nach jedem Update standardmäßig aus.
+Für den ersten Wallbox-Einzeltest bleibt die EHZ-Steuerfreigabe aus; dann arbeitet
+die Wallbox wie in 0.13.0 allein gegen den NVP. Der Kombinationsbetrieb ist
+softwareseitig vorbereitet, aber noch nicht an der realen Anlage abgenommen.
+
+### Vorbereitung des Wallbox-Einzeltests
+
+Vor dem ersten Test wird genau eine Wallbox ausgewählt. Für diese Wallbox sind
+in der Admin-Oberfläche mindestens feste Phasenzahl, tatsächlich belegte
+Netzphase bei einphasigem Laden, Strom-/Freigabeausgang sowie bestätigter Strom,
+Verbindung und Fehlerstatus zu prüfen. Die sichere Startkonfiguration ist:
+
+- globale Schreibfreigabe zunächst aus,
+- nur die ausgewählte Wallbox vorhanden und zur Steuerung freigegeben,
+- **Arm SINGLE wallbox test** nur für diese Wallbox an,
+- Inbetriebnahmegrenze 6 A,
+- EHZ-Steuerfreigabe und **Arm COMBINED wallbox + DHW production test** aus,
+- automatische Phasenumschaltung aus und feste Phasenzahl am Gerät verifiziert.
+
+Unmittelbar vor der Übernahme wird nur der vollständige aktive Schreiber der
+ausgewählten Wallbox ausgeschaltet:
+
+| Wallbox | Fahrzeug | auszuschaltender Schreiber |
+|---|---|---|
+| 0 | Mii/e-Up | `script.js.EV-Charge.Werte_schreiben_0_V2` |
+| 1 | EQV | `script.js.EV-Charge.Werte_schreiben_1_V2` |
+| 2 | EQE | `script.js.EV-Charge.Werte_schreiben_2_V2` |
+
+Eine zugehörige automatische Phasenumschaltung muss ebenfalls aus sein.
+Messwert-, SoC-, RFID-/Benutzerfreigabe-, `PV_Sicherung`-, §14a-/EEBUS- und
+Geräteschutzskripte bleiben eingeschaltet. Erst danach wird die globale
+Schreibfreigabe als letzter Schritt gesetzt.
+
+Für die Rückkehr zum Skriptbetrieb zuerst die Wallbox-Steuerfreigabe entziehen
+und auf bestätigte Ladefreigabe 0 sowie `OutputOwned=false` warten. Danach
+**Arm SINGLE wallbox test** und die globale Schreibfreigabe ausschalten und erst
+dann den oben genannten Schreiber wieder aktivieren. Der Adapter schaltet bei
+Installation oder Update weder Skripte noch Produktivausgänge selbst um.
+
+Der gemeinsame Test mit EHZ ist eine eigene zweite Inbetriebnahmestufe. Dann
+müssen neben dem ausgewählten Wallbox-Schreiber auch die aktiven konkurrierenden
+EHZ-Leistungsschreiber, insbesondere `script.js.E-Heizer.EHZ-Leistung_V2` und
+`script.js.E-Heizer.EHZ-Aufteilen_V5`, anhand ihrer tatsächlichen vollständigen
+IDs geprüft und ausgeschaltet sein. Schutz-, Pumpen-, Temperatur- und
+Messskripte bleiben aktiv. Diese Umschaltung darf erst nach erfolgreichem
+Wallbox-Einzeltest erfolgen.
+
+### Neue Diagnoseobjekte in 0.14.0
+
+Je Wallbox `0`, `1` und `2` werden ergänzt:
+
+- `ems-optimizer.0.Vehicles.WallboxX.ManualMinimumCurrent_A`
+- `ems-optimizer.0.Vehicles.WallboxX.LowSocMinimumCurrent_A`
+- `ems-optimizer.0.Vehicles.WallboxX.RequestedMinimumCurrent_A`
+- `ems-optimizer.0.Vehicles.WallboxX.CurrentConstraintStatus`
+
+Für die gemeinsame Verteilung werden ergänzt:
+
+- `ems-optimizer.0.Control.ParallelDistributionReleased`
+- `ems-optimizer.0.Control.ParallelDistributionReleaseStatus`
+- `ems-optimizer.0.Control.CombinedProductionArmed`
+
+**In Version 0.14.0 entfallen keine Objekte.** Bestehende Diagramme und die
+bisherigen Freigabeobjekte bleiben erhalten.
 
 ## Neu in 0.13.0 – Issue #4
 
@@ -617,14 +735,14 @@ deaktivierte Altversionen wurden nicht übernommen.
 | Funktion | Umsetzung im Adapter | Zuständigkeit bis zur Produktivfreigabe |
 |---|---|---|
 | Fahrzeugpriorität | Grundrang Wallbox 0/1/2, `socfrei`, `alw`, Fahrzeugstatus und `javascript.0.ev.prio` | Erst priorisiertes Fahrzeug, danach weitere Fahrzeuge mit Restueberschuss |
-| SoC-Verwaltung | Mindest-SoC, Ziel-SoC, fehlende kWh und Abfahrtszeit | Adapter-Simulation |
+| SoC-Verwaltung | Mindest-/Ziel-SoC, `amin0..2` und die von `socfrei == 2` abhängigen Stromstufen | Fahrplan, Echtzeitverteilung und Produktivausgang |
 | Phasenerkennung | Direkte Auswertung von L1/L2/L3 mit mehr als 5 A; alter Phasenwert nur als Rückfall | Adapter-Simulation |
-| Wallbox + Trinkwasser | 50/50-Verteilung, ungenutzter Anteil wird dem anderen Gerät angeboten | Prognose und 2-s-Regler |
+| Wallbox + Trinkwasser | 50/50-Verteilung, Wallbox in ganzen Ampere, ungenutzter Anteil und Rundungsrest an den EHZ | Prognose und zentraler 2-s-Regler; produktiver Kombitest ab 0.14.0 separat gesperrt |
 | Hysterese einphasig | EIN über 4.000 W, AUS unter 3.000 W | Konfigurierbar unter `Config.DHWParallelStartPower1P_W` und `Config.DHWParallelStopPower1P_W` |
 | Hysterese dreiphasig | EIN über 9.000 W, AUS unter 8.000 W | Konfigurierbar unter `Config.DHWParallelStartPower3P_W` und `Config.DHWParallelStopPower3P_W` |
 | E-Heizer-Schutz | 9-kW-Maximum und bestehende Temperaturkennlinie | Adapter simuliert den sicheren Sollwert |
-| NVP-Ausregelung | Alle 2 Sekunden innerhalb des aktuellen Fahrplans | Adapter simuliert; Batterie schließt die verbleibende Lücke |
-| Ampere-/Freigabeschreiben, Hausanschlussschutz | Ab 0.13.0 gesicherter Einzeltest mit Rückmeldung und konfigurierbarer Hausanschlussgrenze | Je Wallbox entweder EMS-Test oder bisheriges Schreibskript |
+| NVP-Ausregelung | Ein gemeinsamer Regler: Wallbox grob, stufenloser EHZ als Feinregler; später Batterie für den verbleibenden Fehler | Simulation; produktiv einzeln ab 0.12/0.13, Kombination ab 0.14.0 zur Abnahme vorbereitet |
+| Ampere-/Freigabeschreiben, Hausanschlussschutz | Gesicherter Einzeltest mit Rückmeldung; ab 0.14.0 sichere gemeinsame Freigabekette | Je Aktor genau ein Schreiber; niemals Adapter und Bestandsskript gleichzeitig |
 | Phasenumschaltung | 1-/3-phasige Empfehlung mit fahrzeugspezifischen Grenzen; noch kein Aktorzugriff | Bestehende lokale Skripte schalten real |
 | RFID und Fehlerquittierung | Nicht doppelt implementiert | Bestehende lokale Skripte |
 | EHZ-Pumpe und Raum-PV-Boost | Nicht doppelt implementiert | `EHZ-Pumpe_V2` und `EHZ-P2FBH` |
@@ -640,10 +758,10 @@ Solange alle produktiven Gerätefreigaben ausgeschaltet sind, bleiben
 bleiben `PV_Sicherung`, `Werte_schreiben_0_V2`, `Werte_schreiben_1_V2`,
 `Werte_schreiben_2_V2`, `EHZ-Pumpe_V2` und `EHZ-P2FBH` aktiv. Ein Abschalten der
 Schreibskripte wäre ohne gezielte Übernahme falsch. Für den Wallbox-Einzeltest
-ab 0.13.0 gilt die konkrete Übergabeanleitung oben.
-
-Erst mit einer späteren, ausdrücklich produktiv freigegebenen Adapterversion
-werden wegen doppelter Entscheidungslogik zunächst folgende Skripte abgelöst:
+und die spätere gemeinsame Inbetriebnahme gilt die konkrete Übergabeanleitung
+oben. Version 0.14.0 schaltet kein Skript automatisch ab. Bei einer ausdrücklich
+produktiv freigegebenen Übernahme werden wegen doppelter Entscheidungslogik
+schrittweise folgende Skripte abgelöst:
 
 - `PV_Fahrplan`
 - `PV_Nacht`
@@ -667,6 +785,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.14.0 | Issues #6/#7: manuelle Mindestströme `amin0..2` und nur bei `socfrei == 2` wirksame niedrige SoC-Stromstufen ergänzt; zentralen NVP-Regler für 50/50-Verteilung vorbereitet, Wallbox grob und EHZ stufenlos als Feinregler. Vorhandenes `javascript.0.ehz.aufteilen` als konfigurierbaren, nur gelesenen Laufzeitschalter übernommen; separater standardmäßig ausgeschalteter Kombinations-Arming-Schalter, Diagnose und sichere Übergabereihenfolge ergänzt. Keine Objekte entfernt. |
 | 0.13.0 | Issue #4: Min-/Ziel-SoC und Fahrzeugpriorität im Admin, Mindest-SoC vor manueller Priorität, zwei konfigurierbare SoC-Reduktionsstufen in Prognose/Simulation/Output; gesicherter Wallbox-Einzeltest mit 6-A-Start, bestätigter Rückmeldung, Fehler-/NVP-/Hausanschlussprüfung. Neue Ausgänge bleiben aus; keine Objekte entfernt. |
 | 0.12.4 | Produktive NVP-Regelung des Trinkwasser-EHZ auf direkte SMA-Netzwerte umgestellt; Rückmelde-/Beruhigungslogik für den AC THOR, sofortige Reduktion bei Netzbezug, adaptive 1.000-/500-/200-W-Schritte und zusätzliche Diagnoseobjekte ergänzt. |
 | 0.12.3 | Zeitüberwachung an Sensorverhalten angepasst: unveränderte Tanktemperaturen bis 60 Minuten gültig, dynamische Ausgangstemperatur und Regler weiterhin eng überwacht. Produktiver Trinkwasser-Heizstab und langsame Zielverteilung standardmäßig alle 5 Sekunden. |

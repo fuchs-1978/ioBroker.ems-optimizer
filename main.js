@@ -36,7 +36,7 @@ class EmsOptimizer extends utils.Adapter {
         await this.applyNativeEmsSettings();
         await this.wallboxOutput.initialize();
         await this.setStateAsync("info.connection", true, true);
-        this.log.info("EMS Optimizer 0.13.0 started; real outputs require explicit device release");
+        this.log.info("EMS Optimizer 0.14.0 started; real outputs require explicit device release");
     }
 
     async preloadStates() {
@@ -72,6 +72,7 @@ class EmsOptimizer extends utils.Adapter {
                 dhwPowerId: "DP_DHW_POWER1", dhwTemp1Id: "DP_DHW_TEMP1",
                 dhwTemp2Id: "DP_DHW_TEMP2", dhwTemp3Id: "DP_DHW_TEMP3",
                 dhwTemp4Id: "DP_DHW_TEMP4", dhwReleaseId: "DP_DHW_RELEASE",
+                dhwParallelReleaseId: "DP_DHW_PARALLEL_RELEASE",
                 dhwOutletTempId: "DP_DHW_OUTLET_TEMP", dhwConnectionId: "DP_DHW_CONNECTION",
                 dhwHysteresisId: "DP_DHW_HYSTERESIS", heatingPowerId: "DP_HEAT_POWER1",
                 dhwSetpointId: "DP_DHW_SETPOINT", heatingHistoryId: "DP_HEAT_HISTORY", heatingTempId: "DP_HEAT_TEMP",
@@ -89,6 +90,8 @@ class EmsOptimizer extends utils.Adapter {
             [0, 1, 2].forEach(wb => {
                 const configuredSoc = String(this.config[`wb${wb}SocId`] || "").trim();
                 if (configuredSoc) mapping[`DP_WB${wb}_SOC`] = configuredSoc;
+                const manualMinimum = String(this.config[`wb${wb}ManualMinCurrentId`] || "").trim();
+                if (manualMinimum) mapping[`DP_WB${wb}_AMIN`] = manualMinimum;
             });
             return mapping;
         } catch (error) {
@@ -181,6 +184,12 @@ class EmsOptimizer extends utils.Adapter {
             DHWCommissioningMaxPower_W: ["dhwCommissioningMaxW", 1000],
             DHWHouseConnectionLimit_A: ["dhwHaLimitA", 50],
             DHWTemperatureMaxAge_min: ["dhwTemperatureMaxAgeMin", 60],
+            DHWParallelDistributionEnabled: ["dhwParallelDistributionEnabled", true],
+            DHWParallelStartPower1P_W: ["dhwParallelStartPower1PW", 4000],
+            DHWParallelStopPower1P_W: ["dhwParallelStopPower1PW", 3000],
+            DHWParallelStartPower3P_W: ["dhwParallelStartPower3PW", 9000],
+            DHWParallelStopPower3P_W: ["dhwParallelStopPower3PW", 8000],
+            DHWParallelShare_pct: ["dhwParallelSharePct", 50],
             HeatingBufferVolume_l: ["heatingVolumeL", 400],
             HeatingBufferTemperature_C: ["heatingTempC", 40],
             HeatingBufferMinTemperature_C: ["heatingMinTempC", 35],
@@ -215,6 +224,7 @@ class EmsOptimizer extends utils.Adapter {
         }
         const gates = {
             "System.RealOutputsEnabled": ["globalWriteEnabled", false],
+            "Control.CombinedProductionArmed": ["combinedProductionArmed", false],
             "Devices.MyPV_DHW.Present": ["dhwPresent", true],
             "Devices.MyPV_DHW.ControlEnabled": ["dhwControlEnabled", false],
             "Devices.MyPV_Heating.Present": ["heatingPresent", false],

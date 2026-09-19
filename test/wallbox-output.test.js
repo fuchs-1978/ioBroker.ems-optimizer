@@ -10,7 +10,7 @@ function setup() {
     const mapping = {DP_WB0_CAR: 'car', DP_WB0_SOC: 'soc', DP_WB0_ALLOW: 'userAllow',
         DP_WB0_POWER: 'power', DP_WB0_L1_A: 'i1', DP_WB0_L2_A: 'i2', DP_WB0_L3_A: 'i3',
         DP_GRID_IMPORT: 'import', DP_GRID_EXPORT: 'export', DP_HA_CRITICAL: 'critical',
-        DP_PAR14A: 'par14a', DP_LPC_STATE: 'lpc'};
+        DP_PAR14A: 'par14a', DP_LPC_STATE: 'lpc', DP_DHW_PARALLEL_RELEASE: 'split'};
     const config = {globalWriteEnabled: true, wb0Present: true, wb0ControlEnabled: true,
         wb0ProductionArmed: true, wb0CommissioningMaxA: 32, wb0MaxCurrent1pA: 32,
         wb0MaxPowerW: 7360, wb0AmpereOutputId: 'cmd', wb0AllowOutputId: 'allow',
@@ -36,7 +36,7 @@ function setup() {
     for (const [id, val] of Object.entries({car: 2, soc: 50, userAllow: true, power: 0,
         i1: 0, i2: 0, i3: 0, h1: 10, h2: 10, h3: 10, import: 0, export: 8000,
         critical: false, par14a: false, lpc: 'unlimitedAutonomous', connection: true,
-        error: 0, allow: 0, feedback: 6})) put(id, val);
+        error: 0, allow: 0, feedback: 6, split: 0})) put(id, val);
     const output = new WallboxOutput(adapter);
     const ack = (id, value) => put(id, value, {ts: Date.now() + 1});
     const refresh = () => {
@@ -136,6 +136,34 @@ test('failed current write cannot be followed by enable', async () => {
 test('duplicate output mappings are rejected', async () => {
     const h=setup(); h.config.wb1AmpereOutputId='cmd'; await h.output.initialize(); await h.output.tick();
     assert.equal(h.writes.length,0); assert.equal(h.output.devices[0].valid,false);
+});
+test('confirmed combined mode permits one wallbox beside DHW', async () => {
+    const h=setup();h.config.combinedProductionArmed=true;h.put('split',1);
+    h.put('ems.0.Config.DHWParallelDistributionEnabled',true);
+    h.put('ems.0.Devices.MyPV_DHW.ControlEnabled',true);
+    h.put('ems.0.Control.Targets.MyPV_DHW_W',0);
+    await h.start();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,true);
+});
+test('combined wallbox waits until positive DHW target is settled', async () => {
+    const h=setup();h.config.combinedProductionArmed=true;h.put('split',1);
+    h.put('ems.0.Config.DHWParallelDistributionEnabled',true);
+    h.put('ems.0.Devices.MyPV_DHW.ControlEnabled',true);
+    h.put('ems.0.Control.Targets.MyPV_DHW_W',3000);
+    h.put('ems.0.Actual.MyPV_DHW_W',0);
+    await h.output.initialize();await h.output.tick();
+    assert.equal(h.writes.length,0);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,/EHZ-Feinregler/);
+});
+test('combined wallbox also waits for residual DHW power at a zero target', async () => {
+    const h=setup();h.config.combinedProductionArmed=true;h.put('split',1);
+    h.put('ems.0.Config.DHWParallelDistributionEnabled',true);
+    h.put('ems.0.Devices.MyPV_DHW.ControlEnabled',true);
+    h.put('ems.0.Control.Targets.MyPV_DHW_W',0);
+    h.put('ems.0.Actual.MyPV_DHW_W',1000);
+    await h.output.initialize();await h.output.tick();
+    assert.equal(h.writes.length,0);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,/EHZ-Feinregler/);
 });
 
 module.exports={setup};

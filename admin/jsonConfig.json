@@ -4,7 +4,7 @@
   "items": {
     "safety": {
       "type": "staticText",
-      "text": "Version 0.13.0: DHW output or one guarded wallbox test. Battery, heating buffer and phase switching remain simulated.",
+      "text": "Version 0.14.0: one guarded wallbox test or explicitly armed wallbox + DHW combination. Battery, heating buffer and phase switching remain simulated.",
       "newLine": true
     },
     "generalHeader": {
@@ -210,6 +210,77 @@
       "unit": "A",
       "sm": 6,
       "newLine": true
+    },
+    "wb0ManualMinCurrentId": {
+      "type": "text",
+      "label": "Existing manual minimum-current data point",
+      "default": "javascript.0.ev.amin0",
+      "sm": 12,
+      "newLine": true
+    },
+    "wb0LowSocStepsEnabled": {
+      "type": "checkbox",
+      "label": "Use minimum-current stages when socfrei = 2",
+      "default": true,
+      "sm": 12,
+      "newLine": true
+    },
+    "wb0LowSoc1ThresholdPct": {
+      "type": "number",
+      "label": "Low-SoC stage 1: at or below",
+      "default": 30,
+      "min": 0,
+      "max": 100,
+      "unit": "%",
+      "sm": 6,
+      "newLine": true
+    },
+    "wb0LowSoc1MinA": {
+      "type": "number",
+      "label": "Low-SoC stage 1: minimum current",
+      "default": 10,
+      "min": 0,
+      "max": 32,
+      "unit": "A",
+      "sm": 6
+    },
+    "wb0LowSoc2ThresholdPct": {
+      "type": "number",
+      "label": "Low-SoC stage 2: at or below",
+      "default": 10,
+      "min": 0,
+      "max": 100,
+      "unit": "%",
+      "sm": 6,
+      "newLine": true
+    },
+    "wb0LowSoc2MinA": {
+      "type": "number",
+      "label": "Low-SoC stage 2: minimum current",
+      "default": 16,
+      "min": 0,
+      "max": 32,
+      "unit": "A",
+      "sm": 6
+    },
+    "wb0LowSoc3ThresholdPct": {
+      "type": "number",
+      "label": "Low-SoC stage 3: at or below",
+      "default": 0,
+      "min": 0,
+      "max": 100,
+      "unit": "%",
+      "sm": 6,
+      "newLine": true
+    },
+    "wb0LowSoc3MinA": {
+      "type": "number",
+      "label": "Low-SoC stage 3: minimum current (0 = disabled)",
+      "default": 0,
+      "min": 0,
+      "max": 32,
+      "unit": "A",
+      "sm": 6
     },
     "wb0ProductionArmed": {
       "type": "checkbox",
@@ -503,6 +574,77 @@
       "sm": 6,
       "newLine": true
     },
+    "wb1ManualMinCurrentId": {
+      "type": "text",
+      "label": "Existing manual minimum-current data point",
+      "default": "javascript.0.ev.amin1",
+      "sm": 12,
+      "newLine": true
+    },
+    "wb1LowSocStepsEnabled": {
+      "type": "checkbox",
+      "label": "Use minimum-current stages when socfrei = 2",
+      "default": true,
+      "sm": 12,
+      "newLine": true
+    },
+    "wb1LowSoc1ThresholdPct": {
+      "type": "number",
+      "label": "Low-SoC stage 1: at or below",
+      "default": 50,
+      "min": 0,
+      "max": 100,
+      "unit": "%",
+      "sm": 6,
+      "newLine": true
+    },
+    "wb1LowSoc1MinA": {
+      "type": "number",
+      "label": "Low-SoC stage 1: minimum current",
+      "default": 10,
+      "min": 0,
+      "max": 32,
+      "unit": "A",
+      "sm": 6
+    },
+    "wb1LowSoc2ThresholdPct": {
+      "type": "number",
+      "label": "Low-SoC stage 2: at or below",
+      "default": 30,
+      "min": 0,
+      "max": 100,
+      "unit": "%",
+      "sm": 6,
+      "newLine": true
+    },
+    "wb1LowSoc2MinA": {
+      "type": "number",
+      "label": "Low-SoC stage 2: minimum current",
+      "default": 16,
+      "min": 0,
+      "max": 32,
+      "unit": "A",
+      "sm": 6
+    },
+    "wb1LowSoc3ThresholdPct": {
+      "type": "number",
+      "label": "Low-SoC stage 3: at or below",
+      "default": 10,
+      "min": 0,
+      "max": 100,
+      "unit": "%",
+      "sm": 6,
+      "newLine": true
+    },
+    "wb1LowSoc3MinA": {
+      "type": "number",
+      "label": "Low-SoC stage 3: minimum current (0 = disabled)",
+      "default": 25,
+      "min": 0,
+      "max": 32,
+      "unit": "A",
+      "sm": 6
+    },
     "wb1ProductionArmed": {
       "type": "checkbox",
       "label": "Arm SINGLE wallbox test: competing scripts stopped and fixed phases verified",
@@ -795,6 +937,77 @@
       "sm": 6,
       "newLine": true
     },
+    "wb2ManualMinCurrentId": {
+      "type": "text",
+      "label": "Existing manual minimum-current data point",
+      "default": "javascript.0.ev.amin2",
+      "sm": 12,
+      "newLine": true
+    },
+    "wb2LowSocStepsEnabled": {
+      "type": "checkbox",
+      "label": "Use minimum-current stages when socfrei = 2",
+      "default": true,
+      "sm": 12,
+      "newLine": true
+    },
+    "wb2LowSoc1ThresholdPct": {
+      "type": "number",
+      "label": "Low-SoC stage 1: at or below",
+      "default": 50,
+      "min": 0,
+      "max": 100,
+      "unit": "%",
+      "sm": 6,
+      "newLine": true
+    },
+    "wb2LowSoc1MinA": {
+      "type": "number",
+      "label": "Low-SoC stage 1: minimum current",
+      "default": 10,
+      "min": 0,
+      "max": 32,
+      "unit": "A",
+      "sm": 6
+    },
+    "wb2LowSoc2ThresholdPct": {
+      "type": "number",
+      "label": "Low-SoC stage 2: at or below",
+      "default": 30,
+      "min": 0,
+      "max": 100,
+      "unit": "%",
+      "sm": 6,
+      "newLine": true
+    },
+    "wb2LowSoc2MinA": {
+      "type": "number",
+      "label": "Low-SoC stage 2: minimum current",
+      "default": 16,
+      "min": 0,
+      "max": 32,
+      "unit": "A",
+      "sm": 6
+    },
+    "wb2LowSoc3ThresholdPct": {
+      "type": "number",
+      "label": "Low-SoC stage 3: at or below",
+      "default": 10,
+      "min": 0,
+      "max": 100,
+      "unit": "%",
+      "sm": 6,
+      "newLine": true
+    },
+    "wb2LowSoc3MinA": {
+      "type": "number",
+      "label": "Low-SoC stage 3: minimum current (0 = disabled)",
+      "default": 25,
+      "min": 0,
+      "max": 32,
+      "unit": "A",
+      "sm": 6
+    },
     "wb2ProductionArmed": {
       "type": "checkbox",
       "label": "Arm SINGLE wallbox test: competing scripts stopped and fixed phases verified",
@@ -1004,6 +1217,75 @@
       "type": "text",
       "label": "Hysteresis data point",
       "default": "",
+      "sm": 6
+    },
+    "parallelHeader": {
+      "type": "header",
+      "text": "Wallbox / DHW distribution",
+      "size": 3,
+      "newLine": true
+    },
+    "dhwParallelReleaseId": {
+      "type": "text",
+      "label": "Existing distribution switch data point",
+      "default": "javascript.0.ehz.aufteilen",
+      "sm": 12,
+      "newLine": true
+    },
+    "dhwParallelDistributionEnabled": {
+      "type": "checkbox",
+      "label": "Use common wallbox / DHW allocator",
+      "default": true,
+      "sm": 6,
+      "newLine": true
+    },
+    "combinedProductionArmed": {
+      "type": "checkbox",
+      "label": "Arm COMBINED wallbox + DHW production test",
+      "default": false,
+      "sm": 6
+    },
+    "dhwParallelSharePct": {
+      "type": "number",
+      "label": "DHW share during parallel distribution",
+      "default": 50,
+      "min": 0,
+      "max": 100,
+      "unit": "%",
+      "sm": 4,
+      "newLine": true
+    },
+    "dhwParallelStartPower1PW": {
+      "type": "number",
+      "label": "1-phase distribution ON above",
+      "default": 4000,
+      "min": 0,
+      "unit": "W",
+      "sm": 4
+    },
+    "dhwParallelStopPower1PW": {
+      "type": "number",
+      "label": "1-phase distribution OFF below",
+      "default": 3000,
+      "min": 0,
+      "unit": "W",
+      "sm": 4
+    },
+    "dhwParallelStartPower3PW": {
+      "type": "number",
+      "label": "3-phase distribution ON above",
+      "default": 9000,
+      "min": 0,
+      "unit": "W",
+      "sm": 6,
+      "newLine": true
+    },
+    "dhwParallelStopPower3PW": {
+      "type": "number",
+      "label": "3-phase distribution OFF below",
+      "default": 8000,
+      "min": 0,
+      "unit": "W",
       "sm": 6
     },
     "dhwOutletTempId": {

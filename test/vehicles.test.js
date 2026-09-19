@@ -96,3 +96,47 @@ test('48-hour planner imports only to minimum, then waits for PV',()=>{
     const kwh=plan.reduce((s,x)=>s+x.valueW/4000*0.9,0);
     assert.ok(Math.abs(kwh-0.5)<0.001,`charged ${kwh} instead of 0.5 kWh to minimum`);
 });
+test('legacy low-SoC stages apply only while socfrei equals two',()=>{
+    const h=engine();h.put('DP_WB0_SOC',25);h.put('DP_WB0_RELEASE',2);h.run('updateVehicles()');
+    assert.equal(h.run('vehicleState(0).lowSocMinimumCurrentA'),10);
+    assert.equal(h.run('vehicleState(0).minCurrent1pA'),10);
+    h.put('DP_WB0_RELEASE',1);h.run('updateVehicles()');
+    assert.equal(h.run('vehicleState(0).lowSocMinimumCurrentA'),0);
+    assert.equal(h.run('vehicleState(0).minCurrent1pA'),6);
+});
+test('EQV low-SoC 25 A request is clipped by phase and vehicle maximum',()=>{
+    const h=engine();h.put('DP_WB1_SOC',8);h.put('DP_WB1_RELEASE',2);
+    h.put('ems.0.Config.Wallbox1MaxPower_W',11040);h.run('updateVehicles()');
+    assert.equal(h.run('vehicleState(1).requestedMinimumCurrentA'),25);
+    assert.equal(h.run('vehicleState(1).minCurrent1pA'),25);
+    assert.equal(h.run('vehicleState(1).minCurrent3pA'),16);
+});
+test('manual amin forces its configured minimum while socfrei is positive',()=>{
+    const h=engine();h.put('DP_WB0_AMIN',12);h.put('DP_WB0_RELEASE',1);h.run('updateVehicles()');
+    assert.equal(h.run('vehicleState(0).manualMinimumCurrentA'),12);
+    assert.equal(h.run('vehicleState(0).mustCharge'),true);
+    h.run('updateSlowTargets(0,[{valueW:0},{valueW:0},{valueW:0}],{valueW:0})');
+    assert.equal(h.run('slowTargets.wallboxA[0]'),12);
+});
+test('upper taper safety limit wins over a higher manual minimum',()=>{
+    const h=engine({wb0TaperEnabled:true});h.put('DP_WB0_SOC',79);h.put('DP_WB0_AMIN',16);
+    h.run('updateVehicles()');
+    assert.equal(h.run('vehicleState(0).requestedMinimumCurrentA'),16);
+    assert.equal(h.run('vehicleState(0).minCurrent1pA'),8);
+    assert.equal(h.run('quantizeWallbox(7000,vehicleState(0),0,1).amps'),8);
+});
+test('50/50 allocator requires existing external switch and gives rounding remainder to DHW',()=>{
+    const h=engine();h.put('DP_DHW_PARALLEL_RELEASE',1);
+    h.put('ems.0.Devices.Wallbox1.Present',false);h.put('ems.0.Devices.Wallbox2.Present',false);
+    h.put('ems.0.Config.DHWParallelDistributionEnabled',true);
+    h.put('ems.0.Devices.MyPV_DHW.Release',true);
+    h.put('ems.0.Devices.MyPV_DHW.TemperaturePowerLimit_W',9000);
+    h.run('simulateDhwTarget = valueW => valueW');
+    h.run('updateVehicles()');h.run('updateSlowTargets(6000,[{valueW:6000},{valueW:0},{valueW:0}],{valueW:0})');
+    assert.equal(h.run('realtimeParallelActive'),true);
+    assert.equal(h.run('slowTargets.wallboxW[0]'),1380);
+    assert.equal(h.run('slowTargets.dhwW'),4620);
+    h.put('DP_DHW_PARALLEL_RELEASE',0);h.run('resetSlowTargets()');
+    h.run('updateSlowTargets(6000,[{valueW:6000},{valueW:0},{valueW:0}],{valueW:0})');
+    assert.equal(h.run('realtimeParallelActive'),false);
+});
