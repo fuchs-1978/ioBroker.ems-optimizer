@@ -25,6 +25,7 @@
       "config": "json"
     },
     "loglevel": "info",
+    "tier": 2,
     "readme": "https://github.com/fuchs-1978/ioBroker.ems-optimizer/blob/main/README.md",
     "icon": "ems-optimizer.png",
     "extIcon": "https://raw.githubusercontent.com/fuchs-1978/ioBroker.ems-optimizer/main/admin/ems-optimizer.png",
