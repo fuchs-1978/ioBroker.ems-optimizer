@@ -93,19 +93,6 @@
           "default": false,
           "sm": 3
         },
-        "wb0PhaseOutputEnabled": {
-          "type": "checkbox",
-          "label": "Write phase recommendation",
-          "default": false,
-          "sm": 3,
-          "newLine": true
-        },
-        "wb0PhaseOutputId": {
-          "type": "text",
-          "label": "Existing phase recommendation object",
-          "default": "javascript.0.ev.pha0",
-          "sm": 9
-        },
         "_wb0CurrentHeader": {
           "type": "header",
           "text": "Current and phase limits",
@@ -499,19 +486,6 @@
           "default": false,
           "sm": 3
         },
-        "wb1PhaseOutputEnabled": {
-          "type": "checkbox",
-          "label": "Write phase recommendation",
-          "default": false,
-          "sm": 3,
-          "newLine": true
-        },
-        "wb1PhaseOutputId": {
-          "type": "text",
-          "label": "Existing phase recommendation object",
-          "default": "javascript.0.ev.pha1",
-          "sm": 9
-        },
         "_wb1CurrentHeader": {
           "type": "header",
           "text": "Current and phase limits",
@@ -904,19 +878,6 @@
           "label": "Allow 1-/3-phase switching",
           "default": false,
           "sm": 3
-        },
-        "wb2PhaseOutputEnabled": {
-          "type": "checkbox",
-          "label": "Write phase recommendation",
-          "default": false,
-          "sm": 3,
-          "newLine": true
-        },
-        "wb2PhaseOutputId": {
-          "type": "text",
-          "label": "Existing phase recommendation object",
-          "default": "javascript.0.ev.pha2",
-          "sm": 9
         },
         "_wb2CurrentHeader": {
           "type": "header",

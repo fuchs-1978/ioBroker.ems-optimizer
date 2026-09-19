@@ -125,6 +125,40 @@ test('upper taper safety limit wins over a higher manual minimum',()=>{
     assert.equal(h.run('vehicleState(0).minCurrent1pA'),8);
     assert.equal(h.run('quantizeWallbox(7000,vehicleState(0),0,1).amps'),8);
 });
+test('phase target uses a continuous forecast window and leaves the detected phase input untouched',()=>{
+    const h=engine({phaseSwitchLookAheadMin:30,phaseSwitchMinHoldMin:30});
+    h.put('ems.0.Vehicles.Wallbox1.PhaseSwitchEnabled',true);
+    h.put('ems.0.Vehicles.Wallbox1.MaximumPhases',3);h.run('updateVehicles()');
+    const now=Date.now();
+    const plan=Array.from({length:3},(_,i)=>({timestamp:now+i*900000,valueW:6210,phases:3,chargingMinutes:15}));
+    h.put('ems.0.Plan.Wallbox1_48h_JSON',JSON.stringify(plan));
+    h.put('ems.0.Control.Targets.Wallbox1_Phases',1);h.put('DP_WB1_PHASES',1);
+    assert.equal(h.run(`stabilizedPhaseTarget(1,vehicleState(1),3,${now})`),3);
+    assert.equal(h.states.get('DP_WB1_PHASES').val,1);
+});
+test('phase minimum hold time prevents rapid switching of the existing EMS target',()=>{
+    const h=engine({phaseSwitchLookAheadMin:30,phaseSwitchMinHoldMin:30});
+    h.put('ems.0.Vehicles.Wallbox1.PhaseSwitchEnabled',true);
+    h.put('ems.0.Vehicles.Wallbox1.MaximumPhases',3);h.run('updateVehicles()');
+    const now=Date.now();
+    const plan=Array.from({length:3},(_,i)=>({timestamp:now+i*900000,valueW:2300,phases:1,chargingMinutes:15}));
+    h.put('ems.0.Plan.Wallbox1_48h_JSON',JSON.stringify(plan));
+    h.run(`stableWallboxPhases[1]=3;lastPhaseChangeAt[1]=${now}`);
+    assert.equal(h.run(`stabilizedPhaseTarget(1,vehicleState(1),1,${now+60000})`),3);
+    h.run(`lastPhaseChangeAt[1]=${now-31*60000}`);
+    assert.equal(h.run(`stabilizedPhaseTarget(1,vehicleState(1),1,${now})`),1);
+});
+test('missing energy that no longer fits one-phase selects three phases',()=>{
+    const h=engine({phaseSwitchLookAheadMin:30,phaseSwitchMinHoldMin:30});
+    h.put('ems.0.Vehicles.Wallbox1.PhaseSwitchEnabled',true);
+    h.put('ems.0.Vehicles.Wallbox1.MaximumPhases',3);h.run('updateVehicles()');
+    const now=Date.now();
+    h.put('ems.0.Vehicles.Wallbox1.GridEnergyRequired_kWh',10);
+    h.put('ems.0.Vehicles.Wallbox1.DepartureTimestamp',now+3600000);
+    h.put('ems.0.Plan.Wallbox1_48h_JSON','[]');
+    h.put('ems.0.Control.Targets.Wallbox1_Phases',1);
+    assert.equal(h.run(`stabilizedPhaseTarget(1,vehicleState(1),1,${now})`),3);
+});
 test('50/50 allocator requires existing external switch and gives rounding remainder to DHW',()=>{
     const h=engine();h.put('DP_DHW_PARALLEL_RELEASE',1);
     h.put('ems.0.Devices.Wallbox1.Present',false);h.put('ems.0.Devices.Wallbox2.Present',false);
