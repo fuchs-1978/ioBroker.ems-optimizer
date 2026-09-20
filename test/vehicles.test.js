@@ -89,6 +89,21 @@ test('default PV-only above minimum does not force charging at departure deadlin
     const h=engine();h.put('ems.0.Config.Wallbox0VehicleCapacity_kWh',100000);
     h.run('updateVehicles()');assert.equal(h.run('vehicleState(0).mustCharge'),false);
 });
+test('empty departure keeps the vehicle available for the full forecast horizon',()=>{
+    const h=engine({wb0DeadlineEnabled:true});
+    h.put('ems.0.Vehicles.Wallbox0.DepartureTime','');
+    h.put('ems.0.Devices.Wallbox1.Present',false);h.put('ems.0.Devices.Wallbox2.Present',false);
+    h.put('ems.0.Forecast.Valid',true);h.put('ems.0.Devices.MyPV_DHW.Present',false);
+    h.run('historyReady=true; updateVehicles()');
+    assert.equal(h.run('vehicleState(0).departureTimestamp'),0);
+    assert.equal(h.run('vehicleState(0).latestStartTimestamp'),0);
+    assert.equal(h.run('vehicleState(0).mustCharge'),false);
+    const start=Date.now()+24*60*60*1000;
+    h.run(`buildDevicePlan({pv:Array.from({length:4},(_,i)=>({timestamp:${start}+i*900000,valueW:3000})),
+        house:Array.from({length:4},()=>({valueW:500})),prices:{total:Array.from({length:4},()=>({value_ct_kWh:28.89}))}})`);
+    const plan=JSON.parse(h.states.get('ems.0.Plan.Wallbox0_48h_JSON').val);
+    assert.ok(plan.some(slot=>slot.valueW>0));
+});
 test('48-hour planner imports only to minimum, then waits for PV',()=>{
     const h=engine({wb0SocLimitsSource:'admin',wb0MinSocPct:20,wb0TargetSocPct:80});
     h.put('DP_WB0_SOC',19);h.put('ems.0.Devices.Wallbox1.Present',false);

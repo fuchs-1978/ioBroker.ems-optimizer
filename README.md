@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.15.1**
+Aktuelle Version: **0.15.2**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -13,9 +13,23 @@ einer Wallbox. Version 0.14.0 gleicht die Stromuntergrenzen der aktiven Skripte
 ab und bereitet den gemeinsamen Betrieb einer Wallbox mit dem EHZ vor. Version
 0.15.0 ergänzte das gemeinsame §14a-/LPC-Leistungsbudget und eine richtungsrichtige
 Hausanschlussprüfung. Version 0.15.1 unterstützt zusätzlich einen statischen
-§14a-Binärkontakt mit festem Leistungsbudget. Batterie, Heizpuffer und Wärmepumpe bleiben Simulation.
+§14a-Binärkontakt mit festem Leistungsbudget. Version 0.15.2 macht die optionale
+Abfahrtszeit tatsächlich abschaltbar. Batterie, Heizpuffer und Wärmepumpe bleiben Simulation.
 Reale Phasenwechsel führt ausschließlich das vorhandene externe Skript aus; der
 Adapter stellt dafür nur Empfehlungen bereit. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.15.2 – optionale Abfahrtszeit
+
+- Ein leerer Wert in `ems-optimizer.0.Vehicles.WallboxX.DepartureTime` bedeutet
+  jetzt **keine hinterlegte Abfahrt**.
+- Das Fahrzeug bleibt dann im gesamten 48-Stunden-Horizont für die PV-geführte
+  Planung verfügbar.
+- Ohne Abfahrtszeit wird keine Deadline-Ladung ausgelöst, auch wenn deren
+  Admin-Schalter aktiviert ist.
+- Eine gesetzte Uhrzeit bleibt unverändert die harte Planungsgrenze.
+
+**In Version 0.15.2 werden keine Objekte angelegt oder entfernt.** Die
+Admin-Oberfläche und sämtliche produktiven Ausgänge bleiben unverändert.
 
 ## Neu in 0.15.1 – Issue #8
 
@@ -864,6 +878,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.15.2 | Leere Wallbox-Abfahrtszeit als „keine Abfahrt“ umgesetzt. Das Fahrzeug bleibt dann im gesamten 48-Stunden-Horizont planbar; ohne Uhrzeit wird keine Deadline-Ladung ausgelöst. Keine Objekte ergänzt oder entfernt, keine Admin-Einstellungen und keine produktiven Ausgänge verändert. |
 | 0.15.1 | Issue #8: statischen §14a-Binärkontakt mit konfigurierbarem Festlimit ergänzt. Binärkontakt und EEBUS-LPC werden automatisch anhand der angegebenen Datenpunkte ausgewertet; bei zwei aktiven Begrenzungen gilt das kleinere Limit. Statische Kontakte verfallen nicht wegen eines unveränderten Zeitstempels. Keine Objekte ergänzt oder entfernt und keine produktiven Ausgänge aktiviert. |
 | 0.15.0 | Issues #8/#27: EEBUS-LPC als gemeinsames Budget von Wärmepumpe und Wallboxen umgesetzt; ungültige Signale sperren sicher. Phasenweisen Hausanschlussschutz um optionale getrennte Bezugs-/Einspeiseleistungen ergänzt und die zugehörigen Admin-Felder nach General verschoben. Der Adapter gibt weiterhin nur Phasenempfehlungen aus; reale Umschaltung bleibt beim externen Skript. Vier Diagnoseobjekte ergänzt, keine Objekte entfernt und keine produktiven Ausgänge aktiviert. |
 | 0.14.0 | Issues #6/#7: manuelle Mindestströme `amin0..2` und nur bei `socfrei == 2` wirksame niedrige SoC-Stromstufen ergänzt; zentralen NVP-Regler für 50/50-Verteilung vorbereitet, Wallbox grob und EHZ stufenlos als Feinregler. Vorhandenes `javascript.0.ehz.aufteilen` als konfigurierbaren, nur gelesenen Laufzeitschalter übernommen; separater standardmäßig ausgeschalteter Kombinations-Arming-Schalter, Diagnose und sichere Übergabereihenfolge ergänzt. Keine Objekte entfernt. |
