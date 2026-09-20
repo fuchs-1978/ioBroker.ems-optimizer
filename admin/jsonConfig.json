@@ -8,7 +8,7 @@
       "items": {
         "safety": {
           "type": "staticText",
-          "text": "Version 0.15.1: one guarded wallbox test or explicitly armed wallbox + DHW combination. Binary §14a contact and EEBUS LPC automatically limit the shared budget. Real phase switching remains external.",
+          "text": "Version 0.15.2: one guarded wallbox test or explicitly armed wallbox + DHW combination. Binary §14a contact and EEBUS LPC automatically limit the shared budget. Real phase switching remains external.",
           "newLine": true
         },
         "generalHeader": {
