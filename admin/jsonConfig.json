@@ -8,7 +8,7 @@
       "items": {
         "safety": {
           "type": "staticText",
-          "text": "Version 0.17.0-alpha.3: an adopted wallbox is protected from a transient zero target while realtime control initializes, without bypassing safety gates. 50/50 and SoC handoff fixes remain active. No previously disabled output is enabled by an update.",
+          "text": "Version 0.17.0-alpha.4: productive wallbox control follows the confirmed go-e 1-/3-phase mode and starts a fresh minimum run time after restart handoff. The external script still performs the physical switch. No previously disabled output is enabled by an update.",
           "newLine": true
         },
         "generalHeader": {
@@ -251,7 +251,8 @@
         "wallboxRestartHandoffTimeoutS": {"type": "number", "label": "Maximum wait for fresh control data after restart", "unit": "s", "default": 180, "min": 30, "max": 600, "sm": 4},
         "wallboxRestartHandoffGraceS": {"type": "number", "label": "Protect adopted wallbox from transient zero target", "unit": "s", "default": 30, "min": 10, "max": 120, "sm": 4},
         "phaseSwitchLookAheadMin": {"type": "number", "label": "Phase recommendation look-ahead", "unit": "min", "default": 30, "min": 15, "max": 240, "sm": 4},
-        "phaseSwitchMinHoldMin": {"type": "number", "label": "Minimum time between phase changes", "unit": "min", "default": 30, "min": 0, "max": 240, "sm": 4, "newLine": true}
+        "phaseSwitchMinHoldMin": {"type": "number", "label": "Minimum time between phase changes", "unit": "min", "default": 30, "min": 0, "max": 240, "sm": 4},
+        "phaseSwitchTransitionS": {"type": "number", "label": "Tolerance after confirmed go-e phase change", "unit": "s", "default": 90, "min": 30, "max": 300, "sm": 4, "newLine": true}
       }
     },
     "wallbox0Tab": {
@@ -551,14 +552,14 @@
         },
         "wb0ProductionArmed": {
           "type": "checkbox",
-          "label": "Arm wallbox output: competing writer stopped and fixed phases verified",
+          "label": "Arm wallbox output: competing ampere/allow writer stopped",
           "default": false,
           "sm": 6,
           "newLine": true
         },
         "wb0ProductionPhases": {
           "type": "select",
-          "label": "Verified fixed phases during production test (no automatic switching)",
+          "label": "Fixed production phases (fallback when phase switching is disabled)",
           "default": 1,
           "options": [
             {
@@ -652,6 +653,13 @@
         "wb0AvailableCurrentId": {
           "type": "text",
           "label": "Optional available current (leave empty if go-e provides no value)",
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "wb0PhaseModeId": {
+          "type": "text",
+          "label": "go-e confirmed phase mode (1 = 1P, 2 = 3P)",
           "default": "",
           "sm": 12,
           "newLine": true
@@ -955,14 +963,14 @@
         },
         "wb1ProductionArmed": {
           "type": "checkbox",
-          "label": "Arm wallbox output: competing writer stopped and fixed phases verified",
+          "label": "Arm wallbox output: competing ampere/allow writer stopped",
           "default": false,
           "sm": 6,
           "newLine": true
         },
         "wb1ProductionPhases": {
           "type": "select",
-          "label": "Verified fixed phases during production test (no automatic switching)",
+          "label": "Fixed production phases (fallback when phase switching is disabled)",
           "default": 1,
           "options": [
             {
@@ -1056,6 +1064,13 @@
         "wb1AvailableCurrentId": {
           "type": "text",
           "label": "Optional available current (leave empty if go-e provides no value)",
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "wb1PhaseModeId": {
+          "type": "text",
+          "label": "go-e confirmed phase mode (1 = 1P, 2 = 3P)",
           "default": "",
           "sm": 12,
           "newLine": true
@@ -1359,14 +1374,14 @@
         },
         "wb2ProductionArmed": {
           "type": "checkbox",
-          "label": "Arm wallbox output: competing writer stopped and fixed phases verified",
+          "label": "Arm wallbox output: competing ampere/allow writer stopped",
           "default": false,
           "sm": 6,
           "newLine": true
         },
         "wb2ProductionPhases": {
           "type": "select",
-          "label": "Verified fixed phases during production test (no automatic switching)",
+          "label": "Fixed production phases (fallback when phase switching is disabled)",
           "default": 1,
           "options": [
             {
@@ -1460,6 +1475,13 @@
         "wb2AvailableCurrentId": {
           "type": "text",
           "label": "Optional available current (leave empty if go-e provides no value)",
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "wb2PhaseModeId": {
+          "type": "text",
+          "label": "go-e confirmed phase mode (1 = 1P, 2 = 3P)",
           "default": "",
           "sm": 12,
           "newLine": true
