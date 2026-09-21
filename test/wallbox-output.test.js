@@ -34,6 +34,7 @@ function setup() {
     put('ems.0.Control.TargetGridPower_W', -100);
     put('ems.0.Control.SelectedWallbox', 0);
     put('ems.0.Control.Targets.Wallbox0_W', 7000);
+    put('ems.0.Control.Targets.Wallbox0_Phases', 1);
     put('ems.0.Vehicles.Wallbox0.TargetSoC_pct', 80);
     put('ems.0.Vehicles.Wallbox0.MinimumSoC_pct', 20);
     for (const [id, val] of Object.entries({car: 2, soc: 50, userAllow: true, power: 0,
@@ -101,6 +102,7 @@ test('previously owned active wallbox is safely adopted after an unclean restart
     assert.deepEqual(h.writes, []);
     assert.equal(h.output.devices[0].owned, true);
     assert.equal(h.output.devices[0].lastA, 10);
+    assert.ok(Date.now() - h.output.devices[0].activeSince < 1000);
     assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, true);
     assert.equal(h.states.get('ems.0.Control.RestartHandoffActive').val, false);
     assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,
@@ -152,6 +154,37 @@ test('restart recovery stops a previously owned wallbox when a safety gate fails
     await h.output.initialize(); await h.output.tick();
     assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
     assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, false);
+});
+test('dynamic phase mode waits for external script confirmation before starting', async () => {
+    const h=setup();
+    Object.assign(h.config,{wb0PhaseSwitchEnabled:true,wb0PhaseModeId:'phaseMode',
+        wb0MinCurrent3pA:6,wb0MaxCurrent3pA:16});
+    h.put('phaseMode',1);h.put('ems.0.Control.Targets.Wallbox0_Phases',3);
+    h.put('ems.0.Control.Targets.Wallbox0_W',4140);
+    await h.output.initialize();await h.output.tick();
+    assert.deepEqual(h.writes,[]);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,/Soll 3P.*bestaetigt 1P/);
+    h.put('phaseMode',2);await h.output.tick();h.ack('allow',0);await h.output.tick();
+    h.ack('feedback',6);await h.output.tick();h.ack('allow',1);await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'allow',val:0},{id:'cmd',val:6},{id:'allow',val:1}]);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputPhases').val,3);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ConfirmedPhases').val,3);
+});
+test('confirmed 1-to-3 phase change keeps an owned wallbox active during go-e restart', async () => {
+    const h=setup();
+    Object.assign(h.config,{wb0PhaseSwitchEnabled:true,wb0PhaseModeId:'phaseMode',
+        wb0MinCurrent3pA:6,wb0MaxCurrent3pA:16});
+    h.put('phaseMode',1);await h.start();h.writes.length=0;
+    h.put('ems.0.Control.Targets.Wallbox0_Phases',3);
+    await h.output.tick();
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,/warte auf 3P/);
+    h.put('phaseMode',2);h.put('ems.0.Control.Targets.Wallbox0_W',4140);
+    h.put('i1',0);h.put('i2',0);h.put('i3',0);h.put('power',0);
+    await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,true);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputPhases').val,3);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.PhaseTransitionActive').val,true);
+    assert.deepEqual(h.writes,[]);
 });
 test('running wallbox without persisted EMS ownership is never adopted', async () => {
     const h = setup();

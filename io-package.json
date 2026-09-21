@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.3",
+    "version": "0.17.0-alpha.4",
     "titleLang": {
       "en": "EMS Optimizer",
       "de": "EMS-Optimierer"
@@ -178,6 +178,7 @@
     "wallboxRestartHandoffGraceS": 30,
     "phaseSwitchLookAheadMin": 30,
     "phaseSwitchMinHoldMin": 30,
+    "phaseSwitchTransitionS": 90,
     "dynamicEnergyPrice": false,
     "dynamicGridFee": false,
     "fixedEnergyCt": 22.85,
@@ -275,6 +276,7 @@
     "wb0ConnectionId": "",
     "wb0ErrorId": "",
     "wb0AvailableCurrentId": "",
+    "wb0PhaseModeId": "",
     "wb1SocLimitsSource": "external",
     "wb1MinSocPct": 20,
     "wb1TargetSocPct": 80,
@@ -303,6 +305,7 @@
     "wb1ConnectionId": "",
     "wb1ErrorId": "",
     "wb1AvailableCurrentId": "",
+    "wb1PhaseModeId": "",
     "wb2SocLimitsSource": "external",
     "wb2MinSocPct": 20,
     "wb2TargetSocPct": 80,
@@ -331,6 +334,7 @@
     "wb2ConnectionId": "",
     "wb2ErrorId": "",
     "wb2AvailableCurrentId": "",
+    "wb2PhaseModeId": "",
     "wallboxPriority": -1,
     "wallboxPrioritySource": "auto",
     "wallboxPriorityId": "",
