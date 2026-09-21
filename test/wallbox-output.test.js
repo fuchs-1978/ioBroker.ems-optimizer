@@ -129,6 +129,20 @@ test('restart handoff waits for fresh internal control data without stopping', a
     assert.equal(h.output.devices[0].recovering,false);
     assert.equal(h.states.get('ems.0.Control.RestartHandoffActive').val,false);
 });
+test('recovered wallbox survives a transient zero target until realtime settles', async () => {
+    const h=setup();h.config.wallboxRestartHandoffGraceS=30;
+    h.put('ems.0.Control.RestartHandoffActive',true);
+    h.put('ems.0.Control.RestartHandoffSince',Date.now());
+    h.put('ems.0.Devices.Wallbox0.OutputOwned',true);
+    h.put('ems.0.Devices.Wallbox0.OutputActive',true);
+    h.put('allow',1);h.put('feedback',9);h.put('i1',9);h.put('power',2.07);
+    await h.output.initialize();await h.output.tick();
+    h.output.devices[0].activeSince-=601000;
+    h.put('ems.0.Control.Targets.Wallbox0_W',0);h.writes.length=0;
+    await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'cmd',val:6}]);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,true);
+});
 test('restart recovery stops a previously owned wallbox when a safety gate fails', async () => {
     const h = setup();
     h.put('ems.0.Devices.Wallbox0.OutputOwned', true);
