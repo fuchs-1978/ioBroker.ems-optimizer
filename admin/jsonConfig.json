@@ -8,7 +8,7 @@
       "items": {
         "safety": {
           "type": "staticText",
-          "text": "Version 0.17.0-alpha.5: a lower wallbox target safely replaces a pending higher current command without stopping the charger or rearming the start delay. Dynamic 1-/3-phase feedback remains active. No previously disabled output is enabled by an update.",
+          "text": "Version 0.17.0-alpha.6: restart handoff explicitly starts a fresh productive minimum run time in both realtime allocation and output control, even while OutputActive remains true. No previously disabled output is enabled by an update.",
           "newLine": true
         },
         "generalHeader": {
