@@ -47,3 +47,18 @@ test('EHZ house-connection limit distinguishes phase export from import', () => 
     assert.equal(phaseLimit('import'), 230);
     assert.equal(phaseLimit('export'), 3000);
 });
+
+test('combined EHZ accepts three armed wallboxes only in alpha mode', () => {
+    const states = new Map();
+    for (let wb=0;wb<3;wb++) states.set(`ems.0.Devices.Wallbox${wb}.ControlEnabled`,{val:true});
+    states.set('ems.0.Config.DHWParallelDistributionEnabled',{val:true});
+    const ctx = vm.createContext({Math, gridConstraints: require('../lib/grid-constraints'),
+        CFG:{root:'ems.0',dp:{dhwParallelRelease:'split'}},
+        nativeConfig:{multiWallboxAlphaArmed:true,combinedProductionArmed:true,
+            wb0ProductionArmed:true,wb1ProductionArmed:true,wb2ProductionArmed:true},
+        getState:id=>states.get(id),readBooleanInput:id=>id==='split'?true:null});
+    vm.runInContext(fs.readFileSync(path.join(__dirname, '../lib/engine/dhw-output.js'), 'utf8'), ctx);
+    assert.equal(vm.runInContext('dhwCombinedProductionState().allowed',ctx),true);
+    vm.runInContext('nativeConfig.multiWallboxAlphaArmed=false',ctx);
+    assert.equal(vm.runInContext('dhwCombinedProductionState().allowed',ctx),false);
+});

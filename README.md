@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.15.5**
+Aktuelle Version: **0.16.0-alpha.1**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -18,9 +18,46 @@ Abfahrtszeit tatsächlich abschaltbar. Version 0.15.3 stabilisiert den produktiv
 PV-Betrieb von Wallbox und EHZ. Version 0.15.4 koppelt die Mindestlaufzeit an den
 tatsächlich bestätigten Wallbox-Ausgang. Version 0.15.5 kann einen noch laufenden,
 zuvor EMS-eigenen Auftrag nach einem ungeplanten Neustart sicher wieder übernehmen.
+Version 0.16.0-alpha.1 erlaubt die gemeinsame Freigabe aller drei Wallboxen und
+des EHZ. Die Wallboxen arbeiten dabei zwingend nacheinander; der EHZ darf parallel
+zur jeweils ausgewählten Wallbox als Feinregler laufen.
 Batterie, Heizpuffer und Wärmepumpe bleiben Simulation.
 Reale Phasenwechsel führt ausschließlich das vorhandene externe Skript aus; der
 Adapter stellt dafür nur Empfehlungen bereit. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.16.0-alpha.1 – Alpha-Gesamtsteuerung
+
+- WB0, WB1 und WB2 dürfen gleichzeitig zur Adaptersteuerung freigegeben werden.
+  Der neue Schalter **Arm ALPHA control for all released wallboxes + DHW** muss
+  dafür zusätzlich ausdrücklich gesetzt sein.
+- Produktiv lädt immer nur **eine** Wallbox. Auswahl: laufender EMS-Auftrag,
+  Mindest-SoC, Pflichtladung, Priorität und Fahrplan. Die nächste Wallbox erhält
+  erst nach bestätigtem `allow_charging = 0` der vorherigen eine Startfreigabe.
+- Fahrplan und Echtzeitregler erzeugen ebenfalls nie parallele Wallbox-Sollwerte.
+  Der EHZ bleibt parallel zulässig und regelt den nach der Ganzampere-Stufe
+  verbleibenden Überschuss stufenlos aus.
+- Erkennt der Alpha-Modus beim Übergang eine laufende, noch nicht dem EMS gehörende
+  Wallbox, übernimmt er deren unbekannten Auftrag nicht. Er setzt sie zuerst
+  kontrolliert auf AUS und startet sie bei vorhandenem Budget über die bestätigte
+  Sequenz AUS → Mindeststrom → EIN neu.
+- Eigentümerschaft, sichere Wiederübernahme nach ungeplantem Neustart,
+  Startverzögerung, Mindestlaufzeit, Hausanschlussgrenzen, §14a/LPC sowie alle
+  Geräte-, Messwert- und SoC-Sperren bleiben wirksam.
+- Reale Phasenumschaltung ist weiterhin nicht Bestandteil dieses Alpha-Tests.
+  Jede Wallbox arbeitet mit der im Admin bestätigten festen Phasenzahl.
+
+Für den Alpha-Test werden alle drei Wallbox-Schreiber
+`Werte_schreiben_0_V2`, `Werte_schreiben_1_V2`, `Werte_schreiben_2_V2` sowie die
+konkurrierenden EHZ-Leistungsschreiber deaktiviert. Mess-, SoC-, Benutzer-/RFID-,
+Hausanschluss-, §14a-/EEBUS-, Pumpen-, Temperatur- und Geräteschutzfunktionen
+bleiben aktiv. Danach werden je Wallbox **Control release** und **Arm wallbox
+output**, für den EHZ dessen Steuerfreigabe und die Kombinationsfreigabe sowie
+zuletzt Alpha- und globale Schreibfreigabe gesetzt.
+
+Die Rückkehr zum Skriptbetrieb erfolgt umgekehrt: zuerst die Gerätefreigaben
+entziehen, auf `OutputOwned=false`, alle `OutputActive=false`, alle go-e-
+Freigaben `0` und EHZ-Sollwert `0 W` warten, dann Alpha-/globale Freigabe aus
+und erst anschließend die alten Ausgangsschreiber wieder starten.
 
 ## Neu in 0.15.5 – sichere Wiederübernahme nach Neustart
 
@@ -212,11 +249,12 @@ Für einen gemeinsamen Produktivtest müssen zusätzlich alle folgenden Sperren
 bewusst freigegeben sein:
 
 1. globale Schreibfreigabe,
-2. genau eine Wallbox-Steuerfreigabe,
-3. **Arm SINGLE wallbox test** dieser Wallbox,
-4. EHZ-Steuerfreigabe,
-5. **Arm COMBINED wallbox + DHW production test**,
-6. gültiges und eingeschaltetes Aufteilungsobjekt.
+2. eine oder mehrere Wallbox-Steuerfreigaben,
+3. **Arm wallbox output** jeder freigegebenen Wallbox,
+4. bei mehreren Wallboxen die **ALPHA-Mehrgerätefreigabe**,
+5. EHZ-Steuerfreigabe,
+6. **Arm combined wallbox + DHW production**,
+7. gültiges und eingeschaltetes Aufteilungsobjekt.
 
 Der zusätzliche Kombinationsschalter ist nach jedem Update standardmäßig aus.
 Für den ersten Wallbox-Einzeltest bleibt die EHZ-Steuerfreigabe aus; dann arbeitet
@@ -360,7 +398,7 @@ by wallbox L1** muss der tatsächlichen Verdrahtung entsprechen. Ein gültiges
 begrenztes LPC-Signal reduziert die Wallbox auf das verbleibende §14a-Budget;
 ungültige oder veraltete Signale stoppen sie.
 
-**Bewusste Grenze dieser Version:** genau eine Wallbox produktiv und die
+**Bewusste Grenze der damaligen Version 0.13.0:** genau eine Wallbox produktiv und die
 EHZ-Steuerfreigabe im Adapter aus. Die Phasenzahl wird für den Test physisch fest
 eingestellt und unter **Verified fixed phases** bestätigt. Der Adapter schaltet
 keine Phasenschütze. Seine 1-/3-Phasen-Prognose bleibt eine Empfehlung; der Ausgang
@@ -800,9 +838,10 @@ Konfigurationsseite:
 - **Vorhanden / in Planung berücksichtigen** nimmt das Gerät in Fahrplan und
   Simulation auf. Ist der Schalter aus, bleibt seine geplante Leistung null.
 - **Steuerfreigabe** erlaubt beim Trinkwasser-EHZ zusammen mit dem globalen
-  Hauptschalter die produktive Ansteuerung. Ab 0.13.0 kann alternativ eine Wallbox
-  mit zusätzlicher Einzeltest-Bestätigung produktiv arbeiten. Die übrigen Geräte
-  bleiben ohne Aktorzugriff.
+  Hauptschalter die produktive Ansteuerung. Ab 0.16.0-alpha.1 können alle drei
+  einzeln bestätigten Wallboxen freigegeben werden; die harte Verriegelung lässt
+  weiterhin nur eine Wallbox gleichzeitig laden. Batterie, Heizpuffer und
+  Wärmepumpe bleiben ohne Aktorzugriff.
 
 Darüber liegt die globale Freigabe **Master release for configured real outputs**.
 Sie ist standardmäßig aus. Der EHZ-Ausgang wird erst freigegeben, wenn
@@ -946,6 +985,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.16.0-alpha.1 | Alpha-Gesamtsteuerung für WB0, WB1, WB2 und Trinkwasser-EHZ. Harte Sequenzverriegelung: nie mehr als eine Wallbox gleichzeitig, bestätigtes AUS vor Übergabe, unbekannte laufende Fremdfreigaben werden zuerst kontrolliert gestoppt. EHZ bleibt während der Startverzögerung und parallel zur aktiven Wallbox Feinregler. Startreserve arbeitet nach Beginn des Countdowns als Hysterese; zusätzliche produktive Mindestlaufzeit-Sicherung direkt am Wallbox-Ausgang. Neue standardmäßig ausgeschaltete Alpha-Freigabe; reale Phasenumschaltung bleibt extern. |
 | 0.15.5 | Sichere Wiederübernahme eines zuvor EMS-eigenen und weiterhin aktiven Wallbox-Auftrags nach ungeplantem Prozessneustart. Vollständige Live-Sicherheitsprüfung vor der Übernahme; bei fehlender Eigentümerschaft oder ungültigen Bedingungen wird nicht übernommen. Keine Objekte ergänzt oder entfernt und keine zusätzlichen Ausgänge aktiviert. |
 | 0.15.4 | Produktive Wallbox-Mindestlaufzeit beginnt erst mit dem bestätigten realen Ausgang statt mit einem früheren Simulationssollwert. Einschaltverzögerung und verbleibende Mindestlaufzeit werden je Wallbox über vier Diagnoseobjekte sichtbar. Zwölf Objekte ergänzt, keine entfernt und keine zusätzlichen Ausgänge aktiviert. |
 | 0.15.3 | Produktiven PV-Betrieb stabilisiert: konfigurierbare Startreserve, Startverzögerung und Wallbox-Mindestlaufzeit; nicht nutzbares Ganzampere-/Mindestleistungsbudget fällt an den EHZ-Feinregler zurück. Laufende Wallboxen werden anhand ihrer tatsächlichen Leistungsaufnahme nachgeregelt. 4/3-kW-Hysterese mit Tests abgesichert und Statusmeldungen für Fahrzeug/SoC präzisiert. Drei Konfigurationsobjekte ergänzt, keine Objekte entfernt und keine weiteren Ausgänge aktiviert. |

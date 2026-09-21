@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.15.5",
+    "version": "0.16.0-alpha.1",
     "titleLang": {
       "en": "EMS Optimizer",
       "de": "EMS-Optimierer"
@@ -42,6 +42,7 @@
   "native": {
     "observerOnly": true,
     "globalWriteEnabled": false,
+    "multiWallboxAlphaArmed": false,
     "historyInstance": "",
     "batteryPresent": false,
     "batteryControlEnabled": false,

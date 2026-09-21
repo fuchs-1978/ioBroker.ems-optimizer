@@ -37,7 +37,7 @@ class EmsOptimizer extends utils.Adapter {
         await this.applyNativeEmsSettings();
         await this.wallboxOutput.initialize();
         await this.setStateAsync("info.connection", true, true);
-        this.log.info("EMS Optimizer 0.15.5 started; real outputs require explicit device release");
+        this.log.info("EMS Optimizer 0.16.0-alpha.1 started; alpha outputs require explicit release");
     }
 
     async preloadStates() {
@@ -233,6 +233,7 @@ class EmsOptimizer extends utils.Adapter {
         }
         const gates = {
             "System.RealOutputsEnabled": ["globalWriteEnabled", false],
+            "Control.MultiWallboxAlphaArmed": ["multiWallboxAlphaArmed", false],
             "Control.CombinedProductionArmed": ["combinedProductionArmed", false],
             "Devices.MyPV_DHW.Present": ["dhwPresent", true],
             "Devices.MyPV_DHW.ControlEnabled": ["dhwControlEnabled", false],
