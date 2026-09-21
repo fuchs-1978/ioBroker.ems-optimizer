@@ -284,8 +284,25 @@ test('productive output keeps six amps during minimum runtime on a soft surplus 
     assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,true);
     assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,/Mindestlaufzeit/);
     h.output.devices[0].activeSince-=601000;
+    h.output.devices[0].shortfallSince-=121000;
     await h.output.tick();
     assert.deepEqual(h.writes,[{id:'allow',val:0}]);
+});
+test('brief grid import after minimum runtime holds six amps for the stop delay', async () => {
+    const h=setup();h.config.wallboxMinimumRunTimeS=120;h.config.wallboxStopDelayS=120;
+    await h.start();h.writes.length=0;h.output.devices[0].activeSince-=121000;
+    h.put('ems.0.Control.Targets.Wallbox0_W',0);h.put('import',500);h.put('export',0);
+    await h.output.tick();
+    assert.deepEqual(h.writes,[]);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,true);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,/Leistungsdelle: 6 A/);
+    h.put('ems.0.Control.Targets.Wallbox0_W',7000);h.put('import',0);h.put('export',8000);
+    await h.output.tick();
+    assert.equal(h.output.devices[0].shortfallSince,0);
+    h.put('ems.0.Control.Targets.Wallbox0_W',0);h.put('import',500);h.put('export',0);
+    await h.output.tick();
+    assert.ok(h.output.devices[0].shortfallSince>0);
+    assert.ok(!h.writes.some(write=>write.id==='allow'&&write.val===0));
 });
 test('productive stop reason remains available after later idle ticks', async () => {
     const h=setup();await h.start();h.writes.length=0;

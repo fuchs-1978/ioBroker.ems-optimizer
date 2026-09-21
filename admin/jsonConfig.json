@@ -247,6 +247,7 @@
         "wallboxStartReserveW": {"type": "number", "label": "Additional surplus before start", "unit": "W", "default": 300, "min": 0, "max": 5000, "sm": 4},
         "wallboxStartDelayS": {"type": "number", "label": "Stable surplus before start", "unit": "s", "default": 30, "min": 0, "max": 600, "sm": 4, "newLine": true},
         "wallboxMinimumRunTimeS": {"type": "number", "label": "Minimum run time", "unit": "s", "default": 120, "min": 0, "max": 3600, "sm": 4},
+        "wallboxStopDelayS": {"type": "number", "label": "Delay before stopping on insufficient surplus", "unit": "s", "default": 120, "min": 0, "max": 3600, "sm": 4},
         "wallboxRestartHandoffEnabled": {"type": "checkbox", "label": "Keep an EMS-owned active wallbox running during adapter restart/update", "default": true, "sm": 8, "newLine": true},
         "wallboxRestartHandoffTimeoutS": {"type": "number", "label": "Maximum wait for fresh control data after restart", "unit": "s", "default": 180, "min": 30, "max": 600, "sm": 4},
         "wallboxRestartHandoffGraceS": {"type": "number", "label": "Protect adopted wallbox from transient zero target", "unit": "s", "default": 30, "min": 10, "max": 120, "sm": 4},
