@@ -270,6 +270,16 @@ test('productive output keeps six amps during minimum runtime on a soft surplus 
     await h.output.tick();
     assert.deepEqual(h.writes,[{id:'allow',val:0}]);
 });
+test('productive stop reason remains available after later idle ticks', async () => {
+    const h=setup();await h.start();h.writes.length=0;
+    h.put('ems.0.Vehicles.Wallbox0.Release',false);await h.output.tick();
+    const reason=h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val;
+    const stoppedAt=h.states.get('ems.0.Devices.Wallbox0.LastStopAt').val;
+    h.ack('allow',0);await h.output.tick();
+    assert.match(reason,/Fahrzeugfreigabe/);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val,reason);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.LastStopAt').val,stoppedAt);
+});
 test('confirmed start survives a zero target before the allow acknowledgement is adopted', async () => {
     const h=setup();await h.output.initialize();
     await h.output.tick();h.ack('allow',0);
