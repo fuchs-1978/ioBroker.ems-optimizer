@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.12",
+    "version": "0.17.0-alpha.13",
     "titleLang": {
       "en": "EMS Optimizer",
       "de": "EMS-Optimierer"
@@ -177,6 +177,7 @@
     "wallboxRestartHandoffTimeoutS": 180,
     "wallboxRestartHandoffGraceS": 30,
     "wallboxRestartHandoffSettleS": 10,
+    "wallboxMeasurementMaxAgeS": 30,
     "phaseSwitchLookAheadMin": 30,
     "phaseSwitchMinHoldMin": 30,
     "phaseSwitchTransitionS": 90,
