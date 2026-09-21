@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.13",
+    "version": "0.17.0-alpha.14",
     "titleLang": {
       "en": "EMS Optimizer",
       "de": "EMS-Optimierer"
@@ -173,6 +173,7 @@
     "wallboxStartReserveW": 300,
     "wallboxStartDelayS": 30,
     "wallboxMinimumRunTimeS": 120,
+    "wallboxStopDelayS": 120,
     "wallboxRestartHandoffEnabled": true,
     "wallboxRestartHandoffTimeoutS": 180,
     "wallboxRestartHandoffGraceS": 30,
