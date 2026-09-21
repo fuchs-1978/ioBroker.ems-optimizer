@@ -8,7 +8,7 @@
       "items": {
         "safety": {
           "type": "staticText",
-          "text": "Version 0.17.0-alpha.4: productive wallbox control follows the confirmed go-e 1-/3-phase mode and starts a fresh minimum run time after restart handoff. The external script still performs the physical switch. No previously disabled output is enabled by an update.",
+          "text": "Version 0.17.0-alpha.5: a lower wallbox target safely replaces a pending higher current command without stopping the charger or rearming the start delay. Dynamic 1-/3-phase feedback remains active. No previously disabled output is enabled by an update.",
           "newLine": true
         },
         "generalHeader": {
