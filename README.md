@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.15**
+Aktuelle Version: **0.17.0-alpha.16**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -39,6 +39,21 @@ Version 0.17.0-alpha.4 verwendet im Produktivausgang die vom go-e bestätigte
 Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Batterie, Heizpuffer und Wärmepumpe bleiben Simulation.
 Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.16 – eigene Debug-Aufzeichnung
+
+Unter `ems-optimizer.0.Debug` stehen verständliche Zustände für WB0, WB1, WB2
+und den Trinkwasser-EHZ, ein aktueller Diagnose-Snapshot, die letzten 100
+Ereignisse und ein begrenzter Leistungsverlauf zur Verfügung. Die Aufzeichnung
+ist standardmäßig aktiv, bleibt vom produktiven Hauptschalter unabhängig und
+ändert keine Stellbefehle oder Schutzgrenzen. Kein globaler Debug-Loglevel und
+keine zusätzliche SQL-Aufzeichnung sind notwendig.
+
+`Debug.Enabled=false` pausiert die Aufzeichnung. `Debug.Clear=true` leert die
+Diagnosehistorie, ohne Regler, Timer oder Freigaben zurückzusetzen. Details und
+die für einen Fehlerbericht hilfreichen Objekte stehen in der
+[Debug-Anleitung](docs/debug-diagnostics.md). Der begleitete
+[Regelungstestplan](docs/alpha15-testplan.md) gilt weiterhin.
 
 ## Neu in 0.17.0-alpha.15 – umfassende Regelungs- und Übergabeprüfung
 

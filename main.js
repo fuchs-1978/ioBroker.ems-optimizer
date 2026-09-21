@@ -6,6 +6,7 @@ const vm = require("vm");
 const schedule = require("node-schedule");
 const utils = require("@iobroker/adapter-core");
 const WallboxOutput = require("./lib/wallbox-output");
+const DebugRecorder = require("./lib/debug-recorder");
 const gridConstraints = require("./lib/grid-constraints");
 const {buildNativeMapping, houseConnectionSettings, FIELD_TO_MAPPING,
     WALLBOX_FIELDS} = require("./lib/native-mapping");
@@ -29,6 +30,9 @@ class EmsOptimizer extends utils.Adapter {
         this.unloading = false;
         this.outputInitialization = null;
         this.wallboxOutput = new WallboxOutput(this);
+        this.debugRecorder = new DebugRecorder(this);
+        this.debugInitialization = null;
+        this.debugWarningAt = null;
         this.on("ready", this.onReady.bind(this));
         this.on("stateChange", this.onStateChange.bind(this));
         this.on("unload", this.onUnload.bind(this));
@@ -81,7 +85,39 @@ class EmsOptimizer extends utils.Adapter {
         if (this.unloading) return;
         this.runEngine(fs.readFileSync(path.join(__dirname, 'lib/engine/bootstrap.js'), 'utf8'));
         await this.setStateAsync("info.connection", true, true);
-        this.log.info("EMS Optimizer 0.17.0-alpha.15 started; alpha outputs require explicit release");
+        this.log.info("EMS Optimizer 0.17.0-alpha.16 started; alpha outputs require explicit release");
+        // Diagnostics must never hold up actuator initialization or scheduling.
+        this.debugInitialization = this.startDebug();
+    }
+
+    warnDebug(error) {
+        const now = Date.now();
+        if (this.debugWarningAt === null || now - this.debugWarningAt >= 60000) {
+            this.debugWarningAt = now;
+            try {
+                this.log.warn(`EMS debug recording unavailable (control unchanged): ${error.message || error}`);
+            } catch { /* Optional diagnostics must not propagate logger failures. */ }
+        }
+    }
+
+    runDebug(method, ...args) {
+        try {
+            return this.debugRecorder?.[method]?.(...args);
+        } catch (error) {
+            this.warnDebug(error);
+            return false;
+        }
+    }
+
+    async startDebug() {
+        try {
+            await this.debugRecorder.initialize();
+            if (this.unloading) return;
+            this.runDebug('sample');
+            this.registerSchedule('*/5 * * * * *', () => this.runDebug('sample'));
+        } catch (error) {
+            this.warnDebug(error);
+        }
     }
 
     async preloadStates() {
@@ -366,12 +402,50 @@ class EmsOptimizer extends utils.Adapter {
         void promise.finally(() => {
             if (this.pendingOwnWrites.get(id) === promise) this.pendingOwnWrites.delete(id);
         }).catch(() => {});
-        void promise.catch(error => this.log.warn(`Cannot write ${id}: ${error.message}`));
+        void promise.catch(error => {
+            if (relative !== null && relative.startsWith('Debug.')) this.warnDebug(error);
+            else this.log.warn(`Cannot write ${id}: ${error.message}`);
+        });
+        if (relative !== null && !relative.startsWith('Debug.'))
+            this.runDebug('capture', id, published, previous);
         return promise;
     }
 
     async flushOwnWrites() {
-        await Promise.all([...this.pendingOwnWrites.values()]);
+        // Optional diagnostic persistence must not fail a startup, handoff or
+        // safety stop. Debug writes still use the normal per-state echo ordering.
+        await Promise.all([...this.pendingOwnWrites.entries()]
+            .filter(([id]) => !id.startsWith(`${this.namespace}.Debug.`))
+            .map(([, promise]) => promise));
+    }
+
+    async flushDebugWrites() {
+        const pendingWrites = () => [
+            ...[...this.pendingOwnWrites.entries()]
+                .filter(([id]) => id.startsWith(`${this.namespace}.Debug.`))
+                .map(([, promise]) => promise),
+            ...(this.debugRecorder?.writing?.values() || [])
+        ];
+        if (!pendingWrites().length) return;
+        let timeout;
+        let expired = false;
+        const drain = async () => {
+            while (!expired) {
+                // A completed recorder write can schedule its one coalesced
+                // replacement. Include that final snapshot in the same bound.
+                const pending = pendingWrites();
+                if (!pending.length) return;
+                await Promise.allSettled(pending);
+                await Promise.resolve();
+            }
+        };
+        try {
+            await Promise.race([drain(),
+                new Promise(resolve => { timeout = setTimeout(resolve, 250); })]);
+        } finally {
+            expired = true;
+            clearTimeout(timeout);
+        }
     }
 
     writeForeignStateGuarded(id, value, onComplete) {
@@ -536,6 +610,8 @@ class EmsOptimizer extends utils.Adapter {
         if (state) this.stateCache.set(id, state);
         else this.stateCache.delete(id);
         if (this.unloading) return;
+        if (this.runDebug('handleCommand', id, state)) return;
+        this.runDebug('capture', id, state, previous);
         for (const listener of this.listeners) {
             if (!listener.ids.has(id) || !state) continue;
             const changed = !previous || previous.val !== state.val;
@@ -598,6 +674,9 @@ class EmsOptimizer extends utils.Adapter {
         for (const result of results) if (result.status === "rejected")
             this.log.error(`Cannot stop output on unload: ${result.reason}`);
         await this.flushOwnWrites();
+        this.runDebug('stop', handoffPrepared ? 'Adapter-Neustart mit gepruefter Wallbox-Uebergabe'
+            : 'Adapter beendet; Ausgangsbereinigung abgeschlossen, Rueckmeldungen siehe Snapshot');
+        await this.flushDebugWrites();
     }
 }
 
