@@ -864,4 +864,37 @@ test('peer OFF polling jitter uses the configured thirty-second go-e window',asy
     assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,true);
 });
 
+test('coordinated wallbox cap includes pending HK and battery consumption without discharge credit',async()=>{
+    const h=setup();await h.start();
+    h.adapter.engineContext={coordinatedEnergyEnabled:()=>true,
+        coordinatedPhaseReservations:()=>({valid:true,otherW:[0,0,0]}),
+        coordinatedConsumptionLoads:()=>({valid:true,totalW:4100,wallboxesW:[1380,0,0]})};
+    h.put('lpc','limited');h.put('lpcLimit',4200);
+    h.put('power',1.38);h.put('i1',6);h.writes.length=0;
+    await h.output.tick();
+    assert.ok(!h.writes.some(w=>w.id==='cmd'&&w.val>6));
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,true);
+    h.adapter.engineContext.coordinatedConsumptionLoads=()=>({valid:false});
+    await h.output.tick();
+    assert.ok(h.writes.some(w=>w.id==='allow'&&w.val===0));
+});
+
+test('wallbox publishes a pending ampere reservation before physical acknowledgement',async()=>{
+    const h=setup();await h.output.initialize();await h.output.tick();h.ack('allow',0);
+    await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputCommand_A').val,0);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val,1380);
+    h.put('ems.0.System.RealOutputsEnabled',false);await h.output.tick();
+    h.ack('allow',0);await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val,0);
+});
+
+test('wallbox idle status cannot overwrite active HK or battery NoActuation',async()=>{
+    const h=setup();h.put('ems.0.System.RealOutputsEnabled',false);
+    h.put('ems.0.Devices.Battery.OutputOwned',true);
+    await h.output.initialize();await h.output.tick();
+    assert.equal(h.states.get('ems.0.System.NoActuation').val,false);
+    assert.equal(h.states.get('ems.0.Control.Mode').val,'ALPHA_ENERGY_COORDINATED');
+});
+
 module.exports={setup};

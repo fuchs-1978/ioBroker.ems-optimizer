@@ -15,6 +15,10 @@ Alle folgenden Namen sind relativ zu `ems-optimizer.0.Debug`.
 | `Summary` | Übersicht über aktuellen EMS-Zustand und Freigaben |
 | `Wallbox0.Summary`, `Wallbox1.Summary`, `Wallbox2.Summary` | Klartext zu Status, Warten oder Sperrgrund der jeweiligen Wallbox |
 | `EHZ.Summary` | Klartext zu Leistung und Regel-/Sperrgrund des Trinkwasser-EHZ |
+| `Battery.Summary` | Speicher: reale Leistung, GS-Anforderung, SoC und Regel-/Sperrgrund |
+| `Heating.Summary` | Zweiter my-PV: Heizpuffer, Kühlsperre und Ausgangszustand |
+| `HeatPump.Summary` | Passive WP-Empfehlung mit Begründung, keine Verdichtersteuerung |
+| `Coordination.Summary` | Aktueller Feinregler, Wärmebudget und beabsichtigter Preisbezug |
 | `Snapshot_JSON` | Aktuelle Sicht auf Freigaben, Planung, Soll-/Istleistung, SoC, Phasen, Timer und relevante Rückmeldungen |
 | `Events_JSON` | Letzte 100 Ereignisse, chronologisch; ältere Einträge werden verdrängt |
 | `PowerTrace_JSON` | Bis zu 120 Leistungsmesspunkte im Abstand von 10 Sekunden: ungefähr 20 Minuten bei durchgehendem Betrieb |
@@ -23,6 +27,10 @@ Alle folgenden Namen sind relativ zu `ems-optimizer.0.Debug`.
 | `EventCount` | Gesamtzahl der Ereignisse seit dem letzten Leeren; gespeichert bleiben höchstens die letzten 100 |
 | `Enabled` | Schreibbar: `false` pausiert die Aufzeichnung, `true` setzt sie fort |
 | `Clear` | Taster: einmal `true` leert Ereignis- und Leistungsverlauf; wird automatisch zurückgesetzt |
+
+Zusätzlich gilt je Verlauf eine Grenze von 2 MiB. Bei ungewöhnlich langen
+Meldungen werden deshalb gegebenenfalls weniger Einträge aufbewahrt; die
+neuesten bleiben erhalten und `EventCount` bleibt der Gesamtzähler.
 
 ## Was die Diagnose zeigt
 
@@ -48,6 +56,13 @@ Wallbox-Zielstrom, ausstehender Amperebefehl und bestätigter Ausgangsstrom sind
 unterschiedliche Größen. Beim EHZ ist ein abgeschlossener Schreibauftrag keine
 Bestätigung, dass die gemessene Heizleistung bereits null ist. Deshalb immer
 Soll, Ist, Rückmeldung und Eigentums-/Übergabestatus gemeinsam betrachten.
+
+Ab alpha17 ergänzt Snapshot-Version 2 Speicher, Heizpuffer, WP und den
+gemeinsamen Verteiler; bestehende Diagnosehistorie bleibt lesbar. Beim Speicher
+sind GS-Vorzeichen (positiv entladen) und interne Mess-/Planwerte (positiv laden)
+bewusst getrennt. Ein frischer Instanz-Heartbeat bestätigt keine beliebigen
+fremden Messquellen. Die Diagnose enthält Qualitäts- und Zuordnungsinformationen
+und ersetzt nicht die aktuelle Freigabeprüfung des Ausgangs.
 
 ## Für den nächsten Test
 

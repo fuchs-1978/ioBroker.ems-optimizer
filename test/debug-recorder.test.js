@@ -69,7 +69,9 @@ test('creates only own diagnostic states and exposes current values without cred
     const f = fixture();
     await f.recorder.initialize();
     await f.settle();
-    assert.equal(f.definitions.size, 13);
+    assert.equal(f.definitions.size, 17);
+    for (const id of ['Battery', 'Heating', 'HeatPump', 'Coordination'])
+        assert.ok(f.definitions.has(`ems.0.Debug.${id}.Summary`));
     assert.equal(f.definitions.get('ems.0.Debug.Enabled').write, true);
     assert.equal(f.definitions.get('ems.0.Debug.Clear').role, 'button');
     const s = f.json('Snapshot_JSON');
@@ -293,8 +295,8 @@ test('slow persistence coalesces to one running write and one latest snapshot pe
     const initial = calls.length;
     for (let i = 0; i < 200; i++) { f.clock.now += 5000; f.recorder.sample(); }
     assert.equal(calls.length, initial);
-    assert.ok(f.recorder.writing.size <= 13);
-    assert.ok(f.recorder.latest.size <= 13);
+    assert.ok(f.recorder.writing.size <= 17);
+    assert.ok(f.recorder.latest.size <= 17);
     const key = 'ems.0.Debug.Snapshot_JSON';
     blocked.get(key)();
     await f.settle();
@@ -343,4 +345,284 @@ test('unknown selection is not labelled WBnull and invalid source list is bounde
     await f.recorder.initialize();
     assert.ok(f.cache.get('ems.0.Debug.Summary').val.includes('Auswahl keine'));
     assert.deepEqual(f.json('Snapshot_JSON').system.invalidInputs, ['grid.import fehlt']);
+});
+
+function configureBattery(f) {
+    const instance = 'sunenergyxt500.0';
+    Object.assign(f.adapter.config, {
+        batterySetpointId: `${instance}.heads.0.control.GS`,
+        batteryHeartbeatId: `${instance}.info.lastUpdate`,
+        batteryOnlineId: `${instance}.heads.0.online`,
+        batteryManualModeId: `${instance}.heads.0.control.MM`,
+        batteryLocalModeId: `${instance}.heads.0.control.LM`,
+        batteryPowerId: `${instance}.total.batteryPower`,
+        batteryAcPowerId: `${instance}.total.gridPower`,
+        batterySocId: `${instance}.total.soc`, batteryPowerSign: 1
+    });
+    f.put(f.adapter.config.batteryHeartbeatId, f.clock.now);
+    f.put(f.adapter.config.batteryOnlineId, true);
+    f.put(f.adapter.config.batteryManualModeId, false);
+    f.put(f.adapter.config.batteryLocalModeId, true);
+    f.put(f.adapter.config.batteryPowerId, 243);
+    f.put(f.adapter.config.batteryAcPowerId, -250);
+    f.put(f.adapter.config.batterySocId, 70);
+    f.put('ems.0.Devices.Battery.SingleHeadVerified', true);
+    f.put('ems.0.Devices.Battery.OutputCommand_W', -200);
+    f.put('ems.0.Devices.Battery.OutputCommandInternal_W', 200);
+    f.put('ems.0.Control.Targets.Battery_W', 300);
+}
+
+test('battery snapshot and trace distinguish internal charging watts from the GS discharge convention', async () => {
+    const f = fixture();
+    configureBattery(f);
+    await f.recorder.initialize();
+    await f.settle();
+    const s = f.json('Snapshot_JSON');
+    assert.equal(s.schemaVersion, 2);
+    assert.equal(s.battery.actual_W, 250);
+    assert.equal(s.battery.measurements.power.val, -250);
+    assert.equal(s.battery.measurements.dcPower.val, 243);
+    assert.equal(s.battery.signConvention.measuredACPowerMultiplier, -1);
+    assert.equal(s.battery.OutputCommand_W, -200);
+    assert.equal(s.battery.OutputCommandInternal_W, 200);
+    assert.equal(s.battery.target_W, 300);
+    assert.equal(s.battery.soc_pct, 70);
+    assert.match(s.battery.signConvention.actualAndInternal, /positive = charge/);
+    assert.match(s.battery.signConvention.requestedAndGS, /positive = discharge/);
+    const trace = f.json('PowerTrace_JSON')[0];
+    assert.equal(trace.battery.actual_W, 250);
+    assert.equal(trace.battery.commandGS_W, -200);
+    assert.equal(trace.battery.commandInternal_W, 200);
+    f.adapter.config.batteryPowerSign = -1;
+    assert.equal(f.recorder.snapshot().battery.actual_W, 250);
+    f.adapter.config.batteryPowerSign = 0;
+    assert.equal(f.recorder.snapshot().battery.actual_W, 250);
+});
+
+test('only a verified matching battery driver heartbeat can validate old unchanged total measurements', () => {
+    const f = fixture();
+    configureBattery(f);
+    f.put(f.adapter.config.batteryAcPowerId, -250, {ts: f.clock.now - 86400000});
+    f.put(f.adapter.config.batterySocId, 70, {ts: f.clock.now - 86400000});
+    f.put(f.adapter.config.batteryHeartbeatId, new Date(f.clock.now).toISOString());
+    let battery = f.recorder.snapshot().battery;
+    assert.equal(battery.actual_W, 250);
+    assert.equal(battery.measurements.heartbeat.valid, true);
+    assert.equal(battery.measurements.power.validatedByHeartbeat, true);
+    assert.equal(battery.measurements.power.ageMs, 86400000);
+    f.put('ems.0.Devices.Battery.SingleHeadVerified', false);
+    battery = f.recorder.snapshot().battery;
+    assert.equal(battery.actual_W, null);
+    assert.equal(battery.measurements.power.driverBound, false);
+    f.put('ems.0.Devices.Battery.SingleHeadVerified', true);
+    f.adapter.config.batteryManualModeId = 'sunenergyxt500.0.heads.1.control.MM';
+    assert.equal(f.recorder.snapshot().battery.actual_W, null);
+    f.adapter.config.batteryManualModeId = 'sunenergyxt500.0.heads.0.control.MM';
+    f.put(f.adapter.config.batteryHeartbeatId, f.clock.now - 31000);
+    assert.equal(f.recorder.snapshot().battery.actual_W, null);
+});
+
+test('heating and heat-pump quality show shared cooling heartbeat proof and independent thermal sensors', async () => {
+    const f = fixture();
+    Object.assign(f.adapter.config, {heatingCoolingActiveId: 'isg.cooling',
+        heatingCoolingHeartbeatId: 'isg.lastUpdate', heatingTempId: 'tank.heating',
+        heatingConnectionId: 'modbus.heating.connected', heatingOutput1Id: 'heating.l1',
+        heatingOutput2Id: 'heating.l2', heatingOutput3Id: 'heating.l3'});
+    f.put('isg.cooling', false, {ts: f.clock.now - 86400000});
+    f.put('isg.lastUpdate', f.clock.now);
+    f.put('tank.heating', 45, {ts: f.clock.now - 3500000});
+    f.put('modbus.heating.connected', true, {ts: f.clock.now - 86400000});
+    f.put('heating.l1', 1500);
+    f.put('heating.l2', 500);
+    f.put('heating.l3', 0);
+    await f.recorder.initialize();
+    let s = f.recorder.snapshot();
+    assert.equal(s.heating.actual_W, 2000);
+    assert.equal(s.heating.measurements.cooling.validatedByHeartbeat, true);
+    assert.equal(s.heating.measurements.temperature.valid, true);
+    assert.equal(s.heating.measurements.connection.valid, true);
+    assert.equal(s.heatPump.measurements.bufferTemperature.id, 'tank.heating');
+    assert.equal(s.heatPump.measurements.dhwTemperature.id, null);
+    assert.equal(s.heatPump.adviceOnly, true);
+    f.put('isg.lastUpdate', f.clock.now - 121000);
+    f.put('isg.cooling', false);
+    s = f.recorder.snapshot();
+    assert.equal(s.heating.measurements.cooling.valid, false);
+    assert.equal(s.heatPump.measurements.cooling.valid, false);
+    f.put('heating.l3', '', {ack: false});
+    assert.equal(f.recorder.snapshot().heating.actual_W, null);
+});
+
+test('battery and heating stop causes survive rapid restart without additional recorder actuation', async () => {
+    const f = fixture();
+    configureBattery(f);
+    f.put('ems.0.Devices.Battery.OutputActive', true);
+    await f.recorder.initialize();
+    f.change('Devices.Battery.OutputActive', false);
+    f.change('Devices.Battery.OutputStatus', 'Speicher-Heartbeat veraltet');
+    f.change('Devices.Battery.OutputActive', true);
+    f.change('Devices.Battery.OutputStatus', 'PRODUKTIV: 100 W');
+    f.change('Devices.MyPV_Heating.LastStopReason', 'Kuehlbetrieb aktiv');
+    f.change('Devices.MyPV_Heating.LastStopAt', f.clock.now);
+    f.change('Devices.MyPV_Heating.OutputActive', false);
+    f.change('Devices.MyPV_Heating.OutputStatus', 'Abschaltbefehl gesendet');
+    f.change('Devices.MyPV_Heating.OutputActive', true);
+    f.change('Devices.MyPV_Heating.OutputStatus', 'PRODUKTIV: 500 W');
+    f.recorder.sample();
+    await f.settle();
+    const stops = f.json('Events_JSON').filter(event => event.type === 'output.stop');
+    assert.ok(stops.some(event => event.source === 'Devices.Battery.OutputActive'
+        && event.to === 'Speicher-Heartbeat veraltet'));
+    assert.ok(stops.some(event => event.source === 'Devices.MyPV_Heating.LastStopAt'
+        && event.to === 'Kuehlbetrieb aktiv'));
+    assert.ok(f.writes.every(write => write.id.startsWith('ems.0.Debug.')));
+});
+
+test('WP holding countdown does not flood events; coordination changes remain identifiable', async () => {
+    const f = fixture();
+    await f.recorder.initialize();
+    f.change('Devices.HeatPump.RequestedMode', 'BOOST');
+    f.change('Devices.HeatPump.AdviceReason', 'Haltezeit noch 300 s; nur Empfehlung');
+    f.change('Control.FineRegulator', 'Battery');
+    f.change('Control.CoordinationStatus', 'Batterie 200 W; EHZ 1800 W');
+    f.recorder.sample();
+    const count = f.recorder.eventCount;
+    for (let i = 0; i < 10; i++) {
+        f.change('Devices.HeatPump.HoldRemaining_s', 300 - i);
+        f.change('Devices.HeatPump.AdviceLastUpdate', f.clock.now);
+        f.change('Devices.HeatPump.AdviceReason', `Haltezeit noch ${300 - i} s; nur Empfehlung`);
+        f.change('Control.CoordinationStatus', `Batterie ${200 + i} W; EHZ ${1800 - i} W`);
+        f.recorder.sample();
+    }
+    assert.equal(f.recorder.eventCount, count);
+    f.change('Control.FineRegulator', 'MyPV_DHW');
+    f.recorder.sample();
+    await f.settle();
+    assert.equal(f.recorder.eventCount, count + 1);
+    const event = f.json('Events_JSON').at(-1);
+    assert.equal(event.source, 'Control.FineRegulator');
+    assert.equal(event.to, 'MyPV_DHW');
+    assert.equal(event.context.heatPump.mode, 'BOOST');
+});
+
+test('missing price is not exported as zero-price authorization', () => {
+    const f = fixture();
+    f.put('ems.0.Control.CurrentTotalPrice_ct_kWh', 0);
+    f.put('ems.0.Control.ThermalPriceValid', false);
+    assert.equal(f.recorder.snapshot().coordination.CurrentTotalPrice_ct_kWh, null);
+    f.put('ems.0.Control.ThermalPriceValid', true);
+    assert.equal(f.recorder.snapshot().coordination.CurrentTotalPrice_ct_kWh, 0);
+});
+
+test('alpha16 history restores unchanged while missing extension context remains explicitly unknown', async () => {
+    const ts = Date.parse('2026-09-21T09:59:55Z');
+    const context = {selectedWallbox: 2, grid_W: -500, pv_W: 5000,
+        wallboxes: [{wb: 2, actual_W: 4140}], ehz: {actual_W: 300}};
+    const f = fixture({
+        'ems.0.Debug.Events_JSON': JSON.stringify([{ts, session: 'alpha16', type: 'output.stop',
+            source: 'Devices.Wallbox2.LastStopAt', to: 'Alte Begruendung', context}]),
+        'ems.0.Debug.PowerTrace_JSON': JSON.stringify([{ts, session: 'alpha16', ...context}])
+    });
+    await f.recorder.initialize();
+    await f.settle();
+    const old = f.json('Events_JSON')[0];
+    assert.equal(old.session, 'alpha16');
+    assert.equal(old.to, 'Alte Begruendung');
+    assert.equal(old.context.ehz.actual_W, 300);
+    assert.equal(old.context.battery.actual_W, null);
+    assert.equal(old.context.coordination.FineRegulator, null);
+    const oldTrace = f.json('PowerTrace_JSON')[0];
+    assert.equal(oldTrace.grid_W, -500);
+    assert.equal(oldTrace.heatPump.mode, null);
+});
+
+test('large UTF-8 extension histories stay within the restart byte budget and preserve the latest events', async () => {
+    const f = fixture();
+    await f.recorder.initialize();
+    await f.settle();
+    for (const id of ['Devices.Wallbox0.OutputStatus', 'Devices.Wallbox0.OutputFault',
+        'Devices.Wallbox1.OutputStatus', 'Devices.Wallbox1.OutputFault',
+        'Devices.Wallbox2.OutputStatus', 'Devices.Wallbox2.OutputFault',
+        'Devices.MyPV_DHW.OutputStatus', 'Devices.Battery.OutputStatus', 'Devices.Battery.Fault',
+        'Devices.MyPV_Heating.OutputStatus', 'Devices.MyPV_Heating.OutputFault',
+        'Devices.HeatPump.AdviceReason', 'Control.CoordinationStatus',
+        'Control.ThermalPriceSource', 'Control.ThermalPricePolicyStatus'])
+        f.put(`ems.0.${id}`, '漢'.repeat(600));
+    const s = f.recorder.snapshot();
+    for (let i = 0; i < 100; i++) f.recorder.record('reason.change', `test.${i}`, '漢'.repeat(600), '漢'.repeat(600), s);
+    f.recorder.trace = Array.from({length: 120}, () => ({ts: s.ts, timestamp: s.timestamp,
+        session: f.recorder.session, ...f.recorder.context(s)}));
+    f.recorder.publishHistory();
+    await f.settle();
+    const eventRaw = f.cache.get('ems.0.Debug.Events_JSON').val;
+    const traceRaw = f.cache.get('ems.0.Debug.PowerTrace_JSON').val;
+    assert.ok(Buffer.byteLength(eventRaw) <= 2 * 1024 * 1024);
+    assert.ok(Buffer.byteLength(traceRaw) <= 2 * 1024 * 1024);
+    assert.ok(f.recorder.events.length > 0 && f.recorder.events.length < 100);
+    assert.equal(f.json('Events_JSON').at(-1).source, 'test.99');
+    const next = fixture({'ems.0.Debug.Events_JSON': eventRaw, 'ems.0.Debug.PowerTrace_JSON': traceRaw});
+    await next.recorder.initialize();
+    assert.ok(next.recorder.events.some(event => event.source === 'test.99'));
+    assert.ok(next.recorder.trace.some(item => item.session === f.recorder.session));
+});
+
+test('DC battery telemetry cannot substitute for mandatory selected-head GP feedback', () => {
+    const f = fixture();
+    configureBattery(f);
+    f.put(f.adapter.config.batteryAcPowerId, 100);
+    f.put(f.adapter.config.batteryPowerId, -90);
+    assert.equal(f.recorder.snapshot().battery.actual_W, -100);
+    f.adapter.config.batteryAcPowerId = f.adapter.config.batteryPowerId;
+    let battery = f.recorder.snapshot().battery;
+    assert.equal(battery.actual_W, null);
+    assert.equal(battery.measurements.power.acceptedAsGSFeedback, false);
+    f.adapter.config.batteryAcPowerId = '';
+    assert.equal(f.recorder.snapshot().battery.actual_W, null);
+    f.adapter.config.batteryAcPowerId = 'sunenergyxt500.0.heads.0.grid.GP';
+    f.put(f.adapter.config.batteryAcPowerId, -200);
+    f.put('ems.0.Devices.Battery.SingleHeadVerified', false);
+    battery = f.recorder.snapshot().battery;
+    assert.equal(battery.actual_W, 200);
+    assert.equal(battery.measurements.power.acceptedAsGSFeedback, true);
+});
+
+test('unobserved-command power reservations stay visible at zero target without numeric event floods', async () => {
+    const f = fixture();
+    configureBattery(f);
+    f.put(f.adapter.config.batteryAcPowerId, 0);
+    for (const id of ['ehz.1', 'ehz.2', 'ehz.3']) f.put(id, 0);
+    f.put('ems.0.Devices.Battery.OutputCommand_W', 0);
+    f.put('ems.0.Devices.Battery.OutputCommandInternal_W', 0);
+    f.put('ems.0.Devices.MyPV_DHW.OutputCommand_W', 0);
+    f.put('ems.0.Devices.MyPV_Heating.OutputCommand_W', 0);
+    await f.recorder.initialize();
+    f.change('Devices.MyPV_DHW.OutputReservationPending', true);
+    f.change('Devices.MyPV_Heating.OutputReservationPending', true);
+    const events = f.recorder.eventCount;
+    f.change('Devices.Battery.OutputReservedCharge_W', 2000);
+    f.change('Devices.Battery.OutputUnobservedCommand_W', 2000);
+    f.change('Devices.Battery.OutputUnobservedCommandSince', f.clock.now);
+    for (const device of ['MyPV_DHW', 'MyPV_Heating']) {
+        f.change(`Devices.${device}.OutputReservedPower_W`, 3000);
+        f.change(`Devices.${device}.OutputReservedPhase1_W`, 3000);
+        f.change(`Devices.${device}.OutputReservedPhase2_W`, 0);
+        f.change(`Devices.${device}.OutputReservedPhase3_W`, 0);
+    }
+    f.clock.now += 10000;
+    f.recorder.sample();
+    await f.settle();
+    const s = f.json('Snapshot_JSON');
+    assert.equal(s.battery.actual_W, 0);
+    assert.equal(s.battery.OutputCommandInternal_W, 0);
+    assert.equal(s.battery.OutputReservedCharge_W, 2000);
+    assert.equal(s.battery.OutputUnobservedCommand_W, 2000);
+    assert.equal(s.ehz.actual_W, 0);
+    assert.equal(s.ehz.OutputReservedPower_W, 3000);
+    assert.equal(s.heating.OutputReservedPhase1_W, 3000);
+    assert.equal(f.recorder.eventCount, events);
+    const trace = f.json('PowerTrace_JSON').at(-1);
+    assert.equal(trace.battery.reservedCharge_W, 2000);
+    assert.equal(trace.ehz.reservedPower_W, 3000);
+    assert.equal(trace.heating.reservedPhase1_W, 3000);
+    assert.ok(f.cache.get('ems.0.Debug.Battery.Summary').val.includes('reservierte Ladung 2000 W'));
 });

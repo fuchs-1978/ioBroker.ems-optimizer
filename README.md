@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.16**
+Aktuelle Version: **0.17.0-alpha.17**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -37,8 +37,40 @@ kurzen Initialisierung des Echtzeitreglers vor einem vorübergehenden Null-Soll.
 Version 0.17.0-alpha.4 verwendet im Produktivausgang die vom go-e bestätigte
 1-/3-Phasenstellung. Das externe Skript führt den Wechsel weiterhin aus; der
 Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
-Batterie, Heizpuffer und Wärmepumpe bleiben Simulation.
-Ein Update aktiviert keine neuen Ausgänge.
+Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
+die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
+Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.17 – Speicher und zwei getrennte Heizkreise
+
+- **Ein Feinregler:** Der Sun-Energy-Speicher regelt in kleinen Schritten,
+  Heizstäbe übernehmen größere Leistungsanteile und die Wallbox ganze Ampere.
+  Ist der Speicher aus, gesperrt oder an seiner wirksamen Grenze, übernimmt ein
+  verfügbarer EHZ wieder die schnelle Netznachführung. Kein paralleles Aufaddieren
+  unabhängiger Netzregler.
+- **Sun Energy 500XT:** Direkter, im Admin wählbarer GS-Leistungsdatenpunkt;
+  eigene Lade-/Entladegrenzen, SoC-Reserve, Schrittweite, Totband und Rückmeldefrist.
+  Bestätigter externer Betriebsmodus und frische zusammengehörige Telemetrie sind
+  Voraussetzung. Positive GS-Watt bedeuten Entladen, negative Laden.
+- **Zwei my-PV:** Trinkwasser und Heizpuffer besitzen getrennte Ziele, Messungen
+  und Freigaben. Beide dürfen bei ausreichendem Budget und Temperaturspielraum
+  heizen. Aktive oder unbekannte WP-Kühlung sperrt den Heizpuffer-EHZ.
+- **Preisheizen:** Optionaler, ausdrücklich begrenzter Netzbezug berücksichtigt
+  den Gesamtpreis einschließlich Zuschlägen und Netzentgelt. Die Batterie darf
+  diesen absichtlichen Bezug nicht durch Entladen ausgleichen.
+- **WP-Vorbereitung:** `Devices.HeatPump.RequestedMode` liefert `REDUCED`,
+  `NORMAL` oder `BOOST` mit Hysterese und Haltezeit. Keine direkte Ansteuerung
+  eines Verdichters oder unbekannter Herstellerregister.
+- **Gemeinsame Schutzgrenzen und Diagnose:** Auch noch nicht vollständig
+  ausgeführte Leistungsbefehle werden reserviert. Debug ergänzt Speicher,
+  Heizpuffer, WP und den aktuell zuständigen Feinregler.
+
+Konfiguration, Grenzen und begleitete Tests stehen in der
+[Speicher-/Wärme-Anleitung](docs/alpha17-storage-thermal.md).
+Die Softwaretests sind keine Freigabe für unbeaufsichtigten Betrieb:
+insbesondere ein Strom-/Prozessausfall lässt sich ohne geräteseitigen Watchdog
+nicht durch einen ioBroker-Nullbefehl absichern. Bestehende Geräteschutzfunktionen
+und lokale WP-Regelung bleiben zwingend aktiv.
 
 ## Neu in 0.17.0-alpha.16 – eigene Debug-Aufzeichnung
 
@@ -1068,10 +1100,15 @@ Temperaturgrenzen, §14a-Vorgaben, Geräteschutz, Schütze und Notabschaltungen
 müssen weiterhin durch geeignete lokale und deterministische Funktionen
 gewährleistet werden.
 
-Ohne ausdrückliche globale und gerätespezifische Freigabe schreibt der Adapter
-ausschließlich in seinen eigenen Namespace `ems-optimizer.0`. Freigegebene
-Fremdschreibzugriffe sind der konfigurierte Trinkwasser-Sollwert mit optionalem
-Istwert-Spiegel oder die beiden konfigurierten Ausgänge der einzeln getesteten Wallbox.
+Nichtnull-Stellbefehle erfordern ausdrückliche globale und gerätespezifische
+Freigaben sowie gültige Schutz- und Messwerte. Sicherheits-Nullbefehle an zuvor
+übernommene Ausgänge können auch bei ausgeschalteter Freigabe erforderlich sein.
+Die konfigurierbaren Fremdausgänge sind Trinkwasser-Sollwert und optionaler
+Istwert-Spiegel, die freigegebenen Wallbox-Ausgänge sowie ab alpha17 der
+separat scharfgeschaltete Speicher-GS- und Heizpuffer-Sollwert. Die WP-Erweiterung
+schreibt weiterhin nur eigene Empfehlungsobjekte. Details zur physisch
+bestätigten Rückgabe und den Geräte-/Watchdog-Grenzen stehen in der
+[alpha17-Anleitung](docs/alpha17-storage-thermal.md).
 
 ## Gerätefreigaben ab 0.11.0
 
@@ -1083,8 +1120,10 @@ Konfigurationsseite:
 - **Steuerfreigabe** erlaubt beim Trinkwasser-EHZ zusammen mit dem globalen
   Hauptschalter die produktive Ansteuerung. Ab 0.16.0-alpha.1 können alle drei
   einzeln bestätigten Wallboxen freigegeben werden; die harte Verriegelung lässt
-  weiterhin nur eine Wallbox gleichzeitig laden. Batterie, Heizpuffer und
-  Wärmepumpe bleiben ohne Aktorzugriff.
+  weiterhin nur eine Wallbox gleichzeitig laden. Ab alpha17 können Batterie
+  und Heizpuffer mit zusätzlichen getrennten Produktivfreigaben angebunden
+  werden. Die Wärmepumpe bleibt zunächst eine reine Betriebs-Empfehlung ohne
+  fremde Stellbefehle.
 
 Darüber liegt die globale Freigabe **Master release for configured real outputs**.
 Sie ist standardmäßig aus. Der EHZ-Ausgang wird erst freigegeben, wenn

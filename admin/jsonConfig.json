@@ -8,7 +8,7 @@
       "items": {
         "safety": {
           "type": "staticText",
-          "text": "Version 0.17.0-alpha.15: hard safety and revoked releases override restart handoff. Production budgets exclude simulation-only devices. Before enabling, stop competing output scripts. Before returning to scripts, disable the master release and wait until all OutputOwned states are false. An update never enables previously disabled outputs. Supervised commissioning is still required.",
+          "text": "Version 0.17.0-alpha.17: new battery and heating-buffer outputs are disabled and unmapped by default. Heat-pump modes are advice only, without an external mode write. Before enabling any real output, stop competing output scripts and commission it under supervision. Before returning to scripts, disable the master release and wait until all OutputOwned states are false. Host or driver failure requires independent device-side protection; an EMS process cannot guarantee a final stop after a host crash.",
           "newLine": true
         },
         "generalHeader": {
@@ -1896,6 +1896,15 @@
           "default": false,
           "sm": 4
         },
+        "_heatingOutputHelp": {"type": "staticText", "text": "Independent my-PV controller for the heating buffer; never reuse the DHW actuator. Requires its own setpoint, three measured output powers, connection and buffer temperature. Cooling active, unknown cooling status or manual inhibit blocks heating. Temperature limits do not replace the heater's physical thermostat and safety cut-out.", "newLine": true},
+        "heatingProductionArmed": {"type": "checkbox", "label": "Arm heating-buffer output: separate actuator verified and competing writer stopped", "default": false, "sm": 8, "newLine": true},
+        "heatingInhibit": {"type": "checkbox", "label": "Manual heating-buffer inhibit (always OFF)", "default": false, "sm": 4},
+        "heatingSetpointId": {"type": "objectId", "label": "Writable heating-buffer my-PV setpoint (W, 0 = OFF)", "customFilter": {"type": "state", "common": {"type": "number", "write": true}}, "default": "", "sm": 12, "newLine": true},
+        "heatingConnectionId": {"type": "objectId", "label": "Heating-buffer controller connection (confirmed true = online)", "types": ["state"], "default": "", "sm": 12, "newLine": true},
+        "heatingOutput1Id": {"type": "objectId", "label": "Heating-buffer actual output L1 (W)", "types": ["state"], "default": "", "sm": 4, "newLine": true},
+        "heatingOutput2Id": {"type": "objectId", "label": "Heating-buffer actual output L2 (W)", "types": ["state"], "default": "", "sm": 4},
+        "heatingOutput3Id": {"type": "objectId", "label": "Heating-buffer actual output L3 (W)", "types": ["state"], "default": "", "sm": 4},
+        "heatingOutletTempId": {"type": "objectId", "label": "Optional heating-buffer controller outlet temperature (°C; configured source must be valid)", "types": ["state"], "default": "", "sm": 12, "newLine": true},
         "heatingPowerId": {
           "type": "text",
           "label": "Current power data point",
@@ -1926,7 +1935,7 @@
         },
         "heatingTempC": {
           "type": "number",
-          "label": "Current/manual temperature",
+          "label": "Manual fallback temperature for planning only; not a productive sensor",
           "unit": "°C",
           "default": 40,
           "sm": 3
@@ -1952,7 +1961,14 @@
           "default": 6000,
           "sm": 3,
           "newLine": true
-        }
+        },
+        "heatingStopTempC": {"type": "number", "label": "Heating-buffer safety stop temperature", "unit": "°C", "default": 60, "min": 10, "max": 90, "sm": 4, "newLine": true},
+        "heatingResumeDeltaC": {"type": "number", "label": "Resume below target by", "unit": "K", "default": 2, "min": 0.1, "max": 20, "sm": 4},
+        "heatingOutletEmergencyC": {"type": "number", "label": "Optional outlet sensor emergency stop", "unit": "°C", "default": 80, "min": 10, "max": 95, "sm": 4},
+        "heatingMaxStepW": {"type": "number", "label": "Maximum upward setpoint step", "unit": "W", "default": 1000, "min": 100, "max": 3000, "sm": 4, "newLine": true},
+        "heatingSettleToleranceW": {"type": "number", "label": "Actuator settling tolerance", "unit": "W", "default": 300, "min": 50, "max": 1000, "sm": 4},
+        "heatingTemperatureMaxAgeS": {"type": "number", "label": "Maximum buffer/outlet sensor age", "unit": "s", "default": 3600, "min": 10, "max": 7200, "sm": 4},
+        "heatingOutputMaxAgeS": {"type": "number", "label": "Maximum measured heater power age", "unit": "s", "default": 120, "min": 5, "max": 300, "sm": 4, "newLine": true}
       }
     },
     "batteryTab": {
@@ -1978,6 +1994,16 @@
           "default": false,
           "sm": 4
         },
+        "_batteryOutputHelp": {"type": "staticText", "text": "Supervised SunEnergy battery output: choose the exact sunenergyxt500.N.heads.H.control.GS endpoint and its mandatory AC power feedback heads.H.grid.GP (or total.gridPower only with exactly one configured head). Both GS and GP are positive for discharge/export; the EMS inverts GP to internal positive=charge. BP / total.batteryPower is DC telemetry for history/planning and must not replace AC command feedback. The SunEnergy adapter must use controlMode=off, a fresh info.lastUpdate heartbeat and the selected head must confirm online=true, MM=false and LM=true. A direct GS command has no EMS-side protection against a host crash: a device-side watchdog remains necessary for unattended operation.", "newLine": true},
+        "batteryProductionArmed": {"type": "checkbox", "label": "Arm supervised battery output: GS mapping, signs, driver modes and competing writer checked", "default": false, "sm": 12, "newLine": true},
+        "batterySetpointId": {"type": "objectId", "label": "Writable sunenergyxt500.N.heads.H.control.GS (W: positive discharge / negative charge)", "customFilter": {"type": "state", "common": {"type": "number", "write": true}}, "default": "", "sm": 12, "newLine": true},
+        "batteryAcPowerId": {"type": "objectId", "label": "Required AC power feedback: selected head grid.GP or single-head total.gridPower (W, positive discharge)", "types": ["state"], "default": "", "sm": 12, "newLine": true},
+        "batteryHeartbeatId": {"type": "objectId", "label": "Fresh driver heartbeat / last successful update", "types": ["state"], "default": "", "sm": 12, "newLine": true},
+        "batteryOnlineId": {"type": "objectId", "label": "Driver online state (confirmed true required)", "types": ["state"], "default": "", "sm": 12, "newLine": true},
+        "batteryManualModeId": {"type": "objectId", "label": "Selected head control.MM (confirmed false required)", "types": ["state"], "default": "", "sm": 12, "newLine": true},
+        "batteryLocalModeId": {"type": "objectId", "label": "Selected head control.LM (confirmed true required)", "types": ["state"], "default": "", "sm": 12, "newLine": true},
+        "batteryFaultId": {"type": "objectId", "label": "Optional driver fault state (0 / false = no fault)", "types": ["state"], "default": "", "sm": 12, "newLine": true},
+        "batteryTemperatureId": {"type": "objectId", "label": "Optional battery temperature (°C; configured source must be valid)", "types": ["state"], "default": "", "sm": 12, "newLine": true},
         "batterySocId": {
           "type": "text",
           "label": "SoC data point",
@@ -1987,10 +2013,11 @@
         },
         "batteryPowerId": {
           "type": "text",
-          "label": "Power data point",
+          "label": "Battery DC power for history/planning (BP / total.batteryPower, W; not GS feedback)",
           "default": "",
           "sm": 6
         },
+        "batteryPowerSign": {"type": "select", "label": "Legacy DC power convention (never used for GS / AC feedback)", "default": 1, "options": [{"value": 1, "label": "DC source positive = charge (SunEnergy BP / total.batteryPower)"}, {"value": -1, "label": "DC source positive = discharge"}], "sm": 12, "newLine": true},
         "batteryCapacityKWh": {
           "type": "number",
           "label": "Capacity",
@@ -2024,7 +2051,7 @@
           "type": "number",
           "label": "Minimum SoC",
           "unit": "%",
-          "default": 0,
+          "default": 15,
           "min": 0,
           "max": 100,
           "sm": 3,
@@ -2080,7 +2107,18 @@
           "label": "Discharge for self-consumption",
           "default": true,
           "sm": 3
-        }
+        },
+        "_batteryFineControlHeader": {"type": "header", "text": "Battery fine control and input checks", "size": 3, "newLine": true},
+        "batteryFineStepW": {"type": "number", "label": "Maximum battery setpoint step", "unit": "W", "default": 100, "min": 1, "max": 1000, "sm": 4, "newLine": true},
+        "batteryFineReserveW": {"type": "number", "label": "PV reserve for battery fine control before heater allocation", "unit": "W", "default": 200, "min": 0, "max": 10000, "sm": 4, "newLine": true},
+        "_batteryFineReserveHelp": {"type": "staticText", "text": "Reserves up to this share of actual PV surplus for battery fine control. The effective reserve is capped by available PV, battery charge power and the shared grid-operator budget; without available PV there is no reserve. Existing planned battery charging can require a larger share. This is a power reserve in watts, not an additional SoC reserve or permission to charge from the grid.", "newLine": true},
+        "batteryDeadbandW": {"type": "number", "label": "Battery grid-control deadband", "unit": "W", "default": 50, "min": 0, "max": 500, "sm": 4},
+        "batteryCycleS": {"type": "number", "label": "Battery control cycle", "unit": "s", "default": 2, "min": 2, "max": 30, "sm": 4},
+        "batteryFeedbackTimeoutS": {"type": "number", "label": "Command / physical-response timeout", "unit": "s", "default": 15, "min": 2, "max": 120, "sm": 4, "newLine": true},
+        "batteryMeasurementMaxAgeS": {"type": "number", "label": "Maximum battery measurement / heartbeat age", "unit": "s", "default": 30, "min": 5, "max": 120, "sm": 4},
+        "batterySoCMaxAgeS": {"type": "number", "label": "Maximum battery SoC age", "unit": "s", "default": 300, "min": 5, "max": 3600, "sm": 4},
+        "batteryTemperatureMaxC": {"type": "number", "label": "Optional battery temperature stop limit", "unit": "°C", "default": 50, "min": 10, "max": 60, "sm": 4, "newLine": true},
+        "_batteryMinimumHelp": {"type": "staticText", "text": "The 15% minimum applies to new installations only. Existing explicit settings are retained. A minimum of 0% blocks productive discharge; configure an appropriate positive reserve before a supervised test.", "newLine": true}
       }
     },
     "heatPumpTab": {
@@ -2089,7 +2127,7 @@
       "items": {
         "heatPumpHeader": {
           "type": "header",
-          "text": "Heat pump (prepared)",
+          "text": "Heat pump: slow mode advice only",
           "size": 2,
           "newLine": true
         },
@@ -2102,7 +2140,7 @@
         },
         "heatPumpControlEnabled": {
           "type": "checkbox",
-          "label": "Heat pump control release",
+          "label": "Heat pump strategy release (no external actuator write)",
           "default": false,
           "sm": 4
         },
@@ -2112,7 +2150,32 @@
           "default": "",
           "sm": 8,
           "newLine": true
-        }
+        },
+        "_heatPumpAdviceHelp": {"type": "staticText", "text": "NORMAL / BOOST / REDUCED are EMS-owned recommendations, not commands to the heat pump. No ISG mode endpoint is written. Advice uses measured buffer/DHW temperatures, PV surplus, the optional shared cheap-price policy and the cooling status configured in Thermal strategy. Independent heat-pump safety and its own temperature control remain authoritative.", "newLine": true},
+        "heatPumpAdviceEnabled": {"type": "checkbox", "label": "Enable heat-pump mode recommendations", "default": false, "sm": 12, "newLine": true},
+        "heatPumpBufferTemperatureId": {"type": "objectId", "label": "Heat-pump buffer temperature (empty = configured heating-buffer temperature source)", "types": ["state"], "default": "", "sm": 12, "newLine": true},
+        "heatPumpDhwTemperatureId": {"type": "objectId", "label": "Heat-pump DHW temperature (explicit source; no automatic sensor selection)", "types": ["state"], "default": "", "sm": 12, "newLine": true},
+        "heatPumpHeatingTargetC": {"type": "number", "label": "Heating buffer target for heat-pump advice", "unit": "°C", "default": 45, "min": 10, "max": 70, "sm": 4, "newLine": true},
+        "heatPumpDhwTargetC": {"type": "number", "label": "DHW target for heat-pump advice", "unit": "°C", "default": 60, "min": 10, "max": 80, "sm": 4},
+        "heatPumpTemperatureMaxAgeS": {"type": "number", "label": "Maximum heat-pump temperature age", "unit": "s", "default": 3600, "min": 10, "max": 7200, "sm": 4},
+        "heatPumpMinHoldS": {"type": "number", "label": "Minimum normal mode-advice holding time", "unit": "s", "default": 300, "min": 60, "max": 3600, "sm": 4, "newLine": true},
+        "heatPumpPvBoostOnW": {"type": "number", "label": "PV surplus to enter BOOST advice", "unit": "W", "default": 2500, "min": 1, "max": 30000, "sm": 4},
+        "heatPumpPvBoostOffW": {"type": "number", "label": "PV surplus to leave BOOST advice", "unit": "W", "default": 1200, "min": 0, "max": 30000, "sm": 4},
+        "_heatPumpHysteresisHelp": {"type": "staticText", "text": "The BOOST entry threshold must be positive and greater than the exit threshold. Safety blocks and loss of price permission can end advice before the normal holding time expires.", "newLine": true}
+      }
+    },
+    "thermalStrategyTab": {
+      "type": "panel",
+      "label": "Thermal strategy",
+      "items": {
+        "_thermalSharedHelp": {"type": "staticText", "text": "Shared cooling information protects the heating-buffer heater and informs heat-pump advice. DHW is a separate thermal circuit. Optional cheap-price heating remains disabled unless explicitly released with a positive combined heater grid-power budget; missing prices are never treated as free energy.", "newLine": true},
+        "heatingCoolingActiveId": {"type": "objectId", "label": "Shared cooling active (confirmed true/1 = cooling; false/0 = no cooling)", "types": ["state"], "default": "", "sm": 12, "newLine": true},
+        "heatingCoolingHeartbeatId": {"type": "objectId", "label": "Optional cooling-source heartbeat (fresh epoch-ms timestamp; allows unchanged cooling boolean)", "types": ["state"], "default": "", "sm": 12, "newLine": true},
+        "heatingCoolingMaxAgeS": {"type": "number", "label": "Maximum cooling input / heartbeat age", "unit": "s", "default": 120, "min": 5, "max": 600, "sm": 4, "newLine": true},
+        "thermalCheapPriceEnabled": {"type": "checkbox", "label": "Allow explicitly budgeted heating at cheap total electricity prices", "default": false, "sm": 12, "newLine": true},
+        "thermalCheapPriceMaxCt": {"type": "number", "label": "Maximum total electricity price for cheap heating", "unit": "ct/kWh", "default": 0, "min": -100, "max": 200, "sm": 4, "newLine": true},
+        "thermalCheapGridMaxW": {"type": "number", "label": "Maximum shared grid-power budget for cheap heater operation (0 = no grid heating)", "unit": "W", "default": 0, "min": 0, "max": 15000, "sm": 8},
+        "thermalCheapFixedTariffAllowed": {"type": "checkbox", "label": "Also allow cheap-price heating with an explicitly configured fixed tariff", "default": false, "sm": 12, "newLine": true}
       }
     },
     "controlTab": {

@@ -39,6 +39,11 @@ test('update defaults never arm a productive output', () => {
     assert.equal(native.multiWallboxAlphaArmed, false);
     assert.equal(native.combinedProductionArmed, false);
     assert.equal(native.dhwControlEnabled, false);
+    assert.equal(native.batteryControlEnabled, false);
+    assert.equal(native.batteryProductionArmed, false);
+    assert.equal(native.heatingControlEnabled, false);
+    assert.equal(native.heatingProductionArmed, false);
+    assert.equal(native.heatPumpAdviceEnabled, false);
     for (let wb = 0; wb < 3; wb++) {
         assert.equal(native[`wb${wb}ControlEnabled`], false);
         assert.equal(native[`wb${wb}ProductionArmed`], false);
@@ -46,6 +51,6 @@ test('update defaults never arm a productive output', () => {
 });
 
 test('package manifests publish the same alpha version', () => {
-    assert.equal(packageJson.version, '0.17.0-alpha.16');
+    assert.equal(packageJson.version, '0.17.0-alpha.17');
     assert.equal(ioPackage.common.version, packageJson.version);
 });

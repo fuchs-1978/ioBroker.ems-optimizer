@@ -49,7 +49,7 @@ test('native settings and startup invalidation finish before outputs and schedul
     };
     await a.onReady();
     assert.ok(steps.indexOf('outputs') < steps.indexOf('bootstrap'));
-    assert.ok(steps.indexOf('native') < steps.indexOf('updateVehicles(); updateDhwSimulation(); observe();'));
+    assert.ok(steps.indexOf('native') < steps.indexOf('updateVehicles(); updateDhwSimulation(); updateHeatingSimulation(); observe();'));
 });
 
 test('asynchronous object reads cannot restore an old control value over new native settings', async () => {
@@ -172,7 +172,7 @@ test('unload drains pending actuator write before final zero and suppresses futu
     a.wallboxOutput.stopAll = async () => {};
     a.wallboxOutput.hasActiveOwnedOutput = () => false;
     a.engineContext = {};
-    a.runEngine = () => a.writeForeignStateGuarded('heater', 0);
+    a.runEngine = source => source.includes('stopDhwOutput') && a.writeForeignStateGuarded('heater', 0);
     a.writeForeignStateGuarded('heater', 2000);
     await started;
     const unloading = a.prepareUnload();
@@ -319,9 +319,195 @@ test('real engine startup and shutdown with default configuration never writes a
     assert.equal(a.getCachedState('ems.0.System.RealOutputsEnabled').val, false);
     assert.equal(a.getCachedState('ems.0.Plan.Valid').val, false);
     assert.equal(a.wallboxOutput.ready, true);
+    for (const suffix of ['Control.FineRegulator', 'Devices.Battery.OutputSetpointId',
+        'Devices.MyPV_Heating.OutputSetpointId', 'Devices.HeatPump.RequestedMode'])
+        assert.ok(a.knownObjects.has(`ems.0.${suffix}`), `Missing engine object ${suffix}`);
     await a.prepareUnload({allowHandoff: false});
     assert.equal(foreignWrites.length, 0);
     assert.equal(errors.length, 0, errors.join('\n'));
+});
+
+function extensionOutput(device = 'Battery') {
+    const a = adapter();
+    const prefix = device === 'Battery' ? 'battery' : device === 'MyPV_DHW' ? 'dhw' : 'heating';
+    const id = device === 'Battery' ? 'sunenergyxt500.0.heads.1.control.GS'
+        : device === 'MyPV_DHW' ? 'modbus.4.power' : 'modbus.5.power';
+    Object.assign(a.config, {[`${prefix}SetpointId`]: id, [`${prefix}Present`]: true,
+        [`${prefix}ControlEnabled`]: true, [`${prefix}ProductionArmed`]: true});
+    a.allowedForeignWriteIds.add(id);
+    a.stateCache.set('ems.0.System.RealOutputsEnabled', {val: true});
+    for (const name of ['Present', 'ControlEnabled', 'DriverReady', 'OutputOwned', 'Release'])
+        a.stateCache.set(`ems.0.Devices.${device}.${name}`, {val: true});
+    a.stateCache.set(`ems.0.Devices.${device}.OutputSetpointId`, {val: id});
+    a.engineContext = {};
+    const physical = device === 'Battery' ? {eligible: true, canCharge: true, canDischarge: true,
+        maxChargeW: 2400, maxDischargeW: 2400, reason: 'ready'} : {release: true, thermalCapW: 6000};
+    const electrical = {allowed: true, reason: 'ready'};
+    a.runEngine = source => source.includes('checkQueuedElectricalOutput') ? electrical : physical;
+    const writes = [];
+    a.setForeignStateAsync = async (target, value) => writes.push({target, value});
+    return {a, id, physical, electrical, writes};
+}
+
+for (const value of [-100, 100]) {
+    test(`signed GS ${value} respects durable ownership and global output gates`, async () => {
+        const {a, id, writes} = extensionOutput();
+        let persist;
+        const pending = new Promise(resolve => { persist = resolve; });
+        a.pendingOwnWrites.set('ems.0.Devices.Battery.OutputOwned', pending);
+        assert.equal(a.writeForeignStateGuarded(id, value), true);
+        await Promise.resolve();
+        assert.equal(writes.length, 0);
+        persist();
+        await Promise.allSettled([...a.pendingForeignWrites]);
+        assert.deepEqual(writes.map(write => write.value), [value]);
+        a.config.globalWriteEnabled = false;
+        assert.equal(a.writeForeignStateGuarded(id, value), false);
+        assert.equal(a.writeForeignStateGuarded(id, 0), true);
+        await Promise.allSettled([...a.pendingForeignWrites]);
+        assert.deepEqual(writes.map(write => write.value), [value, 0]);
+    });
+    test(`queued GS ${value} rechecks SoC direction and magnitude`, async () => {
+        for (const change of ['direction', 'cap', 'driver']) {
+            const {a, id, physical, writes} = extensionOutput();
+            a.writeForeignStateGuarded(id, value);
+            if (change === 'direction') physical[value < 0 ? 'canCharge' : 'canDischarge'] = false;
+            if (change === 'cap') physical[value < 0 ? 'maxChargeW' : 'maxDischargeW'] = 50;
+            if (change === 'driver') a.stateCache.set('ems.0.Devices.Battery.DriverReady', {val: false});
+            await Promise.allSettled([...a.pendingForeignWrites]);
+            assert.equal(writes.length, 0, change);
+        }
+    });
+}
+
+test('failed ownership persistence blocks an actuator even if cache already reports ownership', async () => {
+    const {a, id, writes} = extensionOutput();
+    let fail;
+    const pending = new Promise((resolve, reject) => { fail = reject; });
+    a.pendingOwnWrites.set('ems.0.Devices.Battery.OutputOwned', pending);
+    a.writeForeignStateGuarded(id, -100);
+    fail(new Error('database failure'));
+    a.pendingOwnWrites.delete('ems.0.Devices.Battery.OutputOwned');
+    await Promise.allSettled([...a.pendingForeignWrites]);
+    assert.equal(writes.length, 0);
+});
+
+for (const device of ['Battery', 'MyPV_DHW', 'MyPV_Heating']) {
+    test(`${device} cannot forget failed durable reservation on a later retry`, async () => {
+        const {a, id, writes} = extensionOutput(device);
+        const key = `ems.0.Devices.${device}.${device === 'Battery'
+            ? 'OutputReservedCharge_W' : 'OutputReservedPhase1_W'}`;
+        a.setStateAsync = async () => { throw new Error('reservation database unavailable'); };
+        await assert.rejects(a.setCompatState(key, 100));
+        await Promise.resolve();
+        assert.equal(a.pendingOwnWrites.has(key), false);
+        assert.equal(a.getCachedState(key).val, 100);
+        a.writeForeignStateGuarded(id, device === 'Battery' ? -100 : 100);
+        await Promise.allSettled([...a.pendingForeignWrites]);
+        assert.equal(writes.length, 0);
+        a.setStateAsync = async () => {};
+        await a.setCompatState(key, 100);
+        a.writeForeignStateGuarded(id, device === 'Battery' ? -100 : 100);
+        await Promise.allSettled([...a.pendingForeignWrites]);
+        assert.equal(writes.length, 1);
+    });
+    test(`${device} waits for persisted high-water reserve before sending any nonzero`, async () => {
+        const {a, id, writes} = extensionOutput(device);
+        const key = `ems.0.Devices.${device}.${device === 'Battery'
+            ? 'OutputUnobservedCommand_W' : 'OutputReservationState_JSON'}`;
+        let persist;
+        a.pendingOwnWrites.set(key, new Promise(resolve => { persist = resolve; }));
+        a.writeForeignStateGuarded(id, 100);
+        await Promise.resolve();
+        assert.equal(writes.length, 0);
+        persist();
+        await Promise.allSettled([...a.pendingForeignWrites]);
+        assert.equal(writes.length, 1);
+    });
+    test(`${device} rechecks electrical limits after waiting for durable output state`, async () => {
+        const {a, id, writes, electrical} = extensionOutput(device);
+        let persist;
+        a.pendingOwnWrites.set(`ems.0.Devices.${device}.OutputOwned`,
+            new Promise(resolve => { persist = resolve; }));
+        a.writeForeignStateGuarded(id, 100);
+        await Promise.resolve();
+        electrical.allowed = false;
+        electrical.reason = 'Netzbetreiberlimit oder Hausanschluss hat sich geaendert';
+        persist();
+        await Promise.allSettled([...a.pendingForeignWrites]);
+        assert.equal(writes.length, 0);
+    });
+}
+
+test('surrounding Admin whitespace cannot bypass device-specific queued output guards', async () => {
+    for (const device of ['Battery', 'MyPV_Heating']) {
+        const {a, id, writes} = extensionOutput(device);
+        a.config[device === 'Battery' ? 'batterySetpointId' : 'heatingSetpointId'] = ` ${id} `;
+        a.writeForeignStateGuarded(id, 100);
+        a.stateCache.set(`ems.0.Devices.${device}.DriverReady`, {val: false});
+        await Promise.allSettled([...a.pendingForeignWrites]);
+        assert.equal(writes.length, 0);
+    }
+});
+
+test('queued heating write rechecks actual cooling permission and reduced thermal cap', async () => {
+    for (const change of ['cooling', 'cap', 'inhibit']) {
+        const {a, id, physical, writes} = extensionOutput('MyPV_Heating');
+        a.writeForeignStateGuarded(id, 3000);
+        if (change === 'cooling') physical.release = false;
+        if (change === 'cap') physical.thermalCapW = 1000;
+        if (change === 'inhibit') a.stateCache.set('ems.0.Config.HeatingInhibit', {val: true});
+        await Promise.allSettled([...a.pendingForeignWrites]);
+        assert.equal(writes.length, 0, change);
+    }
+});
+
+test('former actuator target only accepts zero and other outputs reject negative watts', async () => {
+    const {a, id, writes} = extensionOutput();
+    a.zeroOnlyForeignWriteIds.add(id);
+    assert.equal(a.writeForeignStateGuarded(id, -100), false);
+    assert.equal(a.writeForeignStateGuarded(id, 100), false);
+    a.unloading = true;
+    assert.equal(a.writeForeignStateGuarded(id, 0), true);
+    await Promise.allSettled([...a.pendingForeignWrites]);
+    assert.equal(writes.length, 1);
+    const heater = extensionOutput('MyPV_Heating');
+    assert.equal(heater.a.writeForeignStateGuarded(heater.id, -100), false);
+});
+
+test('a broken stop callback cannot skip other owned outputs during unload', async () => {
+    const a = adapter();
+    a.engineContext = {};
+    const calls = [];
+    a.runEngine = source => {
+        calls.push(source);
+        if (source.includes('stopDhwOutput')) throw new Error('broken heater cleanup');
+    };
+    a.wallboxOutput.waitForIdle = async () => {};
+    a.wallboxOutput.stopAll = async () => {};
+    a.getForeignObjectAsync = async () => null;
+    await a.prepareUnload({allowHandoff: false});
+    for (const name of ['stopDhwOutput', 'stopBatteryOutput', 'stopHeatingOutput', 'stopHeatPumpOutput'])
+        assert.ok(calls.some(source => source.includes(name)), name);
+});
+
+test('a stalled battery write cannot defer independent heater and wallbox stop requests', async () => {
+    const a = adapter();
+    let finishBattery;
+    a.pendingForeignWrites.add(new Promise(resolve => { finishBattery = resolve; }));
+    a.engineContext = {};
+    const stopped = [];
+    a.runEngine = source => stopped.push(source);
+    a.wallboxOutput.waitForIdle = async () => {};
+    a.wallboxOutput.stopAll = async () => stopped.push('wallboxes');
+    a.getForeignObjectAsync = async () => null;
+    const unloading = a.prepareUnload({allowHandoff: false});
+    for (let tick = 0; tick < 8; tick++) await Promise.resolve();
+    assert.ok(stopped.some(source => source.includes('stopDhwOutput')));
+    assert.ok(stopped.some(source => source.includes('stopHeatingOutput')));
+    assert.ok(stopped.includes('wallboxes'));
+    finishBattery();
+    await unloading;
 });
 
 test('debug capture failures never reject control writes and warnings are rate limited', async () => {
