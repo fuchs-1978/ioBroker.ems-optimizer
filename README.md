@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.7**
+Aktuelle Version: **0.17.0-alpha.8**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -39,6 +39,14 @@ Version 0.17.0-alpha.4 verwendet im Produktivausgang die vom go-e bestätigte
 Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Batterie, Heizpuffer und Wärmepumpe bleiben Simulation.
 Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.8 – 50/50-Schalter ohne Wallbox-Abschaltung
+
+- Der externe 50/50-Schalter steuert nur noch die Leistungsverteilung.
+- Wird er ausgeschaltet, bleibt eine laufende Wallbox aktiv und erhaelt Vorrang;
+  der EHZ uebernimmt nur die verbleibende Leistung.
+- Die produktiven Sicherheitsfreigaben fuer Wallbox, EHZ und gemeinsamen Betrieb
+  bleiben davon unabhaengig wirksam.
 
 ## Neu in 0.17.0-alpha.7 – stabilisierte Restart-Übergabe
 
@@ -1114,6 +1122,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.8 | Der externe 50/50-Schalter steuert nur noch die Verteilung. Beim Ausschalten bleibt die Wallbox aktiv und erhält Vorrang; die produktiven Sicherheitsfreigaben bleiben bestehen. |
 | 0.17.0-alpha.7 | Restart-Übernahme endet erst nach zehn Sekunden durchgehend stabiler EMS-/Messdaten. Späte Initialisierungs-Nullwerte können die laufende Wallbox dadurch nicht mehr unmittelbar nach der Übernahme abschalten. |
 | 0.17.0-alpha.6 | Eine neue Restart-Übergabe startet die produktive Mindestlaufzeit ausdrücklich auch im Echtzeitverteiler neu, selbst wenn `OutputActive=true` den Neustart ohne Zustandsflanke überlebt hat. |
 | 0.17.0-alpha.5 | Ein sinkendes Wallbox-Soll ersetzt einen noch offenen höheren Amperebefehl, ohne `allow=0` auszulösen. Dadurch bleibt die Wallbox bei schnellen WB/EHZ-Neuverteilungen aktiv und fällt nicht erneut in die Einschaltverzögerung. |

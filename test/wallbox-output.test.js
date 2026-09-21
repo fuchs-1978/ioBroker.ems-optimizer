@@ -383,6 +383,17 @@ test('confirmed combined mode permits one wallbox beside DHW', async () => {
     await h.start();
     assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,true);
 });
+test('turning off 50/50 keeps the running wallbox active with wallbox priority', async () => {
+    const h=setup();h.config.combinedProductionArmed=true;h.put('split',1);
+    h.put('ems.0.Config.DHWParallelDistributionEnabled',true);
+    h.put('ems.0.Devices.MyPV_DHW.ControlEnabled',true);
+    h.put('ems.0.Control.Targets.MyPV_DHW_W',0);h.put('ems.0.Actual.MyPV_DHW_W',0);
+    await h.start();h.writes.length=0;
+    h.put('split',0);await h.output.tick();
+    assert.deepEqual(h.writes,[]);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,true);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputOwned').val,true);
+});
 test('combined wallbox waits until positive DHW target is settled', async () => {
     const h=setup();h.config.combinedProductionArmed=true;h.put('split',1);
     h.put('ems.0.Config.DHWParallelDistributionEnabled',true);
