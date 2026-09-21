@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.8",
+    "version": "0.17.0-alpha.9",
     "titleLang": {
       "en": "EMS Optimizer",
       "de": "EMS-Optimierer"
