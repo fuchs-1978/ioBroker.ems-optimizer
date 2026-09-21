@@ -351,6 +351,20 @@ test('productive wallbox never rearms start delay while minimum runtime is activ
     assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.MinimumRunTimeActive').val,true);
     assert.ok(h.states.get('ems.0.Vehicles.Wallbox0.MinimumRunTimeRemaining_s').val>=599);
 });
+test('restart handoff restarts productive minimum runtime without OutputActive edge',()=>{
+    const h=engine();h.put('DP_DHW_PARALLEL_RELEASE',1);
+    h.put('ems.0.Devices.Wallbox1.Present',false);h.put('ems.0.Devices.Wallbox2.Present',false);
+    h.put('ems.0.Devices.Wallbox0.ControlEnabled',true);
+    h.put('ems.0.Devices.Wallbox0.OutputActive',true);
+    h.put('ems.0.Config.WallboxMinimumRunTime_s',600);
+    h.put('ems.0.Control.RestartHandoffSince',Date.now());
+    h.run('simulateDhwTarget = valueW => valueW');h.run('updateVehicles()');
+    h.run('wallboxOutputWasActive[0]=true;wallboxRunStartedAt[0]=Date.now()-700000');
+    h.run('updateSlowTargets(500,[{valueW:0},{valueW:0},{valueW:0}],{valueW:0})');
+    assert.equal(h.run('slowTargets.wallboxA[0]'),6);
+    assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.MinimumRunTimeActive').val,true);
+    assert.ok(h.states.get('ems.0.Vehicles.Wallbox0.MinimumRunTimeRemaining_s').val>=599);
+});
 test('binding grid-operator budget overrides wallbox minimum run time',()=>{
     const h=engine();h.put('ems.0.Devices.Wallbox1.Present',false);
     h.put('ems.0.Devices.Wallbox2.Present',false);
