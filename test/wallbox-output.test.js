@@ -93,6 +93,7 @@ test('confirmed stop, current, then release are separate steps', async () => {
 });
 test('previously owned active wallbox is safely adopted after an unclean restart', async () => {
     const h = setup();
+    h.put('ems.0.Control.RestartHandoffActive', true);
     h.put('ems.0.Devices.Wallbox0.OutputOwned', true);
     h.put('ems.0.Devices.Wallbox0.OutputActive', true);
     h.put('allow', 1); h.put('feedback', 10); h.put('i1', 10); h.put('power', 2.3);
@@ -101,8 +102,32 @@ test('previously owned active wallbox is safely adopted after an unclean restart
     assert.equal(h.output.devices[0].owned, true);
     assert.equal(h.output.devices[0].lastA, 10);
     assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, true);
+    assert.equal(h.states.get('ems.0.Control.RestartHandoffActive').val, false);
     assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,
         /PRODUKTIV: 10 A.*nach Neustart uebernommen/);
+});
+test('restart handoff recognizes only an active EMS-owned wallbox', async () => {
+    const h=setup();await h.output.initialize();
+    assert.equal(h.output.hasActiveOwnedOutput(),false);
+    h.output.devices[0].owned=true;h.put('ems.0.Devices.Wallbox0.OutputActive',true);
+    assert.equal(h.output.hasActiveOwnedOutput(),true);
+});
+test('restart handoff waits for fresh internal control data without stopping', async () => {
+    const h=setup();const old=Date.now()-60000;
+    h.put('ems.0.Control.RestartHandoffActive',true);
+    h.put('ems.0.Control.RestartHandoffSince',Date.now());
+    h.put('ems.0.System.LastUpdate',old);h.put('ems.0.Control.LastUpdate',old);
+    h.put('error',0,{ts:old});h.put('car',2,{ts:old});
+    h.put('ems.0.Devices.Wallbox0.OutputOwned',true);
+    h.put('ems.0.Devices.Wallbox0.OutputActive',true);
+    h.put('allow',1);h.put('feedback',10);h.put('i1',10);h.put('power',2.3);
+    await h.output.initialize();await h.output.tick();
+    assert.deepEqual(h.writes,[]);
+    assert.equal(h.output.devices[0].recovering,true);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,/warte auf frische/);
+    h.refresh();await h.output.tick();
+    assert.equal(h.output.devices[0].recovering,false);
+    assert.equal(h.states.get('ems.0.Control.RestartHandoffActive').val,false);
 });
 test('restart recovery stops a previously owned wallbox when a safety gate fails', async () => {
     const h = setup();
@@ -227,6 +252,15 @@ test('current increase uses whole amps and configured ramp', async () => {
     const h = setup(); await h.start(); h.output.devices[0].lastAt -= 10000;
     h.put('i1',6); h.put('power',1.38); h.writes.length=0;
     await h.output.tick(); assert.deepEqual(h.writes,[{id:'cmd',val:12}]);
+});
+test('combined production limits a confirmed wallbox increase to one ampere', async () => {
+    const h=setup();h.config.combinedProductionArmed=true;h.config.wallboxCombinedMaxStepA=1;
+    h.put('split',1);h.put('ems.0.Config.DHWParallelDistributionEnabled',true);
+    h.put('ems.0.Devices.MyPV_DHW.ControlEnabled',true);
+    h.put('ems.0.Control.Targets.MyPV_DHW_W',0);h.put('ems.0.Actual.MyPV_DHW_W',0);
+    await h.start();h.output.devices[0].lastAt-=10000;
+    h.put('i1',6);h.put('power',1.38);h.writes.length=0;
+    await h.output.tick();assert.deepEqual(h.writes,[{id:'cmd',val:7}]);
 });
 test('taper and available-current limits apply to production', async () => {
     const h = setup(); h.config.wb0TaperEnabled=true; h.config.wb0AvailableCurrentId='available';

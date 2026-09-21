@@ -8,12 +8,12 @@
       "items": {
         "safety": {
           "type": "staticText",
-          "text": "Version 0.16.0-alpha.2: a productive wallbox cannot re-arm its start delay, and timing diagnostics follow the real minimum runtime. Alpha mode controls all released wallboxes sequentially together with the DHW heater. Existing safety gates, §14a/LPC and fixed verified phases remain active. Real phase switching remains external.",
+          "text": "Version 0.17.0-alpha.1: AP2 provides explicit admin fields, one central house-connection limit and compatible migration from legacy JSON. Combined wallbox/DHW control uses measured feedback, fast export absorption and checked wallbox handoff across restarts. No previously disabled output is enabled by an update.",
           "newLine": true
         },
         "generalHeader": {
           "type": "header",
-          "text": "General and history",
+          "text": "General releases",
           "size": 2,
           "newLine": true
         },
@@ -29,98 +29,15 @@
           "default": false,
           "newLine": true
         },
-        "historyInstance": {
-          "type": "text",
-          "label": "History adapter instance",
-          "default": "",
-          "sm": 4,
-          "newLine": true
-        },
         "_houseConnectionHeader": {
           "type": "header",
-          "text": "House-connection protection",
+          "text": "Central house-connection protection",
           "size": 3,
           "newLine": true
         },
-        "dhwHaL1CurrentId": {
-          "type": "text",
-          "label": "SMA L1 measured current (safe fallback without direction)",
-          "default": "",
-          "sm": 4,
-          "newLine": true
-        },
-        "dhwHaL2CurrentId": {
-          "type": "text",
-          "label": "SMA L2 measured current (safe fallback without direction)",
-          "default": "",
-          "sm": 4
-        },
-        "dhwHaL3CurrentId": {
-          "type": "text",
-          "label": "SMA L3 measured current (safe fallback without direction)",
-          "default": "",
-          "sm": 4
-        },
-        "haL1ImportPowerId": {
-          "type": "text",
-          "label": "SMA L1 import power",
-          "default": "",
-          "sm": 4,
-          "newLine": true
-        },
-        "haL2ImportPowerId": {
-          "type": "text",
-          "label": "SMA L2 import power",
-          "default": "",
-          "sm": 4
-        },
-        "haL3ImportPowerId": {
-          "type": "text",
-          "label": "SMA L3 import power",
-          "default": "",
-          "sm": 4
-        },
-        "haL1ExportPowerId": {
-          "type": "text",
-          "label": "SMA L1 export power",
-          "default": "",
-          "sm": 4,
-          "newLine": true
-        },
-        "haL2ExportPowerId": {
-          "type": "text",
-          "label": "SMA L2 export power",
-          "default": "",
-          "sm": 4
-        },
-        "haL3ExportPowerId": {
-          "type": "text",
-          "label": "SMA L3 export power",
-          "default": "",
-          "sm": 4
-        },
-        "dhwHaL1FreeCurrentId": {
-          "type": "text",
-          "label": "HA L1 free current data point (legacy)",
-          "default": "",
-          "sm": 4,
-          "newLine": true
-        },
-        "dhwHaL2FreeCurrentId": {
-          "type": "text",
-          "label": "HA L2 free current data point (legacy)",
-          "default": "",
-          "sm": 4
-        },
-        "dhwHaL3FreeCurrentId": {
-          "type": "text",
-          "label": "HA L3 free current data point (legacy)",
-          "default": "",
-          "sm": 4
-        },
-        "dhwHaLimitA": {
+        "houseConnectionFuseA": {
           "type": "number",
-          "label": "EHZ house-connection control limit per phase",
+          "label": "Physical house-connection fuse per phase",
           "unit": "A",
           "default": 50,
           "min": 1,
@@ -128,23 +45,19 @@
           "sm": 4,
           "newLine": true
         },
-        "wallboxHaLimitA": {
+        "houseConnectionReserveA": {
           "type": "number",
-          "label": "Wallbox house-connection limit per phase",
-          "default": 50,
-          "min": 6,
-          "max": 63,
+          "label": "Control reserve below fuse rating",
+          "default": 4,
+          "min": 0,
+          "max": 20,
           "unit": "A",
           "sm": 4
         },
-        "wallboxHaIncreaseLimitA": {
-          "type": "number",
-          "label": "No wallbox current increase above",
-          "default": 46,
-          "min": 0,
-          "max": 63,
-          "unit": "A",
-          "sm": 4
+        "houseConnectionHelp": {
+          "type": "staticText",
+          "text": "The adapter derives one common working limit (fuse minus reserve) for wallboxes and DHW. Legacy separate limits remain readable only for migration.",
+          "newLine": true
         },
         "_gridOperatorHeader": {
           "type": "header",
@@ -186,7 +99,158 @@
           "label": "EEBUS LPC.limit data point",
           "default": "",
           "sm": 4
+        },
+        "lppStateId": {
+          "type": "text",
+          "label": "Optional EEBUS LPP.state data point",
+          "default": "",
+          "sm": 4,
+          "newLine": true
+        },
+        "lppLimitId": {
+          "type": "text",
+          "label": "Optional EEBUS LPP.limit data point",
+          "default": "",
+          "sm": 4
         }
+      }
+    },
+    "measurementsTab": {
+      "type": "panel",
+      "label": "Measurements",
+      "items": {
+        "measurementHeader": {
+          "type": "header",
+          "text": "Required live measurements",
+          "size": 2,
+          "newLine": true
+        },
+        "measurementHelp": {
+          "type": "staticText",
+          "text": "Required for normal operation: PV power and either grid import/export or an equivalent mapped source. Values are expected in watts. Explicit fields override legacy JSON entries.",
+          "newLine": true
+        },
+        "pvPowerId": {
+          "type": "text",
+          "label": "PV production power (required)",
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "gridImportId": {
+          "type": "text",
+          "label": "Grid import power (required)",
+          "default": "",
+          "sm": 6,
+          "newLine": true
+        },
+        "gridExportId": {
+          "type": "text",
+          "label": "Grid export power (required)",
+          "default": "",
+          "sm": 6
+        },
+        "outsideTemperatureId": {
+          "type": "text",
+          "label": "Outside temperature (optional, °C)",
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "outsideTemperatureHelp": {
+          "type": "staticText",
+          "text": "Expected unit: °C. Invalid or unavailable values are ignored; forecast calculations continue with their conservative fallback.",
+          "newLine": true
+        },
+        "_partialMetersHeader": {
+          "type": "header",
+          "text": "Optional house and partial meters",
+          "size": 3,
+          "newLine": true
+        },
+        "house1PowerId": {"type": "text", "label": "House meter 1", "default": "", "sm": 6, "newLine": true},
+        "house2PowerId": {"type": "text", "label": "House meter 2", "default": "", "sm": 6},
+        "hallPowerId": {"type": "text", "label": "Hall meter", "default": "", "sm": 6, "newLine": true},
+        "apartmentPowerId": {"type": "text", "label": "Apartment meter", "default": "", "sm": 6},
+        "dhwTemperatureId": {"type": "text", "label": "Optional aggregate DHW temperature", "default": "", "sm": 12, "newLine": true},
+        "_phaseMeasurementHeader": {
+          "type": "header",
+          "text": "Optional phase measurements for house-connection protection",
+          "size": 3,
+          "newLine": true
+        },
+        "dhwHaL1CurrentId": {"type": "text", "label": "House current L1 (A)", "default": "", "sm": 4, "newLine": true},
+        "dhwHaL2CurrentId": {"type": "text", "label": "House current L2 (A)", "default": "", "sm": 4},
+        "dhwHaL3CurrentId": {"type": "text", "label": "House current L3 (A)", "default": "", "sm": 4},
+        "haL1ImportPowerId": {"type": "text", "label": "L1 import power (W)", "default": "", "sm": 4, "newLine": true},
+        "haL2ImportPowerId": {"type": "text", "label": "L2 import power (W)", "default": "", "sm": 4},
+        "haL3ImportPowerId": {"type": "text", "label": "L3 import power (W)", "default": "", "sm": 4},
+        "haL1ExportPowerId": {"type": "text", "label": "L1 export power (W)", "default": "", "sm": 4, "newLine": true},
+        "haL2ExportPowerId": {"type": "text", "label": "L2 export power (W)", "default": "", "sm": 4},
+        "haL3ExportPowerId": {"type": "text", "label": "L3 export power (W)", "default": "", "sm": 4},
+        "haFreePowerId": {"type": "text", "label": "Legacy available house power (optional)", "default": "", "sm": 6, "newLine": true},
+        "haCriticalId": {"type": "text", "label": "House-connection critical flag (optional)", "default": "", "sm": 6}
+      }
+    },
+    "forecastTab": {
+      "type": "panel",
+      "label": "History & forecast",
+      "items": {
+        "forecastHeader": {"type": "header", "text": "History sources", "size": 2, "newLine": true},
+        "historyInstance": {"type": "text", "label": "History/SQL adapter instance", "default": "", "sm": 8, "newLine": true},
+        "historyDays": {"type": "number", "label": "History look-back", "unit": "days", "default": 84, "min": 7, "max": 365, "sm": 4},
+        "dhwHistoryId": {"type": "text", "label": "Historized DHW power", "default": "", "sm": 12, "newLine": true},
+        "forecastSourceHeader": {"type": "header", "text": "Forecast sources", "size": 3, "newLine": true},
+        "weatherHourlyBaseId": {"type": "text", "label": "Hourly weather base data point", "default": "", "sm": 6, "newLine": true},
+        "pvForecastBaseId": {"type": "text", "label": "PV forecast base data point", "default": "", "sm": 6},
+        "priceHeader": {"type": "header", "text": "Prices and grid fees", "size": 3, "newLine": true},
+        "energyPriceSeriesId": {"type": "text", "label": "Dynamic energy-price series", "default": "", "sm": 6, "newLine": true},
+        "gridFeeSeriesId": {"type": "text", "label": "Dynamic grid-fee series", "default": "", "sm": 6},
+        "dynamicEnergyPrice": {"type": "checkbox", "label": "Use dynamic energy price (internal switch)", "default": false, "sm": 6, "newLine": true},
+        "dynamicGridFee": {"type": "checkbox", "label": "Use dynamic grid fee (internal switch)", "default": false, "sm": 6},
+        "dynamicEnergyPriceEnabledId": {"type": "text", "label": "External enable switch for dynamic energy price", "default": "", "sm": 6, "newLine": true},
+        "dynamicGridFeeEnabledId": {"type": "text", "label": "External enable switch for dynamic grid fee", "default": "", "sm": 6},
+        "priceSwitchHelp": {"type": "staticText", "text": "If an external enable data point is configured, it overrides the corresponding internal switch. Missing or invalid external values fail safe to OFF and are reported in diagnostics.", "newLine": true},
+        "fixedEnergyCt": {"type": "number", "label": "Fixed energy component", "unit": "ct/kWh", "default": 22.85, "sm": 4, "newLine": true},
+        "fixedGridFeeCt": {"type": "number", "label": "Fixed grid fee", "unit": "ct/kWh", "default": 6.04, "sm": 4},
+        "dynamicEnergyAddersCt": {"type": "number", "label": "Dynamic energy adders", "unit": "ct/kWh", "default": 9.301, "sm": 4},
+        "holidayTodayId": {"type": "text", "label": "Holiday today flag", "default": "", "sm": 4, "newLine": true},
+        "holidayTomorrowId": {"type": "text", "label": "Holiday tomorrow flag", "default": "", "sm": 4},
+        "holidayAfterTomorrowId": {"type": "text", "label": "Holiday day-after-tomorrow flag", "default": "", "sm": 4}
+      }
+    },
+    "wallboxGeneralTab": {
+      "type": "panel",
+      "label": "Wallbox general",
+      "items": {
+        "wallboxGeneralHeader": {"type": "header", "text": "Common wallbox control", "size": 2, "newLine": true},
+        "wallboxPrioritySource": {
+          "type": "select", "label": "Priority source", "default": "auto", "sm": 4, "newLine": true,
+          "options": [
+            {"value": "auto", "label": "Automatic / compatible"},
+            {"value": "internal", "label": "Admin selection"},
+            {"value": "external", "label": "External data point"}
+          ]
+        },
+        "wallboxPriority": {
+          "type": "select", "label": "Preferred wallbox (below minimum SoC always wins)", "default": -1, "sm": 4,
+          "options": [
+            {"value": -1, "label": "Automatic"},
+            {"value": 0, "label": "Wallbox 0"},
+            {"value": 1, "label": "Wallbox 1"},
+            {"value": 2, "label": "Wallbox 2"}
+          ]
+        },
+        "wallboxPriorityId": {"type": "text", "label": "External priority data point", "default": "", "sm": 4},
+        "wallboxMaxStepA": {"type": "number", "label": "Maximum current step (single load)", "unit": "A", "default": 6, "min": 1, "max": 32, "sm": 4, "newLine": true},
+        "wallboxCombinedMaxStepA": {"type": "number", "label": "Maximum current step with DHW active", "unit": "A", "default": 1, "min": 1, "max": 6, "sm": 4},
+        "wallboxStartReserveW": {"type": "number", "label": "Additional surplus before start", "unit": "W", "default": 300, "min": 0, "max": 5000, "sm": 4},
+        "wallboxStartDelayS": {"type": "number", "label": "Stable surplus before start", "unit": "s", "default": 30, "min": 0, "max": 600, "sm": 4, "newLine": true},
+        "wallboxMinimumRunTimeS": {"type": "number", "label": "Minimum run time", "unit": "s", "default": 120, "min": 0, "max": 3600, "sm": 4},
+        "wallboxRestartHandoffEnabled": {"type": "checkbox", "label": "Keep an EMS-owned active wallbox running during adapter restart/update", "default": true, "sm": 8, "newLine": true},
+        "wallboxRestartHandoffTimeoutS": {"type": "number", "label": "Maximum wait for fresh control data after restart", "unit": "s", "default": 180, "min": 30, "max": 600, "sm": 4},
+        "phaseSwitchLookAheadMin": {"type": "number", "label": "Phase recommendation look-ahead", "unit": "min", "default": 30, "min": 15, "max": 240, "sm": 4},
+        "phaseSwitchMinHoldMin": {"type": "number", "label": "Minimum time between phase changes", "unit": "min", "default": 30, "min": 0, "max": 240, "sm": 4, "newLine": true}
       }
     },
     "wallbox0Tab": {
@@ -225,6 +289,17 @@
           "default": "",
           "sm": 9
         },
+        "_wb0InputHeader": {"type": "header", "text": "Vehicle and wallbox input data points", "size": 3, "newLine": true},
+        "wb0MinSocId": {"type": "text", "label": "External minimum SoC", "default": "", "sm": 6, "newLine": true},
+        "wb0TargetSocId": {"type": "text", "label": "External target SoC", "default": "", "sm": 6},
+        "wb0ReleaseId": {"type": "text", "label": "EMS release / socfrei", "default": "", "sm": 6, "newLine": true},
+        "wb0UserAllowId": {"type": "text", "label": "User charging permission", "default": "", "sm": 6},
+        "wb0CarStateId": {"type": "text", "label": "Vehicle connection state", "default": "", "sm": 6, "newLine": true},
+        "wb0PhaseStateId": {"type": "text", "label": "Current phase count", "default": "", "sm": 6},
+        "wb0PowerId": {"type": "text", "label": "Measured charging power", "default": "", "sm": 12, "newLine": true},
+        "wb0L1CurrentId": {"type": "text", "label": "Measured current L1", "default": "", "sm": 4, "newLine": true},
+        "wb0L2CurrentId": {"type": "text", "label": "Measured current L2", "default": "", "sm": 4},
+        "wb0L3CurrentId": {"type": "text", "label": "Measured current L3", "default": "", "sm": 4},
         "wb0CapacityKWh": {
           "type": "number",
           "label": "Battery capacity",
@@ -618,6 +693,17 @@
           "default": "",
           "sm": 9
         },
+        "_wb1InputHeader": {"type": "header", "text": "Vehicle and wallbox input data points", "size": 3, "newLine": true},
+        "wb1MinSocId": {"type": "text", "label": "External minimum SoC", "default": "", "sm": 6, "newLine": true},
+        "wb1TargetSocId": {"type": "text", "label": "External target SoC", "default": "", "sm": 6},
+        "wb1ReleaseId": {"type": "text", "label": "EMS release / socfrei", "default": "", "sm": 6, "newLine": true},
+        "wb1UserAllowId": {"type": "text", "label": "User charging permission", "default": "", "sm": 6},
+        "wb1CarStateId": {"type": "text", "label": "Vehicle connection state", "default": "", "sm": 6, "newLine": true},
+        "wb1PhaseStateId": {"type": "text", "label": "Current phase count", "default": "", "sm": 6},
+        "wb1PowerId": {"type": "text", "label": "Measured charging power", "default": "", "sm": 12, "newLine": true},
+        "wb1L1CurrentId": {"type": "text", "label": "Measured current L1", "default": "", "sm": 4, "newLine": true},
+        "wb1L2CurrentId": {"type": "text", "label": "Measured current L2", "default": "", "sm": 4},
+        "wb1L3CurrentId": {"type": "text", "label": "Measured current L3", "default": "", "sm": 4},
         "wb1CapacityKWh": {
           "type": "number",
           "label": "Battery capacity",
@@ -1011,6 +1097,17 @@
           "default": "",
           "sm": 9
         },
+        "_wb2InputHeader": {"type": "header", "text": "Vehicle and wallbox input data points", "size": 3, "newLine": true},
+        "wb2MinSocId": {"type": "text", "label": "External minimum SoC", "default": "", "sm": 6, "newLine": true},
+        "wb2TargetSocId": {"type": "text", "label": "External target SoC", "default": "", "sm": 6},
+        "wb2ReleaseId": {"type": "text", "label": "EMS release / socfrei", "default": "", "sm": 6, "newLine": true},
+        "wb2UserAllowId": {"type": "text", "label": "User charging permission", "default": "", "sm": 6},
+        "wb2CarStateId": {"type": "text", "label": "Vehicle connection state", "default": "", "sm": 6, "newLine": true},
+        "wb2PhaseStateId": {"type": "text", "label": "Current phase count", "default": "", "sm": 6},
+        "wb2PowerId": {"type": "text", "label": "Measured charging power", "default": "", "sm": 12, "newLine": true},
+        "wb2L1CurrentId": {"type": "text", "label": "Measured current L1", "default": "", "sm": 4, "newLine": true},
+        "wb2L2CurrentId": {"type": "text", "label": "Measured current L2", "default": "", "sm": 4},
+        "wb2L3CurrentId": {"type": "text", "label": "Measured current L3", "default": "", "sm": 4},
         "wb2CapacityKWh": {
           "type": "number",
           "label": "Battery capacity",
@@ -1720,6 +1817,15 @@
           "default": 1000,
           "sm": 3
         },
+        "dhwFastIncreaseMaxStepW": {
+          "type": "number",
+          "label": "Fast increase on confirmed grid export",
+          "unit": "W",
+          "default": 3000,
+          "min": 1000,
+          "max": 9000,
+          "sm": 3
+        },
         "dhwSettleToleranceW": {
           "type": "number",
           "label": "Actual-power settling tolerance",
@@ -1985,7 +2091,7 @@
     },
     "controlTab": {
       "type": "panel",
-      "label": "Control and prices",
+      "label": "Realtime control",
       "items": {
         "controlHeader": {
           "type": "header",
@@ -2022,103 +2128,6 @@
           "default": 5,
           "min": 2,
           "sm": 3
-        },
-        "wallboxMaxStepA": {
-          "type": "number",
-          "label": "Wallbox maximum step",
-          "unit": "A",
-          "default": 6,
-          "min": 1,
-          "max": 32,
-          "sm": 3,
-          "newLine": true
-        },
-        "wallboxStartReserveW": {
-          "type": "number",
-          "label": "Additional surplus before wallbox start",
-          "unit": "W",
-          "default": 300,
-          "min": 0,
-          "max": 5000,
-          "sm": 3
-        },
-        "wallboxStartDelayS": {
-          "type": "number",
-          "label": "Stable surplus time before wallbox start",
-          "unit": "s",
-          "default": 30,
-          "min": 0,
-          "max": 600,
-          "sm": 3
-        },
-        "wallboxMinimumRunTimeS": {
-          "type": "number",
-          "label": "Wallbox minimum run time",
-          "unit": "s",
-          "default": 120,
-          "min": 0,
-          "max": 3600,
-          "sm": 3
-        },
-        "phaseSwitchLookAheadMin": {
-          "type": "number",
-          "label": "Phase recommendation look-ahead",
-          "unit": "min",
-          "default": 30,
-          "min": 15,
-          "max": 240,
-          "sm": 3,
-          "newLine": true
-        },
-        "phaseSwitchMinHoldMin": {
-          "type": "number",
-          "label": "Minimum time between phase changes",
-          "unit": "min",
-          "default": 30,
-          "min": 0,
-          "max": 240,
-          "sm": 3
-        },
-        "priceHeader": {
-          "type": "header",
-          "text": "Prices and grid fees",
-          "size": 2,
-          "newLine": true
-        },
-        "dynamicEnergyPrice": {
-          "type": "checkbox",
-          "label": "Use dynamic energy price",
-          "default": false,
-          "sm": 3,
-          "newLine": true
-        },
-        "dynamicGridFee": {
-          "type": "checkbox",
-          "label": "Use dynamic grid fee",
-          "default": false,
-          "sm": 3
-        },
-        "fixedEnergyCt": {
-          "type": "number",
-          "label": "Fixed energy component",
-          "unit": "ct/kWh",
-          "default": 22.85,
-          "sm": 3,
-          "newLine": true
-        },
-        "fixedGridFeeCt": {
-          "type": "number",
-          "label": "Fixed grid fee",
-          "unit": "ct/kWh",
-          "default": 6.04,
-          "sm": 3
-        },
-        "dynamicEnergyAddersCt": {
-          "type": "number",
-          "label": "Dynamic energy adders",
-          "unit": "ct/kWh",
-          "default": 9.301,
-          "sm": 3
         }
       }
     },
@@ -2134,42 +2143,18 @@
         },
         "advancedHelp": {
           "type": "staticText",
-          "text": "Visible fields override matching JSON entries. Keep JSON for all remaining mappings.",
+          "text": "Migration only: explicit fields on the normal tabs override matching legacy JSON entries. Unchanged JSON entries remain active so updates do not lose existing mappings.",
           "newLine": true
         },
         "dataPointMapJson": {
           "type": "text",
-          "label": "Data-point mapping as JSON",
+          "label": "Legacy data-point mapping JSON (migration fallback)",
           "newLine": true
         },
-        "wallboxPriority": {
-          "type": "select",
-          "label": "Preferred wallbox (below minimum SoC always wins)",
-          "default": -2,
-          "newLine": true,
-          "options": [
-            {
-              "value": -2,
-              "label": "Existing mapped priority data point"
-            },
-            {
-              "value": -1,
-              "label": "Automatic"
-            },
-            {
-              "value": 0,
-              "label": "Wallbox 0"
-            },
-            {
-              "value": 1,
-              "label": "Wallbox 1"
-            },
-            {
-              "value": 2,
-              "label": "Wallbox 2"
-            }
-          ]
-        }
+        "legacyCurrentHelp": {"type": "staticText", "text": "The legacy free-current values below are used only when direct phase-current or phase-power measurements are unavailable.", "newLine": true},
+        "dhwHaL1FreeCurrentId": {"type": "text", "label": "Legacy free current L1 (A)", "default": "", "sm": 4, "newLine": true},
+        "dhwHaL2FreeCurrentId": {"type": "text", "label": "Legacy free current L2 (A)", "default": "", "sm": 4},
+        "dhwHaL3FreeCurrentId": {"type": "text", "label": "Legacy free current L3 (A)", "default": "", "sm": 4}
       }
     }
   }

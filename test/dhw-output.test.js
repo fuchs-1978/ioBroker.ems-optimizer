@@ -27,7 +27,8 @@ function phaseLimit(direction) {
             haPhaseImportW: direction ? ['pi1','pi2','pi3'] : [],
             haPhaseExportW: direction ? ['pe1','pe2','pe3'] : []}},
         existsState: id => states.has(id), getState: id => states.get(id),
-        readNumber: (id, fallback) => id === 'ems.0.Config.DHWHouseConnectionLimit_A' ? 50 : fallback});
+        readNumber: (id, fallback) => id === 'ems.0.Config.HouseConnectionWorkingLimit_A' ? 46
+            : id === 'ems.0.Config.DHWHouseConnectionLimit_A' ? 50 : fallback});
     vm.runInContext(fs.readFileSync(path.join(__dirname, '../lib/engine/dhw-output.js'), 'utf8'), ctx);
     return vm.runInContext('phaseLimitedDhwPower(3000)', ctx);
 }
@@ -42,9 +43,15 @@ test('normal EHZ fine regulation still respects its configured ramp', () => {
     assert.equal(command('limitedDhwCommand(6000, 3000, 6000, 500, 1000)'), 2500);
 });
 
-test('EHZ house-connection limit distinguishes phase export from import', () => {
-    assert.equal(phaseLimit(null), 230);
-    assert.equal(phaseLimit('import'), 230);
+test('settled EHZ absorbs a two-kilowatt export in one feedback step', () => {
+    assert.equal(command('adaptiveDhwStepW(-1900, 1000, 100, 3000)'), 1900);
+    assert.equal(command('limitedDhwCommand(9000, 6500, 9000, 1900, 8400)'), 8400);
+    assert.equal(command('adaptiveDhwStepW(-1900, 1000, 100, 1000)'), 1000);
+});
+
+test('EHZ uses the central working limit and distinguishes phase export from import', () => {
+    assert.equal(phaseLimit(null), 0);
+    assert.equal(phaseLimit('import'), 0);
     assert.equal(phaseLimit('export'), 3000);
 });
 

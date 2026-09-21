@@ -7,6 +7,9 @@ const schedule = require("node-schedule");
 const utils = require("@iobroker/adapter-core");
 const WallboxOutput = require("./lib/wallbox-output");
 const gridConstraints = require("./lib/grid-constraints");
+const {buildNativeMapping, houseConnectionSettings, FIELD_TO_MAPPING,
+    WALLBOX_FIELDS} = require("./lib/native-mapping");
+const {shouldPreserveWallboxOnUnload} = require("./lib/unload-policy");
 
 class EmsOptimizer extends utils.Adapter {
     constructor(options = {}) {
@@ -35,9 +38,10 @@ class EmsOptimizer extends utils.Adapter {
         await this.startEngine();
         await this.applyNativeVehicleSettings();
         await this.applyNativeEmsSettings();
+        this.publishMappingStatus();
         await this.wallboxOutput.initialize();
         await this.setStateAsync("info.connection", true, true);
-        this.log.info("EMS Optimizer 0.16.0-alpha.2 started; alpha outputs require explicit release");
+        this.log.info("EMS Optimizer 0.17.0-alpha.1 started; alpha outputs require explicit release");
     }
 
     async preloadStates() {
@@ -63,47 +67,37 @@ class EmsOptimizer extends utils.Adapter {
     }
 
     readMapping() {
-        try {
-            const value = JSON.parse(String(this.config.dataPointMapJson || "{}"));
-            const mapping = value && typeof value === "object" && !Array.isArray(value) ? value : {};
-            const historyInstance = String(this.config.historyInstance || "").trim();
-            if (historyInstance) mapping.DP_SQL_INSTANCE = historyInstance;
-            const visibleMappings = {
-                batterySocId: "DP_BATTERY_SOC", batteryPowerId: "DP_BATTERY_POWER",
-                dhwPowerId: "DP_DHW_POWER1", dhwTemp1Id: "DP_DHW_TEMP1",
-                dhwTemp2Id: "DP_DHW_TEMP2", dhwTemp3Id: "DP_DHW_TEMP3",
-                dhwTemp4Id: "DP_DHW_TEMP4", dhwReleaseId: "DP_DHW_RELEASE",
-                dhwParallelReleaseId: "DP_DHW_PARALLEL_RELEASE",
-                dhwOutletTempId: "DP_DHW_OUTLET_TEMP", dhwConnectionId: "DP_DHW_CONNECTION",
-                dhwHysteresisId: "DP_DHW_HYSTERESIS", heatingPowerId: "DP_HEAT_POWER1",
-                heatPumpPowerId: "DP_HEAT_PUMP_POWER",
-                dhwSetpointId: "DP_DHW_SETPOINT", heatingHistoryId: "DP_HEAT_HISTORY", heatingTempId: "DP_HEAT_TEMP",
-                dhwActualMirrorId: "DP_DHW_ACTUAL_MIRROR",
-                dhwOutput1Id: "DP_DHW_OUTPUT1", dhwOutput2Id: "DP_DHW_OUTPUT2", dhwOutput3Id: "DP_DHW_OUTPUT3",
-                dhwHaL1FreeCurrentId: "DP_DHW_HA_L1_FREE_A", dhwHaL2FreeCurrentId: "DP_DHW_HA_L2_FREE_A",
-                dhwHaL3FreeCurrentId: "DP_DHW_HA_L3_FREE_A",
-                dhwHaL1CurrentId: "DP_DHW_HA_L1_CURRENT_A", dhwHaL2CurrentId: "DP_DHW_HA_L2_CURRENT_A",
-                dhwHaL3CurrentId: "DP_DHW_HA_L3_CURRENT_A",
-                haL1ImportPowerId: "DP_HA_L1_IMPORT_W", haL2ImportPowerId: "DP_HA_L2_IMPORT_W",
-                haL3ImportPowerId: "DP_HA_L3_IMPORT_W", haL1ExportPowerId: "DP_HA_L1_EXPORT_W",
-                haL2ExportPowerId: "DP_HA_L2_EXPORT_W", haL3ExportPowerId: "DP_HA_L3_EXPORT_W",
-                par14aId: "DP_PAR14A", lpcStateId: "DP_LPC_STATE", lpcLimitId: "DP_LPC_LIMIT"
-            };
-            for (const [nativeId, mappingId] of Object.entries(visibleMappings)) {
-                const configuredId = String(this.config[nativeId] || "").trim();
-                if (configuredId) mapping[mappingId] = configuredId;
-            }
-            [0, 1, 2].forEach(wb => {
-                const configuredSoc = String(this.config[`wb${wb}SocId`] || "").trim();
-                if (configuredSoc) mapping[`DP_WB${wb}_SOC`] = configuredSoc;
-                const manualMinimum = String(this.config[`wb${wb}ManualMinCurrentId`] || "").trim();
-                if (manualMinimum) mapping[`DP_WB${wb}_AMIN`] = manualMinimum;
-            });
-            return mapping;
-        } catch (error) {
-            this.log.error(`Invalid dataPointMapJson: ${error.message}`);
-            return {};
+        return buildNativeMapping(this.config,
+            message => this.log.error(`Invalid dataPointMapJson: ${message}`));
+    }
+
+    publishMappingStatus() {
+        const mapping = this.readMapping();
+        const explicitKeys = new Set();
+        for (const [field, key] of Object.entries(FIELD_TO_MAPPING)) {
+            if (String(this.config[field] || "").trim()) explicitKeys.add(key);
         }
+        for (let wb = 0; wb < 3; wb++) {
+            for (const [suffix, keySuffix] of Object.entries(WALLBOX_FIELDS)) {
+                if (String(this.config[`wb${wb}${suffix}`] || "").trim())
+                    explicitKeys.add(`DP_WB${wb}_${keySuffix}`);
+            }
+        }
+        const required = ["DP_PV_POWER", "DP_GRID_IMPORT", "DP_GRID_EXPORT"];
+        const recommended = ["DP_OUTSIDE_TEMP", "DP_SQL_INSTANCE"];
+        const missingRequired = required.filter(key => !String(mapping[key] || "").trim());
+        const missingRecommended = recommended.filter(key => !String(mapping[key] || "").trim());
+        const status = {
+            schema: "AP2-0.17",
+            precedence: "explicit admin field > legacy JSON",
+            explicit: [...explicitKeys].sort(),
+            legacyFallback: Object.keys(mapping).filter(key => !explicitKeys.has(key)).sort(),
+            missingRequired,
+            missingRecommended,
+            valid: missingRequired.length === 0
+        };
+        this.setCompatState(`${this.namespace}.System.MappingStatus_JSON`,
+            JSON.stringify(status), true);
     }
 
     async applyNativeVehicleSettings() {
@@ -154,6 +148,7 @@ class EmsOptimizer extends utils.Adapter {
 
     async applyNativeEmsSettings() {
         await Promise.all([...this.objectPromises.values()]);
+        const houseConnection = houseConnectionSettings(this.config);
         const settings = {
             BatteryCapacity_kWh: ["batteryCapacityKWh", 10],
             BatteryMaxCharge_W: ["batteryMaxChargeW", 2400],
@@ -185,10 +180,14 @@ class EmsOptimizer extends utils.Adapter {
             DHWCurve4Temperature_C: ["dhwCurve4TempC", 74],
             DHWCurve74Power_W: ["dhwCurve74PowerW", 3000],
             DHWMaxStep_W: ["dhwMaxStepW", 1000],
+            DHWFastIncreaseMaxStep_W: ["dhwFastIncreaseMaxStepW", 3000],
             DHWSettleTolerance_W: ["dhwSettleToleranceW", 300],
             DHWSettleTimeout_s: ["dhwSettleTimeoutS", 15],
             DHWCommissioningMaxPower_W: ["dhwCommissioningMaxW", 1000],
-            DHWHouseConnectionLimit_A: ["dhwHaLimitA", 50],
+            HouseConnectionFuse_A: ["houseConnectionFuseA", houseConnection.fuseA],
+            HouseConnectionReserve_A: ["houseConnectionReserveA", houseConnection.reserveA],
+            HouseConnectionWorkingLimit_A: ["__derivedHouseConnectionWorkingLimitA", houseConnection.increaseLimitA],
+            DHWHouseConnectionLimit_A: ["__legacyDhwHouseConnectionLimitA", houseConnection.increaseLimitA],
             DHWTemperatureMaxAge_min: ["dhwTemperatureMaxAgeMin", 60],
             DHWParallelDistributionEnabled: ["dhwParallelDistributionEnabled", true],
             DHWParallelStartPower1P_W: ["dhwParallelStartPower1PW", 4000],
@@ -203,6 +202,7 @@ class EmsOptimizer extends utils.Adapter {
             HeatingControllerMaxPower_W: ["heatingMaxPowerW", 6000],
             SlowControlCycle_s: ["slowCycleS", 5],
             WallboxMaxStep_A: ["wallboxMaxStepA", 6],
+            WallboxCombinedMaxStep_A: ["wallboxCombinedMaxStepA", 1],
             WallboxStartReserve_W: ["wallboxStartReserveW", 300],
             WallboxStartDelay_s: ["wallboxStartDelayS", 30],
             WallboxMinimumRunTime_s: ["wallboxMinimumRunTimeS", 120],
@@ -441,26 +441,50 @@ class EmsOptimizer extends utils.Adapter {
     }
 
     onUnload(callback) {
+        void this.prepareUnload().catch(error =>
+            this.log.error(`Cannot prepare safe unload: ${error.message}`)).finally(callback);
+    }
+
+    async prepareUnload() {
+        this.wallboxOutput.stopping = true;
+        for (const job of this.jobs) job.cancel();
+        for (const timer of this.timers) clearTimeout(timer);
+        this.jobs = [];
+        this.timers.clear();
+        let instanceObject = null;
         try {
-            this.wallboxOutput.stopping = true;
-            for (const job of this.jobs) job.cancel();
-            for (const timer of this.timers) clearTimeout(timer);
-            this.jobs = [];
-            this.timers.clear();
-            const globalEnabled = Boolean(this.stateCache.get(`${this.namespace}.System.RealOutputsEnabled`)?.val);
-            const dhwEnabled = Boolean(this.stateCache.get(`${this.namespace}.Devices.MyPV_DHW.ControlEnabled`)?.val);
-            const setpointId = String(this.config.dhwSetpointId || "").trim();
-            const stops = [this.wallboxOutput.stopAll()];
-            if (globalEnabled && dhwEnabled && setpointId && this.allowedForeignWriteIds.has(setpointId)) {
-                stops.push(this.setForeignStateAsync(setpointId, 0, false));
-            }
-            void Promise.allSettled(stops).then(results => {
-                for (const result of results) if (result.status === "rejected")
-                    this.log.error(`Cannot stop output on unload: ${result.reason}`);
-            }).finally(callback);
-        } catch {
-            callback();
+            instanceObject = await this.getForeignObjectAsync(`system.adapter.${this.namespace}`);
+        } catch (error) {
+            this.log.warn(`Cannot determine restart handoff: ${error.message}`);
         }
+        const preserveWallbox = shouldPreserveWallboxOnUnload(this.config, instanceObject,
+            this.wallboxOutput.hasActiveOwnedOutput());
+        const stops = [];
+        let handoffPrepared = false;
+        if (preserveWallbox) {
+            try {
+                const now = Date.now();
+                await this.setStateAsync("Control.RestartHandoffActive", true, true);
+                await this.setStateAsync("Control.RestartHandoffSince", now, true);
+                handoffPrepared = true;
+                this.log.info("Adapter restart/update: active EMS-owned wallbox remains on for checked takeover");
+            } catch (error) {
+                this.log.warn(`Restart handoff cannot be persisted; wallbox will stop: ${error.message}`);
+            }
+        }
+        if (!handoffPrepared) stops.push(this.wallboxOutput.stopAll());
+        const globalEnabled = Boolean(
+            this.stateCache.get(`${this.namespace}.System.RealOutputsEnabled`)?.val);
+        const dhwEnabled = Boolean(
+            this.stateCache.get(`${this.namespace}.Devices.MyPV_DHW.ControlEnabled`)?.val);
+        const setpointId = String(this.config.dhwSetpointId || "").trim();
+        if (globalEnabled && dhwEnabled && setpointId
+            && this.allowedForeignWriteIds.has(setpointId)) {
+            stops.push(this.setForeignStateAsync(setpointId, 0, false));
+        }
+        const results = await Promise.allSettled(stops);
+        for (const result of results) if (result.status === "rejected")
+            this.log.error(`Cannot stop output on unload: ${result.reason}`);
     }
 }
 

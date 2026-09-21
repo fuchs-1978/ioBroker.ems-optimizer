@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.16.0-alpha.2**
+Aktuelle Version: **0.17.0-alpha.1**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -24,9 +24,57 @@ Diagnoseobjekte zeigen ihre reale Mindestlaufzeit. Version 0.16.0-alpha.1 erlaub
 die gemeinsame Freigabe aller drei Wallboxen und
 des EHZ. Die Wallboxen arbeiten dabei zwingend nacheinander; der EHZ darf parallel
 zur jeweils ausgewählten Wallbox als Feinregler laufen.
+Version 0.17.0-alpha.1 setzt AP2 (#5 und #28–#32) gemeinsam um: normale
+Datenquellen sind als eigene Admin-Felder sichtbar, der Hausanschluss besitzt
+eine gemeinsame Grenze, und die kombinierte Wallbox-/EHZ-Regelung verteilt nach
+der tatsächlich gemessenen Wallboxleistung.
 Batterie, Heizpuffer und Wärmepumpe bleiben Simulation.
 Reale Phasenwechsel führt ausschließlich das vorhandene externe Skript aus; der
 Adapter stellt dafür nur Empfehlungen bereit. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.1 – AP2 Admin/Konfiguration
+
+- Eigene Reiter strukturieren Messwerte, Historie/Prognose und allgemeine
+  Wallbox-Einstellungen. PV, Netzbezug/-einspeisung, Außentemperatur,
+  Teilzähler, Fahrzeug-/SoC-Werte, Preisreihen und externe Freigaben können ohne
+  JSON direkt eingetragen werden.
+- Explizite Felder haben Vorrang. `dataPointMapJson` bleibt als kompatibler
+  Migrations-Fallback erhalten; leere neue Felder löschen daher keine bestehende
+  Zuordnung. `System.MappingStatus_JSON` zeigt explizite, übernommene und fehlende
+  Zuordnungen.
+- Für Wallboxen und EHZ gilt eine zentrale Hausanschlusssicherung mit gemeinsamer
+  Reserve. Die Arbeitsgrenze ist Sicherung minus Reserve. Alte getrennte Grenzen
+  bleiben ausschließlich zur Migration lesbar.
+- Wallbox-Priorität kann automatisch, im Admin oder über ein externes Objekt
+  bezogen werden. Dynamische Energiepreis- und Netzentgelt-Freigaben können
+  ebenfalls aus externen Bool-Objekten kommen; ungültige externe Werte schalten
+  die jeweilige Dynamik sicher aus und erzeugen einen Diagnosestatus.
+- Die Außentemperatur erwartet °C. Ungültige oder fehlende Werte werden verworfen;
+  die Prognose arbeitet dann mit ihrem konservativen Rückfall weiter. Der
+  Historienzeitraum ist zwischen 7 und 365 Tagen konfigurierbar.
+- Im gemeinsamen Betrieb steigt eine Wallbox standardmäßig nur noch um 1 A pro
+  langsamem Zyklus. Der EHZ bekommt den Rest zur **gemessenen** Wallboxleistung,
+  nicht zu einer vorweggenommenen Sollleistung. So wird die Einspeisung während
+  einer trägen Fahrzeugreaktion unmittelbar nachgeregelt und die 50/50-Verteilung
+  nähert sich kontrolliert an.
+- Ein bereits EMS-eigener, bestätigter Wallbox-Ausgang bleibt bei einem normalen
+  Adapterneustart oder GitHub-Update eingeschaltet. Die neue Instanz prüft alle
+  Schutzbedingungen erneut und übernimmt den Auftrag ohne AUS/EIN-Unterbrechung.
+  Beim Deaktivieren oder Entfernen der Instanz sowie bei ungültiger Übergabe wird
+  weiterhin sicher abgeschaltet. Status: `Control.RestartHandoffActive`.
+- Der EHZ darf bei bestätigter Rückmeldung Einspeisung mit einem größeren
+  Aufwärtsschritt aufnehmen (Standard maximal 3.000 W). Bei −2.000 W NVP und
+  6.500 W Istleistung ergibt sich beim Ziel −100 W direkt etwa 8.400 W statt nur
+  der bisherigen 1-kW-Stufe. Temperatur-, Zuweisungs- und Hausanschlussgrenzen
+  bleiben bindend.
+
+Ein Update übernimmt bestehende Freigaben unverändert, setzt aber keinen bisher
+deaktivierten produktiven Ausgang selbsttätig auf aktiv.
+
+Hinweis für den ersten Wechsel von 0.16: Dessen bereits laufender Prozess kennt
+die neue Restart-Übergabe noch nicht und kann die Wallbox bei genau diesem einen
+Upgrade weiterhin kurz stoppen. Sobald 0.17.0-alpha.1 läuft, verwenden folgende
+Restarts und GitHub-Updates die unterbrechungsfreie Übergabe.
 
 ## Neu in 0.16.0-alpha.2 – konsistente Wallbox-Timer
 
@@ -80,9 +128,9 @@ und erst anschließend die alten Ausgangsschreiber wieder starten.
   feste Phasentopologie sowie bestätigter Ladestrom.
 - Ist eine Bedingung ungültig oder fehlt die frühere EMS-Eigentümerschaft, erfolgt
   keine Übernahme. Ein noch eigener Ausgang wird dann wie bisher sicher gestoppt.
-- Ein kontrolliertes Beenden oder Deaktivieren des Adapters sendet weiterhin einen
-  Stoppbefehl. Die Wiederübernahme überbrückt deshalb ausschließlich ungeplante
-  Prozessabbrüche, bei denen die Wallbox tatsächlich weiterläuft.
+- Dies war in 0.15.5 auf ungeplante Prozessabbrüche begrenzt. Ab 0.17.0-alpha.1
+  nutzt auch ein normaler Restart oder GitHub-Update die geprüfte Übergabe;
+  Deaktivieren oder Entfernen der Instanz sendet weiterhin einen Stoppbefehl.
 
 Version 0.15.5 ergänzt keine Objekte, entfernt keine Objekte und aktiviert keine
 zusätzlichen produktiven Ausgänge.
@@ -124,7 +172,7 @@ keine zusätzlichen produktiven Ausgänge.
   einen veralteten Fahrzeugstatus, einen unbestätigten SoC-Datenpunkt und einen
   erreichten Ziel-SoC.
 
-Die drei neuen Parameter liegen unter **Control and prices**:
+Die drei Parameter liegen ab 0.17 unter **Wallbox general**:
 
 - `Additional surplus before wallbox start`: 300 W
 - `Stable surplus time before wallbox start`: 30 s
@@ -659,19 +707,21 @@ Instanz neu starten.
 
 ## Konfiguration
 
-### Strukturierte Konfigurationsseite ab 0.10.0
+### Strukturierte AP2-Konfiguration ab 0.17.0-alpha.1
 
 Die wichtigsten Einstellungen werden nicht mehr nur ueber EMS-Objekte oder das
 erweiterte JSON gepflegt. Die Adapterseite ist in folgende Bereiche gegliedert:
 
-- Allgemein, Historie, Hausanschlussschutz und §14a/LPC
+- Allgemeine Freigaben, zentrale Hausanschlussgrenze und §14a/LPC
+- Messwerte und optionale Teil-/Phasenmessungen
+- Historie, Wetter-/PV-Prognose, Preise und Netzentgelte
+- allgemeine Wallbox-Regelung und Prioritätsquelle
 - Wallbox 0, Wallbox 1 und Wallbox 2
 - my-PV Trinkwasser
 - my-PV Heizpuffer
 - Hausspeicher
 - NVP-Echtzeitsimulation
-- Preise und Netzentgelte
-- erweiterte Datenpunktzuordnung
+- erweiterte Migrationszuordnung
 
 Je Fahrzeug werden Name, SoC-Datenpunkt, Kapazitaet, maximale Ladeleistung,
 Freigabe der 1-/3-phasigen Umschaltung und die getrennten Stromgrenzen
@@ -679,17 +729,16 @@ eingestellt. Beim Trinkwasser-Heizstab sind die Temperaturdatenpunkte,
 Speichergrenzen, Leistungskennlinie und Leistungsrampe sichtbar. Fuer Batterie
 und Heizpuffer stehen Kapazitaet, Leistung und relevante Zielwerte bereit.
 
-Sichtbare Datenpunktfelder ueberschreiben den entsprechenden Eintrag aus dem
-erweiterten JSON. Bleibt ein sichtbares Datenpunktfeld leer, wird die vorhandene
+Sichtbare Datenpunktfelder überschreiben den entsprechenden Eintrag aus dem
+Legacy-JSON. Bleibt ein sichtbares Datenpunktfeld leer, wird die vorhandene
 JSON-Zuordnung weiterverwendet. Alle externen Objekt-IDs werden aus der
 Adapterkonfiguration gelesen; die Auslieferung enthaelt keine anlagenspezifischen
 Zuordnungen.
 
-Fahrzeugname, SoC-Datenpunkt, Batteriekapazitaet, maximale Ladeleistung,
-Phasenfreigabe und Stromgrenzen werden direkt in den sichtbaren Feldern der
-Adapterkonfiguration gepflegt. Die Zuordnung der weiteren vorhandenen
-ioBroker-Datenpunkte erfolgt weiterhin ueber `dataPointMapJson`. Das Repository
-enthaelt mit `config.example.json` eine neutrale Vorlage.
+`dataPointMapJson` ist ab AP2 nicht mehr der normale Konfigurationsweg. Es bleibt
+im Reiter **Advanced data points** nur erhalten, damit bestehende Installationen
+ohne Datenverlust migrieren. Die wirksame Herkunft ist unter
+`ems-optimizer.0.System.MappingStatus_JSON` nachvollziehbar.
 
 Beispiel:
 
@@ -713,8 +762,10 @@ dieses öffentlichen Repositorys.
 
 ## Historische Lernbasis
 
-Der Adapter verwendet aktuell die letzten **84 Tage**. Die SQL-Aufbewahrung der
-Eingangsmessungen sollte deshalb mindestens 90 Tage betragen. Empfohlen werden:
+Der Adapter verwendet standardmäßig die letzten **84 Tage**; der Wert ist im
+Reiter **History & forecast** zwischen 7 und 365 Tagen einstellbar. Die
+SQL-Aufbewahrung sollte den gewählten Zeitraum mit Reserve abdecken. Für den
+Standardwert werden mindestens 90 Tage empfohlen:
 
 ```text
 Nur Änderungen speichern:     aktiviert
@@ -996,6 +1047,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.1 | Gemeinsame AP2-Umsetzung der Issues #5 und #28–#32: explizite Admin-Datenquellen mit JSON-Migration, zentrale Hausanschlussgrenze, eigene Wallbox-/Historien-/Prognosebereiche, externe Prioritäts- und Preisschalter sowie Diagnose. Kombiregelung nutzt gemessene Wallboxleistung und begrenzt Erhöhungen auf standardmäßig 1 A je Zyklus; EHZ-Einspeisenachführung bis 3 kW je bestätigtem Schritt. Laufende EMS-eigene Wallbox bleibt bei Restart/GitHub-Update aktiv und wird geprüft übernommen. Keine neue Ausgangsfreigabe wird aktiviert. |
 | 0.16.0-alpha.2 | Zeitführung laufender Produktiv-Wallboxen korrigiert: kein erneuter Einschalt-Countdown bei kurzzeitigem internem Null-Sollwert; separate Diagnoseobjekte folgen der realen Mindestlaufzeit. |
 | 0.16.0-alpha.1 | Alpha-Gesamtsteuerung für WB0, WB1, WB2 und Trinkwasser-EHZ. Harte Sequenzverriegelung: nie mehr als eine Wallbox gleichzeitig, bestätigtes AUS vor Übergabe, unbekannte laufende Fremdfreigaben werden zuerst kontrolliert gestoppt. EHZ bleibt während der Startverzögerung und parallel zur aktiven Wallbox Feinregler. Startreserve arbeitet nach Beginn des Countdowns als Hysterese; zusätzliche produktive Mindestlaufzeit-Sicherung direkt am Wallbox-Ausgang. Neue standardmäßig ausgeschaltete Alpha-Freigabe; reale Phasenumschaltung bleibt extern. |
 | 0.15.5 | Sichere Wiederübernahme eines zuvor EMS-eigenen und weiterhin aktiven Wallbox-Auftrags nach ungeplantem Prozessneustart. Vollständige Live-Sicherheitsprüfung vor der Übernahme; bei fehlender Eigentümerschaft oder ungültigen Bedingungen wird nicht übernommen. Keine Objekte ergänzt oder entfernt und keine zusätzlichen Ausgänge aktiviert. |
