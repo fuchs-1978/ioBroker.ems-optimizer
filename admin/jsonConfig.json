@@ -8,7 +8,7 @@
       "items": {
         "safety": {
           "type": "staticText",
-          "text": "Version 0.17.0-alpha.6: restart handoff explicitly starts a fresh productive minimum run time in both realtime allocation and output control, even while OutputActive remains true. No previously disabled output is enabled by an update.",
+          "text": "Version 0.17.0-alpha.7: restart handoff completes only after fresh EMS data remain continuously stable, preventing later initialization zeros from stopping the adopted wallbox. No previously disabled output is enabled by an update.",
           "newLine": true
         },
         "generalHeader": {
@@ -250,6 +250,7 @@
         "wallboxRestartHandoffEnabled": {"type": "checkbox", "label": "Keep an EMS-owned active wallbox running during adapter restart/update", "default": true, "sm": 8, "newLine": true},
         "wallboxRestartHandoffTimeoutS": {"type": "number", "label": "Maximum wait for fresh control data after restart", "unit": "s", "default": 180, "min": 30, "max": 600, "sm": 4},
         "wallboxRestartHandoffGraceS": {"type": "number", "label": "Protect adopted wallbox from transient zero target", "unit": "s", "default": 30, "min": 10, "max": 120, "sm": 4},
+        "wallboxRestartHandoffSettleS": {"type": "number", "label": "Stable EMS data required before restart handoff completes", "unit": "s", "default": 10, "min": 0, "max": 60, "sm": 4},
         "phaseSwitchLookAheadMin": {"type": "number", "label": "Phase recommendation look-ahead", "unit": "min", "default": 30, "min": 15, "max": 240, "sm": 4},
         "phaseSwitchMinHoldMin": {"type": "number", "label": "Minimum time between phase changes", "unit": "min", "default": 30, "min": 0, "max": 240, "sm": 4},
         "phaseSwitchTransitionS": {"type": "number", "label": "Tolerance after confirmed go-e phase change", "unit": "s", "default": 90, "min": 30, "max": 300, "sm": 4, "newLine": true}

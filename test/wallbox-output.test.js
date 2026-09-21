@@ -17,7 +17,7 @@ function setup() {
         wb0MaxPowerW: 7360, wb0AmpereOutputId: 'cmd', wb0AllowOutputId: 'allow',
         wb0AmpereFeedbackId: 'feedback', wb0ConnectionId: 'connection', wb0ErrorId: 'error',
         dhwHaL1CurrentId: 'h1', dhwHaL2CurrentId: 'h2', dhwHaL3CurrentId: 'h3', slowCycleS: 5,
-        par14aActiveHigh: true, par14aLimitW: 4200};
+        par14aActiveHigh: true, par14aLimitW: 4200, wallboxRestartHandoffSettleS: 0};
     const adapter = {namespace: 'ems.0', config, stateCache: states,
         getCachedState: id => states.get(id), readMapping: () => mapping,
         setCompatState: (id, val) => put(id, val),
@@ -130,6 +130,25 @@ test('restart handoff waits for fresh internal control data without stopping', a
     h.refresh();await h.output.tick();
     assert.equal(h.output.devices[0].recovering,false);
     assert.equal(h.states.get('ems.0.Control.RestartHandoffActive').val,false);
+});
+test('restart handoff requires continuously stable EMS data before adoption', async () => {
+    const h=setup();h.config.wallboxRestartHandoffSettleS=10;
+    h.put('ems.0.Control.RestartHandoffActive',true);
+    h.put('ems.0.Control.RestartHandoffSince',Date.now());
+    h.put('ems.0.Devices.Wallbox0.OutputOwned',true);
+    h.put('ems.0.Devices.Wallbox0.OutputActive',true);
+    h.put('allow',1);h.put('feedback',6);h.put('i1',6);h.put('power',1.38);
+    await h.output.initialize();await h.output.tick();
+    assert.equal(h.output.devices[0].recovering,true);
+    assert.deepEqual(h.writes,[]);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,/noch 10 s stabilisieren/);
+    h.put('ems.0.Control.Valid',false);await h.output.tick();
+    assert.equal(h.output.devices[0].handoffReadySince,0);
+    h.put('ems.0.Control.Valid',true);await h.output.tick();
+    h.output.devices[0].handoffReadySince-=11000;await h.output.tick();
+    assert.equal(h.output.devices[0].recovering,false);
+    assert.equal(h.states.get('ems.0.Control.RestartHandoffActive').val,false);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,true);
 });
 test('recovered wallbox survives a transient zero target until realtime settles', async () => {
     const h=setup();h.config.wallboxRestartHandoffGraceS=30;

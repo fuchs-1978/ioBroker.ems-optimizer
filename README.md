@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.6**
+Aktuelle Version: **0.17.0-alpha.7**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -39,6 +39,15 @@ Version 0.17.0-alpha.4 verwendet im Produktivausgang die vom go-e bestätigte
 Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Batterie, Heizpuffer und Wärmepumpe bleiben Simulation.
 Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.7 – stabilisierte Restart-Übergabe
+
+- Eine laufende Wallbox bleibt nach dem Neustart zunächst im geschützten
+  Übergabestatus.
+- Die Übernahme wird erst abgeschlossen, wenn EMS-Regler und Messwerte
+  standardmäßig zehn Sekunden durchgehend gültig waren.
+- Wird der Regler während der Initialisierung nochmals ungültig oder schreibt
+  Null-Sollwerte, beginnt die Stabilitätszeit neu und die Wallbox bleibt aktiv.
 
 ## Neu in 0.17.0-alpha.6 – synchronisierte Restart-Mindestlaufzeit
 
@@ -1105,6 +1114,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.7 | Restart-Übernahme endet erst nach zehn Sekunden durchgehend stabiler EMS-/Messdaten. Späte Initialisierungs-Nullwerte können die laufende Wallbox dadurch nicht mehr unmittelbar nach der Übernahme abschalten. |
 | 0.17.0-alpha.6 | Eine neue Restart-Übergabe startet die produktive Mindestlaufzeit ausdrücklich auch im Echtzeitverteiler neu, selbst wenn `OutputActive=true` den Neustart ohne Zustandsflanke überlebt hat. |
 | 0.17.0-alpha.5 | Ein sinkendes Wallbox-Soll ersetzt einen noch offenen höheren Amperebefehl, ohne `allow=0` auszulösen. Dadurch bleibt die Wallbox bei schnellen WB/EHZ-Neuverteilungen aktiv und fällt nicht erneut in die Einschaltverzögerung. |
 | 0.17.0-alpha.4 | Produktive Wallboxregelung folgt dem bestätigten go-e-Phasenmodus: 1 = einphasig, 2 = dreiphasig. Während der geräteeigenen Umschaltung gilt eine Übergangstoleranz; 6 A werden dreiphasig als 4.140 W berechnet. Nach Restart-Übergabe beginnt die Mindestlaufzeit neu. |
