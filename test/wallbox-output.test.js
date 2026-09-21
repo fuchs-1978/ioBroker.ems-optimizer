@@ -30,6 +30,7 @@ function setup() {
     for (const key of ['System.RealOutputsEnabled', 'System.DataValid', 'Control.Valid', 'Control.Enabled',
         'Devices.Wallbox0.Present', 'Devices.Wallbox0.ControlEnabled', 'Vehicles.Wallbox0.SoCValid',
         'Vehicles.Wallbox0.Release']) put(`ems.0.${key}`, true);
+    put('ems.0.Plan.Valid',true);
     for (const key of ['System.LastUpdate', 'Control.LastUpdate']) put(`ems.0.${key}`, now);
     put('ems.0.Control.TargetGridPower_W', -100);
     put('ems.0.Control.SelectedWallbox', 0);
@@ -126,7 +127,7 @@ test('restart handoff waits for fresh internal control data without stopping', a
     await h.output.initialize();await h.output.tick();
     assert.deepEqual(h.writes,[]);
     assert.equal(h.output.devices[0].recovering,true);
-    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,/warte auf frische/);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,/warte auf frisch/);
     h.refresh();await h.output.tick();
     assert.equal(h.output.devices[0].recovering,false);
     assert.equal(h.states.get('ems.0.Control.RestartHandoffActive').val,false);
@@ -148,6 +149,22 @@ test('restart handoff requires continuously stable EMS data before adoption', as
     h.output.devices[0].handoffReadySince-=11000;await h.output.tick();
     assert.equal(h.output.devices[0].recovering,false);
     assert.equal(h.states.get('ems.0.Control.RestartHandoffActive').val,false);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,true);
+});
+test('restart handoff rejects a persisted plan until it was rebuilt after this restart', async () => {
+    const h=setup();const handoffSince=Date.now();
+    h.put('ems.0.Control.RestartHandoffActive',true);
+    h.put('ems.0.Control.RestartHandoffSince',handoffSince);
+    h.put('ems.0.Plan.Valid',true,{ts:handoffSince-60000});
+    h.put('ems.0.Devices.Wallbox0.OutputOwned',true);
+    h.put('ems.0.Devices.Wallbox0.OutputActive',true);
+    h.put('allow',1);h.put('feedback',6);h.put('i1',6);h.put('power',1.38);
+    await h.output.initialize();await h.output.tick();
+    assert.equal(h.output.devices[0].recovering,true);
+    assert.deepEqual(h.writes,[]);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,/frisch berechneten Fahrplan/);
+    h.put('ems.0.Plan.Valid',true,{ts:handoffSince+1});h.refresh();await h.output.tick();
+    assert.equal(h.output.devices[0].recovering,false);
     assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,true);
 });
 test('recovered wallbox survives a transient zero target until realtime settles', async () => {
