@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.17**
+Aktuelle Version: **0.17.0-alpha.18**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -40,6 +40,21 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.18 – PV-Bilanz im Fahrplan (Issue #54)
+
+- Nach Begrenzung der Wallbox wird der PV-Rest aus PV, Grundlast und tatsächlich
+  geplanter Wallbox-/Warmwasserleistung neu berechnet. Verworfene Netzladeleistung
+  kann keinen zusätzlichen Heizstab-, Speicher- oder PV-Boost-Bedarf mehr speisen.
+- Mindest-SoC-/Abfahrtsladen, Mindesttemperatur-Nachheizen und echte PV-Reste durch
+  Ampere-Rundung bleiben erhalten. Bereits zugewiesenes Warmwasser im
+  Parallelbetrieb wird genau einmal berücksichtigt.
+- `Plan.Allocation_48h_JSON` erklärt die Leistungszuweisung je Viertelstunde;
+  `Plan.AllocationSource` benennt die Grundlastquelle. Netzplan und Diagramme
+  bilanzieren dieselben veröffentlichten Wattwerte.
+
+Fehlerfall, Diagnosefelder und Prüfung stehen in der
+[Anleitung zur Fahrplanbilanz](docs/issue54-plan-budget.md).
 
 ## Neu in 0.17.0-alpha.17 – Speicher und zwei getrennte Heizkreise
 

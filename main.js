@@ -91,7 +91,7 @@ class EmsOptimizer extends utils.Adapter {
         if (this.unloading) return;
         this.runEngine(fs.readFileSync(path.join(__dirname, 'lib/engine/bootstrap.js'), 'utf8'));
         await this.setStateAsync("info.connection", true, true);
-        this.log.info("EMS Optimizer 0.17.0-alpha.17 started; alpha outputs require explicit release");
+        this.log.info("EMS Optimizer 0.17.0-alpha.18 started; alpha outputs require explicit release");
         // Diagnostics must never hold up actuator initialization or scheduling.
         this.debugInitialization = this.startDebug();
     }
