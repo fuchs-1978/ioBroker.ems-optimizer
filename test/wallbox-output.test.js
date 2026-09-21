@@ -270,6 +270,17 @@ test('productive output keeps six amps during minimum runtime on a soft surplus 
     await h.output.tick();
     assert.deepEqual(h.writes,[{id:'allow',val:0}]);
 });
+test('confirmed start survives a zero target before the allow acknowledgement is adopted', async () => {
+    const h=setup();await h.output.initialize();
+    await h.output.tick();h.ack('allow',0);
+    await h.output.tick();h.ack('feedback',6);
+    await h.output.tick();
+    h.put('ems.0.Control.Targets.Wallbox0_W',0);h.put('export',0);h.ack('allow',1);
+    h.writes.length=0;await h.output.tick();
+    assert.deepEqual(h.writes,[]);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,true);
+    assert.ok(h.output.devices[0].activeSince>0);
+});
 test('minimum SoC and a higher target SoC do not stop an active charger', async () => {
     const h=setup();await h.start();h.writes.length=0;
     h.put('ems.0.Vehicles.Wallbox0.MinimumSoC_pct',40);
