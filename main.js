@@ -41,7 +41,7 @@ class EmsOptimizer extends utils.Adapter {
         this.publishMappingStatus();
         await this.wallboxOutput.initialize();
         await this.setStateAsync("info.connection", true, true);
-        this.log.info("EMS Optimizer 0.17.0-alpha.6 started; alpha outputs require explicit release");
+        this.log.info("EMS Optimizer 0.17.0-alpha.7 started; alpha outputs require explicit release");
     }
 
     async preloadStates() {
@@ -206,6 +206,7 @@ class EmsOptimizer extends utils.Adapter {
             WallboxStartReserve_W: ["wallboxStartReserveW", 300],
             WallboxStartDelay_s: ["wallboxStartDelayS", 30],
             WallboxMinimumRunTime_s: ["wallboxMinimumRunTimeS", 120],
+            WallboxRestartHandoffSettle_s: ["wallboxRestartHandoffSettleS", 10],
             PhaseSwitchTransition_s: ["phaseSwitchTransitionS", 90],
             DynamicEnergyPriceEnabled: ["dynamicEnergyPrice", false],
             DynamicGridFeeEnabled: ["dynamicGridFee", false],
