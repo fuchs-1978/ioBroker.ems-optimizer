@@ -375,7 +375,7 @@ test('fresh allocation below 4 kW keeps 50/50 off and gives DHW only the ampere 
     assert.equal(h.run('slowTargets.wallboxW[0]'),3450);
     assert.equal(h.run('slowTargets.dhwW'),50);
 });
-test('50/50 hysteresis stays active from 4 kW down to 3 kW and stops below 3 kW',()=>{
+test('50/50 hysteresis starts at 4 kW, stays active down to 3 kW and stops below 3 kW',()=>{
     const h=engine();h.put('DP_DHW_PARALLEL_RELEASE',1);
     h.put('ems.0.Devices.Wallbox1.Present',false);h.put('ems.0.Devices.Wallbox2.Present',false);
     h.put('ems.0.Devices.MyPV_DHW.Release',true);
@@ -383,11 +383,54 @@ test('50/50 hysteresis stays active from 4 kW down to 3 kW and stops below 3 kW'
     h.put('ems.0.Config.DHWParallelDistributionEnabled',true);
     h.put('ems.0.Config.WallboxStartReserve_W',0);h.put('ems.0.Config.WallboxStartDelay_s',0);
     h.run('simulateDhwTarget = valueW => valueW');h.run('updateVehicles()');
-    h.run('updateSlowTargets(4500,[{valueW:0},{valueW:0},{valueW:0}],{valueW:0})');
+    h.run('updateSlowTargets(4000,[{valueW:0},{valueW:0},{valueW:0}],{valueW:0})');
     assert.equal(h.run('realtimeParallelActive'),true);
     h.run('updateSlowTargets(3500,[{valueW:0},{valueW:0},{valueW:0}],{valueW:0})');
     assert.equal(h.run('realtimeParallelActive'),true);
     assert.ok(h.run('slowTargets.dhwW')>0);
     h.run('updateSlowTargets(2900,[{valueW:0},{valueW:0},{valueW:0}],{valueW:0})');
     assert.equal(h.run('realtimeParallelActive'),false);
+    assert.ok(h.run('slowTargets.wallboxA[0]')>=6);
+    assert.ok(h.run('slowTargets.dhwW')<230);
+});
+test('50/50 allocation settles within one wallbox ampere while DHW closes the residual',()=>{
+    const h=engine();h.put('DP_DHW_PARALLEL_RELEASE',1);
+    h.put('ems.0.Devices.Wallbox1.Present',false);h.put('ems.0.Devices.Wallbox2.Present',false);
+    h.put('ems.0.Devices.Wallbox0.ControlEnabled',true);
+    h.put('ems.0.Devices.Wallbox0.OutputActive',true);
+    h.put('ems.0.Config.DHWParallelDistributionEnabled',true);
+    h.put('ems.0.Config.WallboxStartDelay_s',0);
+    h.put('ems.0.Config.WallboxCombinedMaxStep_A',1);
+    h.put('ems.0.Devices.MyPV_DHW.Release',true);
+    h.put('ems.0.Devices.MyPV_DHW.TemperaturePowerLimit_W',9000);
+    h.run('simulateDhwTarget = valueW => valueW');h.run('updateVehicles()');
+    for(let cycle=0;cycle<12;cycle++) {
+        h.run('updateSlowTargets(6000,[{valueW:6000},{valueW:0},{valueW:0}],{valueW:0})');
+        h.put('DP_WB0_POWER',h.run('slowTargets.wallboxW[0]')/1000);
+    }
+    assert.equal(h.run('realtimeParallelActive'),true);
+    assert.ok(Math.abs(h.run('slowTargets.wallboxExpectedW[0]')-3000)<=230);
+    assert.ok(Math.abs(h.run('slowTargets.dhwW')-3000)<=230);
+    assert.equal(h.run('slowTargets.wallboxExpectedW[0]+slowTargets.dhwW'),6000);
+});
+test('minimum SoC changes keep a released running wallbox selected',()=>{
+    const h=engine();h.put('DP_DHW_PARALLEL_RELEASE',1);
+    h.put('ems.0.Devices.Wallbox1.Present',false);h.put('ems.0.Devices.Wallbox2.Present',false);
+    h.put('ems.0.Config.WallboxStartDelay_s',0);h.run('updateVehicles()');
+    h.run('updateSlowTargets(2900,[{valueW:0},{valueW:0},{valueW:0}],{valueW:0})');
+    assert.ok(h.run('slowTargets.wallboxA[0]')>=6);
+    h.put('DP_WB0_MIN_SOC',40);h.run('updateVehicles()');
+    h.run('updateSlowTargets(2900,[{valueW:0},{valueW:0},{valueW:0}],{valueW:0})');
+    assert.ok(h.run('slowTargets.wallboxA[0]')>=6);
+    h.put('DP_WB0_MIN_SOC',60);h.run('updateVehicles()');
+    h.run('updateSlowTargets(2900,[{valueW:0},{valueW:0},{valueW:0}],{valueW:0})');
+    assert.ok(h.run('slowTargets.wallboxA[0]')>=6);
+});
+test('higher target SoC keeps charging; only an already reached target revokes release',()=>{
+    const h=engine();h.run('updateVehicles()');
+    assert.equal(h.run('vehicleState(0).release'),true);
+    h.put('DP_WB0_TARGET',90);h.run('updateVehicles()');
+    assert.equal(h.run('vehicleState(0).release'),true);
+    h.put('DP_WB0_TARGET',50);h.run('updateVehicles()');
+    assert.equal(h.run('vehicleState(0).release'),false);
 });
