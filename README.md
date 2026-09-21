@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.12**
+Aktuelle Version: **0.17.0-alpha.13**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -39,6 +39,16 @@ Version 0.17.0-alpha.4 verwendet im Produktivausgang die vom go-e bestätigte
 Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Batterie, Heizpuffer und Wärmepumpe bleiben Simulation.
 Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.13 – robuste go-e-Messwertfrist
+
+- go-e-Leistung, Phasenströme, Ladefreigabe, Ampere-Rückmeldung,
+  Fahrzeugstatus und Fehlercode dürfen standardmäßig 30 statt 15 Sekunden alt
+  sein. Normales Polling-Jitter führt damit nicht mehr zur Abschaltung.
+- Die Frist ist über `wallboxMeasurementMaxAgeS` von 5 bis 120 Sekunden
+  einstellbar; empfohlen und voreingestellt sind 30 Sekunden.
+- Netz- und Hausanschlussmessungen sowie echte Sicherheitsgrenzen bleiben von
+  dieser Anpassung unberührt.
 
 ## Neu in 0.17.0-alpha.12 – eindeutige Abschaltmeldung
 
@@ -1154,6 +1164,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.13 | Die Frischefrist der go-e-Messwerte beträgt konfigurierbar standardmäßig 30 Sekunden. Normales Abfragejitter knapp oberhalb von 15 Sekunden schaltet die Wallbox nicht mehr ab. |
 | 0.17.0-alpha.12 | Produktive Abschaltungen werden nur einmal protokolliert. Fehlende oder veraltete Rückmeldungen nennen jetzt den konkreten betroffenen Messwert. |
 | 0.17.0-alpha.11 | Die Restart-Übergabe akzeptiert nur System-, Regler- und Fahrplandaten, die nach Beginn des aktuellen Neustarts neu erzeugt wurden. Ein alter gespeicherter `Plan.Valid`-Wert kann die Übergabe nicht mehr vorzeitig beenden. |
 | 0.17.0-alpha.10 | Dauerhafte Diagnoseobjekte `LastStopReason` und `LastStopAt` halten den letzten produktiven Abschaltgrund fest, auch wenn der normale Status bereits wieder einen Starttimer oder Wartestatus zeigt. |

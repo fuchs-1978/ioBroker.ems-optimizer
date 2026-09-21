@@ -46,6 +46,6 @@ test('update defaults never arm a productive output', () => {
 });
 
 test('package manifests publish the same alpha version', () => {
-    assert.equal(packageJson.version, '0.17.0-alpha.12');
+    assert.equal(packageJson.version, '0.17.0-alpha.13');
     assert.equal(ioPackage.common.version, packageJson.version);
 });
