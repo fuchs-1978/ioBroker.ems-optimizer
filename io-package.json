@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.15.2",
+    "version": "0.15.3",
     "titleLang": {
       "en": "EMS Optimizer",
       "de": "EMS-Optimierer"
@@ -141,6 +141,9 @@
     "deadbandW": 100,
     "slowCycleS": 5,
     "wallboxMaxStepA": 6,
+    "wallboxStartReserveW": 300,
+    "wallboxStartDelayS": 30,
+    "wallboxMinimumRunTimeS": 120,
     "phaseSwitchLookAheadMin": 30,
     "phaseSwitchMinHoldMin": 30,
     "dynamicEnergyPrice": false,

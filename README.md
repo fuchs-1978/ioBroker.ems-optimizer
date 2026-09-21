@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.15.2**
+Aktuelle Version: **0.15.3**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -14,9 +14,41 @@ ab und bereitet den gemeinsamen Betrieb einer Wallbox mit dem EHZ vor. Version
 0.15.0 ergänzte das gemeinsame §14a-/LPC-Leistungsbudget und eine richtungsrichtige
 Hausanschlussprüfung. Version 0.15.1 unterstützt zusätzlich einen statischen
 §14a-Binärkontakt mit festem Leistungsbudget. Version 0.15.2 macht die optionale
-Abfahrtszeit tatsächlich abschaltbar. Batterie, Heizpuffer und Wärmepumpe bleiben Simulation.
+Abfahrtszeit tatsächlich abschaltbar. Version 0.15.3 stabilisiert den produktiven
+PV-Betrieb von Wallbox und EHZ. Batterie, Heizpuffer und Wärmepumpe bleiben Simulation.
 Reale Phasenwechsel führt ausschließlich das vorhandene externe Skript aus; der
 Adapter stellt dafür nur Empfehlungen bereit. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.15.3 – stabiler Wallbox-/EHZ-Betrieb
+
+- Eine PV-geführte Wallbox startet erst, wenn ihre Mindestleistung zuzüglich
+  **300 W Startreserve** mindestens **30 Sekunden** stabil verfügbar ist.
+- Nach dem Start hält der Regler die Wallbox standardmäßig mindestens
+  **120 Sekunden** auf ihrem Mindeststrom. Harte Sicherheitsgrenzen,
+  Gerätefehler, ungültige Daten, Hausanschlussschutz und §14a bleiben vorrangig.
+- Reicht ein Überschuss nicht für den Wallbox-Mindeststrom oder bleibt wegen der
+  Ganzampere-Stufen Leistung übrig, übernimmt der EHZ diesen Rest als stufenloser
+  Feinregler.
+- Während einer laufenden Ladung berücksichtigt die Nachregelung die tatsächlich
+  aufgenommene Wallboxleistung. Zieht ein Fahrzeug weniger Strom als der go-e-
+  Sollwert erwarten lässt, können verbleibende 1-A-Stufen kontrolliert nachgeführt
+  werden, ohne den Sollwert bei einem nicht ladenden Fahrzeug hochzuschrauben.
+- Unter 4.000 W startet keine neue 50/50-Aufteilung. Wurde sie zuvor oberhalb
+  von 4.000 W aktiviert, bleibt sie entsprechend der vorhandenen Hysterese bis
+  unter 3.000 W aktiv.
+- Meldungen unterscheiden jetzt unter anderem ein nicht angeschlossenes Fahrzeug,
+  einen veralteten Fahrzeugstatus, einen unbestätigten SoC-Datenpunkt und einen
+  erreichten Ziel-SoC.
+
+Die drei neuen Parameter liegen unter **Control and prices**:
+
+- `Additional surplus before wallbox start`: 300 W
+- `Stable surplus time before wallbox start`: 30 s
+- `Wallbox minimum run time`: 120 s
+
+Version 0.15.3 ergänzt drei Konfigurationsobjekte, entfernt keine Objekte und
+aktiviert keine zusätzlichen produktiven Ausgänge. Die reale Phasenumschaltung
+bleibt weiterhin extern.
 
 ## Neu in 0.15.2 – optionale Abfahrtszeit
 
@@ -878,6 +910,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.15.3 | Produktiven PV-Betrieb stabilisiert: konfigurierbare Startreserve, Startverzögerung und Wallbox-Mindestlaufzeit; nicht nutzbares Ganzampere-/Mindestleistungsbudget fällt an den EHZ-Feinregler zurück. Laufende Wallboxen werden anhand ihrer tatsächlichen Leistungsaufnahme nachgeregelt. 4/3-kW-Hysterese mit Tests abgesichert und Statusmeldungen für Fahrzeug/SoC präzisiert. Drei Konfigurationsobjekte ergänzt, keine Objekte entfernt und keine weiteren Ausgänge aktiviert. |
 | 0.15.2 | Leere Wallbox-Abfahrtszeit als „keine Abfahrt“ umgesetzt. Das Fahrzeug bleibt dann im gesamten 48-Stunden-Horizont planbar; ohne Uhrzeit wird keine Deadline-Ladung ausgelöst. Keine Objekte ergänzt oder entfernt, keine Admin-Einstellungen und keine produktiven Ausgänge verändert. |
 | 0.15.1 | Issue #8: statischen §14a-Binärkontakt mit konfigurierbarem Festlimit ergänzt. Binärkontakt und EEBUS-LPC werden automatisch anhand der angegebenen Datenpunkte ausgewertet; bei zwei aktiven Begrenzungen gilt das kleinere Limit. Statische Kontakte verfallen nicht wegen eines unveränderten Zeitstempels. Keine Objekte ergänzt oder entfernt und keine produktiven Ausgänge aktiviert. |
 | 0.15.0 | Issues #8/#27: EEBUS-LPC als gemeinsames Budget von Wärmepumpe und Wallboxen umgesetzt; ungültige Signale sperren sicher. Phasenweisen Hausanschlussschutz um optionale getrennte Bezugs-/Einspeiseleistungen ergänzt und die zugehörigen Admin-Felder nach General verschoben. Der Adapter gibt weiterhin nur Phasenempfehlungen aus; reale Umschaltung bleibt beim externen Skript. Vier Diagnoseobjekte ergänzt, keine Objekte entfernt und keine produktiven Ausgänge aktiviert. |

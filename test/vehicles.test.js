@@ -70,6 +70,13 @@ test('realtime taper uses current SoC and cannot be exceeded by downward ramp',(
     assert.equal(h.run('quantizeWallbox(7000,vehicleState(0),32,1).amps'),8);
     assert.equal(h.run('quantizeWallbox(0,vehicleState(0),32,1).amps'),0);
 });
+test('running wallbox follows actual power response instead of nominal command power',()=>{
+    const h=engine();h.run('updateVehicles()');h.put('DP_WB0_POWER',1.72);
+    const result=h.run('quantizeWallbox(2256,vehicleState(0),10,1,1720)');
+    assert.equal(result.amps,12);
+    assert.equal(result.powerW,2760);
+    assert.equal(result.expectedPowerW,2180);
+});
 test('ceiling below minimum never gets lifted to six amps',()=>{
     const h=engine();h.run('updateVehicles()');
     assert.equal(h.run('quantizeWallbox(7000,{...vehicleState(0),maximumPowerW:1000},32,1).amps'),0);
@@ -184,6 +191,7 @@ test('50/50 allocator requires existing external switch and gives rounding remai
     const h=engine();h.put('DP_DHW_PARALLEL_RELEASE',1);
     h.put('ems.0.Devices.Wallbox1.Present',false);h.put('ems.0.Devices.Wallbox2.Present',false);
     h.put('ems.0.Config.DHWParallelDistributionEnabled',true);
+    h.put('ems.0.Config.WallboxStartDelay_s',0);
     h.put('ems.0.Devices.MyPV_DHW.Release',true);
     h.put('ems.0.Devices.MyPV_DHW.TemperaturePowerLimit_W',9000);
     h.run('simulateDhwTarget = valueW => valueW');
@@ -193,5 +201,87 @@ test('50/50 allocator requires existing external switch and gives rounding remai
     assert.equal(h.run('slowTargets.dhwW'),4620);
     h.put('DP_DHW_PARALLEL_RELEASE',0);h.run('resetSlowTargets()');
     h.run('updateSlowTargets(6000,[{valueW:6000},{valueW:0},{valueW:0}],{valueW:0})');
+    assert.equal(h.run('realtimeParallelActive'),false);
+});
+test('small surplus below wallbox minimum falls back completely to DHW',()=>{
+    const h=engine();h.put('DP_DHW_PARALLEL_RELEASE',1);
+    h.put('ems.0.Devices.Wallbox1.Present',false);h.put('ems.0.Devices.Wallbox2.Present',false);
+    h.put('ems.0.Devices.MyPV_DHW.Release',true);
+    h.put('ems.0.Devices.MyPV_DHW.TemperaturePowerLimit_W',9000);
+    h.run('simulateDhwTarget = valueW => valueW');h.run('updateVehicles()');
+    h.run('updateSlowTargets(700,[{valueW:0},{valueW:0},{valueW:0}],{valueW:0})');
+    assert.equal(h.run('slowTargets.wallboxA[0]'),0);
+    assert.equal(h.run('slowTargets.dhwW'),700);
+});
+test('PV-only wallbox requires stable surplus before it starts',()=>{
+    const h=engine();h.put('DP_DHW_PARALLEL_RELEASE',1);
+    h.put('ems.0.Devices.Wallbox1.Present',false);h.put('ems.0.Devices.Wallbox2.Present',false);
+    h.put('ems.0.Devices.MyPV_DHW.Release',true);
+    h.put('ems.0.Devices.MyPV_DHW.TemperaturePowerLimit_W',9000);
+    h.put('ems.0.Config.WallboxStartReserve_W',300);h.put('ems.0.Config.WallboxStartDelay_s',30);
+    h.run('simulateDhwTarget = valueW => valueW');h.run('updateVehicles()');
+    h.run('updateSlowTargets(2000,[{valueW:0},{valueW:0},{valueW:0}],{valueW:0})');
+    assert.equal(h.run('slowTargets.wallboxA[0]'),0);
+    assert.equal(h.run('slowTargets.dhwW'),2000);
+    h.run('wallboxStartCandidateSince[0]=Date.now()-31000');
+    h.run('updateSlowTargets(2000,[{valueW:0},{valueW:0},{valueW:0}],{valueW:0})');
+    assert.ok(h.run('slowTargets.wallboxA[0]')>=6);
+});
+test('started wallbox keeps minimum current for configured minimum run time',()=>{
+    const h=engine();h.put('DP_DHW_PARALLEL_RELEASE',1);
+    h.put('ems.0.Devices.Wallbox1.Present',false);h.put('ems.0.Devices.Wallbox2.Present',false);
+    h.put('ems.0.Devices.MyPV_DHW.Release',true);
+    h.put('ems.0.Devices.MyPV_DHW.TemperaturePowerLimit_W',9000);
+    h.put('ems.0.Config.WallboxStartReserve_W',0);h.put('ems.0.Config.WallboxStartDelay_s',0);
+    h.put('ems.0.Config.WallboxMinimumRunTime_s',120);
+    h.run('simulateDhwTarget = valueW => valueW');h.run('updateVehicles()');
+    h.run('updateSlowTargets(2000,[{valueW:0},{valueW:0},{valueW:0}],{valueW:0})');
+    assert.ok(h.run('slowTargets.wallboxA[0]')>=6);
+    h.run('updateSlowTargets(500,[{valueW:0},{valueW:0},{valueW:0}],{valueW:0})');
+    assert.equal(h.run('slowTargets.wallboxA[0]'),6);
+    assert.equal(h.run('slowTargets.dhwW'),0);
+    h.run('wallboxRunStartedAt[0]=Date.now()-121000');
+    h.run('updateSlowTargets(500,[{valueW:0},{valueW:0},{valueW:0}],{valueW:0})');
+    assert.equal(h.run('slowTargets.wallboxA[0]'),0);
+    assert.equal(h.run('slowTargets.dhwW'),500);
+});
+test('binding grid-operator budget overrides wallbox minimum run time',()=>{
+    const h=engine();h.put('ems.0.Devices.Wallbox1.Present',false);
+    h.put('ems.0.Devices.Wallbox2.Present',false);
+    h.put('ems.0.Config.WallboxStartReserve_W',0);h.put('ems.0.Config.WallboxStartDelay_s',0);
+    h.put('ems.0.Config.WallboxMinimumRunTime_s',120);h.run('updateVehicles()');
+    h.run('updateSlowTargets(2000,[{valueW:0},{valueW:0},{valueW:0}],{valueW:0})');
+    assert.ok(h.run('slowTargets.wallboxA[0]')>=6);
+    h.run('updateSlowTargets(500,[{valueW:0},{valueW:0},{valueW:0}],{valueW:0},1000)');
+    assert.equal(h.run('slowTargets.wallboxA[0]'),0);
+});
+test('fresh allocation below 4 kW keeps 50/50 off and gives DHW only the ampere remainder',()=>{
+    const h=engine();h.put('DP_DHW_PARALLEL_RELEASE',1);
+    h.put('ems.0.Devices.Wallbox1.Present',false);h.put('ems.0.Devices.Wallbox2.Present',false);
+    h.put('ems.0.Devices.MyPV_DHW.Release',true);
+    h.put('ems.0.Devices.MyPV_DHW.TemperaturePowerLimit_W',9000);
+    h.put('ems.0.Config.DHWParallelDistributionEnabled',true);
+    h.put('ems.0.Config.WallboxStartReserve_W',0);h.put('ems.0.Config.WallboxStartDelay_s',0);
+    h.run('simulateDhwTarget = valueW => valueW');h.run('updateVehicles()');
+    for(let i=0;i<3;i++)h.run('updateSlowTargets(3500,[{valueW:0},{valueW:0},{valueW:0}],{valueW:0})');
+    assert.equal(h.run('realtimeParallelActive'),false);
+    assert.equal(h.run('slowTargets.wallboxA[0]'),15);
+    assert.equal(h.run('slowTargets.wallboxW[0]'),3450);
+    assert.equal(h.run('slowTargets.dhwW'),50);
+});
+test('50/50 hysteresis stays active from 4 kW down to 3 kW and stops below 3 kW',()=>{
+    const h=engine();h.put('DP_DHW_PARALLEL_RELEASE',1);
+    h.put('ems.0.Devices.Wallbox1.Present',false);h.put('ems.0.Devices.Wallbox2.Present',false);
+    h.put('ems.0.Devices.MyPV_DHW.Release',true);
+    h.put('ems.0.Devices.MyPV_DHW.TemperaturePowerLimit_W',9000);
+    h.put('ems.0.Config.DHWParallelDistributionEnabled',true);
+    h.put('ems.0.Config.WallboxStartReserve_W',0);h.put('ems.0.Config.WallboxStartDelay_s',0);
+    h.run('simulateDhwTarget = valueW => valueW');h.run('updateVehicles()');
+    h.run('updateSlowTargets(4500,[{valueW:0},{valueW:0},{valueW:0}],{valueW:0})');
+    assert.equal(h.run('realtimeParallelActive'),true);
+    h.run('updateSlowTargets(3500,[{valueW:0},{valueW:0},{valueW:0}],{valueW:0})');
+    assert.equal(h.run('realtimeParallelActive'),true);
+    assert.ok(h.run('slowTargets.dhwW')>0);
+    h.run('updateSlowTargets(2900,[{valueW:0},{valueW:0},{valueW:0}],{valueW:0})');
     assert.equal(h.run('realtimeParallelActive'),false);
 });

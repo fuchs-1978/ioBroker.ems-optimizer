@@ -149,6 +149,11 @@ test('no current ramp-up while device takes less than commanded', async () => {
     const h = setup(); await h.start(); h.output.devices[0].lastAt -= 10000;
     h.writes.length = 0; await h.output.tick(); assert.equal(h.writes.length,0);
 });
+test('slightly reduced vehicle current still permits controlled current increase', async () => {
+    const h = setup(); await h.start(); h.output.devices[0].lastAt -= 10000;
+    h.put('ems.0.Control.Targets.Wallbox0_W',1840); h.put('i1',3.5); h.put('power',0.8);
+    h.writes.length=0; await h.output.tick(); assert.deepEqual(h.writes,[{id:'cmd',val:8}]);
+});
 test('current increase uses whole amps and configured ramp', async () => {
     const h = setup(); await h.start(); h.output.devices[0].lastAt -= 10000;
     h.put('i1',6); h.put('power',1.38); h.writes.length=0;

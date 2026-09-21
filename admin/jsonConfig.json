@@ -8,7 +8,7 @@
       "items": {
         "safety": {
           "type": "staticText",
-          "text": "Version 0.15.2: one guarded wallbox test or explicitly armed wallbox + DHW combination. Binary §14a contact and EEBUS LPC automatically limit the shared budget. Real phase switching remains external.",
+          "text": "Version 0.15.3: guarded wallbox + DHW control with stable wallbox starts, minimum run time and automatic DHW fallback below the wallbox minimum. Binary §14a and EEBUS LPC limits remain active. Real phase switching remains external.",
           "newLine": true
         },
         "generalHeader": {
@@ -2027,6 +2027,33 @@
           "sm": 3,
           "newLine": true
         },
+        "wallboxStartReserveW": {
+          "type": "number",
+          "label": "Additional surplus before wallbox start",
+          "unit": "W",
+          "default": 300,
+          "min": 0,
+          "max": 5000,
+          "sm": 3
+        },
+        "wallboxStartDelayS": {
+          "type": "number",
+          "label": "Stable surplus time before wallbox start",
+          "unit": "s",
+          "default": 30,
+          "min": 0,
+          "max": 600,
+          "sm": 3
+        },
+        "wallboxMinimumRunTimeS": {
+          "type": "number",
+          "label": "Wallbox minimum run time",
+          "unit": "s",
+          "default": 120,
+          "min": 0,
+          "max": 3600,
+          "sm": 3
+        },
         "phaseSwitchLookAheadMin": {
           "type": "number",
           "label": "Phase recommendation look-ahead",
@@ -2034,7 +2061,8 @@
           "default": 30,
           "min": 15,
           "max": 240,
-          "sm": 3
+          "sm": 3,
+          "newLine": true
         },
         "phaseSwitchMinHoldMin": {
           "type": "number",

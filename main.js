@@ -37,7 +37,7 @@ class EmsOptimizer extends utils.Adapter {
         await this.applyNativeEmsSettings();
         await this.wallboxOutput.initialize();
         await this.setStateAsync("info.connection", true, true);
-        this.log.info("EMS Optimizer 0.15.2 started; real outputs require explicit device release");
+        this.log.info("EMS Optimizer 0.15.3 started; real outputs require explicit device release");
     }
 
     async preloadStates() {
@@ -203,6 +203,9 @@ class EmsOptimizer extends utils.Adapter {
             HeatingControllerMaxPower_W: ["heatingMaxPowerW", 6000],
             SlowControlCycle_s: ["slowCycleS", 5],
             WallboxMaxStep_A: ["wallboxMaxStepA", 6],
+            WallboxStartReserve_W: ["wallboxStartReserveW", 300],
+            WallboxStartDelay_s: ["wallboxStartDelayS", 30],
+            WallboxMinimumRunTime_s: ["wallboxMinimumRunTimeS", 120],
             DynamicEnergyPriceEnabled: ["dynamicEnergyPrice", false],
             DynamicGridFeeEnabled: ["dynamicGridFee", false],
             FixedEnergyComponent_ct_kWh: ["fixedEnergyCt", 22.85],
