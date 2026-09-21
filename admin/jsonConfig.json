@@ -8,7 +8,7 @@
       "items": {
         "safety": {
           "type": "staticText",
-          "text": "Version 0.17.0-alpha.1: AP2 provides explicit admin fields, one central house-connection limit and compatible migration from legacy JSON. Combined wallbox/DHW control uses measured feedback, fast export absorption and checked wallbox handoff across restarts. No previously disabled output is enabled by an update.",
+          "text": "Version 0.17.0-alpha.2: 50/50 starts exactly at the configured threshold; below the stop threshold the wallbox remains preferred and DHW only closes the ampere remainder. SoC-derived release values are refreshed before restart handoff. No previously disabled output is enabled by an update.",
           "newLine": true
         },
         "generalHeader": {

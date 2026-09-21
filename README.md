@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.1**
+Aktuelle Version: **0.17.0-alpha.2**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -28,9 +28,24 @@ Version 0.17.0-alpha.1 setzt AP2 (#5 und #28–#32) gemeinsam um: normale
 Datenquellen sind als eigene Admin-Felder sichtbar, der Hausanschluss besitzt
 eine gemeinsame Grenze, und die kombinierte Wallbox-/EHZ-Regelung verteilt nach
 der tatsächlich gemessenen Wallboxleistung.
+Version 0.17.0-alpha.2 startet die 50/50-Aufteilung exakt ab 4.000 W. Unterhalb
+der 3.000-W-Ausschaltschwelle bleibt die Wallbox aktiv; der EHZ übernimmt nur den
+nicht in ganzen Ampere nutzbaren Rest. Vor einer Restart-Übergabe werden die
+abgeleiteten Mindest-/Ziel-SoC- und Freigabewerte neu berechnet.
 Batterie, Heizpuffer und Wärmepumpe bleiben Simulation.
 Reale Phasenwechsel führt ausschließlich das vorhandene externe Skript aus; der
 Adapter stellt dafür nur Empfehlungen bereit. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.2 – stabile 50/50- und SoC-Übergabe
+
+- Die 50/50-Hysterese schaltet jetzt exakt **ab 4.000 W** ein und erst
+  **unter 3.000 W** aus.
+- Nach dem Ausschalten der 50/50-Verteilung bleibt die Wallbox vorrangig aktiv.
+  Der EHZ gleicht nur den Rest unterhalb einer ganzen Wallbox-Ampere-Stufe aus.
+- Eine Änderung des Mindest-SoC oder eine Erhöhung des Ziel-SoC unterbricht eine
+  laufende Ladung nicht. Ein bereits erreichtes Ziel-SoC beendet sie weiterhin.
+- Nach einem Admin-Speichern werden die abgeleiteten SoC- und Freigabewerte vor
+  der geprüften Übernahme einer laufenden Wallbox aktualisiert.
 
 ## Neu in 0.17.0-alpha.1 – AP2 Admin/Konfiguration
 
@@ -1047,6 +1062,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.2 | 50/50 startet exakt an der Einschaltschwelle; unterhalb der Ausschaltschwelle bleibt die Wallbox vorrangig aktiv und der EHZ schließt nur den Ampere-Rest. SoC-Ableitungen werden vor der Restart-Übergabe aktualisiert; Min-SoC- und höhere Ziel-SoC-Änderungen stoppen eine laufende Wallbox nicht. |
 | 0.17.0-alpha.1 | Gemeinsame AP2-Umsetzung der Issues #5 und #28–#32: explizite Admin-Datenquellen mit JSON-Migration, zentrale Hausanschlussgrenze, eigene Wallbox-/Historien-/Prognosebereiche, externe Prioritäts- und Preisschalter sowie Diagnose. Kombiregelung nutzt gemessene Wallboxleistung und begrenzt Erhöhungen auf standardmäßig 1 A je Zyklus; EHZ-Einspeisenachführung bis 3 kW je bestätigtem Schritt. Laufende EMS-eigene Wallbox bleibt bei Restart/GitHub-Update aktiv und wird geprüft übernommen. Keine neue Ausgangsfreigabe wird aktiviert. |
 | 0.16.0-alpha.2 | Zeitführung laufender Produktiv-Wallboxen korrigiert: kein erneuter Einschalt-Countdown bei kurzzeitigem internem Null-Sollwert; separate Diagnoseobjekte folgen der realen Mindestlaufzeit. |
 | 0.16.0-alpha.1 | Alpha-Gesamtsteuerung für WB0, WB1, WB2 und Trinkwasser-EHZ. Harte Sequenzverriegelung: nie mehr als eine Wallbox gleichzeitig, bestätigtes AUS vor Übergabe, unbekannte laufende Fremdfreigaben werden zuerst kontrolliert gestoppt. EHZ bleibt während der Startverzögerung und parallel zur aktiven Wallbox Feinregler. Startreserve arbeitet nach Beginn des Countdowns als Hysterese; zusätzliche produktive Mindestlaufzeit-Sicherung direkt am Wallbox-Ausgang. Neue standardmäßig ausgeschaltete Alpha-Freigabe; reale Phasenumschaltung bleibt extern. |

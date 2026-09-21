@@ -192,6 +192,17 @@ test('productive output keeps six amps during minimum runtime on a soft surplus 
     await h.output.tick();
     assert.deepEqual(h.writes,[{id:'allow',val:0}]);
 });
+test('minimum SoC and a higher target SoC do not stop an active charger', async () => {
+    const h=setup();await h.start();h.writes.length=0;
+    h.put('ems.0.Vehicles.Wallbox0.MinimumSoC_pct',40);
+    await h.output.tick();
+    h.put('ems.0.Vehicles.Wallbox0.MinimumSoC_pct',60);
+    await h.output.tick();
+    h.put('ems.0.Vehicles.Wallbox0.TargetSoC_pct',90);
+    await h.output.tick();
+    assert.deepEqual(h.writes,[]);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,true);
+});
 test('below minimum SoC can start without solar power', async () => {
     const h = setup(); h.put('soc',10); h.put('export',0); await h.start();
     assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, true);
