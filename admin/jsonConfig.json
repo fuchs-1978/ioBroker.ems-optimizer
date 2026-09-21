@@ -8,7 +8,7 @@
       "items": {
         "safety": {
           "type": "staticText",
-          "text": "Version 0.17.0-alpha.2: 50/50 starts exactly at the configured threshold; below the stop threshold the wallbox remains preferred and DHW only closes the ampere remainder. SoC-derived release values are refreshed before restart handoff. No previously disabled output is enabled by an update.",
+          "text": "Version 0.17.0-alpha.3: an adopted wallbox is protected from a transient zero target while realtime control initializes, without bypassing safety gates. 50/50 and SoC handoff fixes remain active. No previously disabled output is enabled by an update.",
           "newLine": true
         },
         "generalHeader": {
@@ -249,6 +249,7 @@
         "wallboxMinimumRunTimeS": {"type": "number", "label": "Minimum run time", "unit": "s", "default": 120, "min": 0, "max": 3600, "sm": 4},
         "wallboxRestartHandoffEnabled": {"type": "checkbox", "label": "Keep an EMS-owned active wallbox running during adapter restart/update", "default": true, "sm": 8, "newLine": true},
         "wallboxRestartHandoffTimeoutS": {"type": "number", "label": "Maximum wait for fresh control data after restart", "unit": "s", "default": 180, "min": 30, "max": 600, "sm": 4},
+        "wallboxRestartHandoffGraceS": {"type": "number", "label": "Protect adopted wallbox from transient zero target", "unit": "s", "default": 30, "min": 10, "max": 120, "sm": 4},
         "phaseSwitchLookAheadMin": {"type": "number", "label": "Phase recommendation look-ahead", "unit": "min", "default": 30, "min": 15, "max": 240, "sm": 4},
         "phaseSwitchMinHoldMin": {"type": "number", "label": "Minimum time between phase changes", "unit": "min", "default": 30, "min": 0, "max": 240, "sm": 4, "newLine": true}
       }
