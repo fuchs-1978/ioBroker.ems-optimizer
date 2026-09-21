@@ -297,6 +297,14 @@ test('productive stop reason remains available after later idle ticks', async ()
     assert.equal(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val,reason);
     assert.equal(h.states.get('ems.0.Devices.Wallbox0.LastStopAt').val,stoppedAt);
 });
+test('one productive stop emits only one persistent diagnostic while allow=0 is pending', async () => {
+    const h=setup();await h.start();h.writes.length=0;
+    h.put('power',null);await h.output.tick();
+    const stoppedAt=h.states.get('ems.0.Devices.Wallbox0.LastStopAt').val;
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val,/Wallbox-Leistung/);
+    await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.LastStopAt').val,stoppedAt);
+});
 test('confirmed start survives a zero target before the allow acknowledgement is adopted', async () => {
     const h=setup();await h.output.initialize();
     await h.output.tick();h.ack('allow',0);

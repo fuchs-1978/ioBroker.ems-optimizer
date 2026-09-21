@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.11**
+Aktuelle Version: **0.17.0-alpha.12**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -39,6 +39,13 @@ Version 0.17.0-alpha.4 verwendet im Produktivausgang die vom go-e bestätigte
 Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Batterie, Heizpuffer und Wärmepumpe bleiben Simulation.
 Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.12 – eindeutige Abschaltmeldung
+
+- Ein produktiver Stopp wird nur einmal protokolliert, auch wenn die
+  `allow=0`-Rückmeldung erst im folgenden Reglerzyklus eintrifft.
+- Bei fehlenden oder veralteten Rückmeldungen nennt `LastStopReason` jetzt den
+  konkreten Eingang, etwa `Wallbox-Leistung`, `L1-Strom` oder `Netzbezug`.
 
 ## Neu in 0.17.0-alpha.11 – frischer Fahrplan vor Restart-Übergabe
 
@@ -1147,6 +1154,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.12 | Produktive Abschaltungen werden nur einmal protokolliert. Fehlende oder veraltete Rückmeldungen nennen jetzt den konkreten betroffenen Messwert. |
 | 0.17.0-alpha.11 | Die Restart-Übergabe akzeptiert nur System-, Regler- und Fahrplandaten, die nach Beginn des aktuellen Neustarts neu erzeugt wurden. Ein alter gespeicherter `Plan.Valid`-Wert kann die Übergabe nicht mehr vorzeitig beenden. |
 | 0.17.0-alpha.10 | Dauerhafte Diagnoseobjekte `LastStopReason` und `LastStopAt` halten den letzten produktiven Abschaltgrund fest, auch wenn der normale Status bereits wieder einen Starttimer oder Wartestatus zeigt. |
 | 0.17.0-alpha.9 | Eine begonnene Wallbox-Startsequenz bleibt bis zur bestätigten Ladefreigabe gegen weiche Sollwertsprünge geschützt. Dadurch führt der noch nachlaufende EHZ nicht mehr unmittelbar nach `allow=1` zu `allow=0` und einem neuen Starttimer. |
