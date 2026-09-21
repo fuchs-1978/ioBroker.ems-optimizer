@@ -8,7 +8,7 @@
       "items": {
         "safety": {
           "type": "staticText",
-          "text": "Version 0.15.4: wallbox minimum run time starts with the confirmed productive output. Per-wallbox start-delay and minimum-run countdown diagnostics are available. Binary §14a and EEBUS LPC limits remain active. Real phase switching remains external.",
+          "text": "Version 0.15.5: a previously EMS-owned active wallbox can be safely adopted after an unclean restart when all live safety checks pass. Minimum-run countdown diagnostics remain available. Binary §14a and EEBUS LPC limits remain active. Real phase switching remains external.",
           "newLine": true
         },
         "generalHeader": {

@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.15.4**
+Aktuelle Version: **0.15.5**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -16,9 +16,28 @@ Hausanschlussprüfung. Version 0.15.1 unterstützt zusätzlich einen statischen
 §14a-Binärkontakt mit festem Leistungsbudget. Version 0.15.2 macht die optionale
 Abfahrtszeit tatsächlich abschaltbar. Version 0.15.3 stabilisiert den produktiven
 PV-Betrieb von Wallbox und EHZ. Version 0.15.4 koppelt die Mindestlaufzeit an den
-tatsächlich bestätigten Wallbox-Ausgang. Batterie, Heizpuffer und Wärmepumpe bleiben Simulation.
+tatsächlich bestätigten Wallbox-Ausgang. Version 0.15.5 kann einen noch laufenden,
+zuvor EMS-eigenen Auftrag nach einem ungeplanten Neustart sicher wieder übernehmen.
+Batterie, Heizpuffer und Wärmepumpe bleiben Simulation.
 Reale Phasenwechsel führt ausschließlich das vorhandene externe Skript aus; der
 Adapter stellt dafür nur Empfehlungen bereit. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.15.5 – sichere Wiederübernahme nach Neustart
+
+- War eine Wallbox vor einem ungeplanten Adapterneustart nachweislich im Besitz des
+  EMS (`OutputOwned=true`) und produktiv aktiv (`OutputActive=true`), kann der neue
+  Prozess den laufenden Auftrag ohne Abschaltimpuls wieder übernehmen.
+- Vor der Übernahme werden erneut alle Freigaben und Sicherheitsbedingungen geprüft,
+  darunter Verbindung, Gerätefehler, Fahrzeug/SoC, Hausanschlussschutz, §14a/LPC,
+  feste Phasentopologie sowie bestätigter Ladestrom.
+- Ist eine Bedingung ungültig oder fehlt die frühere EMS-Eigentümerschaft, erfolgt
+  keine Übernahme. Ein noch eigener Ausgang wird dann wie bisher sicher gestoppt.
+- Ein kontrolliertes Beenden oder Deaktivieren des Adapters sendet weiterhin einen
+  Stoppbefehl. Die Wiederübernahme überbrückt deshalb ausschließlich ungeplante
+  Prozessabbrüche, bei denen die Wallbox tatsächlich weiterläuft.
+
+Version 0.15.5 ergänzt keine Objekte, entfernt keine Objekte und aktiviert keine
+zusätzlichen produktiven Ausgänge.
 
 ## Neu in 0.15.4 – reale Mindestlaufzeit und Countdown-Diagnose
 
@@ -927,6 +946,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.15.5 | Sichere Wiederübernahme eines zuvor EMS-eigenen und weiterhin aktiven Wallbox-Auftrags nach ungeplantem Prozessneustart. Vollständige Live-Sicherheitsprüfung vor der Übernahme; bei fehlender Eigentümerschaft oder ungültigen Bedingungen wird nicht übernommen. Keine Objekte ergänzt oder entfernt und keine zusätzlichen Ausgänge aktiviert. |
 | 0.15.4 | Produktive Wallbox-Mindestlaufzeit beginnt erst mit dem bestätigten realen Ausgang statt mit einem früheren Simulationssollwert. Einschaltverzögerung und verbleibende Mindestlaufzeit werden je Wallbox über vier Diagnoseobjekte sichtbar. Zwölf Objekte ergänzt, keine entfernt und keine zusätzlichen Ausgänge aktiviert. |
 | 0.15.3 | Produktiven PV-Betrieb stabilisiert: konfigurierbare Startreserve, Startverzögerung und Wallbox-Mindestlaufzeit; nicht nutzbares Ganzampere-/Mindestleistungsbudget fällt an den EHZ-Feinregler zurück. Laufende Wallboxen werden anhand ihrer tatsächlichen Leistungsaufnahme nachgeregelt. 4/3-kW-Hysterese mit Tests abgesichert und Statusmeldungen für Fahrzeug/SoC präzisiert. Drei Konfigurationsobjekte ergänzt, keine Objekte entfernt und keine weiteren Ausgänge aktiviert. |
 | 0.15.2 | Leere Wallbox-Abfahrtszeit als „keine Abfahrt“ umgesetzt. Das Fahrzeug bleibt dann im gesamten 48-Stunden-Horizont planbar; ohne Uhrzeit wird keine Deadline-Ladung ausgelöst. Keine Objekte ergänzt oder entfernt, keine Admin-Einstellungen und keine produktiven Ausgänge verändert. |

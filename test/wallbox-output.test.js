@@ -65,6 +65,38 @@ test('confirmed stop, current, then release are separate steps', async () => {
     assert.deepEqual(h.writes, [{id:'allow', val:0}, {id:'cmd', val:6}, {id:'allow', val:1}]);
     assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, true);
 });
+test('previously owned active wallbox is safely adopted after an unclean restart', async () => {
+    const h = setup();
+    h.put('ems.0.Devices.Wallbox0.OutputOwned', true);
+    h.put('ems.0.Devices.Wallbox0.OutputActive', true);
+    h.put('allow', 1); h.put('feedback', 10); h.put('i1', 10); h.put('power', 2.3);
+    await h.output.initialize(); await h.output.tick();
+    assert.deepEqual(h.writes, []);
+    assert.equal(h.output.devices[0].owned, true);
+    assert.equal(h.output.devices[0].lastA, 10);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, true);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,
+        /PRODUKTIV: 10 A.*nach Neustart uebernommen/);
+});
+test('restart recovery stops a previously owned wallbox when a safety gate fails', async () => {
+    const h = setup();
+    h.put('ems.0.Devices.Wallbox0.OutputOwned', true);
+    h.put('ems.0.Devices.Wallbox0.OutputActive', true);
+    h.put('allow', 1); h.put('feedback', 10); h.put('i1', 10); h.put('power', 2.3);
+    h.put('error', 8);
+    await h.output.initialize(); await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, false);
+});
+test('running wallbox without persisted EMS ownership is never adopted', async () => {
+    const h = setup();
+    h.put('ems.0.Devices.Wallbox0.OutputOwned', false);
+    h.put('ems.0.Devices.Wallbox0.OutputActive', false);
+    h.put('allow', 1); h.put('feedback', 10); h.put('i1', 10); h.put('power', 2.3);
+    await h.output.initialize(); await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, false);
+});
 test('current write is never treated as device acknowledgement', async () => {
     const h = setup(); await h.output.initialize(); await h.output.tick(); h.ack('allow', 0);
     await h.output.tick(); h.put('feedback', 6, {ack:false}); await h.output.tick();
