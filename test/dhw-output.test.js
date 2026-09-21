@@ -38,9 +38,263 @@ test('combined EHZ relinquishes a reduced allocation immediately', () => {
     assert.equal(command('limitedDhwCommand(3000, 5000, 3000, 200, 4800)'), 3000);
 });
 
-test('normal EHZ fine regulation still respects its configured ramp', () => {
+test('EHZ increases are ramped but import reductions are immediate', () => {
     assert.equal(command('limitedDhwCommand(6000, 3000, 6000, 500, 5000)'), 3500);
-    assert.equal(command('limitedDhwCommand(6000, 3000, 6000, 500, 1000)'), 2500);
+    assert.equal(command('limitedDhwCommand(6000, 3000, 6000, 500, 1000)'), 1000);
+});
+
+function outputHarness({combined = false, simulate = false} = {}) {
+    let now = 2000000;
+    const states = new Map();
+    const writes = [];
+    const pending = [];
+    const put = (id, val, extra = {}) => states.set(id, {val, ts: now, ack: true, ...extra});
+    const own = (id, val) => put(`ems.0.${id}`, val);
+    for (const id of ['System.RealOutputsEnabled', 'System.DataValid', 'Control.Valid',
+        'Devices.MyPV_DHW.Present', 'Devices.MyPV_DHW.ControlEnabled', 'Devices.MyPV_DHW.Release']) own(id, true);
+    own('System.LastUpdate', now);
+    own('Control.LastUpdate', now);
+    own('Control.Targets.MyPV_DHW_W', 9000);
+    own('Devices.MyPV_DHW.TemperaturePowerLimit_W', 9000);
+    own('Config.DHWCommissioningMaxPower_W', 9000);
+    own('Config.DHWParallelDistributionEnabled', true);
+    own('Devices.Wallbox0.ControlEnabled', combined);
+    own('Devices.Wallbox0.Present', combined);
+    for (const id of ['o1', 'o2', 'o3', 'h1', 'h2', 'h3', 'gridIn']) put(id, 0);
+    ['t1', 't2', 't3', 't4', 'outlet'].forEach(id => put(id, 50));
+    put('connection', true);
+    put('gridOut', 6100);
+    put('split', true);
+    const nativeConfig = {combinedProductionArmed: true, wb0ProductionArmed: true};
+    const consumptionLimit = {valid: true, active: false, budgetW: null};
+    const ctx = vm.createContext({Math, Date: {now: () => now},
+        gridConstraints: require('../lib/grid-constraints'), nativeConfig,
+        CFG: {root: 'ems.0', dataMaxAgeMs: 120000, limits: {myPvDhwMaxW: 9000}, dp: {
+            myPvDhwHaCurrentA: ['h1', 'h2', 'h3'], myPvDhwOutputW: ['o1', 'o2', 'o3'],
+            dhwTemps: ['t1', 't2', 't3', 't4'], myPvDhwOutletTemp: 'outlet',
+            myPvDhwConnection: 'connection', myPvDhwSetpoint: 'setpoint',
+            myPvDhwActualMirror: 'mirror', gridImport: 'gridIn', gridExport: 'gridOut',
+            dhwParallelRelease: 'split', wallboxesKW: ['wb0power', 'wb1power', 'wb2power']}},
+        currentConsumptionLimit: () => consumptionLimit,
+        existsState: id => states.has(id), getState: id => states.get(id),
+        readNumber: (id, fallback) => states.has(id) ? Number(states.get(id).val) : fallback,
+        readBooleanInput: id => states.has(id) ? states.get(id).val : null,
+        write: (id, val) => put(id, val),
+        writeForeignState: (id, val, callback) => {
+            writes.push({id, val, at: now});
+            if (callback) pending.push(callback);
+            return true;
+        }});
+    if (simulate) vm.runInContext(fs.readFileSync(
+        path.join(__dirname, '../lib/engine/dhw-controller.js'), 'utf8'), ctx);
+    vm.runInContext(fs.readFileSync(path.join(__dirname, '../lib/engine/dhw-output.js'), 'utf8'), ctx);
+    return {states, writes, pending, put, own, nativeConfig, consumptionLimit,
+        run: code => vm.runInContext(code, ctx),
+        tick: () => vm.runInContext('updateDhwProductionOutput()', ctx),
+        advance: ms => {now += ms;},
+        fresh: () => {
+            for (const value of states.values()) value.ts = now;
+            own('System.LastUpdate', now);
+            own('Control.LastUpdate', now);
+        },
+        complete: error => { for (const callback of pending.splice(0)) callback(error || null); },
+        commands: () => writes.filter(item => item.id === 'setpoint').map(item => item.val)
+    };
+}
+
+test('turning the external 50/50 switch off preserves combined EHZ residual regulation', () => {
+    const h = outputHarness({combined: true});
+    h.put('split', false);
+    h.tick();
+    assert.deepEqual(h.commands(), [3000]);
+    assert.equal(h.run('dhwCombinedProductionState().allowed'), true);
+    h.nativeConfig.combinedProductionArmed = false;
+    h.tick();
+    assert.deepEqual(h.commands(), [3000, 0]);
+});
+
+test('productive allocation has one physical ramp, reduces immediately and obeys stratification', () => {
+    const h = outputHarness({simulate: true});
+    assert.equal(h.run('simulateDhwTarget(8000)'), 8000);
+    assert.equal(h.run('simulateDhwTarget(1200)'), 1200);
+    assert.equal(h.run('simulateDhwTarget(0)'), 0);
+    h.put('t4', 72);
+    assert.equal(h.run('simulateDhwTarget(800)'), 0);
+    h.own('System.RealOutputsEnabled', false);
+    assert.equal(h.run('simulateDhwTarget(8000)'), 3000);
+    assert.equal(h.run('simulateDhwTarget(1000)'), 1000);
+});
+
+test('standalone EHZ cannot exceed its allocator budget even under larger export', () => {
+    const h = outputHarness();
+    h.own('Control.Targets.MyPV_DHW_W', 1500);
+    h.tick();
+    assert.deepEqual(h.commands(), [1500]);
+});
+
+test('EHZ starts promptly and cannot wind up on unchanged actuator feedback after timeout', () => {
+    const h = outputHarness();
+    h.tick();
+    h.complete();
+    assert.deepEqual(h.commands(), [3000]);
+    h.advance(16000);
+    h.fresh();
+    h.tick();
+    h.complete();
+    assert.deepEqual(h.commands(), [3000, 3000]);
+    assert.match(h.states.get('ems.0.Devices.MyPV_DHW.ControlReason').val, /keine weitere Erhoehung/);
+    h.put('o1', 3000);
+    h.put('gridOut', 3100);
+    h.advance(5000);
+    h.fresh();
+    h.tick();
+    assert.deepEqual(h.commands(), [3000, 3000, 6000]);
+});
+
+test('net import never reverses an EHZ reduction while the old measured load is still high', () => {
+    const h = outputHarness();
+    h.run('dhwLastCommandW = 3000; dhwOutputWasActive = true;');
+    h.put('o1', 3000);
+    h.put('o2', 3000);
+    h.put('gridOut', 0);
+    h.put('gridIn', 1000);
+    h.tick();
+    assert.deepEqual(h.commands(), [3000]);
+    h.complete();
+    h.put('gridIn', 5000);
+    h.tick();
+    assert.deepEqual(h.commands(), [3000, 900]);
+});
+
+test('master disable relinquishes EHZ once and never falsifies actual measured output', () => {
+    const h = outputHarness();
+    h.tick();
+    h.complete();
+    h.put('o1', 3000);
+    h.put('gridOut', 3100);
+    h.tick();
+    h.complete();
+    assert.equal(h.writes.filter(item => item.id === 'mirror').at(-1).val, 3000);
+    h.own('System.RealOutputsEnabled', false);
+    h.tick();
+    h.tick();
+    assert.equal(h.run('hasOwnedDhwOutput()'), true, 'zero write is still pending');
+    const stoppedWrites = h.writes.length;
+    assert.deepEqual(h.commands(), [3000, 6000, 0]);
+    h.complete();
+    h.tick();
+    h.run('stopDhwOutput("Adapter wird beendet")');
+    assert.equal(h.run('hasOwnedDhwOutput()'), false);
+    assert.equal(h.writes.length, stoppedWrites);
+    assert.equal(h.writes.filter(item => item.id === 'mirror').at(-1).val, 3000);
+});
+
+test('unclean restart with disabled master stops only the previously EMS-owned heater once', () => {
+    for (const legacy of [false, true]) {
+        const h = outputHarness();
+        h.own('Devices.MyPV_DHW.OutputOwned', !legacy);
+        h.own('Devices.MyPV_DHW.OutputActive', true);
+        h.own('Devices.MyPV_DHW.OutputCommand_W', 6000);
+        h.own('Devices.MyPV_DHW.OutputLastWrite', 1900000);
+        h.own('System.RealOutputsEnabled', false);
+        h.tick();
+        h.tick();
+        assert.deepEqual(h.commands(), [0]);
+        h.complete();
+        h.run('stopDhwOutput("Startup failure")');
+        assert.deepEqual(h.commands(), [0]);
+        assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.OutputOwned').val, false);
+    }
+    const foreign = outputHarness();
+    foreign.put('o1', 3000);
+    foreign.own('System.RealOutputsEnabled', false);
+    foreign.tick();
+    assert.deepEqual(foreign.commands(), []);
+});
+
+test('startup failure relinquishes persisted EHZ ownership even before first productive tick', () => {
+    const h = outputHarness();
+    h.own('Devices.MyPV_DHW.OutputOwned', true);
+    h.own('Devices.MyPV_DHW.OutputCommand_W', 3000);
+    h.own('Devices.MyPV_DHW.OutputLastWrite', 1900000);
+    h.run('stopDhwOutput("Startup failure")');
+    assert.deepEqual(h.commands(), [0]);
+    h.complete();
+    assert.equal(h.run('hasOwnedDhwOutput()'), false);
+});
+
+test('asynchronous output errors trigger safe zero and do not report successful active control', () => {
+    const h = outputHarness();
+    h.tick();
+    h.complete(new Error('transport down'));
+    assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.OutputActive').val, false);
+    assert.match(h.states.get('ems.0.Devices.MyPV_DHW.OutputStatus').val, /transport down/);
+    h.tick();
+    assert.deepEqual(h.commands(), [3000, 0]);
+    h.complete();
+    assert.equal(h.run('hasOwnedDhwOutput()'), false);
+});
+
+test('DHW telemetry rejects null, blanks, pending commands, bad quality and future timestamps', () => {
+    const h = outputHarness({simulate: true});
+    for (const [val, extra] of [[null, {}], ['', {}], [false, {}], [[], {}], [[50], {}], [50, {ack: false}],
+        [50, {q: 64}], [50, {ts: 3000000}]]) {
+        h.put('t1', val, extra);
+        assert.equal(h.run('freshDhwNumber("t1")'), null);
+        assert.equal(h.run('validDhwOutputNumber("t1")'), null);
+        assert.equal(h.run('evaluateDhwSimulation().release'), false);
+    }
+});
+
+test('DHW never treats a malformed or unconfirmed connection flag as online', () => {
+    for (const [val, extra] of [['false', {}], [true, {q: 64}], [true, {ack: false}]]) {
+        const h = outputHarness({simulate: true});
+        h.put('connection', val, extra);
+        h.tick();
+        assert.deepEqual(h.commands(), []);
+        assert.equal(h.run('evaluateDhwSimulation().available'), false);
+    }
+});
+
+test('DHW protects any overheated tank sensor and refreshes outlet derating on output ticks', () => {
+    const h = outputHarness({simulate: true});
+    h.put('t2', 83);
+    h.tick();
+    assert.deepEqual(h.commands(), []);
+    assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.Release').val, false);
+    h.put('t2', 50);
+    h.put('outlet', 77);
+    h.run('dhwLastCommandW = 6000; dhwOutputWasActive = true;');
+    h.put('o1', 3000);
+    h.put('o2', 3000);
+    h.tick();
+    assert.deepEqual(h.commands(), [3000]);
+});
+
+test('EHZ independently applies a changed grid-operator budget against real wallbox minimum load', () => {
+    const h = outputHarness({combined: true});
+    h.own('Control.Targets.MyPV_DHW_W', 9000);
+    h.own('Control.Targets.Wallbox0_W', 0);
+    h.own('Devices.Wallbox0.OutputActive', true);
+    h.put('wb0power', 1.38);
+    h.run('dhwLastCommandW = 6000; dhwOutputWasActive = true;');
+    // currentConsumptionLimit already deducted the heat pump from the shared
+    // upstream budget; do not deduct it a second time here.
+    h.consumptionLimit.active = true;
+    h.consumptionLimit.budgetW = 3200;
+    h.tick();
+    assert.deepEqual(h.commands(), [1820]);
+    h.complete();
+    h.put('wb0power', null);
+    h.tick();
+    assert.deepEqual(h.commands(), [1820, 0]);
+});
+
+test('an absent unarmed wallbox cannot block EHZ operation through its leftover control switch', () => {
+    const h = outputHarness();
+    h.own('Devices.Wallbox1.ControlEnabled', true);
+    h.tick();
+    assert.deepEqual(h.commands(), [3000]);
 });
 
 test('settled EHZ absorbs a two-kilowatt export in one feedback step', () => {
@@ -57,7 +311,10 @@ test('EHZ uses the central working limit and distinguishes phase export from imp
 
 test('combined EHZ accepts three armed wallboxes only in alpha mode', () => {
     const states = new Map();
-    for (let wb=0;wb<3;wb++) states.set(`ems.0.Devices.Wallbox${wb}.ControlEnabled`,{val:true});
+    for (let wb=0;wb<3;wb++) {
+        states.set(`ems.0.Devices.Wallbox${wb}.Present`,{val:true});
+        states.set(`ems.0.Devices.Wallbox${wb}.ControlEnabled`,{val:true});
+    }
     states.set('ems.0.Config.DHWParallelDistributionEnabled',{val:true});
     const ctx = vm.createContext({Math, gridConstraints: require('../lib/grid-constraints'),
         CFG:{root:'ems.0',dp:{dhwParallelRelease:'split'}},
