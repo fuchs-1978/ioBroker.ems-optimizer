@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.14**
+Aktuelle Version: **0.17.0-alpha.15**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -39,6 +39,47 @@ Version 0.17.0-alpha.4 verwendet im Produktivausgang die vom go-e bestätigte
 Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Batterie, Heizpuffer und Wärmepumpe bleiben Simulation.
 Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.15 – umfassende Regelungs- und Übergabeprüfung
+
+- **Start und Rückgabe:** Native Einstellungen werden vollständig übernommen,
+  bevor Regelzyklen starten. Alte Gültigkeitswerte gelten nicht als neuer
+  Fahrplan. Hauptfreigabe AUS und harte Schutzbedingungen haben Vorrang vor der
+  Neustart-Wartephase; ein fehlgeschlagener Start löst die Abschaltung erkannter
+  eigener Ausgänge aus. Ausstehende Schreibvorgänge werden geordnet abgeschlossen.
+- **Wallbox-Rückmeldungen:** Eigene noch unbestätigte go-e-Befehle lösen keinen
+  falschen Messwert-Stopp aus. Stopps warten auf bestätigtes AUS und behalten
+  eine begrenzte Wiederholungs-/Fehlerdiagnose. Verzögerte Befehle und Antworten
+  dürfen eine neuere Abschaltung nicht rückgängig machen.
+- **Produktive Verteilung:** Nur tatsächlich freigegebene und bestätigte
+  Ausgänge erhalten reales Budget. Simulierte Wallboxen, Batterie und Heizpuffer
+  blockieren weder die aktive Wallbox noch den EHZ. Reale Restleistung während
+  des Starts oder Stopps wird weiterhin berücksichtigt.
+- **EHZ:** Die doppelte Hochlaufbegrenzung entfällt; Einspeisung kann im Rahmen
+  der eingestellten Schrittgrenze schneller aufgenommen werden. Reduzierte
+  Budgets und Netzbezug senken das Soll sofort. Ein nicht folgender Aktor wird
+  nicht durch immer höhere Befehle überfahren. Der externe 50/50-Schalter
+  ändert nur die Verteilung und sperrt den EHZ nicht mehr.
+- **Wallbox-Haltezeiten:** Mindestlaufzeit und Ausschaltverzögerung werden nicht
+  versehentlich hintereinandergeschaltet. Der produktive Ausgang entscheidet
+  über das Halten am wirksamen Mindeststrom. `Devices.WallboxX.StopDelayActive`
+  und `StopDelayRemaining_s` machen die separate Ausschaltverzögerung sichtbar.
+  Ein abgelaufener Starttimer bleibt während der nötigen EHZ-Abregelung bereit,
+  statt erneut 120 Sekunden zu beginnen.
+- **SoC und Planung:** Eine alte externe `socfrei=2`-Meldung erzwingt oberhalb
+  des aktuellen Mindest-SoC keine weitere Pflichtladung. Manuelle Mindestströme
+  bleiben wirksam. Historienlücken, doppelte SQL-Grenzwerte, fehlende Preise,
+  Restwärmekapazität und ausdrücklich aktivierte Abfahrtsfristen sind korrigiert.
+- **Gemeinsame Grenzen:** EHZ und Wallbox berücksichtigen bei einer aktiven
+  Netzbetreiberbegrenzung auch die tatsächliche Leistung des jeweils anderen
+  Verbrauchers; Schutzgrenzen werden nicht durch Haltezeiten aufgehoben.
+
+Die Tests ersetzen keine reale Inbetriebnahme. Für den nächsten begleiteten
+Test gilt der [Prüfplan](docs/alpha15-testplan.md). Beim Kaltstart wartet die
+Regelung weiterhin auf eine vollständige Historie und einen gültigen Fahrplan;
+eine einzelne SQL-Abfrage bricht nach 30 Sekunden ohne Antwort mit Diagnose ab.
+Bei frühen Datenbank-/Konfigurationsfehlern können zuvor eigene Ausgänge noch
+nicht sicher erkannt werden: Diagnose beachten und den realen Zustand prüfen.
 
 ## Neu in 0.17.0-alpha.14 – Ausschaltverzögerung bei Leistungsdellen
 
@@ -1172,6 +1213,8 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.15 | Start-/Stopp-Lifecycle, asynchrone go-e-Rückmeldungen, produktive Budgetauswahl, EHZ-Nachführung, SoC-Pflichtladung und Daten-/Planvalidierung geprüft und mit Regressionstests abgesichert. |
+| 0.17.0-alpha.14 | Eigene konfigurierbare Wallbox-Ausschaltverzögerung bei vorübergehend zu wenig Überschuss. |
 | 0.17.0-alpha.13 | Die Frischefrist der go-e-Messwerte beträgt konfigurierbar standardmäßig 30 Sekunden. Normales Abfragejitter knapp oberhalb von 15 Sekunden schaltet die Wallbox nicht mehr ab. |
 | 0.17.0-alpha.12 | Produktive Abschaltungen werden nur einmal protokolliert. Fehlende oder veraltete Rückmeldungen nennen jetzt den konkreten betroffenen Messwert. |
 | 0.17.0-alpha.11 | Die Restart-Übergabe akzeptiert nur System-, Regler- und Fahrplandaten, die nach Beginn des aktuellen Neustarts neu erzeugt wurden. Ein alter gespeicherter `Plan.Valid`-Wert kann die Übergabe nicht mehr vorzeitig beenden. |

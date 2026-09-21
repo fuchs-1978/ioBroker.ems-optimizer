@@ -22,6 +22,12 @@ class EmsOptimizer extends utils.Adapter {
         this.timers = new Set();
         this.engineContext = null;
         this.allowedForeignWriteIds = new Set();
+        this.pendingForeignWrites = new Set();
+        this.foreignWriteQueues = new Map();
+        this.foreignWriteGeneration = new Map();
+        this.pendingOwnWrites = new Map();
+        this.unloading = false;
+        this.outputInitialization = null;
         this.wallboxOutput = new WallboxOutput(this);
         this.on("ready", this.onReady.bind(this));
         this.on("stateChange", this.onStateChange.bind(this));
@@ -29,19 +35,53 @@ class EmsOptimizer extends utils.Adapter {
     }
 
     async onReady() {
+        try {
+            await this.initializeAdapter();
+        } catch (error) {
+            this.log.error(`EMS startup failed; stopping owned outputs: ${error.message}`);
+            if (!this.outputInitialization) this.log.error(
+                'Output ownership could not yet be validated. Check physical outputs and stop them manually if necessary; do not enable parallel script control.');
+            try {
+                await this.prepareUnload({allowHandoff: false});
+            } catch (cleanupError) {
+                this.log.error(`Startup cleanup incomplete; check physical outputs manually: ${cleanupError.message}`);
+            }
+            try {
+                await this.setStateAsync('info.connection', false, true);
+            } catch (connectionError) {
+                this.log.error(`Cannot publish failed connection: ${connectionError.message}`);
+            }
+        }
+    }
+
+    async initializeAdapter() {
         await this.setStateAsync("info.connection", false, true);
         await this.preloadStates();
+        if (this.unloading) return;
         const dhwSetpointId = String(this.config.dhwSetpointId || "").trim();
         if (dhwSetpointId) this.allowedForeignWriteIds.add(dhwSetpointId);
         const dhwActualMirrorId = String(this.config.dhwActualMirrorId || "").trim();
         if (dhwActualMirrorId) this.allowedForeignWriteIds.add(dhwActualMirrorId);
         await this.startEngine();
+        this.runEngine('createStates()');
+        await Promise.all([...this.objectPromises.values()]);
         await this.applyNativeVehicleSettings();
         await this.applyNativeEmsSettings();
+        // Persisted booleans are not evidence of a completed current startup.
+        for (const id of ['Plan.Valid', 'Control.Valid', 'System.DataValid'])
+            this.setCompatState(`${this.namespace}.${id}`, false, true);
+        for (const id of ['Plan.LastUpdate', 'Control.LastUpdate', 'System.LastUpdate'])
+            this.setCompatState(`${this.namespace}.${id}`, 0, true);
+        await this.flushOwnWrites();
+        if (this.unloading) return;
+        this.runEngine('updateVehicles(); updateDhwSimulation(); observe();');
         this.publishMappingStatus();
-        await this.wallboxOutput.initialize();
+        this.outputInitialization = this.wallboxOutput.initialize();
+        await this.outputInitialization;
+        if (this.unloading) return;
+        this.runEngine(fs.readFileSync(path.join(__dirname, 'lib/engine/bootstrap.js'), 'utf8'));
         await this.setStateAsync("info.connection", true, true);
-        this.log.info("EMS Optimizer 0.17.0-alpha.14 started; alpha outputs require explicit release");
+        this.log.info("EMS Optimizer 0.17.0-alpha.15 started; alpha outputs require explicit release");
     }
 
     async preloadStates() {
@@ -268,6 +308,7 @@ class EmsOptimizer extends utils.Adapter {
     async createCompatState(id, initialValue, common = {}) {
         const relative = this.ownRelative(id);
         if (relative === null) return;
+        const cachedBeforeCreate = this.stateCache.get(id);
         try {
             await this.setObjectNotExistsAsync(relative, {
                 type: "state",
@@ -285,9 +326,13 @@ class EmsOptimizer extends utils.Adapter {
             const existing = await this.getStateAsync(relative);
             if (!existing) {
                 await this.setStateAsync(relative, initialValue, true);
-                this.stateCache.set(id, {val: initialValue, ack: true, ts: Date.now()});
+                if (this.stateCache.get(id) === cachedBeforeCreate)
+                    this.stateCache.set(id, {val: initialValue, ack: true, ts: Date.now()});
             } else {
-                this.stateCache.set(id, existing);
+                // Do not overwrite a newer initialization/configuration write
+                // with a persisted value returned by the asynchronous read.
+                if (this.stateCache.get(id) === cachedBeforeCreate)
+                    this.stateCache.set(id, existing);
             }
         } catch (error) {
             this.log.warn(`Cannot create ${id}: ${error.message}`);
@@ -304,22 +349,70 @@ class EmsOptimizer extends utils.Adapter {
     }
 
     setCompatState(id, value, ack = true) {
-        const now = Date.now();
-        this.stateCache.set(id, {val: value, ack: Boolean(ack), ts: now, lc: now});
+        const previous = this.stateCache.get(id);
+        const now = Math.max(Date.now(), Number(previous?.ts || 0) + 1);
+        const published = {val: value, ack: Boolean(ack), ts: now,
+            lc: previous?.val === value ? previous.lc ?? previous.ts ?? now : now};
+        this.stateCache.set(id, published);
         const relative = this.ownRelative(id);
         const ready = this.objectPromises.get(id) || Promise.resolve();
-        const promise = relative === null ? Promise.resolve() : ready.then(() =>
-            this.setStateAsync(relative, value, Boolean(ack)));
+        const previousWrite = this.pendingOwnWrites.get(id) || Promise.resolve();
+        const promise = relative === null ? Promise.resolve()
+            : Promise.all([ready, previousWrite.catch(() => {})]).then(() =>
+                // Keep the decision timestamp on the database echo, which can
+                // arrive AFTER the write promise resolves and a newer decision.
+                this.setStateAsync(relative, published));
+        this.pendingOwnWrites.set(id, promise);
+        void promise.finally(() => {
+            if (this.pendingOwnWrites.get(id) === promise) this.pendingOwnWrites.delete(id);
+        }).catch(() => {});
         void promise.catch(error => this.log.warn(`Cannot write ${id}: ${error.message}`));
+        return promise;
     }
 
-    writeForeignStateGuarded(id, value) {
+    async flushOwnWrites() {
+        await Promise.all([...this.pendingOwnWrites.values()]);
+    }
+
+    writeForeignStateGuarded(id, value, onComplete) {
         if (!id || !this.allowedForeignWriteIds.has(id)) {
             this.log.error(`Blocked unconfigured foreign write to ${id || '<empty>'}`);
             return false;
         }
-        void this.setForeignStateAsync(id, value, false).catch(error =>
-            this.log.error(`Cannot write production output ${id}: ${error.message}`));
+        if (Number(value) > 0 && (this.unloading || this.config.globalWriteEnabled !== true
+            || this.getCachedState(`${this.namespace}.System.RealOutputsEnabled`)?.val !== true))
+            return false;
+        const generation = (this.foreignWriteGeneration.get(id) || 0) + 1;
+        this.foreignWriteGeneration.set(id, generation);
+        const previousWrite = this.foreignWriteQueues.get(id) || Promise.resolve();
+        const promise = previousWrite.catch(() => {}).then(() => {
+            // Recheck after queued work, immediately before the actual write.
+            if (Number(value) > 0 && (this.unloading || this.config.globalWriteEnabled !== true
+                || this.getCachedState(`${this.namespace}.System.RealOutputsEnabled`)?.val !== true))
+                throw new Error('Schreibfreigabe vor Ausgabe entzogen');
+            // A lower safety budget supersedes an old queued increase just as
+            // a stop does. Already in-flight writes cannot be withdrawn, but
+            // obsolete queued positive commands must never reach the actuator.
+            // Zero commands always retain their place, even before a new start.
+            if (Number(value) > 0 && generation < this.foreignWriteGeneration.get(id))
+                throw new Error('Stellbefehl durch neueren Sollwert ueberholt');
+            if (Number(value) > 0 && id === this.config.dhwSetpointId
+                && (this.config.dhwControlEnabled !== true || this.config.dhwPresent === false
+                    || ['Present', 'ControlEnabled', 'Release'].some(key =>
+                        this.getCachedState(`${this.namespace}.Devices.MyPV_DHW.${key}`)?.val !== true)))
+                throw new Error('EHZ-Freigabe vor Ausgabe entzogen');
+            return this.setForeignStateAsync(id, value, false);
+        });
+        this.foreignWriteQueues.set(id, promise);
+        this.pendingForeignWrites.add(promise);
+        void promise.then(() => onComplete?.(null), error => {
+            this.log.error(`Cannot write production output ${id}: ${error.message}`);
+            onComplete?.(error);
+        }).catch(error => this.log.warn(`Output callback failed: ${error.message}`))
+            .finally(() => {
+                this.pendingForeignWrites.delete(promise);
+                if (this.foreignWriteQueues.get(id) === promise) this.foreignWriteQueues.delete(id);
+            });
         return true;
     }
 
@@ -331,14 +424,16 @@ class EmsOptimizer extends utils.Adapter {
     }
 
     registerSchedule(expression, callback) {
-        const job = schedule.scheduleJob(expression, callback);
+        const job = schedule.scheduleJob(expression, () => {
+            if (!this.unloading) callback();
+        });
         if (job) this.jobs.push(job);
         return job;
     }
 
     compatSendTo(instance, command, message, callback) {
         const send = () => this.sendTo(instance, command, message, response => {
-            if (typeof callback === "function") callback(response);
+            if (!this.unloading && typeof callback === "function") callback(response);
         });
         const pending = command === "enableHistory" && message?.id
             ? this.objectPromises.get(message.id) : null;
@@ -361,8 +456,7 @@ class EmsOptimizer extends utils.Adapter {
             "planner.js",
             "observer.js",
             "realtime.js",
-            "dhw-output.js",
-            "bootstrap.js"
+            "dhw-output.js"
         ].map(file => path.join(__dirname, "lib", "engine", file));
         const mapping = this.readMapping();
         const adapter = this;
@@ -390,7 +484,9 @@ class EmsOptimizer extends utils.Adapter {
             existsState(id) { return adapter.knownObjects.has(id) || adapter.stateCache.has(id); },
             createState(id, value, common) { void adapter.queueCompatState(id, value, common); },
             setState(id, value, ack) { adapter.setCompatState(id, value, ack); },
-            writeForeignState(id, value) { return adapter.writeForeignStateGuarded(id, value); },
+            writeForeignState(id, value, onComplete) {
+                return adapter.writeForeignStateGuarded(id, value, onComplete);
+            },
             updateWallboxProductionOutput() { void adapter.wallboxOutput.tick(); },
             sendTo(instance, command, message, callback) {
                 adapter.compatSendTo(instance, command, message, callback);
@@ -404,7 +500,7 @@ class EmsOptimizer extends utils.Adapter {
             setTimeout(callback, delay, ...args) {
                 const timer = setTimeout(() => {
                     adapter.timers.delete(timer);
-                    callback(...args);
+                    if (!adapter.unloading) callback(...args);
                 }, delay);
                 adapter.timers.add(timer);
                 return timer;
@@ -428,10 +524,18 @@ class EmsOptimizer extends utils.Adapter {
         }
     }
 
+    runEngine(source) {
+        return vm.runInContext(source, this.engineContext);
+    }
+
     onStateChange(id, state) {
         const previous = this.stateCache.get(id);
+        if (this.ownRelative(id) !== null && state && previous && state.ack === true
+            && (Number(state.ts) < Number(previous.ts)
+                || (this.pendingOwnWrites.has(id) && state.val !== previous.val))) return;
         if (state) this.stateCache.set(id, state);
         else this.stateCache.delete(id);
+        if (this.unloading) return;
         for (const listener of this.listeners) {
             if (!listener.ids.has(id) || !state) continue;
             const changed = !previous || previous.val !== state.val;
@@ -449,46 +553,51 @@ class EmsOptimizer extends utils.Adapter {
             this.log.error(`Cannot prepare safe unload: ${error.message}`)).finally(callback);
     }
 
-    async prepareUnload() {
+    async prepareUnload({allowHandoff = true} = {}) {
+        this.unloading = true;
         this.wallboxOutput.stopping = true;
         for (const job of this.jobs) job.cancel();
         for (const timer of this.timers) clearTimeout(timer);
         this.jobs = [];
         this.timers.clear();
+        if (this.outputInitialization) await this.outputInitialization.catch(error =>
+            this.log.warn(`Output initialization interrupted: ${error.message}`));
+        await this.wallboxOutput.waitForIdle();
+        await Promise.allSettled([...this.pendingForeignWrites]);
         let instanceObject = null;
         try {
             instanceObject = await this.getForeignObjectAsync(`system.adapter.${this.namespace}`);
         } catch (error) {
             this.log.warn(`Cannot determine restart handoff: ${error.message}`);
         }
-        const preserveWallbox = shouldPreserveWallboxOnUnload(this.config, instanceObject,
-            this.wallboxOutput.hasActiveOwnedOutput());
+        const preserveWallbox = allowHandoff && shouldPreserveWallboxOnUnload(this.config, instanceObject,
+            this.wallboxOutput.hasActiveOwnedOutput(), this.wallboxOutput.devices
+                .filter(d => d.owned).map(d => d.wb));
         const stops = [];
         let handoffPrepared = false;
         if (preserveWallbox) {
             try {
                 const now = Date.now();
-                await this.setStateAsync("Control.RestartHandoffActive", true, true);
-                await this.setStateAsync("Control.RestartHandoffSince", now, true);
+                await this.setCompatState(`${this.namespace}.Control.RestartHandoffSince`, now, true);
+                await this.setCompatState(`${this.namespace}.Control.RestartHandoffActive`, true, true);
                 handoffPrepared = true;
                 this.log.info("Adapter restart/update: active EMS-owned wallbox remains on for checked takeover");
             } catch (error) {
                 this.log.warn(`Restart handoff cannot be persisted; wallbox will stop: ${error.message}`);
             }
         }
-        if (!handoffPrepared) stops.push(this.wallboxOutput.stopAll());
-        const globalEnabled = Boolean(
-            this.stateCache.get(`${this.namespace}.System.RealOutputsEnabled`)?.val);
-        const dhwEnabled = Boolean(
-            this.stateCache.get(`${this.namespace}.Devices.MyPV_DHW.ControlEnabled`)?.val);
-        const setpointId = String(this.config.dhwSetpointId || "").trim();
-        if (globalEnabled && dhwEnabled && setpointId
-            && this.allowedForeignWriteIds.has(setpointId)) {
-            stops.push(this.setForeignStateAsync(setpointId, 0, false));
+        if (!handoffPrepared) {
+            stops.push(this.wallboxOutput.stopAll());
+            this.setCompatState(`${this.namespace}.Control.RestartHandoffActive`, false, true);
+        }
+        if (this.engineContext) {
+            this.runEngine("stopDhwOutput('Adapter wird beendet')");
+            stops.push(...this.pendingForeignWrites);
         }
         const results = await Promise.allSettled(stops);
         for (const result of results) if (result.status === "rejected")
             this.log.error(`Cannot stop output on unload: ${result.reason}`);
+        await this.flushOwnWrites();
     }
 }
 

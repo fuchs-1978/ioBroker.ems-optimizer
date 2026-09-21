@@ -38,6 +38,42 @@ function engine(config={}) {
     return {put,states,run,ctx};
 }
 
+function productionEngine(config={}) {
+    const native={globalWriteEnabled:true,wb2ControlEnabled:true,wb2ProductionArmed:true,
+        dhwControlEnabled:true,combinedProductionArmed:true,...config};
+    const h=engine(native);
+    h.put('ems.0.System.RealOutputsEnabled',true);
+    for(let wb=0;wb<3;wb++)h.put(`ems.0.Devices.Wallbox${wb}.ControlEnabled`,native[`wb${wb}ControlEnabled`]===true);
+    h.put('ems.0.Devices.MyPV_DHW.Present',true);
+    h.put('ems.0.Devices.MyPV_DHW.ControlEnabled',native.dhwControlEnabled===true);
+    h.put('ems.0.Devices.MyPV_DHW.Release',true);
+    h.put('ems.0.Devices.MyPV_DHW.TemperaturePowerLimit_W',9000);
+    h.put('ems.0.Config.DHWCommissioningMaxPower_W',9000);
+    h.put('ems.0.Config.DHWParallelDistributionEnabled',true);
+    h.put('ems.0.Config.WallboxStartDelay_s',0);
+    h.put('ems.0.Config.WallboxStartReserve_W',0);
+    h.run('simulateDhwTarget=valueW=>valueW;updateVehicles()');
+    return h;
+}
+
+test('realtime plan selection rejects future, expired and malformed active slots',()=>{
+    const h=engine();const now=Date.now();
+    for(const slots of [[{timestamp:now+1,valueW:1000}],
+        [{timestamp:now-900000,valueW:1000}],
+        [{timestamp:now,valueW:null}],[{timestamp:now,valueW:false}],
+        [{timestamp:now,valueW:' '}],[{timestamp:now,valueW:'broken'}]]) {
+        h.put('ems.0.Plan.MyPV_DHW_48h_JSON',JSON.stringify(slots));
+        assert.equal(h.run(`currentPlanItem('MyPV_DHW',${now})`),null,JSON.stringify(slots));
+    }
+    h.put('ems.0.Plan.MyPV_DHW_48h_JSON',JSON.stringify([
+        {timestamp:now+900000,valueW:2000},{timestamp:now-899999,valueW:1000}]));
+    assert.equal(h.run(`currentPlanItem('MyPV_DHW',${now}).valueW`),1000);
+});
+test('future timestamps cannot make a grid-operator constraint look fresh',()=>{
+    const h=engine();h.states.set('limit',{val:4200,ack:true,ts:Date.now()+60000});
+    assert.equal(h.run("freshConstraintValue('limit')"),null);
+});
+
 test('admin min/target override mapped values only when selected',()=>{
     const h=engine({wb0SocLimitsSource:'admin',wb0MinSocPct:60,wb0TargetSocPct:90});
     h.run('updateVehicles()');
@@ -79,6 +115,17 @@ test('disabled wallbox has no release or candidate even if car is attached',()=>
 test('null SoC is not a valid 0 percent reading',()=>{
     const h=engine();h.put('DP_WB0_SOC',null);h.run('updateVehicles()');
     assert.equal(h.run('vehicleState(0).socValid'),false);
+});
+test('invalid SoC quality, command echoes and timestamps never become mandatory zero-percent readings',()=>{
+    const now=Date.now();
+    const invalid=[{val:false},{val:' '},{val:0,ack:false},{val:0,q:64},
+        {val:0,ts:now+60000},{val:0,ts:0},{val:0,ts:now-7200001}];
+    for(const overrides of invalid) {
+        const h=engine();h.states.set('DP_WB0_SOC',{val:0,ack:true,ts:now,...overrides});
+        h.run('updateVehicles()');
+        assert.equal(h.run('vehicleState(0).socValid'),false,JSON.stringify(overrides));
+        assert.equal(h.run('vehicleState(0).release'),false,JSON.stringify(overrides));
+    }
 });
 test('taper follows simulated SoC in later slots and affects quantization',()=>{
     const h=engine({wb0TaperEnabled:true});h.run('updateVehicles()');
@@ -165,13 +212,15 @@ test('48-hour planner imports only to minimum, then waits for PV',()=>{
     const kwh=plan.reduce((s,x)=>s+x.valueW/4000*0.9,0);
     assert.ok(Math.abs(kwh-0.5)<0.001,`charged ${kwh} instead of 0.5 kWh to minimum`);
 });
-test('legacy low-SoC stages apply only while socfrei equals two',()=>{
-    const h=engine();h.put('DP_WB0_SOC',25);h.put('DP_WB0_RELEASE',2);h.run('updateVehicles()');
+test('low-SoC stages follow authoritative minimum even when legacy socfrei is stale',()=>{
+    const h=engine();h.put('DP_WB0_SOC',25);h.put('DP_WB0_MIN_SOC',30);
+    h.put('DP_WB0_RELEASE',1);h.run('updateVehicles()');
     assert.equal(h.run('vehicleState(0).lowSocMinimumCurrentA'),10);
     assert.equal(h.run('vehicleState(0).minCurrent1pA'),10);
-    h.put('DP_WB0_RELEASE',1);h.run('updateVehicles()');
+    h.put('DP_WB0_RELEASE',2);h.put('DP_WB0_MIN_SOC',20);h.run('updateVehicles()');
     assert.equal(h.run('vehicleState(0).lowSocMinimumCurrentA'),0);
     assert.equal(h.run('vehicleState(0).minCurrent1pA'),6);
+    assert.equal(h.run('vehicleState(0).mustCharge'),false);
 });
 test('EQV low-SoC 25 A request is clipped by phase and vehicle maximum',()=>{
     const h=engine();h.put('DP_WB1_SOC',8);h.put('DP_WB1_RELEASE',2);
@@ -447,4 +496,169 @@ test('higher target SoC keeps charging; only an already reached target revokes r
     assert.equal(h.run('vehicleState(0).release'),true);
     h.put('DP_WB0_TARGET',50);h.run('updateVehicles()');
     assert.equal(h.run('vehicleState(0).release'),false);
+});
+
+test('production excludes priority WB0 with only an observer release; WB2 and EHZ retain budget',()=>{
+    const h=productionEngine({wallboxPriority:0});
+    h.run('updateSlowTargets(6000,[{valueW:6000},{valueW:0},{valueW:0}],{valueW:0})');
+    assert.equal(h.states.get('ems.0.Control.SelectedWallbox').val,2);
+    assert.equal(h.run('slowTargets.wallboxW[0]'),0);
+    assert.equal(h.run('slowTargets.wallboxA[2]'),6);
+    assert.equal(h.run('slowTargets.dhwW'),4620);
+    assert.equal(h.run('vehicleState(0).release'),true,'forecast still sees observer vehicle');
+});
+test('observer realtime retains all configured vehicles when master is off',()=>{
+    const h=productionEngine({wallboxPriority:0});
+    h.put('ems.0.System.RealOutputsEnabled',false);
+    assert.equal(h.run('selectRealtimeWallboxes([{valueW:0},{valueW:0},{valueW:0}])[0].wb'),0);
+});
+test('EHZ-only production cannot lose surplus to unarmed forecast wallboxes or heating',()=>{
+    const h=productionEngine({wb2ControlEnabled:false});
+    h.run('updateSlowTargets(4000,[{valueW:4000},{valueW:4000},{valueW:4000}],{valueW:4000})');
+    assert.equal(h.states.get('ems.0.Control.SelectedWallbox').val,-1);
+    assert.equal(h.run('slowTargets.heatingW'),0);
+    assert.equal(h.run('slowTargets.dhwW'),4000);
+    assert.equal(h.run('slowTargets.wallboxW.reduce((sum,w)=>sum+w,0)'),0);
+});
+test('production scope fails closed without single/combined/multi commissioning',()=>{
+    const cases=[
+        {wb2ProductionArmed:false},
+        {combinedProductionArmed:false},
+        {wb0ControlEnabled:true,wb0ProductionArmed:true,multiWallboxAlphaArmed:false},
+        {wb0ControlEnabled:true,wb0ProductionArmed:false,multiWallboxAlphaArmed:true},
+        {globalWriteEnabled:false}
+    ];
+    for(const config of cases) {
+        const h=productionEngine(config);
+        h.run('updateSlowTargets(6000,[{valueW:6000},{valueW:6000},{valueW:6000}],{valueW:0})');
+        assert.equal(h.run('slowTargets.wallboxW.reduce((sum,w)=>sum+w,0)'),0,JSON.stringify(config));
+        assert.equal(h.run('slowTargets.dhwW'),0,JSON.stringify(config));
+    }
+});
+test('disabled productive EHZ does not steal a priority wallbox budget',()=>{
+    const h=productionEngine({dhwControlEnabled:false});
+    h.put('ems.0.Devices.MyPV_DHW.MustHeat',true);
+    h.run('updateSlowTargets(4000,[{valueW:0},{valueW:0},{valueW:4000}],{valueW:0})');
+    assert.equal(h.run('slowTargets.dhwW'),0);
+    assert.equal(h.run('slowTargets.wallboxA[2]'),6);
+});
+test('unowned stale active flag cannot override the configured priority',()=>{
+    const h=engine({wallboxPriority:1});
+    h.put('ems.0.Devices.Wallbox0.OutputActive',true);
+    h.put('ems.0.Devices.Wallbox0.OutputOwned',false);h.run('updateVehicles()');
+    assert.equal(h.run('selectRealtimeWallboxes([{valueW:0},{valueW:0},{valueW:0}])[0].wb'),1);
+});
+test('production ramp uses confirmed current and cannot wind up while feedback is delayed',()=>{
+    const h=productionEngine({dhwControlEnabled:false});
+    h.put('ems.0.Devices.Wallbox2.OutputOwned',true);
+    h.put('ems.0.Devices.Wallbox2.OutputActive',true);
+    h.put('ems.0.Devices.Wallbox2.OutputCommand_A',6);
+    h.put('DP_WB2_POWER',1.38);
+    for(let cycle=0;cycle<5;cycle++) {
+        h.run('updateSlowTargets(7000,[{valueW:0},{valueW:0},{valueW:7000}],{valueW:0})');
+        assert.equal(h.run('slowTargets.wallboxA[2]'),12);
+    }
+});
+test('elapsed productive start countdown stays latched while EHZ handoff is still pending',()=>{
+    const h=productionEngine();h.put('ems.0.Config.WallboxStartDelay_s',120);
+    h.run('wallboxStartCandidateSince[2]=Date.now()-121000');
+    for(let cycle=0;cycle<5;cycle++) {
+        h.run('updateSlowTargets(6000,[{valueW:0},{valueW:0},{valueW:6000}],{valueW:0})');
+        assert.equal(h.run('slowTargets.wallboxA[2]'),6);
+        assert.equal(h.states.get('ems.0.Vehicles.Wallbox2.StartDelayActive').val,false);
+    }
+    h.run('updateSlowTargets(500,[{valueW:0},{valueW:0},{valueW:0}],{valueW:0})');
+    assert.equal(h.run('wallboxStartCandidateSince[2]'),0,'real shortage must reset the ready latch');
+});
+test('feedback compensation cannot exceed binding nominal LPC wattage',()=>{
+    const h=productionEngine({dhwControlEnabled:false});
+    h.put('ems.0.Devices.Wallbox2.OutputOwned',true);
+    h.put('ems.0.Devices.Wallbox2.OutputActive',true);
+    h.put('ems.0.Devices.Wallbox2.OutputCommand_A',20);
+    h.put('DP_WB2_POWER',2.3);
+    h.run('updateSlowTargets(7000,[{valueW:0},{valueW:0},{valueW:7000}],{valueW:0},4200)');
+    assert.ok(h.run('slowTargets.wallboxW[2]')<=4200);
+    assert.equal(h.run('slowTargets.wallboxA[2]'),18);
+});
+test('productive common LPC cap includes EHZ and the next WB current command',()=>{
+    const h=productionEngine();h.put('DP_DHW_PARALLEL_RELEASE',true);
+    h.put('ems.0.Devices.Wallbox2.OutputOwned',true);
+    h.put('ems.0.Devices.Wallbox2.OutputActive',true);
+    h.put('ems.0.Devices.Wallbox2.OutputCommand_A',6);
+    h.put('DP_WB2_POWER',1.38);
+    h.run('updateSlowTargets(9000,[{valueW:0},{valueW:0},{valueW:9000}],{valueW:0},4200)');
+    assert.ok(h.run('slowTargets.wallboxW[2]+slowTargets.dhwW')<=4200);
+    assert.ok(h.run('slowTargets.wallboxExpectedW[2]+slowTargets.dhwW')<=4200);
+    assert.equal(h.run('slowTargets.wallboxA[2]'),7);
+    assert.equal(h.run('slowTargets.dhwW'),2590);
+});
+test('productive soft shortfall remains visible to stop timer and reserves held current for EHZ',()=>{
+    const h=productionEngine();
+    h.put('ems.0.Config.WallboxMinimumRunTime_s',600);
+    h.put('ems.0.Devices.Wallbox2.OutputOwned',true);
+    h.put('ems.0.Devices.Wallbox2.OutputActive',true);
+    h.put('ems.0.Devices.Wallbox2.OutputCommand_A',6);
+    h.put('ems.0.Devices.Wallbox2.OutputPhases',1);
+    h.put('DP_WB2_POWER',1.38);
+    h.run('updateSlowTargets(500,[{valueW:0},{valueW:0},{valueW:0}],{valueW:0})');
+    assert.equal(h.run('slowTargets.wallboxA[2]'),0,'output controller owns actual 6 A hold');
+    assert.equal(h.run('slowTargets.wallboxExpectedW[2]'),1380);
+    assert.equal(h.run('slowTargets.dhwW'),0);
+    assert.equal(h.states.get('ems.0.Vehicles.Wallbox2.MinimumRunTimeActive').val,true);
+    assert.equal(h.states.get('ems.0.Control.SelectedWallbox').val,2);
+});
+test('next car waits for owned stopping car and EHZ only receives unused residual',()=>{
+    const h=productionEngine({wb0ControlEnabled:true,wb0ProductionArmed:true,multiWallboxAlphaArmed:true});
+    h.put('ems.0.Devices.Wallbox2.OutputOwned',true);
+    h.put('ems.0.Devices.Wallbox2.OutputActive',false);
+    h.put('DP_WB2_POWER',1.38);h.put('DP_WB2_SOC',80);h.run('updateVehicles()');
+    h.run('updateSlowTargets(4000,[{valueW:4000},{valueW:0},{valueW:0}],{valueW:0})');
+    assert.equal(h.states.get('ems.0.Control.SelectedWallbox').val,-1);
+    assert.equal(h.run('slowTargets.wallboxExpectedW[2]'),1380);
+    assert.equal(h.run('slowTargets.dhwW'),2620);
+    h.put('ems.0.Devices.Wallbox2.OutputOwned',false);h.put('DP_WB2_POWER',0);
+    h.run('updateSlowTargets(4000,[{valueW:4000},{valueW:0},{valueW:0}],{valueW:0})');
+    assert.equal(h.states.get('ems.0.Control.SelectedWallbox').val,0);
+    assert.equal(h.run('slowTargets.wallboxA[0]'),6);
+});
+test('parallel thresholds use stable requested phase mode, not unadopted plan recommendation',()=>{
+    const h=engine({phaseSwitchMinHoldMin:30});
+    h.put('ems.0.Devices.Wallbox0.Present',false);h.put('ems.0.Devices.Wallbox1.Present',false);
+    h.put('ems.0.Vehicles.Wallbox2.PhaseSwitchEnabled',true);
+    h.put('ems.0.Vehicles.Wallbox2.MaximumPhases',3);
+    h.put('ems.0.Devices.MyPV_DHW.Release',true);
+    h.put('ems.0.Devices.MyPV_DHW.TemperaturePowerLimit_W',9000);
+    h.put('ems.0.Config.DHWParallelDistributionEnabled',true);h.put('DP_DHW_PARALLEL_RELEASE',1);
+    h.run('simulateDhwTarget=valueW=>valueW;updateVehicles();stableWallboxPhases[2]=3;lastPhaseChangeAt[2]=Date.now()');
+    h.run('updateSlowTargets(6000,[{valueW:0},{valueW:0},{valueW:6000,phases:1}],{valueW:0})');
+    assert.equal(h.run('realtimeParallelActive'),false);
+    assert.match(h.states.get('ems.0.Control.ParallelDistributionThresholds').val,/3-phasig/);
+});
+test('productive uncontrolled loads are not reconstructed as reclaimable PV surplus',()=>{
+    const h=productionEngine({wb2ControlEnabled:false});
+    h.run("CFG.dp.par14a='';CFG.dp.lpcState='';CFG.dp.lpcLimit='';CFG.dp.haCritical='' ");
+    h.put('ems.0.System.DataValid',true);h.put('ems.0.Plan.Valid',true);
+    h.put('ems.0.Actual.GridPower_W',-2000);
+    h.put('ems.0.Actual.MyPV_DHW_W',0);h.put('ems.0.Actual.MyPV_Heating_W',1000);
+    h.put('DP_WB0_POWER',3);h.put('DP_BATTERY_POWER',2400);
+    const slot=JSON.stringify([{timestamp:Date.now()-1000,valueW:3000}]);
+    for(const name of ['BatteryPower','MyPV_DHW','MyPV_Heating','Wallbox0','Wallbox1','Wallbox2'])
+        h.put(`ems.0.Plan.${name}_48h_JSON`,slot);
+    h.run('realtimeControl()');
+    assert.equal(h.states.get('ems.0.Control.Targets.MyPV_DHW_W').val,1900);
+    assert.equal(h.states.get('ems.0.Control.Targets.Battery_W').val,0);
+    assert.equal(h.states.get('ems.0.Control.Targets.MyPV_Heating_W').val,0);
+});
+test('reaching minimum SoC ends mandatory import despite retained legacy socfrei two',()=>{
+    const h=engine();h.put('DP_WB2_RELEASE',2);h.put('DP_WB2_MIN_SOC',30);
+    h.put('DP_WB2_SOC',29);h.run('updateVehicles()');
+    assert.equal(h.run('vehicleState(2).mustCharge'),true);
+    assert.equal(h.run('vehicleState(2).minCurrent1pA'),16);
+    h.put('DP_WB2_SOC',30);h.run('updateVehicles()');
+    assert.equal(h.run('vehicleState(2).mustCharge'),false);
+    assert.equal(h.run('vehicleState(2).release'),true);
+    assert.equal(h.run('vehicleState(2).minCurrent1pA'),6);
+    assert.match(h.run('vehicleState(2).status'),/PV-flexibel/);
+    h.put('DP_WB2_AMIN',12);h.run('updateVehicles()');
+    assert.equal(h.run('vehicleState(2).mustCharge'),true,'explicit manual minimum is still authoritative');
 });

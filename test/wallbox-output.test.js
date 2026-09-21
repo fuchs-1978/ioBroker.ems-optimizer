@@ -22,7 +22,7 @@ function setup() {
         getCachedState: id => states.get(id), readMapping: () => mapping,
         setCompatState: (id, val) => put(id, val),
         setStateAsync: async (id, val) => put(`ems.0.${id}`, val),
-        setForeignStateAsync: async (id, val) => { writes.push({id, val}); put(id, val, {ack: false}); },
+        setForeignStateAsync: async (id, val) => { writes.push({id, val}); put(id, val, {ack: false, ts: Date.now()}); },
         getForeignStateAsync: async id => states.get(id), subscribeForeignStatesAsync: async () => {},
         getForeignObjectAsync: async () => ({type: 'state', common: {write: true, type: 'number'}}),
         queueCompatState: async (id, val) => { if (!states.has(id)) put(id, val); },
@@ -31,8 +31,9 @@ function setup() {
         'Devices.Wallbox0.Present', 'Devices.Wallbox0.ControlEnabled', 'Vehicles.Wallbox0.SoCValid',
         'Vehicles.Wallbox0.Release']) put(`ems.0.${key}`, true);
     put('ems.0.Plan.Valid',true);
-    for (const key of ['System.LastUpdate', 'Control.LastUpdate']) put(`ems.0.${key}`, now);
+    for (const key of ['System.LastUpdate', 'Control.LastUpdate', 'Plan.LastUpdate']) put(`ems.0.${key}`, now);
     put('ems.0.Control.TargetGridPower_W', -100);
+    put('ems.0.Actual.MyPV_DHW_W', 0);
     put('ems.0.Control.SelectedWallbox', 0);
     put('ems.0.Control.Targets.Wallbox0_W', 7000);
     put('ems.0.Control.Targets.Wallbox0_Phases', 1);
@@ -47,7 +48,7 @@ function setup() {
     const refresh = () => {
         now = Date.now();
         for (const [id, s] of states) if (s.ack) put(id, s.val);
-        for (const key of ['System.LastUpdate', 'Control.LastUpdate']) put(`ems.0.${key}`, now);
+        for (const key of ['System.LastUpdate', 'Control.LastUpdate', 'Plan.LastUpdate']) put(`ems.0.${key}`, now);
     };
     const start = async () => {
         await output.initialize();
@@ -96,9 +97,11 @@ test('confirmed stop, current, then release are separate steps', async () => {
 test('previously owned active wallbox is safely adopted after an unclean restart', async () => {
     const h = setup();
     h.put('ems.0.Control.RestartHandoffActive', true);
+    h.put('ems.0.Control.RestartHandoffSince', Date.now());
     h.put('ems.0.Devices.Wallbox0.OutputOwned', true);
     h.put('ems.0.Devices.Wallbox0.OutputActive', true);
     h.put('allow', 1); h.put('feedback', 10); h.put('i1', 10); h.put('power', 2.3);
+    h.refresh();
     await h.output.initialize(); await h.output.tick();
     assert.deepEqual(h.writes, []);
     assert.equal(h.output.devices[0].owned, true);
@@ -120,7 +123,6 @@ test('restart handoff waits for fresh internal control data without stopping', a
     h.put('ems.0.Control.RestartHandoffActive',true);
     h.put('ems.0.Control.RestartHandoffSince',Date.now());
     h.put('ems.0.System.LastUpdate',old);h.put('ems.0.Control.LastUpdate',old);
-    h.put('error',0,{ts:old});h.put('car',2,{ts:old});
     h.put('ems.0.Devices.Wallbox0.OutputOwned',true);
     h.put('ems.0.Devices.Wallbox0.OutputActive',true);
     h.put('allow',1);h.put('feedback',10);h.put('i1',10);h.put('power',2.3);
@@ -139,6 +141,7 @@ test('restart handoff requires continuously stable EMS data before adoption', as
     h.put('ems.0.Devices.Wallbox0.OutputOwned',true);
     h.put('ems.0.Devices.Wallbox0.OutputActive',true);
     h.put('allow',1);h.put('feedback',6);h.put('i1',6);h.put('power',1.38);
+    h.refresh();
     await h.output.initialize();await h.output.tick();
     assert.equal(h.output.devices[0].recovering,true);
     assert.deepEqual(h.writes,[]);
@@ -156,6 +159,7 @@ test('restart handoff rejects a persisted plan until it was rebuilt after this r
     h.put('ems.0.Control.RestartHandoffActive',true);
     h.put('ems.0.Control.RestartHandoffSince',handoffSince);
     h.put('ems.0.Plan.Valid',true,{ts:handoffSince-60000});
+    h.put('ems.0.Plan.LastUpdate',handoffSince-60000);
     h.put('ems.0.Devices.Wallbox0.OutputOwned',true);
     h.put('ems.0.Devices.Wallbox0.OutputActive',true);
     h.put('allow',1);h.put('feedback',6);h.put('i1',6);h.put('power',1.38);
@@ -174,6 +178,7 @@ test('recovered wallbox survives a transient zero target until realtime settles'
     h.put('ems.0.Devices.Wallbox0.OutputOwned',true);
     h.put('ems.0.Devices.Wallbox0.OutputActive',true);
     h.put('allow',1);h.put('feedback',9);h.put('i1',9);h.put('power',2.07);
+    h.refresh();
     await h.output.initialize();await h.output.tick();
     h.output.devices[0].activeSince-=601000;
     h.put('ems.0.Control.Targets.Wallbox0_W',0);h.writes.length=0;
@@ -466,15 +471,15 @@ test('turning off 50/50 keeps the running wallbox active with wallbox priority',
     assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,true);
     assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputOwned').val,true);
 });
-test('combined wallbox waits until positive DHW target is settled', async () => {
+test('combined wallbox need not wait for a heater ramp-up or disabled thermal output', async () => {
     const h=setup();h.config.combinedProductionArmed=true;h.put('split',1);
     h.put('ems.0.Config.DHWParallelDistributionEnabled',true);
     h.put('ems.0.Devices.MyPV_DHW.ControlEnabled',true);
     h.put('ems.0.Control.Targets.MyPV_DHW_W',3000);
     h.put('ems.0.Actual.MyPV_DHW_W',0);
     await h.output.initialize();await h.output.tick();
-    assert.equal(h.writes.length,0);
-    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,/EHZ-Feinregler/);
+    assert.deepEqual(h.writes,[{id:'allow',val:0}]);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,/Start/);
 });
 test('combined wallbox also waits for residual DHW power at a zero target', async () => {
     const h=setup();h.config.combinedProductionArmed=true;h.put('split',1);
@@ -521,6 +526,342 @@ test('alpha handover waits for confirmed stop before enabling the next wallbox',
     assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputOwned').val,false);
     assert.equal(h.states.get('ems.0.Devices.Wallbox1.OutputActive').val,true);
     assert.deepEqual(h.writes.slice(-2),[{id:'cmd1',val:6},{id:'allow1',val:1}]);
+});
+
+for (const [name, change] of [
+    ['master off', h => { h.config.globalWriteEnabled = false; }],
+    ['runtime master off', h => h.put('ems.0.System.RealOutputsEnabled', false)],
+    ['controller off', h => h.put('ems.0.Control.Enabled', false)],
+    ['wallbox disabled', h => h.put('ems.0.Devices.Wallbox0.ControlEnabled', false)],
+    ['HA trip', h => h.put('critical', true)],
+    ['invalid HA acknowledgement', h => h.put('critical', false, {ack:false})],
+    ['car unplugged', h => h.put('car', 1)],
+    ['device error', h => h.put('error', 8)],
+    ['stale device error', h => h.put('error', 0, {ts:Date.now()-60000})],
+    ['stale physical meter', h => h.put('import', 0, {ts:Date.now()-60000})],
+    ['HA overload', h => h.put('h1', 70)],
+    ['invalid LPC', h => h.put('lpc', 'failsafe')],
+    ['zero LPC budget', h => { h.put('lpc','limited'); h.put('lpcLimit',0); }],
+    ['vehicle release withdrawn', h => h.put('userAllow', false)]
+]) test(`restart wait never masks ${name}`, async () => {
+    const h=setup();
+    h.put('ems.0.Control.RestartHandoffActive', true);
+    h.put('ems.0.Control.RestartHandoffSince', Date.now());
+    h.put('ems.0.Devices.Wallbox0.OutputOwned', true);
+    h.put('ems.0.Devices.Wallbox0.OutputActive', true);
+    h.put('allow',1); h.put('feedback',6); h.put('i1',6); h.put('power',1.38);
+    h.put('ems.0.Plan.LastUpdate', 0); h.put('ems.0.Control.Valid',false);
+    change(h);
+    await h.output.initialize(); await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'allow',val:0}]);
+    assert.equal(h.output.devices[0].recovering,false);
+    assert.equal(h.states.get('ems.0.Control.RestartHandoffActive').val,false);
+    h.ack('allow',0); await h.output.tick(); await h.output.tick();
+    assert.equal(h.output.devices[0].owned,false);
+    assert.deepEqual(h.writes,[{id:'allow',val:0}]);
+});
+
+test('restart plan wait has a hard timeout even when control booleans remain valid', async () => {
+    const h=setup();
+    h.put('ems.0.Control.RestartHandoffActive',true);
+    h.put('ems.0.Control.RestartHandoffSince',Date.now()-181000);
+    h.put('ems.0.Plan.LastUpdate',0);
+    h.put('ems.0.Devices.Wallbox0.OutputOwned',true);
+    h.put('ems.0.Devices.Wallbox0.OutputActive',true);
+    h.put('allow',1);h.put('feedback',6);h.put('i1',6);h.put('power',1.38);
+    await h.output.initialize();await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'allow',val:0}]);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val,/abgelaufen/);
+});
+
+test('restart adoption starts physical runtime protection before handling a zero target', async () => {
+    const h=setup();
+    h.put('ems.0.Control.RestartHandoffActive',true);
+    h.put('ems.0.Control.RestartHandoffSince',Date.now());
+    h.put('ems.0.Devices.Wallbox0.OutputOwned',true);
+    h.put('ems.0.Devices.Wallbox0.OutputActive',true);
+    h.put('allow',1);h.put('feedback',9);h.put('i1',9);h.put('power',2.07);
+    h.put('ems.0.Control.Targets.Wallbox0_W',0);h.put('export',0);h.refresh();
+    await h.output.initialize();await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'cmd',val:6}]);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,true);
+    assert.equal(h.output.devices[0].recovering,false);
+});
+
+test('asynchronous allow acknowledgements can span several controller ticks without aborting start', async () => {
+    const h=setup();h.put('feedback',6,{ts:Date.now()-1000});
+    await h.output.initialize();await h.output.tick();
+    for(let tick=0;tick<4;tick++) await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'allow',val:0}]);
+    assert.equal(h.output.devices[0].pending.stage,'stop');
+    h.ack('allow',0);await h.output.tick();
+    for(let tick=0;tick<4;tick++) await h.output.tick();
+    assert.equal(h.output.devices[0].pending.stage,'current');
+    assert.ok(!h.writes.some(write=>write.id==='allow'&&write.val===1));
+    h.ack('feedback',6);await h.output.tick();
+    h.put('ems.0.Control.Targets.Wallbox0_W',0);h.put('export',0);
+    for(let tick=0;tick<4;tick++) await h.output.tick();
+    assert.equal(h.output.devices[0].pending.stage,'allow');
+    assert.deepEqual(h.writes,[{id:'allow',val:0},{id:'cmd',val:6},{id:'allow',val:1}]);
+    h.ack('allow',1);await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,true);
+    assert.equal(h.output.devices[0].fault,'');
+});
+
+test('same command/feedback state tolerates only its own pending ack=false current', async () => {
+    const h=setup();h.config.wb0AmpereFeedbackId='cmd';h.put('cmd',6);
+    await h.output.initialize();await h.output.tick();h.ack('allow',0);await h.output.tick();
+    for(let tick=0;tick<4;tick++) await h.output.tick();
+    assert.equal(h.output.devices[0].pending.stage,'current');
+    assert.deepEqual(h.writes,[{id:'allow',val:0},{id:'cmd',val:6}]);
+    h.ack('cmd',6);await h.output.tick();h.ack('allow',1);await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,true);
+    h.put('cmd',10,{ack:false});h.writes.length=0;await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'allow',val:0}]);
+});
+
+test('self-write feedback fallback cannot extend an expired physical confirmation', async () => {
+    const h=setup();await h.output.initialize();await h.output.tick();
+    h.output.devices[0].confirmedFeedback.allow.ts=Date.now()-31000;
+    await h.output.tick();
+    assert.equal(h.output.devices[0].pending,null);
+    assert.ok(h.output.devices[0].stopRequest);
+    assert.ok(!h.writes.some(write=>write.val===1));
+});
+
+test('stop awaits a device acknowledgement without writing OFF every controller tick', async () => {
+    const h=setup();await h.start();h.writes.length=0;
+    h.put('ems.0.Vehicles.Wallbox0.Release',false);await h.output.tick();
+    const stoppedAt=h.states.get('ems.0.Devices.Wallbox0.LastStopAt').val;
+    h.put('ems.0.Vehicles.Wallbox0.Release',true);
+    for(let tick=0;tick<5;tick++) await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'allow',val:0}]);
+    assert.equal(h.output.devices[0].owned,true);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.LastStopAt').val,stoppedAt);
+    h.ack('allow',0);await h.output.tick();
+    assert.equal(h.output.devices[0].owned,false);
+    assert.equal(h.output.devices[0].stopRequest,null);
+    assert.deepEqual(h.writes,[{id:'allow',val:0}]);
+});
+
+test('failed stop confirmation retries after timeout and never releases the interlock early', async () => {
+    const h=setup();await h.start();h.writes.length=0;
+    h.put('ems.0.System.RealOutputsEnabled',false);await h.output.tick();
+    h.output.devices[0].stopRequest.lastAttempt-=21000;await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'allow',val:0},{id:'allow',val:0}]);
+    assert.equal(h.output.devices[0].owned,true);
+    assert.match(h.output.devices[0].fault,/AUS-Rueckmeldung/);
+    h.ack('allow',0);await h.output.tick();
+    assert.equal(h.output.devices[0].owned,false);
+});
+
+test('stop timer is visible, reset on recovered budget, and cleared on hard stop', async () => {
+    const h=setup();await h.start();h.output.devices[0].activeSince-=601000;
+    h.put('ems.0.Control.Targets.Wallbox0_W',0);h.put('export',0);await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.StopDelayActive').val,true);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.StopDelayRemaining_s').val,120);
+    h.put('ems.0.Control.Targets.Wallbox0_W',7000);h.put('export',8000);await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.StopDelayActive').val,false);
+    h.put('ems.0.Control.Targets.Wallbox0_W',0);h.put('export',0);await h.output.tick();
+    h.put('critical',true);await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.StopDelayActive').val,false);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.StopDelayRemaining_s').val,0);
+});
+
+test('fractional physical caps are rounded down before a mandatory start command', async () => {
+    const h=setup();h.config.wb0AvailableCurrentId='available';h.put('available',6.5);
+    h.put('soc',10);h.put('ems.0.Vehicles.Wallbox0.RequestedMinimumCurrent_A',16);
+    await h.start();
+    assert.deepEqual(h.writes,[{id:'allow',val:0},{id:'cmd',val:6},{id:'allow',val:1}]);
+    assert.equal(h.output.devices[0].fault,'');
+});
+
+test('unbalanced three-phase currents cannot borrow headroom from another phase', async () => {
+    const h=setup();Object.assign(h.config,{wb0PhaseSwitchEnabled:true,wb0PhaseModeId:'phaseMode',
+        wb0MaxCurrent3pA:32,wb0MaxPowerW:22080});
+    h.put('phaseMode',2);h.put('ems.0.Control.Targets.Wallbox0_Phases',3);
+    h.put('ems.0.Control.Targets.Wallbox0_W',22080);await h.start();
+    h.output.devices[0].lastAt-=10000;
+    h.put('i1',16);h.put('i2',6);h.put('i3',6);h.put('h2',49);h.put('power',6.44);
+    h.writes.length=0;await h.output.tick();
+    assert.deepEqual(h.writes,[]);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputCommand_A').val,6);
+});
+
+test('shared LPC cap deducts physically active heater power from wallbox headroom', async () => {
+    const h=setup();h.config.combinedProductionArmed=true;h.config.wallboxCombinedMaxStepA=6;
+    h.put('ems.0.Config.DHWParallelDistributionEnabled',true);
+    h.put('ems.0.Devices.MyPV_DHW.ControlEnabled',true);
+    h.put('ems.0.Control.Targets.MyPV_DHW_W',2500);h.put('ems.0.Actual.MyPV_DHW_W',2500);
+    h.put('lpc','limited');h.put('lpcLimit',4200);
+    await h.start();h.output.devices[0].lastAt-=10000;
+    h.put('i1',6);h.put('power',1.38);h.writes.length=0;await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'cmd',val:7}]);
+});
+
+test('configured missing EHZ feedback never allows a wallbox increase based on a stale mirror', async () => {
+    const h=setup();h.config.combinedProductionArmed=true;
+    h.put('ems.0.Config.DHWParallelDistributionEnabled',true);
+    h.put('ems.0.Devices.MyPV_DHW.ControlEnabled',true);
+    Object.assign(h.config,{dhwOutput1Id:'ehz1',dhwOutput2Id:'ehz2',dhwOutput3Id:'ehz3'});
+    h.put('ehz1',0);h.put('ehz2',0);h.put('ehz3',0,{ts:Date.now()-121000});
+    h.put('ems.0.Actual.MyPV_DHW_W',0);
+    await h.output.initialize();await h.output.tick();
+    assert.deepEqual(h.writes,[]);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,/EHZ/);
+});
+
+test('waitForIdle drains an in-flight ownership persist before shutdown', async () => {
+    const h=setup();await h.output.initialize();
+    let resume;const persisted=new Promise(resolve=>{resume=resolve;});
+    const write=h.adapter.setCompatState;
+    h.adapter.setCompatState=(id,val)=>{
+        if(id==='ems.0.Devices.Wallbox0.OutputOwned'&&val===true)
+            return persisted.then(()=>write(id,val));
+        return write(id,val);
+    };
+    const tick=h.output.tick();await Promise.resolve();await Promise.resolve();
+    assert.equal(h.output.busy,true);
+    h.output.stopping=true;
+    let drained=false;const idle=h.output.waitForIdle().then(()=>{drained=true;});
+    await Promise.resolve();assert.equal(drained,false);
+    resume();await tick;await idle;await h.output.stopAll();
+    assert.equal(drained,true);
+    assert.ok(!h.writes.some(write=>write.val===1||write.id==='cmd'));
+});
+
+test('initialization failure retains other verified owners for best-effort shutdown', async () => {
+    const h=setup();h.enableWallbox(2);
+    h.put('ems.0.Devices.Wallbox2.OutputOwned',true);h.put('ems.0.Devices.Wallbox2.OutputActive',true);
+    h.put('allow2',1);
+    h.adapter.getForeignStateAsync=async()=>{throw new Error('read failed');};
+    await assert.rejects(h.output.initialize(),/read failed/);
+    assert.equal(h.output.devices[2].owned,true);
+    h.output.stopping=true;await h.output.stopAll();
+    assert.deepEqual(h.writes,[{id:'allow2',val:0}]);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox2.OutputActive').val,false);
+});
+
+test('failure stopping one owned wallbox does not skip the other owned wallboxes', async () => {
+    const h=setup();h.enableWallbox(1);await h.output.initialize();
+    h.output.devices[0].owned=true;h.output.devices[1].owned=true;h.put('allow',1);h.put('allow1',1);
+    const write=h.adapter.setForeignStateAsync;
+    h.adapter.setForeignStateAsync=async(id,val)=>{if(id==='allow')throw new Error('offline');return write(id,val);};
+    await assert.rejects(h.output.stopAll(),/Nicht alle/);
+    assert.deepEqual(h.writes,[{id:'allow1',val:0}]);
+});
+
+for(const stage of ['stop','current','allow']) test(`hard safety remains immediate during pending ${stage}`,async()=>{
+    const h=setup();await h.output.initialize();await h.output.tick();
+    if(stage!=='stop'){h.ack('allow',0);await h.output.tick();}
+    if(stage==='allow'){h.ack('feedback',6);await h.output.tick();}
+    assert.equal(h.output.devices[0].pending.stage,stage);
+    h.put('critical',true);h.writes.length=0;await h.output.tick();
+    assert.equal(h.output.devices[0].pending,null);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,false);
+    assert.ok(!h.writes.some(write=>write.val!==0));
+    if(stage==='allow')assert.deepEqual(h.writes,[{id:'allow',val:0}]);
+});
+
+test('waitForIdle also drains unfinished initialization with persisted ownership',async()=>{
+    const h=setup();
+    h.put('ems.0.Devices.Wallbox0.OutputOwned',true);h.put('ems.0.Devices.Wallbox0.OutputActive',true);
+    h.put('allow',1);
+    let resume,readStarted;
+    const paused=new Promise(resolve=>{resume=resolve;});
+    const started=new Promise(resolve=>{readStarted=resolve;});
+    const get=h.adapter.getForeignStateAsync;let first=true;
+    h.adapter.getForeignStateAsync=async id=>{
+        if(first){first=false;readStarted();await paused;}
+        return get(id);
+    };
+    const initializing=h.output.initialize();await started;
+    assert.equal(h.output.devices[0].owned,true);
+    h.output.stopping=true;let drained=false;
+    const idle=h.output.waitForIdle().then(()=>{drained=true;});
+    await Promise.resolve();assert.equal(drained,false);
+    resume();await initializing;await idle;await h.output.stopAll();
+    assert.equal(drained,true);
+    assert.deepEqual(h.writes,[{id:'allow',val:0}]);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,false);
+});
+
+test('invalid timestamps and boolean physical measurements fail closed',()=>{
+    const h=setup();
+    for(const timestamp of [undefined,NaN,Infinity,Date.now()+5000]){
+        h.put('power',1,{ts:timestamp});assert.equal(h.output.number('power'),null);
+    }
+    for(const value of [false,[],{},' ']){
+        h.put('power',value);assert.equal(h.output.number('power'),null);
+    }
+});
+
+test('user release switches deliberately written ack=false remain valid commands',async()=>{
+    const h=setup();h.put('userAllow',true,{ack:false});await h.start();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,true);
+    h.writes.length=0;h.put('userAllow',false,{ack:false});await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'allow',val:0}]);
+});
+
+test('multi-wallbox restart keeps the prior owned charger while initial selection is -1',async()=>{
+    const h=setup();h.enableWallbox(1);h.enableWallbox(2);h.config.multiWallboxAlphaArmed=true;
+    h.put('ems.0.Control.RestartHandoffActive',true);
+    h.put('ems.0.Control.RestartHandoffSince',Date.now());
+    h.put('ems.0.Devices.Wallbox2.OutputOwned',true);h.put('ems.0.Devices.Wallbox2.OutputActive',true);
+    h.put('allow2',1);h.put('feedback2',9);h.put('i21',9);h.put('power2',2.07);
+    h.put('ems.0.Control.SelectedWallbox',-1);h.put('ems.0.Plan.Valid',false);
+    h.put('ems.0.Plan.LastUpdate',0);h.put('ems.0.Control.Valid',false);
+    h.put('ems.0.Control.Targets.Wallbox2_W',0);
+    await h.output.initialize();await h.output.tick();
+    assert.deepEqual(h.writes,[]);
+    assert.equal(h.output.devices[2].recovering,true);
+    assert.match(h.states.get('ems.0.Devices.Wallbox2.OutputStatus').val,/frisch berechneten Fahrplan/);
+    h.put('ems.0.System.RealOutputsEnabled',false);await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'allow2',val:0}]);
+    assert.equal(h.output.devices[2].recovering,false);
+});
+
+for(const [name,change] of [
+    ['unacknowledged ON',h=>h.put('allow1',1,{ack:false})],
+    ['unacknowledged OFF',h=>h.put('allow1',0,{ack:false})],
+    ['missing',h=>h.states.delete('allow1')],
+    ['null',h=>h.put('allow1',null)],
+    ['stale OFF',h=>h.put('allow1',0,{ts:Date.now()-31000})],
+    ['invalid quality',h=>h.put('allow1',0,{q:0x40})],
+    ['future timestamp',h=>h.put('allow1',0,{ts:Date.now()+60000})]
+]) test(`multi-wallbox start requires peer confirmed OFF: ${name}`,async()=>{
+    const h=setup();h.enableWallbox(1);h.config.multiWallboxAlphaArmed=true;change(h);
+    await h.output.initialize();await h.output.tick();await h.output.tick();
+    assert.deepEqual(h.writes,[]);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,false);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,/bestaetigte AUS-Rueckmeldung Wallbox 1 fehlt/);
+    h.ack('allow1',0);await h.output.tick();h.ack('allow',0);await h.output.tick();
+    h.ack('feedback',6);await h.output.tick();h.ack('allow',1);await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,true);
+    assert.ok(!h.writes.some(write=>write.id==='allow1'));
+});
+
+test('unknown peer during pending current cannot slip through the final enable step',async()=>{
+    const h=setup();h.enableWallbox(1);h.config.multiWallboxAlphaArmed=true;
+    await h.output.initialize();await h.output.tick();h.ack('allow',0);await h.output.tick();
+    h.ack('feedback',6);h.put('allow1',1,{ack:false});h.writes.length=0;await h.output.tick();
+    assert.deepEqual(h.writes,[]);
+    assert.equal(h.output.devices[0].owned,false);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,false);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,/bestaetigte AUS-Rueckmeldung/);
+});
+
+test('an established selected charger survives an idle peer telemetry gap',async()=>{
+    const h=setup();h.enableWallbox(1);h.config.multiWallboxAlphaArmed=true;await h.start();
+    h.writes.length=0;h.put('allow1',0,{ts:Date.now()-31000});await h.output.tick();
+    assert.deepEqual(h.writes,[]);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,true);
+});
+
+test('peer OFF polling jitter uses the configured thirty-second go-e window',async()=>{
+    const h=setup();h.enableWallbox(1);h.config.multiWallboxAlphaArmed=true;
+    h.put('allow1',0,{ts:Date.now()-20000});await h.start();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,true);
 });
 
 module.exports={setup};
