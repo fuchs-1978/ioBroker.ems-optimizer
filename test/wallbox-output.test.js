@@ -206,6 +206,18 @@ test('feedback timeout latches fault and never enables charging', async () => {
     await h.output.tick(); assert.match(h.output.devices[0].fault, /Rueckmeldung/);
     assert.ok(!h.writes.some(w => w.id === 'allow' && w.val === 1));
 });
+test('lower target supersedes a pending current increase without stopping the wallbox', async () => {
+    const h=setup();h.config.wallboxMinimumRunTimeS=600;await h.start();
+    h.put('i1',6);h.put('power',1.38);h.output.devices[0].lastAt-=10000;h.writes.length=0;
+    await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'cmd',val:12}]);
+    h.put('ems.0.Control.Targets.Wallbox0_W',0);h.put('export',0);
+    await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'cmd',val:12},{id:'cmd',val:6}]);
+    assert.ok(!h.writes.some(write=>write.id==='allow'&&write.val===0));
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,true);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,/durch 6 A ersetzt/);
+});
 for (const [name, change] of [
     ['global off', h => h.put('ems.0.System.RealOutputsEnabled', false)],
     ['device off', h => h.put('ems.0.Devices.Wallbox0.ControlEnabled', false)],

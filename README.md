@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.4**
+Aktuelle Version: **0.17.0-alpha.5**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -39,6 +39,15 @@ Version 0.17.0-alpha.4 verwendet im Produktivausgang die vom go-e bestätigte
 Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Batterie, Heizpuffer und Wärmepumpe bleiben Simulation.
 Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.5 – stabile WB/EHZ-Stromübergabe
+
+- Sinkt das Wallbox-Soll, während eine vorherige Ampereerhöhung noch auf die
+  go-e-Rückmeldung wartet, wird der offene Befehl durch den niedrigeren sicheren
+  Amperewert ersetzt.
+- Die Ladefreigabe bleibt dabei aktiv; die Wallbox fällt nicht auf 0 und startet
+  keinen neuen 120-s-Countdown.
+- Harte Sicherheitsgrenzen stoppen weiterhin unmittelbar.
 
 ## Neu in 0.17.0-alpha.4 – produktive 1-/3-Phasenregelung
 
@@ -1087,6 +1096,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.5 | Ein sinkendes Wallbox-Soll ersetzt einen noch offenen höheren Amperebefehl, ohne `allow=0` auszulösen. Dadurch bleibt die Wallbox bei schnellen WB/EHZ-Neuverteilungen aktiv und fällt nicht erneut in die Einschaltverzögerung. |
 | 0.17.0-alpha.4 | Produktive Wallboxregelung folgt dem bestätigten go-e-Phasenmodus: 1 = einphasig, 2 = dreiphasig. Während der geräteeigenen Umschaltung gilt eine Übergangstoleranz; 6 A werden dreiphasig als 4.140 W berechnet. Nach Restart-Übergabe beginnt die Mindestlaufzeit neu. |
 | 0.17.0-alpha.3 | Erfolgreich übernommene Wallbox gegen kurzzeitiges Null-Soll während der Reglerinitialisierung geschützt; harte Sicherheitsgrenzen bleiben wirksam und die Einschaltverzögerung wird nicht neu aktiviert. |
 | 0.17.0-alpha.2 | 50/50 startet exakt an der Einschaltschwelle; unterhalb der Ausschaltschwelle bleibt die Wallbox vorrangig aktiv und der EHZ schließt nur den Ampere-Rest. SoC-Ableitungen werden vor der Restart-Übergabe aktualisiert; Min-SoC- und höhere Ziel-SoC-Änderungen stoppen eine laufende Wallbox nicht. |
