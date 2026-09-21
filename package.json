@@ -1,6 +1,6 @@
 {
   "name": "iobroker.ems-optimizer",
-  "version": "0.17.0-alpha.6",
+  "version": "0.17.0-alpha.7",
   "description": "Forecast-based energy management observer for ioBroker",
   "author": {
     "name": "fuchs-1978"
