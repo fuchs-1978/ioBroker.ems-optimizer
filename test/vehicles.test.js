@@ -50,6 +50,27 @@ test('below minimum outranks selected wallbox and previously planned slot',()=>{
     h.run('updateVehicles()');
     assert.equal(h.run('selectRealtimeWallboxes([{valueW:0},{valueW:6000},{valueW:0}])[0].wb'),0);
 });
+test('priority source selects admin or external object explicitly',()=>{
+    const internal=engine({wallboxPrioritySource:'internal',wallboxPriority:1});
+    internal.put('DP_WB_PRIORITY',2);internal.run('updateVehicles()');
+    assert.equal(internal.run('vehicleState(1).selectedPriority'),true);
+    assert.equal(internal.run('vehicleState(2).selectedPriority'),false);
+    const external=engine({wallboxPrioritySource:'external',wallboxPriority:1});
+    external.put('DP_WB_PRIORITY',2);external.run('updateVehicles()');
+    assert.equal(external.run('vehicleState(1).selectedPriority'),false);
+    assert.equal(external.run('vehicleState(2).selectedPriority'),true);
+});
+test('external dynamic price switch overrides the internal switch and fails safe',()=>{
+    const h=engine();h.put('ems.0.Config.DynamicEnergyPriceEnabled',true);
+    h.put('DP_DYNAMIC_ENERGY_ENABLED',false);
+    let result=h.run('buildPriceForecast(Date.now())');
+    assert.match(result.mode,/Energie=fest/);
+    assert.match(h.states.get('ems.0.Config.DynamicEnergyPriceSourceStatus').val,/extern/);
+    h.put('DP_DYNAMIC_ENERGY_ENABLED','invalid');
+    result=h.run('buildPriceForecast(Date.now())');
+    assert.match(result.mode,/Energie=fest/);
+    assert.match(h.states.get('ems.0.Config.DynamicEnergyPriceSourceStatus').val,/sicher AUS/);
+});
 test('disabled wallbox has no release or candidate even if car is attached',()=>{
     const h=engine();h.put('ems.0.Devices.Wallbox0.Present',false);h.run('updateVehicles()');
     assert.equal(h.run('vehicleState(0).release'),false);
@@ -222,6 +243,31 @@ test('50/50 allocator requires existing external switch and gives rounding remai
     h.put('DP_DHW_PARALLEL_RELEASE',0);h.run('resetSlowTargets()');
     h.run('updateSlowTargets(6000,[{valueW:6000},{valueW:0},{valueW:0}],{valueW:0})');
     assert.equal(h.run('realtimeParallelActive'),false);
+});
+test('combined allocator uses measured wallbox feedback for the EHZ residual',()=>{
+    const h=engine();h.put('DP_DHW_PARALLEL_RELEASE',1);
+    h.put('ems.0.Devices.Wallbox1.Present',false);h.put('ems.0.Devices.Wallbox2.Present',false);
+    h.put('ems.0.Devices.Wallbox0.ControlEnabled',true);
+    h.put('ems.0.Devices.Wallbox0.OutputActive',true);
+    h.put('ems.0.Config.DHWParallelDistributionEnabled',true);
+    h.put('ems.0.Config.WallboxStartDelay_s',0);
+    h.put('ems.0.Config.WallboxCombinedMaxStep_A',1);
+    h.put('ems.0.Devices.MyPV_DHW.Release',true);
+    h.put('ems.0.Devices.MyPV_DHW.TemperaturePowerLimit_W',9000);
+    h.put('DP_WB0_POWER',2.6);
+    h.run('simulateDhwTarget = valueW => valueW');h.run('updateVehicles()');
+    h.run('slowTargets.wallboxA[0]=10');
+    h.run('updateSlowTargets(6000,[{valueW:6000},{valueW:0},{valueW:0}],{valueW:0})');
+    assert.equal(h.run('realtimeParallelActive'),true);
+    assert.equal(h.run('slowTargets.wallboxA[0]'),11);
+    assert.equal(h.run('slowTargets.wallboxExpectedW[0]'),2600);
+    assert.equal(h.run('slowTargets.dhwW'),3400);
+    assert.equal(h.run('slowTargets.wallboxExpectedW[0]+slowTargets.dhwW'),6000);
+});
+test('combined wallbox ramp advances by only one ampere per slow cycle',()=>{
+    const h=engine();h.run('updateVehicles()');
+    const result=h.run('quantizeWallbox(5000,vehicleState(0),10,1,2300,{rampA:1,nearestAmp:true})');
+    assert.equal(result.amps,11);
 });
 test('small surplus below wallbox minimum falls back completely to DHW',()=>{
     const h=engine();h.put('DP_DHW_PARALLEL_RELEASE',1);
