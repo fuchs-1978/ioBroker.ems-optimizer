@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.13**
+Aktuelle Version: **0.17.0-alpha.14**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -39,6 +39,14 @@ Version 0.17.0-alpha.4 verwendet im Produktivausgang die vom go-e bestätigte
 Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Batterie, Heizpuffer und Wärmepumpe bleiben Simulation.
 Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.14 – Ausschaltverzögerung bei Leistungsdellen
+
+- Eine laufende Wallbox bleibt bei kurzem Netzbezug oder vorübergehend zu wenig
+  Überschuss für standardmäßig 120 Sekunden mit 6 A aktiv.
+- `wallboxStopDelayS` ist im Admin einstellbar. Sobald wieder genügend Leistung
+  vorhanden ist, wird der Ausschalt-Timer zurückgesetzt.
+- Harte Sicherheitsgründe bleiben von der Verzögerung ausgenommen.
 
 ## Neu in 0.17.0-alpha.13 – robuste go-e-Messwertfrist
 
