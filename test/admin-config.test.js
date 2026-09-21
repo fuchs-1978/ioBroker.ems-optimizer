@@ -14,7 +14,7 @@ test('AP2 admin exposes the shared source and house-connection fields', () => {
         'gridImportId', 'gridExportId', 'outsideTemperatureId', 'historyInstance', 'historyDays',
         'energyPriceSeriesId', 'gridFeeSeriesId', 'dynamicEnergyPriceEnabledId',
         'dynamicGridFeeEnabledId', 'wallboxMaxStepA', 'wallboxCombinedMaxStepA',
-        'phaseSwitchLookAheadMin', 'phaseSwitchMinHoldMin', 'phaseSwitchTransitionS', 'wallboxPrioritySource',
+        'phaseSwitchLookAheadMin', 'phaseSwitchMinHoldMin', 'phaseSwitchTransitionS', 'wallboxStopDelayS', 'wallboxPrioritySource',
         'wallboxPriorityId']) assert.ok(allFields[field], `missing Admin field ${field}`);
 });
 
@@ -46,6 +46,6 @@ test('update defaults never arm a productive output', () => {
 });
 
 test('package manifests publish the same alpha version', () => {
-    assert.equal(packageJson.version, '0.17.0-alpha.13');
+    assert.equal(packageJson.version, '0.17.0-alpha.14');
     assert.equal(ioPackage.common.version, packageJson.version);
 });
