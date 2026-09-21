@@ -305,6 +305,15 @@ test('one productive stop emits only one persistent diagnostic while allow=0 is 
     await h.output.tick();
     assert.equal(h.states.get('ems.0.Devices.Wallbox0.LastStopAt').val,stoppedAt);
 });
+test('normal go-e polling jitter above fifteen seconds does not stop an active wallbox', async () => {
+    const h=setup();h.config.wallboxMeasurementMaxAgeS=30;await h.start();h.writes.length=0;
+    const old=Date.now()-20000;
+    for(const id of ['power','i1','i2','i3','feedback','allow','car','error'])
+        h.put(id,h.states.get(id).val,{ts:old});
+    await h.output.tick();
+    assert.deepEqual(h.writes,[]);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,true);
+});
 test('confirmed start survives a zero target before the allow acknowledgement is adopted', async () => {
     const h=setup();await h.output.initialize();
     await h.output.tick();h.ack('allow',0);
