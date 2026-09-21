@@ -8,7 +8,7 @@
       "items": {
         "safety": {
           "type": "staticText",
-          "text": "Version 0.15.5: a previously EMS-owned active wallbox can be safely adopted after an unclean restart when all live safety checks pass. Minimum-run countdown diagnostics remain available. Binary §14a and EEBUS LPC limits remain active. Real phase switching remains external.",
+          "text": "Version 0.16.0-alpha.1: explicit alpha mode can control all released wallboxes sequentially together with the DHW heater. Only one wallbox may charge at a time; handover waits for confirmed OFF. Existing safety gates, restart recovery, minimum runtime, §14a/LPC and fixed verified phases remain active. Real phase switching remains external.",
           "newLine": true
         },
         "generalHeader": {
@@ -20,6 +20,12 @@
         "globalWriteEnabled": {
           "type": "checkbox",
           "label": "Master release for configured real outputs",
+          "default": false,
+          "newLine": true
+        },
+        "multiWallboxAlphaArmed": {
+          "type": "checkbox",
+          "label": "Arm ALPHA control for all released wallboxes + DHW (competing output scripts stopped)",
           "default": false,
           "newLine": true
         },
@@ -463,13 +469,13 @@
         },
         "_wb0ProductionHeader": {
           "type": "header",
-          "text": "Productive single-wallbox test",
+          "text": "Productive wallbox output",
           "size": 3,
           "newLine": true
         },
         "wb0ProductionArmed": {
           "type": "checkbox",
-          "label": "Arm SINGLE wallbox test: competing scripts stopped and fixed phases verified",
+          "label": "Arm wallbox output: competing writer stopped and fixed phases verified",
           "default": false,
           "sm": 6,
           "newLine": true
@@ -856,13 +862,13 @@
         },
         "_wb1ProductionHeader": {
           "type": "header",
-          "text": "Productive single-wallbox test",
+          "text": "Productive wallbox output",
           "size": 3,
           "newLine": true
         },
         "wb1ProductionArmed": {
           "type": "checkbox",
-          "label": "Arm SINGLE wallbox test: competing scripts stopped and fixed phases verified",
+          "label": "Arm wallbox output: competing writer stopped and fixed phases verified",
           "default": false,
           "sm": 6,
           "newLine": true
@@ -1249,13 +1255,13 @@
         },
         "_wb2ProductionHeader": {
           "type": "header",
-          "text": "Productive single-wallbox test",
+          "text": "Productive wallbox output",
           "size": 3,
           "newLine": true
         },
         "wb2ProductionArmed": {
           "type": "checkbox",
-          "label": "Arm SINGLE wallbox test: competing scripts stopped and fixed phases verified",
+          "label": "Arm wallbox output: competing writer stopped and fixed phases verified",
           "default": false,
           "sm": 6,
           "newLine": true
@@ -1498,7 +1504,7 @@
         },
         "combinedProductionArmed": {
           "type": "checkbox",
-          "label": "Arm COMBINED wallbox + DHW production test",
+          "label": "Arm combined wallbox + DHW production",
           "default": false,
           "sm": 6
         },

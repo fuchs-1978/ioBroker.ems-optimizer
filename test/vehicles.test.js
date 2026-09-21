@@ -92,6 +92,17 @@ test('LPC budget caps the combined simulated wallbox targets',()=>{
     h.run('updateSlowTargets(12000,[{valueW:7000},{valueW:7000},{valueW:7000}],{valueW:0},4200)');
     assert.ok(h.run('slowTargets.wallboxW.reduce((sum,value)=>sum+value,0)')<=4200);
 });
+test('realtime allocator never targets two wallboxes at once',()=>{
+    const h=engine();h.put('DP_DHW_PARALLEL_RELEASE',0);h.put('ems.0.Config.WallboxStartDelay_s',0);
+    h.run('updateVehicles()');
+    h.run('updateSlowTargets(20000,[{valueW:7000},{valueW:7000},{valueW:6000}],{valueW:0},20000)');
+    assert.equal(h.run('slowTargets.wallboxA.filter(value=>value>0).length'),1);
+});
+test('running productive wallbox remains selected until it is released',()=>{
+    const h=engine({wallboxPriority:1});h.put('ems.0.Devices.Wallbox0.OutputActive',true);
+    h.put('ems.0.Devices.Wallbox0.OutputOwned',true);h.run('updateVehicles()');
+    assert.equal(h.run('selectRealtimeWallboxes([{valueW:0},{valueW:7000},{valueW:0}])[0].wb'),0);
+});
 test('default PV-only above minimum does not force charging at departure deadline',()=>{
     const h=engine();h.put('ems.0.Config.Wallbox0VehicleCapacity_kWh',100000);
     h.run('updateVehicles()');assert.equal(h.run('vehicleState(0).mustCharge'),false);
@@ -110,6 +121,15 @@ test('empty departure keeps the vehicle available for the full forecast horizon'
         house:Array.from({length:4},()=>({valueW:500})),prices:{total:Array.from({length:4},()=>({value_ct_kWh:28.89}))}})`);
     const plan=JSON.parse(h.states.get('ems.0.Plan.Wallbox0_48h_JSON').val);
     assert.ok(plan.some(slot=>slot.valueW>0));
+});
+test('forecast schedules wallboxes sequentially, never in the same slot',()=>{
+    const h=engine();h.put('ems.0.Forecast.Valid',true);h.put('ems.0.Devices.MyPV_DHW.Present',false);
+    h.run('historyReady=true');
+    h.run(`buildDevicePlan({pv:Array.from({length:8},(_,i)=>({timestamp:Date.now()+i*900000,valueW:16000})),
+        house:Array.from({length:8},()=>({valueW:500})),prices:{total:Array.from({length:8},()=>({value_ct_kWh:28.89}))}})`);
+    const plans=[0,1,2].map(wb=>JSON.parse(h.states.get(`ems.0.Plan.Wallbox${wb}_48h_JSON`).val));
+    for(let slot=0;slot<plans[0].length;slot++)
+        assert.ok(plans.filter(plan=>plan[slot].valueW>0).length<=1,`parallel slot ${slot}`);
 });
 test('48-hour planner imports only to minimum, then waits for PV',()=>{
     const h=engine({wb0SocLimitsSource:'admin',wb0MinSocPct:20,wb0TargetSocPct:80});
@@ -223,6 +243,9 @@ test('PV-only wallbox requires stable surplus before it starts',()=>{
     h.run('updateSlowTargets(2000,[{valueW:0},{valueW:0},{valueW:0}],{valueW:0})');
     assert.equal(h.run('slowTargets.wallboxA[0]'),0);
     assert.equal(h.run('slowTargets.dhwW'),2000);
+    h.run('wallboxStartCandidateSince[0]=Date.now()-10000');
+    h.run('updateSlowTargets(1500,[{valueW:0},{valueW:0},{valueW:0}],{valueW:0})');
+    assert.ok(h.run('wallboxStartCandidateSince[0]')>0);
     h.run('wallboxStartCandidateSince[0]=Date.now()-31000');
     h.run('updateSlowTargets(2000,[{valueW:0},{valueW:0},{valueW:0}],{valueW:0})');
     assert.ok(h.run('slowTargets.wallboxA[0]')>=6);

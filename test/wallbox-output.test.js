@@ -32,6 +32,7 @@ function setup() {
         'Vehicles.Wallbox0.Release']) put(`ems.0.${key}`, true);
     for (const key of ['System.LastUpdate', 'Control.LastUpdate']) put(`ems.0.${key}`, now);
     put('ems.0.Control.TargetGridPower_W', -100);
+    put('ems.0.Control.SelectedWallbox', 0);
     put('ems.0.Control.Targets.Wallbox0_W', 7000);
     put('ems.0.Vehicles.Wallbox0.TargetSoC_pct', 80);
     put('ems.0.Vehicles.Wallbox0.MinimumSoC_pct', 20);
@@ -53,7 +54,32 @@ function setup() {
         await output.tick(); ack('allow', 1);
         await output.tick();
     };
-    return {adapter, config, mapping, states, writes, put, ack, refresh, start, output};
+    const enableWallbox = wb => {
+        Object.assign(mapping, {
+            [`DP_WB${wb}_CAR`]: `car${wb}`, [`DP_WB${wb}_SOC`]: `soc${wb}`,
+            [`DP_WB${wb}_ALLOW`]: `userAllow${wb}`, [`DP_WB${wb}_POWER`]: `power${wb}`,
+            [`DP_WB${wb}_L1_A`]: `i${wb}1`, [`DP_WB${wb}_L2_A`]: `i${wb}2`,
+            [`DP_WB${wb}_L3_A`]: `i${wb}3`
+        });
+        Object.assign(config, {
+            [`wb${wb}Present`]: true, [`wb${wb}ControlEnabled`]: true,
+            [`wb${wb}ProductionArmed`]: true, [`wb${wb}ProductionPhases`]: 1,
+            [`wb${wb}SinglePhaseGridPhase`]: wb + 1,
+            [`wb${wb}CommissioningMaxA`]: 32, [`wb${wb}MaxCurrent1pA`]: 32,
+            [`wb${wb}MaxPowerW`]: 7360, [`wb${wb}AmpereOutputId`]: `cmd${wb}`,
+            [`wb${wb}AllowOutputId`]: `allow${wb}`, [`wb${wb}AmpereFeedbackId`]: `feedback${wb}`,
+            [`wb${wb}ConnectionId`]: `connection${wb}`, [`wb${wb}ErrorId`]: `error${wb}`
+        });
+        for (const key of [`Devices.Wallbox${wb}.Present`, `Devices.Wallbox${wb}.ControlEnabled`,
+            `Vehicles.Wallbox${wb}.SoCValid`, `Vehicles.Wallbox${wb}.Release`]) put(`ems.0.${key}`, true);
+        put(`ems.0.Control.Targets.Wallbox${wb}_W`, 0);
+        put(`ems.0.Vehicles.Wallbox${wb}.TargetSoC_pct`, 80);
+        put(`ems.0.Vehicles.Wallbox${wb}.MinimumSoC_pct`, 20);
+        for (const [id, val] of Object.entries({[`car${wb}`]:2,[`soc${wb}`]:50,[`userAllow${wb}`]:true,
+            [`power${wb}`]:0,[`i${wb}1`]:0,[`i${wb}2`]:0,[`i${wb}3`]:0,
+            [`connection${wb}`]:true,[`error${wb}`]:0,[`allow${wb}`]:0,[`feedback${wb}`]:6})) put(id,val);
+    };
+    return {adapter, config, mapping, states, writes, put, ack, refresh, start, output, enableWallbox};
 }
 
 test('default/unarmed wallbox never writes, even with global release', async () => {
@@ -123,12 +149,23 @@ for (const [name, change] of [
     ['limited without budget', h => {h.put('lpc', 'limited'); h.put('lpcLimit', null);}],
     ['user release off', h => h.put('userAllow', false)],
     ['unexpected phases', h => h.put('i2', 6)],
-    ['no PV', h => h.put('export', 0)],
-    ['second wallbox enabled', h => {h.config.wb1ControlEnabled = true;}],
+    ['second wallbox enabled', h => {h.config.wb1ControlEnabled = true;
+        h.put('ems.0.Devices.Wallbox1.ControlEnabled', true); h.put('ems.0.Devices.Wallbox1.Present', true);}],
     ['DHW production enabled', h => h.put('ems.0.Devices.MyPV_DHW.ControlEnabled', true)]
 ]) test(`${name}: active charger gets stop, no positive write`, async () => {
     const h = setup(); await h.start(); h.writes.length = 0; change(h);
     await h.output.tick(); assert.deepEqual(h.writes, [{id:'allow', val:0}]);
+});
+test('productive output keeps six amps during minimum runtime on a soft surplus drop', async () => {
+    const h=setup();h.config.wallboxMinimumRunTimeS=600;await h.start();h.writes.length=0;
+    h.put('ems.0.Control.Targets.Wallbox0_W',0);h.put('export',0);
+    await h.output.tick();
+    assert.deepEqual(h.writes,[]);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,true);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,/Mindestlaufzeit/);
+    h.output.devices[0].activeSince-=601000;
+    await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'allow',val:0}]);
 });
 test('below minimum SoC can start without solar power', async () => {
     const h = setup(); h.put('soc',10); h.put('export',0); await h.start();
@@ -242,6 +279,42 @@ test('combined wallbox also waits for residual DHW power at a zero target', asyn
     await h.output.initialize();await h.output.tick();
     assert.equal(h.writes.length,0);
     assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,/EHZ-Feinregler/);
+});
+
+test('alpha mode arms all wallboxes but starts only the selected one', async () => {
+    const h=setup();h.enableWallbox(1);h.enableWallbox(2);h.config.multiWallboxAlphaArmed=true;
+    await h.start();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,true);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox1.OutputActive').val,false);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox2.OutputActive').val,false);
+    assert.equal(h.writes.filter(write=>write.val===1).length,1);
+    assert.deepEqual(h.writes.find(write=>write.val===1),{id:'allow',val:1});
+});
+
+test('alpha takeover first stops an externally running unowned wallbox', async () => {
+    const h=setup();h.enableWallbox(2);h.config.multiWallboxAlphaArmed=true;
+    h.put('ems.0.Control.Targets.Wallbox0_W',0);h.put('allow2',1);
+    await h.output.initialize();await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'allow2',val:0}]);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox2.OutputActive').val,false);
+    assert.match(h.states.get('ems.0.Devices.Wallbox2.OutputStatus').val,/ALPHA-Uebernahme/);
+});
+
+test('alpha handover waits for confirmed stop before enabling the next wallbox', async () => {
+    const h=setup();h.enableWallbox(1);h.config.multiWallboxAlphaArmed=true;
+    await h.start();h.writes.length=0;
+    h.put('ems.0.Control.SelectedWallbox',1);
+    h.put('ems.0.Control.Targets.Wallbox0_W',0);
+    h.put('ems.0.Control.Targets.Wallbox1_W',7000);
+    await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'allow',val:0}]);
+    h.ack('allow',0);await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'allow',val:0},{id:'allow1',val:0}]);
+    h.ack('allow1',0);await h.output.tick();h.ack('feedback1',6);await h.output.tick();
+    h.ack('allow1',1);await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputOwned').val,false);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox1.OutputActive').val,true);
+    assert.deepEqual(h.writes.slice(-2),[{id:'cmd1',val:6},{id:'allow1',val:1}]);
 });
 
 module.exports={setup};
