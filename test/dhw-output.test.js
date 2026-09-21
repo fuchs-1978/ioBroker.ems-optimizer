@@ -49,7 +49,7 @@ function outputHarness({combined = false, simulate = false} = {}) {
     const writes = [];
     const pending = [];
     const put = (id, val, extra = {}) => states.set(id, {val, ts: now, ack: true, ...extra});
-    const own = (id, val) => put(`ems.0.${id}`, val);
+    const own = (id, val, extra) => put(`ems.0.${id}`, val, extra);
     for (const id of ['System.RealOutputsEnabled', 'System.DataValid', 'Control.Valid',
         'Devices.MyPV_DHW.Present', 'Devices.MyPV_DHW.ControlEnabled', 'Devices.MyPV_DHW.Release']) own(id, true);
     own('System.LastUpdate', now);
@@ -132,6 +132,63 @@ test('standalone EHZ cannot exceed its allocator budget even under larger export
     assert.deepEqual(h.commands(), [1500]);
 });
 
+test('DHW follows central budget when battery owns fine regulation or grid import is intentional', () => {
+    const h = outputHarness();
+    h.run('heaterUsesGridFeedback = () => false');
+    h.put('gridOut', 0); h.put('gridIn', 3000);
+    h.own('Control.Targets.MyPV_DHW_W', 4000);
+    h.tick(); h.complete();
+    assert.deepEqual(h.commands(), [1000]);
+    h.put('o1', 1000); h.tick(); h.complete();
+    assert.deepEqual(h.commands(), [1000, 2000]);
+    h.run('heaterUsesGridFeedback = () => true');
+    h.tick(); h.complete();
+    assert.equal(h.commands().at(-1), 0, 'single EHZ fallback reacquires its NVP loop');
+});
+
+test('DHW coordinated LPC cap reserves pending HK, battery and wallbox commands', () => {
+    const h = outputHarness();
+    h.consumptionLimit.active = true; h.consumptionLimit.budgetW = 4200;
+    h.run(`coordinatedEnergyEnabled = () => true;
+        coordinatedPhaseReservations = () => ({valid:true,otherW:[0,0,0]});
+        coordinatedConsumptionLoads = () => ({valid: true,totalW:3700,dhwW:0,
+            heatingW:2000,batteryW:320,wallboxW:1380,wallboxesW:[1380,0,0]});
+        heaterUsesGridFeedback = () => false;`);
+    h.tick(); h.complete();
+    assert.deepEqual(h.commands(), [500]);
+    h.run('coordinatedConsumptionLoads = () => ({valid:false})');
+    h.tick(); h.complete();
+    assert.deepEqual(h.commands(), [500, 0]);
+});
+
+test('DHW cannot report NoActuation while the independent heating or battery output is owned', () => {
+    const h = outputHarness();
+    h.own('System.RealOutputsEnabled', false);
+    h.own('Devices.MyPV_Heating.OutputOwned', true);
+    h.tick();
+    assert.equal(h.states.get('ems.0.System.NoActuation').val, false);
+    assert.equal(h.states.get('ems.0.Control.Mode').val, 'ALPHA_ENERGY_COORDINATED');
+});
+
+test('DHW actively reduces an existing load when its house phase exceeds the working limit', () => {
+    const h = outputHarness();
+    h.run('dhwLastCommandW=2000;dhwOutputWasActive=true;');
+    h.own('Control.Targets.MyPV_DHW_W', 2000);
+    h.put('o1', 2000); h.put('h1', 52);
+    h.own('Config.HouseConnectionWorkingLimit_A', 46);
+    h.tick(); h.complete();
+    assert.deepEqual(h.commands(), [620]);
+});
+
+test('DHW does not reuse phase headroom already reserved by a pending HK command', () => {
+    const h = outputHarness();
+    h.put('h1', 45); h.own('Config.HouseConnectionWorkingLimit_A', 46);
+    h.run(`coordinatedEnergyEnabled=()=>true;
+        coordinatedPhaseReservations=()=>({valid:true,otherW:[200,0,0]});`);
+    h.tick(); h.complete();
+    assert.deepEqual(h.commands(), [30]);
+});
+
 test('EHZ starts promptly and cannot wind up on unchanged actuator feedback after timeout', () => {
     const h = outputHarness();
     h.tick();
@@ -166,7 +223,7 @@ test('net import never reverses an EHZ reduction while the old measured load is 
     assert.deepEqual(h.commands(), [3000, 900]);
 });
 
-test('master disable relinquishes EHZ once and never falsifies actual measured output', () => {
+test('master disable sends zero once but retains physical reservations without falsifying measured output', () => {
     const h = outputHarness();
     h.tick();
     h.complete();
@@ -184,7 +241,10 @@ test('master disable relinquishes EHZ once and never falsifies actual measured o
     h.complete();
     h.tick();
     h.run('stopDhwOutput("Adapter wird beendet")');
-    assert.equal(h.run('hasOwnedDhwOutput()'), false);
+    assert.equal(h.run('hasOwnedDhwOutput()'), true, 'database zero acknowledgement is not physical stop proof');
+    h.advance(8000); h.put('o1', 3000); h.put('o2', 3000); h.tick();
+    h.advance(1000); h.put('o1', 0); h.put('o2', 0); h.tick();
+    assert.equal(h.run('hasOwnedDhwOutput()'), false, 'delayed peak and subsequent real zero settle the reservation');
     assert.equal(h.writes.length, stoppedWrites);
     assert.equal(h.writes.filter(item => item.id === 'mirror').at(-1).val, 3000);
 });
@@ -203,6 +263,9 @@ test('unclean restart with disabled master stops only the previously EMS-owned h
         h.complete();
         h.run('stopDhwOutput("Startup failure")');
         assert.deepEqual(h.commands(), [0]);
+        assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.OutputOwned').val, true);
+        h.advance(8000); h.put('o1', 3000); h.put('o2', 3000); h.tick();
+        h.advance(1000); h.put('o1', 0); h.put('o2', 0); h.tick();
         assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.OutputOwned').val, false);
     }
     const foreign = outputHarness();
@@ -212,7 +275,7 @@ test('unclean restart with disabled master stops only the previously EMS-owned h
     assert.deepEqual(foreign.commands(), []);
 });
 
-test('startup failure relinquishes persisted EHZ ownership even before first productive tick', () => {
+test('startup failure stops persisted EHZ but retains unconfirmed physical highwater', () => {
     const h = outputHarness();
     h.own('Devices.MyPV_DHW.OutputOwned', true);
     h.own('Devices.MyPV_DHW.OutputCommand_W', 3000);
@@ -220,7 +283,8 @@ test('startup failure relinquishes persisted EHZ ownership even before first pro
     h.run('stopDhwOutput("Startup failure")');
     assert.deepEqual(h.commands(), [0]);
     h.complete();
-    assert.equal(h.run('hasOwnedDhwOutput()'), false);
+    assert.equal(h.run('hasOwnedDhwOutput()'), true);
+    assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservedPower_W').val, 3000);
 });
 
 test('asynchronous output errors trigger safe zero and do not report successful active control', () => {
@@ -232,7 +296,83 @@ test('asynchronous output errors trigger safe zero and do not report successful 
     h.tick();
     assert.deepEqual(h.commands(), [3000, 0]);
     h.complete();
+    assert.equal(h.run('hasOwnedDhwOutput()'), true, 'failed transport cannot prove the old positive never reached hardware');
+});
+
+test('DHW retains every delayed phase highwater across zero and an unclean restart', () => {
+    const first = outputHarness(); first.tick(); first.complete();
+    first.own('System.RealOutputsEnabled', false); first.tick(); first.complete();
+    const h = outputHarness();
+    for (const [id, state] of first.states) h.states.set(id, {...state});
+    h.tick(); h.complete();
+    h.advance(30000); h.fresh(); h.tick();
+    assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservedPower_W').val, 3000);
+    assert.equal(h.states.get('ems.0.System.NoActuation').val, false);
+    h.advance(1000); h.put('o1', 3000); h.tick();
+    h.advance(1000); h.put('o1', 0); h.tick();
+    assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservedPower_W').val, 0);
     assert.equal(h.run('hasOwnedDhwOutput()'), false);
+    assert.deepEqual(h.commands(), [0], 'restart sends one protective zero, not recurring script-interfering writes');
+});
+
+test('DHW old sink is stopped after remapping and new telemetry never releases its reservation', () => {
+    const h = outputHarness(); h.tick(); h.complete();
+    h.run("CFG.dp.myPvDhwSetpoint='newSet'; CFG.dp.myPvDhwOutputW=['new1','new2','new3'];");
+    for (const id of ['new1', 'new2', 'new3']) h.put(id, 0);
+    h.tick(); h.complete();
+    assert.equal(h.writes.filter(w => w.id === 'setpoint').at(-1).val, 0);
+    h.advance(1000); h.fresh(); h.tick();
+    assert.equal(h.writes.some(w => w.id === 'newSet'), false);
+    assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.OutputSetpointId').val, 'setpoint');
+    assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservedPower_W').val, 3000);
+    h.nativeConfig.globalWriteEnabled = false; h.own('System.RealOutputsEnabled', false);
+    h.own('Devices.MyPV_DHW.ConfirmPhysicalStop', true, {ack: false}); h.tick();
+    assert.equal(h.run('hasOwnedDhwOutput()'), true, 'new zero meter cannot acknowledge the old output');
+});
+
+test('DHW manual stop acknowledgement requires both masters off, completed zero and a new physical sample', () => {
+    const h = outputHarness(); h.tick(); h.complete();
+    h.own('System.RealOutputsEnabled', false); h.tick(); h.complete();
+    h.advance(1); h.fresh();
+    h.nativeConfig.globalWriteEnabled = true;
+    h.own('Devices.MyPV_DHW.ConfirmPhysicalStop', true, {ack: false}); h.tick();
+    assert.equal(h.run('hasOwnedDhwOutput()'), true);
+    h.nativeConfig.globalWriteEnabled = false;
+    h.own('Devices.MyPV_DHW.ConfirmPhysicalStop', true, {ack: false, ts: 1999999}); h.tick();
+    assert.equal(h.run('hasOwnedDhwOutput()'), true, 'old acknowledgement predating the zero is rejected');
+    h.put('o1', 0, {q: 64});
+    h.own('Devices.MyPV_DHW.ConfirmPhysicalStop', true, {ack: false}); h.tick();
+    assert.equal(h.run('hasOwnedDhwOutput()'), true);
+    h.put('o1', 0); const before = h.writes.length;
+    h.own('Devices.MyPV_DHW.ConfirmPhysicalStop', true, {ack: false}); h.tick();
+    assert.equal(h.run('hasOwnedDhwOutput()'), false);
+    assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.ConfirmPhysicalStop').val, false);
+    assert.equal(h.writes.length, before, 'physical confirmation is passive and issues no actuator write');
+});
+
+test('DHW does not invent physical proof from its ordinary settling tolerance', () => {
+    const h = outputHarness(); h.own('Control.Targets.MyPV_DHW_W', 1000); h.tick(); h.complete();
+    h.advance(1000); h.put('o1', 997); h.own('System.RealOutputsEnabled', false); h.tick(); h.complete();
+    h.advance(1000); h.put('o1', 0); h.tick();
+    assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservedPower_W').val, 1000);
+    assert.match(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservationStatus').val, /Messabweichungen/);
+});
+
+test('DHW synchronous rejected positive dispatch does not leave invented highwater', () => {
+    const h = outputHarness(); h.run('writeForeignState=()=>false'); h.tick();
+    assert.equal(h.run('hasOwnedDhwOutput()'), false);
+    assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservedPower_W').val, 0);
+});
+
+test('DHW restores protective zero ownership from phase highwater when its ownership boolean was lost', () => {
+    const h = outputHarness();
+    h.own('Devices.MyPV_DHW.OutputOwned', false);
+    h.own('Devices.MyPV_DHW.OutputReservedPhase2_W', 3000);
+    h.own('Devices.MyPV_DHW.OutputSetpointId', 'oldSet');
+    h.own('System.RealOutputsEnabled', false); h.tick(); h.complete();
+    assert.deepEqual(h.writes, [{id: 'oldSet', val: 0, at: 2000000}]);
+    assert.equal(h.run('hasOwnedDhwOutput()'), true);
+    assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservedPhase2_W').val, 3000);
 });
 
 test('DHW telemetry rejects null, blanks, pending commands, bad quality and future timestamps', () => {

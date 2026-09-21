@@ -11,6 +11,8 @@ const gridConstraints = require("./lib/grid-constraints");
 const {buildNativeMapping, houseConnectionSettings, FIELD_TO_MAPPING,
     WALLBOX_FIELDS} = require("./lib/native-mapping");
 const {shouldPreserveWallboxOnUnload} = require("./lib/unload-policy");
+const {EXTENSION_SETTINGS} = require("./lib/extension-settings");
+const {OutputMetadata} = require("./lib/output-metadata");
 
 class EmsOptimizer extends utils.Adapter {
     constructor(options = {}) {
@@ -23,18 +25,22 @@ class EmsOptimizer extends utils.Adapter {
         this.timers = new Set();
         this.engineContext = null;
         this.allowedForeignWriteIds = new Set();
+        this.zeroOnlyForeignWriteIds = new Set();
         this.pendingForeignWrites = new Set();
         this.foreignWriteQueues = new Map();
         this.foreignWriteGeneration = new Map();
         this.pendingOwnWrites = new Map();
+        this.failedOwnWrites = new Set();
         this.unloading = false;
         this.outputInitialization = null;
         this.wallboxOutput = new WallboxOutput(this);
+        this.outputMetadata = new OutputMetadata(this);
         this.debugRecorder = new DebugRecorder(this);
         this.debugInitialization = null;
         this.debugWarningAt = null;
         this.on("ready", this.onReady.bind(this));
         this.on("stateChange", this.onStateChange.bind(this));
+        this.on("objectChange", id => this.outputMetadata.changed(id));
         this.on("unload", this.onUnload.bind(this));
     }
 
@@ -62,12 +68,10 @@ class EmsOptimizer extends utils.Adapter {
         await this.setStateAsync("info.connection", false, true);
         await this.preloadStates();
         if (this.unloading) return;
-        const dhwSetpointId = String(this.config.dhwSetpointId || "").trim();
-        if (dhwSetpointId) this.allowedForeignWriteIds.add(dhwSetpointId);
         const dhwActualMirrorId = String(this.config.dhwActualMirrorId || "").trim();
         if (dhwActualMirrorId) this.allowedForeignWriteIds.add(dhwActualMirrorId);
         await this.startEngine();
-        this.runEngine('createStates()');
+        this.runEngine('createStates(); createBatteryStates(); createHeatingStates(); createHeatPumpStates(); createEnergyCoordinationStates();');
         await Promise.all([...this.objectPromises.values()]);
         await this.applyNativeVehicleSettings();
         await this.applyNativeEmsSettings();
@@ -78,14 +82,16 @@ class EmsOptimizer extends utils.Adapter {
             this.setCompatState(`${this.namespace}.${id}`, 0, true);
         await this.flushOwnWrites();
         if (this.unloading) return;
-        this.runEngine('updateVehicles(); updateDhwSimulation(); observe();');
+        await this.outputMetadata.refresh();
+        if (this.unloading) return;
+        this.runEngine('updateVehicles(); updateDhwSimulation(); updateHeatingSimulation(); observe();');
         this.publishMappingStatus();
         this.outputInitialization = this.wallboxOutput.initialize();
         await this.outputInitialization;
         if (this.unloading) return;
         this.runEngine(fs.readFileSync(path.join(__dirname, 'lib/engine/bootstrap.js'), 'utf8'));
         await this.setStateAsync("info.connection", true, true);
-        this.log.info("EMS Optimizer 0.17.0-alpha.16 started; alpha outputs require explicit release");
+        this.log.info("EMS Optimizer 0.17.0-alpha.17 started; alpha outputs require explicit release");
         // Diagnostics must never hold up actuator initialization or scheduling.
         this.debugInitialization = this.startDebug();
     }
@@ -226,10 +232,11 @@ class EmsOptimizer extends utils.Adapter {
         await Promise.all([...this.objectPromises.values()]);
         const houseConnection = houseConnectionSettings(this.config);
         const settings = {
+            ...EXTENSION_SETTINGS,
             BatteryCapacity_kWh: ["batteryCapacityKWh", 10],
             BatteryMaxCharge_W: ["batteryMaxChargeW", 2400],
             BatteryMaxDischarge_W: ["batteryMaxDischargeW", 2400],
-            BatteryMinSoC_pct: ["batteryMinSocPct", 0],
+            BatteryMinSoC_pct: ["batteryMinSocPct", 15],
             BatteryMaxSoC_pct: ["batteryMaxSocPct", 100],
             BatteryMorningTargetSoC_pct: ["batteryMorningTargetPct", 70],
             BatteryAfternoonTargetSoC_pct: ["batteryAfternoonTargetPct", 90],
@@ -399,6 +406,7 @@ class EmsOptimizer extends utils.Adapter {
                 // arrive AFTER the write promise resolves and a newer decision.
                 this.setStateAsync(relative, published));
         this.pendingOwnWrites.set(id, promise);
+        void promise.then(() => this.failedOwnWrites.delete(id), () => this.failedOwnWrites.add(id));
         void promise.finally(() => {
             if (this.pendingOwnWrites.get(id) === promise) this.pendingOwnWrites.delete(id);
         }).catch(() => {});
@@ -453,28 +461,91 @@ class EmsOptimizer extends utils.Adapter {
             this.log.error(`Blocked unconfigured foreign write to ${id || '<empty>'}`);
             return false;
         }
-        if (Number(value) > 0 && (this.unloading || this.config.globalWriteEnabled !== true
+        if (typeof value !== 'number' || !Number.isFinite(value)) return false;
+        const nonzero = value !== 0;
+        const device = id === String(this.config.batterySetpointId || '').trim() ? 'Battery'
+            : id === String(this.config.heatingSetpointId || '').trim() ? 'MyPV_Heating'
+                : id === String(this.config.dhwSetpointId || '').trim() ? 'MyPV_DHW' : null;
+        if (value < 0 && device !== 'Battery') return false;
+        if (nonzero && this.zeroOnlyForeignWriteIds.has(id)) return false;
+        if (nonzero && (this.unloading || this.config.globalWriteEnabled !== true
             || this.getCachedState(`${this.namespace}.System.RealOutputsEnabled`)?.val !== true))
             return false;
+        const ownershipIds = device ? ['OutputOwned', 'OutputSetpointId']
+            .map(key => `${this.namespace}.Devices.${device}.${key}`) : [];
+        const reservationKeys = device === 'Battery'
+            ? ['OutputReservedCharge_W', 'OutputUnobservedCommand_W', 'OutputUnobservedCommandSince']
+            : ['OutputReservedPower_W', 'OutputReservedPhase1_W', 'OutputReservedPhase2_W',
+                'OutputReservedPhase3_W', 'OutputReservationState_JSON', 'OutputReservationPending'];
+        const durableIds = device ? [...ownershipIds, ...reservationKeys.map(key =>
+            `${this.namespace}.Devices.${device}.${key}`)] : [];
+        // Capture these promises now: a rejected durable ownership claim must
+        // not disappear from pendingOwnWrites before a queued GS write runs.
+        const ownershipWrites = nonzero ? durableIds.map(key => this.pendingOwnWrites.get(key)).filter(Boolean) : [];
         const generation = (this.foreignWriteGeneration.get(id) || 0) + 1;
         this.foreignWriteGeneration.set(id, generation);
         const previousWrite = this.foreignWriteQueues.get(id) || Promise.resolve();
-        const promise = previousWrite.catch(() => {}).then(() => {
+        const promise = previousWrite.catch(() => {}).then(async () => {
+            if (nonzero && device) {
+                await Promise.all(ownershipWrites);
+                if (durableIds.some(key => this.failedOwnWrites.has(key)))
+                    throw new Error('Ausgangsbesitz/Leistungsreserve nach Datenbankfehler noch nicht dauerhaft bestaetigt');
+                if (this.getCachedState(ownershipIds[0])?.val !== true
+                    || this.getCachedState(ownershipIds[1])?.val !== id)
+                    throw new Error('Ausgangsbesitz und Ziel muessen vor dem Stellbefehl dokumentiert sein');
+            }
             // Recheck after queued work, immediately before the actual write.
-            if (Number(value) > 0 && (this.unloading || this.config.globalWriteEnabled !== true
+            if (nonzero && (this.unloading || this.config.globalWriteEnabled !== true
                 || this.getCachedState(`${this.namespace}.System.RealOutputsEnabled`)?.val !== true))
                 throw new Error('Schreibfreigabe vor Ausgabe entzogen');
             // A lower safety budget supersedes an old queued increase just as
             // a stop does. Already in-flight writes cannot be withdrawn, but
             // obsolete queued positive commands must never reach the actuator.
             // Zero commands always retain their place, even before a new start.
-            if (Number(value) > 0 && generation < this.foreignWriteGeneration.get(id))
+            if (nonzero && generation < this.foreignWriteGeneration.get(id))
                 throw new Error('Stellbefehl durch neueren Sollwert ueberholt');
-            if (Number(value) > 0 && id === this.config.dhwSetpointId
+            if (nonzero && this.zeroOnlyForeignWriteIds.has(id))
+                throw new Error('Frueherer Ausgang nur fuer sichere Null freigegeben');
+            if (nonzero && id === String(this.config.dhwSetpointId || '').trim()
                 && (this.config.dhwControlEnabled !== true || this.config.dhwPresent === false
                     || ['Present', 'ControlEnabled', 'Release'].some(key =>
                         this.getCachedState(`${this.namespace}.Devices.MyPV_DHW.${key}`)?.val !== true)))
                 throw new Error('EHZ-Freigabe vor Ausgabe entzogen');
+            if (nonzero && device) {
+                const nativePrefix = device === 'Battery' ? 'battery' : device === 'MyPV_DHW' ? 'dhw' : 'heating';
+                const base = `${this.namespace}.Devices.${device}`;
+                if (this.config[`${nativePrefix}Present`] !== true
+                    || this.config[`${nativePrefix}ControlEnabled`] !== true
+                    || (device !== 'MyPV_DHW' && this.config[`${nativePrefix}ProductionArmed`] !== true)
+                    || ['Present', 'ControlEnabled', 'DriverReady'].some(key => this.getCachedState(`${base}.${key}`)?.val !== true))
+                    throw new Error(`${device}: Ausgabefreigabe vor Stellbefehl entzogen`);
+                if (this.engineContext && device === 'Battery') {
+                    const state = this.runEngine('batteryRegulationState()');
+                    if (!state.eligible || (value < 0 ? !state.canCharge : !state.canDischarge))
+                        throw new Error(`Speicher vor Ausgabe gesperrt: ${state.reason}`);
+                    // GS uses the opposite sign to the internal allocation.
+                    // A limit can shrink while a previously valid command is
+                    // queued, without changing its release or direction.
+                    const maximumW = value < 0 ? state.maxChargeW : state.maxDischargeW;
+                    if (!Number.isFinite(maximumW) || maximumW < 0 || Math.abs(value) > maximumW)
+                        throw new Error('Speicher-Leistungsgrenze vor Ausgabe reduziert/ungueltig');
+                }
+                if (device === 'MyPV_Heating') {
+                    const thermal = this.engineContext ? this.runEngine('evaluateHeatingSimulation()') : null;
+                    if (this.getCachedState(`${this.namespace}.Config.HeatingInhibit`)?.val === true
+                        || this.getCachedState(`${base}.Release`)?.val !== true
+                        || (thermal && !thermal.release))
+                        throw new Error('Heizpuffer-Freigabe/Kuehlsperre vor Ausgabe geaendert');
+                    if (thermal && (!Number.isFinite(thermal.thermalCapW)
+                        || thermal.thermalCapW < 0 || value > thermal.thermalCapW))
+                        throw new Error('Heizpuffer-Leistungsgrenze vor Ausgabe reduziert/ungueltig');
+                }
+                if (this.engineContext) {
+                    const electrical = this.runEngine(`checkQueuedElectricalOutput(${JSON.stringify(device)}, ${value})`);
+                    if (!electrical?.allowed)
+                        throw new Error(electrical?.reason || 'Elektrische Grenze vor Ausgabe nicht bestaetigt');
+                }
+            }
             return this.setForeignStateAsync(id, value, false);
         });
         this.foreignWriteQueues.set(id, promise);
@@ -527,6 +598,10 @@ class EmsOptimizer extends utils.Adapter {
             "forecast.js",
             "vehicles.js",
             "dhw-controller.js",
+            "battery-controller.js",
+            "heating-controller.js",
+            "heatpump-controller.js",
+            "energy-coordination.js",
             "planner.js",
             "observer.js",
             "realtime.js",
@@ -636,10 +711,21 @@ class EmsOptimizer extends utils.Adapter {
         for (const timer of this.timers) clearTimeout(timer);
         this.jobs = [];
         this.timers.clear();
+        // Issue independent stops before waiting for any foreign channel.
+        // Each actuator queue already orders its own final zero; a stalled
+        // storage write must not defer a different heater's stop request.
+        if (this.engineContext) {
+            for (const stop of ['stopDhwOutput', 'stopBatteryOutput', 'stopHeatingOutput', 'stopHeatPumpOutput']) {
+                try {
+                    this.runEngine(`if (typeof ${stop} === 'function') ${stop}('Adapter wird beendet');`);
+                } catch (error) {
+                    this.log.error(`Cannot stop ${stop} on unload: ${error.message}`);
+                }
+            }
+        }
         if (this.outputInitialization) await this.outputInitialization.catch(error =>
             this.log.warn(`Output initialization interrupted: ${error.message}`));
         await this.wallboxOutput.waitForIdle();
-        await Promise.allSettled([...this.pendingForeignWrites]);
         let instanceObject = null;
         try {
             instanceObject = await this.getForeignObjectAsync(`system.adapter.${this.namespace}`);
@@ -666,10 +752,7 @@ class EmsOptimizer extends utils.Adapter {
             stops.push(this.wallboxOutput.stopAll());
             this.setCompatState(`${this.namespace}.Control.RestartHandoffActive`, false, true);
         }
-        if (this.engineContext) {
-            this.runEngine("stopDhwOutput('Adapter wird beendet')");
-            stops.push(...this.pendingForeignWrites);
-        }
+        stops.push(...this.pendingForeignWrites);
         const results = await Promise.allSettled(stops);
         for (const result of results) if (result.status === "rejected")
             this.log.error(`Cannot stop output on unload: ${result.reason}`);
