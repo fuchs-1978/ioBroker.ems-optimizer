@@ -37,7 +37,7 @@ class EmsOptimizer extends utils.Adapter {
         await this.applyNativeEmsSettings();
         await this.wallboxOutput.initialize();
         await this.setStateAsync("info.connection", true, true);
-        this.log.info("EMS Optimizer 0.16.0-alpha.1 started; alpha outputs require explicit release");
+        this.log.info("EMS Optimizer 0.16.0-alpha.2 started; alpha outputs require explicit release");
     }
 
     async preloadStates() {

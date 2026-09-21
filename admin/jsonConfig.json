@@ -8,7 +8,7 @@
       "items": {
         "safety": {
           "type": "staticText",
-          "text": "Version 0.16.0-alpha.1: explicit alpha mode can control all released wallboxes sequentially together with the DHW heater. Only one wallbox may charge at a time; handover waits for confirmed OFF. Existing safety gates, restart recovery, minimum runtime, §14a/LPC and fixed verified phases remain active. Real phase switching remains external.",
+          "text": "Version 0.16.0-alpha.2: a productive wallbox cannot re-arm its start delay, and timing diagnostics follow the real minimum runtime. Alpha mode controls all released wallboxes sequentially together with the DHW heater. Existing safety gates, §14a/LPC and fixed verified phases remain active. Real phase switching remains external.",
           "newLine": true
         },
         "generalHeader": {

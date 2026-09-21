@@ -286,6 +286,25 @@ test('productive minimum run time starts with the real wallbox output',()=>{
     assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.MinimumRunTimeActive').val,true);
     assert.ok(h.states.get('ems.0.Vehicles.Wallbox0.MinimumRunTimeRemaining_s').val>=599);
 });
+test('productive wallbox never rearms start delay while minimum runtime is active',()=>{
+    const h=engine();h.put('DP_DHW_PARALLEL_RELEASE',1);
+    h.put('ems.0.Devices.Wallbox1.Present',false);h.put('ems.0.Devices.Wallbox2.Present',false);
+    h.put('ems.0.Devices.Wallbox0.ControlEnabled',true);
+    h.put('ems.0.Devices.Wallbox0.OutputActive',true);
+    h.put('ems.0.Devices.MyPV_DHW.Release',true);
+    h.put('ems.0.Devices.MyPV_DHW.TemperaturePowerLimit_W',9000);
+    h.put('ems.0.Config.WallboxStartReserve_W',300);
+    h.put('ems.0.Config.WallboxStartDelay_s',120);
+    h.put('ems.0.Config.WallboxMinimumRunTime_s',600);
+    h.run('simulateDhwTarget = valueW => valueW');h.run('updateVehicles()');
+    h.run('updateSlowTargets(500,[{valueW:0},{valueW:0},{valueW:0}],{valueW:0})');
+    assert.equal(h.run('slowTargets.wallboxA[0]'),6);
+    assert.equal(h.run('wallboxStartCandidateSince[0]'),0);
+    assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.StartDelayActive').val,false);
+    assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.StartDelayRemaining_s').val,0);
+    assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.MinimumRunTimeActive').val,true);
+    assert.ok(h.states.get('ems.0.Vehicles.Wallbox0.MinimumRunTimeRemaining_s').val>=599);
+});
 test('binding grid-operator budget overrides wallbox minimum run time',()=>{
     const h=engine();h.put('ems.0.Devices.Wallbox1.Present',false);
     h.put('ems.0.Devices.Wallbox2.Present',false);

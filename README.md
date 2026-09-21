@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.16.0-alpha.1**
+Aktuelle Version: **0.16.0-alpha.2**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -18,12 +18,23 @@ Abfahrtszeit tatsächlich abschaltbar. Version 0.15.3 stabilisiert den produktiv
 PV-Betrieb von Wallbox und EHZ. Version 0.15.4 koppelt die Mindestlaufzeit an den
 tatsächlich bestätigten Wallbox-Ausgang. Version 0.15.5 kann einen noch laufenden,
 zuvor EMS-eigenen Auftrag nach einem ungeplanten Neustart sicher wieder übernehmen.
-Version 0.16.0-alpha.1 erlaubt die gemeinsame Freigabe aller drei Wallboxen und
+Version 0.16.0-alpha.2 korrigiert die Zeitführung einer bereits produktiv
+laufenden Wallbox: Sie startet keinen neuen Einschalt-Countdown und die separaten
+Diagnoseobjekte zeigen ihre reale Mindestlaufzeit. Version 0.16.0-alpha.1 erlaubt
+die gemeinsame Freigabe aller drei Wallboxen und
 des EHZ. Die Wallboxen arbeiten dabei zwingend nacheinander; der EHZ darf parallel
 zur jeweils ausgewählten Wallbox als Feinregler laufen.
 Batterie, Heizpuffer und Wärmepumpe bleiben Simulation.
 Reale Phasenwechsel führt ausschließlich das vorhandene externe Skript aus; der
 Adapter stellt dafür nur Empfehlungen bereit. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.16.0-alpha.2 – konsistente Wallbox-Timer
+
+- Eine bereits produktiv laufende Wallbox wird unabhängig von einem kurzzeitig
+  auf null fallenden internen Sollwert als laufend behandelt.
+- Während ihrer Mindestlaufzeit startet deshalb kein neuer Einschalt-Countdown.
+- `MinimumRunTimeActive` und `MinimumRunTimeRemaining_s` folgen dem bestätigten
+  produktiven Ausgang und stimmen mit dem Countdown im Ausgangsstatus überein.
 
 ## Neu in 0.16.0-alpha.1 – Alpha-Gesamtsteuerung
 
@@ -985,6 +996,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.16.0-alpha.2 | Zeitführung laufender Produktiv-Wallboxen korrigiert: kein erneuter Einschalt-Countdown bei kurzzeitigem internem Null-Sollwert; separate Diagnoseobjekte folgen der realen Mindestlaufzeit. |
 | 0.16.0-alpha.1 | Alpha-Gesamtsteuerung für WB0, WB1, WB2 und Trinkwasser-EHZ. Harte Sequenzverriegelung: nie mehr als eine Wallbox gleichzeitig, bestätigtes AUS vor Übergabe, unbekannte laufende Fremdfreigaben werden zuerst kontrolliert gestoppt. EHZ bleibt während der Startverzögerung und parallel zur aktiven Wallbox Feinregler. Startreserve arbeitet nach Beginn des Countdowns als Hysterese; zusätzliche produktive Mindestlaufzeit-Sicherung direkt am Wallbox-Ausgang. Neue standardmäßig ausgeschaltete Alpha-Freigabe; reale Phasenumschaltung bleibt extern. |
 | 0.15.5 | Sichere Wiederübernahme eines zuvor EMS-eigenen und weiterhin aktiven Wallbox-Auftrags nach ungeplantem Prozessneustart. Vollständige Live-Sicherheitsprüfung vor der Übernahme; bei fehlender Eigentümerschaft oder ungültigen Bedingungen wird nicht übernommen. Keine Objekte ergänzt oder entfernt und keine zusätzlichen Ausgänge aktiviert. |
 | 0.15.4 | Produktive Wallbox-Mindestlaufzeit beginnt erst mit dem bestätigten realen Ausgang statt mit einem früheren Simulationssollwert. Einschaltverzögerung und verbleibende Mindestlaufzeit werden je Wallbox über vier Diagnoseobjekte sichtbar. Zwölf Objekte ergänzt, keine entfernt und keine zusätzlichen Ausgänge aktiviert. |
