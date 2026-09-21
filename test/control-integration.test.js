@@ -9,15 +9,21 @@ const {createRequire} = require('node:module');
 
 // Shared, deterministic plant: real allocator + real output state machines,
 // delayed ioBroker ack and delayed AC THOR power, no device/network writes.
-async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true} = {}) {
+async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, diagnostics} = {}) {
     let now = Date.UTC(2026, 8, 21, 12), surplusW = 6000;
     let heaterW = 0, heaterCommandW = 0, physicalAllow = 0, physicalA = 6;
-    const states = new Map(), writes = [], events = [], trace = [];
+    const states = new Map(), writes = [], events = [], trace = [], diagnosticWrites = [];
+    let recorder = null;
     class Clock extends Date {
         constructor(...args) { super(...(args.length ? args : [now])); }
         static now() { return now; }
     }
-    const put = (id, val, extra = {}) => states.set(id, {val, ack: true, ts: now, ...extra});
+    const put = (id, val, extra = {}) => {
+        const previous = states.get(id);
+        const state = {val, ack: true, ts: now, ...extra};
+        states.set(id, state);
+        if (!id.startsWith('ems.0.Debug.')) recorder?.capture(id, state, previous);
+    };
     const own = (id, val) => put(`ems.0.${id}`, val);
     const value = id => states.get(`ems.0.${id}`)?.val;
     const mapping = {};
@@ -122,6 +128,28 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true} = 
     vm.runInNewContext(`(function(require,module,exports){${fs.readFileSync(wallboxFile, 'utf8')}\n})`,
         {Date: Clock})(createRequire(wallboxFile), module, module.exports);
     const output = new module.exports(adapter);
+    adapter.wallboxOutput = output;
+    if (diagnostics !== undefined) {
+        own('Debug.Enabled', diagnostics);
+        const debugFile = path.join(__dirname, '../lib/debug-recorder.js');
+        const debugModule = {exports: {}};
+        vm.runInNewContext(`(function(require,module,exports){${fs.readFileSync(debugFile, 'utf8')}\n})`,
+            {Date: Clock, Buffer})(createRequire(debugFile), debugModule, debugModule.exports);
+        const debugAdapter = {...adapter,
+            setCompatState: (id, val) => {
+                assert.ok(id.startsWith('ems.0.Debug.'), `diagnostics wrote a non-debug state: ${id}`);
+                diagnosticWrites.push({id, val, at: now});
+                put(id, val);
+            },
+            setStateAsync: async (id, val) => {
+                assert.ok(id.startsWith('Debug.'), `diagnostics wrote a non-debug state: ${id}`);
+                diagnosticWrites.push({id: `ems.0.${id}`, val, at: now});
+                own(id, val);
+            },
+            setForeignStateAsync: async id => assert.fail(`diagnostics attempted an actuator write: ${id}`)};
+        recorder = new debugModule.exports(debugAdapter);
+        await recorder.initialize();
+    }
     const refresh = () => {
         const wbW = physicalAllow ? physicalA * 230 : 0;
         const gridW = heaterW + wbW - surplusW;
@@ -151,12 +179,15 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true} = 
             vm.runInContext('updateVehicles();updateDhwSimulation();realtimeControl()', ctx);
             await output.tick();
         }
-        if (now % 5000 === 0) vm.runInContext('updateDhwProductionOutput()', ctx);
+        if (now % 5000 === 0) {
+            vm.runInContext('updateDhwProductionOutput()', ctx);
+            recorder?.sample();
+        }
         trace.push({at: now, wbW: physicalAllow ? physicalA * 230 : 0, heaterW, physicalAllow,
             targetW: value('Control.Targets.Wallbox2_W'), heaterTargetW: value('Control.Targets.MyPV_DHW_W'),
             status: value('Devices.Wallbox2.OutputStatus'), heaterStatus: value('Devices.MyPV_DHW.OutputStatus')});
     };
-    return {states, writes, trace, put, value, output,
+    return {states, writes, trace, put, value, output, diagnosticWrites,
         now: () => now,
         run: code => vm.runInContext(code, ctx),
         setSurplus: watts => { surplusW = watts; },
@@ -217,4 +248,36 @@ test('integrated continuous deficit stops after the configured 120s delay, then 
     assert.ok(stop && stop.at - beforeDip >= 120000, h.diagnostic());
     assert.ok(stop.at - beforeDip <= 126000, h.diagnostic());
     assert.ok(h.physical().heaterW >= 500 && h.physical().heaterW <= 800, h.diagnostic());
+});
+
+test('passive diagnostics preserve every WB/EHZ command through delayed startup and a cloud dip', async () => {
+    const disabled = await plant({diagnostics: false});
+    const enabled = await plant({diagnostics: true});
+    for (const h of [disabled, enabled]) {
+        await h.advance(240);
+        assert.equal(h.physical().allow, 1, h.diagnostic());
+        h.setSurplus(300);
+        await h.advance(30);
+        assert.equal(h.physical().allow, 1, h.diagnostic());
+        assert.equal(h.physical().amps, 6, h.diagnostic());
+        h.setSurplus(6000);
+        await h.advance(150);
+        h.put('DP_DHW_PARALLEL_RELEASE', false);
+        await h.advance(40);
+    }
+    assert.deepEqual(enabled.writes, disabled.writes,
+        'diagnostics must not change any external command, mirror value, ordering or timestamp');
+    assert.deepEqual(enabled.trace, disabled.trace,
+        'physical response, allocator targets and control statuses remain identical');
+    const snapshots = enabled.diagnosticWrites.filter(write => write.id === 'ems.0.Debug.Snapshot_JSON');
+    assert.ok(snapshots.length > 0, 'enabled recorder actually persisted diagnostic snapshots');
+    assert.ok(snapshots.length <= 460 / 5 + 1, 'snapshots are bounded by the diagnostic sampling cadence');
+    assert.ok(enabled.diagnosticWrites.length <= 20 + (460 / 5) * 20,
+        'diagnostic persistence remains bounded independently of high-frequency state changes');
+    assert.equal(disabled.diagnosticWrites.filter(write => write.id === 'ems.0.Debug.Snapshot_JSON').length, 0,
+        'disabled recorder does not collect snapshots');
+    const events = JSON.parse(enabled.value('Debug.Events_JSON'));
+    const power = JSON.parse(enabled.value('Debug.PowerTrace_JSON'));
+    assert.ok(events.length > 0 && events.length <= 100, 'bounded meaningful event ring');
+    assert.ok(power.length > 0 && power.length <= 120, 'bounded power trace ring');
 });

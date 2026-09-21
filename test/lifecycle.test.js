@@ -314,6 +314,7 @@ test('real engine startup and shutdown with default configuration never writes a
     a.subscribeForeignStatesAsync = async () => {};
     a.setForeignStateAsync = async (id, value) => foreignWrites.push({id, value});
     await a.onReady();
+    await a.debugInitialization;
     assert.equal(stored.get('info.connection').val, true, errors.join('\n'));
     assert.equal(a.getCachedState('ems.0.System.RealOutputsEnabled').val, false);
     assert.equal(a.getCachedState('ems.0.Plan.Valid').val, false);
@@ -321,4 +322,138 @@ test('real engine startup and shutdown with default configuration never writes a
     await a.prepareUnload({allowHandoff: false});
     assert.equal(foreignWrites.length, 0);
     assert.equal(errors.length, 0, errors.join('\n'));
+});
+
+test('debug capture failures never reject control writes and warnings are rate limited', async () => {
+    const a = adapter();
+    const warnings = [];
+    a.log.warn = message => warnings.push(message);
+    a.debugRecorder.capture = () => { throw new Error('diagnostic snapshot failed'); };
+    await a.setCompatState('ems.0.Control.Valid', true);
+    await a.setCompatState('ems.0.Control.Valid', false);
+    assert.equal(a.getCachedState('ems.0.Control.Valid').val, false);
+    assert.equal(warnings.length, 1);
+});
+
+test('debug persistence failure is excluded from critical own-state flush', async () => {
+    const a = adapter();
+    a.setStateAsync = async id => {
+        if (id.startsWith('Debug.')) throw new Error('diagnostic storage unavailable');
+    };
+    const debug = a.setCompatState('ems.0.Debug.Snapshot_JSON', '{}').catch(() => {});
+    a.setCompatState('ems.0.Control.Valid', true);
+    await a.flushOwnWrites();
+    await debug;
+    assert.equal(a.getCachedState('ems.0.Control.Valid').val, true);
+});
+
+test('a failing diagnostic logger cannot propagate into a control write', async () => {
+    const a = adapter();
+    a.debugRecorder.capture = () => { throw new Error('snapshot failed'); };
+    a.log.warn = () => { throw new Error('logger unavailable'); };
+    await a.setCompatState('ems.0.Control.Valid', true);
+    assert.equal(a.getCachedState('ems.0.Control.Valid').val, true);
+});
+
+test('debug publication does not recursively capture its own data', async () => {
+    const a = adapter();
+    let captures = 0;
+    a.debugRecorder.capture = () => captures++;
+    await a.setCompatState('ems.0.Debug.Summary', 'Bereit');
+    assert.equal(captures, 0);
+    await a.setCompatState('ems.0.Control.SelectedWallbox', 2);
+    assert.equal(captures, 1);
+});
+
+test('debug commands are handled without running control listeners', () => {
+    const a = adapter();
+    const id = 'ems.0.Debug.Clear';
+    let captures = 0;
+    let listeners = 0;
+    a.debugRecorder.handleCommand = (changedId, state) => changedId === id && state.ack === false;
+    a.debugRecorder.capture = () => captures++;
+    a.listeners.push({ids: new Set([id]), change: 'any', callback: () => listeners++});
+    a.onStateChange(id, {val: true, ack: false, ts: Date.now()});
+    assert.equal(captures, 0);
+    assert.equal(listeners, 0);
+});
+
+test('debug initialization completing after unload cannot restart sampling', async () => {
+    const a = adapter();
+    let finish;
+    let sampled = 0;
+    let scheduled = 0;
+    a.debugRecorder.initialize = () => new Promise(resolve => { finish = resolve; });
+    a.debugRecorder.sample = () => sampled++;
+    a.registerSchedule = () => scheduled++;
+    const starting = a.startDebug();
+    a.unloading = true;
+    finish();
+    await starting;
+    assert.equal(sampled, 0);
+    assert.equal(scheduled, 0);
+});
+
+test('debug initialization failure is optional and never installs a sampling job', async () => {
+    const a = adapter();
+    let scheduled = 0;
+    const warnings = [];
+    a.log.warn = message => warnings.push(message);
+    a.debugRecorder.initialize = async () => { throw new Error('debug objects unavailable'); };
+    a.registerSchedule = () => scheduled++;
+    await a.startDebug();
+    assert.equal(scheduled, 0);
+    assert.equal(warnings.length, 1);
+});
+
+test('shutdown never waits indefinitely for optional debug persistence', async () => {
+    const a = adapter();
+    a.pendingOwnWrites.set('ems.0.Debug.Events_JSON', new Promise(() => {}));
+    const started = Date.now();
+    await a.flushDebugWrites();
+    assert.ok(Date.now() - started < 1500);
+});
+
+test('bounded shutdown drain includes the final coalesced diagnostic replacement', async () => {
+    const a = adapter();
+    const stored = [];
+    let finishOld;
+    let started;
+    const starting = new Promise(resolve => { started = resolve; });
+    a.setStateAsync = async (id, state) => {
+        if (state.val === 'old') await new Promise(resolve => { finishOld = resolve; started(); });
+        else await new Promise(resolve => setTimeout(resolve, 10));
+        stored.push(state.val);
+    };
+    a.debugRecorder.publish('Events_JSON', 'old');
+    await starting;
+    a.debugRecorder.publish('Events_JSON', 'final');
+    const flushing = a.flushDebugWrites();
+    finishOld();
+    await flushing;
+    assert.deepEqual(stored, ['old', 'final']);
+});
+
+test('real Debug.Clear is acknowledged again when pressed during an older reset write', async () => {
+    const a = adapter();
+    await a.debugRecorder.initialize();
+    await a.flushDebugWrites();
+    let finishOld;
+    let started;
+    let writes = 0;
+    const starting = new Promise(resolve => { started = resolve; });
+    a.setStateAsync = async id => {
+        if (id === 'Debug.Clear' && ++writes === 1)
+            await new Promise(resolve => { finishOld = resolve; started(); });
+    };
+    a.debugRecorder.lastPublished.delete('Clear');
+    a.debugRecorder.publish('Clear', false);
+    await starting;
+    a.onStateChange('ems.0.Debug.Clear', {val: true, ack: false, ts: Date.now()});
+    assert.equal(a.getCachedState('ems.0.Debug.Clear').ack, false);
+    finishOld();
+    await a.flushDebugWrites();
+    assert.equal(a.getCachedState('ems.0.Debug.Clear').val, false);
+    assert.equal(a.getCachedState('ems.0.Debug.Clear').ack, true);
+    assert.equal(a.getCachedState('ems.0.System.RealOutputsEnabled'), null);
 });
