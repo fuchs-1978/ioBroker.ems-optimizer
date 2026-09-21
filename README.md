@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.9**
+Aktuelle Version: **0.17.0-alpha.10**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -39,6 +39,14 @@ Version 0.17.0-alpha.4 verwendet im Produktivausgang die vom go-e bestätigte
 Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Batterie, Heizpuffer und Wärmepumpe bleiben Simulation.
 Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.10 – dauerhafte Abschaltdiagnose
+
+- `Devices.WallboxX.LastStopReason` speichert den letzten Grund, aus dem ein
+  besessener oder aktiver Wallboxausgang abgeschaltet wurde.
+- `Devices.WallboxX.LastStopAt` speichert den zugehörigen Zeitpunkt.
+- Normale Wartestatus überschreiben diese Diagnose nicht; zusätzlich wird der
+  Abschaltgrund als Warnung protokolliert.
 
 ## Neu in 0.17.0-alpha.9 – geschützte Wallbox-Startsequenz
 
@@ -1130,6 +1138,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.10 | Dauerhafte Diagnoseobjekte `LastStopReason` und `LastStopAt` halten den letzten produktiven Abschaltgrund fest, auch wenn der normale Status bereits wieder einen Starttimer oder Wartestatus zeigt. |
 | 0.17.0-alpha.9 | Eine begonnene Wallbox-Startsequenz bleibt bis zur bestätigten Ladefreigabe gegen weiche Sollwertsprünge geschützt. Dadurch führt der noch nachlaufende EHZ nicht mehr unmittelbar nach `allow=1` zu `allow=0` und einem neuen Starttimer. |
 | 0.17.0-alpha.8 | Der externe 50/50-Schalter steuert nur noch die Verteilung. Beim Ausschalten bleibt die Wallbox aktiv und erhält Vorrang; die produktiven Sicherheitsfreigaben bleiben bestehen. |
 | 0.17.0-alpha.7 | Restart-Übernahme endet erst nach zehn Sekunden durchgehend stabiler EMS-/Messdaten. Späte Initialisierungs-Nullwerte können die laufende Wallbox dadurch nicht mehr unmittelbar nach der Übernahme abschalten. |
