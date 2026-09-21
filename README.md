@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.15.3**
+Aktuelle Version: **0.15.4**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -15,9 +15,26 @@ ab und bereitet den gemeinsamen Betrieb einer Wallbox mit dem EHZ vor. Version
 Hausanschlussprüfung. Version 0.15.1 unterstützt zusätzlich einen statischen
 §14a-Binärkontakt mit festem Leistungsbudget. Version 0.15.2 macht die optionale
 Abfahrtszeit tatsächlich abschaltbar. Version 0.15.3 stabilisiert den produktiven
-PV-Betrieb von Wallbox und EHZ. Batterie, Heizpuffer und Wärmepumpe bleiben Simulation.
+PV-Betrieb von Wallbox und EHZ. Version 0.15.4 koppelt die Mindestlaufzeit an den
+tatsächlich bestätigten Wallbox-Ausgang. Batterie, Heizpuffer und Wärmepumpe bleiben Simulation.
 Reale Phasenwechsel führt ausschließlich das vorhandene externe Skript aus; der
 Adapter stellt dafür nur Empfehlungen bereit. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.15.4 – reale Mindestlaufzeit und Countdown-Diagnose
+
+- Bei einer produktiv gesteuerten Wallbox beginnt die Mindestlaufzeit erst, wenn
+  `Devices.WallboxX.OutputActive` den realen Start bestätigt. Ein bereits länger
+  vorhandener Simulationssollwert kann die Mindestlaufzeit nicht mehr vorzeitig
+  ablaufen lassen.
+- Je Wallbox zeigen vier neue Diagnoseobjekte die aktive Einschaltverzögerung und
+  Mindestlaufzeit sowie die jeweils verbleibenden Sekunden an:
+  `StartDelayActive`, `StartDelayRemaining_s`, `MinimumRunTimeActive` und
+  `MinimumRunTimeRemaining_s` unter `Vehicles.WallboxX`.
+- Sicherheitsgrenzen, Gerätefehler, ungültige Daten, Hausanschlussschutz und §14a
+  dürfen die Mindestlaufzeit weiterhin sofort übersteuern.
+
+Version 0.15.4 ergänzt zwölf Diagnoseobjekte, entfernt keine Objekte und aktiviert
+keine zusätzlichen produktiven Ausgänge.
 
 ## Neu in 0.15.3 – stabiler Wallbox-/EHZ-Betrieb
 
@@ -910,6 +927,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.15.4 | Produktive Wallbox-Mindestlaufzeit beginnt erst mit dem bestätigten realen Ausgang statt mit einem früheren Simulationssollwert. Einschaltverzögerung und verbleibende Mindestlaufzeit werden je Wallbox über vier Diagnoseobjekte sichtbar. Zwölf Objekte ergänzt, keine entfernt und keine zusätzlichen Ausgänge aktiviert. |
 | 0.15.3 | Produktiven PV-Betrieb stabilisiert: konfigurierbare Startreserve, Startverzögerung und Wallbox-Mindestlaufzeit; nicht nutzbares Ganzampere-/Mindestleistungsbudget fällt an den EHZ-Feinregler zurück. Laufende Wallboxen werden anhand ihrer tatsächlichen Leistungsaufnahme nachgeregelt. 4/3-kW-Hysterese mit Tests abgesichert und Statusmeldungen für Fahrzeug/SoC präzisiert. Drei Konfigurationsobjekte ergänzt, keine Objekte entfernt und keine weiteren Ausgänge aktiviert. |
 | 0.15.2 | Leere Wallbox-Abfahrtszeit als „keine Abfahrt“ umgesetzt. Das Fahrzeug bleibt dann im gesamten 48-Stunden-Horizont planbar; ohne Uhrzeit wird keine Deadline-Ladung ausgelöst. Keine Objekte ergänzt oder entfernt, keine Admin-Einstellungen und keine produktiven Ausgänge verändert. |
 | 0.15.1 | Issue #8: statischen §14a-Binärkontakt mit konfigurierbarem Festlimit ergänzt. Binärkontakt und EEBUS-LPC werden automatisch anhand der angegebenen Datenpunkte ausgewertet; bei zwei aktiven Begrenzungen gilt das kleinere Limit. Statische Kontakte verfallen nicht wegen eines unveränderten Zeitstempels. Keine Objekte ergänzt oder entfernt und keine produktiven Ausgänge aktiviert. |
