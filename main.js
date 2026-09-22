@@ -7,6 +7,9 @@ const schedule = require("node-schedule");
 const utils = require("@iobroker/adapter-core");
 const WallboxOutput = require("./lib/wallbox-output");
 const DebugRecorder = require("./lib/debug-recorder");
+const ShadowController = require("./lib/shadow-controller");
+const ShadowHistory = require("./lib/shadow-history");
+const {createEngineContext} = require("./lib/engine-loader");
 const gridConstraints = require("./lib/grid-constraints");
 const {buildNativeMapping, houseConnectionSettings, FIELD_TO_MAPPING,
     WALLBOX_FIELDS} = require("./lib/native-mapping");
@@ -36,6 +39,11 @@ class EmsOptimizer extends utils.Adapter {
         this.wallboxOutput = new WallboxOutput(this);
         this.outputMetadata = new OutputMetadata(this);
         this.debugRecorder = new DebugRecorder(this);
+        this.shadowController = new ShadowController(this, {
+            createContext: sandbox => createEngineContext(this.namespace, this.readMapping(), sandbox, 'ems-shadow-decisions')
+        });
+        this.shadowHistory = new ShadowHistory(this);
+        this.shadowInitialization = null;
         this.debugInitialization = null;
         this.debugWarningAt = null;
         this.on("ready", this.onReady.bind(this));
@@ -91,9 +99,10 @@ class EmsOptimizer extends utils.Adapter {
         if (this.unloading) return;
         this.runEngine(fs.readFileSync(path.join(__dirname, 'lib/engine/bootstrap.js'), 'utf8'));
         await this.setStateAsync("info.connection", true, true);
-        this.log.info("EMS Optimizer 0.17.0-alpha.18 started; alpha outputs require explicit release");
+        this.log.info("EMS Optimizer 0.17.0-alpha.19 started; alpha outputs require explicit release");
         // Diagnostics must never hold up actuator initialization or scheduling.
         this.debugInitialization = this.startDebug();
+        this.shadowInitialization = this.startShadow();
     }
 
     warnDebug(error) {
@@ -121,6 +130,33 @@ class EmsOptimizer extends utils.Adapter {
             if (this.unloading) return;
             this.runDebug('sample');
             this.registerSchedule('*/5 * * * * *', () => this.runDebug('sample'));
+        } catch (error) {
+            this.warnDebug(error);
+        }
+    }
+
+    runShadow(method, ...args) {
+        try {
+            const result = this.shadowController?.[method]?.(...args);
+            if (result && typeof result.then === 'function') return result.catch(error => {
+                this.warnDebug(error);
+                return false;
+            });
+            return result;
+        } catch (error) {
+            this.warnDebug(error);
+            return false;
+        }
+    }
+
+    async startShadow() {
+        try {
+            await this.shadowController.initialize();
+            if (this.unloading) return;
+            this.runShadow('tick');
+            this.registerSchedule('*/2 * * * * *', () => this.runShadow('tick'));
+            // SQL setup is optional diagnostics; actuator startup never waits for it.
+            await this.shadowHistory.initialize(this.shadowController.historyIds);
         } catch (error) {
             this.warnDebug(error);
         }
@@ -591,22 +627,6 @@ class EmsOptimizer extends utils.Adapter {
     }
 
     async startEngine() {
-        const enginePaths = [
-            "core.js",
-            "config-mapping.js",
-            "history.js",
-            "forecast.js",
-            "vehicles.js",
-            "dhw-controller.js",
-            "battery-controller.js",
-            "heating-controller.js",
-            "heatpump-controller.js",
-            "energy-coordination.js",
-            "planner.js",
-            "observer.js",
-            "realtime.js",
-            "dhw-output.js"
-        ].map(file => path.join(__dirname, "lib", "engine", file));
         const mapping = this.readMapping();
         const adapter = this;
         const sandbox = {
@@ -659,18 +679,7 @@ class EmsOptimizer extends utils.Adapter {
                 adapter.timers.delete(timer);
             }
         };
-        this.engineContext = vm.createContext(sandbox, {name: "ems-observer-engine"});
-        for (const enginePath of enginePaths) {
-            let source = fs.readFileSync(enginePath, "utf8")
-                .replaceAll("__ADAPTER_ROOT__", this.namespace);
-            for (const token of source.match(/__[A-Z0-9_]+__/g) || []) {
-                const key = token.slice(2, -2);
-                const raw = mapping[key] ?? "";
-                const escaped = String(raw).replaceAll("\\", "\\\\").replaceAll("'", "\\'");
-                source = source.replaceAll(token, escaped);
-            }
-            new vm.Script(source, {filename: enginePath}).runInContext(this.engineContext);
-        }
+        this.engineContext = createEngineContext(this.namespace, mapping, sandbox);
     }
 
     runEngine(source) {
@@ -685,6 +694,7 @@ class EmsOptimizer extends utils.Adapter {
         if (state) this.stateCache.set(id, state);
         else this.stateCache.delete(id);
         if (this.unloading) return;
+        if (this.runShadow('handleCommand', id, state)) return;
         if (this.runDebug('handleCommand', id, state)) return;
         this.runDebug('capture', id, state, previous);
         for (const listener of this.listeners) {
@@ -706,6 +716,9 @@ class EmsOptimizer extends utils.Adapter {
 
     async prepareUnload({allowHandoff = true} = {}) {
         this.unloading = true;
+        this.runShadow('stop');
+        try { this.shadowHistory?.stop(); }
+        catch (error) { this.warnDebug(error); }
         this.wallboxOutput.stopping = true;
         for (const job of this.jobs) job.cancel();
         for (const timer of this.timers) clearTimeout(timer);
