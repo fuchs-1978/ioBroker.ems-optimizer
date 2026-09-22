@@ -257,7 +257,11 @@ test('phase target uses a continuous forecast window and leaves the detected pha
 test('phase minimum hold time prevents rapid switching of the existing EMS target',()=>{
     const h=engine({phaseSwitchLookAheadMin:30,phaseSwitchMinHoldMin:30});
     h.put('ems.0.Vehicles.Wallbox1.PhaseSwitchEnabled',true);
+    // Isolate phase holding from deadline urgency. The default 06:00 departure
+    // requires three phases near that time, irrespective of the forecast.
+    h.put('ems.0.Vehicles.Wallbox1.DepartureTime','');
     h.put('ems.0.Vehicles.Wallbox1.MaximumPhases',3);h.run('updateVehicles()');
+    assert.equal(h.run('vehicleState(1).departureTimestamp'),0);
     const now=Date.now();
     const plan=Array.from({length:3},(_,i)=>({timestamp:now+i*900000,valueW:2300,phases:1,chargingMinutes:15}));
     h.put('ems.0.Plan.Wallbox1_48h_JSON',JSON.stringify(plan));
