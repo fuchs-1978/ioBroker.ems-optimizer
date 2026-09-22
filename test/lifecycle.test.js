@@ -297,6 +297,77 @@ test('late history response after unload cannot restart planner or outputs', asy
     assert.equal(calls, 0);
 });
 
+test('shadow initialization schedules only diagnostics and passes its own series to SQL', async () => {
+    const a = adapter();
+    const order = [];
+    const ids = ['ems.0.Debug.Shadow.Targets.Wallbox0_W', 'ems.0.Debug.Shadow.Valid'];
+    a.shadowController = {
+        historyIds: ids,
+        initialize: async () => { order.push('objects'); },
+        tick: () => { order.push('preview'); }
+    };
+    a.shadowHistory = {initialize: async actual => {
+        assert.deepEqual(actual, ids);
+        order.push('sql');
+    }};
+    let scheduled;
+    a.registerSchedule = (expression, callback) => {
+        assert.equal(expression, '*/2 * * * * *');
+        scheduled = callback;
+        order.push('schedule');
+    };
+    a.setForeignStateAsync = () => assert.fail('shadow setup wrote an actuator');
+    a.runEngine = () => assert.fail('shadow setup ran production code in live context');
+    await a.startShadow();
+    assert.deepEqual(order, ['objects', 'preview', 'schedule', 'sql']);
+    scheduled();
+    assert.equal(order.at(-1), 'preview');
+});
+
+test('unload during shadow initialization prevents later preview, schedules and SQL setup', async () => {
+    const a = adapter();
+    let ready;
+    a.shadowController = {
+        initialize: () => new Promise(resolve => { ready = resolve; }),
+        tick: () => assert.fail('late preview')
+    };
+    a.shadowHistory = {initialize: () => assert.fail('late SQL setup')};
+    a.registerSchedule = () => assert.fail('late diagnostic schedule');
+    const pending = a.startShadow();
+    a.unloading = true;
+    ready();
+    await pending;
+});
+
+test('shadow errors are contained and never enter productive write handling', () => {
+    const a = adapter();
+    let warned = false;
+    a.warnDebug = () => { warned = true; };
+    a.shadowController = {tick: () => { throw new Error('preview failure'); }};
+    a.writeForeignStateGuarded = () => assert.fail('diagnostic error caused a foreign write');
+    assert.equal(a.runShadow('tick'), false);
+    assert.equal(warned, true);
+});
+
+test('asynchronous shadow errors cannot escape the diagnostic scheduler', async () => {
+    const a = adapter();
+    let warned = false;
+    a.warnDebug = () => { warned = true; };
+    a.shadowController = {tick: async () => { throw new Error('async preview failure'); }};
+    assert.equal(await a.runShadow('tick'), false);
+    assert.equal(warned, true);
+});
+
+test('a diagnostic SQL stop error cannot skip actuator shutdown', async () => {
+    const a = adapter();
+    let stopped = false;
+    a.shadowHistory = {stop: () => { throw new Error('diagnostic stop failure'); }};
+    a.getForeignObjectAsync = async () => ({common: {enabled: false}});
+    a.wallboxOutput.stopAll = async () => { stopped = true; };
+    await a.prepareUnload({allowHandoff: false});
+    assert.equal(stopped, true);
+});
+
 test('real engine startup and shutdown with default configuration never writes an actuator', async () => {
     const a = adapter();
     a.config = JSON.parse(fs.readFileSync(path.join(__dirname, '../io-package.json'))).native;

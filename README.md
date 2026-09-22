@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.18**
+Aktuelle Version: **0.17.0-alpha.19**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -40,6 +40,23 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.19 – Schattenbetrieb und 24 Stunden SQL
+
+`Debug.Shadow` zeigt bei ausgeschaltetem Master die Entscheidungen der gemeinsamen
+Produktivregellogik: Wallboxauswahl und Strom, beide Heizkreise, Speicher und
+WP-Empfehlung. Eine getrennte Rechenumgebung verwendet die aktuellen Messwerte
+und Gerätefreigaben; sie erhält keinen Zugriff auf reale Ausgänge. So lässt sich
+der Vorschlag des EMS mit den Leistungen der laufenden Skripte vergleichen.
+
+Die neue Version richtet ihre eigenen skalaren Schatten-Sollwerte, Istwerte und
+Gründe automatisch in der konfigurierten SQL-Instanz mit **24 Stunden
+Aufbewahrung** ein. `Debug.Shadow.SQL.Status` meldet die bestätigte Einrichtung
+oder einen Fehler. Bestehende Verbrauchshistorien behalten ihre Einstellungen.
+Die SQL-Version kann intern einen zusätzlichen Löschpuffer verwenden.
+
+Bedienung, Datenpunkte und Grenzen stehen in der
+[Anleitung zum Schattenbetrieb](docs/shadow-mode.md).
 
 ## Neu in 0.17.0-alpha.18 – PV-Bilanz im Fahrplan (Issue #54)
 
