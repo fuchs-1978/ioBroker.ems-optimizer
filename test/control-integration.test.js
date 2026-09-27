@@ -253,9 +253,10 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
             if (events[index].at <= now) events.splice(index, 1);
         refresh();
         if (now % 2000 === 0) {
-            vm.runInContext('updateVehicles();updateDhwSimulation();realtimeControl();updateBatteryProductionOutput()', ctx);
-            await output.tick();
+            vm.runInContext('updateVehicles();updateDhwSimulation()', ctx);
         }
+        vm.runInContext('realtimeControl();updateBatteryProductionOutput()', ctx);
+        if (now % 2000 === 0) await output.tick();
         if (now % 5000 === 0) {
             vm.runInContext('updateDhwProductionOutput();updateHeatingProductionOutput()', ctx);
             recorder?.sample();
@@ -280,6 +281,24 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         physical: () => ({allow: physicalAllow, amps: physicalA, heaterW, heatingW, batteryW}),
         diagnostic: () => JSON.stringify(trace.slice(-12), null, 2)};
 }
+
+test('battery-only plant follows one-second fresh feedback and refreshes a settled GS demand', async () => {
+    const h = await plant({battery: true, wallbox: false, initialSurplusW: 1000, batteryDelayMs: 1000});
+    h.config.dhwControlEnabled = false;
+    h.own('Devices.MyPV_DHW.ControlEnabled', false);
+    await h.advance(12);
+    const commands = h.writes.filter(item => item.id === h.config.batterySetpointId);
+    assert.equal(commands.length, 12);
+    assert.deepEqual(commands.map(item => item.val),
+        [-100, -200, -300, -400, -500, -600, -700, -800, -900, -900, -900, -900]);
+    assert.ok(commands.slice(1).every((item, index) => item.at - commands[index].at === 1000));
+    assert.equal(h.value('Control.FineRegulator'), 'Battery');
+    h.config.globalWriteEnabled = false;
+    h.own('System.RealOutputsEnabled', false);
+    await h.advance(5);
+    const stopped = h.writes.filter(item => item.id === h.config.batterySetpointId);
+    assert.deepEqual(stopped.slice(commands.length).map(item => item.val), [0]);
+});
 
 test('integrated delayed plant absorbs PV during 120s countdown then starts only WB2 without dropouts', async () => {
     const h = await plant();
@@ -648,6 +667,64 @@ test('integrated 30s cloud dip holds charging; recovered surplus cancels delayed
     assert.equal(h.value('Control.ParallelDistributionActive'), false);
     assert.equal(h.writes.filter(write => write.id === 'goe.allow' && write.val === 0 && write.at >= beforeDip).length, 0,
         h.diagnostic());
+});
+
+test('fast raw grid feedback stays aligned with physical EHZ power while the observer mirror lags', async () => {
+    const h = await plant({startDelayS: 120});
+    await h.advance(30);
+    assert.equal(h.physical().allow, 0, h.diagnostic());
+    assert.ok(h.physical().heaterW >= 5500, h.diagnostic());
+    const heaterTarget = h.value('Control.Targets.MyPV_DHW_W');
+    const startDelay = h.value('Vehicles.Wallbox2.StartDelayRemaining_s');
+    assert.ok(startDelay > 0);
+    // Physical phase readings and the fresh NVP already include the heater's
+    // ramp, but the normal ten-second observer has not published that ramp yet.
+    h.own('Actual.MyPV_DHW_W', 0);
+    h.run('lastSlowUpdate = 0; realtimeControl();');
+    assert.equal(h.value('Control.Targets.MyPV_DHW_W'), heaterTarget,
+        'fresh NVP must not be paired with an older observer heater measurement');
+    assert.ok(h.value('Vehicles.Wallbox2.StartDelayRemaining_s') > 0
+        && h.value('Vehicles.Wallbox2.StartDelayRemaining_s') <= startDelay,
+    'the countdown continues from its original start; an extra fast sample may decrement it');
+    assert.equal(h.value('Control.Valid'), true);
+    h.put('DP_DHW_OUTPUT1', h.physical().heaterW, {q: 64});
+    h.run('lastSlowUpdate = 0; realtimeControl();');
+    assert.equal(h.value('Control.Valid'), false, 'invalid physical heater telemetry must not fall back to an old mirror');
+    assert.equal(h.value('Control.Targets.MyPV_DHW_W'), 0);
+    assert.equal(h.value('Control.Targets.Wallbox2_W'), 0);
+});
+
+test('integrated deficit countdown starts during minimum runtime and held EV power stays reserved', async () => {
+    const h = await plant({startDelayS: 0, minimumRuntimeS: 600});
+    await h.advance(60);
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    const activeSince = h.output.devices.find(device => device.wb === 2).activeSince;
+    assert.ok(activeSince > 0);
+    const deficitAt = h.now();
+    h.setSurplus(800);
+    await h.advance(30);
+    assert.equal(h.value('Control.Targets.Wallbox2_W'), 0,
+        'allocator must expose the actual shortfall while the output holds minimum current');
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    assert.equal(h.physical().amps, 6, h.diagnostic());
+    assert.ok(h.value('Devices.Wallbox2.StopDelayRemaining_s') > 0,
+        'stop countdown starts immediately, concurrently with minimum runtime');
+    assert.equal(h.value('Control.Targets.MyPV_DHW_W'), 0,
+        'held physical EV consumption must not become available EHZ budget');
+    assert.equal(h.physical().heaterW, 0, h.diagnostic());
+    await h.advance(110);
+    assert.equal(h.value('Devices.Wallbox2.StopDelayRemaining_s'), 0);
+    assert.equal(h.physical().allow, 1, 'minimum runtime still protects the ongoing charge');
+    assert.ok(h.value('Vehicles.Wallbox2.MinimumRunTimeRemaining_s') > 0);
+    await h.advance(Math.ceil((activeSince + 600000 - h.now()) / 1000) + 20);
+    const stop = h.writes.find(write => write.id === 'goe.allow' && write.val === 0 && write.at >= deficitAt);
+    assert.ok(stop, h.diagnostic());
+    assert.ok(stop.at >= activeSince + 600000, 'minimum runtime is respected');
+    assert.ok(stop.at <= activeSince + 604000,
+        'an additional 120-second stop delay must not begin after minimum runtime has ended');
+    assert.equal(h.physical().allow, 0, h.diagnostic());
+    assert.ok(h.physical().heaterW >= 500 && h.physical().heaterW <= 800,
+        'EHZ may absorb the small surplus after the EV stop is confirmed');
 });
 
 test('integrated continuous deficit stops after the configured 120s delay, then EHZ takes small residual', async () => {

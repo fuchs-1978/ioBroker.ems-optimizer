@@ -7,6 +7,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 function engine(config = {}) {
+    config = {wb0PhaseControlMode: 'ems', wb1PhaseControlMode: 'ems', wb2PhaseControlMode: 'ems', ...config};
     const states = new Map();
     const now = new Date(2026, 8, 21, 12, 0, 0).getTime();
     class Clock extends Date {
@@ -324,4 +325,177 @@ test('future enabled departure deadline enters forecast and charges at feasible 
     const batteryKWh = plan.reduce((sum, slot) => sum + slot.valueW / 4000 * 0.9, 0);
     // Public EnergyRequired_kWh is rounded to two decimals by the vehicle manager.
     assert.ok(Math.abs(batteryKWh - 3.31) < 0.001, `charged ${batteryKWh} kWh`);
+});
+
+test('issue #59: a short final PV charge releases later slots to the next wallbox', () => {
+    const h = engine({wallboxPrioritySource: 'external'});
+    h.put('DP_WB_PRIORITY', 0);
+    h.put('ems.0.Devices.MyPV_DHW.Present', false);
+    vehicle(h, {wb: 0, soc: 50, minimum: 20, target: 58, capacityKWh: 10,
+        maximumW: 3680, maximum1pA: 16, maximumPhases: 1, phaseSwitch: false});
+    vehicle(h, {wb: 1, soc: 50, minimum: 20, target: 58, capacityKWh: 10,
+        maximumW: 3680, maximum1pA: 16, maximumPhases: 1, phaseSwitch: false});
+    // This is an instantaneous output restriction, not a forecast exclusion.
+    h.put('ems.0.Control.SelectedWallbox', 0);
+    h.put('ems.0.Devices.Wallbox1.OutputBlockReason', 'Sequenzbetrieb: andere Wallbox ausgewaehlt');
+    const data = h.plan({pvW: 3000, slots: 192});
+    const wb0 = h.series('Wallbox0');
+    const wb1 = h.series('Wallbox1');
+    assert.equal(wb0[0].valueW, 2990);
+    assert.ok(wb0[1].valueW > 0 && wb0[1].valueW < 1380, 'final slot is a short charge at minimum current');
+    assert.equal(wb0[1].currentA, 6);
+    assert.ok(wb0[1].chargingMinutes > 0 && wb0[1].chargingMinutes < 15);
+    assert.equal(wb1[0].valueW, 0);
+    assert.equal(wb1[1].valueW, 0);
+    assert.equal(wb1[2].valueW, 2990, 'second car follows the completed first car');
+    for (const wb of [0, 1]) {
+        const chargedKWh = h.series(`Wallbox${wb}`).reduce((sum, slot) => sum + slot.valueW / 4000 * 0.9, 0);
+        assert.ok(Math.abs(chargedKWh - 0.8) < 0.0002, `WB${wb} receives its complete demand`);
+    }
+    const status = JSON.parse(h.states.get('ems.0.Plan.WallboxStatus_JSON').val);
+    for (const wb of [0, 1]) {
+        assert.equal(status[wb].planningStatus, 'complete');
+        assert.equal(status[wb].plannedEnergyKWh, 0.8);
+        assert.equal(status[wb].remainingEnergyKWh, 0);
+    }
+    assert.equal(status[1].firstPlannedTimestamp, data.pv[2].timestamp);
+    assert.equal(h.states.get('ems.0.Control.SelectedWallbox').val, 0);
+    assert.match(h.states.get('ems.0.Devices.Wallbox1.OutputBlockReason').val, /Sequenzbetrieb/);
+    balancedPlan(h, data);
+});
+
+test('issue #59: three cars share a 48-hour horizon in effective priority order', () => {
+    const h = engine({wallboxPrioritySource: 'external'});
+    h.put('DP_WB_PRIORITY', 1);
+    h.put('ems.0.Devices.MyPV_DHW.Present', false);
+    for (const wb of [0, 1, 2]) vehicle(h, {wb, soc: 50, minimum: 20, target: 58,
+        capacityKWh: 10, maximumW: 3680, maximum1pA: 16, maximumPhases: 1, phaseSwitch: false});
+    const pvW = Array(192).fill(0);
+    for (const slot of [0, 1, 2, 96, 97, 98]) pvW[slot] = 3000;
+    const data = h.plan({pvW, slots: 192});
+    const chargedSlots = h.series('Allocation').filter(slot => slot.wallboxW > 0);
+    assert.deepEqual(chargedSlots.map(slot => slot.activeWallbox), [1, 1, 2, 2, 0, 0]);
+    assert.equal(chargedSlots[3].offsetMin, 24 * 60, 'next day continues the second car before the third');
+    balancedPlan(h, data);
+});
+
+test('issue #59: insufficient PV leaves lower priority demand unplanned instead of duplicating energy', () => {
+    const h = engine({wallboxPriority: 0});
+    h.put('ems.0.Devices.MyPV_DHW.Present', false);
+    for (const wb of [0, 1]) vehicle(h, {wb, soc: 50, minimum: 20, target: 80,
+        capacityKWh: 50, maximumW: 3680, maximum1pA: 16, maximumPhases: 1, phaseSwitch: false});
+    const data = h.plan({pvW: [3000, 0, 3000, 0], slots: 4});
+    assert.deepEqual(h.series('Wallbox0').map(slot => slot.valueW), [2990, 0, 2990, 0]);
+    assert.ok(h.series('Wallbox1').every(slot => slot.valueW === 0));
+    const status = JSON.parse(h.states.get('ems.0.Plan.WallboxStatus_JSON').val);
+    assert.equal(status[0].planningStatus, 'partial');
+    assert.equal(status[1].planningStatus, 'no-window');
+    assert.equal(status[1].remainingEnergyKWh, 15);
+    assert.equal(status[1].firstPlannedTimestamp, 0);
+    balancedPlan(h, data);
+});
+
+test('issue #59: mandatory manual current outranks selected flexible charging', () => {
+    const h = engine({wallboxPriority: 1});
+    h.put('ems.0.Devices.MyPV_DHW.Present', false);
+    for (const wb of [0, 1]) vehicle(h, {wb, soc: 50, minimum: 20, target: 58,
+        capacityKWh: 10, maximumW: 3680, maximum1pA: 16, maximumPhases: 1, phaseSwitch: false});
+    h.put('DP_WB0_AMIN', 6);
+    const data = h.plan({pvW: 3000, slots: 8});
+    assert.ok(h.series('Wallbox0')[0].valueW > 0, 'manual minimum follows the effective priority model');
+    assert.equal(h.series('Wallbox1')[0].valueW, 0);
+    assert.ok(h.series('Wallbox1').some(slot => slot.valueW > 0));
+    balancedPlan(h, data);
+});
+
+test('issue #59: simulated minimum SoC satisfaction restores flexible priority without more grid charge', () => {
+    const h = engine({wallboxPriority: 1, wb0LowSocStepsEnabled: false});
+    h.put('ems.0.Devices.MyPV_DHW.Present', false);
+    vehicle(h, {wb: 0, soc: 49, minimum: 50, target: 58, capacityKWh: 10,
+        maximumW: 3680, maximum1pA: 16, maximumPhases: 1, phaseSwitch: false});
+    vehicle(h, {wb: 1, soc: 50, minimum: 20, target: 58, capacityKWh: 10,
+        maximumW: 3680, maximum1pA: 16, maximumPhases: 1, phaseSwitch: false});
+    const data = h.plan({pvW: [0, 0, 3000, 3000, 3000, 3000], slots: 6});
+    assert.ok(h.series('Wallbox0')[0].valueW > 0, 'minimum SoC can use the grid');
+    assert.equal(h.series('Wallbox0')[1].valueW, 0, 'grid charging stops at the simulated minimum');
+    assert.ok(h.series('Wallbox1')[2].valueW > 0, 'selected flexible car receives the next PV slot');
+    assert.ok(h.series('Wallbox0')[4].valueW > 0, 'remaining first-car demand follows after selected car completes');
+    balancedPlan(h, data);
+});
+
+test('issue #59: a future mandatory deadline outranks the selected flexible vehicle', () => {
+    const h = engine({wallboxPriority: 0, wb1DeadlineEnabled: true});
+    h.put('ems.0.Devices.MyPV_DHW.Present', false);
+    vehicle(h, {wb: 0, soc: 50, minimum: 20, target: 80, capacityKWh: 50,
+        maximumW: 3680, maximum1pA: 16, maximumPhases: 1, phaseSwitch: false});
+    vehicle(h, {wb: 1, soc: 50, minimum: 20, target: 90, capacityKWh: 5.175,
+        maximumW: 4600, maximum1pA: 20, maximumPhases: 1, phaseSwitch: false, departure: '13:00'});
+    const data = h.plan({pvW: 3000, slots: 8});
+    assert.deepEqual(h.series('Wallbox1').map(slot => slot.valueW), [0, 0, 4600, 4600, 0, 0, 0, 0]);
+    assert.equal(h.series('Wallbox0')[2].valueW, 0);
+    assert.equal(h.series('Wallbox0')[3].valueW, 0);
+    assert.ok(h.series('Wallbox0')[4].valueW > 0);
+    balancedPlan(h, data);
+});
+
+test('issue #59: future planning keeps connection, user permission and SoC gates intact', () => {
+    for (const block of [
+        h => h.put('ems.0.Devices.Wallbox1.Present', false),
+        h => h.put('DP_WB1_CAR', 1),
+        h => h.put('DP_WB1_ALLOW', false),
+        h => h.put('DP_WB1_SOC', 80),
+        h => h.put('DP_WB1_SOC', null)
+    ]) {
+        const h = engine({wallboxPriority: 1});
+        h.put('ems.0.Devices.MyPV_DHW.Present', false);
+        for (const wb of [0, 1]) vehicle(h, {wb, soc: 50, minimum: 20, target: 80,
+            capacityKWh: 1, maximumW: 3680, maximum1pA: 16, maximumPhases: 1, phaseSwitch: false});
+        block(h);
+        const data = h.plan({pvW: 3000, slots: 192});
+        assert.ok(h.series('Wallbox1').every(slot => slot.valueW === 0));
+        assert.ok(h.series('Wallbox0').some(slot => slot.valueW > 0));
+        const status = JSON.parse(h.states.get('ems.0.Plan.WallboxStatus_JSON').val);
+        assert.equal(status[1].planningStatus, 'ineligible');
+        assert.equal(status[1].plannedEnergyKWh, 0);
+        balancedPlan(h, data);
+    }
+});
+
+test('a final partial PV slot still requires enough instantaneous power for minimum current', () => {
+    const h = engine({wallboxPriority: 0});
+    h.put('ems.0.Devices.MyPV_DHW.Present', false);
+    vehicle(h, {wb: 0, soc: 50, minimum: 20, target: 51, capacityKWh: 10,
+        maximumW: 3680, maximum1pA: 16, maximumPhases: 1, phaseSwitch: false});
+    const data = h.plan({pvW: [1000, 1380], slots: 2});
+    assert.equal(h.series('Wallbox0')[0].valueW, 0);
+    assert.ok(h.series('Wallbox0')[1].valueW > 0 && h.series('Wallbox0')[1].valueW < 1380);
+    balancedPlan(h, data);
+});
+
+test('script phase control plans with confirmed phases instead of an unadopted three-phase recommendation', () => {
+    const h = engine({wb1PhaseControlMode: 'script', wb1PhaseModeId: 'phase.mode'});
+    h.put('ems.0.Devices.MyPV_DHW.Present', false);
+    vehicle(h, {wb: 1, soc: 50, minimum: 20, target: 80, capacityKWh: 50,
+        maximumW: 11040, maximum1pA: 16, maximum3pA: 16});
+    h.put('phase.mode', 1);
+    const data = h.plan({pvW: 20000, slots: 4});
+    assert.ok(h.series('Wallbox1').every(slot => slot.phases === 1 && slot.valueW === 3680));
+    balancedPlan(h, data);
+    h.put('phase.mode', 2);
+    h.plan({pvW: 20000, slots: 4});
+    assert.ok(h.series('Wallbox1').every(slot => slot.phases === 3 && slot.valueW === 11040));
+    h.put('phase.mode', 0);
+    h.plan({pvW: 20000, slots: 4});
+    assert.ok(h.series('Wallbox1').every(slot => slot.valueW === 0));
+});
+
+test('disabled phase switching ignores retained three-phase feedback in a fixed one-phase plan', () => {
+    const h = engine({wb0PhaseControlMode: 'script', wb0PhaseModeId: 'phase.mode'});
+    h.put('ems.0.Devices.MyPV_DHW.Present', false);
+    vehicle(h, {wb: 0, soc: 50, minimum: 20, target: 80, capacityKWh: 50,
+        maximumW: 3680, maximum1pA: 16, maximumPhases: 1, phaseSwitch: false});
+    h.put('phase.mode', 2);
+    const data = h.plan({pvW: 3000, slots: 4});
+    assert.ok(h.series('Wallbox0').every(slot => slot.phases === 1 && slot.valueW === 2990));
+    balancedPlan(h, data);
 });

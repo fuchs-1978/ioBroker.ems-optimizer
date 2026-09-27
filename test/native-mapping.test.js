@@ -22,6 +22,13 @@ test('blank explicit AP2 fields keep legacy mappings', () => {
     assert.equal(mapping.DP_GRID_IMPORT, 'legacy.import');
 });
 
+test('phase mode feedback participates in preload mapping and preserves legacy fallback', () => {
+    const mapping=buildNativeMapping({wb0PhaseModeId:' go-e.0.psm ',wb1PhaseModeId:'',
+        dataPointMapJson:JSON.stringify({DP_WB0_PHASE_MODE:'legacy.zero',DP_WB1_PHASE_MODE:'legacy.one'})});
+    assert.equal(mapping.DP_WB0_PHASE_MODE,'go-e.0.psm');
+    assert.equal(mapping.DP_WB1_PHASE_MODE,'legacy.one');
+});
+
 test('invalid legacy JSON is diagnosed but explicit fields still work', () => {
     const errors = [];
     const mapping = buildNativeMapping({dataPointMapJson: '{', pvPowerId: 'admin.pv'},

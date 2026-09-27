@@ -22,7 +22,10 @@ test('dynamic production phase feedback is configurable for every wallbox', () =
     for (let wb = 0; wb < 3; wb++) {
         assert.ok(allFields[`wb${wb}PhaseModeId`], `missing wb${wb}PhaseModeId`);
         assert.equal(ioPackage.native[`wb${wb}PhaseModeId`], '');
+        assert.equal(ioPackage.native[`wb${wb}PhaseControlMode`], 'script');
+        assert.deepEqual(allFields[`wb${wb}PhaseControlMode`].options.map(option => option.value), ['script', 'ems']);
     }
+    assert.equal(allFields.wallboxPhaseSwitchTimeoutS.default, ioPackage.native.wallboxPhaseSwitchTimeoutS);
 });
 
 test('AP2 admin exposes all vehicle input mappings', () => {
@@ -51,6 +54,6 @@ test('update defaults never arm a productive output', () => {
 });
 
 test('package manifests publish the same alpha version', () => {
-    assert.equal(packageJson.version, '0.17.0-alpha.19');
+    assert.equal(packageJson.version, '0.17.0-alpha.20');
     assert.equal(ioPackage.common.version, packageJson.version);
 });

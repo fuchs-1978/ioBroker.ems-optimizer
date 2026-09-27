@@ -244,7 +244,7 @@ test('upper taper safety limit wins over a higher manual minimum',()=>{
     assert.equal(h.run('quantizeWallbox(7000,vehicleState(0),0,1).amps'),8);
 });
 test('phase target uses a continuous forecast window and leaves the detected phase input untouched',()=>{
-    const h=engine({phaseSwitchLookAheadMin:30,phaseSwitchMinHoldMin:30});
+    const h=engine({wb1PhaseControlMode:'ems',phaseSwitchLookAheadMin:30,phaseSwitchMinHoldMin:30});
     h.put('ems.0.Vehicles.Wallbox1.PhaseSwitchEnabled',true);
     h.put('ems.0.Vehicles.Wallbox1.MaximumPhases',3);h.run('updateVehicles()');
     const now=Date.now();
@@ -255,7 +255,7 @@ test('phase target uses a continuous forecast window and leaves the detected pha
     assert.equal(h.states.get('DP_WB1_PHASES').val,1);
 });
 test('phase minimum hold time prevents rapid switching of the existing EMS target',()=>{
-    const h=engine({phaseSwitchLookAheadMin:30,phaseSwitchMinHoldMin:30});
+    const h=engine({wb1PhaseControlMode:'ems',phaseSwitchLookAheadMin:30,phaseSwitchMinHoldMin:30});
     h.put('ems.0.Vehicles.Wallbox1.PhaseSwitchEnabled',true);
     // Isolate phase holding from deadline urgency. The default 06:00 departure
     // requires three phases near that time, irrespective of the forecast.
@@ -271,7 +271,7 @@ test('phase minimum hold time prevents rapid switching of the existing EMS targe
     assert.equal(h.run(`stabilizedPhaseTarget(1,vehicleState(1),1,${now})`),1);
 });
 test('missing energy that no longer fits one-phase selects three phases',()=>{
-    const h=engine({phaseSwitchLookAheadMin:30,phaseSwitchMinHoldMin:30});
+    const h=engine({wb1PhaseControlMode:'ems',phaseSwitchLookAheadMin:30,phaseSwitchMinHoldMin:30});
     h.put('ems.0.Vehicles.Wallbox1.PhaseSwitchEnabled',true);
     h.put('ems.0.Vehicles.Wallbox1.MaximumPhases',3);h.run('updateVehicles()');
     const now=Date.now();
@@ -280,6 +280,75 @@ test('missing energy that no longer fits one-phase selects three phases',()=>{
     h.put('ems.0.Plan.Wallbox1_48h_JSON','[]');
     h.put('ems.0.Control.Targets.Wallbox1_Phases',1);
     assert.equal(h.run(`stabilizedPhaseTarget(1,vehicleState(1),1,${now})`),3);
+});
+test('script phase authority keeps a confirmed 1P car charging despite a 3P forecast',()=>{
+    const h=productionEngine({wb2PhaseControlMode:'script',wb2PhaseModeId:'phase2'});
+    h.put('ems.0.Vehicles.Wallbox2.PhaseSwitchEnabled',true);
+    h.put('ems.0.Vehicles.Wallbox2.MaximumPhases',3);
+    h.put('phase2',1);h.put('DP_DHW_PARALLEL_RELEASE',true);
+    h.put('ems.0.Control.Targets.Wallbox2_Phases',3);
+    const now=Date.now();
+    h.put('ems.0.Plan.Wallbox2_48h_JSON',JSON.stringify(Array.from({length:3},(_,i)=>({
+        timestamp:now+i*900000,valueW:6210,phases:3,chargingMinutes:15}))));
+    h.run('updateVehicles();updateSlowTargets(5000,[{valueW:0},{valueW:0},{valueW:6210,phases:3}],{valueW:0})');
+    assert.equal(h.run('slowTargets.wallboxPhases[2]'),1);
+    assert.equal(h.run('slowTargets.wallboxW[2]'),1380);
+    assert.equal(h.run('realtimeParallelActive'),true,'1P start threshold applies to the actual phase');
+    assert.equal(h.run('slowTargets.dhwW'),3620,'heater receives the unused physical 1P budget');
+    assert.equal(h.states.get('phase2').val,1,'external script remains the phase authority');
+    h.put('phase2',2);
+    h.run('updateVehicles();updateSlowTargets(5000,[{valueW:0},{valueW:0},{valueW:1380,phases:1}],{valueW:0})');
+    assert.equal(h.run('slowTargets.wallboxPhases[2]'),3,'confirmed script switch applies immediately');
+    assert.equal(h.run('slowTargets.wallboxW[2]'),4140);
+    assert.equal(h.run('realtimeParallelActive'),false,'3P stop threshold follows the confirmed switch');
+});
+test('script phase allocation rejects unknown or unconfirmed modes without guessing 1P',()=>{
+    const now=Date.now();
+    const cases=[null,{val:0},{val:3},{val:true},{val:null},{val:' '},
+        {val:1,ack:false},{val:1,q:64},{val:1,ts:0},{val:1,ts:now+60000}];
+    for(const invalid of cases) {
+        const h=productionEngine({wb2PhaseControlMode:'script',wb2PhaseModeId:'phase2'});
+        h.put('ems.0.Vehicles.Wallbox2.PhaseSwitchEnabled',true);
+        h.put('ems.0.Vehicles.Wallbox2.MaximumPhases',3);
+        if(invalid)h.states.set('phase2',{val:1,ack:true,ts:now,...invalid});
+        h.run('updateVehicles();updateSlowTargets(5000,[{valueW:0},{valueW:0},{valueW:5000,phases:1}],{valueW:0})');
+        assert.equal(h.run('vehicleState(2).release'),false,JSON.stringify(invalid));
+        assert.equal(h.run('slowTargets.wallboxPhases[2]'),0,JSON.stringify(invalid));
+        assert.equal(h.run('slowTargets.wallboxW[2]'),0,JSON.stringify(invalid));
+        assert.equal(h.run('slowTargets.dhwW'),5000,JSON.stringify(invalid));
+        assert.match(h.states.get('ems.0.Vehicles.Wallbox2.Status').val,/Phasenmodus/);
+    }
+});
+test('retained confirmed script mode stays valid and loss of confirmation gates before the next observer cycle',()=>{
+    const h=productionEngine({wb2PhaseControlMode:'script',wb2PhaseModeId:'phase2'});
+    h.put('ems.0.Vehicles.Wallbox2.PhaseSwitchEnabled',true);
+    h.put('ems.0.Vehicles.Wallbox2.MaximumPhases',3);
+    h.states.set('phase2',{val:'1',ack:true,ts:Date.now()-86400000});
+    h.run('updateVehicles()');
+    assert.equal(h.run('vehicleState(2).release'),true);
+    h.states.set('phase2',{val:1,ack:false,ts:Date.now()});
+    assert.equal(h.run('vehicleState(2).release'),false);
+    assert.equal(h.run('selectRealtimeWallboxes([{},{},{}]).length'),0);
+});
+test('phase control defaults to the script and accepts the mapped source when the native ID is blank',()=>{
+    const h=productionEngine({wb2PhaseModeId:'   '});
+    h.put('ems.0.Vehicles.Wallbox2.PhaseSwitchEnabled',true);
+    h.put('ems.0.Vehicles.Wallbox2.MaximumPhases',3);
+    h.put('DP_WB2_PHASE_MODE',1);
+    h.put('ems.0.Control.Targets.Wallbox2_Phases',3);
+    h.run('updateVehicles();updateSlowTargets(5000,[{},{},{valueW:5000,phases:3}],{valueW:0})');
+    assert.equal(h.run('vehicleState(2).phaseControlMode'),'script');
+    assert.equal(h.run('vehicleState(2).release'),true);
+    assert.equal(h.run('slowTargets.wallboxPhases[2]'),1);
+    assert.equal(h.run('slowTargets.wallboxW[2]'),1380);
+});
+test('script mode does not change fixed-phase installations with phase switching disabled',()=>{
+    const h=productionEngine({wb2PhaseControlMode:'script'});
+    h.put('ems.0.Vehicles.Wallbox2.PhaseSwitchEnabled',false);
+    h.run('updateVehicles();updateSlowTargets(5000,[{},{},{valueW:5000,phases:3}],{valueW:0})');
+    assert.equal(h.run('vehicleState(2).release'),true);
+    assert.equal(h.run('slowTargets.wallboxPhases[2]'),1);
+    assert.equal(h.run('slowTargets.wallboxW[2]'),1380);
 });
 test('50/50 allocator requires existing external switch and gives rounding remainder to DHW',()=>{
     const h=engine();h.put('DP_DHW_PARALLEL_RELEASE',1);
@@ -626,7 +695,7 @@ test('next car waits for owned stopping car and EHZ only receives unused residua
     assert.equal(h.run('slowTargets.wallboxA[0]'),6);
 });
 test('parallel thresholds use stable requested phase mode, not unadopted plan recommendation',()=>{
-    const h=engine({phaseSwitchMinHoldMin:30});
+    const h=engine({wb2PhaseControlMode:'ems',phaseSwitchMinHoldMin:30});
     h.put('ems.0.Devices.Wallbox0.Present',false);h.put('ems.0.Devices.Wallbox1.Present',false);
     h.put('ems.0.Vehicles.Wallbox2.PhaseSwitchEnabled',true);
     h.put('ems.0.Vehicles.Wallbox2.MaximumPhases',3);
@@ -643,7 +712,9 @@ test('productive uncontrolled loads are not reconstructed as reclaimable PV surp
     h.run("CFG.dp.par14a='';CFG.dp.lpcState='';CFG.dp.lpcLimit='';CFG.dp.haCritical='' ");
     h.put('ems.0.System.DataValid',true);h.put('ems.0.Plan.Valid',true);
     h.put('ems.0.Actual.GridPower_W',-2000);
+    h.put('DP_GRID_IMPORT',0);h.put('DP_GRID_EXPORT',2000);
     h.put('ems.0.Actual.MyPV_DHW_W',0);h.put('ems.0.Actual.MyPV_Heating_W',1000);
+    for(const phase of [1,2,3])h.put(`DP_DHW_OUTPUT${phase}`,0);
     h.put('DP_WB0_POWER',3);h.put('DP_BATTERY_POWER',2400);
     const slot=JSON.stringify([{timestamp:Date.now()-1000,valueW:3000}]);
     for(const name of ['BatteryPower','MyPV_DHW','MyPV_Heating','Wallbox0','Wallbox1','Wallbox2'])

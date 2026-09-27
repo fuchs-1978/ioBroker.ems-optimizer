@@ -52,6 +52,41 @@ test('native settings and startup invalidation finish before outputs and schedul
     assert.ok(steps.indexOf('native') < steps.indexOf('updateVehicles(); updateDhwSimulation(); updateHeatingSimulation(); observe();'));
 });
 
+test('alpha20 cadence migration persists only the old default and leaves permissions and custom cycles intact', async () => {
+    for (const [version, cycle, expected] of [['0.17.0-alpha.19', 2, 1],
+        ['0.17.0-alpha.17', 2, 1], ['0.17.0-alpha.20', 2, 2],
+        ['0.17.0-alpha.19', 5, 5], ['', 2, 2]]) {
+        const a = adapter();
+        a.stateCache.set('ems.0.System.Version', {val: version, ack: true});
+        a.config.batteryCycleS = cycle;
+        a.config.batteryProductionArmed = false;
+        const patches = [];
+        a.extendForeignObjectAsync = async (id, patch) => patches.push({id, patch: JSON.parse(JSON.stringify(patch))});
+        await a.migrateBatteryCadence();
+        assert.deepEqual(patches, [], 'native persistence must wait for output ownership initialization');
+        await a.persistBatteryCadenceMigration();
+        assert.equal(a.config.batteryCycleS, expected);
+        assert.equal(a.config.batteryProductionArmed, false);
+        assert.deepEqual(patches, cycle !== expected
+            ? [{id: 'system.adapter.ems.0', patch: {native: {batteryCycleS: 1}}}] : []);
+    }
+});
+
+test('failed cadence persistence cannot abort initialized control or alter other native settings', async () => {
+    const a = adapter();
+    a.stateCache.set('ems.0.System.Version', {val: '0.17.0-alpha.19', ack: true});
+    a.config.batteryCycleS = 2;
+    a.extendForeignObjectAsync = async () => { throw new Error('DB unavailable'); };
+    const warnings = [];
+    a.log.warn = message => warnings.push(message);
+    await a.migrateBatteryCadence();
+    await a.persistBatteryCadenceMigration();
+    assert.equal(a.config.batteryCycleS, 1);
+    assert.equal(a.config.globalWriteEnabled, true);
+    assert.equal(a.batteryCadenceMigrationPending, true);
+    assert.match(warnings[0], /saving the Admin cycle failed/);
+});
+
 test('asynchronous object reads cannot restore an old control value over new native settings', async () => {
     const a = adapter();
     const id = 'ems.0.Control.Valid';
@@ -312,7 +347,7 @@ test('shadow initialization schedules only diagnostics and passes its own series
     }};
     let scheduled;
     a.registerSchedule = (expression, callback) => {
-        assert.equal(expression, '*/2 * * * * *');
+        assert.equal(expression, '* * * * * *');
         scheduled = callback;
         order.push('schedule');
     };

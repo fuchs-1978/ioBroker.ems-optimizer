@@ -1,10 +1,13 @@
-# Schattenbetrieb ab 0.17.0-alpha.19
+# Schattenbetrieb ab 0.17.0-alpha.20
 
 Der Schattenbetrieb beantwortet: **Welche Leistungen würde das EMS bei
 freigegebenem Master mit den aktuellen Messwerten und Gerätefreigaben anfordern?**
 Er läuft zusätzlich zur bisherigen Beobachtersimulation. Dieselben Engine-Module
 wie im Produktivbetrieb berechnen in einer getrennten Umgebung die Entscheidungen
 für Wallboxen, Trinkwasser-EHZ, Heizpuffer-EHZ, Speicher und WP-Empfehlung.
+Zusätzlich durchläuft jede Wallbox den produktiven Ausgangsablauf in einem
+isolierten Modell. Nur Strom-/Freigabebefehle werden dort privat sofort
+bestätigt; reale Leistungen, SoC und Phasenwechsel werden nicht erfunden.
 
 Nur in dieser privaten Rechenumgebung gilt der Master als eingeschaltet.
 Vorhanden-/Gerätefreigaben, Inbetriebnahmebestätigungen, Konfiguration,
@@ -40,6 +43,9 @@ Alle folgenden Objektpfade liegen unter `ems-optimizer.0.Debug.Shadow`:
 | `Targets.Wallbox0_W` bis `Wallbox2_W` | Angeforderte Wallboxleistungen |
 | `Targets.Wallbox0_A` bis `Wallbox2_A` | Angeforderte Ladeströme |
 | `Targets.Wallbox0_Phases` bis `Wallbox2_Phases` | Verwendete Phasenanzahl |
+| `Modeled.Wallbox0_W/A/Phases` bis `Wallbox2_W/A/Phases` | Modellierter Ausgang nach Start-, Rampen-, Halte- und Sperrlogik |
+| `WallboxN.ModelOwned`, `ModelStatus` | Virtuelle Übernahme und Ablaufzustand für N = 0, 1, 2 |
+| `WallboxN.MinimumRunTimeRemaining_s`, `StopDelayRemaining_s` | Restzeiten des isolierten Ausgangsmodells |
 | `Targets.MyPV_DHW_W`, `Targets.MyPV_Heating_W` | Leistungsvorschläge für die beiden Heizkreise |
 | `Targets.Battery_W` | Interner Speichersollwert: positiv Laden, negativ Entladen |
 | `Targets.HeatPumpMode` | WP-Empfehlung `REDUCED`, `NORMAL` oder `BOOST` |
@@ -48,12 +54,15 @@ Alle folgenden Objektpfade liegen unter `ems-optimizer.0.Debug.Shadow`:
 | `Battery.Summary`, `MyPV_DHW.Summary`, `MyPV_Heating.Summary`, `HeatPump.Summary` | Gerätebezogene Erläuterungen |
 | `Wallbox0.OutputBlockReason` bis `Wallbox2.OutputBlockReason`, `Battery.OutputBlockReason`, `MyPV_DHW.OutputBlockReason`, `MyPV_Heating.OutputBlockReason` | Bekannte Sperre vor einer tatsächlichen Ausgabe |
 | `Snapshot_JSON` | Zusammengehörige Entscheidung mit Kontext und Grenzen |
+| `DecisionRecord` | Kompakter zusammengehöriger SQL-Datensatz mit Zyklus, Zeit, Bedarf, Modell und echten Rückmeldungen |
+| `CycleId` | Fortlaufende Zyklusnummer seit diesem Adapterstart |
+| `RecordSequence`, `RecordQueueDepth`, `RecordDropped`, `RecordWriteErrors`, `RecordLastError` | Reihenfolge und Zustand der Datensatz-Veröffentlichung; Verluste/Fehler bleiben sichtbar |
 | `SQL.Status`, `SQL.Enabled`, `SQL.ConfiguredCount` | Ergebnis der SQL-Einrichtung |
 
-Ein Schatten-Sollwert ist ein berechneter Bedarf und kein bestätigter
-Gerätestellwert. Auch bei gültiger Verteilung kann eine zusätzliche
-Ausgangssperre bestehen; deshalb `OutputBlockReason` mitlesen. Eine leere
-Vorprüfung ersetzt keine reale Start-/Rückmeldesequenz.
+Ein Schatten-Sollwert ist ein berechneter Bedarf. Ein modellierter Ausgang ist
+eine ausdrücklich angenommene Befehlsfolge. Beide sind keine bestätigten realen
+Gerätestellwerte. Auch bei gültiger Verteilung kann eine zusätzliche
+Ausgangssperre bestehen; deshalb `OutputBlockReason` und `ModelStatus` mitlesen.
 Fehlende Messwerte bleiben als unbekannt erkennbar. Die
 Gültigkeitsreihe gehört deshalb in eine spätere Diagrammauswertung dazu.
 
@@ -67,15 +76,32 @@ wurden; `SQL.ConfiguredCount` nennt deren Anzahl. Ein SQL-Fehler stoppt die
 Schattenberechnung nicht und wird in `SQL.Status` sichtbar.
 
 Gespeichert werden ausschließlich die dafür ausgewählten skalaren Datenpunkte
-unter `Debug.Shadow`: Soll- und Istleistungen, Ströme, Gültigkeit, Betriebsarten
-und Gründe. Große JSON-Snapshots und die vorhandenen Debug-Ringspeicher werden
+unter `Debug.Shadow`: Soll-, Modell- und Istleistungen, Ströme, Gültigkeit,
+Betriebsarten und Gründe. Hinzu kommt `DecisionRecord` als einzelner
+zusammengehöriger Textdatensatz. Große JSON-Snapshots und die Debug-Ringspeicher werden
 nicht zusätzlich als ganze Dokumente in SQL geschrieben.
 
-Leistungsreihen werden bei Änderung mit einer Begrenzung auf einen Wert pro
-zehn Sekunden aufgezeichnet. Spätestens nach 60 Sekunden wird ein unveränderter
-Wert erneut gespeichert. Zustands- und Begründungswechsel erhalten keine solche
-Zehn-Sekunden-Sperre. Die Aufzeichnung beginnt ab der Einrichtung; vergangene
-Schattenentscheidungen lassen sich nicht nachträglich erzeugen.
+Gemessene Leistungsreihen und Countdownwerte behalten die Begrenzung auf einen
+Wert pro zehn Sekunden. Soll- und Modellausgänge, Zustands- und
+Begründungswechsel erhalten keine solche Sperre. Unveränderte Einzelwerte
+werden nach 60 Sekunden erneut gespeichert.
+
+`DecisionRecord` wird bei relevanten Zustandswechseln und als eigener
+60-Sekunden-Lebensnachweis geschrieben. SQL-Wiederholwerte sind dafür deaktiviert.
+Die eigene Zyklusnummer, Zeitpunkt, `valid`, `targets`, `modeled` und
+`realFeedback` ermöglichen eine konsistente Auswertung. Einzelne skalare Reihen
+sind keine atomare Zeile und sollen keinen vermeintlichen Neustart allein durch
+einen verspäteten Wiederholwert beweisen. Reale Rückmeldungen enthalten Wert,
+Quellzeitpunkt, Qualität und Bestätigung. Auch bei Master EIN werden sie im
+ungültigen/pausierten Datensatz weiter aufgezeichnet, ohne das Modell zu starten.
+Datensätze werden in Reihenfolge veröffentlicht. Eine begrenzte Warteschlange
+hält bis zu 128 weitere Datensätze zusätzlich zum laufenden Schreibzugriff.
+Überlauf und fehlgeschlagene Veröffentlichungen stehen in Diagnosezählern sowie
+im nächsten Datensatz. `recordSession` und `recordSequence` machen solche
+Lücken erkennbar. Ein Adapterende oder nicht beobachtete Quellereignisse werden
+dadurch nicht nachträglich rekonstruiert.
+Die Aufzeichnung beginnt ab Einrichtung; vergangene Schattenentscheidungen
+lassen sich nicht nachträglich erzeugen.
 
 Die Einstellung lautet `retention: 86400` Sekunden, also 24 Stunden.
 **SQL 4.1.5 ergänzt bei kurzen Aufbewahrungszeiten intern einen Tag und bereinigt
@@ -87,13 +113,19 @@ bleiben unverändert.
 ## Aussagegrenze
 
 Die Vorschau berechnet Entscheidungen anhand echter, laufend erneuerter
-Messungen. Sie erfindet keine Schaltbestätigung und verändert keine gemessene
-Leistung, Temperatur oder Batterie-/Fahrzeugladung. Läuft ein Bestandsskript,
-gehen dessen tatsächliche Geräteleistungen in die nächste Vorschau ein.
+Messungen. Das Ausgangsmodell nimmt nur in seinem privaten Speicher eine
+unmittelbare Strom-/Freigabebestätigung an. Es verändert keine echte Messung,
+Temperatur oder Batterie-/Fahrzeugladung. Läuft ein Bestandsskript, gehen dessen
+tatsächliche Geräteleistungen in die nächste Vorschau ein. Ein angeforderter
+Phasenwechsel wird erst durch eine echte go-e-Phasenmeldung bestätigt.
 
 Damit können wir Verteilung, Prioritäten, Startbedingungen, SoC-Grenzen,
-Preisreaktion, Speicher-Feinregelung und Kühlsperren prüfen. Ein vollständiger
-virtueller Tagesverlauf nach allen hypothetischen Schaltbefehlen wird nicht
-behauptet: Mindestlaufzeiten nach bestätigtem Gerätestart, reale Ladeabbrüche,
-Schaltverzögerungen und Kommunikation müssen im begleiteten Gerätetest geprüft
+Preisreaktion, Speicher-Feinregelung und Kühlsperren prüfen. Das Wallboxmodell
+zeigt zusätzlich Start, Rampe, Mindestlaufzeit und Abschaltverzögerung. Es ist
+keine Simulation der vollständigen elektrischen Anlage: Abweichende echte
+Leistung kann weiterhin Modellrampen begrenzen. Reale Ladeabbrüche,
+Geräteverzögerungen und Kommunikation müssen im begleiteten Gerätetest geprüft
 werden. Der Schattenbetrieb erteilt keine zusätzliche Ausgangsfreigabe.
+
+Die Konfiguration der Phasenführung und die Änderungen aus den SQL-Auswertungen
+stehen in [Issues #57–#60 / alpha.20](issues57-60-alpha20.md).

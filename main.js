@@ -76,6 +76,8 @@ class EmsOptimizer extends utils.Adapter {
         await this.setStateAsync("info.connection", false, true);
         await this.preloadStates();
         if (this.unloading) return;
+        await this.migrateBatteryCadence();
+        if (this.unloading) return;
         const dhwActualMirrorId = String(this.config.dhwActualMirrorId || "").trim();
         if (dhwActualMirrorId) this.allowedForeignWriteIds.add(dhwActualMirrorId);
         await this.startEngine();
@@ -99,10 +101,11 @@ class EmsOptimizer extends utils.Adapter {
         if (this.unloading) return;
         this.runEngine(fs.readFileSync(path.join(__dirname, 'lib/engine/bootstrap.js'), 'utf8'));
         await this.setStateAsync("info.connection", true, true);
-        this.log.info("EMS Optimizer 0.17.0-alpha.19 started; alpha outputs require explicit release");
+        this.log.info("EMS Optimizer 0.17.0-alpha.20 started; alpha outputs require explicit release");
         // Diagnostics must never hold up actuator initialization or scheduling.
         this.debugInitialization = this.startDebug();
         this.shadowInitialization = this.startShadow();
+        await this.persistBatteryCadenceMigration();
     }
 
     warnDebug(error) {
@@ -154,7 +157,7 @@ class EmsOptimizer extends utils.Adapter {
             await this.shadowController.initialize();
             if (this.unloading) return;
             this.runShadow('tick');
-            this.registerSchedule('*/2 * * * * *', () => this.runShadow('tick'));
+            this.registerSchedule('* * * * * *', () => this.runShadow('tick'));
             // SQL setup is optional diagnostics; actuator startup never waits for it.
             await this.shadowHistory.initialize(this.shadowController.historyIds);
         } catch (error) {
@@ -229,6 +232,7 @@ class EmsOptimizer extends utils.Adapter {
             const capacity = Number(this.config[`wb${wb}CapacityKWh`] ?? defaults[wb].capacity);
             const maxPower = Number(this.config[`wb${wb}MaxPowerW`] ?? defaults[wb].maxPower);
             const phaseSwitchEnabled = Boolean(this.config[`wb${wb}PhaseSwitchEnabled`] ?? defaults[wb].switchPhases);
+            const phaseControlMode = String(this.config[`wb${wb}PhaseControlMode`] ?? 'script');
             const minCurrent1p = Number(this.config[`wb${wb}MinCurrent1pA`] ?? defaults[wb].min1p);
             const maxCurrent1p = Number(this.config[`wb${wb}MaxCurrent1pA`] ?? defaults[wb].max1p);
             const minCurrent3p = Number(this.config[`wb${wb}MinCurrent3pA`] ?? defaults[wb].min3p);
@@ -237,6 +241,7 @@ class EmsOptimizer extends utils.Adapter {
                 [`Vehicles.Wallbox${wb}.VehicleName`, name, {type: "string", role: "text"}],
                 [`Vehicles.Wallbox${wb}.MaximumPhases`, phaseSwitchEnabled ? 3 : 1, {type: "number", role: "value"}],
                 [`Vehicles.Wallbox${wb}.PhaseSwitchEnabled`, phaseSwitchEnabled, {type: "boolean", role: "indicator"}],
+                [`Vehicles.Wallbox${wb}.PhaseControlMode`, phaseControlMode, {type: "string", role: "text"}],
                 [`Vehicles.Wallbox${wb}.MinCurrent1P_A`, minCurrent1p, {type: "number", role: "value.current", unit: "A"}],
                 [`Vehicles.Wallbox${wb}.MaxCurrent1P_A`, maxCurrent1p, {type: "number", role: "value.current", unit: "A"}],
                 [`Vehicles.Wallbox${wb}.MinCurrent3P_A`, minCurrent3p, {type: "number", role: "value.current", unit: "A"}],
@@ -255,6 +260,7 @@ class EmsOptimizer extends utils.Adapter {
             this.setCompatState(`${this.namespace}.Config.Wallbox${wb}MaxPower_W`, maxPower, true);
             this.setCompatState(`${this.namespace}.Vehicles.Wallbox${wb}.MaximumPhases`, phaseSwitchEnabled ? 3 : 1, true);
             this.setCompatState(`${this.namespace}.Vehicles.Wallbox${wb}.PhaseSwitchEnabled`, phaseSwitchEnabled, true);
+            this.setCompatState(`${this.namespace}.Vehicles.Wallbox${wb}.PhaseControlMode`, phaseControlMode, true);
             this.setCompatState(`${this.namespace}.Vehicles.Wallbox${wb}.MinCurrent1P_A`, minCurrent1p, true);
             this.setCompatState(`${this.namespace}.Vehicles.Wallbox${wb}.MaxCurrent1P_A`, maxCurrent1p, true);
             this.setCompatState(`${this.namespace}.Vehicles.Wallbox${wb}.MinCurrent3P_A`, minCurrent3p, true);
@@ -372,6 +378,32 @@ class EmsOptimizer extends utils.Adapter {
             await this.queueCompatState(`${this.namespace}.${relativeId}`, fallback,
                 {type: "boolean", role: "indicator"});
             this.setCompatState(`${this.namespace}.${relativeId}`, value, true);
+        }
+    }
+
+    async migrateBatteryCadence() {
+        // #58 changes the old two-second default to one second. Persist the
+        // native value as well so Admin and runtime agree after an update.
+        // Only recognized older installations are migrated; later deliberate
+        // changes (including 2 s) and custom slower intervals remain intact.
+        const previous = String(this.getCachedState(`${this.namespace}.System.Version`)?.val || '');
+        const oldAlpha = /^0\.17\.0-alpha\.(\d+)$/.exec(previous);
+        if (!oldAlpha || Number(oldAlpha[1]) > 19 || Number(this.config.batteryCycleS) !== 2) return;
+        this.config.batteryCycleS = 1;
+        this.batteryCadenceMigrationPending = true;
+    }
+
+    async persistBatteryCadenceMigration() {
+        if (!this.batteryCadenceMigrationPending || this.unloading) return;
+        // Saving our own native config may restart this adapter. Do it only
+        // after ownership recovery and output cleanup have been initialized.
+        // Optional settings persistence must not prevent that safety setup.
+        try {
+            await this.extendForeignObjectAsync(`system.adapter.${this.namespace}`, {native: {batteryCycleS: 1}});
+            this.batteryCadenceMigrationPending = false;
+            this.log.info('Battery control cycle migrated from 2 s to 1 s (#58); output releases unchanged');
+        } catch (error) {
+            this.log.warn(`Battery runs at 1 s; saving the Admin cycle failed: ${error.message}. Set Battery control cycle to 1 s in Admin.`);
         }
     }
 
