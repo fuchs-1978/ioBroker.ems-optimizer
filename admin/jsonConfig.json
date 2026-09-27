@@ -255,6 +255,7 @@
         "wallboxMeasurementMaxAgeS": {"type": "number", "label": "Maximum age of go-e measurements", "unit": "s", "default": 30, "min": 5, "max": 120, "sm": 4},
         "phaseSwitchLookAheadMin": {"type": "number", "label": "Phase recommendation look-ahead", "unit": "min", "default": 30, "min": 15, "max": 240, "sm": 4},
         "phaseSwitchMinHoldMin": {"type": "number", "label": "Minimum time between phase changes", "unit": "min", "default": 30, "min": 0, "max": 240, "sm": 4},
+        "wallboxPhaseSwitchTimeoutS": {"type": "number", "label": "Maximum wait for external phase confirmation", "unit": "s", "default": 180, "min": 30, "max": 900, "sm": 4},
         "phaseSwitchTransitionS": {"type": "number", "label": "Tolerance after confirmed go-e phase change", "unit": "s", "default": 90, "min": 30, "max": 300, "sm": 4, "newLine": true}
       }
     },
@@ -326,9 +327,19 @@
         },
         "wb0PhaseSwitchEnabled": {
           "type": "checkbox",
-          "label": "Allow EMS 1-/3-phase recommendation (external script switches)",
+          "label": "Enable dynamic 1-/3-phase operation (external script switches)",
           "default": false,
           "sm": 3
+        },
+        "wb0PhaseControlMode": {
+          "type": "select",
+          "label": "Phase control when switching is enabled",
+          "default": "script",
+          "options": [
+            {"label": "Script: EMS follows confirmed go-e phases", "value": "script"},
+            {"label": "EMS target: external script follows EMS phases", "value": "ems"}
+          ],
+          "sm": 6
         },
         "_wb0CurrentHeader": {
           "type": "header",
@@ -737,9 +748,19 @@
         },
         "wb1PhaseSwitchEnabled": {
           "type": "checkbox",
-          "label": "Allow EMS 1-/3-phase recommendation (external script switches)",
+          "label": "Enable dynamic 1-/3-phase operation (external script switches)",
           "default": false,
           "sm": 3
+        },
+        "wb1PhaseControlMode": {
+          "type": "select",
+          "label": "Phase control when switching is enabled",
+          "default": "script",
+          "options": [
+            {"label": "Script: EMS follows confirmed go-e phases", "value": "script"},
+            {"label": "EMS target: external script follows EMS phases", "value": "ems"}
+          ],
+          "sm": 6
         },
         "_wb1CurrentHeader": {
           "type": "header",
@@ -1148,9 +1169,19 @@
         },
         "wb2PhaseSwitchEnabled": {
           "type": "checkbox",
-          "label": "Allow EMS 1-/3-phase recommendation (external script switches)",
+          "label": "Enable dynamic 1-/3-phase operation (external script switches)",
           "default": false,
           "sm": 3
+        },
+        "wb2PhaseControlMode": {
+          "type": "select",
+          "label": "Phase control when switching is enabled",
+          "default": "script",
+          "options": [
+            {"label": "Script: EMS follows confirmed go-e phases", "value": "script"},
+            {"label": "EMS target: external script follows EMS phases", "value": "ems"}
+          ],
+          "sm": 6
         },
         "_wb2CurrentHeader": {
           "type": "header",
@@ -2113,7 +2144,7 @@
         "batteryFineReserveW": {"type": "number", "label": "PV reserve for battery fine control before heater allocation", "unit": "W", "default": 200, "min": 0, "max": 10000, "sm": 4, "newLine": true},
         "_batteryFineReserveHelp": {"type": "staticText", "text": "Reserves up to this share of actual PV surplus for battery fine control. The effective reserve is capped by available PV, battery charge power and the shared grid-operator budget; without available PV there is no reserve. Existing planned battery charging can require a larger share. This is a power reserve in watts, not an additional SoC reserve or permission to charge from the grid.", "newLine": true},
         "batteryDeadbandW": {"type": "number", "label": "Battery grid-control deadband", "unit": "W", "default": 50, "min": 0, "max": 500, "sm": 4},
-        "batteryCycleS": {"type": "number", "label": "Battery control cycle", "unit": "s", "default": 2, "min": 2, "max": 30, "sm": 4},
+        "batteryCycleS": {"type": "number", "label": "Battery control cycle", "unit": "s", "default": 1, "min": 1, "max": 30, "sm": 4},
         "batteryFeedbackTimeoutS": {"type": "number", "label": "Command / physical-response timeout", "unit": "s", "default": 15, "min": 2, "max": 120, "sm": 4, "newLine": true},
         "batteryMeasurementMaxAgeS": {"type": "number", "label": "Maximum battery measurement / heartbeat age", "unit": "s", "default": 30, "min": 5, "max": 120, "sm": 4},
         "batterySoCMaxAgeS": {"type": "number", "label": "Maximum battery SoC age", "unit": "s", "default": 300, "min": 5, "max": 3600, "sm": 4},

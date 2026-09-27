@@ -112,19 +112,56 @@ test('fine regulation waits for transport and real measured feedback before incr
     h.tick();
     assert.deepEqual(h.commands(), [-100, -200]);
     h.complete(); h.put('power', 200);
-    h.advance(1000); h.fresh(); h.tick();
+    h.advance(999); h.fresh(); h.tick();
     assert.deepEqual(h.commands(), [-100, -200]);
-    h.advance(1000); h.fresh(); h.tick();
+    h.advance(1); h.fresh(); h.tick();
     assert.deepEqual(h.commands(), [-100, -200, -300]);
 });
 
-test('settled unchanged command does not produce repetitive GS writes', () => {
+test('settled unchanged command refreshes GS once per second with confirmed feedback', () => {
     const h = harness();
     h.own('Control.Targets.Battery_W', 100);
     h.tick(); h.complete(); h.put('power', 100);
-    h.advance(2000); h.fresh(); h.tick();
-    h.advance(2000); h.fresh(); h.tick();
+    h.advance(999); h.fresh(); h.tick();
     assert.deepEqual(h.commands(), [-100]);
+    h.advance(1); h.fresh(); h.tick();
+    assert.deepEqual(h.commands(), [-100, -100]);
+    h.complete();
+    h.advance(1000); h.fresh(); h.tick();
+    assert.deepEqual(h.commands(), [-100, -100, -100]);
+    assert.deepEqual(h.writes.map(item => item.at), [2000000, 2001000, 2002000]);
+    assert.equal(h.value('Devices.Battery.EffectiveStep_W'), 0);
+});
+
+test('one-second refresh does not queue behind transport or conceal missing physical feedback', () => {
+    for (const acknowledgeTransport of [false, true]) {
+        const h = harness();
+        h.own('Control.Targets.Battery_W', 100);
+        h.tick();
+        if (acknowledgeTransport) h.complete();
+        else h.put('power', 100);
+        for (let second = 1; second < 15; second++) {
+            h.advance(1000); h.fresh(); h.tick();
+            assert.deepEqual(h.commands(), [-100]);
+        }
+        h.advance(1000); h.fresh(); h.tick();
+        assert.deepEqual(h.commands(), [-100, 0]);
+        assert.match(h.value('Devices.Battery.Fault'), /Rueckmeldefrist/);
+    }
+});
+
+test('disabled or idle battery does not emit periodic zero heartbeats', () => {
+    for (const disabled of [false, true]) {
+        const h = harness();
+        if (disabled) {
+            h.nativeConfig.globalWriteEnabled = false;
+            h.own('System.RealOutputsEnabled', false);
+        } else h.own('Control.Targets.Battery_W', 0);
+        for (let second = 0; second < 5; second++) {
+            h.tick(); h.advance(1000); h.fresh();
+        }
+        assert.deepEqual(h.commands(), []);
+    }
 });
 
 test('battery ramp step, cycle and deadband are configurable independently', () => {
@@ -441,7 +478,7 @@ test('zero demand leaves an otherwise healthy idle battery available for the nex
 
 test('invalid tuning and SoC ranges fail closed instead of creating NaN or unlimited power', () => {
     for (const [suffix, value] of [['BatteryFineStep_W', null], ['BatteryCycle_s', 0],
-        ['BatteryFeedbackTimeout_s', 1], ['BatteryMeasurementMaxAge_s', 0],
+        ['BatteryFeedbackTimeout_s', 0], ['BatteryMeasurementMaxAge_s', 0],
         ['BatteryMaxCharge_W', -1], ['BatteryMinSoC_pct', 101], ['BatteryMaxSoC_pct', 10]]) {
         const h = harness(); h.own(`Config.${suffix}`, value); h.tick();
         assert.deepEqual(h.commands(), [], suffix);

@@ -3,9 +3,9 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const WallboxOutput = require('../lib/wallbox-output');
 
-function setup() {
+function setup({now: readNow = () => Date.now()} = {}) {
     const states = new Map(), writes = [];
-    let now = Date.now();
+    let now = readNow();
     const put = (id, val, extra = {}) => states.set(id, {val, ack: true, ts: now, ...extra});
     const mapping = {DP_WB0_CAR: 'car', DP_WB0_SOC: 'soc', DP_WB0_ALLOW: 'userAllow',
         DP_WB0_POWER: 'power', DP_WB0_L1_A: 'i1', DP_WB0_L2_A: 'i2', DP_WB0_L3_A: 'i3',
@@ -13,7 +13,7 @@ function setup() {
         DP_PAR14A: 'par14a', DP_LPC_STATE: 'lpc', DP_LPC_LIMIT: 'lpcLimit',
         DP_DHW_PARALLEL_RELEASE: 'split'};
     const config = {globalWriteEnabled: true, wb0Present: true, wb0ControlEnabled: true,
-        wb0ProductionArmed: true, wb0CommissioningMaxA: 32, wb0MaxCurrent1pA: 32,
+        wb0ProductionArmed: true, wb0PhaseControlMode: 'ems', wb0CommissioningMaxA: 32, wb0MaxCurrent1pA: 32,
         wb0MaxPowerW: 7360, wb0AmpereOutputId: 'cmd', wb0AllowOutputId: 'allow',
         wb0AmpereFeedbackId: 'feedback', wb0ConnectionId: 'connection', wb0ErrorId: 'error',
         dhwHaL1CurrentId: 'h1', dhwHaL2CurrentId: 'h2', dhwHaL3CurrentId: 'h3', slowCycleS: 5,
@@ -22,7 +22,7 @@ function setup() {
         getCachedState: id => states.get(id), readMapping: () => mapping,
         setCompatState: (id, val) => put(id, val),
         setStateAsync: async (id, val) => put(`ems.0.${id}`, val),
-        setForeignStateAsync: async (id, val) => { writes.push({id, val}); put(id, val, {ack: false, ts: Date.now()}); },
+        setForeignStateAsync: async (id, val) => { writes.push({id, val}); put(id, val, {ack: false, ts: readNow()}); },
         getForeignStateAsync: async id => states.get(id), subscribeForeignStatesAsync: async () => {},
         getForeignObjectAsync: async () => ({type: 'state', common: {write: true, type: 'number'}}),
         queueCompatState: async (id, val) => { if (!states.has(id)) put(id, val); },
@@ -43,10 +43,10 @@ function setup() {
         i1: 0, i2: 0, i3: 0, h1: 10, h2: 10, h3: 10, import: 0, export: 8000,
         critical: false, par14a: false, lpc: 'unlimitedAutonomous', lpcLimit: 0, connection: true,
         error: 0, allow: 0, feedback: 6, split: 0})) put(id, val);
-    const output = new WallboxOutput(adapter);
-    const ack = (id, value) => put(id, value, {ts: Date.now() + 1});
+    const output = new WallboxOutput(adapter, {now: readNow});
+    const ack = (id, value) => put(id, value, {ts: readNow() + 1});
     const refresh = () => {
-        now = Date.now();
+        now = readNow();
         for (const [id, s] of states) if (s.ack) put(id, s.val);
         for (const key of ['System.LastUpdate', 'Control.LastUpdate', 'Plan.LastUpdate']) put(`ems.0.${key}`, now);
     };
@@ -226,6 +226,148 @@ test('confirmed 1-to-3 phase change keeps an owned wallbox active during go-e re
     assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputPhases').val,3);
     assert.equal(h.states.get('ems.0.Devices.Wallbox0.PhaseTransitionActive').val,true);
     assert.deepEqual(h.writes,[]);
+});
+test('unconfirmed EMS phase request times out, stays blocked, and accepts late real confirmation', async () => {
+    let now=Date.now();const h=setup({now:()=>now});
+    Object.assign(h.config,{wb0PhaseSwitchEnabled:true,wb0PhaseModeId:'phaseMode',
+        wallboxPhaseSwitchTimeoutS:180});
+    h.put('phaseMode',1);h.put('ems.0.Control.Targets.Wallbox0_Phases',3);
+    h.put('ems.0.Control.Targets.Wallbox0_W',4140);
+    await h.output.initialize();await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.PhaseSwitchRemaining_s').val,180);
+    now+=179000;h.refresh();await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.PhaseSwitchTimedOut').val,false);
+    now+=1000;h.refresh();await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.PhaseSwitchTimedOut').val,true);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,/Zeitlimit erreicht/);
+    assert.deepEqual(h.writes,[]);
+    h.put('ems.0.Control.Targets.Wallbox0_W',0);await h.output.tick();
+    h.put('ems.0.Control.Targets.Wallbox0_W',4140);await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.PhaseSwitchTimedOut').val,true);
+    assert.deepEqual(h.writes,[]);
+    h.put('phaseMode',2,{ack:false});await h.output.tick();
+    assert.deepEqual(h.writes,[]);
+    h.put('phaseMode',2);await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.PhaseSwitchTimedOut').val,false);
+    assert.deepEqual(h.writes,[{id:'allow',val:0}]);
+});
+test('owned phase request timeout sends one stop and waits for confirmed OFF', async () => {
+    let now=Date.now();const h=setup({now:()=>now});
+    Object.assign(h.config,{wb0PhaseSwitchEnabled:true,wb0PhaseModeId:'phaseMode',
+        wallboxPhaseSwitchTimeoutS:180});
+    h.put('phaseMode',1);await h.start();h.writes.length=0;
+    h.put('ems.0.Control.Targets.Wallbox0_Phases',3);await h.output.tick();
+    now+=180000;h.refresh();await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'allow',val:0}]);
+    assert.equal(h.output.devices[0].owned,true);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val,/Zeitlimit erreicht/);
+    await h.output.tick();assert.equal(h.writes.length,1);
+    h.ack('allow',0);await h.output.tick();await h.output.tick();
+    assert.equal(h.output.devices[0].owned,false);
+    assert.equal(h.writes.length,1);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.PhaseSwitchTimedOut').val,true);
+    h.put('ems.0.Control.Targets.Wallbox0_Phases',1);await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.PhaseSwitchTimedOut').val,false);
+    assert.deepEqual(h.writes,[{id:'allow',val:0},{id:'allow',val:0}]);
+});
+test('phase mismatch never masks the configured soft shortfall stop delay', async () => {
+    let now=Date.now();const h=setup({now:()=>now});
+    Object.assign(h.config,{wb0PhaseSwitchEnabled:true,wb0PhaseModeId:'phaseMode',
+        wallboxMinimumRunTimeS:600,wallboxStopDelayS:120,wallboxPhaseSwitchTimeoutS:900});
+    h.put('phaseMode',1);await h.start();h.writes.length=0;
+    now+=601000;h.refresh();
+    h.put('ems.0.Control.Targets.Wallbox0_Phases',3);
+    h.put('ems.0.Control.Targets.Wallbox0_W',0);h.put('export',0);
+    await h.output.tick();
+    assert.deepEqual(h.writes,[]);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.StopDelayActive').val,true);
+    now+=119000;h.refresh();await h.output.tick();assert.deepEqual(h.writes,[]);
+    now+=1000;h.refresh();await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'allow',val:0}]);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val,/Budget/);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.PhaseSwitchTimedOut').val,false);
+});
+test('phase mismatch preserves minimum runtime but never hard limits', async () => {
+    let now=Date.now();const h=setup({now:()=>now});
+    Object.assign(h.config,{wb0PhaseSwitchEnabled:true,wb0PhaseModeId:'phaseMode',
+        wallboxMinimumRunTimeS:600,wallboxStopDelayS:120,wallboxPhaseSwitchTimeoutS:900});
+    h.put('phaseMode',1);await h.start();h.writes.length=0;
+    h.put('ems.0.Control.Targets.Wallbox0_Phases',3);
+    h.put('ems.0.Control.Targets.Wallbox0_W',0);h.put('export',0);
+    await h.output.tick();now+=121000;h.refresh();await h.output.tick();
+    assert.deepEqual(h.writes,[]);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,true);
+    h.put('lpc','limited');h.put('lpcLimit',1000);await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'allow',val:0}]);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val,/Sicherheitsgrenze/);
+});
+test('pending phases permit a current reduction while preventing an increase', async () => {
+    const h=setup();Object.assign(h.config,{wb0PhaseSwitchEnabled:true,wb0PhaseModeId:'phaseMode',
+        wb0AvailableCurrentId:'available'});
+    h.put('phaseMode',1);h.put('available',32);await h.start();h.writes.length=0;
+    h.output.devices[0].lastAt-=10000;h.put('i1',6);h.put('power',1.38);
+    h.put('ems.0.Control.Targets.Wallbox0_Phases',3);await h.output.tick();
+    assert.deepEqual(h.writes,[]);
+    h.output.devices[0].lastA=16;h.put('feedback',16);h.put('i1',16);h.put('power',3.68);
+    h.put('available',8);await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'cmd',val:8}]);
+    assert.ok(!h.writes.some(write=>write.id==='allow'&&write.val===0));
+});
+test('selected wallbox handoff overrides phase waiting and retains the OFF interlock', async () => {
+    const h=setup();h.config.multiWallboxAlphaArmed=true;h.enableWallbox(1);
+    Object.assign(h.config,{wb0PhaseSwitchEnabled:true,wb0PhaseModeId:'phaseMode'});
+    h.put('phaseMode',1);await h.start();h.writes.length=0;
+    h.put('ems.0.Control.Targets.Wallbox0_Phases',3);await h.output.tick();
+    h.put('ems.0.Control.SelectedWallbox',1);h.put('ems.0.Control.Targets.Wallbox1_W',4140);
+    await h.output.tick();assert.deepEqual(h.writes,[{id:'allow',val:0}]);
+    assert.equal(h.output.devices[0].owned,true);
+    assert.equal(h.output.devices[1].owned,false);
+    h.ack('allow',0);await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'allow',val:0},{id:'allow1',val:0}]);
+});
+test('script phase mode uses the real confirmation independently of EMS phase proposals', async () => {
+    const h=setup();Object.assign(h.config,{wb0PhaseSwitchEnabled:true,
+        wb0PhaseControlMode:'script',wb0PhaseModeId:'phaseMode'});
+    h.put('phaseMode',1);h.put('ems.0.Control.Targets.Wallbox0_Phases',3);
+    await h.start();
+    assert.deepEqual(h.writes,[{id:'allow',val:0},{id:'cmd',val:6},{id:'allow',val:1}]);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputPhases').val,1);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.PhaseControlMode').val,'script');
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.PhaseSwitchPending').val,false);
+    h.writes.length=0;h.put('phaseMode',2);h.put('ems.0.Control.Targets.Wallbox0_W',4140);
+    await h.output.tick();assert.deepEqual(h.writes,[]);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputPhases').val,3);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val,4140);
+});
+test('upgraded configurations default to independent script phase control', async () => {
+    const h=setup();delete h.config.wb0PhaseControlMode;
+    Object.assign(h.config,{wb0PhaseSwitchEnabled:true,wb0PhaseModeId:'phaseMode'});
+    h.put('phaseMode',1);h.put('ems.0.Control.Targets.Wallbox0_Phases',3);
+    await h.start();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,true);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.PhaseControlMode').val,'script');
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.PhaseSwitchPending').val,false);
+});
+test('script mode still rejects missing phase feedback and invalid control modes', async () => {
+    const h=setup();Object.assign(h.config,{wb0PhaseSwitchEnabled:true,
+        wb0PhaseControlMode:'script',wb0PhaseModeId:'phaseMode'});
+    await h.output.initialize();await h.output.tick();
+    assert.deepEqual(h.writes,[]);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,/Phasenmodus/);
+    h.config.wb0PhaseControlMode='typo';h.put('phaseMode',1);await h.output.tick();
+    assert.deepEqual(h.writes,[]);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,/Phasenfuehrung ungueltig/);
+});
+test('phase feedback mapping fallback keeps acknowledged static modes and rejects malformed data', async () => {
+    const h=setup();Object.assign(h.config,{wb0PhaseSwitchEnabled:true,wb0PhaseControlMode:'script'});
+    h.mapping.DP_WB0_PHASE_MODE='mappedMode';
+    h.put('mappedMode',true);await h.output.initialize();await h.output.tick();
+    assert.equal(h.output.devices[0].ids.phaseMode,'mappedMode');
+    assert.deepEqual(h.writes,[]);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,/Phasenmodus/);
+    h.put('mappedMode',1,{ts:0});await h.output.tick();assert.deepEqual(h.writes,[]);
+    h.put('mappedMode','1',{ts:Date.now()-86400000});await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'allow',val:0}]);
 });
 test('running wallbox without persisted EMS ownership is never adopted', async () => {
     const h = setup();

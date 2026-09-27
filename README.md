@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.19**
+Aktuelle Version: **0.17.0-alpha.20**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -40,6 +40,32 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.20 – Verbesserungen aus #57 bis #60
+
+- **Mehrere Fahrzeuge im 48-h-Plan:** Kleine Restladebedarfe blockieren die
+  nachfolgenden Fahrzeuge nicht mehr. Die Schlussladung darf einen Teil des
+  Viertelstunden-Slots belegen; Prioritäten und Mindest-SoC werden fortlaufend
+  berücksichtigt. Plan und Diagramm verwenden dieselbe Energiezuweisung.
+- **Speicher jede Sekunde:** Ein gemeinsamer Takt liest die frische Netzleistung,
+  berechnet den Bedarf und aktualisiert den Speicherauftrag. Offene Befehle
+  warten weiterhin auf echte Rückmeldung. Der bisherige Standard von 2 s wird
+  beim Update einmalig auf 1 s übernommen; andere eigene Intervalle bleiben.
+- **Phasenführung ausdrücklich wählbar:** Standard ist jetzt `script`: Das EMS
+  rechnet mit der vom go-e bestätigten Phase des vorhandenen Skripts. `ems`
+  setzt ein externes Skript voraus, das dem EMS-Phasensoll folgt. Fehlende
+  Bestätigung führt nach konfigurierbarer Frist zu einer klaren Sperre.
+- **Aussagekräftiger Schattenbetrieb:** Angefordertes Budget, modellierter
+  Wallbox-Ausgang und echte Messung sind getrennt. Das Ausgangsmodell verwendet
+  die produktive Start-, Rampen-, Mindestlaufzeit- und Abschaltlogik mit rein
+  privaten Befehlsbestätigungen. Reale Phasenwechsel werden nicht erfunden.
+- **Bessere SQL-Diagnose:** Frische PV-Skriptwerte mit `ack=false` sind sichtbar.
+  Sollwertwechsel erhalten keine Zehn-Sekunden-Sperre mehr. `DecisionRecord`
+  speichert zusammengehörige Zustände einschließlich realer Rückmeldungen und
+  Quellzeitpunkten. Die Aufbewahrung bleibt auf 24 h eingestellt.
+
+Änderungen, Betriebsarten und verbleibende Live-Prüfungen stehen in der
+[Auswertung und Testgrundlage für alpha.20](docs/issues57-60-alpha20.md).
 
 ## Neu in 0.17.0-alpha.19 – Schattenbetrieb und 24 Stunden SQL
 
@@ -1211,15 +1237,16 @@ Leistungsdeckel. Wenn real mehr PV als prognostiziert zur Verfügung steht,
 duerfen freigegebene Wallboxen und der Trinkwasser-Heizstab bis zu ihren
 technischen, SoC- und Temperaturgrenzen mehr Leistung aufnehmen.
 
-- Die Batterie regelt die NVP-Abweichung alle 2 Sekunden aus.
+- Ab alpha.20 berechnet die Batterie die NVP-Abweichung jede Sekunde neu; Stellbefehle beachten weiterhin die konfigurierte Taktung und echte Rückmeldungen.
 - Wallboxen und Heizstäbe ändern ihre Sollwerte standardmäßig alle 5 Sekunden. Damit kann der Trinkwasser-Heizstab den NVP ohne vorhandene Batterie zeitnah ausregeln.
 - Wallboxen arbeiten nur mit ganzen Ampere und mindestens dem je Fahrzeug
   konfigurierten Mindeststrom.
 - Wallboxänderungen sind auf 6 A je langsamem Zyklus begrenzt.
 - Der Trinkwasser-Heizstab ändert sich um höchstens 1.000 W je langsamem Zyklus.
 - Bei der Ampere-Abrundung freie Leistung wird dem stufenlosen Heizstab angeboten.
-- Nach Versorgung des priorisierten Fahrzeugs wird verbleibender Ueberschuss
-  auf weitere freigegebene Fahrzeuge verteilt.
+- Nach gedecktem Bedarf werden im Fahrplan weitere freigegebene Fahrzeuge
+  nacheinander eingeplant. Produktiv startet die nächste Wallbox erst nach
+  bestätigtem AUS der vorherigen.
 - Die 1-/3-phasige Empfehlung beachtet den Umschalthaken und die getrennten
   Stromgrenzen jedes Fahrzeugs.
 - Erreicht ein Gerät seine SoC-, Temperatur- oder Sicherheitsgrenze, bleibt es
@@ -1299,6 +1326,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.20 | Issues #57–#60: sekündlicher Speicher, Restladebedarf und Mehrfahrzeugplan, bestätigte Skriptphasen und begrenztes EMS-Phasenwarten, isoliertes Wallbox-Ausgangsmodell sowie zusammengehörige SQL-Ereignisdaten. |
 | 0.17.0-alpha.15 | Start-/Stopp-Lifecycle, asynchrone go-e-Rückmeldungen, produktive Budgetauswahl, EHZ-Nachführung, SoC-Pflichtladung und Daten-/Planvalidierung geprüft und mit Regressionstests abgesichert. |
 | 0.17.0-alpha.14 | Eigene konfigurierbare Wallbox-Ausschaltverzögerung bei vorübergehend zu wenig Überschuss. |
 | 0.17.0-alpha.13 | Die Frischefrist der go-e-Messwerte beträgt konfigurierbar standardmäßig 30 Sekunden. Normales Abfragejitter knapp oberhalb von 15 Sekunden schaltet die Wallbox nicht mehr ab. |

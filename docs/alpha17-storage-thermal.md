@@ -1,5 +1,10 @@
 # Speicher und Wärme: alpha17
 
+**Aktualisierung alpha.20:** Der Standard-Speichertakt beträgt jetzt 1 s.
+Phasenführung, Schattenmodell und neue Regressionen sind in
+[Issues #57–#60 / alpha.20](issues57-60-alpha20.md) dokumentiert.
+Die unten genannte Testanzahl beschreibt den damaligen alpha17-Abschlussstand.
+
 Diese Erweiterung ist eine Grundlage für begleitete Tests, keine bestätigte
 Inbetriebnahme. Es wurden keine laufenden ioBroker-Instanzen, Skripte oder
 Geräte umgeschaltet. Neue produktive Ausgänge sind standardmäßig unkonfiguriert
@@ -10,7 +15,7 @@ Test weiterlaufen; zwei Regler dürfen niemals denselben Aktor bedienen.
 
 | Verbraucher | Aufgabe | Voreinstellung |
 | --- | --- | --- |
-| Speicher | Kleine Restabweichungen ausgleichen | 100 W pro bestätigtem Schritt, mindestens 2 s; Totband 50 W |
+| Speicher | Kleine Restabweichungen ausgleichen | 100 W pro bestätigtem Schritt, standardmäßig 1 s ab alpha.20; Totband 50 W |
 | Trinkwasser-EHZ / Heizpuffer-EHZ | Größere zugeteilte Wärmeleistung | Eigene Leistungs-/Temperaturgrenzen, Ausgabe alle 5 s |
 | Wallbox | Grobe, diskrete Leistung | Ganze Ampere, bestehende Start-, Mindestlauf- und Ausschaltzeiten |
 | Wärmepumpe | Langsame Betriebsabsicht | Empfehlung mit PV-Hysterese und 300 s Haltezeit; keine fremden Schreibzugriffe |

@@ -9,7 +9,9 @@ const series = [
     ['Targets.Battery_W', 'number'], ['Actuals.Battery_W', 'number'],
     ['Targets.Wallbox0_A', 'number'], ['Wallbox0.StartDelayRemaining_s', 'number'],
     ['Valid', 'boolean'], ['SelectedWallbox', 'number'], ['Targets.HeatPumpModeValue', 'number'],
-    ['Targets.HeatPumpMode', 'string'], ['Battery.Summary', 'string']
+    ['Targets.HeatPumpMode', 'string'], ['Battery.Summary', 'string'],
+    ['Modeled.Wallbox1_W', 'number'], ['DecisionRecord', 'string'],
+    ['Wallbox1.ActualCarState', 'number']
 ];
 
 function fixture({instance = 'sql.0', timeoutMs = 30} = {}) {
@@ -75,7 +77,7 @@ test('configures only requested shadow scalar series and confirms exact 24h opti
         assert.equal(o.changesOnly, true);
         assert.equal(o.debounce, 0);
         assert.equal(o.debounceTime, 0);
-        assert.equal(o.changesRelogInterval, 60);
+        assert.equal(o.changesRelogInterval, message.id.endsWith('.DecisionRecord') ? 0 : 60);
         assert.equal(o.disableSkippedValueLogging, true);
         assert.equal(o.ignoreZero, false);
         assert.equal(o.ignoreBelowZero, false);
@@ -86,14 +88,15 @@ test('configures only requested shadow scalar series and confirms exact 24h opti
     for (const common of f.definitions.values()) assert.equal(common.write, false);
 });
 
-test('limits continuous power samples to 10s while preserving brief validity, mode and reason transitions', async () => {
+test('limits measured power and countdowns while retaining all requested/modelled output and feedback edges', async () => {
     const f = fixture();
     await f.history.initialize(f.ids);
     const blocks = Object.fromEntries(f.requests.map(r => [r.message.id.slice(ROOT.length), r.message.options.blockTime]));
     assert.deepEqual(blocks, {
-        'Targets.Battery_W': 10000, 'Actuals.Battery_W': 10000, 'Targets.Wallbox0_A': 10000,
+        'Targets.Battery_W': 0, 'Actuals.Battery_W': 10000, 'Targets.Wallbox0_A': 0,
         'Wallbox0.StartDelayRemaining_s': 10000, 'Valid': 0, 'SelectedWallbox': 0,
-        'Targets.HeatPumpModeValue': 0, 'Targets.HeatPumpMode': 0, 'Battery.Summary': 0
+        'Targets.HeatPumpModeValue': 0, 'Targets.HeatPumpMode': 0, 'Battery.Summary': 0,
+        'Modeled.Wallbox1_W': 0, 'DecisionRecord': 0, 'Wallbox1.ActualCarState': 0
     });
 });
 
