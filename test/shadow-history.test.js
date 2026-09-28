@@ -7,6 +7,7 @@ const ShadowHistory = require('../lib/shadow-history');
 const ROOT = 'ems-optimizer.0.Debug.Shadow.';
 const series = [
     ['Targets.Battery_W', 'number'], ['Actuals.Battery_W', 'number'],
+    ['Response.Grid_W', 'number'], ['Response.Valid', 'boolean'],
     ['Targets.Wallbox0_A', 'number'], ['Wallbox0.StartDelayRemaining_s', 'number'],
     ['Valid', 'boolean'], ['SelectedWallbox', 'number'], ['Targets.HeatPumpModeValue', 'number'],
     ['Targets.HeatPumpMode', 'string'], ['Battery.Summary', 'string'],
@@ -94,6 +95,7 @@ test('limits measured power and countdowns while retaining all requested/modelle
     const blocks = Object.fromEntries(f.requests.map(r => [r.message.id.slice(ROOT.length), r.message.options.blockTime]));
     assert.deepEqual(blocks, {
         'Targets.Battery_W': 0, 'Actuals.Battery_W': 10000, 'Targets.Wallbox0_A': 0,
+        'Response.Grid_W': 10000, 'Response.Valid': 0,
         'Wallbox0.StartDelayRemaining_s': 10000, 'Valid': 0, 'SelectedWallbox': 0,
         'Targets.HeatPumpModeValue': 0, 'Targets.HeatPumpMode': 0, 'Battery.Summary': 0,
         'Modeled.Wallbox1_W': 0, 'DecisionRecord': 0, 'Wallbox1.ActualCarState': 0

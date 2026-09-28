@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.20**
+Aktuelle Version: **0.17.0-alpha.21**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -40,6 +40,28 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.21 – SQL-Befunde aus #62
+
+- **Toleranz für kleine negative Messwerte:** Frische gültige Wallbox-Leistungswerte
+  zwischen −20 W und 0 W gelten für die Regelung als 0 W. Der Rohwert bleibt
+  sichtbar; größere negative Werte, ungültige Qualität und veraltete Rückmeldungen
+  lösen weiterhin die Schutzprüfung aus.
+- **Zusammenpassende Schattenwerte:** Eine ausdrücklich angenommene elektrische
+  Wallbox-Antwort verbindet den virtuellen Strom mit virtueller Leistung und
+  entsprechend korrigierter Netzleistung. Reale Messungen bleiben getrennt
+  erhalten. Phasenbestätigungen, Gerätefehler, SoC und Schutzwerte bleiben real.
+- **Nachvollziehbare Ladeentscheidungen:** Budget vor der Stromberechnung,
+  verwendeter vorheriger Strom, Leistungsantwort und Rechenschritt stehen als
+  Diagnose bereit. Der Entscheidungsdatensatz enthält außerdem Fehlercode und
+  Verbindungsstatus einschließlich Quellenqualität.
+- **Verlässlichere Auswertung:** Ein nur lesendes Werkzeug wertet exportierte
+  Entscheidungsdatensätze aus, trennt Modellpausen von gemessenen Leistungseinbrüchen
+  und kennzeichnet Datenlücken. Netzenergie stammt bevorzugt aus vollständigen
+  Zählerdifferenzen, ersatzweise aus einer ausreichend dichten Nettoleistungsreihe.
+
+Details und Aussagegrenzen: [Änderungen aus Issue #62](docs/issue62-alpha21.md).
+Ein Update schaltet keine zusätzliche Geräte- oder Masterfreigabe ein.
 
 ## Neu in 0.17.0-alpha.20 – Verbesserungen aus #57 bis #60
 
@@ -1326,6 +1348,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.21 | Issue #62: −20-W-Toleranz für gültige Wallbox-Leistung, präzise Fehlerdiagnose, konsistente elektrische Schattenantwort, Budgetdiagnose und SQL-Auswertung mit Datenqualitätsprüfung. |
 | 0.17.0-alpha.20 | Issues #57–#60: sekündlicher Speicher, Restladebedarf und Mehrfahrzeugplan, bestätigte Skriptphasen und begrenztes EMS-Phasenwarten, isoliertes Wallbox-Ausgangsmodell sowie zusammengehörige SQL-Ereignisdaten. |
 | 0.17.0-alpha.15 | Start-/Stopp-Lifecycle, asynchrone go-e-Rückmeldungen, produktive Budgetauswahl, EHZ-Nachführung, SoC-Pflichtladung und Daten-/Planvalidierung geprüft und mit Regressionstests abgesichert. |
 | 0.17.0-alpha.14 | Eigene konfigurierbare Wallbox-Ausschaltverzögerung bei vorübergehend zu wenig Überschuss. |

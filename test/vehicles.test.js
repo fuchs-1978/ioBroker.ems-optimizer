@@ -145,6 +145,39 @@ test('running wallbox follows actual power response instead of nominal command p
     assert.equal(result.powerW,2760);
     assert.equal(result.expectedPowerW,2180);
 });
+test('allocation diagnostics explain a mismatched command and response without changing quantization',()=>{
+    const h=engine();h.run('updateVehicles()');
+    // Independently constructed nominal powers: 12 A budget, 16 A real load,
+    // but a previous virtual command of only 6 A.
+    const result=h.run('quantizeWallbox(12*230,vehicleState(0),6,1,16*230)');
+    assert.equal(result.amps,0);
+    assert.equal(result.diagnostics.requestedW,2760);
+    assert.equal(result.diagnostics.previousA,6);
+    assert.equal(result.diagnostics.actualPowerW,3680);
+    assert.equal(result.diagnostics.deltaA,-4);
+    assert.equal(result.diagnostics.requestedA,2);
+    assert.equal(result.diagnostics.reason,'quantized-below-minimum');
+    const coherent=h.run('quantizeWallbox(12*230,vehicleState(0),6,1,6*230)');
+    assert.equal(coherent.amps,12);
+    assert.equal(coherent.diagnostics.responseBasis,'power-response');
+});
+test('allocator publishes pre-stabilization budget and clears diagnostics on invalidation',()=>{
+    const h=engine({wallboxPrioritySource:'internal',wallboxPriority:0});h.run('updateVehicles()');
+    h.put('ems.0.Config.WallboxStartDelay_s',0);
+    h.put('ems.0.Config.WallboxStartReserve_W',0);
+    h.run('updateSlowTargets(4000,[{valueW:4000},{valueW:0},{valueW:0}],{valueW:0})');
+    const diag=JSON.parse(h.states.get('ems.0.Control.Wallbox0.AllocationDiagnostics_JSON').val);
+    assert.equal(diag.valid,true);
+    assert.equal(diag.selected,true);
+    assert.ok(diag.requestedBeforeStabilizationW>0);
+    assert.equal(diag.targetA,h.run('slowTargets.wallboxA[0]'));
+    const idle=JSON.parse(h.states.get('ems.0.Control.Wallbox1.AllocationDiagnostics_JSON').val);
+    assert.equal(idle.selected,false);
+    h.run("zeroRealtimeTargets('test-invalid')");
+    const cleared=JSON.parse(h.states.get('ems.0.Control.Wallbox0.AllocationDiagnostics_JSON').val);
+    assert.equal(cleared.valid,false);
+    assert.equal(cleared.reason,'test-invalid');
+});
 test('ceiling below minimum never gets lifted to six amps',()=>{
     const h=engine();h.run('updateVehicles()');
     assert.equal(h.run('quantizeWallbox(7000,{...vehicleState(0),maximumPowerW:1000},32,1).amps'),0);

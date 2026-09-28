@@ -1,4 +1,4 @@
-# Schattenbetrieb ab 0.17.0-alpha.20
+# Schattenbetrieb ab 0.17.0-alpha.21
 
 Der Schattenbetrieb beantwortet: **Welche Leistungen würde das EMS bei
 freigegebenem Master mit den aktuellen Messwerten und Gerätefreigaben anfordern?**
@@ -6,8 +6,13 @@ Er läuft zusätzlich zur bisherigen Beobachtersimulation. Dieselben Engine-Modu
 wie im Produktivbetrieb berechnen in einer getrennten Umgebung die Entscheidungen
 für Wallboxen, Trinkwasser-EHZ, Heizpuffer-EHZ, Speicher und WP-Empfehlung.
 Zusätzlich durchläuft jede Wallbox den produktiven Ausgangsablauf in einem
-isolierten Modell. Nur Strom-/Freigabebefehle werden dort privat sofort
-bestätigt; reale Leistungen, SoC und Phasenwechsel werden nicht erfunden.
+isolierten Modell. Strom-/Freigabebefehle werden dort privat sofort bestätigt.
+Ab alpha.21 wird dazu eine ideale elektrische Wallbox-Antwort bei 230 V
+angenommen. Die private Netzleistung wird um die Differenz zwischen realer und
+modellierter Wallboxlast korrigiert. So passt die Leistungsantwort zum vorherigen
+Modellbefehl, auch wenn die Bestandsskripte einen anderen Strom vorgeben.
+Echte Messungen bleiben separat erhalten; SoC und Phasenwechsel werden nicht
+simuliert. Fehlerstatus, Quellenqualität und physische Schutzwerte bleiben bindend.
 
 Nur in dieser privaten Rechenumgebung gilt der Master als eingeschaltet.
 Vorhanden-/Gerätefreigaben, Inbetriebnahmebestätigungen, Konfiguration,
@@ -44,6 +49,7 @@ Alle folgenden Objektpfade liegen unter `ems-optimizer.0.Debug.Shadow`:
 | `Targets.Wallbox0_A` bis `Wallbox2_A` | Angeforderte Ladeströme |
 | `Targets.Wallbox0_Phases` bis `Wallbox2_Phases` | Verwendete Phasenanzahl |
 | `Modeled.Wallbox0_W/A/Phases` bis `Wallbox2_W/A/Phases` | Modellierter Ausgang nach Start-, Rampen-, Halte- und Sperrlogik |
+| `Response.Valid`, `Response.Grid_W` | Quellenprüfung und angenommene Netzleistung für die elektrische Wallbox-Antwort; ausdrücklich keine reale Messung |
 | `WallboxN.ModelOwned`, `ModelStatus` | Virtuelle Übernahme und Ablaufzustand für N = 0, 1, 2 |
 | `WallboxN.MinimumRunTimeRemaining_s`, `StopDelayRemaining_s` | Restzeiten des isolierten Ausgangsmodells |
 | `Targets.MyPV_DHW_W`, `Targets.MyPV_Heating_W` | Leistungsvorschläge für die beiden Heizkreise |
@@ -113,19 +119,27 @@ bleiben unverändert.
 ## Aussagegrenze
 
 Die Vorschau berechnet Entscheidungen anhand echter, laufend erneuerter
-Messungen. Das Ausgangsmodell nimmt nur in seinem privaten Speicher eine
-unmittelbare Strom-/Freigabebestätigung an. Es verändert keine echte Messung,
-Temperatur oder Batterie-/Fahrzeugladung. Läuft ein Bestandsskript, gehen dessen
-tatsächliche Geräteleistungen in die nächste Vorschau ein. Ein angeforderter
-Phasenwechsel wird erst durch eine echte go-e-Phasenmeldung bestätigt.
+Messungen. Das Ausgangsmodell nimmt in seinem privaten Speicher eine
+unmittelbare Strom-/Freigabebestätigung und eine ideale elektrische
+Wallbox-Leistungsantwort an. Für diesen Rechenzweig gilt:
+`Netzleistung Modell = Netzleistung real + Summe(Wallboxleistung Modell − Wallboxleistung real)`.
+Damit bleiben Erzeugung und sonstige Lasten als gemessene Randbedingungen
+erhalten. Die originalen Quellobjekte werden nicht verändert. Ungültige oder
+veraltete Quellwerte werden durch die Annahme nicht repariert; die
+Antwortgültigkeit muss bei der Auswertung berücksichtigt werden.
+Ein angeforderter Phasenwechsel wird erst durch eine echte go-e-Phasenmeldung
+bestätigt. Temperaturen, SoC, EHZ- und Speicherantwort werden nicht simuliert.
 
 Damit können wir Verteilung, Prioritäten, Startbedingungen, SoC-Grenzen,
 Preisreaktion, Speicher-Feinregelung und Kühlsperren prüfen. Das Wallboxmodell
 zeigt zusätzlich Start, Rampe, Mindestlaufzeit und Abschaltverzögerung. Es ist
-keine Simulation der vollständigen elektrischen Anlage: Abweichende echte
-Leistung kann weiterhin Modellrampen begrenzen. Reale Ladeabbrüche,
+keine Simulation der vollständigen Anlage: Reale Hausanschluss- und
+Phasenstromgrenzen sowie die tatsächliche EHZ-Antwort können Modellrampen
+weiterhin begrenzen. Reale Ladeabbrüche,
 Geräteverzögerungen und Kommunikation müssen im begleiteten Gerätetest geprüft
 werden. Der Schattenbetrieb erteilt keine zusätzliche Ausgangsfreigabe.
 
 Die Konfiguration der Phasenführung und die Änderungen aus den SQL-Auswertungen
 stehen in [Issues #57–#60 / alpha.20](issues57-60-alpha20.md).
+Die Messwerttoleranz, die Budgetdiagnose und der SQL-Auswerter sind in
+[Issue #62 / alpha.21](issue62-alpha21.md) beschrieben.

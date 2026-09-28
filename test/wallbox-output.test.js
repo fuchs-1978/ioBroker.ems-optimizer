@@ -3,7 +3,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const WallboxOutput = require('../lib/wallbox-output');
 
-function setup({now: readNow = () => Date.now()} = {}) {
+function setup({now: readNow = () => Date.now(), responseCurrentA = null} = {}) {
     const states = new Map(), writes = [];
     let now = readNow();
     const put = (id, val, extra = {}) => states.set(id, {val, ack: true, ts: now, ...extra});
@@ -43,7 +43,7 @@ function setup({now: readNow = () => Date.now()} = {}) {
         i1: 0, i2: 0, i3: 0, h1: 10, h2: 10, h3: 10, import: 0, export: 8000,
         critical: false, par14a: false, lpc: 'unlimitedAutonomous', lpcLimit: 0, connection: true,
         error: 0, allow: 0, feedback: 6, split: 0})) put(id, val);
-    const output = new WallboxOutput(adapter, {now: readNow});
+    const output = new WallboxOutput(adapter, {now: readNow, responseCurrentA});
     const ack = (id, value) => put(id, value, {ts: readNow() + 1});
     const refresh = () => {
         now = readNow();
@@ -1037,6 +1037,116 @@ test('wallbox idle status cannot overwrite active HK or battery NoActuation',asy
     await h.output.initialize();await h.output.tick();
     assert.equal(h.states.get('ems.0.System.NoActuation').val,false);
     assert.equal(h.states.get('ems.0.Control.Mode').val,'ALPHA_ENERGY_COORDINATED');
+});
+
+test('fresh -10 W and zero readings do not hard-stop an active wallbox or modify its raw state', async () => {
+    let now = 1000000000000;
+    const h = setup({now: () => now});
+    await h.start(); h.writes.length = 0;
+    h.put('export', 0); h.put('import', 500);
+    // Independent two-second test steps cover the normalization bounds and
+    // nominal minimum power. A budget shortfall still uses the normal timers.
+    for (const power of [-0.01, -0.02, 0, 6 * 230 / 1000]) {
+        now += 2000; h.refresh(); h.put('power', power);
+        const raw = h.states.get('power');
+        await h.output.tick();
+        assert.equal(h.states.get('power'), raw);
+        assert.equal(h.states.get('power').val, power);
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, true);
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.LastStopAt').val, 0);
+    }
+    assert.ok(!h.writes.some(write => write.id === 'allow' && write.val === 0));
+});
+
+test('zero-noise tolerance never bypasses missing, stale, unacknowledged or bad-quality measurements', async t => {
+    const now = 1000000000000;
+    const cases = [
+        {name: 'outside negative band', value: -0.020001, reason: /negativer Messwert.*ausserhalb der Nulltoleranz/},
+        {name: 'large negative', value: -1, reason: /negativer Messwert -1000 W/},
+        {name: 'null', value: null, reason: /Messwert fehlt/},
+        {name: 'undefined', value: undefined, reason: /Messwert fehlt/},
+        {name: 'blank', value: ' ', reason: /Messwert fehlt/},
+        {name: 'non-number', value: true, reason: /nicht numerisch/},
+        {name: 'NaN', value: NaN, reason: /nicht endlich/},
+        {name: 'Infinity', value: Infinity, reason: /nicht endlich/},
+        {name: 'unacknowledged', value: -0.01, extra: {ack: false}, reason: /ack=false/},
+        {name: 'quality', value: -0.01, extra: {q: 128}, reason: /q=128/},
+        {name: 'stale', value: -0.01, extra: {ts: now - 31000}, reason: /veraltet.*31 s.*30 s/},
+        {name: 'timestamp missing', value: -0.01, extra: {ts: undefined}, reason: /Zeitstempel fehlt/},
+        {name: 'future', value: -0.01, extra: {ts: now + 2000}, reason: /Zukunft/}
+    ];
+    for (const item of cases) await t.test(item.name, async () => {
+        const h = setup({now: () => now}); await h.start(); h.writes.length = 0;
+        h.put('power', item.value, item.extra);
+        await h.output.tick();
+        assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, false);
+        const reason = h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val;
+        assert.match(reason, /Wallbox-Leistung/);
+        assert.match(reason, item.reason);
+    });
+});
+
+test('measurement fault recovery still requires a confirmed stop and full start sequence', async () => {
+    const h = setup(); await h.start(); h.writes.length = 0;
+    h.put('power', -0.03); await h.output.tick();
+    h.put('power', -0.01); await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, false);
+    h.ack('allow', 0); await h.output.tick();
+    assert.equal(h.output.devices[0].owned, false);
+    await h.output.tick(); h.ack('allow', 0);
+    await h.output.tick(); h.ack('feedback', 6);
+    await h.output.tick(); h.ack('allow', 1);
+    await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}, {id: 'allow', val: 0},
+        {id: 'cmd', val: 6}, {id: 'allow', val: 1}]);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, true);
+});
+
+test('wallbox faults identify error codes, source freshness, quality and connection separately', async t => {
+    const now = 1000000000000;
+    const cases = [
+        {name: 'device error', id: 'error', value: 8, reason: /Geraetefehler \(Code 8\)/},
+        {name: 'error missing', id: 'error', value: null, reason: /Fehlerstatus: Messwert fehlt/},
+        {name: 'error stale', id: 'error', value: 0, extra: {ts: now - 31000}, reason: /Fehlerstatus: veraltet/},
+        {name: 'error ack', id: 'error', value: 0, extra: {ack: false}, reason: /Fehlerstatus: unbestaetigt.*ack=false/},
+        {name: 'error quality', id: 'error', value: 0, extra: {q: 64}, reason: /Fehlerstatus:.*q=64/},
+        {name: 'error value', id: 'error', value: -1, reason: /Fehlerstatus ungueltig.*Code -1/},
+        {name: 'connection off', id: 'connection', value: false, reason: /offline.*Verbindungsstatus=false/},
+        {name: 'connection missing', id: 'connection', value: null, reason: /Verbindungsstatus: Messwert fehlt/},
+        {name: 'connection ack', id: 'connection', value: true, extra: {ack: false}, reason: /Verbindungsstatus: unbestaetigt/},
+        {name: 'connection quality', id: 'connection', value: true, extra: {q: 16}, reason: /Verbindungsstatus:.*q=16/},
+        {name: 'connection invalid', id: 'connection', value: 1, reason: /Verbindungsstatus ungueltig/}
+    ];
+    for (const item of cases) await t.test(item.name, async () => {
+        const h = setup({now: () => now}); await h.start(); h.writes.length = 0;
+        h.put('power', -0.01); // The power tolerance must not mask hard gates.
+        h.put(item.id, item.value, item.extra);
+        await h.output.tick();
+        assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+        assert.match(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val, item.reason);
+    });
+});
+
+test('optional modeled current affects only vehicle-response ramp feedback', async t => {
+    for (const value of [null, NaN, Infinity, -1, 6]) await t.test(String(value), async () => {
+        let now = 1000000000000;
+        const h = setup({now: () => now, responseCurrentA: value === null ? null : () => value});
+        await h.start(); h.writes.length = 0;
+        now += 6000; h.refresh();
+        // Physical current remains zero; production/default must not wind up.
+        await h.output.tick();
+        assert.equal(h.writes.some(write => write.id === 'cmd' && write.val > 6), value === 6);
+    });
+    for (const violation of ['wrong phases', 'house overload']) await t.test(violation, async () => {
+        const h = setup({responseCurrentA: () => 32}); await h.start(); h.writes.length = 0;
+        if (violation === 'wrong phases') h.put('i2', 2);
+        else h.put('h1', 70);
+        await h.output.tick();
+        assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, false);
+    });
 });
 
 module.exports={setup};

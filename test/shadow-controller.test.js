@@ -10,8 +10,8 @@ const {createEngineContext, MODULES} = require('../lib/engine-loader');
 const gridConstraints = require('../lib/grid-constraints');
 
 async function fixture({battery = false, heating = false, wallbox = true, heatPump = false,
-    surplusW = 6000, delayS = 0, slowS = 2} = {}) {
-    let now = Date.now();
+    surplusW = 6000, delayS = 0, slowS = 2, nowMs = Date.now()} = {}) {
+    let now = nowMs;
     const states = new Map(), writes = [], mapping = {};
     for (const name of MODULES) {
         const source = fs.readFileSync(path.join(__dirname, '../lib/engine', `${name}.js`), 'utf8');
@@ -650,4 +650,169 @@ test('unload discards waiting records without starting new writes or delaying ac
     assert.equal(h.shadow.pending.size, 0);
     assert.equal(h.shadow.recordWriting, false);
     assert.equal(h.states.get('goe.allow').val, 0);
+});
+
+function syntheticWallboxInputs(h, {pv = 25 * 230, wallboxW = 16 * 230} = {}) {
+    // Independent nominal electrical scenario: 230 V, 16 A legacy WB,
+    // 6 A heater, 4 A base load and 25 A equivalent PV production.
+    const heaterW = 6 * 230, baseW = 4 * 230;
+    const gridW = baseW + heaterW + wallboxW - pv;
+    h.put('DP_PV_POWER', pv);
+    h.put('DP_GRID_IMPORT', Math.max(0, gridW)); h.put('DP_GRID_EXPORT', Math.max(0, -gridW));
+    h.put('DP_WB0_POWER', wallboxW / 1000); h.put('DP_WB0_L1_A', wallboxW / 230);
+    h.put('DP_DHW_OUTPUT1', heaterW); h.own('Actual.MyPV_DHW_W', heaterW);
+}
+
+test('mismatched virtual and legacy currents keep charging beyond 600 seconds without hybrid-response stops', async () => {
+    const h = await fixture();
+    h.adapter.config.wallboxMinimumRunTimeS = 600;
+    h.adapter.config.wallboxStopDelayS = 120;
+    h.adapter.config.wallboxCombinedMaxStepA = 3;
+    h.own('Config.WallboxCombinedMaxStep_A', 3);
+    syntheticWallboxInputs(h);
+    await startModel(h);
+    for (let elapsed = 0; elapsed <= 780; elapsed += 10) {
+        h.advance(10000); syntheticWallboxInputs(h); await h.tick();
+        const snapshot = JSON.parse(h.value('Snapshot_JSON'));
+        assert.equal(snapshot.valid, true);
+        assert.ok(snapshot.modeled.Wallbox0.active, `unexpected stop after ${elapsed}s: ${snapshot.modeled.Wallbox0.status}`);
+        assert.ok(snapshot.targets.Wallbox0 >= 1380, `unjustified zero budget after ${elapsed}s`);
+        assert.equal(snapshot.actuals.Wallbox0, 16 * 230);
+        assert.equal(snapshot.actuals.Grid, 230);
+        assert.equal(snapshot.response.wallboxes.Wallbox0.powerW,
+            snapshot.allocation.Wallbox0.actualPowerW);
+        assert.equal(snapshot.response.gridW,
+            snapshot.actuals.Grid + snapshot.response.wallboxes.Wallbox0.powerW - 16 * 230);
+    }
+});
+
+test('paired constant and variable PV replays do not depend on legacy-script WB draw', async () => {
+    for (const varying of [false, true]) {
+        const a = await fixture(), b = await fixture();
+        for (let cycle = 0; cycle < 45; cycle++) {
+            const pv = (varying ? [25, 22, 32, 27, 30][Math.floor(cycle / 9)] : 25) * 230;
+            for (const [h, wallboxW] of [[a, 16 * 230], [b, (cycle % 2 ? 20 : 6) * 230]]) {
+                h.advance(2000); syntheticWallboxInputs(h, {pv, wallboxW}); await h.tick();
+            }
+            assert.equal(a.value('Targets.Wallbox0_A'), b.value('Targets.Wallbox0_A'), `target cycle ${cycle}`);
+            assert.equal(a.value('Modeled.Wallbox0_A'), b.value('Modeled.Wallbox0_A'), `model cycle ${cycle}`);
+            assert.equal(a.value('Response.Grid_W'), b.value('Response.Grid_W'), `private NVP cycle ${cycle}`);
+        }
+    }
+});
+
+test('assumed response retains real source faults, error changes and phase protections in coherent records', async () => {
+    for (const change of [
+        h => h.put('DP_WB0_POWER', -0.021),
+        h => h.put('DP_WB0_POWER', 16 * 230 / 1000, {q: 64}),
+        h => h.put('DP_WB0_POWER', 16 * 230 / 1000, {ts: 1}),
+        h => h.put('goe.error', 8),
+        h => h.put('goe.connection', false),
+        h => h.put('DP_WB0_L2_A', 5)
+    ]) {
+        const h = await fixture(); syntheticWallboxInputs(h); await startModel(h);
+        h.advance(2000); change(h); await h.tick();
+        const record = JSON.parse(h.value('DecisionRecord'));
+        assert.equal(h.value('Modeled.Wallbox0_W'), 0, h.value('Wallbox0.ModelStatus'));
+        assert.equal(record.modeled.Wallbox0.active, false);
+        assert.equal(record.realFeedback.Wallbox0.error.value, h.states.get('goe.error').val);
+        assert.equal(record.realFeedback.Wallbox0.connection.value, h.states.get('goe.connection').val);
+        assert.ok(Number.isFinite(record.realFeedback.Wallbox0.powerKW.ageMs));
+        if (!record.response.valid) {
+            assert.equal(record.valid, false, 'invalid electrical sources cannot produce a valid hybrid replay');
+            assert.equal(h.value('Valid'), false);
+            assert.match(record.reason, /Schattenantwort ungueltig/);
+        }
+    }
+});
+
+test('private acknowledgements do not hide out-of-range real actuator feedback', async () => {
+    for (const [id, value] of [['goe.allow', 2], ['goe.current', -1]]) {
+        const h = await fixture(); forceWallboxBudget(h); await startModel(h);
+        h.advance(2000); h.put(id, value); await h.tick();
+        assert.equal(h.value('Modeled.Wallbox0_W'), 0, `invalid ${id} must stop`);
+        const record = JSON.parse(h.value('DecisionRecord'));
+        assert.equal(record.realFeedback.Wallbox0[id === 'goe.allow' ? 'allow' : 'currentA'].value, value);
+    }
+});
+
+test('coherent feedback distinguishes stale/numeric/negative sources and keeps static connection fresh', async () => {
+    const h = await fixture();
+    h.put('goe.connection', true, {ts: 1});
+    h.put('DP_WB0_POWER', '0.2');
+    await h.tick();
+    let feedback = JSON.parse(h.value('Snapshot_JSON')).realFeedback.Wallbox0;
+    assert.equal(feedback.connection.fresh, true);
+    assert.equal(feedback.connection.issue, '');
+    assert.equal(feedback.powerKW.issue, '');
+    for (const [value, extra, issue] of [[-0.021, {}, 'negative'], ['bad', {}, 'numeric'], [1, {ts: 1}, 'stale']]) {
+        h.put('DP_WB0_POWER', value, extra); await h.tick();
+        feedback = JSON.parse(h.value('DecisionRecord')).realFeedback.Wallbox0;
+        assert.equal(feedback.powerKW.issue, issue);
+        assert.equal(feedback.powerKW.value, value);
+    }
+});
+
+test('synthetic long WB1 electrical trajectory runs without artificial zero-budget stops', async t => {
+    // Entirely generated test inputs, independent of any private SQL history.
+    const samples = Array.from({length: 263}, (_, index) => {
+        const finished = index >= 260;
+        const pvW = [5700, 6800, 8200, 6100, 7500][Math.floor(index / 7) % 5];
+        const dhwW = 1600;
+        const wallboxW = finished ? 0 : [2300, 3900, 5500, 3100][index % 4];
+        return {elapsedS: index * 50, pvW, dhwW, wallboxW,
+            gridW: 800 + dhwW + wallboxW - pvW,
+            soc: finished ? 80 : 40 + Math.floor(index * 40 / 260),
+            car: finished ? 4 : 2, userRelease: true, targetSoc: 80, minimumSoc: 20, phaseMode: 1};
+    });
+    const start = Date.parse('2025-01-01T10:00:00Z');
+    const h = await fixture({nowMs: start, wallbox: false});
+    Object.assign(h.adapter.config, {multiWallboxAlphaArmed: true, wb1Present: true,
+        wb1ControlEnabled: true, wb1ProductionArmed: true, wb1MaxCurrent1pA: 32,
+        wb1MinCurrent1pA: 6, wb1CommissioningMaxA: 32, wb1MaxPowerW: 7360,
+        wb1PhaseSwitchEnabled: false, wb1ProductionPhases: 1,
+        wallboxMinimumRunTimeS: 600, wallboxStopDelayS: 120, wallboxCombinedMaxStepA: 3});
+    h.own('Devices.Wallbox1.Present', true); h.own('Devices.Wallbox1.ControlEnabled', true);
+    h.own('Config.WallboxCombinedMaxStep_A', 3);
+    h.adapter.wallboxOutput.devices = [{wb: 1, valid: true, owned: false,
+        ids: {connection: 'goe1.connection', error: 'goe1.error', allow: 'goe1.allow',
+            feedback: 'goe1.current', command: 'goe1.command', phaseMode: 'goe1.phase'}}];
+    let cursor = 0, wasActive = false, unexpectedStops = 0, activeCycles = 0;
+    // Hold each generated observation for 50 s while the controller runs every
+    // 10 s. This harness assumes fresh sources, healthy error/connection and
+    // one-phase currents. Temperatures and plan are fixed fixture conditions;
+    // real vehicle response and thermodynamic behavior are outside its scope.
+    for (let elapsedS = 0; elapsedS <= 13100; elapsedS += 10) {
+        while (cursor + 1 < samples.length && samples[cursor + 1].elapsedS <= elapsedS) cursor++;
+        const row = samples[cursor];
+        if (elapsedS) h.advance(10000);
+        h.put('DP_PV_POWER', row.pvW);
+        h.put('DP_GRID_IMPORT', Math.max(0, row.gridW)); h.put('DP_GRID_EXPORT', Math.max(0, -row.gridW));
+        h.put('DP_WB1_POWER', row.wallboxW / 1000); h.put('DP_WB1_L1_A', Math.max(0, row.wallboxW / 230));
+        h.put('DP_DHW_OUTPUT1', row.dhwW); h.own('Actual.MyPV_DHW_W', row.dhwW);
+        for (const [field, val] of [['SOC', row.soc], ['CAR', row.car], ['ALLOW', row.userRelease],
+            ['TARGET', row.targetSoc], ['MIN_SOC', row.minimumSoc]]) h.put(`DP_WB1_${field}`, val);
+        h.put('goe1.phase', row.phaseMode);
+        h.put('goe1.connection', true); h.put('goe1.error', 0); h.put('goe1.allow', row.wallboxW > 0 ? 1 : 0);
+        h.put('goe1.current', Math.max(6, Math.min(32, Math.round(row.wallboxW / 230))));
+        for (const name of ['BatteryPower', 'MyPV_DHW', 'MyPV_Heating', 'Wallbox0', 'Wallbox1', 'Wallbox2'])
+            h.own(`Plan.${name}_48h_JSON`, JSON.stringify([{timestamp: start + elapsedS * 1000 - 1,
+                valueW: ['MyPV_DHW', 'Wallbox1'].includes(name) ? 6000 : 0, phases: 1}]));
+        await h.tick();
+        const snapshot = JSON.parse(h.value('Snapshot_JSON'));
+        assert.equal(snapshot.valid, true, `${elapsedS}: ${snapshot.reason}`);
+        const active = snapshot.modeled.Wallbox1.active;
+        if (wasActive && !active && row.car === 2 && row.soc < row.targetSoc && row.wallboxW > 500)
+            unexpectedStops++;
+        if (active) activeCycles++;
+        wasActive = active;
+        const input = snapshot.response.wallboxes.Wallbox1;
+        assert.ok(Math.abs(snapshot.response.gridW - input.powerW - (row.gridW - row.wallboxW)) < 1e-8,
+            `exogenous balance changed at ${elapsedS}s`);
+        assert.ok(Math.abs(snapshot.actuals.Wallbox1 - row.wallboxW) < 1e-8);
+    }
+    assert.ok(activeCycles > 1000, 'simulation must cover a long charging session');
+    assert.equal(unexpectedStops, 0);
+    assert.equal(h.value('Modeled.Wallbox1_W'), 0, 'generated 80% target SoC ends modeled charging');
+    t.diagnostic(`${samples.length} synthetic observations, 1311 control cycles; ${activeCycles} active cycles; ${unexpectedStops} artificial in-session stops`);
 });
