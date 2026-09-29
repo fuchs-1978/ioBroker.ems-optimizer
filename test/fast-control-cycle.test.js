@@ -9,11 +9,11 @@ const vm = require('node:vm');
 const source = name => fs.readFileSync(path.join(__dirname, '../lib/engine', `${name}.js`), 'utf8');
 
 function bootstrapHarness() {
-    const jobs = [], timers = [], calls = [];
+    const jobs = [], timers = [], calls = [], writes = [], messages = [];
     const context = vm.createContext({
         CFG: {root: 'ems.0', refreshSeconds: 10, forecastRefreshMinutes: 15,
             dp: new Proxy({}, {get: () => []})},
-        write() {}, on() {}, log() {},
+        write(id, value) { writes.push({id, value}); }, on() {}, log(message) { messages.push(message); },
         schedule(expression, callback) { jobs.push({expression, callback}); },
         setTimeout(callback, delay) { timers.push({callback, delay}); }
     });
@@ -26,8 +26,17 @@ function bootstrapHarness() {
     }
     vm.runInContext(source('bootstrap'), context);
     calls.length = 0;
-    return {jobs, timers, calls, context};
+    return {jobs, timers, calls, writes, messages, context};
 }
+
+test('bootstrap publishes the release version and never logs an obsolete version', () => {
+    const h = bootstrapHarness();
+    const version = require('../package.json').version;
+    assert.deepEqual(h.writes.filter(item => item.id === 'ems.0.System.Version'),
+        [{id: 'ems.0.System.Version', value: version}]);
+    assert.ok(h.messages.some(message => message.includes('gestartet')));
+    assert.ok(h.messages.every(message => !/alpha\.20/.test(message)));
+});
 
 test('one ordered one-second job computes fresh demand before the battery, retaining slower output jobs', () => {
     const h = bootstrapHarness();
