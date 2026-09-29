@@ -753,6 +753,20 @@ test('coherent feedback distinguishes stale/numeric/negative sources and keeps s
     }
 });
 
+test('retained user settings have valid quality despite old timestamps and ack=false', async () => {
+    const h = await fixture();
+    for (const key of ['ALLOW', 'TARGET', 'MIN_SOC'])
+        h.put(`DP_WB0_${key}`, key === 'ALLOW' ? true : 80, {ts: 1, ack: false});
+    const feedback = h.shadow.realWallboxFeedback(0);
+    for (const key of ['userRelease', 'targetSoc', 'minimumSoc']) {
+        assert.equal(feedback[key].fresh, true, key);
+        assert.equal(feedback[key].issue, '', key);
+        assert.equal(feedback[key].ack, false, key);
+    }
+    h.put('DP_WB0_CAR', 2, {ts: 1, ack: false});
+    assert.equal(h.shadow.realWallboxFeedback(0).car.issue, 'unacknowledged');
+});
+
 test('synthetic long WB1 electrical trajectory runs without artificial zero-budget stops', async t => {
     // Entirely generated test inputs, independent of any private SQL history.
     const samples = Array.from({length: 263}, (_, index) => {
