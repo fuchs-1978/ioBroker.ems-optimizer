@@ -69,3 +69,23 @@ test('small fresh negative meter noise is normalized, while disconnected WB load
     assert.equal(r.states.get('power2').val, 2);
     assert.equal(r.response.wallboxes.Wallbox2, undefined);
 });
+
+test('a newer grid measurement cannot be combined with an old large WB correction', () => {
+    const h = fixture();
+    h.put('import', 0); h.put('export', 3541);
+    h.put('power1', 5.11, {ts: 1000000 - 3661});
+    const r = h.run();
+    assert.equal(r.response.valid, false);
+    assert.equal(r.response.applied, false);
+    assert.match(r.response.reason, /grid-power-asynchronous \(3661 ms/);
+    assert.equal(r.response.wallboxes.Wallbox1.gridPowerSkewMs, 3661);
+    assert.deepEqual(r.states, h.rawStates);
+    h.put('power1', 5.11, {ts: 1000000 - 500});
+    assert.equal(h.run().response.valid, true);
+});
+
+test('small substitutions tolerate ordinary meter and wallbox poll skew', () => {
+    const h = fixture();
+    h.put('power1', 1.3, {ts: 1000000 - 3661});
+    assert.equal(h.run().response.valid, true);
+});

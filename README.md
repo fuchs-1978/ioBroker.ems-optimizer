@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.21**
+Aktuelle Version: **0.17.0-alpha.22**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -40,6 +40,20 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.22 – Messzeitpunkte und Diagnose aus #64
+
+- Große virtuelle Wallboxkorrekturen werden bei mehr als zwei Sekunden Abstand
+  zwischen Netz- und Wallboxmessung nicht auf die Schattenbilanz angewendet.
+  `Response.Valid` und der Entscheidungsdatensatz nennen die Abweichung; kleine
+  Korrekturen tolerieren übliches Abfragejitter. Der produktive Regler bleibt
+  davon unberührt.
+- `System.Version` und die Startmeldung zeigen die neue Version. Dauerhafte
+  Benutzerfreigabe und SoC-Grenzen werden bei gültiger Qualität nicht allein
+  wegen altem Zeitstempel oder `ack=false` als gestört markiert.
+- Die Ursache der realen WB1-Delle, die Übergabe zwischen WB1 und WB2 sowie
+  ein praktischer 1P/3P-Test bleiben gesondert zu prüfen. Dieses Update
+  aktiviert weder Master noch Ausgänge.
 
 ## Neu in 0.17.0-alpha.21 – SQL-Befunde aus #62
 
@@ -1348,6 +1362,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.22 | Issue #64: Plausibilitätsgrenze für zeitversetzte Netz-/WB-Messungen im Schattenmodell, aktuelle Versionsanzeige und korrekte Diagnose dauerhafter Benutzervorgaben. |
 | 0.17.0-alpha.21 | Issue #62: −20-W-Toleranz für gültige Wallbox-Leistung, präzise Fehlerdiagnose, konsistente elektrische Schattenantwort, Budgetdiagnose und SQL-Auswertung mit Datenqualitätsprüfung. |
 | 0.17.0-alpha.20 | Issues #57–#60: sekündlicher Speicher, Restladebedarf und Mehrfahrzeugplan, bestätigte Skriptphasen und begrenztes EMS-Phasenwarten, isoliertes Wallbox-Ausgangsmodell sowie zusammengehörige SQL-Ereignisdaten. |
 | 0.17.0-alpha.15 | Start-/Stopp-Lifecycle, asynchrone go-e-Rückmeldungen, produktive Budgetauswahl, EHZ-Nachführung, SoC-Pflichtladung und Daten-/Planvalidierung geprüft und mit Regressionstests abgesichert. |
