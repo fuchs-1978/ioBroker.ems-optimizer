@@ -550,6 +550,44 @@ test('DecisionRecord emits coherent transitions and bounded heartbeats including
     assert.equal(records().length, count + 4, 'quality transitions are captured without using changing timestamps as event keys');
 });
 
+test('invalid response records coalesce skew magnitudes but preserve model and real safety edges', async () => {
+    const h = await fixture();
+    const record = {valid: false, masterEnabled: false, targets: {Wallbox0: 0},
+        selectedWallbox: 0, fineRegulator: 'none',
+        response: {valid: false, applied: false, basis: 'previous-output',
+            reason: 'Wallbox0:grid-power-asynchronous (3000 ms, 2000 W)'},
+        modeled: {Wallbox0: {powerW: 0, phases: 1, owned: false, stage: 'off',
+            status: 'Warten auf EHZ-Feinregler: Ist 2000 W / Ziel 0 W'}},
+        realFeedback: {Wallbox0: {error: {value: 0, ack: true, q: 0, fresh: true, issue: ''},
+            allow: {value: 1, ack: true, q: 0, fresh: true, issue: ''}}}};
+    const count = () => h.writes.filter(w => w.id.endsWith('.DecisionRecord')).length;
+    h.shadow.publishRecord(record); await h.flush(); const first = count();
+    record.response.reason = 'Wallbox0:grid-power-asynchronous (4000 ms, 2500 W)';
+    record.modeled.Wallbox0.status = 'Warten auf EHZ-Feinregler: Ist 2100 W / Ziel 0 W';
+    h.shadow.publishRecord(record); await h.flush(); assert.equal(count(), first);
+    record.realFeedback.Wallbox0.error.value = 5;
+    h.shadow.publishRecord(record); await h.flush(); assert.equal(count(), first + 1);
+    record.realFeedback.Wallbox0.allow.value = 0;
+    h.shadow.publishRecord(record); await h.flush(); assert.equal(count(), first + 2);
+    record.modeled.Wallbox0.stage = 'stopping';
+    h.shadow.publishRecord(record); await h.flush(); assert.equal(count(), first + 3);
+    h.advance(60000); h.shadow.publishRecord(record); await h.flush(); assert.equal(count(), first + 4);
+    record.masterEnabled = true;
+    h.shadow.publishRecord(record); await h.flush(); assert.equal(count(), first + 5);
+});
+
+test('response coverage counts elapsed state, marks long gaps unknown and remains session scoped', async () => {
+    const h = await fixture(); await h.tick();
+    const model = h.shadow.model;
+    const firstAt = model.response.coverage.since;
+    h.advance(2000); await h.tick();
+    assert.equal(model.response.coverage.validMs + model.response.coverage.invalidMs, 2000);
+    h.advance(70000); await h.tick();
+    assert.equal(model.response.coverage.unknownMs, 70000);
+    assert.equal(model.response.coverage.since, firstAt);
+    assert.equal(model.response.coverage.scope, 'current-model-session');
+});
+
 test('isolated output facade rejects foreign targets and never exposes subscription/SQL capabilities', async () => {
     const h = await fixture();
     await h.tick();

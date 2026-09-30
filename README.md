@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.22**
+Aktuelle Version: **0.17.0-alpha.23**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -40,6 +40,32 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.23 – begrenzte Messwertpaarung aus #66
+
+- Ausschließlich das isolierte Schattenmodell puffert 30 s reale Netz-/WB-Messungen.
+  Bei Zeitversatz wird eine gemeinsame Netzaufnahme von höchstens 10 s Alter
+  gesucht. WB-Leistung darf nur zwischen zwei gültigen Messungen interpoliert
+  werden: höchstens 20 s Abstand und 100 W Differenz je Wallbox. Keine
+  Extrapolation, keine pauschale Lockerung der 2-s-Prüfung bei Lastsprüngen.
+- Historische Paarung ist ausdrücklich als `bracketed-historical-input` mit
+  Zeitgrenze, Alter, Quellzeitpunkten und begrenzter beobachteter WB-Streuung ausgewiesen.
+  Aktuelle WB-Werte dürfen höchstens 100 W vom gepaarten Wert abweichen;
+  aktuelle Netzleistung höchstens 500 W von der gepaarten Netzaufnahme.
+  Unbeobachtete Zwischenereignisse bleiben möglich, diese Grenzen sind kein
+  garantierter physischer Fehlerbereich.
+  Die Netzbilanz ist eine begrenzte Näherung, keine synchrone Live-Messung.
+- Fehlende, veraltete, unbestätigte oder qualitativ ungültige aktuelle Quellen
+  bleiben Sperrgründe. Reale Schutz-, Fahrzeug-, Phasen- und ACK-Daten werden
+  nicht ersetzt. Eine unvollständige Gesamtbilanz bleibt ungültig; unabhängige
+  WB-Telemetrie und Korrekturgültigkeit werden separat dokumentiert.
+- `response.coverage` zählt gültige/ungültige Zeit der aktuellen Modellsitzung;
+  Zykluslücken über 65 s werden unbekannt. Keine rückwirkende Rohdatenrekonstruktion.
+- SQL-Entscheidungsrecords behalten auch bei ungültiger Antwort Modell-, Fehler-,
+  Freigabe- und Phasenwechsel. Nur wechselnde Zeitversatzbeträge und numerische
+  Countdown-/Watt-Details erzeugen keine eigenen Ereignisse; 60-s-Heartbeat bleibt.
+- Produktive Regelung, Schutzgrenzen, Konfiguration und Aktoren unverändert.
+  Fehlercode 5 an WB0 bleibt ein Untersuchungsauftrag, keine automatische Reparatur.
 
 ## Neu in 0.17.0-alpha.22 – Messzeitpunkte und Diagnose aus #64
 
@@ -1362,6 +1388,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.23 | Issue #66: begrenzte historische Messwertpaarung im Schattenmodell, getrennte Telemetrie-/Korrekturgültigkeit, Sitzungsabdeckung und ereignistreue Recordverdichtung. |
 | 0.17.0-alpha.22 | Issue #64: Plausibilitätsgrenze für zeitversetzte Netz-/WB-Messungen im Schattenmodell, aktuelle Versionsanzeige und korrekte Diagnose dauerhafter Benutzervorgaben. |
 | 0.17.0-alpha.21 | Issue #62: −20-W-Toleranz für gültige Wallbox-Leistung, präzise Fehlerdiagnose, konsistente elektrische Schattenantwort, Budgetdiagnose und SQL-Auswertung mit Datenqualitätsprüfung. |
 | 0.17.0-alpha.20 | Issues #57–#60: sekündlicher Speicher, Restladebedarf und Mehrfahrzeugplan, bestätigte Skriptphasen und begrenztes EMS-Phasenwarten, isoliertes Wallbox-Ausgangsmodell sowie zusammengehörige SQL-Ereignisdaten. |
