@@ -13,7 +13,7 @@ function harness(time = '2026-10-01T00:00:00Z') {
         getState: id => states.get(id), existsState: id => states.has(id),
         createState: (id, val) => { if (!states.has(id)) states.set(id, {val, ack: true, ts: now}); },
         setState: (id, val) => states.set(id, {val, ack: true, ts: now}), log() {}});
-    for (const name of ['core', 'planner']) vm.runInContext(fs.readFileSync(path.join(__dirname, `../lib/engine/${name}.js`), 'utf8')
+    for (const name of ['core', 'vehicles', 'planner']) vm.runInContext(fs.readFileSync(path.join(__dirname, `../lib/engine/${name}.js`), 'utf8')
         .replaceAll('__ADAPTER_ROOT__', 'ems.0'), context);
     const run = source => vm.runInContext(source, context);
     run('createStates()');
@@ -189,8 +189,10 @@ function wholePlan(h, price, pv, car) {
     h.context.cars = [0, 1, 2].map(index => ({...vehicle(h, index, 1), connected: false,
         release: false, eligible: false, socValid: false, energyRequiredKWh: 0,
         minimumSocPct: 0, targetSocPct: 80, socPct: 40, capacityKWh: 50,
+        baseMinCurrent1pA: 6, baseMaxCurrent1pA: 16, baseMinCurrent3pA: 6, baseMaxCurrent3pA: 16,
+        legacyRelease: 1, deadlineEnabled: false,
         manualMinimumCurrentA: 0, status: 'unavailable', ...index === car.index ? car : {}}));
-    h.run('historyReady=true; updateVehicles=()=>{}; vehicleState=wb=>cars[wb]; plannedVehicleAtSoc=v=>v; localDateKey=d=>d.toISOString().slice(0,10)');
+    h.run('historyReady=true; updateVehicles=()=>{}; vehicleState=wb=>cars[wb]; localDateKey=d=>d.toISOString().slice(0,10)');
     const start = Math.floor(h.now / 900000) * 900000;
     h.context.planInput = {pv: price.map((_, i) => ({timestamp: start + i * 900000, valueW: pv[i] || 0})),
         house: price.map(() => ({valueW: 0})), prices: {total: price.map(value_ct_kWh => ({value_ct_kWh}))}};
@@ -217,6 +219,79 @@ test('whole planner does not count PV after the fixed session deadline then dupl
     const totalAC = plans[0].reduce((sum, p) => sum + p.valueW * 0.25 / 1000, 0);
     assert.ok(Math.abs(totalAC - 1.84) < 0.001);
     assert.ok(plans[0].slice(4).every(point => point.valueW === 0));
+});
+
+function twoDayVehiclePlan({tomorrowSlots = 8, departure = false, minimum = false, measuredDemand} = {}) {
+    const h = harness('2026-10-01T04:00:00Z'); // 06:00 in Germany, cheap upcoming night before tomorrow's sun.
+    h.put('Config.PriceChargingHorizon_h', 24);
+    const prices = Array(192).fill(30), pv = Array(192).fill(0);
+    for (let i = 68; i < 80; i++) prices[i] = 5;
+    pv[24] = 5000;
+    for (let i = 112; i < 112 + tomorrowSlots; i++) pv[i] = 5000;
+    const acDemand = minimum ? 7 / 0.9 : 4.6;
+    const car = {...vehicle(h, 0, measuredDemand ?? acDemand), priceChargingEnabled: true,
+        release: true, connected: true, energyRequiredKWh: acDemand * 0.9,
+        priceDeadlineTimestamp: h.now + (departure ? 24 : 48) * 3600000,
+        priceDeadlineMode: departure ? 'departure' : 'flexible',
+        deadlineEnabled: departure, departureTimestamp: h.now + 24 * 3600000,
+        ...(minimum ? {minimumSocPct: 20, targetSocPct: 80, socPct: 10, capacityKWh: 10,
+            mustCharge: true, belowMinimum: true, legacyRelease: 2} : {})};
+    const plans = wholePlan(h, prices, pv, car);
+    const diagnostics = JSON.parse(h.run("getState('ems.0.Plan.PriceChargingDiagnostics_JSON').val"));
+    const allocations = JSON.parse(h.run("getState('ems.0.Plan.Allocation_48h_JSON').val"));
+    return {h, plans, diagnostics, allocations, acDemand};
+}
+
+test('flexible EV waits for tomorrow PV beyond the 24h purchase window and ignores an inactive departure', () => {
+    const {h, plans, diagnostics, acDemand} = twoDayVehiclePlan();
+    assert.ok(plans[0].slice(112).some(point => point.valueW > 0), 'tomorrow PV remains usable');
+    assert.ok(plans[0].every(point => !point.gridChargeW), 'cheap night must not replace available PV');
+    const totalAC = plans[0].reduce((sum, point) => sum + point.valueW / 4000, 0);
+    assert.ok(Math.abs(totalAC - acDemand) < 0.001);
+    const report = diagnostics.wallboxes[0];
+    assert.equal(report.deadlineMode, 'flexible');
+    assert.equal(report.pvDemandUntil, h.now + 48 * 3600000);
+    assert.equal(report.gridPurchaseUntil, h.now + 24 * 3600000);
+    assert.equal(report.reason, 'covered-by-pv-or-mandatory-plan');
+});
+
+test('flexible EV buys only the remainder after PV today and tomorrow without duplicating target energy', () => {
+    const {plans, diagnostics, acDemand} = twoDayVehiclePlan({tomorrowSlots: 1});
+    const report = diagnostics.wallboxes[0];
+    assert.ok(Math.abs(report.baselineKWh - 1.84) < 1e-8);
+    assert.ok(Math.abs(report.gridKWh - (acDemand - 1.84)) < 1e-8);
+    assert.ok(plans[0].filter(point => point.gridChargeW > 0).every(point => point.priceLimitCt === 5));
+    const totalAC = plans[0].reduce((sum, point) => sum + point.valueW / 4000, 0);
+    assert.ok(Math.abs(totalAC - acDemand) < 0.001);
+});
+
+test('a real departure before tomorrow PV still requires the missing energy during the cheap night', () => {
+    const {h, plans, diagnostics, acDemand} = twoDayVehiclePlan({departure: true});
+    assert.ok(plans[0].slice(96).every(point => point.valueW === 0));
+    assert.ok(plans[0].slice(68, 80).some(point => point.gridChargeW > 0));
+    const report = diagnostics.wallboxes[0];
+    assert.equal(report.deadlineMode, 'departure');
+    assert.equal(report.pvDemandUntil, h.now + 24 * 3600000);
+    assert.ok(Math.abs(report.gridKWh - (acDemand - 0.92)) < 1e-8);
+    assert.ok(Math.abs(plans[0].reduce((sum, point) => sum + point.valueW / 4000, 0) - acDemand) < 0.001);
+});
+
+test('minimum SoC remains immediate mandatory charging although next-day PV covers the rest', () => {
+    const {plans, allocations} = twoDayVehiclePlan({minimum: true, tomorrowSlots: 12});
+    assert.ok(plans[0][0].valueW > 0, 'minimum SoC is restored immediately');
+    const gridKWh = allocations.reduce((sum, slot) => sum + slot.wallboxGridW / 4000, 0);
+    assert.ok(Math.abs(gridKWh - 1 / 0.9) < 1e-8, 'mandatory import ends at minimum SoC');
+    assert.ok(plans[0].slice(112).some(point => point.valueW > 0));
+    assert.ok(plans[0].every(point => !point.gridChargeW), 'no discretionary import in addition to minimum');
+});
+
+test('future PV baseline honors measured session demand when the latest raw SoC has not moved yet', () => {
+    const {plans, h} = twoDayVehiclePlan({measuredDemand: 1.84});
+    assert.ok(Math.abs(plans[0].reduce((sum, point) => sum + point.valueW / 4000, 0) - 1.84) < 0.001);
+    assert.ok(plans[0].every(point => !point.gridChargeW));
+    const status = JSON.parse(h.run("getState('ems.0.Plan.WallboxStatus_JSON').val"))[0];
+    assert.equal(status.planningStatus, 'complete');
+    assert.equal(status.remainingEnergyKWh, 0);
 });
 
 

@@ -14,7 +14,8 @@ erforderlich. Die Preisquellen werden wie unter
 [Tarife und Preisquellen](prices-and-tariffs.md) eingerichtet.
 
 Preisoptimiertes Netzladen wird für den Speicher und für jede Wallbox separat
-freigegeben. Diese neuen Freigaben sind nach einem Update zunächst aus.
+freigegeben. Bei der erstmaligen Einrichtung sind diese Freigaben aus;
+bereits gesetzte Freigaben bleiben bei einem Update erhalten.
 Zusätzlich gelten weiterhin die Gerätefreigaben, der globale Schreibschalter,
 die Produktionsfreigaben und die vorhandenen Ausgangs- und Messwertprüfungen.
 Das Update schaltet keine Geräte ein.
@@ -26,7 +27,7 @@ manueller Mindeststrom bleiben eigenständig.
 
 | Admin-Bereich | Neue Einstellungen |
 |---|---|
-| Preise & Tarife | Planungshorizont, Vorgabe 24 Stunden; Ladeblockdauer, Vorgabe 30 Minuten |
+| Preise & Tarife | Preisfenster für Netzladung, Vorgabe 24 Stunden; Ladeblockdauer, Vorgabe 30 Minuten |
 | Speicher | Preisladung erlauben, Preisobergrenze, Mindestersparnis nach Verlusten, zusätzliche Reserve |
 | Je Wallbox | Preisladung erlauben, Preisobergrenze, AC-Energiemenge bei fehlendem SoC |
 
@@ -54,11 +55,33 @@ geschätzt oder neu aufgefüllt. Die Sitzung meldet den Grund; erneutes
 Abstecken und Anstecken beginnt eine neue Sitzung. Sehr kleine Restmengen
 dürfen einen kürzeren letzten Ladeblock ergeben.
 
-Ohne Abfahrtszeit begrenzt ein Planungshorizont die Ladeentscheidung; Vorgabe
-sind 24 Stunden. Ein solcher Horizont ist keine garantierte Fertigstellung.
-Fehlende Preise, fehlende Leistung oder Gerätesperren können verhindern, dass
-das Ziel erreicht wird. Die Planung darf dann keine unbekannten Preisfenster
-als billig behandeln.
+**Ab alpha.26 berücksichtigt ein Fahrzeug ohne feste Abfahrtszeit die nutzbare
+PV der gesamten kommenden 48 Stunden.** Reicht diese für sein Ladeziel, wird
+keine zusätzliche preisabhängige Netzladung geplant. Reicht sie nur teilweise,
+wird ausschließlich der verbleibende Bedarf auf günstige Netzladeblöcke verteilt.
+Die vorgeschaltete PV-Verteilung berücksichtigt die Fahrzeugprioritäten und
+das nacheinander erfolgende Laden; derselbe PV-Überschuss wird nicht mehreren
+Autos zugesagt. Mindest-SoC und manuelle Pflichtladegründe bleiben verbindlich.
+
+Das **Preisfenster für Netzladung** (Vorgabe 24 Stunden) begrenzt die Suche nach
+kaufbaren Preisblöcken. Es ist keine Frist, bis zu der ein Auto ohne Abfahrt voll
+sein muss. Seine PV-Vorschau umfasst unabhängig davon bis zu 48 Stunden und
+wandert bei jeder Neuplanung mit. Eine aktivierte echte Abfahrt ist dagegen
+eine feste Frist: Nur vorher nutzbare PV reduziert dann den Netzladebedarf.
+Eine abgelaufene Abfahrt wird innerhalb derselben Sitzung nicht automatisch
+auf den nächsten Tag verschoben.
+
+Bereits angeschlossene Fahrzeuge übernehmen die flexible Vorschau beim Update
+von alpha.25, ohne Abstecken. Session-ID, gemessene Ladeenergie, SoC-Bezug und
+eventuelle Messfehler bleiben erhalten. Auch ein manuelles Budget ohne SoC
+wird durch die rollierende Vorschau oder einen Neustart nicht erneuert.
+
+Beispiel: Heute bleibt ein Ladebedarf von 18 kWh, morgen ist ausreichend
+zugeteilter PV-Überschuss verfügbar. Ohne feste Abfahrt wartet das Auto auf die
+PV, selbst wenn heute Nacht günstiger Netzstrom angeboten wird. Bei einer
+Abfahrt morgen früh muss die fehlende Energie dagegen vorher geladen werden.
+Fehlende Preise, fehlende Leistung oder Gerätesperren können eine vollständige
+Ladung verhindern; unbekannte Preisfenster werden nicht als billig behandelt.
 
 ## Speicher
 

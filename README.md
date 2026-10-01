@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.25**
+Aktuelle Version: **0.17.0-alpha.26**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -40,6 +40,21 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.26 – Morgen-PV vor unnötiger Nachtladung
+
+- Fahrzeuge ohne feste Abfahrt berücksichtigen die nutzbare PV der kommenden
+  48 Stunden. Reicht sie für das Ladeziel, entfällt zusätzliche Preis-Netzladung;
+  bei einer Lücke wird nur die fehlende Energie günstig nachgeladen.
+- Das Preisfenster (Vorgabe 24 Stunden) begrenzt mögliche Netzladeblöcke und
+  erzeugt keine künstliche Fertigstellungsfrist mehr. Mindest-SoC und echte
+  Abfahrtszeiten bleiben verbindlich.
+- Bereits angeschlossene Autos übernehmen die Änderung automatisch. Sitzung,
+  gemessene Lademengen und Messwertprüfungen bleiben über Updates und Neustarts
+  erhalten; auch manuelle kWh-Budgets werden nicht erneuert.
+- Admin-Texte und Diagnosen unterscheiden PV-Vorschau und Netzladefenster.
+
+Details: [Preisoptimiertes Netzladen](docs/price-charging.md).
 
 ## Neu in 0.17.0-alpha.25 – Preisoptimiertes Laden von Speicher und Autos
 
