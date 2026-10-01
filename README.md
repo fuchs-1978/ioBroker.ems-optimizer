@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.26**
+Aktuelle Version: **0.17.0-alpha.27**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -40,6 +40,25 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.27 – PV-Regelruhe, Startdiagnose und BHKW
+
+- Eine eingeschaltete Preisoption ohne laufendes Netzladefenster löst bei einer
+  PV-Delle keinen sofortigen Wallbox-Stopp mehr aus. Mindestlaufzeit und
+  Stoppverzögerung gelten weiter. Eine tatsächlich genutzte Netzladefreigabe
+  wird bei Ablauf oder ungültigen Preisdaten weiterhin sofort entzogen.
+- `Control.WallboxN.AllocationDiagnostics_JSON` erklärt Startschwelle,
+  Mindestleistung, Reserve, Countdown, Budget und EHZ-Priorität. Ein real
+  ladendes Auto beweist kein ausreichendes EMS-Startbudget; die Reserve bleibt erhalten.
+- Optionale BHKW-Leistung und kumulierter Erzeugungszähler stehen unter
+  `Actual.BHKW*` und `Debug.Shadow.BHKW.*` beziehungsweise `Actuals.BHKW_W`.
+  Der Zähler unterstützt kWh, Wh und Joule (1 kWh = 3.600.000 J).
+  ACK, Qualität und Quellenalter werden geprüft; unbekannte Werte bleiben null.
+- In **Messwerte** BHKW vorhanden, Leistungs-/Zählerquelle und deren tatsächliche
+  Einheit einstellen. BHKW bleibt getrennt von PV und wird nicht nochmals zum
+  Netzbudget oder als Prognose addiert. Es gibt keinen BHKW-Stellausgang.
+  Nach Stilllegung (hier vorgesehen Ende 2026) „BHKW vorhanden“ deaktivieren.
+- Updates aktivieren keine Ausgänge. Softwaretests ersetzen keine begleitete Liveabnahme.
 
 ## Neu in 0.17.0-alpha.26 – Morgen-PV vor unnötiger Nachtladung
 

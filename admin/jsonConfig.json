@@ -137,6 +137,72 @@
           "sm": 12,
           "newLine": true
         },
+        "bhkwHeader": {
+          "type": "header",
+          "text": "Optional BHKW generation (measurement only)",
+          "size": 2,
+          "newLine": true
+        },
+        "bhkwPresent": {
+          "type": "checkbox",
+          "label": "BHKW present – disable after decommissioning",
+          "default": false,
+          "newLine": true
+        },
+        "bhkwPowerId": {
+          "type": "text",
+          "label": "BHKW electrical production power (W)",
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "bhkwEnergyId": {
+          "type": "text",
+          "label": "BHKW cumulative electrical production energy",
+          "default": "",
+          "sm": 8,
+          "newLine": true
+        },
+        "bhkwEnergyUnit": {
+          "type": "select",
+          "label": "BHKW source energy unit",
+          "default": "kWh",
+          "options": [
+            {
+              "label": "kWh",
+              "value": "kWh"
+            },
+            {
+              "label": "Wh",
+              "value": "Wh"
+            },
+            {
+              "label": "J",
+              "value": "J"
+            }
+          ],
+          "sm": 4
+        },
+        "bhkwPowerMaxAgeS": {
+          "type": "number",
+          "label": "Maximum BHKW power sample age (s)",
+          "default": 120,
+          "min": 1,
+          "sm": 6,
+          "newLine": true
+        },
+        "bhkwEnergyMaxAgeS": {
+          "type": "number",
+          "label": "Maximum BHKW counter sample age (s)",
+          "default": 86400,
+          "min": 1,
+          "sm": 6
+        },
+        "bhkwHelp": {
+          "type": "staticText",
+          "text": "BHKW is recorded separately from PV. The net meter already includes its power: no extra live budget or forecast generation is added. Missing, stale or unacknowledged values remain unknown. Daily energy requires valid counter differences. After decommissioning disable BHKW present.",
+          "newLine": true
+        },
         "gridImportId": {
           "type": "text",
           "label": "Grid import power (required)",

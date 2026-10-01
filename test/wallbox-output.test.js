@@ -1150,3 +1150,24 @@ test('optional modeled current affects only vehicle-response ramp feedback', asy
 });
 
 module.exports={setup};
+
+test('enabled price option without a price session preserves PV minimum runtime and stop delay', async () => {
+    const h = setup();
+    h.config.wallboxMinimumRunTimeS = 600;
+    h.config.wallboxStopDelayS = 120;
+    h.put('ems.0.Config.Wallbox0PriceChargingEnabled', true);
+    h.adapter.engineContext = {vehicleState: () => ({release: true})};
+    await h.start(); h.writes.length = 0;
+    h.put('ems.0.Control.Targets.Wallbox0_W', 0); h.put('export', 0);
+    await h.output.tick();
+    assert.deepEqual(h.writes, []);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, true);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val, /Mindestlaufzeit/);
+    h.output.devices[0].activeSince -= 601000;
+    await h.output.tick();
+    assert.deepEqual(h.writes, [], 'stop delay survives minimum-runtime expiry');
+    h.output.devices[0].shortfallSince -= 121000;
+    await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+    assert.doesNotMatch(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val, /Preisfenster/);
+});

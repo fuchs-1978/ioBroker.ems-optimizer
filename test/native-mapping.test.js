@@ -43,3 +43,9 @@ test('central house-connection settings derive one working limit', () => {
     assert.deepEqual(houseConnectionSettings({wallboxHaLimitA: 63,
         wallboxHaIncreaseLimitA: 58}), {fuseA: 63, reserveA: 5, increaseLimitA: 58});
 });
+
+test('BHKW power and counter explicit mappings override legacy sources independently', () => {
+    const mapping = buildNativeMapping({bhkwPowerId: 'meter.power', bhkwEnergyId: 'meter.energy',
+        dataPointMapJson: '{"DP_BHKW_POWER":"old.power","DP_BHKW_ENERGY":"old.energy"}'});
+    assert.equal(mapping.DP_BHKW_POWER, 'meter.power'); assert.equal(mapping.DP_BHKW_ENERGY, 'meter.energy');
+});

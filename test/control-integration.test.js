@@ -1023,3 +1023,20 @@ test('passive diagnostics preserve every WB/EHZ command through delayed startup 
     assert.ok(events.length > 0 && events.length <= 100, 'bounded meaningful event ring');
     assert.ok(power.length > 0 && power.length <= 120, 'bounded power trace ring');
 });
+
+test('start diagnostics distinguish reserve shortfall, countdown and ready state without forcing a start', async () => {
+    const h = await plant({startDelayS: 30});
+    h.own('Config.WallboxStartReserve_W', 300);
+    h.own('Config.WallboxStartDelay_s', 30);
+    const call = (watts, elapsedMs = 0) => h.run(`stabilizedWallboxPower(1, ${watts},
+        {phaseSwitchEnabled:false, maximumPhases:1, minCurrent1pA:6, maximumPowerW:7360},
+        0, 1, Date.now() + ${elapsedMs});`);
+    const diag = () => h.run('wallboxStartDiagnostics[1]');
+    assert.equal(call(1590), 0);
+    assert.equal(diag().minimumW, 1380); assert.equal(diag().startThresholdW, 1680);
+    assert.equal(diag().reason, 'budget-below-start-threshold');
+    assert.equal(call(1680), 0);
+    assert.equal(diag().reason, 'start-delay'); assert.equal(diag().startDelayRemainingS, 30);
+    assert.equal(call(1500, 31000), 1500, 'armed reserve hysteresis remains intact');
+    assert.equal(diag().reason, 'ready-to-start'); assert.equal(diag().startThresholdW, 1380);
+});

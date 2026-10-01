@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.26",
+    "version": "0.17.0-alpha.27",
     "titleLang": {
       "en": "EMS Optimizer",
       "de": "EMS-Optimierer"
@@ -497,7 +497,13 @@
     "wallboxPrioritySource": "auto",
     "wallboxPriorityId": "",
     "wallboxHaLimitA": 50,
-    "wallboxHaIncreaseLimitA": 46
+    "wallboxHaIncreaseLimitA": 46,
+    "bhkwPresent": false,
+    "bhkwPowerId": "",
+    "bhkwEnergyId": "",
+    "bhkwEnergyUnit": "kWh",
+    "bhkwPowerMaxAgeS": 120,
+    "bhkwEnergyMaxAgeS": 86400
   },
   "objects": [],
   "instanceObjects": [
