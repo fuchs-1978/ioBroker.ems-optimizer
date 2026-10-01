@@ -21,7 +21,7 @@ function engine(overrides = {}) {
         getState: id => states.get(id), existsState: id => states.has(id),
         createState: (id, val) => { if (!states.has(id)) put(id, val); },
         setState: put, writeForeignState: (...args) => foreignWrites.push(args), log: () => {}});
-    for (const file of ['core', 'heating-controller', 'heatpump-controller']) {
+    for (const file of ['core', 'prices', 'heating-controller', 'heatpump-controller']) {
         const source = fs.readFileSync(path.join(__dirname, '../lib/engine', `${file}.js`), 'utf8')
             .replaceAll('__ADAPTER_ROOT__', 'ems.0').replace(/__([A-Z0-9_]+)__/g, (_, key) =>
                 ['DP_HEAT_PUMP_BUFFER_TEMP', 'DP_HEAT_PUMP_DHW_TEMP'].includes(key) ? '' : key);

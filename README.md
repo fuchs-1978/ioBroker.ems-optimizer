@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.23**
+Aktuelle Version: **0.17.0-alpha.24**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -40,6 +40,24 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.24 – Tarife und Viertelstundenpreise
+
+- Eigener Admin-Reiter **Preise & Tarife** mit Jahresgültigkeit, drei
+  Netzentgeltstufen und einer editierbaren Tabelle der Zeitfenster je Quartal.
+  Der Netzfahrplan entsteht unabhängig vom Veröffentlichungszeitraum der Börse.
+- Optionale direkte Viertelstundenpreise für DE-LU von **Energy-Charts.info**.
+  Externe Preis-Datenpunkte bleiben als alternative Quelle verwendbar.
+- Gemeinsame Preisberechnung für Prognose und thermische Preisfreigabe;
+  explizite Netto-/Bruttobasis und ein Festtarifmodus mit Gesamtarbeitspreis
+  und darin enthaltenem Referenz-Netzentgelt.
+- Fehlende Preise erscheinen als Lücken und berechtigen nicht zu
+  preisbedingtem Netzladen. Tarifwechsel um 16:30, Mitternacht, Quartalswechsel
+  und die Zeitumstellung werden anhand gültiger Intervalle ausgewertet.
+- Der Fahrplan bleibt viertelstündlich, die Leistungsregelung im Sekundenbereich.
+  Bestehende Quellen und Ausgangsfreigaben werden beim Update beibehalten.
+
+Einrichtung, Einheiten und Datenquellen: [Tarife und Preisquellen](docs/prices-and-tariffs.md).
 
 ## Neu in 0.17.0-alpha.23 – begrenzte Messwertpaarung aus #66
 
@@ -1047,7 +1065,8 @@ erweiterte JSON gepflegt. Die Adapterseite ist in folgende Bereiche gegliedert:
 
 - Allgemeine Freigaben, zentrale Hausanschlussgrenze und §14a/LPC
 - Messwerte und optionale Teil-/Phasenmessungen
-- Historie, Wetter-/PV-Prognose, Preise und Netzentgelte
+- Historie und Wetter-/PV-Prognose
+- Preise & Tarife: Preisquellen, Steuerbasis und jährliche Netzentgelt-Zeitfenster
 - allgemeine Wallbox-Regelung und Prioritätsquelle
 - Wallbox 0, Wallbox 1 und Wallbox 2
 - my-PV Trinkwasser
@@ -1388,6 +1407,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.24 | Jahrestarife im Admin, direkte Viertelstundenpreise von Energy-Charts, gemeinsame Brutto-Preisberechnung und ausdrückliche Datenlücken ohne günstigen Ersatzpreis. |
 | 0.17.0-alpha.23 | Issue #66: begrenzte historische Messwertpaarung im Schattenmodell, getrennte Telemetrie-/Korrekturgültigkeit, Sitzungsabdeckung und ereignistreue Recordverdichtung. |
 | 0.17.0-alpha.22 | Issue #64: Plausibilitätsgrenze für zeitversetzte Netz-/WB-Messungen im Schattenmodell, aktuelle Versionsanzeige und korrekte Diagnose dauerhafter Benutzervorgaben. |
 | 0.17.0-alpha.21 | Issue #62: −20-W-Toleranz für gültige Wallbox-Leistung, präzise Fehlerdiagnose, konsistente elektrische Schattenantwort, Budgetdiagnose und SQL-Auswertung mit Datenqualitätsprüfung. |

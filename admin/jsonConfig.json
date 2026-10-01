@@ -196,27 +196,713 @@
       "type": "panel",
       "label": "History & forecast",
       "items": {
-        "forecastHeader": {"type": "header", "text": "History sources", "size": 2, "newLine": true},
-        "historyInstance": {"type": "text", "label": "History/SQL adapter instance", "default": "", "sm": 8, "newLine": true},
-        "historyDays": {"type": "number", "label": "History look-back", "unit": "days", "default": 84, "min": 7, "max": 365, "sm": 4},
-        "dhwHistoryId": {"type": "text", "label": "Historized DHW power", "default": "", "sm": 12, "newLine": true},
-        "forecastSourceHeader": {"type": "header", "text": "Forecast sources", "size": 3, "newLine": true},
-        "weatherHourlyBaseId": {"type": "text", "label": "Hourly weather base data point", "default": "", "sm": 6, "newLine": true},
-        "pvForecastBaseId": {"type": "text", "label": "PV forecast base data point", "default": "", "sm": 6},
-        "priceHeader": {"type": "header", "text": "Prices and grid fees", "size": 3, "newLine": true},
-        "energyPriceSeriesId": {"type": "text", "label": "Dynamic energy-price series", "default": "", "sm": 6, "newLine": true},
-        "gridFeeSeriesId": {"type": "text", "label": "Dynamic grid-fee series", "default": "", "sm": 6},
-        "dynamicEnergyPrice": {"type": "checkbox", "label": "Use dynamic energy price (internal switch)", "default": false, "sm": 6, "newLine": true},
-        "dynamicGridFee": {"type": "checkbox", "label": "Use dynamic grid fee (internal switch)", "default": false, "sm": 6},
-        "dynamicEnergyPriceEnabledId": {"type": "text", "label": "External enable switch for dynamic energy price", "default": "", "sm": 6, "newLine": true},
-        "dynamicGridFeeEnabledId": {"type": "text", "label": "External enable switch for dynamic grid fee", "default": "", "sm": 6},
-        "priceSwitchHelp": {"type": "staticText", "text": "If an external enable data point is configured, it overrides the corresponding internal switch. Missing or invalid external values fail safe to OFF and are reported in diagnostics.", "newLine": true},
-        "fixedEnergyCt": {"type": "number", "label": "Fixed energy component", "unit": "ct/kWh", "default": 22.85, "sm": 4, "newLine": true},
-        "fixedGridFeeCt": {"type": "number", "label": "Fixed grid fee", "unit": "ct/kWh", "default": 6.04, "sm": 4},
-        "dynamicEnergyAddersCt": {"type": "number", "label": "Dynamic energy adders", "unit": "ct/kWh", "default": 9.301, "sm": 4},
-        "holidayTodayId": {"type": "text", "label": "Holiday today flag", "default": "", "sm": 4, "newLine": true},
-        "holidayTomorrowId": {"type": "text", "label": "Holiday tomorrow flag", "default": "", "sm": 4},
-        "holidayAfterTomorrowId": {"type": "text", "label": "Holiday day-after-tomorrow flag", "default": "", "sm": 4}
+        "forecastHeader": {
+          "type": "header",
+          "text": "History sources",
+          "size": 2,
+          "newLine": true
+        },
+        "historyInstance": {
+          "type": "text",
+          "label": "History/SQL adapter instance",
+          "default": "",
+          "sm": 8,
+          "newLine": true
+        },
+        "historyDays": {
+          "type": "number",
+          "label": "History look-back",
+          "unit": "days",
+          "default": 84,
+          "min": 7,
+          "max": 365,
+          "sm": 4
+        },
+        "dhwHistoryId": {
+          "type": "text",
+          "label": "Historized DHW power",
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "forecastSourceHeader": {
+          "type": "header",
+          "text": "Forecast sources",
+          "size": 3,
+          "newLine": true
+        },
+        "weatherHourlyBaseId": {
+          "type": "text",
+          "label": "Hourly weather base data point",
+          "default": "",
+          "sm": 6,
+          "newLine": true
+        },
+        "pvForecastBaseId": {
+          "type": "text",
+          "label": "PV forecast base data point",
+          "default": "",
+          "sm": 6
+        },
+        "holidayTodayId": {
+          "type": "text",
+          "label": "Holiday today flag",
+          "default": "",
+          "sm": 4,
+          "newLine": true
+        },
+        "holidayTomorrowId": {
+          "type": "text",
+          "label": "Holiday tomorrow flag",
+          "default": "",
+          "sm": 4
+        },
+        "holidayAfterTomorrowId": {
+          "type": "text",
+          "label": "Holiday day-after-tomorrow flag",
+          "default": "",
+          "sm": 4
+        }
+      }
+    },
+    "pricesTab": {
+      "type": "panel",
+      "label": {
+        "en": "Prices & tariffs",
+        "de": "Preise & Tarife"
+      },
+      "items": {
+        "priceHeader": {
+          "type": "header",
+          "text": {
+            "en": "Prices and tariffs",
+            "de": "Preise und Tarife"
+          },
+          "size": 3,
+          "newLine": true
+        },
+        "_priceQuarterHelp": {
+          "type": "staticText",
+          "text": {
+            "en": "Forecast prices and tariff windows use 15-minute intervals. Real-time power control continues at its configured seconds interval. All resulting prices are gross ct/kWh.",
+            "de": "Prognosepreise und Tarifzeiten werden in 15-Minuten-Intervallen verarbeitet. Die Leistungsregelung arbeitet weiter im eingestellten Sekundentakt. Alle berechneten Preise sind brutto in ct/kWh."
+          },
+          "newLine": true
+        },
+        "priceVatPct": {
+          "type": "number",
+          "label": {
+            "en": "VAT",
+            "de": "Mehrwertsteuer"
+          },
+          "default": 19,
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "sm": 4,
+          "newLine": true
+        },
+        "priceInputBasis": {
+          "type": "select",
+          "label": {
+            "en": "Basis of existing price components",
+            "de": "Preisart der bisherigen Preisbestandteile"
+          },
+          "default": "gross",
+          "options": [
+            {
+              "value": "gross",
+              "label": {
+                "en": "Gross (including VAT)",
+                "de": "Brutto (inklusive MwSt.)"
+              }
+            },
+            {
+              "value": "net",
+              "label": {
+                "en": "Net (excluding VAT)",
+                "de": "Netto (ohne MwSt.)"
+              }
+            }
+          ],
+          "sm": 8
+        },
+        "_priceMigrationHelp": {
+          "type": "staticText",
+          "text": {
+            "en": "Existing amounts are preserved without automatic reinterpretation. Review whether the fixed energy component, fixed grid fee, energy adders and external grid-fee series are net or gross. This selector applies to these four inputs; exchange prices and the annual tariff have their own basis.",
+            "de": "Bisherige Beträge bleiben ohne automatische Umdeutung erhalten. Bitte prüfen, ob fester Energieanteil, festes Netzentgelt, Energieaufschläge und externe Netzentgeltreihe netto oder brutto sind. Diese Auswahl gilt für diese vier Eingaben; Börsenpreise und Jahrestarif haben eine eigene Preisart."
+          },
+          "newLine": true
+        },
+        "_fixedTariffHeader": {
+          "type": "header",
+          "text": {
+            "en": "Fixed electricity tariff",
+            "de": "Fester Stromtarif"
+          },
+          "size": 3,
+          "newLine": true
+        },
+        "fixedTariffMode": {
+          "type": "select",
+          "label": {
+            "en": "Fixed tariff input",
+            "de": "Eingabe des festen Stromtarifs"
+          },
+          "default": "components",
+          "options": [
+            {
+              "value": "components",
+              "label": {
+                "en": "Energy component plus grid fee",
+                "de": "Energieanteil plus Netzentgelt"
+              }
+            },
+            {
+              "value": "total",
+              "label": {
+                "en": "Contract total price with reference grid fee",
+                "de": "Vertragspreis gesamt mit Referenz-Netzentgelt"
+              }
+            }
+          ],
+          "sm": 12,
+          "newLine": true
+        },
+        "fixedEnergyCt": {
+          "type": "number",
+          "label": {
+            "en": "Fixed energy component (excluding grid fee)",
+            "de": "Fester Energieanteil (ohne Netzentgelt)"
+          },
+          "default": 22.85,
+          "unit": "ct/kWh",
+          "min": -1000,
+          "max": 1000,
+          "sm": 6,
+          "newLine": true,
+          "hidden": "data.fixedTariffMode === 'total'"
+        },
+        "fixedTotalPriceCt": {
+          "type": "number",
+          "label": {
+            "en": "Contract total price (gross)",
+            "de": "Gesamter Arbeitspreis laut Vertrag (brutto)"
+          },
+          "default": 0,
+          "unit": "ct/kWh",
+          "min": 0,
+          "max": 1000,
+          "sm": 6,
+          "newLine": true,
+          "hidden": "data.fixedTariffMode !== 'total'",
+          "validator": "data.fixedTariffMode !== 'total' || Number(data.fixedTotalPriceCt) > 0"
+        },
+        "referenceGridFeeCt": {
+          "type": "number",
+          "label": {
+            "en": "Grid fee included in contract price (gross)",
+            "de": "Im Vertragspreis enthaltenes Netzentgelt (brutto)"
+          },
+          "default": 7.19,
+          "unit": "ct/kWh",
+          "min": 0,
+          "max": 1000,
+          "sm": 6,
+          "hidden": "data.fixedTariffMode !== 'total'"
+        },
+        "_fixedTotalHelp": {
+          "type": "staticText",
+          "text": {
+            "en": "Enter your actual contract price. The energy component is total price minus the included reference grid fee; the applicable grid fee is then added per interval. Both inputs in this mode are always gross. A total price of 0 is not configured.",
+            "de": "Den tatsächlichen Vertragspreis eintragen. Energieanteil = Gesamtpreis minus enthaltenes Referenz-Netzentgelt; anschließend wird je Intervall das gültige Netzentgelt ergänzt. Beide Eingaben in diesem Modus sind immer brutto. Ein Gesamtpreis von 0 ist nicht eingerichtet."
+          },
+          "newLine": true,
+          "hidden": "data.fixedTariffMode !== 'total'"
+        },
+        "fixedGridFeeCt": {
+          "type": "number",
+          "label": {
+            "en": "Fixed grid fee (dynamic grid fee disabled)",
+            "de": "Festes Netzentgelt (zeitabhängiges Netzentgelt aus)"
+          },
+          "default": 6.04,
+          "unit": "ct/kWh",
+          "min": 0,
+          "max": 1000,
+          "sm": 6,
+          "newLine": true
+        },
+        "_energySourceHeader": {
+          "type": "header",
+          "text": {
+            "en": "Dynamic energy prices",
+            "de": "Dynamische Energiepreise"
+          },
+          "size": 3,
+          "newLine": true
+        },
+        "dynamicEnergyPrice": {
+          "type": "checkbox",
+          "label": {
+            "en": "Use dynamic energy price",
+            "de": "Dynamischen Energiepreis verwenden"
+          },
+          "default": false,
+          "sm": 6,
+          "newLine": true
+        },
+        "dynamicEnergyPriceEnabledId": {
+          "type": "text",
+          "label": {
+            "en": "External enable switch (optional)",
+            "de": "Externer Freigabeschalter (optional)"
+          },
+          "default": "",
+          "sm": 6
+        },
+        "energyPriceSource": {
+          "type": "select",
+          "label": {
+            "en": "Exchange-price source",
+            "de": "Quelle der Börsenpreise"
+          },
+          "default": "external",
+          "options": [
+            {
+              "value": "external",
+              "label": {
+                "en": "External data point",
+                "de": "Externer Datenpunkt"
+              }
+            },
+            {
+              "value": "energy-charts",
+              "label": {
+                "en": "Energy-Charts: DE-LU day-ahead",
+                "de": "Energy-Charts: DE-LU Day-Ahead"
+              }
+            }
+          ],
+          "sm": 6,
+          "newLine": true
+        },
+        "energyPriceSeriesId": {
+          "type": "text",
+          "label": {
+            "en": "External energy-price series data point",
+            "de": "Datenpunkt der externen Energiepreisreihe"
+          },
+          "default": "",
+          "sm": 6,
+          "hidden": "data.energyPriceSource === 'energy-charts'"
+        },
+        "energyPriceSeriesBasis": {
+          "type": "select",
+          "label": {
+            "en": "External exchange-price basis",
+            "de": "Preisart der externen Börsenpreise"
+          },
+          "default": "gross",
+          "options": [
+            {
+              "value": "gross",
+              "label": {
+                "en": "Gross (including VAT)",
+                "de": "Brutto (inklusive MwSt.)"
+              }
+            },
+            {
+              "value": "net",
+              "label": {
+                "en": "Net (excluding VAT)",
+                "de": "Netto (ohne MwSt.)"
+              }
+            }
+          ],
+          "sm": 6,
+          "newLine": true,
+          "hidden": "data.energyPriceSource === 'energy-charts'"
+        },
+        "_directExchangeHelp": {
+          "type": "staticText",
+          "text": {
+            "en": "Energy-Charts supplies actual published DE-LU quarter-hour prices in EUR/MWh, always net. The adapter converts the unit and adds VAT once. Unpublished intervals remain missing and cannot authorize price-dependent operation.",
+            "de": "Energy-Charts liefert die veröffentlichten DE-LU-Viertelstundenpreise in EUR/MWh, immer netto. Der Adapter rechnet die Einheit um und ergänzt die MwSt. einmalig. Noch unveröffentlichte Intervalle bleiben fehlend und geben keinen preisabhängigen Betrieb frei."
+          },
+          "newLine": true,
+          "hidden": "data.energyPriceSource !== 'energy-charts'"
+        },
+        "dynamicEnergyAddersCt": {
+          "type": "number",
+          "label": {
+            "en": "Energy adders excluding grid fee",
+            "de": "Energieaufschläge ohne Netzentgelt"
+          },
+          "default": 9.301,
+          "unit": "ct/kWh",
+          "min": -1000,
+          "max": 1000,
+          "sm": 6,
+          "newLine": true
+        },
+        "_gridSourceHeader": {
+          "type": "header",
+          "text": {
+            "en": "Grid fees",
+            "de": "Netzentgelte"
+          },
+          "size": 3,
+          "newLine": true
+        },
+        "dynamicGridFee": {
+          "type": "checkbox",
+          "label": {
+            "en": "Use time-dependent grid fee",
+            "de": "Zeitabhängiges Netzentgelt verwenden"
+          },
+          "default": false,
+          "sm": 6,
+          "newLine": true
+        },
+        "dynamicGridFeeEnabledId": {
+          "type": "text",
+          "label": {
+            "en": "External grid-fee enable switch (optional)",
+            "de": "Externer Netzentgelt-Freigabeschalter (optional)"
+          },
+          "default": "",
+          "sm": 6
+        },
+        "gridFeeSource": {
+          "type": "select",
+          "label": {
+            "en": "Grid-fee source",
+            "de": "Quelle der Netzentgelte"
+          },
+          "default": "external",
+          "options": [
+            {
+              "value": "external",
+              "label": {
+                "en": "External data point",
+                "de": "Externer Datenpunkt"
+              }
+            },
+            {
+              "value": "schedule",
+              "label": {
+                "en": "Annual tariff with time windows",
+                "de": "Jahrestarif mit Zeitfenstern"
+              }
+            }
+          ],
+          "sm": 6,
+          "newLine": true
+        },
+        "gridFeeSeriesId": {
+          "type": "text",
+          "label": {
+            "en": "External grid-fee series data point",
+            "de": "Datenpunkt der externen Netzentgeltreihe"
+          },
+          "default": "",
+          "sm": 6,
+          "hidden": "data.gridFeeSource === 'schedule'"
+        },
+        "priceSwitchHelp": {
+          "type": "staticText",
+          "text": {
+            "en": "An external enable data point overrides its internal switch. Missing or invalid external switch values disable that dynamic source and are reported in diagnostics. Selecting a source alone does not enable it.",
+            "de": "Ein externer Freigabedatenpunkt ersetzt den zugehörigen internen Schalter. Fehlende oder ungültige Schalterwerte deaktivieren die dynamische Quelle und werden in der Diagnose gemeldet. Die Quellenauswahl allein aktiviert sie nicht."
+          },
+          "newLine": true
+        },
+        "_annualTariffHeader": {
+          "type": "header",
+          "text": {
+            "en": "Annual grid tariff",
+            "de": "Jahrestarif Netzentgelte"
+          },
+          "size": 3,
+          "newLine": true,
+          "hidden": "data.gridFeeSource !== 'schedule'"
+        },
+        "gridTariffYear": {
+          "type": "number",
+          "label": {
+            "en": "Tariff year",
+            "de": "Tarifjahr"
+          },
+          "default": 2026,
+          "min": 2020,
+          "max": 2100,
+          "step": 1,
+          "sm": 6,
+          "newLine": true,
+          "hidden": "data.gridFeeSource !== 'schedule'"
+        },
+        "gridTariffBasis": {
+          "type": "select",
+          "label": {
+            "en": "Annual tariff price basis",
+            "de": "Preisart des Jahrestarifs"
+          },
+          "default": "gross",
+          "options": [
+            {
+              "value": "gross",
+              "label": {
+                "en": "Gross (including VAT)",
+                "de": "Brutto (inklusive MwSt.)"
+              }
+            },
+            {
+              "value": "net",
+              "label": {
+                "en": "Net (excluding VAT)",
+                "de": "Netto (ohne MwSt.)"
+              }
+            }
+          ],
+          "sm": 6,
+          "hidden": "data.gridFeeSource !== 'schedule'"
+        },
+        "gridTariffStandardCt": {
+          "type": "number",
+          "label": {
+            "en": "Standard tariff",
+            "de": "Standardtarif"
+          },
+          "default": 7.19,
+          "unit": "ct/kWh",
+          "min": 0,
+          "max": 1000,
+          "sm": 4,
+          "newLine": true,
+          "hidden": "data.gridFeeSource !== 'schedule'"
+        },
+        "gridTariffHighCt": {
+          "type": "number",
+          "label": {
+            "en": "High tariff",
+            "de": "Hochtarif"
+          },
+          "default": 10.01,
+          "unit": "ct/kWh",
+          "min": 0,
+          "max": 1000,
+          "sm": 4,
+          "hidden": "data.gridFeeSource !== 'schedule'"
+        },
+        "gridTariffLowCt": {
+          "type": "number",
+          "label": {
+            "en": "Low tariff",
+            "de": "Niedrigtarif"
+          },
+          "default": 0.71,
+          "unit": "ct/kWh",
+          "min": 0,
+          "max": 1000,
+          "sm": 4,
+          "hidden": "data.gridFeeSource !== 'schedule'"
+        },
+        "_annualTariffHelp": {
+          "type": "staticText",
+          "text": {
+            "en": "Editable example: Avacon 2026, module 3. Confirm prices, eligibility and tariff year against your own agreement. Time windows apply daily in Europe/Berlin, including daylight-saving changes. Each quarter must cover 00:00–24:00 without gaps or overlaps. Use quarter-hour boundaries; split a window at midnight. An expired or incomplete tariff is reported as invalid and cannot authorize price-dependent operation.",
+            "de": "Bearbeitbares Beispiel: Avacon 2026, Modul 3. Preise, Anwendbarkeit und Tarifjahr mit dem eigenen Vertrag abgleichen. Zeitfenster gelten täglich in Europe/Berlin, auch bei Zeitumstellung. Jedes Quartal muss 00:00–24:00 lückenlos und ohne Überschneidung abdecken. Viertelstundengrenzen verwenden; Zeitfenster an Mitternacht aufteilen. Ein abgelaufener oder unvollständiger Tarif wird als ungültig gemeldet und gibt keinen preisabhängigen Betrieb frei."
+          },
+          "newLine": true,
+          "hidden": "data.gridFeeSource !== 'schedule'"
+        },
+        "gridTariffRules": {
+          "type": "table",
+          "label": {
+            "en": "Daily time windows by quarter",
+            "de": "Tägliche Zeitfenster je Quartal"
+          },
+          "default": [
+            {
+              "quarter": 1,
+              "from": "00:00",
+              "to": "05:00",
+              "level": "low"
+            },
+            {
+              "quarter": 1,
+              "from": "05:00",
+              "to": "16:30",
+              "level": "standard"
+            },
+            {
+              "quarter": 1,
+              "from": "16:30",
+              "to": "21:00",
+              "level": "high"
+            },
+            {
+              "quarter": 1,
+              "from": "21:00",
+              "to": "23:00",
+              "level": "standard"
+            },
+            {
+              "quarter": 1,
+              "from": "23:00",
+              "to": "24:00",
+              "level": "low"
+            },
+            {
+              "quarter": 2,
+              "from": "00:00",
+              "to": "24:00",
+              "level": "standard"
+            },
+            {
+              "quarter": 3,
+              "from": "00:00",
+              "to": "24:00",
+              "level": "standard"
+            },
+            {
+              "quarter": 4,
+              "from": "00:00",
+              "to": "05:00",
+              "level": "low"
+            },
+            {
+              "quarter": 4,
+              "from": "05:00",
+              "to": "16:30",
+              "level": "standard"
+            },
+            {
+              "quarter": 4,
+              "from": "16:30",
+              "to": "21:00",
+              "level": "high"
+            },
+            {
+              "quarter": 4,
+              "from": "21:00",
+              "to": "23:00",
+              "level": "standard"
+            },
+            {
+              "quarter": 4,
+              "from": "23:00",
+              "to": "24:00",
+              "level": "low"
+            }
+          ],
+          "newLine": true,
+          "sm": 12,
+          "noDelete": false,
+          "clone": true,
+          "useCardFor": [
+            "xs",
+            "sm"
+          ],
+          "hidden": "data.gridFeeSource !== 'schedule'",
+          "items": [
+            {
+              "type": "select",
+              "attr": "quarter",
+              "title": {
+                "en": "Quarter",
+                "de": "Quartal"
+              },
+              "width": "24%",
+              "default": 1,
+              "options": [
+                {
+                  "value": 1,
+                  "label": {
+                    "en": "Q1 (Jan–Mar)",
+                    "de": "Q1 (Jan–Mär)"
+                  }
+                },
+                {
+                  "value": 2,
+                  "label": {
+                    "en": "Q2 (Apr–Jun)",
+                    "de": "Q2 (Apr–Jun)"
+                  }
+                },
+                {
+                  "value": 3,
+                  "label": {
+                    "en": "Q3 (Jul–Sep)",
+                    "de": "Q3 (Jul–Sep)"
+                  }
+                },
+                {
+                  "value": 4,
+                  "label": {
+                    "en": "Q4 (Oct–Dec)",
+                    "de": "Q4 (Okt–Dez)"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "attr": "from",
+              "title": {
+                "en": "From (HH:mm)",
+                "de": "Von (HH:mm)"
+              },
+              "width": "22%",
+              "default": "00:00"
+            },
+            {
+              "type": "text",
+              "attr": "to",
+              "title": {
+                "en": "To (HH:mm, max. 24:00)",
+                "de": "Bis (HH:mm, max. 24:00)"
+              },
+              "width": "24%",
+              "default": "24:00"
+            },
+            {
+              "type": "select",
+              "attr": "level",
+              "title": {
+                "en": "Tariff",
+                "de": "Tarifstufe"
+              },
+              "width": "30%",
+              "default": "standard",
+              "options": [
+                {
+                  "value": "standard",
+                  "label": {
+                    "en": "Standard",
+                    "de": "Standard"
+                  }
+                },
+                {
+                  "value": "high",
+                  "label": {
+                    "en": "High",
+                    "de": "Hoch"
+                  }
+                },
+                {
+                  "value": "low",
+                  "label": {
+                    "en": "Low",
+                    "de": "Niedrig"
+                  }
+                }
+              ]
+            }
+          ]
+        }
       }
     },
     "wallboxGeneralTab": {

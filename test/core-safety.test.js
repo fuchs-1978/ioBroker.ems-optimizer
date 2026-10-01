@@ -10,7 +10,7 @@ function engine() {
     const states = new Map();
     const context = vm.createContext({nativeConfig: {}, Date,
         getState: id => states.get(id), existsState: id => states.has(id)});
-    for (const file of ['core', 'forecast', 'planner']) {
+    for (const file of ['core', 'prices', 'forecast', 'planner']) {
         vm.runInContext(fs.readFileSync(path.join(__dirname, '../lib/engine', `${file}.js`), 'utf8'), context);
     }
     return {states, run: source => vm.runInContext(source, context)};

@@ -16,6 +16,7 @@ const {buildNativeMapping, houseConnectionSettings, FIELD_TO_MAPPING,
 const {shouldPreserveWallboxOnUnload} = require("./lib/unload-policy");
 const {EXTENSION_SETTINGS} = require("./lib/extension-settings");
 const {OutputMetadata} = require("./lib/output-metadata");
+const {MarketPrices} = require("./lib/market-prices");
 
 class EmsOptimizer extends utils.Adapter {
     constructor(options = {}) {
@@ -43,6 +44,11 @@ class EmsOptimizer extends utils.Adapter {
             createContext: sandbox => createEngineContext(this.namespace, this.readMapping(), sandbox, 'ems-shadow-decisions')
         });
         this.shadowHistory = new ShadowHistory(this);
+        this.marketPrices = new MarketPrices(this, {onUpdate: () => {
+            if (this.engineContext && !this.unloading)
+                this.runEngine('requestForecastRebuild();');
+        }});
+        this.marketInitialization = null;
         this.shadowInitialization = null;
         this.debugInitialization = null;
         this.debugWarningAt = null;
@@ -105,6 +111,7 @@ class EmsOptimizer extends utils.Adapter {
         // Diagnostics must never hold up actuator initialization or scheduling.
         this.debugInitialization = this.startDebug();
         this.shadowInitialization = this.startShadow();
+        this.marketInitialization = this.startMarketPrices();
         await this.persistBatteryCadenceMigration();
     }
 
@@ -165,6 +172,19 @@ class EmsOptimizer extends utils.Adapter {
         }
     }
 
+    async startMarketPrices() {
+        try {
+            await this.marketPrices.initialize();
+            if (this.unloading || !this.marketPrices.enabled) return;
+            this.registerSchedule('0 */15 * * * *', () => {
+                void this.marketPrices.refresh().catch(error => this.log.warn(`Market prices: ${error.message}`));
+            });
+            await this.marketPrices.refresh();
+        } catch (error) {
+            this.log.warn(`Market price source unavailable: ${error.message}`);
+        }
+    }
+
     async preloadStates() {
         const mapping = this.readMapping();
         const configured = Object.values(mapping).filter(value => typeof value === "string" && value);
@@ -188,8 +208,11 @@ class EmsOptimizer extends utils.Adapter {
     }
 
     readMapping() {
-        return buildNativeMapping(this.config,
+        const mapping = buildNativeMapping(this.config,
             message => this.log.error(`Invalid dataPointMapJson: ${message}`));
+        if (this.config.energyPriceSource === 'energy-charts')
+            mapping.DP_ENERGY_PRICE_SERIES = `${this.namespace}.Market.EnergyPrice_JSON`;
+        return mapping;
     }
 
     publishMappingStatus() {
@@ -338,6 +361,8 @@ class EmsOptimizer extends utils.Adapter {
             DynamicEnergyPriceEnabled: ["dynamicEnergyPrice", false],
             DynamicGridFeeEnabled: ["dynamicGridFee", false],
             FixedEnergyComponent_ct_kWh: ["fixedEnergyCt", 22.85],
+            FixedTotalPrice_ct_kWh: ["fixedTotalPriceCt", 0],
+            ReferenceGridFee_ct_kWh: ["referenceGridFeeCt", 7.19],
             FixedGridFee_ct_kWh: ["fixedGridFeeCt", 6.04],
             DynamicEnergyAdders_ct_kWh: ["dynamicEnergyAddersCt", 9.301]
         };
@@ -749,6 +774,7 @@ class EmsOptimizer extends utils.Adapter {
     async prepareUnload({allowHandoff = true} = {}) {
         this.unloading = true;
         this.runShadow('stop');
+        this.marketPrices?.stop();
         try { this.shadowHistory?.stop(); }
         catch (error) { this.warnDebug(error); }
         this.wallboxOutput.stopping = true;
