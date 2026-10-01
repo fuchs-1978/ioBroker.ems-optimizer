@@ -957,3 +957,36 @@ test('actual no-SoC price-session helper never spends physical kWh on virtual ch
     assert.equal(h.shadow.run('getActualState("DP_WB0_POWER").val'), 0);
     assert.ok(h.writes.every(write => write.id.startsWith('ems.0.Debug.Shadow.')));
 });
+
+test('BHKW shadow record contains separate valid counter and source quality without extra budget', async () => {
+    const h = await fixture();
+    h.adapter.config.bhkwPresent = true; h.adapter.config.bhkwEnergyUnit = 'J';
+    h.put('DP_BHKW_POWER', 920); h.put('DP_BHKW_ENERGY', 360000000);
+    await h.tick(); await h.flush();
+    const record = JSON.parse(h.value('DecisionRecord'));
+    assert.equal(record.actuals.BHKW, 920); assert.equal(record.bhkw.energyKWh, 100);
+    assert.equal(record.bhkw.power.ack, true); assert.equal(record.bhkw.valid, true);
+    assert.equal(h.value('BHKW.Energy_kWh'), 100);
+    assert.ok(h.shadow.historyIds.includes('ems.0.Debug.Shadow.BHKW.Energy_kWh'));
+    assert.ok(!h.shadow.historyIds.includes('ems.0.Debug.Shadow.BHKW.Quality_JSON'));
+    assert.ok(h.writes.every(write => write.id.startsWith('ems.0.Debug.Shadow.')));
+});
+
+test('price-enabled PV shadow run holds a dip without inventing price authorization', async () => {
+    const h = await fixture();
+    h.adapter.config.wallboxMinimumRunTimeS = 60;
+    h.adapter.config.wallboxStopDelayS = 10;
+    h.own('Config.Wallbox0PriceChargingEnabled', true);
+    forceWallboxBudget(h);
+    await startModel(h);
+    assert.equal(h.value('Modeled.Wallbox0_W'), 1380);
+    h.shadow.context.testDemandW = 0;
+    h.put('DP_GRID_EXPORT', 0);
+    h.advance(2000); await h.tick();
+    assert.equal(h.value('Targets.Wallbox0_W'), 0);
+    assert.equal(h.value('Modeled.Wallbox0_W'), 1380);
+    assert.ok(h.value('Wallbox0.MinimumRunTimeRemaining_s') > 0);
+    assert.doesNotMatch(h.value('Wallbox0.ModelStatus'), /Preisfenster beendet/);
+    h.advance(61000); await h.tick();
+    assert.equal(h.value('Modeled.Wallbox0_W'), 0);
+});

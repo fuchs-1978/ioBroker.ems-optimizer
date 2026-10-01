@@ -54,6 +54,15 @@ test('update defaults never arm a productive output', () => {
 });
 
 test('package manifests publish the same alpha version', () => {
-    assert.equal(packageJson.version, '0.17.0-alpha.26');
+    assert.equal(packageJson.version, '0.17.0-alpha.27');
     assert.equal(ioPackage.common.version, packageJson.version);
+});
+
+test('optional BHKW inputs default disabled and expose explicit energy units', () => {
+    for (const field of ['bhkwPresent', 'bhkwPowerId', 'bhkwEnergyId', 'bhkwEnergyUnit',
+        'bhkwPowerMaxAgeS', 'bhkwEnergyMaxAgeS']) {
+        assert.ok(allFields[field]); assert.equal(allFields[field].default, ioPackage.native[field]);
+    }
+    assert.equal(ioPackage.native.bhkwPresent, false);
+    assert.deepEqual(allFields.bhkwEnergyUnit.options.map(option => option.value), ['kWh', 'Wh', 'J']);
 });
