@@ -118,7 +118,7 @@ test('first opt-in starts a fresh measurement baseline; toggling enabled later c
     h.own('Config.Wallbox0PriceChargingEnabled', true);
     assert.equal(h.update().priceSessionId, first.priceSessionId);
     assert.equal(h.vehicle().priceRemainingKWh, before);
-    assert.equal(h.vehicle().priceDeadlineTimestamp, first.priceDeadlineTimestamp);
+    assert.equal(h.vehicle().priceDeadlineTimestamp, h.now() + 48 * 3600000);
 });
 
 test('missing, stale and bad-quality real power cannot authorize unbounded no-SoC grid charging', () => {
@@ -186,22 +186,133 @@ test('a known-SoC session requires fresh measured power and recovers an accounti
     assert.equal(h.vehicle().priceRemainingKWh, 0);
 });
 
-test('fixed horizon and optional departure deadline do not roll forward after repeated forecasts or restart', () => {
+test('flexible PV planning rolls across 24 hours independently of the configured price purchase horizon', () => {
     const h = fixture(); h.put('DP_WB0_SOC', 40); h.own('Config.PriceChargingHorizon_h', 6);
     const start = h.update();
-    assert.equal(start.priceDeadlineTimestamp, h.now() + 6 * 3600000);
-    h.advance(6 * 3600 + 1); h.put('DP_WB0_SOC', 40);
-    assert.equal(h.update().priceSessionValid, false);
-    assert.equal(h.vehicle().priceDeadlineTimestamp, start.priceDeadlineTimestamp);
-    assert.match(h.value('PriceSessionStatus'), /abgelaufen/);
-    h.boot(); assert.equal(h.update().priceSessionId, start.priceSessionId);
+    assert.equal(start.priceDeadlineMode, 'flexible');
+    assert.equal(start.priceDeadlineTimestamp, h.now() + 48 * 3600000);
+    h.sample(25 * 3600, 0); h.put('DP_WB0_SOC', 40);
+    const next = h.update();
+    assert.equal(next.priceSessionValid, true);
+    assert.equal(next.priceDeadlineTimestamp, h.now() + 48 * 3600000);
+    assert.equal(next.priceSessionId, start.priceSessionId);
+    assert.equal(h.value('PriceSessionStartedAt'), Number(start.priceSessionId.split(':')[1]));
+    h.boot();
+    assert.equal(h.update().priceSessionId, start.priceSessionId);
+    assert.equal(h.vehicle().priceDeadlineTimestamp, next.priceDeadlineTimestamp);
+});
+
+test('real departure remains fixed after expiry, repeated forecasts and restart', () => {
     const departure = fixture({wb0DeadlineEnabled: true});
     departure.own('Vehicles.Wallbox0.DepartureTime', '06:00'); departure.put('DP_WB0_SOC', 40);
     const first = departure.update();
+    assert.equal(first.priceDeadlineMode, 'departure');
     assert.equal(first.priceDeadlineTimestamp, departure.value('DepartureTimestamp'));
-    departure.advance(86400); departure.put('DP_WB0_SOC', 40);
+    departure.sample(86400, 0); departure.put('DP_WB0_SOC', 40);
     assert.equal(departure.update().priceDeadlineTimestamp, first.priceDeadlineTimestamp);
     assert.equal(departure.vehicle().priceSessionValid, false);
+    assert.match(departure.value('PriceSessionStatus'), /abgelaufen/);
+    departure.boot();
+    assert.equal(departure.update().priceDeadlineTimestamp, first.priceDeadlineTimestamp);
+    assert.equal(departure.vehicle().priceSessionId, first.priceSessionId);
+    assert.equal(departure.vehicle().priceSessionValid, false);
+});
+
+test('alpha.25 implicit deadline migrates after restart while retaining measured energy and the SoC anchor', () => {
+    const h = fixture(); h.put('DP_WB0_SOC', 79); h.update(); h.sample(30); h.update();
+    const legacy = JSON.parse(h.value('PriceSessionLedger_JSON'));
+    delete legacy.PriceDeadlineMode;
+    legacy.PriceDeadlineTimestamp = legacy.PriceSessionStartedAt + 24 * 3600000;
+    h.own('Vehicles.Wallbox0.PriceSessionLedger_JSON', JSON.stringify(legacy));
+    h.boot();
+    const migrated = h.update();
+    assert.equal(migrated.priceSessionId, legacy.PriceSessionId);
+    assert.equal(migrated.priceDeadlineMode, 'flexible');
+    assert.equal(migrated.priceDeadlineTimestamp, h.now() + 48 * 3600000);
+    assert.ok(Math.abs(migrated.priceRemainingKWh - 0.595) < 1e-12);
+    for (const key of ['PriceSessionStartedAt', 'PriceChargedEnergy_kWh', 'PriceLastMeasurementAt',
+        'PriceSoCSampleAt', 'PriceSoCSample_pct', 'PriceEnergyAtSoCSample_kWh', 'PriceEnergyTrackingValid'])
+        assert.equal(h.value(key), legacy[key], key);
+});
+
+test('flexible migration does not refill a spent manual quota or heal its tracking fault', () => {
+    const h = fixture(); h.update();
+    for (let i = 0; i < 4; i++) { h.sample(30); h.update(); }
+    const legacy = JSON.parse(h.value('PriceSessionLedger_JSON'));
+    delete legacy.PriceDeadlineMode;
+    legacy.PriceDeadlineTimestamp = legacy.PriceSessionStartedAt + 24 * 3600000;
+    h.own('Vehicles.Wallbox0.PriceSessionLedger_JSON', JSON.stringify(legacy));
+    h.boot();
+    assert.equal(h.update().priceRemainingKWh, 0);
+    assert.equal(h.vehicle().priceSessionId, legacy.PriceSessionId);
+    assert.equal(h.vehicle().priceChargedEnergyKWh, legacy.PriceChargedEnergy_kWh);
+    h.sample(25 * 3600, 0);
+    assert.equal(h.update().priceSessionValid, false);
+    assert.match(h.value('PriceSessionStatus'), /Luecke/);
+    assert.equal(h.vehicle().priceDeadlineTimestamp, h.now() + 48 * 3600000);
+    const failedLegacy = JSON.parse(h.value('PriceSessionLedger_JSON'));
+    delete failedLegacy.PriceDeadlineMode;
+    failedLegacy.PriceDeadlineTimestamp = failedLegacy.PriceSessionStartedAt + 24 * 3600000;
+    h.own('Vehicles.Wallbox0.PriceSessionLedger_JSON', JSON.stringify(failedLegacy));
+    h.boot(); h.sample(1, 0);
+    assert.equal(h.update().priceSessionValid, false);
+    assert.equal(h.value('PriceEnergyTrackingValid'), false);
+    assert.equal(h.vehicle().priceDeadlineMode, 'flexible');
+    assert.equal(h.vehicle().priceSessionId, legacy.PriceSessionId);
+    assert.equal(h.vehicle().priceChargedEnergyKWh, legacy.PriceChargedEnergy_kWh);
+    assert.equal(h.vehicle().priceRemainingKWh, 0);
+});
+
+test('enabling or disabling a real departure changes only the planning boundary, not the plug energy budget', () => {
+    const h = fixture(); h.update(); h.sample(30); h.update();
+    const before = h.vehicle();
+    h.own('Vehicles.Wallbox0.DepartureTime', '06:00');
+    h.run('nativeConfig.wb0DeadlineEnabled = true');
+    const fixed = h.update();
+    assert.equal(fixed.priceDeadlineMode, 'departure');
+    assert.equal(fixed.priceDeadlineTimestamp, h.value('DepartureTimestamp'));
+    assert.equal(fixed.priceSessionId, before.priceSessionId);
+    assert.equal(fixed.priceRemainingKWh, before.priceRemainingKWh);
+    assert.equal(fixed.priceChargedEnergyKWh, before.priceChargedEnergyKWh);
+    h.run('nativeConfig.wb0DeadlineEnabled = false');
+    const flexible = h.update();
+    assert.equal(flexible.priceDeadlineMode, 'flexible');
+    assert.equal(flexible.priceDeadlineTimestamp, h.now() + 48 * 3600000);
+    assert.equal(flexible.priceSessionId, before.priceSessionId);
+    assert.equal(flexible.priceRemainingKWh, before.priceRemainingKWh);
+    assert.equal(flexible.priceChargedEnergyKWh, before.priceChargedEnergyKWh);
+});
+
+test('legacy enabled departure keeps its original fixed deadline during migration', () => {
+    const h = fixture({wb0DeadlineEnabled: true});
+    h.own('Vehicles.Wallbox0.DepartureTime', '06:00'); h.put('DP_WB0_SOC', 40); h.update();
+    const legacy = JSON.parse(h.value('PriceSessionLedger_JSON'));
+    delete legacy.PriceDeadlineMode;
+    h.own('Vehicles.Wallbox0.PriceSessionLedger_JSON', JSON.stringify(legacy));
+    h.sample(25 * 3600, 0); h.put('DP_WB0_SOC', 40); h.boot();
+    assert.equal(h.update().priceDeadlineTimestamp, legacy.PriceDeadlineTimestamp);
+    assert.equal(h.vehicle().priceSessionId, legacy.PriceSessionId);
+    assert.equal(h.vehicle().priceDeadlineMode, 'departure');
+    assert.equal(h.vehicle().priceSessionValid, false);
+});
+
+test('an enabled departure with missing or malformed time cannot silently use a flexible deadline', () => {
+    for (const time of ['', 'invalid', '24:00', '12:60']) {
+        const h = fixture({wb0DeadlineEnabled: true});
+        h.own('Vehicles.Wallbox0.DepartureTime', time);
+        assert.equal(h.update().priceSessionValid, false, time);
+        assert.equal(h.vehicle().priceDeadlineTimestamp, 0, time);
+        assert.match(h.value('PriceSessionStatus'), /Abfahrt fehlt\/ungueltig/, time);
+    }
+    const h = fixture(); h.update(); h.sample(30); h.update();
+    const before = h.vehicle();
+    h.run('nativeConfig.wb0DeadlineEnabled = true');
+    assert.equal(h.update().priceSessionValid, false);
+    assert.equal(h.vehicle().priceSessionId, before.priceSessionId);
+    assert.equal(h.vehicle().priceChargedEnergyKWh, before.priceChargedEnergyKWh);
+    h.own('Vehicles.Wallbox0.DepartureTime', '06:00');
+    assert.equal(h.update().priceSessionValid, true);
+    assert.equal(h.vehicle().priceRemainingKWh, before.priceRemainingKWh);
 });
 
 test('corrupt persisted session accounting fails closed instead of silently assigning another quota', () => {
