@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.24",
+    "version": "0.17.0-alpha.25",
     "titleLang": {
       "en": "EMS Optimizer",
       "de": "EMS-Optimierer"
@@ -232,6 +232,21 @@
     "phaseSwitchMinHoldMin": 30,
     "phaseSwitchTransitionS": 90,
     "wallboxPhaseSwitchTimeoutS": 180,
+    "priceChargingHorizonH": 24,
+    "priceChargingMinBlockMin": 30,
+    "batteryPriceChargingEnabled": false,
+    "batteryPriceMaxCt": 0,
+    "batteryPriceMinSavingsCt": 2,
+    "batteryPriceReservePct": 10,
+    "wb0PriceChargingEnabled": false,
+    "wb0PriceMaxCt": 0,
+    "wb0PriceEnergyKWh": 0,
+    "wb1PriceChargingEnabled": false,
+    "wb1PriceMaxCt": 0,
+    "wb1PriceEnergyKWh": 0,
+    "wb2PriceChargingEnabled": false,
+    "wb2PriceMaxCt": 0,
+    "wb2PriceEnergyKWh": 0,
     "gridFeeSource": "external",
     "gridTariffYear": 2026,
     "gridTariffBasis": "gross",

@@ -282,6 +282,254 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         diagnostic: () => JSON.stringify(trace.slice(-12), null, 2)};
 }
 
+function armPricePlans(h, {batteryW = 1200, wallboxW = 2300, price = 15, limit = 15,
+    until = h.now() + 15 * 60000, floor = 60} = {}) {
+    h.run("CFG.dp.dynamicEnergyPriceEnabled='';CFG.dp.dynamicGridFeeEnabled=''");
+    h.own('Config.DynamicEnergyPriceEnabled', false);
+    h.own('Config.DynamicGridFeeEnabled', false);
+    h.own('Config.FixedEnergyComponent_ct_kWh', price);
+    h.own('Config.FixedGridFee_ct_kWh', 0);
+    h.own('Config.BatteryPriceChargingEnabled', batteryW > 0);
+    h.own('Config.BatteryPriceMax_ct_kWh', 0);
+    h.own('Config.Wallbox2PriceChargingEnabled', wallboxW > 0);
+    h.own('Config.Wallbox2PriceMax_ct_kWh', 0);
+    h.own('Config.PriceChargingHorizon_h', 24);
+    h.run('updateVehicles()');
+    const sessionId = h.value('Vehicles.Wallbox2.PriceSessionId');
+    const common = {timestamp: h.now(), priceOptimized: true, priceLimitCt: limit,
+        priceChargeUntil: until};
+    h.own('Plan.BatteryPower_48h_JSON', JSON.stringify([{...common, valueW: batteryW,
+        gridChargeW: batteryW, targetSoCPct: 70, dischargeFloorPct: floor}]));
+    h.own('Plan.Wallbox2_48h_JSON', JSON.stringify([{...common, valueW: wallboxW,
+        gridChargeW: wallboxW, phases: 1, priceSessionId: sessionId}]));
+    return {sessionId, until};
+}
+
+test('price plans wait at an expensive dark hour then drive real EV and battery outputs in a cheap hour', async () => {
+    const h = await plant({battery: true, startDelayS: 0, initialSurplusW: -500});
+    armPricePlans(h, {price: 35});
+    await h.advance(20);
+    assert.equal(h.physical().allow, 0, h.diagnostic());
+    assert.equal(h.physical().batteryW, 0, h.diagnostic());
+    h.own('Config.FixedEnergyComponent_ct_kWh', 15);
+    await h.advance(80);
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    assert.equal(h.physical().amps, 10, h.diagnostic());
+    assert.equal(h.physical().batteryW, 1200, h.diagnostic());
+    assert.equal(h.physical().heaterW, 0, 'EV import cannot become a heater PV budget');
+    assert.ok(h.trace.every(row => row.batteryW >= 0), 'battery must not supply imported EV charging');
+    assert.ok(h.writes.some(row => row.id === 'goe.allow' && row.val === 1));
+    assert.ok(h.writes.some(row => row.id === h.config.batterySetpointId && row.val === -1200));
+});
+
+test('price expiry stops an already running EV despite minimum runtime and stops battery grid charging', async () => {
+    const h = await plant({battery: true, startDelayS: 0, minimumRuntimeS: 600, initialSurplusW: -500});
+    const {until} = armPricePlans(h, {until: h.now() + 60000});
+    await h.advance(50);
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    assert.equal(h.physical().batteryW, 1200, h.diagnostic());
+    await h.advance(20);
+    assert.equal(h.physical().allow, 0, h.diagnostic());
+    assert.equal(h.physical().batteryW, 0, h.diagnostic());
+    assert.ok(h.writes.some(row => row.id === 'goe.allow' && row.val === 0
+        && row.at >= until && row.at <= until + 2000), h.diagnostic());
+});
+
+test('live price revision and invalid source revoke output permission before a forecast rebuild', async () => {
+    for (const invalid of [false, true]) {
+        const h = await plant({battery: true, startDelayS: 0, minimumRuntimeS: 600, initialSurplusW: -500});
+        armPricePlans(h);
+        await h.advance(50);
+        assert.equal(h.physical().allow, 1, h.diagnostic());
+        h.own('Config.FixedEnergyComponent_ct_kWh', invalid ? null : 35);
+        // Deliberately leave allocated targets/diagnostics stale. The physical
+        // controllers must check price again, independently of realtimeControl.
+        await h.output.tick();
+        h.run('updateBatteryProductionOutput()');
+        assert.equal(h.writes.filter(row => row.id === 'goe.allow').at(-1).val, 0);
+        assert.equal(h.writes.filter(row => row.id === h.config.batterySetpointId).at(-1).val, 0);
+    }
+});
+
+test('standalone wallbox price import passes its NVP guard and expiry still allows genuine PV', async () => {
+    const h = await plant({startDelayS: 0, minimumRuntimeS: 600, initialSurplusW: -500});
+    h.config.dhwControlEnabled = false;
+    h.own('Devices.MyPV_DHW.ControlEnabled', false);
+    armPricePlans(h, {batteryW: 0, until: h.now() + 60000});
+    await h.advance(45);
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    assert.equal(h.physical().amps, 10, h.diagnostic());
+    h.setSurplus(3000);
+    await h.advance(35);
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    assert.ok(h.physical().amps >= 6, h.diagnostic());
+    assert.equal(h.value('Control.Wallbox2PriceGridCharge_W'), 0);
+    h.setSurplus(-500);
+    await h.advance(8);
+    assert.equal(h.physical().allow, 0, h.diagnostic());
+});
+
+test('price EV and storage remain under gross LPC limits with delayed physical response', async () => {
+    const h = await plant({battery: true, startDelayS: 0, initialSurplusW: -500, lpcLimitW: 3000});
+    armPricePlans(h);
+    await h.advance(100);
+    assert.ok(h.trace.every(row => row.wbW + Math.max(0, row.batteryW)
+        + row.heaterW + row.heatingW <= 3000), h.diagnostic());
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    h.put('lpc.limit', 1000);
+    await h.advance(12);
+    assert.equal(h.physical().allow, 0, h.diagnostic());
+    assert.ok(h.physical().batteryW <= 1000, h.diagnostic());
+});
+
+test('price import cannot bypass a nearly exhausted physical house-connection phase', async () => {
+    const h = await plant({battery: true, startDelayS: 0, initialSurplusW: -500,
+        phaseBiasW: [10300, 0, 0]});
+    armPricePlans(h);
+    await h.advance(35);
+    assert.equal(h.physical().allow, 0, h.diagnostic());
+    assert.ok(h.physical().batteryW <= 113, h.diagnostic());
+    assert.ok(h.trace.every(row => Math.max(...row.phaseImportW) <= 46 * 230), h.diagnostic());
+});
+
+test('partial final price slot uses physical minimum current only until its explicit end', async () => {
+    const h = await plant({startDelayS: 0, minimumRuntimeS: 600, initialSurplusW: -500});
+    h.config.dhwControlEnabled = false;
+    h.own('Devices.MyPV_DHW.ControlEnabled', false);
+    armPricePlans(h, {batteryW: 0, wallboxW: 1380, until: h.now() + 45000});
+    const plan = JSON.parse(h.value('Plan.Wallbox2_48h_JSON'));
+    plan[0].valueW = 69; // 45 s at 1380 W, averaged over a full 15-min slot.
+    h.own('Plan.Wallbox2_48h_JSON', JSON.stringify(plan));
+    await h.advance(30);
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    assert.equal(h.physical().amps, 6, h.diagnostic());
+    await h.advance(25);
+    assert.equal(h.physical().allow, 0, h.diagnostic());
+});
+
+test('price session mismatch, stale plan and reached battery target never authorize grid power', async () => {
+    const h = await plant({battery: true, startDelayS: 0, initialSurplusW: -500});
+    armPricePlans(h);
+    const plan = JSON.parse(h.value('Plan.Wallbox2_48h_JSON'));
+    plan[0].priceSessionId = 'previous-plug-session';
+    h.own('Plan.Wallbox2_48h_JSON', JSON.stringify(plan));
+    h.put('sunenergyxt500.0.heads.1.battery.SC', 70);
+    await h.advance(10);
+    assert.equal(h.physical().allow, 0);
+    assert.ok(h.physical().batteryW <= 0);
+    h.own('Plan.LastUpdate', h.now() - 21 * 60000);
+    assert.equal(h.run("priceChargingAuthorization('Battery').allowed"), false);
+    assert.equal(h.run("priceChargingAuthorization('Wallbox2').allowed"), false);
+});
+
+test('manual no-SoC price quota drives the real wallbox and stops when measured session energy is consumed', async () => {
+    const h = await plant({startDelayS: 0, minimumRuntimeS: 600, initialSurplusW: -500});
+    h.states.delete('DP_WB2_SOC');
+    h.own('Config.Wallbox2PriceEnergy_kWh', 0.015);
+    h.config.dhwControlEnabled = false;
+    h.own('Devices.MyPV_DHW.ControlEnabled', false);
+    armPricePlans(h, {batteryW: 0, wallboxW: 1380, until: h.now() + 120000});
+    await h.advance(25);
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    await h.advance(55);
+    assert.equal(h.physical().allow, 0, h.diagnostic());
+    assert.equal(h.value('Vehicles.Wallbox2.PriceRemainingEnergy_kWh'), 0);
+    assert.ok(h.value('Vehicles.Wallbox2.PriceChargedEnergy_kWh') < 0.018,
+        'only bounded physical stop latency may exceed the 0.015-kWh quota');
+    const session = h.value('Vehicles.Wallbox2.PriceSessionId');
+    h.run('updateVehicles()');
+    assert.equal(h.value('Vehicles.Wallbox2.PriceSessionId'), session);
+    assert.equal(h.run("priceChargingAuthorization('Wallbox2').allowed"), false);
+});
+
+test('manual no-SoC car uses PV outside a purchase window and still stops at its measured quota', async () => {
+    const h = await plant({startDelayS: 0, minimumRuntimeS: 600, initialSurplusW: 2000});
+    h.states.delete('DP_WB2_SOC');
+    h.own('Config.Wallbox2PriceEnergy_kWh', 0.015);
+    h.config.dhwControlEnabled = false;
+    h.own('Devices.MyPV_DHW.ControlEnabled', false);
+    armPricePlans(h, {batteryW: 0, wallboxW: 1380, price: 35, limit: 15});
+    assert.equal(h.run("priceChargingAuthorization('Wallbox2').allowed"), false);
+    const plan = JSON.parse(h.value('Plan.Wallbox2_48h_JSON'));
+    plan[0].gridChargeW = 0;
+    plan[0].priceOptimized = false;
+    h.own('Plan.Wallbox2_48h_JSON', JSON.stringify(plan));
+    await h.advance(25);
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    assert.ok(h.trace.every(row => row.gridW <= 0), 'PV-only authorization cannot import for the car');
+    await h.advance(55);
+    assert.equal(h.physical().allow, 0, h.diagnostic());
+    assert.equal(h.value('Vehicles.Wallbox2.PriceRemainingEnergy_kWh'), 0);
+});
+
+test('fresh known-SoC session completion overrides stale Release and PV allocation before minimum runtime', async () => {
+    const h = await plant({startDelayS: 0, minimumRuntimeS: 600, initialSurplusW: 6000});
+    armPricePlans(h, {batteryW: 0, price: 35, limit: 15});
+    await h.advance(50);
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    assert.equal(h.value('Vehicles.Wallbox2.Release'), true);
+    assert.ok(h.value('Control.Targets.Wallbox2_W') > 0);
+    assert.equal(h.states.get('DP_WB2_SOC').val, 50);
+    const ledger = JSON.parse(h.value('Vehicles.Wallbox2.PriceSessionLedger_JSON'));
+    // Model a just-persisted actual-energy ledger while the slow vehicle
+    // mirrors and unchanged 50% SoC report still describe the previous cycle.
+    ledger.PriceChargedEnergy_kWh = ledger.PriceEnergyAtSoCSample_kWh + 20;
+    h.own('Vehicles.Wallbox2.PriceSessionLedger_JSON', JSON.stringify(ledger));
+    const before = h.writes.length;
+    await h.output.tick();
+    assert.equal(h.value('Vehicles.Wallbox2.Release'), true, 'do not rely on the next slow mirror update');
+    assert.equal(h.value('Vehicles.Wallbox2.PriceRemainingEnergy_kWh'), 0);
+    assert.ok(h.writes.slice(before).some(row => row.id === 'goe.allow' && row.val === 0));
+    assert.ok(h.writes.slice(before).every(row => row.id !== 'goe.cmd'
+        && !(row.id === 'goe.allow' && row.val === 1)));
+});
+
+test('scheduled lower-priority EV receives handoff from a still-released PV-only owner', async () => {
+    const h = await plant({startDelayS: 0, initialSurplusW: -500});
+    armPricePlans(h, {batteryW: 0});
+    h.own('Devices.Wallbox0.OutputOwned', true);
+    h.own('Devices.Wallbox0.OutputActive', true);
+    h.own('Vehicles.Wallbox0.Priority', 100);
+    const selected = h.run(`selectRealtimeWallboxes([currentPlanItem('Wallbox0', Date.now()),
+        currentPlanItem('Wallbox1', Date.now()),currentPlanItem('Wallbox2', Date.now())],
+        {production: true, wallboxes: [0,2], dhw: false})[0].wb`);
+    assert.equal(selected, 2);
+});
+
+test('battery planned reserve protects bought energy until its discharge floor declines', async () => {
+    const h = await plant({battery: true, wallbox: false, initialSurplusW: -1000});
+    armPricePlans(h, {price: 35, floor: 55});
+    await h.advance(15);
+    assert.equal(h.physical().batteryW, 0);
+    const plan = JSON.parse(h.value('Plan.BatteryPower_48h_JSON'));
+    plan[0].dischargeFloorPct = 20;
+    h.own('Plan.BatteryPower_48h_JSON', JSON.stringify(plan));
+    await h.advance(45);
+    assert.ok(h.physical().batteryW <= -900, h.diagnostic());
+});
+
+test('queued battery purchase is rejected after price revocation without changing the old allocation', async () => {
+    const h = await plant({battery: true, wallbox: false, initialSurplusW: -500});
+    armPricePlans(h, {wallboxW: 0});
+    await h.advance(45);
+    assert.equal(h.run("checkQueuedElectricalOutput('Battery', -1200).allowed"), true);
+    h.own('Config.FixedEnergyComponent_ct_kWh', 40);
+    assert.equal(h.value('Control.Targets.Battery_W'), 1200);
+    assert.equal(h.run("checkQueuedElectricalOutput('Battery', -1200).allowed"), false);
+    assert.equal(h.run("checkQueuedElectricalOutput('Battery', 0).allowed"), true);
+});
+
+test('negative gross price ceiling is enforced exactly and zero means no fixed ceiling', async () => {
+    const h = await plant({startDelayS: 0, initialSurplusW: -500});
+    armPricePlans(h, {batteryW: 0, price: -2, limit: 0});
+    h.own('Config.Wallbox2PriceMax_ct_kWh', -3);
+    assert.equal(h.run("priceChargingAuthorization('Wallbox2').allowed"), false);
+    h.own('Config.FixedEnergyComponent_ct_kWh', -4);
+    assert.equal(h.run("priceChargingAuthorization('Wallbox2').allowed"), true);
+    h.own('Config.Wallbox2PriceMax_ct_kWh', 0);
+    assert.equal(h.run("priceChargingAuthorization('Wallbox2').allowed"), true);
+});
+
 test('battery-only plant follows one-second fresh feedback and refreshes a settled GS demand', async () => {
     const h = await plant({battery: true, wallbox: false, initialSurplusW: 1000, batteryDelayMs: 1000});
     h.config.dhwControlEnabled = false;
