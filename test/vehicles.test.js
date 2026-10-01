@@ -13,7 +13,7 @@ function engine(config={}) {
         getState:id=>states.get(id),existsState:id=>states.has(id),
         createState:(id,val)=>{if(!states.has(id))put(id,val);},setState:put,
         log:()=>{},sendTo:()=>{}});
-    for(const file of ['core','history','forecast','vehicles','dhw-controller','planner','realtime']) {
+    for(const file of ['core', 'prices','history','forecast','vehicles','dhw-controller','planner','realtime']) {
         let source=fs.readFileSync(path.join(__dirname,'../lib/engine',file+'.js'),'utf8');
         source=source.replaceAll('__ADAPTER_ROOT__','ems.0').replace(/__([A-Z0-9_]+)__/g,(_,k)=>k);
         vm.runInContext(source,ctx);
@@ -104,8 +104,9 @@ test('external dynamic price switch overrides the internal switch and fails safe
     assert.match(h.states.get('ems.0.Config.DynamicEnergyPriceSourceStatus').val,/extern/);
     h.put('DP_DYNAMIC_ENERGY_ENABLED','invalid');
     result=h.run('buildPriceForecast(Date.now())');
-    assert.match(result.mode,/Energie=fest/);
-    assert.match(h.states.get('ems.0.Config.DynamicEnergyPriceSourceStatus').val,/sicher AUS/);
+    assert.match(result.mode,/Energie=ungueltig/);
+    assert.equal(result.total[0].value_ct_kWh,null);
+    assert.match(h.states.get('ems.0.Config.DynamicEnergyPriceSourceStatus').val,/keine Preisfreigabe/);
 });
 test('disabled wallbox has no release or candidate even if car is attached',()=>{
     const h=engine();h.put('ems.0.Devices.Wallbox0.Present',false);h.run('updateVehicles()');

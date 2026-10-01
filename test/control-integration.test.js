@@ -103,7 +103,7 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         getState: id => states.get(id), existsState: id => states.has(id),
         createState: (id, val) => { if (!states.has(id)) put(id, val); }, setState: put,
         writeForeignState: writeForeign, log: () => {}, sendTo: () => {}});
-    for (const file of ['core', 'history', 'forecast', 'vehicles', 'dhw-controller',
+    for (const file of ['core', 'prices', 'history', 'forecast', 'vehicles', 'dhw-controller',
         'battery-controller', 'heating-controller', 'heatpump-controller',
         'planner', 'energy-coordination', 'realtime', 'dhw-output'])
         vm.runInContext(substitute(fs.readFileSync(path.join(__dirname, '../lib/engine', `${file}.js`), 'utf8')), ctx);

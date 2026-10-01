@@ -19,7 +19,7 @@ function engine(config = {}) {
         getState: id => states.get(id), existsState: id => states.has(id),
         createState: (id, val) => { if (!states.has(id)) put(id, val); },
         setState: put, log: () => {}});
-    for (const file of ['core', 'history', 'forecast', 'vehicles', 'planner', 'config-mapping']) {
+    for (const file of ['core', 'prices', 'history', 'forecast', 'vehicles', 'planner', 'config-mapping']) {
         const source = fs.readFileSync(path.join(__dirname, '../lib/engine', `${file}.js`), 'utf8')
             .replaceAll('__ADAPTER_ROOT__', 'ems.0').replace(/__([A-Z0-9_]+)__/g, (_, key) => key);
         vm.runInContext(source, context);
