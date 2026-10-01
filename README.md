@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.24**
+Aktuelle Version: **0.17.0-alpha.25**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -40,6 +40,24 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.25 – Preisoptimiertes Laden von Speicher und Autos
+
+- Separate Netzladefreigaben für Speicher und jede Wallbox. Grundlage ist der
+  Brutto-Gesamtpreis einschließlich zeitabhängiger Netzentgelte; ein fester
+  Energiepreis bleibt nutzbar.
+- Viertelstundenplanung berücksichtigt PV, verbleibenden Energiebedarf,
+  verfügbare Ladefenster und Fahrzeugprioritäten. Die Autos laden nacheinander.
+- Speicherplanung berücksichtigt Hausverbrauch, Reserven und Verluste. Nur
+  wirtschaftlich nutzbare fehlende Energie wird aus günstigen Fenstern nachgeladen.
+- Fahrzeuge ohne SoC können eine gemessene AC-Energiemenge je Steckvorgang nutzen.
+  Adapterneustarts und Neuplanungen erneuern dieses Budget nicht.
+- Preisaufträge erreichen die tatsächliche Regelung. Aktuelle Preise,
+  Freigaben, SoC, Hausanschluss und §14a/LPC werden weiterhin geprüft.
+  Absichtliche Netzladung wird nicht als freier PV-Überschuss verteilt.
+- Neue Freigaben sind zunächst aus. Bestehende Ausgangsfreigaben bleiben erhalten.
+
+Einrichtung und Verhalten: [Preisoptimiertes Netzladen](docs/price-charging.md).
 
 ## Neu in 0.17.0-alpha.24 – Tarife und Viertelstundenpreise
 

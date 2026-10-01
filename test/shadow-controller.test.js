@@ -868,3 +868,92 @@ test('synthetic long WB1 electrical trajectory runs without artificial zero-budg
     assert.equal(h.value('Modeled.Wallbox1_W'), 0, 'generated 80% target SoC ends modeled charging');
     t.diagnostic(`${samples.length} synthetic observations, 1311 control cycles; ${activeCycles} active cycles; ${unexpectedStops} artificial in-session stops`);
 });
+
+test('shadow real-state reader bypasses modeled power and returns detached read-only snapshots', async () => {
+    const h = await fixture();
+    h.put('DP_WB0_POWER', 0);
+    await h.tick();
+    assert.equal(h.value('Valid'), true);
+    // An idealized response belongs to the model's private state map only.
+    h.shadow.states.set('DP_WB0_POWER', {val: 7.36, ack: true, q: 0, ts: Date.now()});
+    assert.equal(h.shadow.run('getState("DP_WB0_POWER").val'), 7.36);
+    assert.equal(h.shadow.run('getActualState("DP_WB0_POWER").val'), 0);
+    h.shadow.run('const measuredPriceSample = getActualState("DP_WB0_POWER"); measuredPriceSample.val = 99;');
+    assert.equal(h.states.get('DP_WB0_POWER').val, 0);
+    h.put('DP_WB0_POWER', 1.38);
+    assert.equal(h.shadow.run('getActualState("DP_WB0_POWER").val'), 1.38);
+    assert.ok(h.writes.every(write => write.id.startsWith('ems.0.Debug.Shadow.')));
+});
+
+test('price-session ledger follows authoritative live progress instead of derived shadow writes', async () => {
+    const h = await fixture();
+    const remaining = 'ems.0.Vehicles.Wallbox0.PriceRemainingEnergy_kWh';
+    const session = 'ems.0.Vehicles.Wallbox0.PriceSessionId';
+    h.own('Vehicles.Wallbox0.PriceRemainingEnergy_kWh', 3);
+    h.own('Vehicles.Wallbox0.PriceSessionId', 'real-session');
+    h.shadow.prepareContext();
+    h.shadow.run(`setState('${remaining}', 0, true); setState('${session}', 'invented-model-session', true);`);
+    assert.equal(h.states.get(remaining).val, 3, 'private calculations cannot consume real kWh');
+    assert.equal(h.states.get(session).val, 'real-session');
+    assert.equal(h.shadow.derived.has(remaining), false);
+    assert.equal(h.shadow.derived.has(session), false);
+    // Even old derived entries from a previous context must not override live progress.
+    h.shadow.derived.set(remaining, {val: 99, ack: true, ts: Date.now()});
+    h.own('Vehicles.Wallbox0.PriceRemainingEnergy_kWh', 2.5);
+    h.shadow.prepareContext();
+    assert.equal(h.shadow.run(`getState('${remaining}').val`), 2.5);
+    assert.equal(h.shadow.run(`getState('${session}').val`), 'real-session');
+    assert.equal(h.shadow.derived.has(remaining), false);
+    h.states.delete(session);
+    h.shadow.prepareContext();
+    assert.equal(h.shadow.run(`getState('${session}')`), undefined,
+        'a removed physical session is not recreated from model history');
+});
+
+test('actual-state reader adds no write capability to the isolated shadow engine', async () => {
+    const h = await fixture();
+    await h.tick();
+    const before = h.states.get('DP_WB0_POWER').val;
+    assert.throws(() => h.shadow.run('setState("DP_WB0_POWER", 10, true)'), /Nicht erlaubte/);
+    assert.throws(() => h.shadow.run('writeForeignState("real.actuator", 1000)'), /Nicht erlaubte/);
+    assert.throws(() => h.shadow.run('sendTo("sql.0", "query", {})'), /Nicht erlaubte/);
+    assert.equal(h.states.get('DP_WB0_POWER').val, before);
+    assert.ok(h.writes.every(write => write.id.startsWith('ems.0.Debug.Shadow.')));
+});
+
+test('actual no-SoC price-session helper never spends physical kWh on virtual charging', async () => {
+    const h = await fixture();
+    const now = h.states.get('ems.0.System.LastUpdate').val;
+    h.own('Config.Wallbox0PriceChargingEnabled', true);
+    h.own('Config.Wallbox0PriceEnergy_kWh', 3);
+    h.own('Config.Wallbox0PriceMax_ct_kWh', 25);
+    const ledger = {PriceSessionId: `0:${now - 1000}`, PriceSessionStartedAt: now - 1000,
+        PriceChargedEnergy_kWh: 0.5, PriceRemainingEnergy_kWh: 2.5,
+        PriceDeadlineTimestamp: now + 24 * 3600000, PriceLastMeasurementAt: now,
+        PriceLastPower_kW: 0, PriceEnergyTrackingValid: true, PriceSessionConnected: true};
+    for (const [field, value] of Object.entries(ledger)) h.own(`Vehicles.Wallbox0.${field}`, value);
+    const liveLedgerJson = JSON.stringify({version: 1, ...ledger});
+    h.own('Vehicles.Wallbox0.PriceSessionLedger_JSON', liveLedgerJson);
+    h.put('DP_WB0_SOC', null);
+    h.put('DP_WB0_POWER', 0);
+    h.own('Config.WallboxPlanWithoutSoC', true);
+    const physicalLedger = () => Object.fromEntries(Object.keys(ledger).map(field =>
+        [field, h.states.get(`ems.0.Vehicles.Wallbox0.${field}`).val]));
+    // Establish and ramp a real shadow output while the physical car still
+    // consumes zero. The helper must integrate the bridge's real samples.
+    for (let i = 0; i < 6; i++) {
+        h.advance(2000);
+        await h.tick();
+        assert.equal(h.value('Valid'), true);
+        const result = h.shadow.run('updateVehiclePriceSession(0, {socValid:false, gridEnergyKWh:0})');
+        assert.equal(result.priceSessionValid, true);
+        assert.equal(result.priceChargedEnergyKWh, 0.5);
+        assert.equal(result.priceRemainingKWh, 2.5);
+        assert.deepEqual(physicalLedger(), ledger);
+        assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.PriceSessionLedger_JSON').val, liveLedgerJson);
+    }
+    assert.ok(h.value('Modeled.Wallbox0_W') > 0, JSON.stringify({model:h.value('Modeled.Wallbox0_W'), target:h.value('Targets.Wallbox0_W'), status:h.value('Wallbox0.Summary'), summary:h.value('Summary')}));
+    assert.equal(h.value('Actuals.Wallbox0_W'), 0);
+    assert.equal(h.shadow.run('getActualState("DP_WB0_POWER").val'), 0);
+    assert.ok(h.writes.every(write => write.id.startsWith('ems.0.Debug.Shadow.')));
+});
