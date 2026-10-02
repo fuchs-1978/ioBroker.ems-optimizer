@@ -990,3 +990,116 @@ test('price-enabled PV shadow run holds a dip without inventing price authorizat
     h.advance(61000); await h.tick();
     assert.equal(h.value('Modeled.Wallbox0_W'), 0);
 });
+
+test('real protection sources record ACK, quality, allowed age and stale transitions', async () => {
+    const h = await fixture();
+    h.mapping.DP_HA_L2_IMPORT_W = 'ha.l2.import';
+    h.mapping.DP_HA_L2_EXPORT_W = 'ha.l2.export';
+    h.put('ha.l2.import', 500, {q: 0x82});
+    h.put('ha.l2.export', 0, {ts: Date.now() - 100000000000});
+    const quality = h.shadow.realProtectionFeedback();
+    assert.equal(quality.houseL2Import.issue, 'quality');
+    assert.equal(quality.houseL2Import.q, 0x82);
+    assert.equal(quality.houseL2Import.maxAgeMs, 15000);
+    assert.equal(quality.houseL2Export.issue, 'stale');
+    await h.tick();
+    const r = JSON.parse(h.value('DecisionRecord'));
+    assert.equal(r.adapterVersion, require('../package.json').version);
+    assert.equal(r.protectionFeedback.houseL2Import.valid, false);
+    assert.equal(r.masterEnabled, false);
+});
+
+test('slow scalar persistence coalesces complete frames and commits only after their scalars', async () => {
+    const writes = [];
+    let release;
+    const adapter = {namespace: 'ems.0', setCompatState: (id, value) => {
+        writes.push({id: id.split('.Debug.Shadow.')[1], value});
+        if (id.endsWith('Targets.Wallbox2_W') && value === 1000)
+            return new Promise(resolve => { release = resolve; });
+        return Promise.resolve();
+    }};
+    const shadow = new ShadowController(adapter);
+    const frame = (cycle, watts) => {
+        shadow.beginScalarFrame();
+        shadow.publish('Targets.Wallbox2_W', watts);
+        shadow.publish('Targets.Wallbox2_W', watts + 1); // final value only
+        shadow.publish('LastUpdate', cycle * 1000);
+        shadow.publish('CycleId', cycle);
+        shadow.finishScalarFrame();
+    };
+    // Hold a different final value to exercise a pending complete frame.
+    shadow.beginScalarFrame();
+    shadow.publish('Targets.Wallbox2_W', 1000);
+    shadow.publish('LastUpdate', 1000); shadow.publish('CycleId', 1);
+    shadow.finishScalarFrame();
+    await Promise.resolve();
+    frame(2, 2000); frame(3, 3000);
+    assert.equal(writes.some(w => w.id === 'ScalarCycleId'), false);
+    release();
+    for (let i = 0; i < 80; i++) await Promise.resolve();
+    assert.deepEqual(writes.filter(w => w.id === 'Targets.Wallbox2_W').map(w => w.value), [1000, 3001]);
+    assert.deepEqual(writes.filter(w => w.id === 'ScalarCycleId').map(w => w.value), [1, 3]);
+    assert.equal(shadow.scalarSkippedCycles, 1);
+    assert.ok(writes.findIndex(w => w.id === 'ScalarCycleId' && w.value === 3)
+        > writes.findIndex(w => w.id === 'Targets.Wallbox2_W' && w.value === 3001));
+});
+
+test('a partially failed scalar frame cannot commit while another write is outstanding', async () => {
+    const writes = [];
+    let release;
+    const shadow = new ShadowController({namespace: 'ems.0', setCompatState: (id, value) => {
+        writes.push({id, value});
+        if (id.endsWith('Targets.Wallbox2_W')) return Promise.reject(new Error('storage failure'));
+        if (id.endsWith('Targets.Wallbox1_W')) return new Promise(resolve => { release = resolve; });
+        return Promise.resolve();
+    }});
+    shadow.beginScalarFrame();
+    shadow.publish('Targets.Wallbox2_W', 0); shadow.publish('Targets.Wallbox1_W', 1380);
+    shadow.publish('LastUpdate', 1000); shadow.publish('CycleId', 1);
+    shadow.finishScalarFrame();
+    for (let i = 0; i < 8; i++) await Promise.resolve();
+    assert.equal(shadow.scalarWriting, true);
+    release();
+    for (let i = 0; i < 30; i++) await Promise.resolve();
+    assert.equal(shadow.scalarPublishErrors, 1);
+    assert.equal(writes.some(w => w.id.endsWith('.ScalarCycleId')), false);
+});
+
+test('decision publication records actual master enablement even if it changes after input validation', async () => {
+    const h = await fixture();
+    await h.tick();
+    for (const [globalEnabled, realEnabled] of [[true, false], [false, true], [false, false]]) {
+        h.adapter.config.globalWriteEnabled = globalEnabled;
+        h.own('System.RealOutputsEnabled', realEnabled);
+        // Publishing may finish after an awaited model update. The normal
+        // next tick still pauses on master ON; the record must retain reality.
+        h.shadow.publishDecision();
+        for (let i = 0; i < 80; i++) await Promise.resolve();
+        const record = JSON.parse(h.value('DecisionRecord'));
+        assert.equal(record.valid, true);
+        assert.equal(record.masterEnabled, globalEnabled || realEnabled);
+        assert.equal(record.controlState.globalWriteEnabled, globalEnabled);
+        assert.equal(record.controlState.realOutputsEnabled, realEnabled);
+        assert.equal(JSON.parse(h.value('Snapshot_JSON')).masterAssumedEnabled, true);
+    }
+});
+
+test('unload cancels queued scalar frames without committing an incomplete cycle', async () => {
+    const writes = [];
+    let release;
+    const shadow = new ShadowController({namespace: 'ems.0', setCompatState: (id, value) => {
+        writes.push({id, value});
+        if (id.endsWith('Targets.Wallbox2_W')) return new Promise(resolve => { release = resolve; });
+        return Promise.resolve();
+    }});
+    const frame = cycle => {
+        shadow.beginScalarFrame(); shadow.publish('Targets.Wallbox2_W', cycle * 1000);
+        shadow.publish('LastUpdate', cycle * 1000); shadow.publish('CycleId', cycle);
+        shadow.finishScalarFrame();
+    };
+    frame(1); await Promise.resolve(); frame(2);
+    shadow.stop(); release();
+    for (let i = 0; i < 40; i++) await Promise.resolve();
+    assert.equal(writes.some(w => w.value === 2000), false);
+    assert.equal(writes.some(w => w.id.endsWith('.ScalarCycleId')), false);
+});

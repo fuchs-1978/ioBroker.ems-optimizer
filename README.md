@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.27**
+Aktuelle Version: **0.17.0-alpha.28**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -40,6 +40,46 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.28 – nachvollziehbare Schattenstopps und SQL-Diagnose
+
+- Der Masterstatus gültiger DecisionRecords wird jetzt aus den echten Freigaben gelesen.
+  Alpha.27 ließ das Feld bei gültigen Entscheidungen weg und speicherte dadurch im kompakten
+  Record immer false. Der Schattenregler pausiert schon vor der Berechnung bei Master EIN;
+  diese Schutzprüfung bleibt bestehen. Das neue Feld erfasst auch Änderungen während eines
+  laufenden Berechnungsschritts. Frühere false-Werte sind keine unabhängige Statusmessung;
+  separate damalige Statusquellen beachten. `controlState` trennt globale und reale Freigabe.
+- DecisionRecord enthält jetzt die Adapterversion und die echten Netz-/Hausanschlussquellen
+  mit Wert, Zeitstempel, Alter, maximal zulässigem Alter, ACK, Qualität und Fehlerkategorie.
+  Hausanschluss-Stopps erklären getrennt Bezug/Einspeisung beziehungsweise Stromquelle.
+  Ein global gültiger Schattenrecord ersetzt keine gültige Sicherheitsquelle.
+- Startdiagnosen zeigen Mindest- und Reservefehlbetrag, Countdownbeginn, Anzahl der
+  Startversuche und Budget-/Auswahl-/Steuerungsresets mit Zeitpunkt und Ursache.
+  Mindestlaufzeit, Startreserve, Stoppverzögerung und harte Schutzgrenzen bleiben erhalten.
+  Lange budgetbedingte Wartezeiten werden damit nachvollziehbarer; ein pauschaler
+  Regelungsfix oder bestandener Livebetrieb wird daraus nicht behauptet.
+- Skalare Schattenwerte werden aus einem vollständigen finalen Zyklus veröffentlicht.
+  `Debug.Shadow.ScalarCycleId` bestätigt erst nach allen skalaren Schreibbestätigungen
+  dessen Abschluss. Bei langsamer Speicherung werden ganze skalare Zyklen zusammengefasst,
+  gezählt in `ScalarSkippedCycles`; Fehler stehen in `ScalarPublishErrors`.
+  Es gibt keine atomare Mehr-State-SQL-Transaktion: für Ereignisse bleibt der separat
+  serialisierte DecisionRecord mit Sitzung/Sequenz maßgeblich. Während einer Veröffentlichung
+  können einzelne UI-Werte noch unterschiedlichen Zyklen angehören.
+- SQL-Historienabfragen prüfen die aktive Aufzeichnung in der tatsächlich konfigurierten
+  SQL-Instanz, bevor `getHistory` gesendet wird. Fehlende Aufzeichnung, Metadatenfehler und
+  Timeout werden offen gemeldet; sie sind keine leere oder erfolgreiche Historie.
+- BHKW-Quelleneinheiten werden beim Adapterstart gelesen und mit der Konfiguration
+  verglichen. Einheitenwiderspruch und winzige positive unplausible Zählerstände
+  (kleiner 1e-12 Quelleinheiten) bleiben unbekannt; ein echter Zählerstand 0 ist zulässig.
+  Rohwert und Fehlergrund bleiben in der Qualitätsdiagnose sichtbar. Nicht gelieferte
+  Einheitenmetadaten bleiben unbekannt; die konfigurierte Einheit wird nicht umgeschrieben.
+  Nach einer Änderung der Quelleneinheit den Adapter neu starten.
+
+Die Tagesauswertung #73 bleibt Referenz. Der beobachtete KNX-BHKW-Zähler muss außerhalb
+dieser Adapterversion auf Datentyp/Decodierung geprüft werden; das vorhandene Reset-Skript
+für go-e-Fehler 5 und externe SQL-Schreibfehler werden nicht automatisch verändert.
+Keine Aktivierung von Master, Skripten oder Aktoren; BHKW-Quellen nur nach bewusster
+Zuordnung. Kein BHKW-Prognoseertrag und keine doppelte Addition zum Netzbudget.
 
 ## Neu in 0.17.0-alpha.27 – PV-Regelruhe, Startdiagnose und BHKW
 

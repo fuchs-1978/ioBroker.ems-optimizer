@@ -72,3 +72,30 @@ test('BHKW corrects measured household balance without adding to PV or net budge
     h.config.bhkwPresent = false; h.run('observe()');
     assert.equal(val('Actual.HouseLoad_W'), 1080);
 });
+
+test('BHKW rejects the observed near-zero KNX counter but accepts a genuine counter zero', () => {
+    const h = fixture();
+    h.put('__DP_BHKW_ENERGY__', 9.999805971268327e-41);
+    let r = h.run('bhkwTelemetry()');
+    assert.equal(r.energyKWh, null);
+    assert.equal(r.energy.issue, 'counter-implausible');
+    assert.equal(r.energy.rawValue, 9.999805971268327e-41);
+    assert.equal(r.powerW, 920);
+    h.put('__DP_BHKW_ENERGY__', 0);
+    r = h.run('bhkwTelemetry()');
+    assert.equal(r.energyKWh, 0);
+    assert.equal(r.energy.valid, true);
+});
+
+test('BHKW metadata mismatch is explicit and cannot apply a wrong energy conversion', () => {
+    const h = fixture({bhkwEnergyUnit: 'kWh'});
+    h.run("getSourceUnit = id => id === CFG.dp.bhkwEnergy ? 'J' : 'W';");
+    const r = h.run('bhkwTelemetry()');
+    assert.equal(r.energyKWh, null);
+    assert.equal(r.energy.issue, 'unit-mismatch');
+    assert.equal(r.energy.sourceUnit, 'J');
+    assert.equal(r.powerW, 920);
+    h.run("getSourceUnit = () => 'kW';");
+    assert.equal(h.run('bhkwTelemetry().powerW'), null);
+    assert.equal(h.run('bhkwTelemetry().power.issue'), 'unit-mismatch');
+});
