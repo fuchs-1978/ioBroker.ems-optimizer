@@ -1040,3 +1040,26 @@ test('start diagnostics distinguish reserve shortfall, countdown and ready state
     assert.equal(call(1500, 31000), 1500, 'armed reserve hysteresis remains intact');
     assert.equal(diag().reason, 'ready-to-start'); assert.equal(diag().startThresholdW, 1380);
 });
+
+test('countdown diagnostics retain budget-reset history without bypassing start hysteresis', async () => {
+    const h = await plant({startDelayS: 30});
+    h.own('Config.WallboxStartDelay_s', 30);
+    h.own('Config.WallboxStartReserve_W', 300);
+    const call = (watts, elapsed) => h.run(`stabilizedWallboxPower(1, ${watts},
+        {maximumPhases:1, minCurrent1pA:6, maximumPowerW:7360}, 0, 1, Date.now() + ${elapsed})`);
+    assert.equal(call(1680, 0), 0);
+    assert.equal(call(1300, 10000), 0);
+    let d = h.run('wallboxStartDiagnostics[1]');
+    assert.equal(d.history.armedCount, 1);
+    assert.equal(d.history.resetCount, 1);
+    assert.equal(d.history.lastResetReason, 'budget-below-minimum-during-countdown');
+    assert.equal(d.history.lastResetBudgetW, 1300);
+    assert.equal(d.minimumShortfallW, 80);
+    assert.equal(d.candidateSince, null);
+    assert.equal(call(1500, 20000), 0, 'reset requires entry reserve again');
+    assert.equal(call(1680, 30000), 0);
+    assert.equal(call(1500, 61000), 1500, 'armed countdown survives within reserve band');
+    d = h.run('wallboxStartDiagnostics[1]');
+    assert.equal(d.history.armedCount, 2);
+    assert.equal(d.history.resetCount, 1);
+});

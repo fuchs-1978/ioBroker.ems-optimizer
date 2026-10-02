@@ -143,3 +143,21 @@ Die Konfiguration der Phasenführung und die Änderungen aus den SQL-Auswertunge
 stehen in [Issues #57–#60 / alpha.20](issues57-60-alpha20.md).
 Die Messwerttoleranz, die Budgetdiagnose und der SQL-Auswerter sind in
 [Issue #62 / alpha.21](issue62-alpha21.md) beschrieben.
+
+## Zyklus und Quellenqualität ab alpha.28
+
+DecisionRecord ergänzt `adapterVersion` und `protectionFeedback`. Die Schutzquellen
+bleiben echte Messungen, auch wenn die elektrische Wallboxantwort virtuell ist.
+`realFeedback.*.maxAgeMs` erklärt die geltende Altersgrenze; null steht hier für
+einen bewusst ohne Altersgrenze retained Zustand, nicht für einen fehlenden Messwert.
+Startresetzähler stehen unter `allocation.WallboxN.start.history` beziehungsweise
+`startHistory` bei nicht ausgewählter Wallbox. Sie gelten für die aktuelle Regler-VM,
+nicht als persistente Tageszähler. Ein neuer Versuch nach Budgetmangel ersetzt keine
+Kontinuität durch einen SQL-/Sitzungsausfall.
+
+Die skalare Abschlussmarke `ScalarCycleId` wird erst nach sämtlichen Werten geschrieben.
+Vollständige Frames sind geordnet, bei langsamer Speicherung werden Zwischenframes
+gezählt zusammengefasst. Fehlgeschlagene Frames bekommen keine neue Abschlussmarke.
+Die Abschlussmarke ist keine SQL-Durabilitätsbestätigung und keine Mehr-State-Transaktion.
+DecisionRecords bleiben in der gesonderten begrenzten FIFO-Warteschlange;
+`ScalarSkippedCycles` ist nicht `RecordDropped`.

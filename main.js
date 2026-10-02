@@ -686,6 +686,14 @@ class EmsOptimizer extends utils.Adapter {
     async startEngine() {
         const mapping = this.readMapping();
         const adapter = this;
+        // Unit metadata is read only; never silently rewrite the configured unit.
+        this.bhkwSourceUnits = new Map();
+        for (const id of [mapping.DP_BHKW_POWER, mapping.DP_BHKW_ENERGY].filter(Boolean)) {
+            try {
+                const object = await this.getForeignObjectAsync(id);
+                this.bhkwSourceUnits.set(id, object?.common?.unit ?? null);
+            } catch { this.bhkwSourceUnits.set(id, null); }
+        }
         const sandbox = {
             console,
             Date,
@@ -708,6 +716,11 @@ class EmsOptimizer extends utils.Adapter {
             isNaN,
             getState(id) { return adapter.getCachedState(id); },
             existsState(id) { return adapter.knownObjects.has(id) || adapter.stateCache.has(id); },
+            getSourceUnit(id) { return adapter.bhkwSourceUnits?.get(id) ?? null; },
+            async historySourceEnabled(id, instance) {
+                const object = await adapter.getForeignObjectAsync(id);
+                return object?.type === 'state' && object.common?.custom?.[instance]?.enabled === true;
+            },
             createState(id, value, common) { void adapter.queueCompatState(id, value, common); },
             setState(id, value, ack) { adapter.setCompatState(id, value, ack); },
             writeForeignState(id, value, onComplete) {
