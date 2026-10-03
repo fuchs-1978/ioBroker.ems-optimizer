@@ -26,7 +26,7 @@ const extensionIds = {
 };
 
 test('every extension setting has matching Admin and native defaults', () => {
-    assert.equal(Object.keys(EXTENSION_SETTINGS).length, 45);
+    assert.equal(Object.keys(EXTENSION_SETTINGS).length, 48);
     const names = new Set();
     for (const [suffix, [name, fallback]] of Object.entries(EXTENSION_SETTINGS)) {
         assert.ok(!suffix.startsWith('Config.'), suffix);

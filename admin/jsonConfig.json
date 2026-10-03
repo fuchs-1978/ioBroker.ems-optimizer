@@ -2489,6 +2489,9 @@
           "sm": 12,
           "newLine": true
         },
+        "dhwDailyDemandKWh": {"type": "number", "label": {"de": "Angenommener Warmwasserbedarf pro 24 h (keine Messung)", "en": "Assumed daily hot-water heat demand (not measured)"}, "default": 20, "min": 0, "max": 100, "unit": "kWh", "sm": 4, "newLine": true},
+        "dhwStandingLossKWhDay": {"type": "number", "label": {"de": "Angenommene Speicherverluste pro 24 h", "en": "Assumed tank standby heat losses per day"}, "default": 2, "min": 0, "max": 20, "unit": "kWh/d", "sm": 4, "newLine": true},
+        "dhwForecastReserveKWh": {"type": "number", "label": {"de": "Warmwasser-Prognosereserve oberhalb Mindesttemperatur", "en": "Hot-water forecast reserve above minimum temperature"}, "default": 0.5, "min": 0, "max": 20, "unit": "kWh", "sm": 4, "newLine": true},
         "dhwVolumeL": {
           "type": "number",
           "label": "Storage volume",

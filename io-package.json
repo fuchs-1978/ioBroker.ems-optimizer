@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.29",
+    "version": "0.17.0-alpha.30",
     "titleLang": {
       "en": "EMS Optimizer",
       "de": "EMS-Optimierer"
@@ -146,6 +146,9 @@
     "lpcStateId": "",
     "lpcLimitId": "",
     "dhwHaLimitA": 50,
+    "dhwDailyDemandKWh": 20,
+    "dhwStandingLossKWhDay": 2,
+    "dhwForecastReserveKWh": 0.5,
     "dhwVolumeL": 500,
     "dhwMinTempC": 48,
     "dhwTargetTempC": 60,
