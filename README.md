@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.29**
+Aktuelle Version: **0.17.0-alpha.30**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -40,6 +40,18 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.30 – Warmwasserbedarf und günstige Wärmefenster
+
+Der Warmwasserplan berücksichtigt vier gültige Speichersensoren mit der konfigurierten Quellenaltersgrenze statt eines einzelnen Temperatur-Ersatzwerts. Eine kalte untere Schicht löst bei ausreichender warmer Reserve keine sofortige Vollaufheizung aus. Fehlende, unbestätigte, veraltete oder ungültige Sensorwerte machen die thermische Prognose ausdrücklich nicht bewertbar.
+
+Drei neue Annahmen sind im Warmwasser-Tab einstellbar: täglicher Wärmebedarf (Standard **20 kWh**), Speicherverluste (Standard **2 kWh/Tag**) und zusätzliche Prognosereserve (Standard **0,5 kWh**). Dies sind konfigurierbare Schätzwerte, keine aus SQL gemessenen Größen. Der Plan verteilt Bedarf und Verluste gleichmäßig über die tatsächlichen Stunden des Prognosezeitraums und führt den Wärmebedarf am Folgetag weiter.
+
+Bei ausreichender Reserve wartet Netz-Nachheizen auf einen günstigeren erreichbaren Viertelstundenpreis. Geplant wird eine Wärmebrücke bis zur nächsten günstigeren oder ausreichend starken PV-Gelegenheit, höchstens 24 Stunden voraus, statt pauschal bis zum maximalen Ziel aufzuheizen. Eine notwendige sofortige Nachheizung stellt zunächst die Mindestreserve her. Verfügbare PV wird weiterhin vorrangig zur Aufnahme nutzbarer Wärme eingeplant.
+
+`Plan.DHWForecastValid` und `Plan.DHWForecastStatus` zeigen die thermische Bewertbarkeit unabhängig vom übrigen Fahrplan. `Plan.DHWThermalDiagnostics_JSON` zeigt Sensorqualität und Quellenalter, anfängliche Reserve und Speicherkapazität, angenommene Verbräuche und Verluste, geplante Netz-/PV-Wärme sowie nicht gedeckte Mengen. Das Modell gewichtet vier Schichten gleich und ersetzt keine Schichtenspeicher-Simulation; BHKW-, Kessel- und WP-Wärme werden nicht als gesicherter zukünftiger Ertrag angerechnet. Die verfügbaren PV-Fenster sind Prognosen und können durch andere Verbraucher eingeschränkt werden.
+
+Dies ist eine Fahrplanverbesserung. Preisheiz-, Geräte-, Master- und Produktivfreigaben werden nicht automatisch aktiviert. Der Fahrplan allein autorisiert keinen realen Netzladevorgang; vorhandene Sicherheits- und Übergabekriterien bleiben erforderlich.
 
 ## Neu in 0.17.0-alpha.29 – Schatten-Quellenalter und Speicherplanung nach Modul 3
 

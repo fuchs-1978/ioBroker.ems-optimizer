@@ -6,10 +6,10 @@ const vm = require('node:vm');
 const fs = require('node:fs');
 const path = require('node:path');
 
-function engine(config = {}) {
+function engine(config = {}, clock = null) {
     config = {wb0PhaseControlMode: 'ems', wb1PhaseControlMode: 'ems', wb2PhaseControlMode: 'ems', ...config};
     const states = new Map();
-    const now = new Date(2026, 8, 21, 12, 0, 0).getTime();
+    const now = clock ? Date.parse(clock) : new Date(2026, 8, 21, 12, 0, 0).getTime();
     class Clock extends Date {
         constructor(...args) { super(...(args.length ? args : [now])); }
         static now() { return now; }
@@ -26,6 +26,9 @@ function engine(config = {}) {
     }
     const run = source => vm.runInContext(source, context);
     run('createStates(); historyReady = true;');
+    put('ems.0.Config.DHWDailyDemand_kWh', 0);
+    put('ems.0.Config.DHWStandingLoss_kWh_day', 0);
+    put('ems.0.Config.DHWForecastReserve_kWh', 0);
     for (let wb = 0; wb < 3; wb++) put(`ems.0.Devices.Wallbox${wb}.Present`, false);
     put('ems.0.Devices.Battery.Present', false);
     put('ems.0.Devices.MyPV_Heating.Present', false);
@@ -69,6 +72,7 @@ function dhw(h, {volumeL = 500, temperature = 51.6, minimum = 40, target = 76} =
     h.put('ems.0.Devices.MyPV_DHW.Present', true);
     h.put('ems.0.Config.DHWVolume_l', volumeL);
     h.put('ems.0.Actual.DHWTemperature_C', temperature);
+    for (const id of h.run('CFG.dp.dhwTemps')) h.put(id, temperature);
     h.put('ems.0.Config.DHWMinTemperature_C', minimum);
     h.put('ems.0.Config.DHWTargetTemperature_C', target);
     return Math.max(0, volumeL * 1.163 * (target - temperature) / 1000);
@@ -252,18 +256,18 @@ test('fractional final energy respects both storage caps and published slot bala
     assert.ok(allocations.slice(1).every(slot => slot.wallboxW === 0 && slot.dhwW === 0));
 });
 
-test('cheap minimum-temperature hot water remains explicit grid heating', () => {
+test('available PV restores cold-top service before mandatory vehicle grid charging', () => {
     const h = engine();
     vehicle(h);
     dhw(h, {temperature: 39});
     const data = h.plan({pvW: 2954, houseW: 615, price: [5, 35, 35, 35], slots: 4});
-    assert.deepEqual(h.series('MyPV_DHW').map(slot => slot.valueW), [9000, 0, 0, 0]);
+    assert.deepEqual(h.series('MyPV_DHW').map(slot => slot.valueW), [2339, 0, 0, 0]);
     assert.deepEqual(h.series('Wallbox2').map(slot => slot.valueW), [0, 4600, 4600, 4600]);
-    assert.deepEqual(h.series('GridPower').map(slot => slot.valueW), [6661, 2261, 2261, 2261]);
+    assert.deepEqual(h.series('GridPower').map(slot => slot.valueW), [0, 2261, 2261, 2261]);
     const allocations = balancedPlan(h, data);
-    assert.equal(allocations[0].dhwReason, 'minimum-temperature');
+    assert.equal(allocations[0].dhwReason, 'minimum-reserve');
     assert.equal(allocations[0].dhwPvW, 2339);
-    assert.equal(allocations[0].dhwGridW, 6661);
+    assert.equal(allocations[0].dhwGridW, 0);
     assert.equal(allocations[1].dhwReason, 'off');
 });
 
@@ -295,6 +299,7 @@ test('DHW planner never schedules more heat than the remaining storage capacity'
     const h = engine();
     h.put('ems.0.Config.DHWVolume_l', 1000 / 1.163);
     h.put('ems.0.Actual.DHWTemperature_C', 40);
+    for (const id of h.run('CFG.dp.dhwTemps')) h.put(id, 40);
     h.put('ems.0.Config.DHWTargetTemperature_C', 41);
     h.put('ems.0.Config.DHWMinTemperature_C', 45);
     h.plan();
@@ -498,4 +503,91 @@ test('disabled phase switching ignores retained three-phase feedback in a fixed 
     const data = h.plan({pvW: 3000, slots: 4});
     assert.ok(h.series('Wallbox0').every(slot => slot.phases === 1 && slot.valueW === 2990));
     balancedPlan(h, data);
+});
+
+function thermalFixture({temperatures = [35.9, 40.1, 48.1, 55.2], demand = 20, loss = 2,
+    reserve = 0.5, start = '2026-10-03T19:15:00Z'} = {}) {
+    const h = engine({}, start);
+    h.put('ems.0.Devices.MyPV_DHW.Present', true);
+    h.put('ems.0.Config.DHWMinTemperature_C', 40);
+    h.put('ems.0.Config.DHWTargetTemperature_C', 76);
+    h.put('ems.0.Config.DHWDailyDemand_kWh', demand);
+    h.put('ems.0.Config.DHWStandingLoss_kWh_day', loss);
+    h.put('ems.0.Config.DHWForecastReserve_kWh', reserve);
+    h.run('CFG.dp.dhwTemps').forEach((id, i) => h.put(id, temperatures[i]));
+    const report = () => JSON.parse(h.states.get('ems.0.Plan.DHWThermalDiagnostics_JSON').val);
+    return {...h, report};
+}
+
+test('stratified warm-water reserve waits for NT and forecasts tomorrow consumption and PV refill', () => {
+    const h = thermalFixture();
+    // Quiet tank sensors older than ten minutes are still valid under the
+    // configured sixty-minute policy; no fallback to the cold bottom is allowed.
+    for (const id of h.run('CFG.dp.dhwTemps')) h.states.get(id).ts -= 20 * 60000;
+    h.put('ems.0.Actual.DHWTemperature_C', 35.9);
+    const pvW = Array.from({length: 192}, (_, i) => i >= 47 && i < 71 || i >= 143 && i < 167 ? 8000 : 0);
+    const price = Array.from({length: 192}, (_, i) => i >= 7 && i < 31 || i >= 103 && i < 127 ? 23.56 : 30.04);
+    const data = h.plan({pvW, houseW: 500, price, slots: 192});
+    const a = balancedPlan(h, data), r = h.report();
+    assert.equal(r.valid, true);
+    near(r.averageTemperatureC, 44.825, 'four-layer average');
+    assert.ok(a.slice(0, 7).every(p => p.dhwGridW === 0), 'no 9kW ST full charge tonight');
+    assert.ok(a.slice(7, 31).some(p => p.dhwGridW > 0), 'NT replenishes only the bridge');
+    assert.ok(a.slice(47, 71).some(p => p.dhwPvW > 0), 'tomorrow PV still has thermal headroom');
+    near(r.expectedDemandKWh, 40, 'two days of configured hot-water consumption');
+    near(r.expectedLossKWh, 4, 'two days of configured standby losses');
+    near(r.unmetReserveKWh, 0, 'supply reserve remains sufficient');
+    assert.ok(a.slice(7, 31).reduce((sum, p) => sum + p.dhwGridW / 4000, 0) < r.initialHeadroomKWh,
+        'night bridge does not fill the tank to its full target');
+});
+
+test('genuinely cold top gets a minimum service refill without an expensive full-target charge', () => {
+    const h = thermalFixture({temperatures: [39, 39, 39, 39]});
+    const data = h.plan({pvW: 0, price: [30.04, 30.04, 23.56, 23.56, 23.56], slots: 5});
+    const a = balancedPlan(h, data);
+    assert.ok(a[0].dhwGridW > 0 && a[0].dhwGridW <= (0.5815 + 0.5 + 22 / 24 * 0.5) * 4000 + 1e-6, 'only reserve and demand until the cheaper window');
+    assert.equal(a[0].dhwReason, 'minimum-reserve');
+    assert.ok(a.slice(2).some(p => p.dhwGridW > 0), 'remaining demand moved to NT');
+});
+
+test('sufficient stored heat and upcoming PV prevent an unnecessary night purchase', () => {
+    const h = thermalFixture({temperatures: [60, 60, 60, 60], demand: 2, loss: 0});
+    h.plan({pvW: Array.from({length: 96}, (_, i) => i >= 47 && i < 71 ? 8000 : 0),
+        price: Array.from({length: 96}, (_, i) => i >= 7 && i < 31 ? 23.56 : 30.04), slots: 96});
+    assert.equal(h.report().gridHeatingKWh, 0);
+    assert.ok(h.report().pvHeatingKWh > 0);
+});
+
+test('missing, stale or bad tank sensor yields unknown thermal forecast instead of a bottom-value fallback', () => {
+    for (const extra of [{val: null}, {ts: 0}, {ack: false}, {q: 64}, {ts: 9999999999999}]) {
+        const h = thermalFixture();
+        Object.assign(h.states.get(h.run('CFG.dp.dhwTemps[2]')), extra);
+        h.put('ems.0.Actual.DHWTemperature_C', 35.9);
+        h.plan({pvW: 10000, slots: 8});
+        assert.equal(h.report().valid, false);
+        assert.equal(h.states.get('ems.0.Plan.DHWForecastValid').val, false);
+        assert.match(h.states.get('ems.0.Plan.DHWForecastStatus').val, /Nicht bewertbar/);
+        assert.equal(h.report().averageTemperatureC, null);
+        assert.equal(h.report().initialHeadroomKWh, null);
+        assert.ok(h.series('MyPV_DHW').every(p => p.valueW === 0));
+    }
+});
+
+test('missing prices never authorize minimum-reserve grid heat and the deficit remains visible', () => {
+    const h = thermalFixture({temperatures: [39, 39, 39, 39]});
+    h.plan({pvW: 0, price: null, slots: 8});
+    assert.equal(h.report().gridHeatingKWh, 0);
+    assert.ok(h.report().unmetReserveKWh > 0);
+});
+
+
+test('thermal forecast respects the configured heater cap for both PV and price purchases', () => {
+    for (const pvW of [0, 12000]) {
+        const h = thermalFixture({temperatures: [30, 30, 30, 30], demand: 20});
+        h.put('ems.0.Config.DHWControllerMaxPower_W', 3000);
+        const data = h.plan({pvW, price: 23.56, slots: 96});
+        balancedPlan(h, data);
+        assert.ok(h.series('MyPV_DHW').every(p => p.valueW <= 3000));
+        assert.ok(h.series('MyPV_DHW').some(p => p.valueW > 0));
+    }
 });
