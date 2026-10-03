@@ -9,7 +9,7 @@ const {EXTENSION_SETTINGS} = require('../lib/extension-settings');
 const readEngine = file => fs.readFileSync(path.join(__dirname, '../lib/engine', `${file}.js`), 'utf8')
     .replaceAll('__ADAPTER_ROOT__', 'ems.0');
 const priceSettings = Object.fromEntries(Object.entries(EXTENSION_SETTINGS)
-    .filter(([name]) => /^(?:PriceCharging|BatteryPrice|Wallbox\dPrice)/.test(name)));
+    .filter(([name]) => /^(?:PriceCharging|BatteryPrice|BatteryRoundTrip|Wallbox\dPrice)/.test(name)));
 const admin = JSON.parse(fs.readFileSync(path.join(__dirname, '../admin/jsonConfig.json'), 'utf8'));
 const fields = Object.assign({}, ...Object.values(admin.items).map(tab => tab.items || {}));
 
@@ -42,7 +42,7 @@ test('price settings initialize through the real native mapping without enabling
     const {a} = adapter({globalWriteEnabled: false, batteryMinSocPct: 23});
     await a.applyNativeEmsSettings();
     await a.flushOwnWrites();
-    assert.equal(Object.keys(priceSettings).length, 15);
+    assert.equal(Object.keys(priceSettings).length, 17);
     for (const [suffix, [name, fallback]] of Object.entries(priceSettings)) {
         assert.equal(a.getCachedState(`ems.0.Config.${suffix}`).val, fallback, name);
     }

@@ -1063,3 +1063,17 @@ test('countdown diagnostics retain budget-reset history without bypassing start 
     assert.equal(d.history.armedCount, 2);
     assert.equal(d.history.resetCount, 1);
 });
+
+
+test('lowered grid-charge SoC ceiling revokes a still-current battery price plan immediately', async () => {
+    const h = await plant({battery: true, wallbox: false, initialSurplusW: -500});
+    armPricePlans(h, {wallboxW: 0});
+    assert.equal(h.run("priceChargingAuthorization('Battery').allowed"), true);
+    h.own('Config.BatteryPriceMaxSoC_pct', 45);
+    assert.equal(h.run("priceChargingAuthorization('Battery').allowed"), false);
+    assert.equal(h.run("checkQueuedElectricalOutput('Battery', -1200).allowed"), false);
+    h.own('Config.BatteryPriceMaxSoC_pct', 65);
+    assert.equal(h.run("priceChargingAuthorization('Battery').allowed"), true);
+    h.put(h.run('CFG.dp.batterySoc'), 65);
+    assert.equal(h.run("priceChargingAuthorization('Battery').allowed"), false);
+});

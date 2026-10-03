@@ -54,6 +54,8 @@ test('annual network schedule preserves 16:30 boundary, midnight, quarters and a
     assert.equal(forecast.grid.length, 192);
     assert.equal(forecast.grid[1].value_ct_kWh, 7.19); // Berlin 16:15
     assert.equal(forecast.grid[2].value_ct_kWh, 10.01); // Berlin 16:30
+    assert.equal(forecast.grid[1].level, 'standard');
+    assert.equal(forecast.grid[2].level, 'high');
     assert.equal(h.price('2026-10-01T21:00:00Z').gridCt, 0.71);
     assert.equal(h.price('2026-10-01T22:00:00Z').gridCt, 0.71);
     assert.equal(h.price('2026-03-31T21:00:00Z').gridCt, 0.71);

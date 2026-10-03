@@ -161,3 +161,9 @@ gezählt zusammengefasst. Fehlgeschlagene Frames bekommen keine neue Abschlussma
 Die Abschlussmarke ist keine SQL-Durabilitätsbestätigung und keine Mehr-State-Transaktion.
 DecisionRecords bleiben in der gesonderten begrenzten FIFO-Warteschlange;
 `ScalarSkippedCycles` ist nicht `RecordDropped`.
+
+## Historische Modellantwort und aktuelle Schutzquelle ab alpha.29
+
+Das Quellenalter einer historischen Modellantwort wird nicht auf den aktuellen Zeitpunkt umgeschrieben. Ihr Zeitstempel bleibt für Abdeckung und Response.Valid nachvollziehbar. Die Wallbox-Ausgangsprüfung verwendet für die SMA-Bezugs-/Einspeisequellen hingegen ACK, Qualität und Alter aus dem aktuellen Originalzustand, während die Leistungsberechnung weiterhin die private modellierte Netzantwort verwendet. Fehlende, negative, nichtnumerische, unbestätigte oder veraltete Original-Netzwerte geben keinen Modellstart frei. Die produktive Wallbox-Ausgangsprüfung verwendet weiterhin ihre realen Quellen; diese Trennung betrifft ausschließlich das private Schattenmodell.
+
+Ein Regressionstest bildet eine 9,988 Sekunden alte, noch gültige Modellbasis mit frischen realen Netzquellen nach. Der folgende Ausgangszyklus darf daraus keinen künstlichen Quellenalter-Stopp ableiten. Dieser Softwaretest weist keine bestandene reale Wallbox- oder Phasenabnahme nach.

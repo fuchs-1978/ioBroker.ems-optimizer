@@ -183,6 +183,64 @@ test('battery PV stage targets remain effective in price mode', () => {
     assert.equal(result.report.gridKWh, 0);
 });
 
+test('Modul 3 with fixed energy price reserves constrained NT purchases for HT before ST', () => {
+    const h = harness(), data = slots(h, [23.56, 23.56, 30.04, 30.04, 32.86, 32.86]);
+    for (let i = 2; i < data.length; i++) data[i].baseW = 2000;
+    const result = batteryPlan(h, data, {capacity: 15, initialSoc: 10, minSoc: 10,
+        maxCharge: 2400, maxDischarge: 2400, efficiency: Math.sqrt(0.85)});
+    const served = (from, to) => result.slots.slice(from, to).reduce((s, p) => s + Math.max(0, -p.valueW) * 0.25 / 1000, 0);
+    assert.ok(served(4, 6) > 0.99, 'limited NT energy covers HT first');
+    assert.ok(served(2, 4) < 0.03, 'ST cannot consume capacity required for HT');
+    assert.ok(result.report.gridKWh <= 1.2 + 1e-6, '30-minute NT power limit');
+    assert.ok(Math.max(...result.slots.map(p => p.socPct)) < 25, 'no blanket charge to 100%');
+});
+
+test('round-trip setting is used once and zero preserves legacy per-direction losses', () => {
+    const h = harness();
+    h.put('Config.BatteryEfficiency_pct', 92);
+    assert.ok(Math.abs(h.run('batteryPlanningEfficiency() ** 2') - 0.92 ** 2) < 1e-10);
+    h.put('Config.BatteryRoundTripEfficiency_pct', 85);
+    assert.ok(Math.abs(h.run('batteryPlanningEfficiency() ** 2') - 0.85) < 1e-10);
+});
+
+test('grid SoC ceiling limits purchases while PV can charge above it and report keeps honest economics', () => {
+    const h = harness(), data = slots(h, [23.56, 23.56, 32.86, 32.86]);
+    data.forEach((slot, i) => { slot.gridLevel = i < 2 ? 'low' : 'high'; if (i >= 2) slot.baseW = 2400; });
+    const result = batteryPlan(h, data, {capacity: 15, initialSoc: 10, minSoc: 10,
+        gridMaxSoc: 15, maxCharge: 2400, maxDischarge: 2400, efficiency: Math.sqrt(.85)});
+    assert.ok(Math.max(...result.slots.map(p => p.targetSoCPct)) <= 15.001);
+    assert.ok(result.report.expectedSavingsEUR > 0);
+    assert.ok(result.report.chargeWindows.length > 0);
+    assert.ok(result.slots.some(p => p.energyReason === 'NT-Netzladung'));
+    assert.ok(result.slots.some(p => p.energyReason === 'HT-Vermeidung'));
+    const pv = slots(h, [23.56, 23.56, 32.86, 32.86]);
+    pv[0].pvW = pv[0].residualPvW = pv[1].pvW = pv[1].residualPvW = 8000;
+    const solar = batteryPlan(h, pv, {initialSoc: 10, minSoc: 10, gridMaxSoc: 15});
+    assert.equal(solar.report.gridKWh, 0);
+    assert.ok(solar.slots.some(p => p.socPct > 15 && p.energyReason === 'PV'));
+    assert.ok(solar.report.reservedPvCapacityKWh > 0);
+});
+
+test('flat grid fees and unprofitable round-trip losses do not authorize arbitrary NT charging', () => {
+    for (const prices of [[30.04, 30.04, 30.04, 30.04], [23.56, 23.56, 32.86, 32.86]]) {
+        const h = harness(), data = slots(h, prices);
+        data[2].baseW = data[3].baseW = 2000;
+        const result = batteryPlan(h, data, {efficiency: Math.sqrt(.65)});
+        assert.equal(result.report.gridKWh, 0);
+        assert.equal(result.report.expectedSavingsEUR, 0);
+        assert.equal(result.report.chargeWindows.length, 0);
+    }
+});
+
+test('equal-price later NT window covers later demand without filling the battery in this NT window', () => {
+    const h = harness(), data = slots(h, [23.56, 23.56, 30.04, 30.04, 30.04, 30.04, 23.56, 23.56, 32.86, 32.86]);
+    data[8].baseW = data[9].baseW = 1000;
+    const result = batteryPlan(h, data, {efficiency: Math.sqrt(.85)});
+    assert.equal(result.slots[0].gridChargeW + result.slots[1].gridChargeW, 0);
+    assert.ok(result.slots[6].gridChargeW + result.slots[7].gridChargeW > 0);
+    assert.ok(result.report.unmetHouseholdKWh < 1e-6);
+});
+
 
 function wholePlan(h, price, pv, car) {
     for (const name of ['Battery', 'MyPV_DHW', 'MyPV_Heating']) h.put(`Devices.${name}.Present`, false);

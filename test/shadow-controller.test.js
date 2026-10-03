@@ -363,6 +363,42 @@ async function startModel(h) {
     assert.ok(h.value('Modeled.Wallbox0_W') >= 1380, h.value('Wallbox0.ModelStatus'));
 }
 
+test('historical response at the age boundary does not turn fresh real grid protection stale', async () => {
+    const h = await fixture();
+    forceWallboxBudget(h);
+    await startModel(h);
+    const model = h.shadow.model;
+    const now = model.now();
+    const ids = [h.mapping.DP_GRID_IMPORT, h.mapping.DP_GRID_EXPORT, h.mapping.DP_WB0_POWER];
+    model.sampleBuffer.clear();
+    const raw = new Map(model.rawStates);
+    for (const [ts, power] of [[now - 15000, 3.68], [now - 9988, 3.68]]) {
+        raw.set(ids[0], {val: 230, ts, ack: true, q: 0});
+        raw.set(ids[1], {val: 0, ts, ack: true, q: 0});
+        raw.set(ids[2], {val: power, ts, ack: true, q: 0});
+        model.sampleBuffer.capture(raw, ids, ts);
+    }
+    raw.set(ids[0], {val: 300, ts: now, ack: true, q: 0});
+    raw.set(ids[1], {val: 0, ts: now, ack: true, q: 0});
+    raw.set(ids[2], {val: 3.7, ts: now - 3000, ack: true, q: 0});
+    model.rawStates = raw;
+    model.prepareResponse();
+    assert.equal(model.response.basis, 'bracketed-historical-input');
+    assert.equal(model.response.inputAgeMs, 9988);
+    assert.equal(model.states.get(ids[0]).ts, now - 9988, 'never redate the historic modeled baseline');
+    h.advance(100);
+    await model.tick();
+    assert.equal(model.decision(0).active, true, model.decision(0).status);
+    assert.equal(h.states.get('goe.allow').val, 0, 'no real actuator write');
+    for (const extra of [{ts: now - 10001}, {ack: false}, {q: 64}, {val: null}, {val: 'bad'},
+        {val: -1}, {ts: model.now() + 1001}]) {
+        model.rawStates.set(ids[0], {val: 300, ts: model.now(), ack: true, q: 0, ...extra});
+        assert.equal(model.output.number(ids[0], 10000), null, 'real source problems remain hard gates');
+    }
+    await model.tick();
+    assert.equal(model.decision(0).active, false, 'an actually invalid real grid source stops the output');
+});
+
 test('private production output models startup and ramps while actual measurements stay real', async () => {
     const h = await fixture();
     h.adapter.config.slowCycleS = 2;

@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.28",
+    "version": "0.17.0-alpha.29",
     "titleLang": {
       "en": "EMS Optimizer",
       "de": "EMS-Optimierer"
@@ -238,6 +238,8 @@
     "batteryPriceMaxCt": 0,
     "batteryPriceMinSavingsCt": 2,
     "batteryPriceReservePct": 10,
+    "batteryPriceMaxSocPct": 100,
+    "batteryRoundTripEfficiencyPct": 0,
     "wb0PriceChargingEnabled": false,
     "wb0PriceMaxCt": 0,
     "wb0PriceEnergyKWh": 0,

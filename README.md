@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.28**
+Aktuelle Version: **0.17.0-alpha.29**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -40,6 +40,16 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.29 – Schatten-Quellenalter und Speicherplanung nach Modul 3
+
+- Historische Netzwerte bleiben die Grundlage der modellierten Antwort. Für die Schutzprüfung der Schatten-Wallboxausgänge werden dagegen Qualität, ACK und Alter der aktuellen Original-Netzquelle verwendet. So verursacht eine gültige historische Basis am Alterslimit keinen künstlichen Stopp im nächsten Ausgangszyklus. Ungültige oder tatsächlich veraltete Originalquellen sperren weiterhin.
+- Issue #75: Bei knappen günstigen Ladefenstern bekommt späterer HT-Verbrauch Vorrang vor weniger wertvollem ST-Verbrauch. Gleich teure Netzladungen werden bis zum letzten noch geeigneten Fenster verschoben; bereits geplante PV-Aufnahme wird durch einen neuen Netzladevorschlag nicht reduziert.
+- `BatteryRoundTripEfficiency_pct` beschreibt optional den gesamten Lade-/Entladezyklus (z. B. 85 %). Der Wert 0 übernimmt unverändert die bisherige Effizienz pro Richtung; 92 % pro Richtung entsprechen 84,64 % für den Gesamtzyklus.
+- `BatteryPriceMaxSoC_pct` begrenzt separat den SoC für preisoptimiertes Netzladen. PV-Laden darf darüber hinaus bis zur allgemeinen Speichergrenze erfolgen. Eine abgesenkte Netzladegrenze wird auch vor der Ausführung eines bereits bestehenden Preisplans geprüft.
+- Neue Plan-Diagnosen: Netzladeenergie, Netzladeziel-SoC, Ladefenster, prognostizierte Kosteneinsparung und für die nächste PV-Phase eingeplante freie Speicherkapazität. Die Einsparung vergleicht Prognose-Netzbezugskosten mit derselben PV- und Ausgangsreserve ohne zusätzliche Netzladung; sie ist keine gemessene Abrechnung und berücksichtigt weder Verschleiß noch Einspeisevergütung.
+
+Bestehende Installationen erhalten keine automatische Preisladefreigabe: Gesamtzyklus-Effizienz startet mit 0 (bisheriges Verhalten), die zusätzliche Netzlade-SoC-Grenze mit 100 %. Die Änderungen sind durch reproduzierbare Tests geprüft, ersetzen aber keine begleitete Liveabnahme. Details und Diagnosefelder: [Issue #75](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/75).
 
 ## Neu in 0.17.0-alpha.28 – nachvollziehbare Schattenstopps und SQL-Diagnose
 
