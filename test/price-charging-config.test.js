@@ -10,6 +10,7 @@ const readEngine = file => fs.readFileSync(path.join(__dirname, '../lib/engine',
     .replaceAll('__ADAPTER_ROOT__', 'ems.0');
 const priceSettings = Object.fromEntries(Object.entries(EXTENSION_SETTINGS)
     .filter(([name]) => /^(?:PriceCharging|BatteryPrice|BatteryRoundTrip|Wallbox\dPrice)/.test(name)));
+const de = JSON.parse(fs.readFileSync(path.join(__dirname, '../admin/i18n/de/translations.json'), 'utf8'));
 const admin = JSON.parse(fs.readFileSync(path.join(__dirname, '../admin/jsonConfig.json'), 'utf8'));
 const fields = Object.assign({}, ...Object.values(admin.items).map(tab => tab.items || {}));
 
@@ -135,12 +136,12 @@ test('price-charging Admin bounds distinguish negative caps, zero energy and opt
     for (const name of ['batteryPriceMaxCt', 'wb0PriceMaxCt', 'wb1PriceMaxCt', 'wb2PriceMaxCt']) {
         assert.ok(fields[name].min < 0, `${name} must support negative prices`);
         assert.equal(fields[name].default, 0);
-        assert.match(fields[name].label.de, /0 = keine Grenze/);
+        assert.match(de[fields[name].label], /0 = keine Grenze/);
     }
     for (const wb of [0, 1, 2]) {
         assert.equal(fields[`wb${wb}PriceEnergyKWh`].default, 0);
-        assert.match(fields[`_wb${wb}PriceHelp`].text.de, /AC-Ladeenergie je Anstecken/);
-        assert.match(fields[`_wb${wb}PriceHelp`].text.de, /Neustart setzt ihn nicht zurück/);
+        assert.match(de[fields[`_wb${wb}PriceHelp`].text], /AC-Ladeenergie je Anstecken/);
+        assert.match(de[fields[`_wb${wb}PriceHelp`].text], /Neustart setzt ihn nicht zurück/);
     }
-    assert.match(fields._priceChargingHelp.text.de, /festem Energiepreis und zeitabhängigen Netzentgelten/);
+    assert.match(de[fields._priceChargingHelp.text], /festem Energiepreis und zeitabhängigen Netzentgelten/);
 });
