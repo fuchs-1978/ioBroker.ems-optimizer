@@ -1075,6 +1075,26 @@
           "max": 120,
           "sm": 4
         },
+        "wallboxResponseSettleTimeoutS": {
+          "type": "number",
+          "label": "Vehicle response timeout after command acknowledgement",
+          "help": "After a confirmed current or start command, wait for fresh electrical readings before increasing again. Real charger errors and safety limits remain immediate.",
+          "unit": "s",
+          "default": 45,
+          "min": 5,
+          "max": 120,
+          "sm": 4
+        },
+        "wallboxResponseCurrentToleranceA": {
+          "type": "number",
+          "label": "Vehicle response current tolerance",
+          "help": "Tolerance for measured current versus confirmed command. This does not change the charger over-current protection.",
+          "unit": "A",
+          "default": 1.5,
+          "min": 0.5,
+          "max": 3,
+          "sm": 4
+        },
         "phaseSwitchLookAheadMin": {
           "type": "number",
           "label": "Phase recommendation look-ahead",
@@ -3145,13 +3165,7 @@
         "heatingSetpointId": {
           "type": "objectId",
           "label": "Writable heating-buffer my-PV setpoint (W, 0 = OFF)",
-          "customFilter": {
-            "type": "state",
-            "common": {
-              "type": "number",
-              "write": true
-            }
-          },
+          "filterFunc": "obj.type === 'state' && !!obj.common && obj.common.type === 'number' && obj.common.write === true",
           "default": "",
           "sm": 12,
           "newLine": true
@@ -3367,13 +3381,7 @@
         "batterySetpointId": {
           "type": "objectId",
           "label": "Writable sunenergyxt500.N.heads.H.control.GS (W: positive discharge / negative charge)",
-          "customFilter": {
-            "type": "state",
-            "common": {
-              "type": "number",
-              "write": true
-            }
-          },
+          "filterFunc": "obj.type === 'state' && !!obj.common && obj.common.type === 'number' && obj.common.write === true",
           "default": "",
           "sm": 12,
           "newLine": true
