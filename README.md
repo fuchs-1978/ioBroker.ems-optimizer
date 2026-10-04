@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.30**
+Aktuelle Version: **0.17.0-alpha.31**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -40,6 +40,10 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.31 – Admin-Übersetzungen
+
+Alle Admin-Beschriftungen, Auswahleinträge und Hilfetexte verwenden zentrale Übersetzungsdateien unter `admin/i18n/en/translations.json` und `admin/i18n/de/translations.json`. Die Admin-Sprache bestimmt die Anzeige. Der Warmwasser-Reiter heißt auf Deutsch **Warmwasser-Heizstab**. Konfigurationsschlüssel, Optionswerte und Datenpunkt-IDs bleiben erhalten.
 
 ## Neu in 0.17.0-alpha.30 – Warmwasserbedarf und günstige Wärmefenster
 

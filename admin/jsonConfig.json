@@ -234,28 +234,115 @@
           "size": 3,
           "newLine": true
         },
-        "house1PowerId": {"type": "text", "label": "House meter 1", "default": "", "sm": 6, "newLine": true},
-        "house2PowerId": {"type": "text", "label": "House meter 2", "default": "", "sm": 6},
-        "hallPowerId": {"type": "text", "label": "Hall meter", "default": "", "sm": 6, "newLine": true},
-        "apartmentPowerId": {"type": "text", "label": "Apartment meter", "default": "", "sm": 6},
-        "dhwTemperatureId": {"type": "text", "label": "Optional aggregate DHW temperature", "default": "", "sm": 12, "newLine": true},
+        "house1PowerId": {
+          "type": "text",
+          "label": "House meter 1",
+          "default": "",
+          "sm": 6,
+          "newLine": true
+        },
+        "house2PowerId": {
+          "type": "text",
+          "label": "House meter 2",
+          "default": "",
+          "sm": 6
+        },
+        "hallPowerId": {
+          "type": "text",
+          "label": "Hall meter",
+          "default": "",
+          "sm": 6,
+          "newLine": true
+        },
+        "apartmentPowerId": {
+          "type": "text",
+          "label": "Apartment meter",
+          "default": "",
+          "sm": 6
+        },
+        "dhwTemperatureId": {
+          "type": "text",
+          "label": "Optional aggregate DHW temperature",
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
         "_phaseMeasurementHeader": {
           "type": "header",
           "text": "Optional phase measurements for house-connection protection",
           "size": 3,
           "newLine": true
         },
-        "dhwHaL1CurrentId": {"type": "text", "label": "House current L1 (A)", "default": "", "sm": 4, "newLine": true},
-        "dhwHaL2CurrentId": {"type": "text", "label": "House current L2 (A)", "default": "", "sm": 4},
-        "dhwHaL3CurrentId": {"type": "text", "label": "House current L3 (A)", "default": "", "sm": 4},
-        "haL1ImportPowerId": {"type": "text", "label": "L1 import power (W)", "default": "", "sm": 4, "newLine": true},
-        "haL2ImportPowerId": {"type": "text", "label": "L2 import power (W)", "default": "", "sm": 4},
-        "haL3ImportPowerId": {"type": "text", "label": "L3 import power (W)", "default": "", "sm": 4},
-        "haL1ExportPowerId": {"type": "text", "label": "L1 export power (W)", "default": "", "sm": 4, "newLine": true},
-        "haL2ExportPowerId": {"type": "text", "label": "L2 export power (W)", "default": "", "sm": 4},
-        "haL3ExportPowerId": {"type": "text", "label": "L3 export power (W)", "default": "", "sm": 4},
-        "haFreePowerId": {"type": "text", "label": "Legacy available house power (optional)", "default": "", "sm": 6, "newLine": true},
-        "haCriticalId": {"type": "text", "label": "House-connection critical flag (optional)", "default": "", "sm": 6}
+        "dhwHaL1CurrentId": {
+          "type": "text",
+          "label": "House current L1 (A)",
+          "default": "",
+          "sm": 4,
+          "newLine": true
+        },
+        "dhwHaL2CurrentId": {
+          "type": "text",
+          "label": "House current L2 (A)",
+          "default": "",
+          "sm": 4
+        },
+        "dhwHaL3CurrentId": {
+          "type": "text",
+          "label": "House current L3 (A)",
+          "default": "",
+          "sm": 4
+        },
+        "haL1ImportPowerId": {
+          "type": "text",
+          "label": "L1 import power (W)",
+          "default": "",
+          "sm": 4,
+          "newLine": true
+        },
+        "haL2ImportPowerId": {
+          "type": "text",
+          "label": "L2 import power (W)",
+          "default": "",
+          "sm": 4
+        },
+        "haL3ImportPowerId": {
+          "type": "text",
+          "label": "L3 import power (W)",
+          "default": "",
+          "sm": 4
+        },
+        "haL1ExportPowerId": {
+          "type": "text",
+          "label": "L1 export power (W)",
+          "default": "",
+          "sm": 4,
+          "newLine": true
+        },
+        "haL2ExportPowerId": {
+          "type": "text",
+          "label": "L2 export power (W)",
+          "default": "",
+          "sm": 4
+        },
+        "haL3ExportPowerId": {
+          "type": "text",
+          "label": "L3 export power (W)",
+          "default": "",
+          "sm": 4
+        },
+        "haFreePowerId": {
+          "type": "text",
+          "label": "Legacy available house power (optional)",
+          "default": "",
+          "sm": 6,
+          "newLine": true
+        },
+        "haCriticalId": {
+          "type": "text",
+          "label": "House-connection critical flag (optional)",
+          "default": "",
+          "sm": 6
+        }
       }
     },
     "forecastTab": {
@@ -333,34 +420,22 @@
     },
     "pricesTab": {
       "type": "panel",
-      "label": {
-        "en": "Prices & tariffs",
-        "de": "Preise & Tarife"
-      },
+      "label": "Prices & tariffs",
       "items": {
         "priceHeader": {
           "type": "header",
-          "text": {
-            "en": "Prices and tariffs",
-            "de": "Preise und Tarife"
-          },
+          "text": "Prices and tariffs",
           "size": 3,
           "newLine": true
         },
         "_priceQuarterHelp": {
           "type": "staticText",
-          "text": {
-            "en": "Forecast prices and tariff windows use 15-minute intervals. Real-time power control continues at its configured seconds interval. All resulting prices are gross ct/kWh.",
-            "de": "Prognosepreise und Tarifzeiten werden in 15-Minuten-Intervallen verarbeitet. Die Leistungsregelung arbeitet weiter im eingestellten Sekundentakt. Alle berechneten Preise sind brutto in ct/kWh."
-          },
+          "text": "Forecast prices and tariff windows use 15-minute intervals. Real-time power control continues at its configured seconds interval. All resulting prices are gross ct/kWh.",
           "newLine": true
         },
         "priceVatPct": {
           "type": "number",
-          "label": {
-            "en": "VAT",
-            "de": "Mehrwertsteuer"
-          },
+          "label": "VAT",
           "default": 19,
           "min": 0,
           "max": 100,
@@ -370,71 +445,74 @@
         },
         "priceInputBasis": {
           "type": "select",
-          "label": {
-            "en": "Basis of existing price components",
-            "de": "Preisart der bisherigen Preisbestandteile"
-          },
+          "label": "Basis of existing price components",
           "default": "gross",
           "options": [
             {
               "value": "gross",
-              "label": {
-                "en": "Gross (including VAT)",
-                "de": "Brutto (inklusive MwSt.)"
-              }
+              "label": "Gross (including VAT)"
             },
             {
               "value": "net",
-              "label": {
-                "en": "Net (excluding VAT)",
-                "de": "Netto (ohne MwSt.)"
-              }
+              "label": "Net (excluding VAT)"
             }
           ],
           "sm": 8
         },
         "_priceMigrationHelp": {
           "type": "staticText",
-          "text": {
-            "en": "Existing amounts are preserved without automatic reinterpretation. Review whether the fixed energy component, fixed grid fee, energy adders and external grid-fee series are net or gross. This selector applies to these four inputs; exchange prices and the annual tariff have their own basis.",
-            "de": "Bisherige Beträge bleiben ohne automatische Umdeutung erhalten. Bitte prüfen, ob fester Energieanteil, festes Netzentgelt, Energieaufschläge und externe Netzentgeltreihe netto oder brutto sind. Diese Auswahl gilt für diese vier Eingaben; Börsenpreise und Jahrestarif haben eine eigene Preisart."
-          },
+          "text": "Existing amounts are preserved without automatic reinterpretation. Review whether the fixed energy component, fixed grid fee, energy adders and external grid-fee series are net or gross. This selector applies to these four inputs; exchange prices and the annual tariff have their own basis.",
           "newLine": true
         },
-        "_priceChargingHeader": {"type": "header", "text": {"en": "Price-based charging", "de": "Preisabhängiges Laden"}, "size": 3, "newLine": true},
-        "priceChargingHorizonH": {"type": "number", "label": {"en": "Price window for grid charging", "de": "Preisfenster für Netzladung"}, "default": 24, "min": 6, "max": 48, "unit": "h", "sm": 6, "newLine": true},
-        "priceChargingMinBlockMin": {"type": "number", "label": {"en": "Minimum price-charging block", "de": "Mindestdauer eines Preis-Ladeblocks"}, "default": 30, "min": 15, "max": 240, "unit": "min", "sm": 6, "step": 15},
-        "_priceChargingHelp": {"type": "staticText", "text": {"en": "Enable price-based grid charging separately on the Battery tab or each Wallbox tab. The comparison uses the full gross price including energy, adders and grid fees. A fixed energy tariff with time-dependent grid fees also works. Expected usable PV reduces the required grid energy. Without departure time, vehicles account for usable PV over the next 48 h. The price window above (default 24 h) limits grid purchases, not when the car must be full. An enabled departure remains a fixed deadline. Blocks avoid chasing each quarter-hour. Existing master, device and production releases still apply.", "de": "Preisabhängiges Netzladen im Reiter Speicher oder je Wallbox separat aktivieren. Verglichen wird der gesamte Bruttopreis aus Energie, Aufschlägen und Netzentgelten. Das funktioniert auch mit festem Energiepreis und zeitabhängigen Netzentgelten. Erwartete nutzbare PV verringert die benötigte Netzenergie. Ohne Abfahrtszeit berücksichtigen Fahrzeuge die nutzbare PV der kommenden 48 h. Das obige Preisfenster (Standard 24 h) begrenzt Netzladeblöcke, nicht den Zeitpunkt der vollständigen Ladung. Eine aktivierte Abfahrt bleibt eine feste Frist. Ladeblöcke vermeiden Wechsel in jeder Viertelstunde. Master-, Geräte- und Produktivfreigaben gelten weiterhin."}, "newLine": true},
+        "_priceChargingHeader": {
+          "type": "header",
+          "text": "Price-based charging",
+          "size": 3,
+          "newLine": true
+        },
+        "priceChargingHorizonH": {
+          "type": "number",
+          "label": "Price window for grid charging",
+          "default": 24,
+          "min": 6,
+          "max": 48,
+          "unit": "h",
+          "sm": 6,
+          "newLine": true
+        },
+        "priceChargingMinBlockMin": {
+          "type": "number",
+          "label": "Minimum price-charging block",
+          "default": 30,
+          "min": 15,
+          "max": 240,
+          "unit": "min",
+          "sm": 6,
+          "step": 15
+        },
+        "_priceChargingHelp": {
+          "type": "staticText",
+          "text": "Enable price-based grid charging separately on the Battery tab or each Wallbox tab. The comparison uses the full gross price including energy, adders and grid fees. A fixed energy tariff with time-dependent grid fees also works. Expected usable PV reduces the required grid energy. Without departure time, vehicles account for usable PV over the next 48 h. The price window above (default 24 h) limits grid purchases, not when the car must be full. An enabled departure remains a fixed deadline. Blocks avoid chasing each quarter-hour. Existing master, device and production releases still apply.",
+          "newLine": true
+        },
         "_fixedTariffHeader": {
           "type": "header",
-          "text": {
-            "en": "Fixed electricity tariff",
-            "de": "Fester Stromtarif"
-          },
+          "text": "Fixed electricity tariff",
           "size": 3,
           "newLine": true
         },
         "fixedTariffMode": {
           "type": "select",
-          "label": {
-            "en": "Fixed tariff input",
-            "de": "Eingabe des festen Stromtarifs"
-          },
+          "label": "Fixed tariff input",
           "default": "components",
           "options": [
             {
               "value": "components",
-              "label": {
-                "en": "Energy component plus grid fee",
-                "de": "Energieanteil plus Netzentgelt"
-              }
+              "label": "Energy component plus grid fee"
             },
             {
               "value": "total",
-              "label": {
-                "en": "Contract total price with reference grid fee",
-                "de": "Vertragspreis gesamt mit Referenz-Netzentgelt"
-              }
+              "label": "Contract total price with reference grid fee"
             }
           ],
           "sm": 12,
@@ -442,10 +520,7 @@
         },
         "fixedEnergyCt": {
           "type": "number",
-          "label": {
-            "en": "Fixed energy component (excluding grid fee)",
-            "de": "Fester Energieanteil (ohne Netzentgelt)"
-          },
+          "label": "Fixed energy component (excluding grid fee)",
           "default": 22.85,
           "unit": "ct/kWh",
           "min": -1000,
@@ -456,10 +531,7 @@
         },
         "fixedTotalPriceCt": {
           "type": "number",
-          "label": {
-            "en": "Contract total price (gross)",
-            "de": "Gesamter Arbeitspreis laut Vertrag (brutto)"
-          },
+          "label": "Contract total price (gross)",
           "default": 0,
           "unit": "ct/kWh",
           "min": 0,
@@ -471,10 +543,7 @@
         },
         "referenceGridFeeCt": {
           "type": "number",
-          "label": {
-            "en": "Grid fee included in contract price (gross)",
-            "de": "Im Vertragspreis enthaltenes Netzentgelt (brutto)"
-          },
+          "label": "Grid fee included in contract price (gross)",
           "default": 7.19,
           "unit": "ct/kWh",
           "min": 0,
@@ -484,19 +553,13 @@
         },
         "_fixedTotalHelp": {
           "type": "staticText",
-          "text": {
-            "en": "Enter your actual contract price. The energy component is total price minus the included reference grid fee; the applicable grid fee is then added per interval. Both inputs in this mode are always gross. A total price of 0 is not configured.",
-            "de": "Den tatsächlichen Vertragspreis eintragen. Energieanteil = Gesamtpreis minus enthaltenes Referenz-Netzentgelt; anschließend wird je Intervall das gültige Netzentgelt ergänzt. Beide Eingaben in diesem Modus sind immer brutto. Ein Gesamtpreis von 0 ist nicht eingerichtet."
-          },
+          "text": "Enter your actual contract price. The energy component is total price minus the included reference grid fee; the applicable grid fee is then added per interval. Both inputs in this mode are always gross. A total price of 0 is not configured.",
           "newLine": true,
           "hidden": "data.fixedTariffMode !== 'total'"
         },
         "fixedGridFeeCt": {
           "type": "number",
-          "label": {
-            "en": "Fixed grid fee (dynamic grid fee disabled)",
-            "de": "Festes Netzentgelt (zeitabhängiges Netzentgelt aus)"
-          },
+          "label": "Fixed grid fee (dynamic grid fee disabled)",
           "default": 6.04,
           "unit": "ct/kWh",
           "min": 0,
@@ -506,53 +569,35 @@
         },
         "_energySourceHeader": {
           "type": "header",
-          "text": {
-            "en": "Dynamic energy prices",
-            "de": "Dynamische Energiepreise"
-          },
+          "text": "Dynamic energy prices",
           "size": 3,
           "newLine": true
         },
         "dynamicEnergyPrice": {
           "type": "checkbox",
-          "label": {
-            "en": "Use dynamic energy price",
-            "de": "Dynamischen Energiepreis verwenden"
-          },
+          "label": "Use dynamic energy price",
           "default": false,
           "sm": 6,
           "newLine": true
         },
         "dynamicEnergyPriceEnabledId": {
           "type": "text",
-          "label": {
-            "en": "External enable switch (optional)",
-            "de": "Externer Freigabeschalter (optional)"
-          },
+          "label": "External enable switch (optional)",
           "default": "",
           "sm": 6
         },
         "energyPriceSource": {
           "type": "select",
-          "label": {
-            "en": "Exchange-price source",
-            "de": "Quelle der Börsenpreise"
-          },
+          "label": "Exchange-price source",
           "default": "external",
           "options": [
             {
               "value": "external",
-              "label": {
-                "en": "External data point",
-                "de": "Externer Datenpunkt"
-              }
+              "label": "External data point"
             },
             {
               "value": "energy-charts",
-              "label": {
-                "en": "Energy-Charts: DE-LU day-ahead",
-                "de": "Energy-Charts: DE-LU Day-Ahead"
-              }
+              "label": "Energy-Charts: DE-LU day-ahead"
             }
           ],
           "sm": 6,
@@ -560,35 +605,23 @@
         },
         "energyPriceSeriesId": {
           "type": "text",
-          "label": {
-            "en": "External energy-price series data point",
-            "de": "Datenpunkt der externen Energiepreisreihe"
-          },
+          "label": "External energy-price series data point",
           "default": "",
           "sm": 6,
           "hidden": "data.energyPriceSource === 'energy-charts'"
         },
         "energyPriceSeriesBasis": {
           "type": "select",
-          "label": {
-            "en": "External exchange-price basis",
-            "de": "Preisart der externen Börsenpreise"
-          },
+          "label": "External exchange-price basis",
           "default": "gross",
           "options": [
             {
               "value": "gross",
-              "label": {
-                "en": "Gross (including VAT)",
-                "de": "Brutto (inklusive MwSt.)"
-              }
+              "label": "Gross (including VAT)"
             },
             {
               "value": "net",
-              "label": {
-                "en": "Net (excluding VAT)",
-                "de": "Netto (ohne MwSt.)"
-              }
+              "label": "Net (excluding VAT)"
             }
           ],
           "sm": 6,
@@ -597,19 +630,13 @@
         },
         "_directExchangeHelp": {
           "type": "staticText",
-          "text": {
-            "en": "Energy-Charts supplies actual published DE-LU quarter-hour prices in EUR/MWh, always net. The adapter converts the unit and adds VAT once. Unpublished intervals remain missing and cannot authorize price-dependent operation.",
-            "de": "Energy-Charts liefert die veröffentlichten DE-LU-Viertelstundenpreise in EUR/MWh, immer netto. Der Adapter rechnet die Einheit um und ergänzt die MwSt. einmalig. Noch unveröffentlichte Intervalle bleiben fehlend und geben keinen preisabhängigen Betrieb frei."
-          },
+          "text": "Energy-Charts supplies actual published DE-LU quarter-hour prices in EUR/MWh, always net. The adapter converts the unit and adds VAT once. Unpublished intervals remain missing and cannot authorize price-dependent operation.",
           "newLine": true,
           "hidden": "data.energyPriceSource !== 'energy-charts'"
         },
         "dynamicEnergyAddersCt": {
           "type": "number",
-          "label": {
-            "en": "Energy adders excluding grid fee",
-            "de": "Energieaufschläge ohne Netzentgelt"
-          },
+          "label": "Energy adders excluding grid fee",
           "default": 9.301,
           "unit": "ct/kWh",
           "min": -1000,
@@ -619,53 +646,35 @@
         },
         "_gridSourceHeader": {
           "type": "header",
-          "text": {
-            "en": "Grid fees",
-            "de": "Netzentgelte"
-          },
+          "text": "Grid fees",
           "size": 3,
           "newLine": true
         },
         "dynamicGridFee": {
           "type": "checkbox",
-          "label": {
-            "en": "Use time-dependent grid fee",
-            "de": "Zeitabhängiges Netzentgelt verwenden"
-          },
+          "label": "Use time-dependent grid fee",
           "default": false,
           "sm": 6,
           "newLine": true
         },
         "dynamicGridFeeEnabledId": {
           "type": "text",
-          "label": {
-            "en": "External grid-fee enable switch (optional)",
-            "de": "Externer Netzentgelt-Freigabeschalter (optional)"
-          },
+          "label": "External grid-fee enable switch (optional)",
           "default": "",
           "sm": 6
         },
         "gridFeeSource": {
           "type": "select",
-          "label": {
-            "en": "Grid-fee source",
-            "de": "Quelle der Netzentgelte"
-          },
+          "label": "Grid-fee source",
           "default": "external",
           "options": [
             {
               "value": "external",
-              "label": {
-                "en": "External data point",
-                "de": "Externer Datenpunkt"
-              }
+              "label": "External data point"
             },
             {
               "value": "schedule",
-              "label": {
-                "en": "Annual tariff with time windows",
-                "de": "Jahrestarif mit Zeitfenstern"
-              }
+              "label": "Annual tariff with time windows"
             }
           ],
           "sm": 6,
@@ -673,38 +682,26 @@
         },
         "gridFeeSeriesId": {
           "type": "text",
-          "label": {
-            "en": "External grid-fee series data point",
-            "de": "Datenpunkt der externen Netzentgeltreihe"
-          },
+          "label": "External grid-fee series data point",
           "default": "",
           "sm": 6,
           "hidden": "data.gridFeeSource === 'schedule'"
         },
         "priceSwitchHelp": {
           "type": "staticText",
-          "text": {
-            "en": "An external enable data point overrides its internal switch. Missing or invalid external switch values disable that dynamic source and are reported in diagnostics. Selecting a source alone does not enable it.",
-            "de": "Ein externer Freigabedatenpunkt ersetzt den zugehörigen internen Schalter. Fehlende oder ungültige Schalterwerte deaktivieren die dynamische Quelle und werden in der Diagnose gemeldet. Die Quellenauswahl allein aktiviert sie nicht."
-          },
+          "text": "An external enable data point overrides its internal switch. Missing or invalid external switch values disable that dynamic source and are reported in diagnostics. Selecting a source alone does not enable it.",
           "newLine": true
         },
         "_annualTariffHeader": {
           "type": "header",
-          "text": {
-            "en": "Annual grid tariff",
-            "de": "Jahrestarif Netzentgelte"
-          },
+          "text": "Annual grid tariff",
           "size": 3,
           "newLine": true,
           "hidden": "data.gridFeeSource !== 'schedule'"
         },
         "gridTariffYear": {
           "type": "number",
-          "label": {
-            "en": "Tariff year",
-            "de": "Tarifjahr"
-          },
+          "label": "Tariff year",
           "default": 2026,
           "min": 2020,
           "max": 2100,
@@ -715,25 +712,16 @@
         },
         "gridTariffBasis": {
           "type": "select",
-          "label": {
-            "en": "Annual tariff price basis",
-            "de": "Preisart des Jahrestarifs"
-          },
+          "label": "Annual tariff price basis",
           "default": "gross",
           "options": [
             {
               "value": "gross",
-              "label": {
-                "en": "Gross (including VAT)",
-                "de": "Brutto (inklusive MwSt.)"
-              }
+              "label": "Gross (including VAT)"
             },
             {
               "value": "net",
-              "label": {
-                "en": "Net (excluding VAT)",
-                "de": "Netto (ohne MwSt.)"
-              }
+              "label": "Net (excluding VAT)"
             }
           ],
           "sm": 6,
@@ -741,10 +729,7 @@
         },
         "gridTariffStandardCt": {
           "type": "number",
-          "label": {
-            "en": "Standard tariff",
-            "de": "Standardtarif"
-          },
+          "label": "Standard tariff",
           "default": 7.19,
           "unit": "ct/kWh",
           "min": 0,
@@ -755,10 +740,7 @@
         },
         "gridTariffHighCt": {
           "type": "number",
-          "label": {
-            "en": "High tariff",
-            "de": "Hochtarif"
-          },
+          "label": "High tariff",
           "default": 10.01,
           "unit": "ct/kWh",
           "min": 0,
@@ -768,10 +750,7 @@
         },
         "gridTariffLowCt": {
           "type": "number",
-          "label": {
-            "en": "Low tariff",
-            "de": "Niedrigtarif"
-          },
+          "label": "Low tariff",
           "default": 0.71,
           "unit": "ct/kWh",
           "min": 0,
@@ -781,19 +760,13 @@
         },
         "_annualTariffHelp": {
           "type": "staticText",
-          "text": {
-            "en": "Editable example: Avacon 2026, module 3. Confirm prices, eligibility and tariff year against your own agreement. Time windows apply daily in Europe/Berlin, including daylight-saving changes. Each quarter must cover 00:00–24:00 without gaps or overlaps. Use quarter-hour boundaries; split a window at midnight. An expired or incomplete tariff is reported as invalid and cannot authorize price-dependent operation.",
-            "de": "Bearbeitbares Beispiel: Avacon 2026, Modul 3. Preise, Anwendbarkeit und Tarifjahr mit dem eigenen Vertrag abgleichen. Zeitfenster gelten täglich in Europe/Berlin, auch bei Zeitumstellung. Jedes Quartal muss 00:00–24:00 lückenlos und ohne Überschneidung abdecken. Viertelstundengrenzen verwenden; Zeitfenster an Mitternacht aufteilen. Ein abgelaufener oder unvollständiger Tarif wird als ungültig gemeldet und gibt keinen preisabhängigen Betrieb frei."
-          },
+          "text": "Editable example: Avacon 2026, module 3. Confirm prices, eligibility and tariff year against your own agreement. Time windows apply daily in Europe/Berlin, including daylight-saving changes. Each quarter must cover 00:00–24:00 without gaps or overlaps. Use quarter-hour boundaries; split a window at midnight. An expired or incomplete tariff is reported as invalid and cannot authorize price-dependent operation.",
           "newLine": true,
           "hidden": "data.gridFeeSource !== 'schedule'"
         },
         "gridTariffRules": {
           "type": "table",
-          "label": {
-            "en": "Daily time windows by quarter",
-            "de": "Tägliche Zeitfenster je Quartal"
-          },
+          "label": "Daily time windows by quarter",
           "default": [
             {
               "quarter": 1,
@@ -881,93 +854,60 @@
             {
               "type": "select",
               "attr": "quarter",
-              "title": {
-                "en": "Quarter",
-                "de": "Quartal"
-              },
+              "title": "Quarter",
               "width": "24%",
               "default": 1,
               "options": [
                 {
                   "value": 1,
-                  "label": {
-                    "en": "Q1 (Jan–Mar)",
-                    "de": "Q1 (Jan–Mär)"
-                  }
+                  "label": "Q1 (Jan–Mar)"
                 },
                 {
                   "value": 2,
-                  "label": {
-                    "en": "Q2 (Apr–Jun)",
-                    "de": "Q2 (Apr–Jun)"
-                  }
+                  "label": "Q2 (Apr–Jun)"
                 },
                 {
                   "value": 3,
-                  "label": {
-                    "en": "Q3 (Jul–Sep)",
-                    "de": "Q3 (Jul–Sep)"
-                  }
+                  "label": "Q3 (Jul–Sep)"
                 },
                 {
                   "value": 4,
-                  "label": {
-                    "en": "Q4 (Oct–Dec)",
-                    "de": "Q4 (Okt–Dez)"
-                  }
+                  "label": "Q4 (Oct–Dec)"
                 }
               ]
             },
             {
               "type": "text",
               "attr": "from",
-              "title": {
-                "en": "From (HH:mm)",
-                "de": "Von (HH:mm)"
-              },
+              "title": "From (HH:mm)",
               "width": "22%",
               "default": "00:00"
             },
             {
               "type": "text",
               "attr": "to",
-              "title": {
-                "en": "To (HH:mm, max. 24:00)",
-                "de": "Bis (HH:mm, max. 24:00)"
-              },
+              "title": "To (HH:mm, max. 24:00)",
               "width": "24%",
               "default": "24:00"
             },
             {
               "type": "select",
               "attr": "level",
-              "title": {
-                "en": "Tariff",
-                "de": "Tarifstufe"
-              },
+              "title": "Tariff",
               "width": "30%",
               "default": "standard",
               "options": [
                 {
                   "value": "standard",
-                  "label": {
-                    "en": "Standard",
-                    "de": "Standard"
-                  }
+                  "label": "Standard"
                 },
                 {
                   "value": "high",
-                  "label": {
-                    "en": "High",
-                    "de": "Hoch"
-                  }
+                  "label": "High"
                 },
                 {
                   "value": "low",
-                  "label": {
-                    "en": "Low",
-                    "de": "Niedrig"
-                  }
+                  "label": "Low"
                 }
               ]
             }
@@ -979,40 +919,199 @@
       "type": "panel",
       "label": "Wallbox general",
       "items": {
-        "wallboxGeneralHeader": {"type": "header", "text": "Common wallbox control", "size": 2, "newLine": true},
+        "wallboxGeneralHeader": {
+          "type": "header",
+          "text": "Common wallbox control",
+          "size": 2,
+          "newLine": true
+        },
         "wallboxPrioritySource": {
-          "type": "select", "label": "Priority source", "default": "auto", "sm": 4, "newLine": true,
+          "type": "select",
+          "label": "Priority source",
+          "default": "auto",
+          "sm": 4,
+          "newLine": true,
           "options": [
-            {"value": "auto", "label": "Automatic / compatible"},
-            {"value": "internal", "label": "Admin selection"},
-            {"value": "external", "label": "External data point"}
+            {
+              "value": "auto",
+              "label": "Automatic / compatible"
+            },
+            {
+              "value": "internal",
+              "label": "Admin selection"
+            },
+            {
+              "value": "external",
+              "label": "External data point"
+            }
           ]
         },
         "wallboxPriority": {
-          "type": "select", "label": "Preferred wallbox (below minimum SoC always wins)", "default": -1, "sm": 4,
+          "type": "select",
+          "label": "Preferred wallbox (below minimum SoC always wins)",
+          "default": -1,
+          "sm": 4,
           "options": [
-            {"value": -1, "label": "Automatic"},
-            {"value": 0, "label": "Wallbox 0"},
-            {"value": 1, "label": "Wallbox 1"},
-            {"value": 2, "label": "Wallbox 2"}
+            {
+              "value": -1,
+              "label": "Automatic"
+            },
+            {
+              "value": 0,
+              "label": "Wallbox 0"
+            },
+            {
+              "value": 1,
+              "label": "Wallbox 1"
+            },
+            {
+              "value": 2,
+              "label": "Wallbox 2"
+            }
           ]
         },
-        "wallboxPriorityId": {"type": "text", "label": "External priority data point", "default": "", "sm": 4},
-        "wallboxMaxStepA": {"type": "number", "label": "Maximum current step (single load)", "unit": "A", "default": 6, "min": 1, "max": 32, "sm": 4, "newLine": true},
-        "wallboxCombinedMaxStepA": {"type": "number", "label": "Maximum current step with DHW active", "unit": "A", "default": 1, "min": 1, "max": 6, "sm": 4},
-        "wallboxStartReserveW": {"type": "number", "label": "Additional surplus before start", "unit": "W", "default": 300, "min": 0, "max": 5000, "sm": 4},
-        "wallboxStartDelayS": {"type": "number", "label": "Stable surplus before start", "unit": "s", "default": 30, "min": 0, "max": 600, "sm": 4, "newLine": true},
-        "wallboxMinimumRunTimeS": {"type": "number", "label": "Minimum run time", "unit": "s", "default": 120, "min": 0, "max": 3600, "sm": 4},
-        "wallboxStopDelayS": {"type": "number", "label": "Delay before stopping on insufficient surplus", "unit": "s", "default": 120, "min": 0, "max": 3600, "sm": 4},
-        "wallboxRestartHandoffEnabled": {"type": "checkbox", "label": "Keep an EMS-owned active wallbox running during adapter restart/update", "default": true, "sm": 8, "newLine": true},
-        "wallboxRestartHandoffTimeoutS": {"type": "number", "label": "Maximum wait for fresh control data after restart", "unit": "s", "default": 180, "min": 30, "max": 600, "sm": 4},
-        "wallboxRestartHandoffGraceS": {"type": "number", "label": "Protect adopted wallbox from transient zero target", "unit": "s", "default": 30, "min": 10, "max": 120, "sm": 4},
-        "wallboxRestartHandoffSettleS": {"type": "number", "label": "Stable EMS data required before restart handoff completes", "unit": "s", "default": 10, "min": 0, "max": 60, "sm": 4},
-        "wallboxMeasurementMaxAgeS": {"type": "number", "label": "Maximum age of go-e measurements", "unit": "s", "default": 30, "min": 5, "max": 120, "sm": 4},
-        "phaseSwitchLookAheadMin": {"type": "number", "label": "Phase recommendation look-ahead", "unit": "min", "default": 30, "min": 15, "max": 240, "sm": 4},
-        "phaseSwitchMinHoldMin": {"type": "number", "label": "Minimum time between phase changes", "unit": "min", "default": 30, "min": 0, "max": 240, "sm": 4},
-        "wallboxPhaseSwitchTimeoutS": {"type": "number", "label": "Maximum wait for external phase confirmation", "unit": "s", "default": 180, "min": 30, "max": 900, "sm": 4},
-        "phaseSwitchTransitionS": {"type": "number", "label": "Tolerance after confirmed go-e phase change", "unit": "s", "default": 90, "min": 30, "max": 300, "sm": 4, "newLine": true}
+        "wallboxPriorityId": {
+          "type": "text",
+          "label": "External priority data point",
+          "default": "",
+          "sm": 4
+        },
+        "wallboxMaxStepA": {
+          "type": "number",
+          "label": "Maximum current step (single load)",
+          "unit": "A",
+          "default": 6,
+          "min": 1,
+          "max": 32,
+          "sm": 4,
+          "newLine": true
+        },
+        "wallboxCombinedMaxStepA": {
+          "type": "number",
+          "label": "Maximum current step with DHW active",
+          "unit": "A",
+          "default": 1,
+          "min": 1,
+          "max": 6,
+          "sm": 4
+        },
+        "wallboxStartReserveW": {
+          "type": "number",
+          "label": "Additional surplus before start",
+          "unit": "W",
+          "default": 300,
+          "min": 0,
+          "max": 5000,
+          "sm": 4
+        },
+        "wallboxStartDelayS": {
+          "type": "number",
+          "label": "Stable surplus before start",
+          "unit": "s",
+          "default": 30,
+          "min": 0,
+          "max": 600,
+          "sm": 4,
+          "newLine": true
+        },
+        "wallboxMinimumRunTimeS": {
+          "type": "number",
+          "label": "Minimum run time",
+          "unit": "s",
+          "default": 120,
+          "min": 0,
+          "max": 3600,
+          "sm": 4
+        },
+        "wallboxStopDelayS": {
+          "type": "number",
+          "label": "Delay before stopping on insufficient surplus",
+          "unit": "s",
+          "default": 120,
+          "min": 0,
+          "max": 3600,
+          "sm": 4
+        },
+        "wallboxRestartHandoffEnabled": {
+          "type": "checkbox",
+          "label": "Keep an EMS-owned active wallbox running during adapter restart/update",
+          "default": true,
+          "sm": 8,
+          "newLine": true
+        },
+        "wallboxRestartHandoffTimeoutS": {
+          "type": "number",
+          "label": "Maximum wait for fresh control data after restart",
+          "unit": "s",
+          "default": 180,
+          "min": 30,
+          "max": 600,
+          "sm": 4
+        },
+        "wallboxRestartHandoffGraceS": {
+          "type": "number",
+          "label": "Protect adopted wallbox from transient zero target",
+          "unit": "s",
+          "default": 30,
+          "min": 10,
+          "max": 120,
+          "sm": 4
+        },
+        "wallboxRestartHandoffSettleS": {
+          "type": "number",
+          "label": "Stable EMS data required before restart handoff completes",
+          "unit": "s",
+          "default": 10,
+          "min": 0,
+          "max": 60,
+          "sm": 4
+        },
+        "wallboxMeasurementMaxAgeS": {
+          "type": "number",
+          "label": "Maximum age of go-e measurements",
+          "unit": "s",
+          "default": 30,
+          "min": 5,
+          "max": 120,
+          "sm": 4
+        },
+        "phaseSwitchLookAheadMin": {
+          "type": "number",
+          "label": "Phase recommendation look-ahead",
+          "unit": "min",
+          "default": 30,
+          "min": 15,
+          "max": 240,
+          "sm": 4
+        },
+        "phaseSwitchMinHoldMin": {
+          "type": "number",
+          "label": "Minimum time between phase changes",
+          "unit": "min",
+          "default": 30,
+          "min": 0,
+          "max": 240,
+          "sm": 4
+        },
+        "wallboxPhaseSwitchTimeoutS": {
+          "type": "number",
+          "label": "Maximum wait for external phase confirmation",
+          "unit": "s",
+          "default": 180,
+          "min": 30,
+          "max": 900,
+          "sm": 4
+        },
+        "phaseSwitchTransitionS": {
+          "type": "number",
+          "label": "Tolerance after confirmed go-e phase change",
+          "unit": "s",
+          "default": 90,
+          "min": 30,
+          "max": 300,
+          "sm": 4,
+          "newLine": true
+        }
       }
     },
     "wallbox0Tab": {
@@ -1051,17 +1150,77 @@
           "default": "",
           "sm": 9
         },
-        "_wb0InputHeader": {"type": "header", "text": "Vehicle and wallbox input data points", "size": 3, "newLine": true},
-        "wb0MinSocId": {"type": "text", "label": "External minimum SoC", "default": "", "sm": 6, "newLine": true},
-        "wb0TargetSocId": {"type": "text", "label": "External target SoC", "default": "", "sm": 6},
-        "wb0ReleaseId": {"type": "text", "label": "EMS release / socfrei", "default": "", "sm": 6, "newLine": true},
-        "wb0UserAllowId": {"type": "text", "label": "User charging permission", "default": "", "sm": 6},
-        "wb0CarStateId": {"type": "text", "label": "Vehicle connection state", "default": "", "sm": 6, "newLine": true},
-        "wb0PhaseStateId": {"type": "text", "label": "Current phase count", "default": "", "sm": 6},
-        "wb0PowerId": {"type": "text", "label": "Measured charging power", "default": "", "sm": 12, "newLine": true},
-        "wb0L1CurrentId": {"type": "text", "label": "Measured current L1", "default": "", "sm": 4, "newLine": true},
-        "wb0L2CurrentId": {"type": "text", "label": "Measured current L2", "default": "", "sm": 4},
-        "wb0L3CurrentId": {"type": "text", "label": "Measured current L3", "default": "", "sm": 4},
+        "_wb0InputHeader": {
+          "type": "header",
+          "text": "Vehicle and wallbox input data points",
+          "size": 3,
+          "newLine": true
+        },
+        "wb0MinSocId": {
+          "type": "text",
+          "label": "External minimum SoC",
+          "default": "",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb0TargetSocId": {
+          "type": "text",
+          "label": "External target SoC",
+          "default": "",
+          "sm": 6
+        },
+        "wb0ReleaseId": {
+          "type": "text",
+          "label": "EMS release / socfrei",
+          "default": "",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb0UserAllowId": {
+          "type": "text",
+          "label": "User charging permission",
+          "default": "",
+          "sm": 6
+        },
+        "wb0CarStateId": {
+          "type": "text",
+          "label": "Vehicle connection state",
+          "default": "",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb0PhaseStateId": {
+          "type": "text",
+          "label": "Current phase count",
+          "default": "",
+          "sm": 6
+        },
+        "wb0PowerId": {
+          "type": "text",
+          "label": "Measured charging power",
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "wb0L1CurrentId": {
+          "type": "text",
+          "label": "Measured current L1",
+          "default": "",
+          "sm": 4,
+          "newLine": true
+        },
+        "wb0L2CurrentId": {
+          "type": "text",
+          "label": "Measured current L2",
+          "default": "",
+          "sm": 4
+        },
+        "wb0L3CurrentId": {
+          "type": "text",
+          "label": "Measured current L3",
+          "default": "",
+          "sm": 4
+        },
         "wb0CapacityKWh": {
           "type": "number",
           "label": "Battery capacity",
@@ -1092,8 +1251,14 @@
           "label": "Phase control when switching is enabled",
           "default": "script",
           "options": [
-            {"label": "Script: EMS follows confirmed go-e phases", "value": "script"},
-            {"label": "EMS target: external script follows EMS phases", "value": "ems"}
+            {
+              "label": "Script: EMS follows confirmed go-e phases",
+              "value": "script"
+            },
+            {
+              "label": "EMS target: external script follows EMS phases",
+              "value": "ems"
+            }
           ],
           "sm": 6
         },
@@ -1237,11 +1402,44 @@
           "sm": 6,
           "newLine": true
         },
-        "_wb0PriceHeader": {"type": "header", "text": {"en": "Price-based vehicle charging", "de": "Preisabhängiges Fahrzeugladen"}, "size": 3, "newLine": true},
-        "wb0PriceChargingEnabled": {"type": "checkbox", "label": {"en": "Allow vehicle grid charging in selected low-price periods", "de": "Fahrzeug-Netzladen in ausgewählten günstigen Zeiten erlauben"}, "default": false, "sm": 12, "newLine": true},
-        "wb0PriceMaxCt": {"type": "number", "label": {"en": "Maximum total gross price (0 = no cap)", "de": "Maximaler Gesamtpreis brutto (0 = keine Grenze)"}, "default": 0, "min": -1000, "max": 1000, "unit": "ct/kWh", "sm": 6, "newLine": true},
-        "wb0PriceEnergyKWh": {"type": "number", "label": {"en": "AC energy per plug-in session when SoC is missing", "de": "AC-Ladeenergie je Anstecken bei fehlendem SoC"}, "default": 0, "min": 0, "max": 1000, "unit": "kWh", "sm": 6, "step": 0.1},
-        "_wb0PriceHelp": {"type": "staticText", "text": {"en": "With valid vehicle SoC, the existing target determines the energy needed. Without SoC, enter the AC energy to add per plug-in session (0 = no price-based grid charging without SoC). Measured charging reduces the remaining session energy; a restart does not reset it. Usable PV is planned first. Without departure time, usable PV over the next 48 h reduces grid demand; sufficient PV tomorrow avoids unnecessary charging tonight. An enabled departure is a fixed deadline. The price window (default 24 h) only limits the search for grid-charging blocks. The price cap is the full gross price including time-dependent grid fees; 0 means no additional cap. User permission, master, device and production releases remain required.", "de": "Bei gültigem Fahrzeug-SoC bestimmt das bestehende Ladeziel die benötigte Energie. Ohne SoC die AC-Ladeenergie je Anstecken vorgeben (0 = kein preisabhängiges Netzladen ohne SoC). Gemessene Ladung reduziert den Restbedarf der Sitzung; ein Neustart setzt ihn nicht zurück. Nutzbare PV wird zuerst eingeplant. Ohne Abfahrtszeit verringert nutzbare PV der nächsten 48 h den Netzbedarf; ausreichend PV am Folgetag vermeidet unnötige Nachtladung. Eine aktivierte Abfahrt bleibt eine feste Frist. Das Preisfenster (Standard 24 h) begrenzt nur die Suche nach Netzladeblöcken. Die Preisgrenze ist der volle Bruttopreis inklusive zeitabhängiger Netzentgelte; 0 bedeutet keine zusätzliche Grenze. Benutzer-, Master-, Geräte- und Produktivfreigaben bleiben erforderlich."}, "newLine": true},
+        "_wb0PriceHeader": {
+          "type": "header",
+          "text": "Price-based vehicle charging",
+          "size": 3,
+          "newLine": true
+        },
+        "wb0PriceChargingEnabled": {
+          "type": "checkbox",
+          "label": "Allow vehicle grid charging in selected low-price periods",
+          "default": false,
+          "sm": 12,
+          "newLine": true
+        },
+        "wb0PriceMaxCt": {
+          "type": "number",
+          "label": "Maximum total gross price (0 = no cap)",
+          "default": 0,
+          "min": -1000,
+          "max": 1000,
+          "unit": "ct/kWh",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb0PriceEnergyKWh": {
+          "type": "number",
+          "label": "AC energy per plug-in session when SoC is missing",
+          "default": 0,
+          "min": 0,
+          "max": 1000,
+          "unit": "kWh",
+          "sm": 6,
+          "step": 0.1
+        },
+        "_wb0PriceHelp": {
+          "type": "staticText",
+          "text": "With valid vehicle SoC, the existing target determines the energy needed. Without SoC, enter the AC energy to add per plug-in session (0 = no price-based grid charging without SoC). Measured charging reduces the remaining session energy; a restart does not reset it. Usable PV is planned first. Without departure time, usable PV over the next 48 h reduces grid demand; sufficient PV tomorrow avoids unnecessary charging tonight. An enabled departure is a fixed deadline. The price window (default 24 h) only limits the search for grid-charging blocks. The price cap is the full gross price including time-dependent grid fees; 0 means no additional cap. User permission, master, device and production releases remain required.",
+          "newLine": true
+        },
         "_wb0MinimumHeader": {
           "type": "header",
           "text": "Manual and low-SoC minimum current",
@@ -1477,17 +1675,77 @@
           "default": "",
           "sm": 9
         },
-        "_wb1InputHeader": {"type": "header", "text": "Vehicle and wallbox input data points", "size": 3, "newLine": true},
-        "wb1MinSocId": {"type": "text", "label": "External minimum SoC", "default": "", "sm": 6, "newLine": true},
-        "wb1TargetSocId": {"type": "text", "label": "External target SoC", "default": "", "sm": 6},
-        "wb1ReleaseId": {"type": "text", "label": "EMS release / socfrei", "default": "", "sm": 6, "newLine": true},
-        "wb1UserAllowId": {"type": "text", "label": "User charging permission", "default": "", "sm": 6},
-        "wb1CarStateId": {"type": "text", "label": "Vehicle connection state", "default": "", "sm": 6, "newLine": true},
-        "wb1PhaseStateId": {"type": "text", "label": "Current phase count", "default": "", "sm": 6},
-        "wb1PowerId": {"type": "text", "label": "Measured charging power", "default": "", "sm": 12, "newLine": true},
-        "wb1L1CurrentId": {"type": "text", "label": "Measured current L1", "default": "", "sm": 4, "newLine": true},
-        "wb1L2CurrentId": {"type": "text", "label": "Measured current L2", "default": "", "sm": 4},
-        "wb1L3CurrentId": {"type": "text", "label": "Measured current L3", "default": "", "sm": 4},
+        "_wb1InputHeader": {
+          "type": "header",
+          "text": "Vehicle and wallbox input data points",
+          "size": 3,
+          "newLine": true
+        },
+        "wb1MinSocId": {
+          "type": "text",
+          "label": "External minimum SoC",
+          "default": "",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb1TargetSocId": {
+          "type": "text",
+          "label": "External target SoC",
+          "default": "",
+          "sm": 6
+        },
+        "wb1ReleaseId": {
+          "type": "text",
+          "label": "EMS release / socfrei",
+          "default": "",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb1UserAllowId": {
+          "type": "text",
+          "label": "User charging permission",
+          "default": "",
+          "sm": 6
+        },
+        "wb1CarStateId": {
+          "type": "text",
+          "label": "Vehicle connection state",
+          "default": "",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb1PhaseStateId": {
+          "type": "text",
+          "label": "Current phase count",
+          "default": "",
+          "sm": 6
+        },
+        "wb1PowerId": {
+          "type": "text",
+          "label": "Measured charging power",
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "wb1L1CurrentId": {
+          "type": "text",
+          "label": "Measured current L1",
+          "default": "",
+          "sm": 4,
+          "newLine": true
+        },
+        "wb1L2CurrentId": {
+          "type": "text",
+          "label": "Measured current L2",
+          "default": "",
+          "sm": 4
+        },
+        "wb1L3CurrentId": {
+          "type": "text",
+          "label": "Measured current L3",
+          "default": "",
+          "sm": 4
+        },
         "wb1CapacityKWh": {
           "type": "number",
           "label": "Battery capacity",
@@ -1518,8 +1776,14 @@
           "label": "Phase control when switching is enabled",
           "default": "script",
           "options": [
-            {"label": "Script: EMS follows confirmed go-e phases", "value": "script"},
-            {"label": "EMS target: external script follows EMS phases", "value": "ems"}
+            {
+              "label": "Script: EMS follows confirmed go-e phases",
+              "value": "script"
+            },
+            {
+              "label": "EMS target: external script follows EMS phases",
+              "value": "ems"
+            }
           ],
           "sm": 6
         },
@@ -1663,11 +1927,44 @@
           "sm": 6,
           "newLine": true
         },
-        "_wb1PriceHeader": {"type": "header", "text": {"en": "Price-based vehicle charging", "de": "Preisabhängiges Fahrzeugladen"}, "size": 3, "newLine": true},
-        "wb1PriceChargingEnabled": {"type": "checkbox", "label": {"en": "Allow vehicle grid charging in selected low-price periods", "de": "Fahrzeug-Netzladen in ausgewählten günstigen Zeiten erlauben"}, "default": false, "sm": 12, "newLine": true},
-        "wb1PriceMaxCt": {"type": "number", "label": {"en": "Maximum total gross price (0 = no cap)", "de": "Maximaler Gesamtpreis brutto (0 = keine Grenze)"}, "default": 0, "min": -1000, "max": 1000, "unit": "ct/kWh", "sm": 6, "newLine": true},
-        "wb1PriceEnergyKWh": {"type": "number", "label": {"en": "AC energy per plug-in session when SoC is missing", "de": "AC-Ladeenergie je Anstecken bei fehlendem SoC"}, "default": 0, "min": 0, "max": 1000, "unit": "kWh", "sm": 6, "step": 0.1},
-        "_wb1PriceHelp": {"type": "staticText", "text": {"en": "With valid vehicle SoC, the existing target determines the energy needed. Without SoC, enter the AC energy to add per plug-in session (0 = no price-based grid charging without SoC). Measured charging reduces the remaining session energy; a restart does not reset it. Usable PV is planned first. Without departure time, usable PV over the next 48 h reduces grid demand; sufficient PV tomorrow avoids unnecessary charging tonight. An enabled departure is a fixed deadline. The price window (default 24 h) only limits the search for grid-charging blocks. The price cap is the full gross price including time-dependent grid fees; 0 means no additional cap. User permission, master, device and production releases remain required.", "de": "Bei gültigem Fahrzeug-SoC bestimmt das bestehende Ladeziel die benötigte Energie. Ohne SoC die AC-Ladeenergie je Anstecken vorgeben (0 = kein preisabhängiges Netzladen ohne SoC). Gemessene Ladung reduziert den Restbedarf der Sitzung; ein Neustart setzt ihn nicht zurück. Nutzbare PV wird zuerst eingeplant. Ohne Abfahrtszeit verringert nutzbare PV der nächsten 48 h den Netzbedarf; ausreichend PV am Folgetag vermeidet unnötige Nachtladung. Eine aktivierte Abfahrt bleibt eine feste Frist. Das Preisfenster (Standard 24 h) begrenzt nur die Suche nach Netzladeblöcken. Die Preisgrenze ist der volle Bruttopreis inklusive zeitabhängiger Netzentgelte; 0 bedeutet keine zusätzliche Grenze. Benutzer-, Master-, Geräte- und Produktivfreigaben bleiben erforderlich."}, "newLine": true},
+        "_wb1PriceHeader": {
+          "type": "header",
+          "text": "Price-based vehicle charging",
+          "size": 3,
+          "newLine": true
+        },
+        "wb1PriceChargingEnabled": {
+          "type": "checkbox",
+          "label": "Allow vehicle grid charging in selected low-price periods",
+          "default": false,
+          "sm": 12,
+          "newLine": true
+        },
+        "wb1PriceMaxCt": {
+          "type": "number",
+          "label": "Maximum total gross price (0 = no cap)",
+          "default": 0,
+          "min": -1000,
+          "max": 1000,
+          "unit": "ct/kWh",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb1PriceEnergyKWh": {
+          "type": "number",
+          "label": "AC energy per plug-in session when SoC is missing",
+          "default": 0,
+          "min": 0,
+          "max": 1000,
+          "unit": "kWh",
+          "sm": 6,
+          "step": 0.1
+        },
+        "_wb1PriceHelp": {
+          "type": "staticText",
+          "text": "With valid vehicle SoC, the existing target determines the energy needed. Without SoC, enter the AC energy to add per plug-in session (0 = no price-based grid charging without SoC). Measured charging reduces the remaining session energy; a restart does not reset it. Usable PV is planned first. Without departure time, usable PV over the next 48 h reduces grid demand; sufficient PV tomorrow avoids unnecessary charging tonight. An enabled departure is a fixed deadline. The price window (default 24 h) only limits the search for grid-charging blocks. The price cap is the full gross price including time-dependent grid fees; 0 means no additional cap. User permission, master, device and production releases remain required.",
+          "newLine": true
+        },
         "_wb1MinimumHeader": {
           "type": "header",
           "text": "Manual and low-SoC minimum current",
@@ -1903,17 +2200,77 @@
           "default": "",
           "sm": 9
         },
-        "_wb2InputHeader": {"type": "header", "text": "Vehicle and wallbox input data points", "size": 3, "newLine": true},
-        "wb2MinSocId": {"type": "text", "label": "External minimum SoC", "default": "", "sm": 6, "newLine": true},
-        "wb2TargetSocId": {"type": "text", "label": "External target SoC", "default": "", "sm": 6},
-        "wb2ReleaseId": {"type": "text", "label": "EMS release / socfrei", "default": "", "sm": 6, "newLine": true},
-        "wb2UserAllowId": {"type": "text", "label": "User charging permission", "default": "", "sm": 6},
-        "wb2CarStateId": {"type": "text", "label": "Vehicle connection state", "default": "", "sm": 6, "newLine": true},
-        "wb2PhaseStateId": {"type": "text", "label": "Current phase count", "default": "", "sm": 6},
-        "wb2PowerId": {"type": "text", "label": "Measured charging power", "default": "", "sm": 12, "newLine": true},
-        "wb2L1CurrentId": {"type": "text", "label": "Measured current L1", "default": "", "sm": 4, "newLine": true},
-        "wb2L2CurrentId": {"type": "text", "label": "Measured current L2", "default": "", "sm": 4},
-        "wb2L3CurrentId": {"type": "text", "label": "Measured current L3", "default": "", "sm": 4},
+        "_wb2InputHeader": {
+          "type": "header",
+          "text": "Vehicle and wallbox input data points",
+          "size": 3,
+          "newLine": true
+        },
+        "wb2MinSocId": {
+          "type": "text",
+          "label": "External minimum SoC",
+          "default": "",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb2TargetSocId": {
+          "type": "text",
+          "label": "External target SoC",
+          "default": "",
+          "sm": 6
+        },
+        "wb2ReleaseId": {
+          "type": "text",
+          "label": "EMS release / socfrei",
+          "default": "",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb2UserAllowId": {
+          "type": "text",
+          "label": "User charging permission",
+          "default": "",
+          "sm": 6
+        },
+        "wb2CarStateId": {
+          "type": "text",
+          "label": "Vehicle connection state",
+          "default": "",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb2PhaseStateId": {
+          "type": "text",
+          "label": "Current phase count",
+          "default": "",
+          "sm": 6
+        },
+        "wb2PowerId": {
+          "type": "text",
+          "label": "Measured charging power",
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "wb2L1CurrentId": {
+          "type": "text",
+          "label": "Measured current L1",
+          "default": "",
+          "sm": 4,
+          "newLine": true
+        },
+        "wb2L2CurrentId": {
+          "type": "text",
+          "label": "Measured current L2",
+          "default": "",
+          "sm": 4
+        },
+        "wb2L3CurrentId": {
+          "type": "text",
+          "label": "Measured current L3",
+          "default": "",
+          "sm": 4
+        },
         "wb2CapacityKWh": {
           "type": "number",
           "label": "Battery capacity",
@@ -1944,8 +2301,14 @@
           "label": "Phase control when switching is enabled",
           "default": "script",
           "options": [
-            {"label": "Script: EMS follows confirmed go-e phases", "value": "script"},
-            {"label": "EMS target: external script follows EMS phases", "value": "ems"}
+            {
+              "label": "Script: EMS follows confirmed go-e phases",
+              "value": "script"
+            },
+            {
+              "label": "EMS target: external script follows EMS phases",
+              "value": "ems"
+            }
           ],
           "sm": 6
         },
@@ -2089,11 +2452,44 @@
           "sm": 6,
           "newLine": true
         },
-        "_wb2PriceHeader": {"type": "header", "text": {"en": "Price-based vehicle charging", "de": "Preisabhängiges Fahrzeugladen"}, "size": 3, "newLine": true},
-        "wb2PriceChargingEnabled": {"type": "checkbox", "label": {"en": "Allow vehicle grid charging in selected low-price periods", "de": "Fahrzeug-Netzladen in ausgewählten günstigen Zeiten erlauben"}, "default": false, "sm": 12, "newLine": true},
-        "wb2PriceMaxCt": {"type": "number", "label": {"en": "Maximum total gross price (0 = no cap)", "de": "Maximaler Gesamtpreis brutto (0 = keine Grenze)"}, "default": 0, "min": -1000, "max": 1000, "unit": "ct/kWh", "sm": 6, "newLine": true},
-        "wb2PriceEnergyKWh": {"type": "number", "label": {"en": "AC energy per plug-in session when SoC is missing", "de": "AC-Ladeenergie je Anstecken bei fehlendem SoC"}, "default": 0, "min": 0, "max": 1000, "unit": "kWh", "sm": 6, "step": 0.1},
-        "_wb2PriceHelp": {"type": "staticText", "text": {"en": "With valid vehicle SoC, the existing target determines the energy needed. Without SoC, enter the AC energy to add per plug-in session (0 = no price-based grid charging without SoC). Measured charging reduces the remaining session energy; a restart does not reset it. Usable PV is planned first. Without departure time, usable PV over the next 48 h reduces grid demand; sufficient PV tomorrow avoids unnecessary charging tonight. An enabled departure is a fixed deadline. The price window (default 24 h) only limits the search for grid-charging blocks. The price cap is the full gross price including time-dependent grid fees; 0 means no additional cap. User permission, master, device and production releases remain required.", "de": "Bei gültigem Fahrzeug-SoC bestimmt das bestehende Ladeziel die benötigte Energie. Ohne SoC die AC-Ladeenergie je Anstecken vorgeben (0 = kein preisabhängiges Netzladen ohne SoC). Gemessene Ladung reduziert den Restbedarf der Sitzung; ein Neustart setzt ihn nicht zurück. Nutzbare PV wird zuerst eingeplant. Ohne Abfahrtszeit verringert nutzbare PV der nächsten 48 h den Netzbedarf; ausreichend PV am Folgetag vermeidet unnötige Nachtladung. Eine aktivierte Abfahrt bleibt eine feste Frist. Das Preisfenster (Standard 24 h) begrenzt nur die Suche nach Netzladeblöcken. Die Preisgrenze ist der volle Bruttopreis inklusive zeitabhängiger Netzentgelte; 0 bedeutet keine zusätzliche Grenze. Benutzer-, Master-, Geräte- und Produktivfreigaben bleiben erforderlich."}, "newLine": true},
+        "_wb2PriceHeader": {
+          "type": "header",
+          "text": "Price-based vehicle charging",
+          "size": 3,
+          "newLine": true
+        },
+        "wb2PriceChargingEnabled": {
+          "type": "checkbox",
+          "label": "Allow vehicle grid charging in selected low-price periods",
+          "default": false,
+          "sm": 12,
+          "newLine": true
+        },
+        "wb2PriceMaxCt": {
+          "type": "number",
+          "label": "Maximum total gross price (0 = no cap)",
+          "default": 0,
+          "min": -1000,
+          "max": 1000,
+          "unit": "ct/kWh",
+          "sm": 6,
+          "newLine": true
+        },
+        "wb2PriceEnergyKWh": {
+          "type": "number",
+          "label": "AC energy per plug-in session when SoC is missing",
+          "default": 0,
+          "min": 0,
+          "max": 1000,
+          "unit": "kWh",
+          "sm": 6,
+          "step": 0.1
+        },
+        "_wb2PriceHelp": {
+          "type": "staticText",
+          "text": "With valid vehicle SoC, the existing target determines the energy needed. Without SoC, enter the AC energy to add per plug-in session (0 = no price-based grid charging without SoC). Measured charging reduces the remaining session energy; a restart does not reset it. Usable PV is planned first. Without departure time, usable PV over the next 48 h reduces grid demand; sufficient PV tomorrow avoids unnecessary charging tonight. An enabled departure is a fixed deadline. The price window (default 24 h) only limits the search for grid-charging blocks. The price cap is the full gross price including time-dependent grid fees; 0 means no additional cap. User permission, master, device and production releases remain required.",
+          "newLine": true
+        },
         "_wb2MinimumHeader": {
           "type": "header",
           "text": "Manual and low-SoC minimum current",
@@ -2489,9 +2885,36 @@
           "sm": 12,
           "newLine": true
         },
-        "dhwDailyDemandKWh": {"type": "number", "label": {"de": "Angenommener Warmwasserbedarf pro 24 h (keine Messung)", "en": "Assumed daily hot-water heat demand (not measured)"}, "default": 20, "min": 0, "max": 100, "unit": "kWh", "sm": 4, "newLine": true},
-        "dhwStandingLossKWhDay": {"type": "number", "label": {"de": "Angenommene Speicherverluste pro 24 h", "en": "Assumed tank standby heat losses per day"}, "default": 2, "min": 0, "max": 20, "unit": "kWh/d", "sm": 4, "newLine": true},
-        "dhwForecastReserveKWh": {"type": "number", "label": {"de": "Warmwasser-Prognosereserve oberhalb Mindesttemperatur", "en": "Hot-water forecast reserve above minimum temperature"}, "default": 0.5, "min": 0, "max": 20, "unit": "kWh", "sm": 4, "newLine": true},
+        "dhwDailyDemandKWh": {
+          "type": "number",
+          "label": "Assumed daily hot-water heat demand (not measured)",
+          "default": 20,
+          "min": 0,
+          "max": 100,
+          "unit": "kWh",
+          "sm": 4,
+          "newLine": true
+        },
+        "dhwStandingLossKWhDay": {
+          "type": "number",
+          "label": "Assumed tank standby heat losses per day",
+          "default": 2,
+          "min": 0,
+          "max": 20,
+          "unit": "kWh/d",
+          "sm": 4,
+          "newLine": true
+        },
+        "dhwForecastReserveKWh": {
+          "type": "number",
+          "label": "Hot-water forecast reserve above minimum temperature",
+          "default": 0.5,
+          "min": 0,
+          "max": 20,
+          "unit": "kWh",
+          "sm": 4,
+          "newLine": true
+        },
         "dhwVolumeL": {
           "type": "number",
           "label": "Storage volume",
@@ -2701,15 +3124,86 @@
           "default": false,
           "sm": 4
         },
-        "_heatingOutputHelp": {"type": "staticText", "text": "Independent my-PV controller for the heating buffer; never reuse the DHW actuator. Requires its own setpoint, three measured output powers, connection and buffer temperature. Cooling active, unknown cooling status or manual inhibit blocks heating. Temperature limits do not replace the heater's physical thermostat and safety cut-out.", "newLine": true},
-        "heatingProductionArmed": {"type": "checkbox", "label": "Arm heating-buffer output: separate actuator verified and competing writer stopped", "default": false, "sm": 8, "newLine": true},
-        "heatingInhibit": {"type": "checkbox", "label": "Manual heating-buffer inhibit (always OFF)", "default": false, "sm": 4},
-        "heatingSetpointId": {"type": "objectId", "label": "Writable heating-buffer my-PV setpoint (W, 0 = OFF)", "customFilter": {"type": "state", "common": {"type": "number", "write": true}}, "default": "", "sm": 12, "newLine": true},
-        "heatingConnectionId": {"type": "objectId", "label": "Heating-buffer controller connection (confirmed true = online)", "types": ["state"], "default": "", "sm": 12, "newLine": true},
-        "heatingOutput1Id": {"type": "objectId", "label": "Heating-buffer actual output L1 (W)", "types": ["state"], "default": "", "sm": 4, "newLine": true},
-        "heatingOutput2Id": {"type": "objectId", "label": "Heating-buffer actual output L2 (W)", "types": ["state"], "default": "", "sm": 4},
-        "heatingOutput3Id": {"type": "objectId", "label": "Heating-buffer actual output L3 (W)", "types": ["state"], "default": "", "sm": 4},
-        "heatingOutletTempId": {"type": "objectId", "label": "Optional heating-buffer controller outlet temperature (°C; configured source must be valid)", "types": ["state"], "default": "", "sm": 12, "newLine": true},
+        "_heatingOutputHelp": {
+          "type": "staticText",
+          "text": "Independent my-PV controller for the heating buffer; never reuse the DHW actuator. Requires its own setpoint, three measured output powers, connection and buffer temperature. Cooling active, unknown cooling status or manual inhibit blocks heating. Temperature limits do not replace the heater's physical thermostat and safety cut-out.",
+          "newLine": true
+        },
+        "heatingProductionArmed": {
+          "type": "checkbox",
+          "label": "Arm heating-buffer output: separate actuator verified and competing writer stopped",
+          "default": false,
+          "sm": 8,
+          "newLine": true
+        },
+        "heatingInhibit": {
+          "type": "checkbox",
+          "label": "Manual heating-buffer inhibit (always OFF)",
+          "default": false,
+          "sm": 4
+        },
+        "heatingSetpointId": {
+          "type": "objectId",
+          "label": "Writable heating-buffer my-PV setpoint (W, 0 = OFF)",
+          "customFilter": {
+            "type": "state",
+            "common": {
+              "type": "number",
+              "write": true
+            }
+          },
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "heatingConnectionId": {
+          "type": "objectId",
+          "label": "Heating-buffer controller connection (confirmed true = online)",
+          "types": [
+            "state"
+          ],
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "heatingOutput1Id": {
+          "type": "objectId",
+          "label": "Heating-buffer actual output L1 (W)",
+          "types": [
+            "state"
+          ],
+          "default": "",
+          "sm": 4,
+          "newLine": true
+        },
+        "heatingOutput2Id": {
+          "type": "objectId",
+          "label": "Heating-buffer actual output L2 (W)",
+          "types": [
+            "state"
+          ],
+          "default": "",
+          "sm": 4
+        },
+        "heatingOutput3Id": {
+          "type": "objectId",
+          "label": "Heating-buffer actual output L3 (W)",
+          "types": [
+            "state"
+          ],
+          "default": "",
+          "sm": 4
+        },
+        "heatingOutletTempId": {
+          "type": "objectId",
+          "label": "Optional heating-buffer controller outlet temperature (°C; configured source must be valid)",
+          "types": [
+            "state"
+          ],
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
         "heatingPowerId": {
           "type": "text",
           "label": "Current power data point",
@@ -2767,13 +3261,72 @@
           "sm": 3,
           "newLine": true
         },
-        "heatingStopTempC": {"type": "number", "label": "Heating-buffer safety stop temperature", "unit": "°C", "default": 60, "min": 10, "max": 90, "sm": 4, "newLine": true},
-        "heatingResumeDeltaC": {"type": "number", "label": "Resume below target by", "unit": "K", "default": 2, "min": 0.1, "max": 20, "sm": 4},
-        "heatingOutletEmergencyC": {"type": "number", "label": "Optional outlet sensor emergency stop", "unit": "°C", "default": 80, "min": 10, "max": 95, "sm": 4},
-        "heatingMaxStepW": {"type": "number", "label": "Maximum upward setpoint step", "unit": "W", "default": 1000, "min": 100, "max": 3000, "sm": 4, "newLine": true},
-        "heatingSettleToleranceW": {"type": "number", "label": "Actuator settling tolerance", "unit": "W", "default": 300, "min": 50, "max": 1000, "sm": 4},
-        "heatingTemperatureMaxAgeS": {"type": "number", "label": "Maximum buffer/outlet sensor age", "unit": "s", "default": 3600, "min": 10, "max": 7200, "sm": 4},
-        "heatingOutputMaxAgeS": {"type": "number", "label": "Maximum measured heater power age", "unit": "s", "default": 120, "min": 5, "max": 300, "sm": 4, "newLine": true}
+        "heatingStopTempC": {
+          "type": "number",
+          "label": "Heating-buffer safety stop temperature",
+          "unit": "°C",
+          "default": 60,
+          "min": 10,
+          "max": 90,
+          "sm": 4,
+          "newLine": true
+        },
+        "heatingResumeDeltaC": {
+          "type": "number",
+          "label": "Resume below target by",
+          "unit": "K",
+          "default": 2,
+          "min": 0.1,
+          "max": 20,
+          "sm": 4
+        },
+        "heatingOutletEmergencyC": {
+          "type": "number",
+          "label": "Optional outlet sensor emergency stop",
+          "unit": "°C",
+          "default": 80,
+          "min": 10,
+          "max": 95,
+          "sm": 4
+        },
+        "heatingMaxStepW": {
+          "type": "number",
+          "label": "Maximum upward setpoint step",
+          "unit": "W",
+          "default": 1000,
+          "min": 100,
+          "max": 3000,
+          "sm": 4,
+          "newLine": true
+        },
+        "heatingSettleToleranceW": {
+          "type": "number",
+          "label": "Actuator settling tolerance",
+          "unit": "W",
+          "default": 300,
+          "min": 50,
+          "max": 1000,
+          "sm": 4
+        },
+        "heatingTemperatureMaxAgeS": {
+          "type": "number",
+          "label": "Maximum buffer/outlet sensor age",
+          "unit": "s",
+          "default": 3600,
+          "min": 10,
+          "max": 7200,
+          "sm": 4
+        },
+        "heatingOutputMaxAgeS": {
+          "type": "number",
+          "label": "Maximum measured heater power age",
+          "unit": "s",
+          "default": 120,
+          "min": 5,
+          "max": 300,
+          "sm": 4,
+          "newLine": true
+        }
       }
     },
     "batteryTab": {
@@ -2799,16 +3352,102 @@
           "default": false,
           "sm": 4
         },
-        "_batteryOutputHelp": {"type": "staticText", "text": "Supervised SunEnergy battery output: choose the exact sunenergyxt500.N.heads.H.control.GS endpoint and its mandatory AC power feedback heads.H.grid.GP (or total.gridPower only with exactly one configured head). Both GS and GP are positive for discharge/export; the EMS inverts GP to internal positive=charge. BP / total.batteryPower is DC telemetry for history/planning and must not replace AC command feedback. The SunEnergy adapter must use controlMode=off, a fresh info.lastUpdate heartbeat and the selected head must confirm online=true, MM=false and LM=true. A direct GS command has no EMS-side protection against a host crash: a device-side watchdog remains necessary for unattended operation.", "newLine": true},
-        "batteryProductionArmed": {"type": "checkbox", "label": "Arm supervised battery output: GS mapping, signs, driver modes and competing writer checked", "default": false, "sm": 12, "newLine": true},
-        "batterySetpointId": {"type": "objectId", "label": "Writable sunenergyxt500.N.heads.H.control.GS (W: positive discharge / negative charge)", "customFilter": {"type": "state", "common": {"type": "number", "write": true}}, "default": "", "sm": 12, "newLine": true},
-        "batteryAcPowerId": {"type": "objectId", "label": "Required AC power feedback: selected head grid.GP or single-head total.gridPower (W, positive discharge)", "types": ["state"], "default": "", "sm": 12, "newLine": true},
-        "batteryHeartbeatId": {"type": "objectId", "label": "Fresh driver heartbeat / last successful update", "types": ["state"], "default": "", "sm": 12, "newLine": true},
-        "batteryOnlineId": {"type": "objectId", "label": "Driver online state (confirmed true required)", "types": ["state"], "default": "", "sm": 12, "newLine": true},
-        "batteryManualModeId": {"type": "objectId", "label": "Selected head control.MM (confirmed false required)", "types": ["state"], "default": "", "sm": 12, "newLine": true},
-        "batteryLocalModeId": {"type": "objectId", "label": "Selected head control.LM (confirmed true required)", "types": ["state"], "default": "", "sm": 12, "newLine": true},
-        "batteryFaultId": {"type": "objectId", "label": "Optional driver fault state (0 / false = no fault)", "types": ["state"], "default": "", "sm": 12, "newLine": true},
-        "batteryTemperatureId": {"type": "objectId", "label": "Optional battery temperature (°C; configured source must be valid)", "types": ["state"], "default": "", "sm": 12, "newLine": true},
+        "_batteryOutputHelp": {
+          "type": "staticText",
+          "text": "Supervised SunEnergy battery output: choose the exact sunenergyxt500.N.heads.H.control.GS endpoint and its mandatory AC power feedback heads.H.grid.GP (or total.gridPower only with exactly one configured head). Both GS and GP are positive for discharge/export; the EMS inverts GP to internal positive=charge. BP / total.batteryPower is DC telemetry for history/planning and must not replace AC command feedback. The SunEnergy adapter must use controlMode=off, a fresh info.lastUpdate heartbeat and the selected head must confirm online=true, MM=false and LM=true. A direct GS command has no EMS-side protection against a host crash: a device-side watchdog remains necessary for unattended operation.",
+          "newLine": true
+        },
+        "batteryProductionArmed": {
+          "type": "checkbox",
+          "label": "Arm supervised battery output: GS mapping, signs, driver modes and competing writer checked",
+          "default": false,
+          "sm": 12,
+          "newLine": true
+        },
+        "batterySetpointId": {
+          "type": "objectId",
+          "label": "Writable sunenergyxt500.N.heads.H.control.GS (W: positive discharge / negative charge)",
+          "customFilter": {
+            "type": "state",
+            "common": {
+              "type": "number",
+              "write": true
+            }
+          },
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "batteryAcPowerId": {
+          "type": "objectId",
+          "label": "Required AC power feedback: selected head grid.GP or single-head total.gridPower (W, positive discharge)",
+          "types": [
+            "state"
+          ],
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "batteryHeartbeatId": {
+          "type": "objectId",
+          "label": "Fresh driver heartbeat / last successful update",
+          "types": [
+            "state"
+          ],
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "batteryOnlineId": {
+          "type": "objectId",
+          "label": "Driver online state (confirmed true required)",
+          "types": [
+            "state"
+          ],
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "batteryManualModeId": {
+          "type": "objectId",
+          "label": "Selected head control.MM (confirmed false required)",
+          "types": [
+            "state"
+          ],
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "batteryLocalModeId": {
+          "type": "objectId",
+          "label": "Selected head control.LM (confirmed true required)",
+          "types": [
+            "state"
+          ],
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "batteryFaultId": {
+          "type": "objectId",
+          "label": "Optional driver fault state (0 / false = no fault)",
+          "types": [
+            "state"
+          ],
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "batteryTemperatureId": {
+          "type": "objectId",
+          "label": "Optional battery temperature (°C; configured source must be valid)",
+          "types": [
+            "state"
+          ],
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
         "batterySocId": {
           "type": "text",
           "label": "SoC data point",
@@ -2822,7 +3461,23 @@
           "default": "",
           "sm": 6
         },
-        "batteryPowerSign": {"type": "select", "label": "Legacy DC power convention (never used for GS / AC feedback)", "default": 1, "options": [{"value": 1, "label": "DC source positive = charge (SunEnergy BP / total.batteryPower)"}, {"value": -1, "label": "DC source positive = discharge"}], "sm": 12, "newLine": true},
+        "batteryPowerSign": {
+          "type": "select",
+          "label": "Legacy DC power convention (never used for GS / AC feedback)",
+          "default": 1,
+          "options": [
+            {
+              "value": 1,
+              "label": "DC source positive = charge (SunEnergy BP / total.batteryPower)"
+            },
+            {
+              "value": -1,
+              "label": "DC source positive = discharge"
+            }
+          ],
+          "sm": 12,
+          "newLine": true
+        },
         "batteryCapacityKWh": {
           "type": "number",
           "label": "Capacity",
@@ -2847,7 +3502,7 @@
         },
         "batteryEfficiencyPct": {
           "type": "number",
-          "label": {"en": "Legacy efficiency per direction", "de": "Bisheriger Wirkungsgrad je Richtung"},
+          "label": "Legacy efficiency per direction",
           "unit": "%",
           "default": 92,
           "sm": 3
@@ -2913,25 +3568,163 @@
           "default": true,
           "sm": 3
         },
-        "_batteryPriceHeader": {"type": "header", "text": {"en": "Price-based battery charging", "de": "Preisabhängiges Speicherladen"}, "size": 3, "newLine": true},
-        "batteryPriceChargingEnabled": {"type": "checkbox", "label": {"en": "Allow battery grid charging in selected low-price periods", "de": "Speicher-Netzladen in ausgewählten günstigen Zeiten erlauben"}, "default": false, "sm": 12, "newLine": true},
-        "batteryPriceMaxSocPct": {"type": "number", "label": {"en": "Maximum SoC from grid charging (PV may charge higher)", "de": "Maximaler SoC durch Netzladung (PV darf höher laden)"}, "default": 100, "min": 0, "max": 100, "unit": "%", "sm": 4, "newLine": true},
-        "batteryRoundTripEfficiencyPct": {"type": "number", "label": {"en": "Round-trip efficiency (0 = legacy per-leg setting)", "de": "Round-Trip-Wirkungsgrad (0 = bisheriger Wert je Richtung)"}, "default": 0, "min": 0, "max": 100, "unit": "%", "sm": 4},
-        "batteryPriceMaxCt": {"type": "number", "label": {"en": "Maximum total gross price (0 = no cap)", "de": "Maximaler Gesamtpreis brutto (0 = keine Grenze)"}, "default": 0, "min": -1000, "max": 1000, "unit": "ct/kWh", "sm": 4, "newLine": true},
-        "batteryPriceMinSavingsCt": {"type": "number", "label": {"en": "Minimum saving after storage losses", "de": "Mindestersparnis nach Speicherverlusten"}, "default": 2, "min": 0, "max": 1000, "unit": "ct/kWh", "sm": 4},
-        "batteryPriceReservePct": {"type": "number", "label": {"en": "Extra reserve above minimum SoC", "de": "Zusätzliche Reserve über Mindest-SoC"}, "default": 10, "min": 0, "max": 100, "unit": "%", "sm": 4},
-        "_batteryPriceHelp": {"type": "staticText", "text": {"en": "Opt-in grid charging is scheduled against expected demand, PV, storage losses and later total electricity prices. The extra reserve is in percentage points above the configured minimum SoC, capped by the maximum SoC. The price cap uses the full gross price, including time-dependent grid fees; negative caps are allowed. 0 means no additional price cap, not free electricity. Round-trip efficiency 0 preserves the legacy efficiency per direction. The separate grid-charge maximum SoC does not limit PV charging. Missing prices do not authorize grid charging. Existing master, device and battery production releases remain required.", "de": "Optionales Netzladen wird anhand von erwartetem Bedarf, PV, Speicherverlusten und späteren Strom-Gesamtpreisen geplant. Die zusätzliche Reserve zählt in Prozentpunkten über dem eingestellten Mindest-SoC, begrenzt durch den Maximal-SoC. Die Preisgrenze gilt für den vollen Bruttopreis einschließlich zeitabhängiger Netzentgelte; negative Grenzen sind erlaubt. 0 bedeutet keine zusätzliche Preisgrenze, nicht kostenlosen Strom. Gesamtzyklus-Effizienz 0 übernimmt die bisherige Effizienz pro Richtung. Der separate Netzlade-Maximal-SoC begrenzt kein PV-Laden. Fehlende Preise geben kein Netzladen frei. Master-, Geräte- und Speicher-Produktivfreigabe bleiben erforderlich."}, "newLine": true},
-        "_batteryFineControlHeader": {"type": "header", "text": "Battery fine control and input checks", "size": 3, "newLine": true},
-        "batteryFineStepW": {"type": "number", "label": "Maximum battery setpoint step", "unit": "W", "default": 100, "min": 1, "max": 1000, "sm": 4, "newLine": true},
-        "batteryFineReserveW": {"type": "number", "label": "PV reserve for battery fine control before heater allocation", "unit": "W", "default": 200, "min": 0, "max": 10000, "sm": 4, "newLine": true},
-        "_batteryFineReserveHelp": {"type": "staticText", "text": "Reserves up to this share of actual PV surplus for battery fine control. The effective reserve is capped by available PV, battery charge power and the shared grid-operator budget; without available PV there is no reserve. Existing planned battery charging can require a larger share. This is a power reserve in watts, not an additional SoC reserve or permission to charge from the grid.", "newLine": true},
-        "batteryDeadbandW": {"type": "number", "label": "Battery grid-control deadband", "unit": "W", "default": 50, "min": 0, "max": 500, "sm": 4},
-        "batteryCycleS": {"type": "number", "label": "Battery control cycle", "unit": "s", "default": 1, "min": 1, "max": 30, "sm": 4},
-        "batteryFeedbackTimeoutS": {"type": "number", "label": "Command / physical-response timeout", "unit": "s", "default": 15, "min": 2, "max": 120, "sm": 4, "newLine": true},
-        "batteryMeasurementMaxAgeS": {"type": "number", "label": "Maximum battery measurement / heartbeat age", "unit": "s", "default": 30, "min": 5, "max": 120, "sm": 4},
-        "batterySoCMaxAgeS": {"type": "number", "label": "Maximum battery SoC age", "unit": "s", "default": 300, "min": 5, "max": 3600, "sm": 4},
-        "batteryTemperatureMaxC": {"type": "number", "label": "Optional battery temperature stop limit", "unit": "°C", "default": 50, "min": 10, "max": 60, "sm": 4, "newLine": true},
-        "_batteryMinimumHelp": {"type": "staticText", "text": "The 15% minimum applies to new installations only. Existing explicit settings are retained. A minimum of 0% blocks productive discharge; configure an appropriate positive reserve before a supervised test.", "newLine": true}
+        "_batteryPriceHeader": {
+          "type": "header",
+          "text": "Price-based battery charging",
+          "size": 3,
+          "newLine": true
+        },
+        "batteryPriceChargingEnabled": {
+          "type": "checkbox",
+          "label": "Allow battery grid charging in selected low-price periods",
+          "default": false,
+          "sm": 12,
+          "newLine": true
+        },
+        "batteryPriceMaxSocPct": {
+          "type": "number",
+          "label": "Maximum SoC from grid charging (PV may charge higher)",
+          "default": 100,
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "sm": 4,
+          "newLine": true
+        },
+        "batteryRoundTripEfficiencyPct": {
+          "type": "number",
+          "label": "Round-trip efficiency (0 = legacy per-leg setting)",
+          "default": 0,
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "sm": 4
+        },
+        "batteryPriceMaxCt": {
+          "type": "number",
+          "label": "Maximum total gross price (0 = no cap)",
+          "default": 0,
+          "min": -1000,
+          "max": 1000,
+          "unit": "ct/kWh",
+          "sm": 4,
+          "newLine": true
+        },
+        "batteryPriceMinSavingsCt": {
+          "type": "number",
+          "label": "Minimum saving after storage losses",
+          "default": 2,
+          "min": 0,
+          "max": 1000,
+          "unit": "ct/kWh",
+          "sm": 4
+        },
+        "batteryPriceReservePct": {
+          "type": "number",
+          "label": "Extra reserve above minimum SoC",
+          "default": 10,
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "sm": 4
+        },
+        "_batteryPriceHelp": {
+          "type": "staticText",
+          "text": "Opt-in grid charging is scheduled against expected demand, PV, storage losses and later total electricity prices. The extra reserve is in percentage points above the configured minimum SoC, capped by the maximum SoC. The price cap uses the full gross price, including time-dependent grid fees; negative caps are allowed. 0 means no additional price cap, not free electricity. Round-trip efficiency 0 preserves the legacy efficiency per direction. The separate grid-charge maximum SoC does not limit PV charging. Missing prices do not authorize grid charging. Existing master, device and battery production releases remain required.",
+          "newLine": true
+        },
+        "_batteryFineControlHeader": {
+          "type": "header",
+          "text": "Battery fine control and input checks",
+          "size": 3,
+          "newLine": true
+        },
+        "batteryFineStepW": {
+          "type": "number",
+          "label": "Maximum battery setpoint step",
+          "unit": "W",
+          "default": 100,
+          "min": 1,
+          "max": 1000,
+          "sm": 4,
+          "newLine": true
+        },
+        "batteryFineReserveW": {
+          "type": "number",
+          "label": "PV reserve for battery fine control before heater allocation",
+          "unit": "W",
+          "default": 200,
+          "min": 0,
+          "max": 10000,
+          "sm": 4,
+          "newLine": true
+        },
+        "_batteryFineReserveHelp": {
+          "type": "staticText",
+          "text": "Reserves up to this share of actual PV surplus for battery fine control. The effective reserve is capped by available PV, battery charge power and the shared grid-operator budget; without available PV there is no reserve. Existing planned battery charging can require a larger share. This is a power reserve in watts, not an additional SoC reserve or permission to charge from the grid.",
+          "newLine": true
+        },
+        "batteryDeadbandW": {
+          "type": "number",
+          "label": "Battery grid-control deadband",
+          "unit": "W",
+          "default": 50,
+          "min": 0,
+          "max": 500,
+          "sm": 4
+        },
+        "batteryCycleS": {
+          "type": "number",
+          "label": "Battery control cycle",
+          "unit": "s",
+          "default": 1,
+          "min": 1,
+          "max": 30,
+          "sm": 4
+        },
+        "batteryFeedbackTimeoutS": {
+          "type": "number",
+          "label": "Command / physical-response timeout",
+          "unit": "s",
+          "default": 15,
+          "min": 2,
+          "max": 120,
+          "sm": 4,
+          "newLine": true
+        },
+        "batteryMeasurementMaxAgeS": {
+          "type": "number",
+          "label": "Maximum battery measurement / heartbeat age",
+          "unit": "s",
+          "default": 30,
+          "min": 5,
+          "max": 120,
+          "sm": 4
+        },
+        "batterySoCMaxAgeS": {
+          "type": "number",
+          "label": "Maximum battery SoC age",
+          "unit": "s",
+          "default": 300,
+          "min": 5,
+          "max": 3600,
+          "sm": 4
+        },
+        "batteryTemperatureMaxC": {
+          "type": "number",
+          "label": "Optional battery temperature stop limit",
+          "unit": "°C",
+          "default": 50,
+          "min": 10,
+          "max": 60,
+          "sm": 4,
+          "newLine": true
+        },
+        "_batteryMinimumHelp": {
+          "type": "staticText",
+          "text": "The 15% minimum applies to new installations only. Existing explicit settings are retained. A minimum of 0% blocks productive discharge; configure an appropriate positive reserve before a supervised test.",
+          "newLine": true
+        }
       }
     },
     "heatPumpTab": {
@@ -2964,31 +3757,173 @@
           "sm": 8,
           "newLine": true
         },
-        "_heatPumpAdviceHelp": {"type": "staticText", "text": "NORMAL / BOOST / REDUCED are EMS-owned recommendations, not commands to the heat pump. No ISG mode endpoint is written. Advice uses measured buffer/DHW temperatures, PV surplus, the optional shared cheap-price policy and the cooling status configured in Thermal strategy. Independent heat-pump safety and its own temperature control remain authoritative.", "newLine": true},
-        "heatPumpAdviceEnabled": {"type": "checkbox", "label": "Enable heat-pump mode recommendations", "default": false, "sm": 12, "newLine": true},
-        "heatPumpBufferTemperatureId": {"type": "objectId", "label": "Heat-pump buffer temperature (empty = configured heating-buffer temperature source)", "types": ["state"], "default": "", "sm": 12, "newLine": true},
-        "heatPumpDhwTemperatureId": {"type": "objectId", "label": "Heat-pump DHW temperature (explicit source; no automatic sensor selection)", "types": ["state"], "default": "", "sm": 12, "newLine": true},
-        "heatPumpHeatingTargetC": {"type": "number", "label": "Heating buffer target for heat-pump advice", "unit": "°C", "default": 45, "min": 10, "max": 70, "sm": 4, "newLine": true},
-        "heatPumpDhwTargetC": {"type": "number", "label": "DHW target for heat-pump advice", "unit": "°C", "default": 60, "min": 10, "max": 80, "sm": 4},
-        "heatPumpTemperatureMaxAgeS": {"type": "number", "label": "Maximum heat-pump temperature age", "unit": "s", "default": 3600, "min": 10, "max": 7200, "sm": 4},
-        "heatPumpMinHoldS": {"type": "number", "label": "Minimum normal mode-advice holding time", "unit": "s", "default": 300, "min": 60, "max": 3600, "sm": 4, "newLine": true},
-        "heatPumpPvBoostOnW": {"type": "number", "label": "PV surplus to enter BOOST advice", "unit": "W", "default": 2500, "min": 1, "max": 30000, "sm": 4},
-        "heatPumpPvBoostOffW": {"type": "number", "label": "PV surplus to leave BOOST advice", "unit": "W", "default": 1200, "min": 0, "max": 30000, "sm": 4},
-        "_heatPumpHysteresisHelp": {"type": "staticText", "text": "The BOOST entry threshold must be positive and greater than the exit threshold. Safety blocks and loss of price permission can end advice before the normal holding time expires.", "newLine": true}
+        "_heatPumpAdviceHelp": {
+          "type": "staticText",
+          "text": "NORMAL / BOOST / REDUCED are EMS-owned recommendations, not commands to the heat pump. No ISG mode endpoint is written. Advice uses measured buffer/DHW temperatures, PV surplus, the optional shared cheap-price policy and the cooling status configured in Thermal strategy. Independent heat-pump safety and its own temperature control remain authoritative.",
+          "newLine": true
+        },
+        "heatPumpAdviceEnabled": {
+          "type": "checkbox",
+          "label": "Enable heat-pump mode recommendations",
+          "default": false,
+          "sm": 12,
+          "newLine": true
+        },
+        "heatPumpBufferTemperatureId": {
+          "type": "objectId",
+          "label": "Heat-pump buffer temperature (empty = configured heating-buffer temperature source)",
+          "types": [
+            "state"
+          ],
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "heatPumpDhwTemperatureId": {
+          "type": "objectId",
+          "label": "Heat-pump DHW temperature (explicit source; no automatic sensor selection)",
+          "types": [
+            "state"
+          ],
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "heatPumpHeatingTargetC": {
+          "type": "number",
+          "label": "Heating buffer target for heat-pump advice",
+          "unit": "°C",
+          "default": 45,
+          "min": 10,
+          "max": 70,
+          "sm": 4,
+          "newLine": true
+        },
+        "heatPumpDhwTargetC": {
+          "type": "number",
+          "label": "DHW target for heat-pump advice",
+          "unit": "°C",
+          "default": 60,
+          "min": 10,
+          "max": 80,
+          "sm": 4
+        },
+        "heatPumpTemperatureMaxAgeS": {
+          "type": "number",
+          "label": "Maximum heat-pump temperature age",
+          "unit": "s",
+          "default": 3600,
+          "min": 10,
+          "max": 7200,
+          "sm": 4
+        },
+        "heatPumpMinHoldS": {
+          "type": "number",
+          "label": "Minimum normal mode-advice holding time",
+          "unit": "s",
+          "default": 300,
+          "min": 60,
+          "max": 3600,
+          "sm": 4,
+          "newLine": true
+        },
+        "heatPumpPvBoostOnW": {
+          "type": "number",
+          "label": "PV surplus to enter BOOST advice",
+          "unit": "W",
+          "default": 2500,
+          "min": 1,
+          "max": 30000,
+          "sm": 4
+        },
+        "heatPumpPvBoostOffW": {
+          "type": "number",
+          "label": "PV surplus to leave BOOST advice",
+          "unit": "W",
+          "default": 1200,
+          "min": 0,
+          "max": 30000,
+          "sm": 4
+        },
+        "_heatPumpHysteresisHelp": {
+          "type": "staticText",
+          "text": "The BOOST entry threshold must be positive and greater than the exit threshold. Safety blocks and loss of price permission can end advice before the normal holding time expires.",
+          "newLine": true
+        }
       }
     },
     "thermalStrategyTab": {
       "type": "panel",
       "label": "Thermal strategy",
       "items": {
-        "_thermalSharedHelp": {"type": "staticText", "text": "Shared cooling information protects the heating-buffer heater and informs heat-pump advice. DHW is a separate thermal circuit. Optional cheap-price heating remains disabled unless explicitly released with a positive combined heater grid-power budget; missing prices are never treated as free energy.", "newLine": true},
-        "heatingCoolingActiveId": {"type": "objectId", "label": "Shared cooling active (confirmed true/1 = cooling; false/0 = no cooling)", "types": ["state"], "default": "", "sm": 12, "newLine": true},
-        "heatingCoolingHeartbeatId": {"type": "objectId", "label": "Optional cooling-source heartbeat (fresh epoch-ms timestamp; allows unchanged cooling boolean)", "types": ["state"], "default": "", "sm": 12, "newLine": true},
-        "heatingCoolingMaxAgeS": {"type": "number", "label": "Maximum cooling input / heartbeat age", "unit": "s", "default": 120, "min": 5, "max": 600, "sm": 4, "newLine": true},
-        "thermalCheapPriceEnabled": {"type": "checkbox", "label": "Allow explicitly budgeted heating at cheap total electricity prices", "default": false, "sm": 12, "newLine": true},
-        "thermalCheapPriceMaxCt": {"type": "number", "label": "Maximum total electricity price for cheap heating", "unit": "ct/kWh", "default": 0, "min": -100, "max": 200, "sm": 4, "newLine": true},
-        "thermalCheapGridMaxW": {"type": "number", "label": "Maximum shared grid-power budget for cheap heater operation (0 = no grid heating)", "unit": "W", "default": 0, "min": 0, "max": 15000, "sm": 8},
-        "thermalCheapFixedTariffAllowed": {"type": "checkbox", "label": "Also allow cheap-price heating with an explicitly configured fixed tariff", "default": false, "sm": 12, "newLine": true}
+        "_thermalSharedHelp": {
+          "type": "staticText",
+          "text": "Shared cooling information protects the heating-buffer heater and informs heat-pump advice. DHW is a separate thermal circuit. Optional cheap-price heating remains disabled unless explicitly released with a positive combined heater grid-power budget; missing prices are never treated as free energy.",
+          "newLine": true
+        },
+        "heatingCoolingActiveId": {
+          "type": "objectId",
+          "label": "Shared cooling active (confirmed true/1 = cooling; false/0 = no cooling)",
+          "types": [
+            "state"
+          ],
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "heatingCoolingHeartbeatId": {
+          "type": "objectId",
+          "label": "Optional cooling-source heartbeat (fresh epoch-ms timestamp; allows unchanged cooling boolean)",
+          "types": [
+            "state"
+          ],
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "heatingCoolingMaxAgeS": {
+          "type": "number",
+          "label": "Maximum cooling input / heartbeat age",
+          "unit": "s",
+          "default": 120,
+          "min": 5,
+          "max": 600,
+          "sm": 4,
+          "newLine": true
+        },
+        "thermalCheapPriceEnabled": {
+          "type": "checkbox",
+          "label": "Allow explicitly budgeted heating at cheap total electricity prices",
+          "default": false,
+          "sm": 12,
+          "newLine": true
+        },
+        "thermalCheapPriceMaxCt": {
+          "type": "number",
+          "label": "Maximum total electricity price for cheap heating",
+          "unit": "ct/kWh",
+          "default": 0,
+          "min": -100,
+          "max": 200,
+          "sm": 4,
+          "newLine": true
+        },
+        "thermalCheapGridMaxW": {
+          "type": "number",
+          "label": "Maximum shared grid-power budget for cheap heater operation (0 = no grid heating)",
+          "unit": "W",
+          "default": 0,
+          "min": 0,
+          "max": 15000,
+          "sm": 8
+        },
+        "thermalCheapFixedTariffAllowed": {
+          "type": "checkbox",
+          "label": "Also allow cheap-price heating with an explicitly configured fixed tariff",
+          "default": false,
+          "sm": 12,
+          "newLine": true
+        }
       }
     },
     "controlTab": {
@@ -3053,10 +3988,30 @@
           "label": "Legacy data-point mapping JSON (migration fallback)",
           "newLine": true
         },
-        "legacyCurrentHelp": {"type": "staticText", "text": "The legacy free-current values below are used only when direct phase-current or phase-power measurements are unavailable.", "newLine": true},
-        "dhwHaL1FreeCurrentId": {"type": "text", "label": "Legacy free current L1 (A)", "default": "", "sm": 4, "newLine": true},
-        "dhwHaL2FreeCurrentId": {"type": "text", "label": "Legacy free current L2 (A)", "default": "", "sm": 4},
-        "dhwHaL3FreeCurrentId": {"type": "text", "label": "Legacy free current L3 (A)", "default": "", "sm": 4}
+        "legacyCurrentHelp": {
+          "type": "staticText",
+          "text": "The legacy free-current values below are used only when direct phase-current or phase-power measurements are unavailable.",
+          "newLine": true
+        },
+        "dhwHaL1FreeCurrentId": {
+          "type": "text",
+          "label": "Legacy free current L1 (A)",
+          "default": "",
+          "sm": 4,
+          "newLine": true
+        },
+        "dhwHaL2FreeCurrentId": {
+          "type": "text",
+          "label": "Legacy free current L2 (A)",
+          "default": "",
+          "sm": 4
+        },
+        "dhwHaL3FreeCurrentId": {
+          "type": "text",
+          "label": "Legacy free current L3 (A)",
+          "default": "",
+          "sm": 4
+        }
       }
     }
   }
