@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.31**
+Aktuelle Version: **0.17.0-alpha.32**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -40,6 +40,18 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.32 – Wallbox-Rückmeldung und erklärbare Schattenläufe
+
+Ein bestätigter Ampere- oder Startbefehl ist noch keine bestätigte Fahrzeugreaktion. Nach der vorhandenen Befehlsbestätigungsfrist wartet der Ausgang auf neue, gültige Leistungs- und Stromwerte ab der Bestätigung, bevor er weiter erhöht oder eine normale PV-Regelung umkehrt. Die zusätzliche Fahrzeug-Reaktionsfrist ist im Reiter **Wallboxen allgemein** einstellbar: `wallboxResponseSettleTimeoutS` (Standard 45 s, 5–120 s) und `wallboxResponseCurrentToleranceA` (Standard 1,5 A, 0,5–3 A). Ein Fahrzeug, das wenig abnimmt, erhält eine begrenzte Diagnose ohne weitere Aufregelung. Bleibt die gemessene Stromaufnahme nach der Frist oberhalb der bestätigten Vorgabe, wird gestoppt und ein Fehler gemeldet. Echte go-e-Fehler einschließlich Fehler 5, ungültige Schutzquellen, Benutzerfreigaben und harte Leistungsgrenzen wirken weiterhin sofort; es gibt keine automatische Fehlerquittierung.
+
+Die Schattenantwort kann bei versetzten Polls eine vollständig zugeordnete historische Messbasis bis höchstens 20 s verwenden, begrenzt durch das konfigurierte Quellenalter. Es werden nur belegte, nahezu konstante Wallbox-Messpaare interpoliert: maximal 20 s Abstand, maximal 100 W Änderung je Wallbox und maximal 500 W Netzänderung zur aktuellen Messung. Fehlende Messpaare, Lastsprünge und schlechte Quellen bleiben unbekannt. Die aktuelle Netz-Schutzprüfung bleibt bei 10 s. `Response.TimingState`, `Reason`, `InputTimestamp` und `InputAge_ms` erklären die Bewertbarkeit; Zeitstempel werden nicht künstlich verjüngt.
+
+Die zusammengehörigen DecisionRecords unterscheiden jetzt Befehlsbestätigung, Fahrzeug-Wartephase und ausdrücklich angenommene Modellantwort mit Befehl, Zeitpunkten und elektrischer Rückmeldung. Reale Leistung aus dem Bestandsskript ist keine Bestätigung eines virtuellen Befehls. Das Schattenmodell bleibt eine ideale elektrische Wallboxantwort; Fahrzeugdynamik, Speicher, EHZ und thermische Anlage sind damit nicht real abgenommen.
+
+Außerdem verwenden die Heizpuffer-/Speicher-Sollwertauswahlen einen vom Admin-Schema unterstützten Filter für schreibbare numerische Zustände. Die bisherige `customFilter.common.write`-Warnung wird behoben; die strenge Ausgangsprüfung bleibt erhalten.
+
+Die Version dient nachvollziehbaren Schattenläufen und einem späteren begleiteten Test. Sie aktiviert keine Ausgänge und ändert keine vorhandenen Start-, Stopp- oder Mindestlaufzeiten. Ein Score-Anstieg setzt neue Betriebsbelege voraus. Details: [Wallbox-Zeitverhalten und Prüfkriterien](docs/wallbox-timing-alpha32.md).
 
 ## Neu in 0.17.0-alpha.31 – Admin-Übersetzungen
 

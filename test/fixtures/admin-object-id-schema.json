@@ -1,0 +1,287 @@
+{
+  "$comment": "Unmodified definitions from the official ioBroker Admin JSON schema; pins the objectId/customFilter contract relevant to output selectors.",
+  "source": {
+    "url": "https://github.com/ioBroker/ioBroker.admin/blob/master/packages/jsonConfig/schemas/jsonConfig.json",
+    "blobSha": "d3eb132c450fb49833076fc4231de1520e2e7a0f",
+    "retrieved": "2026-10-04"
+  },
+  "definitions": {
+    "customFilter": {
+      "type": "object",
+      "description": "JSON schema for the ObjectBrowserCustomFilter interface from TypeScript.\n\nNote: ioBroker-specific enums (e.g., ObjectType, CommonType) are allowed here as strings or arrays of strings; typical values are mentioned in the description.",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "description": "Object type(s) in Object Browser, e.g., 'state', 'channel', 'device'. Can be a string or an array of strings.",
+          "oneOf": [
+            {
+              "type": "string",
+              "enum": [
+                "state",
+                "channel",
+                "device",
+                "folder",
+                "meta",
+                "adapter",
+                "instance",
+                "host",
+                "enum",
+                "group",
+                "user",
+                "script",
+                "chart",
+                "schedule"
+              ]
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "state",
+                  "channel",
+                  "device",
+                  "folder",
+                  "meta",
+                  "adapter",
+                  "instance",
+                  "host",
+                  "enum",
+                  "group",
+                  "user",
+                  "script",
+                  "chart",
+                  "schedule"
+                ]
+              },
+              "minItems": 1
+            }
+          ]
+        },
+        "common": {
+          "description": "Filter on common.* properties of the object (e.g., type, role, custom)",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "description": "Data type of the state, e.g., 'number', 'string', 'boolean', 'object', 'array', 'mixed'. Accepts string or array of strings.",
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "number",
+                    "string",
+                    "boolean",
+                    "object",
+                    "array",
+                    "mixed"
+                  ]
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "number",
+                      "string",
+                      "boolean",
+                      "object",
+                      "array",
+                      "mixed"
+                    ]
+                  },
+                  "minItems": 1
+                }
+              ]
+            },
+            "role": {
+              "description": "Role(s) of the state, e.g., 'switch', 'button' or beginning of roles. String or array of strings.",
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "minItems": 1
+                }
+              ]
+            },
+            "custom": {
+              "description": "Special filter for common.custom:\n- \"_\" => no custom set (literal underscore)\n- \"_dataSources\" => only data sources (history/sql/influx etc.)\n- true => any non-empty custom\n- \"adapter.\" or \"adapter.0\" or general string => specific custom (or prefix)\nAccepts: boolean true, string or array of strings.",
+              "oneOf": [
+                {
+                  "type": "boolean",
+                  "const": true
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "minItems": 1
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "objectIdProps": {
+      "type": "object",
+      "properties": {
+        "types": {
+          "description": "Filter for one of the possible types: 'channel', 'device', ... (is state by default)",
+          "oneOf": [
+            {
+              "default": "state",
+              "type": "string",
+              "enum": [
+                "state",
+                "channel",
+                "device",
+                "enum",
+                "host",
+                "adapter",
+                "instance",
+                "meta",
+                "config",
+                "script",
+                "user",
+                "group",
+                "chart",
+                "folder"
+              ]
+            },
+            {
+              "type": "array",
+              "maxItems": 1,
+              "items": {
+                "type": "string",
+                "enum": [
+                  "state",
+                  "channel",
+                  "device",
+                  "enum",
+                  "host",
+                  "adapter",
+                  "instance",
+                  "meta",
+                  "config",
+                  "script",
+                  "user",
+                  "group",
+                  "chart",
+                  "folder"
+                ]
+              }
+            }
+          ]
+        },
+        "root": {
+          "description": "Show only this root object and its children",
+          "type": "string"
+        },
+        "customFilter": {
+          "description": "Cannot be used together with `types` settings. Example: `{type: ['channel', 'device']}` - show only channels and devices",
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/definitions/customFilter"
+            }
+          ]
+        },
+        "filterFunc": {
+          "description": "Cannot be used together with `types` settings. It is a function that will be called for every object and must return true or false. Example: `obj.common.type === 'number'`",
+          "type": "string"
+        },
+        "fillOnSelect": {
+          "description": "Fill other config fields when an object ID is selected. Format: 'pathInObject=>attr,pathInObject=>attr(X)'. Example: 'common.name=>name,common.color=>color(X)'. Append '(X)' to overwrite non-empty fields.",
+          "type": "string"
+        },
+        "placeholder": {
+          "description": "Placeholder (for text control)",
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/definitions/multilingual"
+            }
+          ]
+        },
+        "label": true,
+        "type": true,
+        "defaultSendTo": true,
+        "allowSaveWithError": true,
+        "xs": true,
+        "sm": true,
+        "md": true,
+        "lg": true,
+        "xl": true,
+        "newLine": true,
+        "hidden": true,
+        "dependsOnStates": true,
+        "debug": true,
+        "os": true,
+        "notOs": true,
+        "docker": true,
+        "hideOnlyControl": true,
+        "disabled": true,
+        "helpLink": true,
+        "help": true,
+        "style": true,
+        "darkStyle": true,
+        "validator": true,
+        "validatorNoSaveOnError": true,
+        "validatorErrorText": true,
+        "noMultiEdit": true,
+        "tooltip": true,
+        "expertMode": true,
+        "default": true,
+        "defaultFunc": true,
+        "onChange": true,
+        "noTranslation": true,
+        "confirm": true,
+        "filters": {
+          "description": "Predefined search filters",
+          "type": "object"
+        },
+        "doNotSave": true,
+        "button": true,
+        "buttonTooltip": true,
+        "buttonTooltipNoTranslation": true,
+        "data": true,
+        "jsonData": true
+      },
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ]
+    },
+    "multilingual": {
+      "type": "object",
+      "required": [
+        "en"
+      ],
+      "properties": {
+        "en": {
+          "type": "string"
+        }
+      },
+      "patternProperties": {
+        "^(de|ru|pt|nl|fr|it|es|pl|uk|zh-cn)$": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

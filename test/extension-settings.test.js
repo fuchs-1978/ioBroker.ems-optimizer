@@ -92,8 +92,9 @@ test('new physical controls and price-based grid-heating permissions cannot star
 test('output selectors restrict choices to numeric writable states and never preselect a live target', () => {
     for (const id of ['batterySetpointId', 'heatingSetpointId']) {
         assert.equal(fields[id].type, 'objectId');
-        assert.deepEqual(fields[id].customFilter, {type: 'state', common: {type: 'number', write: true}});
-        assert.ok(!Object.hasOwn(fields[id], 'types'), 'objectId customFilter must not be combined with types');
+        assert.equal(typeof fields[id].filterFunc, 'string');
+        assert.ok(!Object.hasOwn(fields[id], 'customFilter'), 'writability is unsupported in Admin customFilter');
+        assert.ok(!Object.hasOwn(fields[id], 'types'), 'objectId filterFunc must not be combined with types');
         assert.equal(fields[id].default, '');
     }
 });

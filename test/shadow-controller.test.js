@@ -363,7 +363,7 @@ async function startModel(h) {
     assert.ok(h.value('Modeled.Wallbox0_W') >= 1380, h.value('Wallbox0.ModelStatus'));
 }
 
-test('historical response at the age boundary does not turn fresh real grid protection stale', async () => {
+test('a sixteen-second historical frame does not turn fresh real grid protection stale', async () => {
     const h = await fixture();
     forceWallboxBudget(h);
     await startModel(h);
@@ -372,7 +372,7 @@ test('historical response at the age boundary does not turn fresh real grid prot
     const ids = [h.mapping.DP_GRID_IMPORT, h.mapping.DP_GRID_EXPORT, h.mapping.DP_WB0_POWER];
     model.sampleBuffer.clear();
     const raw = new Map(model.rawStates);
-    for (const [ts, power] of [[now - 15000, 3.68], [now - 9988, 3.68]]) {
+    for (const [ts, power] of [[now - 25000, 3.68], [now - 16000, 3.68]]) {
         raw.set(ids[0], {val: 230, ts, ack: true, q: 0});
         raw.set(ids[1], {val: 0, ts, ack: true, q: 0});
         raw.set(ids[2], {val: power, ts, ack: true, q: 0});
@@ -384,8 +384,8 @@ test('historical response at the age boundary does not turn fresh real grid prot
     model.rawStates = raw;
     model.prepareResponse();
     assert.equal(model.response.basis, 'bracketed-historical-input');
-    assert.equal(model.response.inputAgeMs, 9988);
-    assert.equal(model.states.get(ids[0]).ts, now - 9988, 'never redate the historic modeled baseline');
+    assert.equal(model.response.inputAgeMs, 16000);
+    assert.equal(model.states.get(ids[0]).ts, now - 16000, 'never redate the historic modeled baseline');
     h.advance(100);
     await model.tick();
     assert.equal(model.decision(0).active, true, model.decision(0).status);
@@ -610,6 +610,19 @@ test('invalid response records coalesce skew magnitudes but preserve model and r
     h.advance(60000); h.shadow.publishRecord(record); await h.flush(); assert.equal(count(), first + 4);
     record.masterEnabled = true;
     h.shadow.publishRecord(record); await h.flush(); assert.equal(count(), first + 5);
+    record.modeled.Wallbox0.responseState = 'vehicle_response';
+    record.modeled.Wallbox0.responseCommandA = 6;
+    record.modeled.Wallbox0.responseSentAt = 100;
+    h.shadow.publishRecord(record); await h.flush(); assert.equal(count(), first + 6);
+    record.modeled.Wallbox0.responseAcknowledgedAt = 115;
+    h.shadow.publishRecord(record); await h.flush(); assert.equal(count(), first + 7);
+    record.modeled.Wallbox0.responseState = 'modeled';
+    record.modeled.Wallbox0.responseConfirmedAt = 130;
+    h.shadow.publishRecord(record); await h.flush(); assert.equal(count(), first + 8);
+    const persisted = JSON.parse(h.value('DecisionRecord')).modeled.Wallbox0;
+    assert.equal(persisted.responseState, 'modeled');
+    assert.equal(persisted.responseAcknowledgedAt, 115);
+    assert.equal(persisted.responseConfirmedAt, 130);
 });
 
 test('response coverage counts elapsed state, marks long gaps unknown and remains session scoped', async () => {

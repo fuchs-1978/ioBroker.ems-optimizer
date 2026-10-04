@@ -3,10 +3,13 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const WallboxOutput = require('../lib/wallbox-output');
 
-function setup({now: readNow = () => Date.now(), responseCurrentA = null} = {}) {
+function setup({now: readNow = () => Date.now(), responseCurrentA = null, responseEvidence = null} = {}) {
     const states = new Map(), writes = [];
     let now = readNow();
-    const put = (id, val, extra = {}) => states.set(id, {val, ack: true, ts: now, ...extra});
+    // A test publication follows the previous command within the logical
+    // millisecond. Explicit old timestamps remain available for stale-input
+    // and pre-command response regressions below.
+    const put = (id, val, extra = {}) => states.set(id, {val, ack: true, ts: readNow() + 1, ...extra});
     const mapping = {DP_WB0_CAR: 'car', DP_WB0_SOC: 'soc', DP_WB0_ALLOW: 'userAllow',
         DP_WB0_POWER: 'power', DP_WB0_L1_A: 'i1', DP_WB0_L2_A: 'i2', DP_WB0_L3_A: 'i3',
         DP_GRID_IMPORT: 'import', DP_GRID_EXPORT: 'export', DP_HA_CRITICAL: 'critical',
@@ -43,7 +46,7 @@ function setup({now: readNow = () => Date.now(), responseCurrentA = null} = {}) 
         i1: 0, i2: 0, i3: 0, h1: 10, h2: 10, h3: 10, import: 0, export: 8000,
         critical: false, par14a: false, lpc: 'unlimitedAutonomous', lpcLimit: 0, connection: true,
         error: 0, allow: 0, feedback: 6, split: 0})) put(id, val);
-    const output = new WallboxOutput(adapter, {now: readNow, responseCurrentA});
+    const output = new WallboxOutput(adapter, {now: readNow, responseCurrentA, responseEvidence});
     const ack = (id, value) => put(id, value, {ts: readNow() + 1});
     const refresh = () => {
         now = readNow();
@@ -389,12 +392,15 @@ test('feedback timeout latches fault and never enables charging', async () => {
     await h.output.tick(); assert.match(h.output.devices[0].fault, /Rueckmeldung/);
     assert.ok(!h.writes.some(w => w.id === 'allow' && w.val === 1));
 });
-test('lower target supersedes a pending current increase without stopping the wallbox', async () => {
+test('soft target change waits for the pending command and a fresh vehicle response before reversing', async () => {
     const h=setup();h.config.wallboxMinimumRunTimeS=600;await h.start();
     h.put('i1',6);h.put('power',1.38);h.output.devices[0].lastAt-=10000;h.writes.length=0;
     await h.output.tick();
     assert.deepEqual(h.writes,[{id:'cmd',val:12}]);
     h.put('ems.0.Control.Targets.Wallbox0_W',0);h.put('export',0);
+    await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'cmd',val:12}]);
+    h.ack('feedback',12);h.put('i1',12);h.put('power',2.76);
     await h.output.tick();
     assert.deepEqual(h.writes,[{id:'cmd',val:12},{id:'cmd',val:6}]);
     assert.ok(!h.writes.some(write=>write.id==='allow'&&write.val===0));
@@ -1132,7 +1138,8 @@ test('wallbox faults identify error codes, source freshness, quality and connect
 test('optional modeled current affects only vehicle-response ramp feedback', async t => {
     for (const value of [null, NaN, Infinity, -1, 6]) await t.test(String(value), async () => {
         let now = 1000000000000;
-        const h = setup({now: () => now, responseCurrentA: value === null ? null : () => value});
+        const h = setup({now: () => now, responseCurrentA: value === null ? null : () => value,
+            responseEvidence: () => ({valid: value === 6, assumed: true, currentA: value})});
         await h.start(); h.writes.length = 0;
         now += 6000; h.refresh();
         // Physical current remains zero; production/default must not wind up.
@@ -1150,6 +1157,204 @@ test('optional modeled current affects only vehicle-response ramp feedback', asy
 });
 
 module.exports={setup};
+
+test('current ACK alone cannot confirm electrical uptake or permit another current increase', async () => {
+    let now = 1000000000000;
+    const h = setup({now: () => now});
+    await h.start();
+    h.writes.length = 0;
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'vehicle_response');
+    now += 15000; h.refresh();
+    // First new poll confirms the command, but the car has not yet reacted.
+    await h.output.tick();
+    assert.deepEqual(h.writes, []);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponsePending').val, true);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.ResponseStatus').val, /Ist 0 A.*Soll 6 A/);
+    now += 15000; h.refresh(); h.put('i1', 6); h.put('power', 1.38);
+    await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'cmd', val: 12}]);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseConfirmedAt').val, now);
+});
+
+test('a fresh command ACK cannot turn a pre-command power/current sample into a vehicle response', async () => {
+    let now = 1000000000000;
+    const h = setup({now: () => now});
+    await h.start(); h.writes.length = 0;
+    const commandAt = h.output.devices[0].response.at;
+    now += 5000; h.refresh();
+    h.put('i1', 6, {ts: commandAt - 1});
+    h.put('power', 1.38, {ts: commandAt - 1});
+    await h.output.tick();
+    assert.deepEqual(h.writes, []);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'vehicle_response');
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.ResponseStatus').val, /keine neue Leistung/);
+});
+
+test('a newer current ACK does not reuse electrical measurements from an earlier poll', async () => {
+    let now = 1000000000000;
+    const h = setup({now: () => now}); await h.start();
+    now += 6000; h.refresh(); h.put('i1', 6); h.put('power', 1.38);
+    await h.output.tick(); assert.equal(h.writes.at(-1).val, 12);
+    now += 10000; h.refresh(); h.put('i1', 12); h.put('power', 2.76);
+    const earlierPollAt = now + 1;
+    await h.output.tick();
+    now += 5000; h.refresh(); h.ack('feedback', 12);
+    h.put('i1', 12, {ts: earlierPollAt}); h.put('power', 2.76, {ts: earlierPollAt});
+    h.writes.length = 0; await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'vehicle_response');
+    assert.deepEqual(h.writes, []);
+    now += 1000; h.refresh(); await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'confirmed');
+    assert.deepEqual(h.writes, []); // The normal ramp cycle still applies.
+});
+
+test('persistent vehicle under-response reaches a bounded diagnosis without winding up or claiming success', async () => {
+    let now = 1000000000000;
+    const h = setup({now: () => now});
+    await h.start(); h.writes.length = 0;
+    now += 45002; h.refresh(); await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'limited');
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponsePending').val, false);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseConfirmedAt').val, 0);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, true);
+    assert.deepEqual(h.writes, []);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.ResponseStatus').val, /Antwortzeit abgelaufen.*keine weitere Erhoehung/);
+});
+
+test('reduced command waits for vehicle response and stops safely if current remains above its confirmed cap', async () => {
+    let now = 1000000000000;
+    const h = setup({now: () => now});
+    await h.start();
+    now += 6000; h.refresh(); h.put('i1', 6); h.put('power', 1.38);
+    await h.output.tick(); h.ack('feedback', 12);
+    now += 15000; h.refresh(); h.put('i1', 12); h.put('power', 2.76);
+    h.put('ems.0.Control.Targets.Wallbox0_W', 1380);
+    await h.output.tick();
+    assert.equal(h.writes.at(-1).val, 6); h.ack('feedback', 6);
+    now += 15000; h.refresh(); h.writes.length = 0;
+    await h.output.tick();
+    assert.deepEqual(h.writes, []);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'vehicle_response');
+    now += 45001; h.refresh(); await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'timeout');
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputFault').val, /12 A.*Vorgabe 6 A/);
+});
+
+for (const [name, change] of [
+    ['go-e Overamp error 5', h => h.put('error', 5)],
+    ['user release removed', h => h.put('userAllow', false)],
+    ['house protection', h => h.put('critical', true)],
+    ['unknown power quality', h => h.put('power', 0, {q: 0x40})]
+]) test(`vehicle settling never masks ${name}`, async () => {
+    const h = setup(); await h.start(); h.writes.length = 0;
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponsePending').val, true);
+    change(h); await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, false);
+    if (name.includes('Overamp')) assert.match(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val, /Code 5/);
+});
+
+test('a new hard current cap supersedes a pending increase while its vehicle response is unknown', async () => {
+    let now = 1000000000000;
+    const h = setup({now: () => now});
+    await h.start(); now += 6000; h.refresh(); h.put('i1', 6); h.put('power', 1.38);
+    await h.output.tick(); assert.equal(h.writes.at(-1).val, 12);
+    h.config.wb0CommissioningMaxA = 7; h.writes.length = 0;
+    await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'cmd', val: 7}]);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, true);
+});
+
+test('modeled electrical proof requires valid explicit assumption provenance and retains real error gates', async () => {
+    for (const evidence of [{valid: true, currentA: 6}, {assumed: true, currentA: 6},
+        {valid: true, assumed: false, currentA: 6}]) {
+        const h = setup({responseCurrentA: () => 6, responseEvidence: () => evidence});
+        await h.start(); h.writes.length = 0; h.output.devices[0].lastAt -= 10000;
+        await h.output.tick(); assert.deepEqual(h.writes, []);
+        assert.notEqual(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'modeled');
+    }
+    const h = setup({responseEvidence: () => ({valid: true, assumed: true, currentA: 6})});
+    await h.start();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'modeled');
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseMeasuredCurrent_A').val, null);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseMeasuredPower_W').val, null);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.ResponseStatus').val, /keine reale Fahrzeugbestaetigung/);
+    h.writes.length = 0; h.put('error', 5); await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+});
+
+test('an invalid assumed response never interprets the real controller load as virtual uptake or over-current', async () => {
+    let now = 1000000000000, valid = true;
+    const h = setup({now: () => now,
+        responseEvidence: () => ({valid, assumed: true, currentA: valid ? 6 : undefined})});
+    await h.start(); valid = false;
+    now += 60000; h.refresh(); h.put('i1', 16); h.put('power', 3.68); h.writes.length = 0;
+    await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'unavailable');
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponsePending').val, true);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputFault').val, '');
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, true);
+    assert.deepEqual(h.writes, []);
+    h.put('error', 5); await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val, /Code 5/);
+});
+
+test('command timeline publishes sent target and ACK separately from electrical confirmation', async () => {
+    let now = 1000000000000;
+    const h = setup({now: () => now}); await h.start();
+    now += 6000; h.refresh(); h.put('i1', 6); h.put('power', 1.38);
+    await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'command_ack');
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponsePreviousCommand_A').val, 6);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseCommand_A').val, 12);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseSentAt').val, now);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseAcknowledgedAt').val, 0);
+    now += 15000; h.refresh(); h.ack('feedback', 12); await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'vehicle_response');
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseAcknowledgedAt').val, now + 1);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseMeasuredCurrent_A').val, 6);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseMeasuredPower_W').val, 1380);
+});
+
+test('lost ACK remains bounded after a pending start has already been cleared', async () => {
+    let now = 1000000000000;
+    const h = setup({now: () => now});
+    await h.output.initialize(); await h.output.tick(); h.ack('allow', 0);
+    await h.output.tick(); h.put('feedback', 6, {ts: now});
+    await h.output.tick(); h.put('allow', 1, {ts: now});
+    await h.output.tick(); assert.equal(h.output.devices[0].pending, null);
+    assert.equal(h.output.devices[0].response.ackAt, 0);
+    const originalTs = now;
+    now += 20000; h.refresh(); h.put('feedback', 6, {ts: originalTs});
+    h.put('allow', 1, {ts: originalTs}); h.writes.length = 0;
+    await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'timeout');
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputFault').val, /Befehlsbestaetigung.*fehlt/);
+});
+
+test('a current poll cannot replace the outstanding start-release acknowledgement', async () => {
+    let now = 1000000000000;
+    const h = setup({now: () => now}); await h.start();
+    const d = h.output.devices[0], at = d.response.at;
+    d.response.ackAt = 0;
+    h.put('allow', 1, {ts: at});
+    now += 15000; h.refresh();
+    h.put('allow', 1, {ts: at}); h.ack('feedback', 6);
+    h.put('i1', 6); h.put('power', 1.38);
+    h.writes.length = 0; await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'command_ack');
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseAcknowledgedAt').val, at + 1,
+        'the earlier recorded ACK is retained as history, not replaced by a different source');
+    assert.deepEqual(h.writes, []);
+    now += 6000; h.refresh(); h.put('allow', 1, {ts: at});
+    await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'timeout');
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputFault').val, /Befehlsbestaetigung/);
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+});
 
 test('enabled price option without a price session preserves PV minimum runtime and stop delay', async () => {
     const h = setup();

@@ -357,6 +357,8 @@ class EmsOptimizer extends utils.Adapter {
             WallboxStopDelay_s: ["wallboxStopDelayS", 120],
             WallboxRestartHandoffSettle_s: ["wallboxRestartHandoffSettleS", 10],
             WallboxMeasurementMaxAge_s: ["wallboxMeasurementMaxAgeS", 30],
+            WallboxResponseSettleTimeout_s: ["wallboxResponseSettleTimeoutS", 45],
+            WallboxResponseCurrentTolerance_A: ["wallboxResponseCurrentToleranceA", 1.5],
             PhaseSwitchTransition_s: ["phaseSwitchTransitionS", 90],
             DynamicEnergyPriceEnabled: ["dynamicEnergyPrice", false],
             DynamicGridFeeEnabled: ["dynamicGridFee", false],
