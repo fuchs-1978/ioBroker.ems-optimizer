@@ -4,6 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {wallboxResponse} = require('../lib/shadow-wallbox-response');
 const ShadowSampleBuffer = require('../lib/shadow-sample-buffer');
+const ShadowWallboxModel = require('../lib/shadow-wallbox-model');
 
 function fixture() {
     const now = 1000000, rawStates = new Map(), mapping = {}, config = {}, devices = [];
@@ -245,4 +246,117 @@ test('the export half of a historical grid pair must also respect its age limit'
     assert.equal(r.response.valid, false);
     assert.equal(r.response.applied, false);
     assert.ok(r.response.alignment.reasons.includes('grid-pair-missing'));
+});
+
+function peerHandoffFixture() {
+    let now = 1000000000000;
+    const rawStates = new Map(), devices = [], mapping = {}, violations = [];
+    const put = (id, val, extra = {}) => rawStates.set(id, {val, ts: now, ack: true, q: 0, ...extra});
+    const config = {globalWriteEnabled: false, multiWallboxAlphaArmed: true,
+        wallboxMinimumRunTimeS: 600, wallboxMeasurementMaxAgeS: 30,
+        wallboxResponseSettleTimeoutS: 45, slowCycleS: 5,
+        dhwHaL1CurrentId: 'h1', dhwHaL2CurrentId: 'h2', dhwHaL3CurrentId: 'h3'};
+    Object.assign(mapping, {DP_GRID_IMPORT: 'import', DP_GRID_EXPORT: 'export', DP_HA_CRITICAL: 'critical'});
+    for (const [id, val] of Object.entries({import: 0, export: 128, critical: false, h1: 10, h2: 10, h3: 10})) put(id, val);
+    for (const key of ['System.RealOutputsEnabled', 'System.DataValid', 'Control.Enabled', 'Control.Valid'])
+        put(`ems.0.${key}`, true);
+    put('ems.0.Control.SelectedWallbox', 2); put('ems.0.Control.TargetGridPower_W', -100);
+    put('ems.0.System.LastUpdate', now); put('ems.0.Control.LastUpdate', now);
+    for (const wb of [0, 1, 2]) {
+        const ids = {command: `cmd${wb}`, feedback: `feedback${wb}`, allow: `allow${wb}`,
+            connection: `connection${wb}`, error: `error${wb}`};
+        devices.push({wb, ids, valid: true});
+        Object.assign(config, {[`wb${wb}Present`]: true, [`wb${wb}ControlEnabled`]: true,
+            [`wb${wb}ProductionArmed`]: true, [`wb${wb}ProductionPhases`]: 1,
+            [`wb${wb}SinglePhaseGridPhase`]: wb + 1, [`wb${wb}CommissioningMaxA`]: 32,
+            [`wb${wb}MinCurrent1pA`]: 6, [`wb${wb}MaxCurrent1pA`]: 32, [`wb${wb}MaxPowerW`]: 7360});
+        for (const [suffix, id] of Object.entries({CAR: `car${wb}`, SOC: `soc${wb}`,
+            ALLOW: `userAllow${wb}`, POWER: `power${wb}`, L1_A: `i${wb}1`, L2_A: `i${wb}2`, L3_A: `i${wb}3`}))
+            mapping[`DP_WB${wb}_${suffix}`] = id;
+        put(`ems.0.Devices.Wallbox${wb}.Present`, true);
+        put(`ems.0.Devices.Wallbox${wb}.ControlEnabled`, true);
+        put(`ems.0.Vehicles.Wallbox${wb}.SoCValid`, true);
+        put(`ems.0.Vehicles.Wallbox${wb}.Release`, wb === 2);
+        put(`ems.0.Vehicles.Wallbox${wb}.TargetSoC_pct`, wb === 0 ? 80 : 95);
+        put(`ems.0.Vehicles.Wallbox${wb}.MinimumSoC_pct`, 20);
+        put(`ems.0.Control.Targets.Wallbox${wb}_W`, wb === 2 ? 3578 : 0);
+        put(`ems.0.Control.Targets.Wallbox${wb}_Phases`, 1);
+        for (const [id, val] of Object.entries({[`car${wb}`]: wb === 2 ? 2 : 1,
+            [`soc${wb}`]: wb === 0 ? 80 : 78, [`userAllow${wb}`]: true,
+            [`power${wb}`]: wb === 2 ? 3.97 : 0, [`i${wb}1`]: wb === 2 ? 17.2 : 0,
+            [`i${wb}2`]: 0, [`i${wb}3`]: 0, [`cmd${wb}`]: wb === 2 ? 15 : 6,
+            [`feedback${wb}`]: wb === 2 ? 15 : 6, [`allow${wb}`]: wb === 2 ? 1 : 0,
+            [`connection${wb}`]: true, [`error${wb}`]: 0})) put(id, val);
+    }
+    const model = new ShadowWallboxModel({namespace: 'ems.0', config, devices, mapping,
+        states: structuredClone(rawStates), context: {}, now: () => now,
+        violation: reason => violations.push(reason)});
+    const eqe = model.output.devices.find(d => d.wb === 2), activeSince = now - 577000;
+    Object.assign(eqe, {owned: true, activeSince, lastA: 15, lastAt: now, confirmedPhases: 1});
+    for (const [key, value] of Object.entries({OutputOwned: true, OutputActive: true,
+        OutputCommand_A: 15, OutputReservedPower_W: 3450, OutputPhases: 1})) model.output.publish(2, key, value);
+    model.feedback.set('allow2', {val: 1, ack: true, ts: now, q: 0});
+    const poll = milliseconds => {
+        now += milliseconds;
+        for (const [id, state] of rawStates) rawStates.set(id, {...state, ts: now});
+        put('ems.0.System.LastUpdate', now); put('ems.0.Control.LastUpdate', now);
+    };
+    const tick = async () => {
+        model.prepare(structuredClone(rawStates), {});
+        model.prepareResponse();
+        await model.tick();
+    };
+    return {rawStates, model, put, poll, tick, violations, activeSince};
+}
+
+test('instant private OFF acknowledgement of an unplugged Mii peer preserves the selected EQE and its minimum run', async () => {
+    const h = peerHandoffFixture();
+    await h.tick();
+    assert.equal(h.model.decision(2).active, true);
+    assert.equal(h.model.decision(2).minimumRunRemainingS, 23);
+    h.poll(15000); h.put('allow0', 1);
+    const original = structuredClone(h.rawStates);
+    await h.tick();
+    assert.equal(h.model.response.valid, true);
+    assert.equal(h.model.feedback.get('allow0').val, 0, 'the isolated model closes the foreign permission');
+    assert.equal(h.model.output.devices[0].owned, false, 'its immediate private OFF/zero proof completes the stop');
+    assert.equal(h.model.output.devices[0].stopRequest, null);
+    const eqe = h.model.decision(2);
+    assert.equal(eqe.active, true);
+    assert.equal(eqe.owned, true);
+    assert.equal(eqe.powerW, 3450);
+    assert.equal(eqe.stage, 'running');
+    assert.equal(eqe.minimumRunRemainingS, 8, 'the peer pulse neither clears nor restarts minimum runtime');
+    assert.equal(h.model.output.devices[2].activeSince, h.activeSince);
+    assert.equal(h.model.feedback.get('allow2').val, 1, 'no EQE stop command is modeled');
+    assert.equal(h.rawStates.get('allow0').val, 1, 'real permission is untouched');
+    assert.deepEqual(h.rawStates, original, 'no original source or actuator state is changed');
+    assert.deepEqual(h.violations, []);
+});
+
+test('an invalid assumed response cannot infer electrical stop proof from an idle real peer', async () => {
+    const h = peerHandoffFixture(); await h.tick();
+    h.poll(15000); h.put('allow0', 1); h.put('power1', 0, {q: 64});
+    const original = structuredClone(h.rawStates);
+    await h.tick();
+    assert.equal(h.model.response.valid, false);
+    assert.equal(h.model.feedback.get('allow0').val, 0, 'the private OFF ACK alone still exists');
+    assert.equal(h.rawStates.get('power0').val, 0);
+    assert.equal(h.model.output.devices[0].owned, true, 'unknown modeled response is not physical zero-load proof');
+    assert.notEqual(h.model.output.devices[0].stopRequest, null);
+    assert.equal(h.model.decision(2).active, false, 'the existing interlock fails closed while peer stop remains unknown');
+    assert.deepEqual(h.rawStates, original);
+    assert.deepEqual(h.violations, []);
+    h.poll(60000);
+    await h.tick();
+    assert.equal(h.model.response.valid, false);
+    assert.equal(h.model.output.devices[0].owned, true);
+    assert.notEqual(h.model.output.devices[0].stopRequest, null);
+    assert.equal(h.model.output.devices[0].fault, '', 'a prolonged unavailable model is not a physical OFF failure');
+    assert.equal(h.model.decision(2).active, false);
+    h.poll(15000); h.put('power1', 0, {q: 0});
+    await h.tick();
+    assert.equal(h.model.response.valid, true);
+    assert.equal(h.model.output.devices[0].owned, false, 'a later valid assumed zero response can complete the private stop');
+    assert.equal(h.model.output.devices[0].fault, '');
 });

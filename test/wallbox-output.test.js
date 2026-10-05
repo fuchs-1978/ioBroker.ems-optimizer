@@ -48,6 +48,11 @@ function setup({now: readNow = () => Date.now(), responseCurrentA = null, respon
         error: 0, allow: 0, feedback: 6, split: 0})) put(id, val);
     const output = new WallboxOutput(adapter, {now: readNow, responseCurrentA, responseEvidence});
     const ack = (id, value) => put(id, value, {ts: readNow() + 1});
+    const electricalOff = (wb = 0) => {
+        const ids = wb === 0 ? ['power', 'i1', 'i2', 'i3']
+            : [`power${wb}`, `i${wb}1`, `i${wb}2`, `i${wb}3`];
+        for (const id of ids) put(id, 0, {ts: readNow() + 2});
+    };
     const refresh = () => {
         now = readNow();
         for (const [id, s] of states) if (s.ack) put(id, s.val);
@@ -85,7 +90,7 @@ function setup({now: readNow = () => Date.now(), responseCurrentA = null, respon
             [`power${wb}`]:0,[`i${wb}1`]:0,[`i${wb}2`]:0,[`i${wb}3`]:0,
             [`connection${wb}`]:true,[`error${wb}`]:0,[`allow${wb}`]:0,[`feedback${wb}`]:6})) put(id,val);
     };
-    return {adapter, config, mapping, states, writes, put, ack, refresh, start, output, enableWallbox};
+    return {adapter, config, mapping, states, writes, put, ack, electricalOff, refresh, start, output, enableWallbox};
 }
 
 test('default/unarmed wallbox never writes, even with global release', async () => {
@@ -325,7 +330,7 @@ test('selected wallbox handoff overrides phase waiting and retains the OFF inter
     await h.output.tick();assert.deepEqual(h.writes,[{id:'allow',val:0}]);
     assert.equal(h.output.devices[0].owned,true);
     assert.equal(h.output.devices[1].owned,false);
-    h.ack('allow',0);await h.output.tick();
+    h.ack('allow',0);h.electricalOff();await h.output.tick();
     assert.deepEqual(h.writes,[{id:'allow',val:0},{id:'allow1',val:0}]);
 });
 test('script phase mode uses the real confirmation independently of EMS phase proposals', async () => {
@@ -667,7 +672,7 @@ test('alpha handover waits for confirmed stop before enabling the next wallbox',
     h.put('ems.0.Control.Targets.Wallbox1_W',7000);
     await h.output.tick();
     assert.deepEqual(h.writes,[{id:'allow',val:0}]);
-    h.ack('allow',0);await h.output.tick();
+    h.ack('allow',0);h.electricalOff();await h.output.tick();
     assert.deepEqual(h.writes,[{id:'allow',val:0},{id:'allow1',val:0}]);
     h.ack('allow1',0);await h.output.tick();h.ack('feedback1',6);await h.output.tick();
     h.ack('allow1',1);await h.output.tick();
@@ -704,7 +709,7 @@ for (const [name, change] of [
     assert.deepEqual(h.writes,[{id:'allow',val:0}]);
     assert.equal(h.output.devices[0].recovering,false);
     assert.equal(h.states.get('ems.0.Control.RestartHandoffActive').val,false);
-    h.ack('allow',0); await h.output.tick(); await h.output.tick();
+    h.ack('allow',0);h.electricalOff(); await h.output.tick(); await h.output.tick();
     assert.equal(h.output.devices[0].owned,false);
     assert.deepEqual(h.writes,[{id:'allow',val:0}]);
 });
@@ -786,7 +791,7 @@ test('stop awaits a device acknowledgement without writing OFF every controller 
     assert.deepEqual(h.writes,[{id:'allow',val:0}]);
     assert.equal(h.output.devices[0].owned,true);
     assert.equal(h.states.get('ems.0.Devices.Wallbox0.LastStopAt').val,stoppedAt);
-    h.ack('allow',0);await h.output.tick();
+    h.ack('allow',0);h.electricalOff();await h.output.tick();
     assert.equal(h.output.devices[0].owned,false);
     assert.equal(h.output.devices[0].stopRequest,null);
     assert.deepEqual(h.writes,[{id:'allow',val:0}]);
@@ -799,8 +804,78 @@ test('failed stop confirmation retries after timeout and never releases the inte
     assert.deepEqual(h.writes,[{id:'allow',val:0},{id:'allow',val:0}]);
     assert.equal(h.output.devices[0].owned,true);
     assert.match(h.output.devices[0].fault,/AUS-Rueckmeldung/);
-    h.ack('allow',0);await h.output.tick();
+    h.ack('allow',0);h.electricalOff();await h.output.tick();
     assert.equal(h.output.devices[0].owned,false);
+});
+
+test('OFF acknowledgement retains residual load reservation until fresh electrical zero', async () => {
+    let now = 1000000;
+    const h = setup({now: () => now}); await h.start(); h.writes.length = 0;
+    h.put('power', 3.68); h.put('i1', 16);
+    h.put('ems.0.Vehicles.Wallbox0.Release', false); await h.output.tick();
+    now += 1000; h.refresh(); h.ack('allow', 0); await h.output.tick();
+    assert.equal(h.output.devices[0].owned, true);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.StopPowerPending').val, true);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val, 3680);
+    for (let i = 0; i < 3; i++) { now += 1000; h.refresh(); await h.output.tick(); }
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+    h.electricalOff(); await h.output.tick();
+    assert.equal(h.output.devices[0].owned, false);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val, 0);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.StopPowerPending').val, false);
+});
+
+test('an OFF sample older than the stop command cannot complete its acknowledgement', async () => {
+    let now = 1000000;
+    const h = setup({now: () => now}); await h.start();
+    h.put('ems.0.Vehicles.Wallbox0.Release', false); await h.output.tick();
+    h.put('allow', 0, {ts: now - 1}); h.electricalOff(); await h.output.tick();
+    assert.equal(h.output.devices[0].owned, true);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.StopConfirmedAt').val, 0);
+    now += 1000; h.refresh(); h.ack('allow', 0); h.electricalOff(); await h.output.tick();
+    assert.equal(h.output.devices[0].owned, false);
+});
+
+test('external OFF on a previously active charger still requires post-OFF electrical samples', async () => {
+    let now = 1000000;
+    const h = setup({now: () => now}); await h.start(); h.writes.length = 0;
+    now += 1000; h.ack('allow', 0); h.put('ems.0.Vehicles.Wallbox0.Release', false);
+    await h.output.tick();
+    assert.deepEqual(h.writes, []);
+    assert.equal(h.output.devices[0].owned, true);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.StopPowerPending').val, true);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val, 1380);
+    h.electricalOff(); await h.output.tick();
+    assert.equal(h.output.devices[0].owned, false);
+});
+
+for (const [name, change] of [
+    ['positive power', h => h.put('power1', 1.38)],
+    ['positive phase current', h => h.put('i11', 6)],
+    ['missing power', h => h.states.delete('power1')],
+    ['null phase current', h => h.put('i12', null)],
+    ['stale power', h => h.put('power1', 0, {ts: Date.now() - 31000})],
+    ['bad current quality', h => h.put('i13', 0, {q: 0x40})]
+]) test(`peer OFF alone cannot start a new charger: ${name}`, async () => {
+    const h = setup(); h.enableWallbox(1); h.config.multiWallboxAlphaArmed = true;
+    change(h); await h.output.initialize(); await h.output.tick();
+    assert.deepEqual(h.writes, []);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val, /elektrische AUS-Bestaetigung/);
+    h.electricalOff(1); await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+});
+
+test('peer interlock grants only a bounded same-selected-vehicle resume token', async () => {
+    let now = 1000000;
+    const h = setup({now: () => now}); h.enableWallbox(1); h.config.multiWallboxAlphaArmed = true;
+    await h.start(); h.put('allow1', 1); await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.SequenceResumePending').val, true);
+    const until = h.states.get('ems.0.Devices.Wallbox0.SequenceResumeUntil').val;
+    assert.equal(until, now + 65000);
+    now += 1000; h.refresh(); await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.SequenceResumeUntil').val, until);
+    h.put('ems.0.Control.SelectedWallbox', 1); await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.SequenceResumePending').val, false);
 });
 
 test('stop timer is visible, reset on recovered budget, and cleared on hard stop', async () => {
@@ -1099,7 +1174,7 @@ test('measurement fault recovery still requires a confirmed stop and full start 
     h.put('power', -0.01); await h.output.tick();
     assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
     assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, false);
-    h.ack('allow', 0); await h.output.tick();
+    h.ack('allow', 0);h.electricalOff(); await h.output.tick();
     assert.equal(h.output.devices[0].owned, false);
     await h.output.tick(); h.ack('allow', 0);
     await h.output.tick(); h.ack('feedback', 6);

@@ -677,6 +677,146 @@ test('elapsed productive start countdown stays latched while EHZ handoff is stil
     h.run('updateSlowTargets(500,[{valueW:0},{valueW:0},{valueW:0}],{valueW:0})');
     assert.equal(h.run('wallboxStartCandidateSince[2]'),0,'real shortage must reset the ready latch');
 });
+
+function sequenceResumeFixture() {
+    const h=productionEngine({dhwControlEnabled:false});
+    const startedAt=Date.now();
+    h.ctx.resumeNow=startedAt;
+    const state=(suffix,value)=>h.states.set(suffix,{val:value,ts:h.ctx.resumeNow,ack:true});
+    const advance=milliseconds=>{
+        h.ctx.resumeNow+=milliseconds;
+        state('DP_WB2_CAR',2);state('DP_WB2_SOC',50);
+    };
+    h.put('ems.0.Control.Enabled',true);
+    h.put('ems.0.System.DataValid',true);h.put('ems.0.Plan.Valid',true);
+    h.put('ems.0.Config.WallboxStartDelay_s',120);
+    h.put('ems.0.Config.WallboxStartReserve_W',300);
+    state('ems.0.Devices.Wallbox2.OutputOwned',true);
+    state('ems.0.Devices.Wallbox2.OutputActive',true);
+    state('ems.0.Devices.Wallbox2.OutputCommand_A',6);
+    state('ems.0.Devices.Wallbox2.SequenceResumePending',false);
+    state('ems.0.Devices.Wallbox2.SequenceResumeUntil',0);
+    h.run('resumeVehicle=vehicleState(2)');
+    const cycle=(watts=2000,cap=7360,price=false,phases=1,valid=true,selected=true)=>h.run(
+        `stabilizedWallboxPower(2,${watts},resumeVehicle,0,${phases},resumeNow,${cap},${price},`+
+        `{selected:${selected},valid:${valid}})`);
+    const stop=()=>{
+        state('ems.0.Devices.Wallbox2.OutputActive',false);
+        state('ems.0.Devices.Wallbox2.SequenceResumePending',true);
+        state('ems.0.Devices.Wallbox2.SequenceResumeUntil',h.ctx.resumeNow+65000);
+    };
+    const diagnostic=()=>h.run('wallboxStartDiagnostics[2]');
+    return {...h,state,advance,cycle,stop,diagnostic};
+}
+
+test('same selected owned charge resumes without another start delay after a bounded peer interlock',()=>{
+    const h=sequenceResumeFixture();
+    assert.equal(h.cycle(),2000,'the engine must first observe the active owned output');
+    h.advance(5000);h.stop();
+    assert.equal(h.cycle(1400),1400,'prepared continuation needs the real minimum, not a new start reserve');
+    assert.equal(h.diagnostic().reason,'prepared-sequence-resume');
+    assert.equal(h.diagnostic().sequenceResume.eligible,true);
+    assert.equal(h.run('wallboxStartCandidateSince[2]'),0);
+    h.advance(5000);
+    assert.equal(h.cycle(1600),1600);
+    assert.equal(h.diagnostic().sequenceResume.remainingS,60);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox2.OutputActive').val,false,
+        'a prepared target does not claim a physical start or acknowledge OFF');
+});
+
+test('a resume token without prior owned active evidence never skips initial qualification',()=>{
+    for(const cause of ['unobserved','not-owned','virtual-only']) {
+        const h=sequenceResumeFixture();
+        if(cause==='not-owned')h.state('ems.0.Devices.Wallbox2.OutputOwned',false);
+        if(cause==='virtual-only')h.state('ems.0.Devices.Wallbox2.OutputActive',false);
+        if(cause!=='unobserved')h.cycle();
+        h.advance(5000);h.stop();
+        assert.equal(h.cycle(),0,cause);
+        assert.equal(h.diagnostic().sequenceResume.eligible,false,cause);
+        assert.equal(h.diagnostic().reason,'start-delay',cause);
+    }
+});
+
+test('budget or hard cap loss revokes resume until a new observed active edge',()=>{
+    for(const capLoss of [false,true]) {
+        const h=sequenceResumeFixture();h.cycle();h.advance(5000);h.stop();
+        assert.ok(h.cycle()>0);
+        h.advance(5000);
+        assert.equal(capLoss?h.cycle(2000,1000):h.cycle(1000),0);
+        assert.equal(h.diagnostic().sequenceResume.qualified,false);
+        h.advance(5000);
+        assert.equal(h.cycle(),0,'a still-true token cannot replenish revoked readiness');
+        assert.equal(h.diagnostic().reason,'start-delay');
+        h.state('ems.0.Devices.Wallbox2.SequenceResumePending',false);
+        h.state('ems.0.Devices.Wallbox2.OutputActive',true);
+        h.state('ems.0.Devices.Wallbox2.OutputOwned',true);
+        assert.ok(h.cycle()>0);
+        h.advance(5000);h.stop();
+        assert.ok(h.cycle()>0,'a newly observed active sequence can qualify a later continuation');
+    }
+});
+
+test('ineligible vehicle, invalid data, phase or price changes cannot retain resume qualification',()=>{
+    for(const cause of ['selection','release','disconnect','soc','target','car-quality',
+        'output-quality','fault','data','phase','price','price-session']) {
+        const h=sequenceResumeFixture();h.cycle(2000,7360,cause==='price');
+        h.advance(5000);h.stop();
+        if(cause==='release')h.ctx.resumeVehicle.release=false;
+        if(cause==='disconnect')h.ctx.resumeVehicle.connected=false;
+        if(cause==='soc')h.ctx.resumeVehicle.socValid=false;
+        if(cause==='target')h.state('DP_WB2_SOC',80);
+        if(cause==='car-quality')h.states.get('DP_WB2_CAR').q=64;
+        if(cause==='output-quality')h.states.get('ems.0.Devices.Wallbox2.OutputActive').ack=false;
+        if(cause==='fault')h.state('ems.0.Devices.Wallbox2.OutputFault','Kommunikationsfehler');
+        if(cause==='price-session')h.ctx.resumeVehicle.priceSessionId='new-plug-session';
+        if(cause==='phase'){
+            h.ctx.resumeVehicle.phaseSwitchEnabled=true;h.ctx.resumeVehicle.maximumPhases=3;
+        }
+        const result=h.cycle(cause==='phase'?5000:2000,7360,false,cause==='phase'?3:1,
+            cause!=='data',cause!=='selection');
+        assert.equal(result,0,cause);
+        assert.equal(h.diagnostic().sequenceResume.eligible,false,cause);
+        assert.equal(h.diagnostic().sequenceResume.qualified,false,cause);
+    }
+});
+
+test('resume expires on a missed observation, fixed deadline or restart and cannot be extended',()=>{
+    for(const cause of ['gap','expiry','extension','reset']) {
+        const h=sequenceResumeFixture();h.cycle();h.advance(5000);h.stop();
+        assert.ok(h.cycle()>0);
+        if(cause==='gap')h.advance(10000);
+        if(cause==='expiry') {
+            for(let tick=0;tick<12;tick++){h.advance(5000);assert.ok(h.cycle()>0);}
+            h.advance(5000);
+        }
+        if(cause==='extension') {
+            h.advance(5000);
+            h.state('ems.0.Devices.Wallbox2.SequenceResumeUntil',h.ctx.resumeNow+65000);
+        }
+        if(cause==='reset')h.run('resetSlowTargets()');
+        assert.equal(h.cycle(),0,cause);
+        assert.equal(h.diagnostic().sequenceResume.eligible,false,cause);
+        assert.equal(h.diagnostic().sequenceResume.qualified,false,cause);
+    }
+});
+
+test('allocator does not mistake a stopped peer-interlocked virtual target for running output',()=>{
+    for(const token of ['unqualified','expired','cleared']) {
+        const h=productionEngine({dhwControlEnabled:false});
+        h.put('ems.0.Config.WallboxStartDelay_s',120);
+        h.put('ems.0.Devices.Wallbox2.OutputOwned',true);
+        h.put('ems.0.Devices.Wallbox2.OutputActive',false);
+        h.put('ems.0.Devices.Wallbox2.SequenceResumePending',token!=='cleared');
+        h.put('ems.0.Devices.Wallbox2.SequenceResumeUntil',token==='expired'?Date.now()-1:Date.now()+65000);
+        h.run('slowTargets.wallboxA[2]=6');
+        h.run('updateSlowTargets(4000,[{valueW:0},{valueW:0},{valueW:4000}],{valueW:0})');
+        assert.equal(h.run('slowTargets.wallboxA[2]'),0,token);
+        const diag=JSON.parse(h.states.get('ems.0.Control.Wallbox2.AllocationDiagnostics_JSON').val);
+        assert.equal(diag.start.sequenceResume.eligible,false,token);
+        assert.equal(diag.start.reason,'start-delay',token);
+    }
+});
+
 test('feedback compensation cannot exceed binding nominal LPC wattage',()=>{
     const h=productionEngine({dhwControlEnabled:false});
     h.put('ems.0.Devices.Wallbox2.OutputOwned',true);
