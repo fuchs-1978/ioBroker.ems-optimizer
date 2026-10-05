@@ -20,7 +20,7 @@ Nur eine zuvor aktive EMS-eigene Ladung derselben ausgewählten Wallbox kann nac
 
 Budget, Schutzgrenzen, Fahrzeug-/SoC-/Benutzerfreigabe, Auswahl, Phasen und Preisberechtigung müssen weiterhin passen. Eine Daten- oder Beobachtungslücke, unzureichendes Budget, Wechsel der Auswahl oder Berechtigungsbasis sowie das Fristende verwerfen die Bereitschaft. Ein gespeicherter Hinweis nach Neustart genügt nicht. Erst eine neue aktive Ladung kann erneut qualifizieren.
 
-Eine zulässige Wiederaufnahme vermeidet lediglich einen zweiten vollen allgemeinen Starttimer. AUS-Bestätigung, elektrische Ruhe, Phasenbestätigung, Stromvorgabe, Freigabe-ACK und Fahrzeugreaktion werden weiterhin geprüft. Neue Fahrzeugwechsel und normale Erststarts behalten die gewöhnliche Startverzögerung. Zwei Fahrzeuge werden nicht gleichzeitig freigegeben.
+Eine zulässige Wiederaufnahme vermeidet lediglich einen zweiten vollen allgemeinen Starttimer. AUS-Bestätigung, elektrische Ruhe, Phasenbestätigung, Stromvorgabe, Freigabe-ACK und Fahrzeugreaktion werden weiterhin geprüft. In alpha.34 behalten neue Fahrzeugwechsel und normale Erststarts die gewöhnliche Startverzögerung. Ab alpha.36 ergänzt eine [qualifizierte Fahrzeugübergabe](wallbox-handoff-alpha36.md) eine eigene begrenzte Ausnahme; normale Erststarts behalten die Verzögerung. Zwei Fahrzeuge werden nicht gleichzeitig freigegeben.
 
 ## Diagnose und Abnahme
 

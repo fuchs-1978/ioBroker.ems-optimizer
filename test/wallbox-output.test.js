@@ -860,10 +860,59 @@ for (const [name, change] of [
     const h = setup(); h.enableWallbox(1); h.config.multiWallboxAlphaArmed = true;
     change(h); await h.output.initialize(); await h.output.tick();
     assert.deepEqual(h.writes, []);
-    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val, /elektrische AUS-Bestaetigung/);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,
+        'Sequenzbetrieb: elektrische AUS-Bestaetigung Wallbox 1 fehlt');
     h.electricalOff(1); await h.output.tick();
     assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
 });
+
+test('unknown assumed peer response blocks startup despite real zero until valid modeled zero', async () => {
+    let peerEvidence = {valid: false, assumed: true, currentA: 0};
+    const h = setup({responseEvidence: wb => wb === 0 ? peerEvidence
+        : {valid: true, assumed: true, currentA: 6}});
+    h.enableWallbox(1);
+    h.config.multiWallboxAlphaArmed = true;
+    h.put('ems.0.Control.SelectedWallbox', 1);
+    h.put('ems.0.Control.Targets.Wallbox1_W', 4140);
+    await h.output.initialize();
+    await h.output.tick();
+    await h.output.tick();
+    assert.deepEqual(h.writes, [], 'unknown modeled OFF must not invoke an actuator');
+    assert.equal(h.states.get('ems.0.Devices.Wallbox1.OutputStatus').val,
+        'Sequenzbetrieb: elektrische Schattenantwort Wallbox 0 unbekannt; Modell-AUS-Bestaetigung fehlt');
+    assert.equal(h.states.get('ems.0.Devices.Wallbox1.OutputActive').val, false);
+    assert.equal(h.states.get('power').val, 0, 'the real idle Mii is not treated as virtual OFF proof');
+
+    peerEvidence = {valid: true, assumed: true, currentA: 0};
+    await h.output.tick(); h.ack('allow1', 0);
+    await h.output.tick(); h.ack('feedback1', 6);
+    await h.output.tick(); h.ack('allow1', 1);
+    await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'allow1', val: 0}, {id: 'cmd1', val: 6}, {id: 'allow1', val: 1}]);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox1.OutputActive').val, true);
+    assert.ok(!h.writes.some(write => ['allow', 'cmd'].includes(write.id)), 'idle peer remains untouched');
+});
+
+test('valid assumed peer draw is identified as missing modeled OFF proof', async () => {
+    const h = setup({responseEvidence: wb => ({valid: true, assumed: true, currentA: wb === 1 ? 6 : 0})});
+    h.enableWallbox(1);
+    h.config.multiWallboxAlphaArmed = true;
+    await h.output.initialize(); await h.output.tick();
+    assert.deepEqual(h.writes, []);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,
+        'Sequenzbetrieb: elektrische Modell-AUS-Bestaetigung Wallbox 1 fehlt');
+});
+
+for (const currentA of [undefined, null, NaN, Infinity, -1])
+    test(`unusable assumed peer current stays unknown and blocks startup: ${String(currentA)}`, async () => {
+        const h = setup({responseEvidence: wb => ({valid: true, assumed: true, currentA: wb === 1 ? currentA : 0})});
+        h.enableWallbox(1);
+        h.config.multiWallboxAlphaArmed = true;
+        await h.output.initialize(); await h.output.tick();
+        assert.deepEqual(h.writes, []);
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,
+            'Sequenzbetrieb: elektrische Schattenantwort Wallbox 1 unbekannt; Modell-AUS-Bestaetigung fehlt');
+    });
 
 test('peer interlock grants only a bounded same-selected-vehicle resume token', async () => {
     let now = 1000000;
