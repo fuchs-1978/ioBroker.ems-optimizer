@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.35**
+Aktuelle Version: **0.17.0-alpha.36**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -41,11 +41,19 @@ Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
 
+## Neu in 0.17.0-alpha.36 – Qualifizierte Fahrzeugübergabe ohne zweiten Starttimer
+
+Wechselt eine in dieser Adapter-Sitzung bestätigte EMS-Ladung durch eine gültige manuelle Priorität oder das erreichte Ziel-SoC auf das nächste geeignete Fahrzeug, kann dessen erneuter allgemeiner Einschalt-Countdown entfallen. Bei der Vorbereitung muss das Budget Mindestleistung plus Startreserve decken; anschließend müssen Mindestleistung, gültige Quellen und unveränderte Phasen-/Preisberechtigung durchgehend bestehen. Die Vorbereitung läuft nach höchstens fünf Minuten ab und verfällt bei Daten-, Budget- oder Auswahlverlust. Ein Neustart oder eine fremde Bestandsladung liefert keine solche Startqualifikation. Normale Erststarts behalten die eingestellte Verzögerung.
+
+Die neue Wallbox startet weiterhin erst nach bestätigtem AUS und frischer elektrischer Ruhe der alten, mit bestätigter Phasenstellung und der regulären 6-A-/Freigabe-/Fahrzeugantwort-Sequenz. Die Totzeit der Rückmeldungen und die Reaktion des Autos wird dadurch nicht übersprungen. Das Schattenmodell verwendet für die Qualifikation ausschließlich seine ausdrücklich gültige private Antwort des aktuellen Zyklus. Eine unbekannte Modellantwort wird in der Ausgangsdiagnose als solche benannt und nicht als reale Restlast ausgegeben.
+
+`allocation.WallboxN.start.vehicleHandoff` im DecisionRecord erklärt Vorbereitung, Ablehnung, Ziel und feste Frist. Softwaretests und modellierte Antworten ersetzen keine Liveabnahme oder neue SQL-Betriebsbelege für den Score. Details: [Fahrzeugübergabe in alpha.36](docs/wallbox-handoff-alpha36.md).
+
 ## Neu in 0.17.0-alpha.35 – Manuelle Priorität wechselt das Fahrzeug
 
 Eine gültige manuelle Auswahl `prio = 0 / 1 / 2` wählt das freigegebene Fahrzeug Mii / EQV / EQE auch dann aus, wenn eine andere Wallbox bereits vom EMS geladen wird. Sie steht vor der automatischen Mindest-SoC-/Abfahrtsreihenfolge und der Mindestlaufzeit der bisherigen Ladung. Ohne gültige manuelle Auswahl bleibt die automatische Auswahl mit ihrem Schutz gegen unnötige Wechsel erhalten.
 
-Die Übergabe bleibt sequenziell: Die alte Wallbox erhält AUS; die neue startet erst nach frischer AUS-Rückmeldung und bestätigter elektrischer Abschaltung. Die normale Einschaltverzögerung und alle Budget-, Quellen-, Phasen-, Preis- und Sicherheitsprüfungen gelten weiterhin. Eine abgesteckte, nicht freigegebene oder fertige bevorzugte Wallbox verdrängt keinen gültigen Ladeauftrag. Leere, fehlerhafte oder ungültige Prioritätswerte wählen nicht versehentlich WB0.
+Die Übergabe bleibt sequenziell: Die alte Wallbox erhält AUS; die neue startet erst nach frischer AUS-Rückmeldung und bestätigter elektrischer Abschaltung. Alle Budget-, Quellen-, Phasen-, Preis- und Sicherheitsprüfungen gelten weiterhin. Ab alpha.36 entfällt die erneute allgemeine Einschaltverzögerung ausschließlich bei einer gültig qualifizierten Fahrzeugübergabe. Eine abgesteckte, nicht freigegebene oder fertige bevorzugte Wallbox verdrängt keinen gültigen Ladeauftrag. Leere, fehlerhafte oder ungültige Prioritätswerte wählen nicht versehentlich WB0.
 
 `Control.WallboxSelectionReason` und `selectionReason` im Schatten-DecisionRecord erklären die Auswahl und einen laufenden Wechsel. Eine bewusst angeforderte Übergabe ist damit von einer internen Budgetpause unterscheidbar. Details: [Manuelle Priorität und Übergabe](docs/wallbox-priority-alpha35.md).
 
@@ -53,7 +61,7 @@ Die Übergabe bleibt sequenziell: Die alte Wallbox erhält AUS; die neue startet
 
 - Eine bereits bestätigte virtuelle Abschaltung wird noch im selben Zyklus abgeschlossen. Eine kurze Freigabe der abgesteckten Mii löst dadurch bei gültiger Nullantwort keine unnötige EQE-Unterbrechung mehr aus.
 - Im realen Ausgang sind AUS-Bestätigung und elektrische Abschaltung getrennt: Erst frische Leistung bis 20 W und Phasenströme bis 0,5 A bestätigen das Ende der Last. Bis dahin bleiben Verriegelung und Leistungsreserve bestehen; ein bestätigter AUS-Befehl wird nicht ständig wiederholt.
-- Nach einer kurzen Peer-Sequenzsperre kann dieselbe zuvor aktive, durchgehend budgetbereite Ladung ohne erneute vollständige Einschaltverzögerung fortgesetzt werden. Die Bereitschaft ist zeitlich begrenzt und verfällt bei Daten-/Budgetlücken, anderer Auswahl, Phasen- oder Preisänderung und Fehlern. Normale Erststarts und neue Fahrzeugwechsel behalten ihre Startbedingungen.
+- Nach einer kurzen Peer-Sequenzsperre kann dieselbe zuvor aktive, durchgehend budgetbereite Ladung ohne erneute vollständige Einschaltverzögerung fortgesetzt werden. Die Bereitschaft ist zeitlich begrenzt und verfällt bei Daten-/Budgetlücken, anderer Auswahl, Phasen- oder Preisänderung und Fehlern. Normale Erststarts behalten ihre Startbedingungen; alpha.36 ergänzt eine begrenzte Ausnahme vom allgemeinen Starttimer für qualifizierte Fahrzeugwechsel.
 - `SequenceResumePending`, `SequenceResumeUntil`, `StopConfirmedAt` und `StopPowerPending` erklären die Übergabe in den Diagnoseobjekten; das DecisionRecord enthält die entsprechenden modellierten Felder. Modellbestätigungen bleiben ausdrücklich angenommen, ungültige Schattenantworten bleiben unbekannt.
 - Eine explizite `.npmignore` beseitigt `gitignore-fallback` und schließt Entwicklungstests sowie lokale private Dateien aus dem Installationspaket aus. Andere npm-Warnungen zu Git-Integrität oder Installationsskripten werden dadurch nicht behoben.
 

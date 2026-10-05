@@ -17,8 +17,8 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
     batteryDcFactor = 1, batteryDcPvW = 0} = {}) {
     let now = Date.UTC(2026, 8, 21, 12), surplusW = 6000;
     let heaterW = 0, heaterCommandW = 0, physicalAllow = 0, physicalA = 6;
-    let physicalPowerAllow = 0, miiAllow = 0, miiA = 6;
-    let physicalStopResponseSequence = 0;
+    let physicalPowerAllow = 0, miiAllow = 0, miiPowerAllow = 0, miiA = 6;
+    let physicalStopResponseSequence = 0, miiStopResponseSequence = 0;
     let heatingW = 0, heatingCommandW = 0, batteryW = 0, batteryCommandW = 0;
     let batteryResponds = true, batteryHeartbeat = true;
     surplusW = initialSurplusW;
@@ -119,7 +119,15 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
             }});
         } else if (id === 'goe0.allow') {
             put(id, val, {ack: false});
-            events.push({at: now + 4000, run: () => { miiAllow = val; put(id, val); }});
+            events.push({at: now + 4000, run: () => {
+                miiAllow = val; put(id, val);
+                const responseSequence = ++miiStopResponseSequence;
+                if (val || wallboxStopResponseDelayMs === 0 || !miiPowerAllow) miiPowerAllow = val;
+                else events.push({at: now + wallboxStopResponseDelayMs,
+                    run: () => {
+                        if (responseSequence === miiStopResponseSequence) miiPowerAllow = 0;
+                    }});
+            }});
         } else put(id, val);
         callback?.(null);
         return true;
@@ -249,7 +257,7 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
     }
     const refresh = () => {
         const wbW = physicalPowerAllow ? physicalA * 230 : 0;
-        const miiW = miiAllow ? miiA * 230 : 0;
+        const miiW = miiPowerAllow ? miiA * 230 : 0;
         const gridW = heaterW + heatingW + batteryW + wbW + miiW - surplusW;
         for (const [id, state] of states) if (state.ack && !id.startsWith('ems.0.')) put(id, state.val);
         put('DP_GRID_IMPORT', Math.max(0, gridW)); put('DP_GRID_EXPORT', Math.max(0, -gridW));
@@ -260,7 +268,7 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         if (batteryHeartbeat) put(config.batteryHeartbeatId, now);
         for (const wb of [0, 1, 2]) {
             put(`DP_WB${wb}_POWER`, (wb === 2 ? wbW : wb === 0 ? miiW : 0) / 1000);
-            put(`DP_WB${wb}_L1_A`, wb === 2 && physicalPowerAllow ? physicalA : wb === 0 && miiAllow ? miiA : 0);
+            put(`DP_WB${wb}_L1_A`, wb === 2 && physicalPowerAllow ? physicalA : wb === 0 && miiPowerAllow ? miiA : 0);
             put(`DP_WB${wb}_L2_A`, 0); put(`DP_WB${wb}_L3_A`, 0);
         }
         const stagedPhases = (watts, stage) => watts <= stage ? [watts, 0, 0]
@@ -293,9 +301,9 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
             recorder?.sample();
         }
         trace.push({at: now, wbW: physicalPowerAllow ? physicalA * 230 : 0,
-            miiW: miiAllow ? miiA * 230 : 0, heaterW, heatingW, batteryW,
+            miiW: miiPowerAllow ? miiA * 230 : 0, heaterW, heatingW, batteryW,
             gridW: heaterW + heatingW + batteryW + (physicalPowerAllow ? physicalA * 230 : 0)
-                + (miiAllow ? miiA * 230 : 0) - surplusW,
+                + (miiPowerAllow ? miiA * 230 : 0) - surplusW,
             fine: value('Control.FineRegulator'), physicalAllow, miiAllow,
             selectedWallbox: value('Control.SelectedWallbox'),
             phaseImportW: [1, 2, 3].map(p => Number(states.get(`DP_DHW_HA_L${p}_CURRENT_A`)?.val || 0) * 230),
@@ -311,9 +319,18 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         setBatteryResponse: value => { batteryResponds = value; },
         setBatteryHeartbeat: value => { batteryHeartbeat = value; },
         setBatteryPower: value => { batteryW = value; },
+        setWallboxPhysical: (wb, {allow = 1, amps = 6} = {}) => {
+            if (wb === 0) {
+                miiAllow = miiPowerAllow = allow; miiA = amps; ++miiStopResponseSequence;
+                put('goe0.allow', allow); put('goe0.feedback', amps);
+            } else if (wb === 2) {
+                physicalAllow = physicalPowerAllow = allow; physicalA = amps; ++physicalStopResponseSequence;
+                put('goe.allow', allow); put('goe.feedback', amps);
+            } else assert.fail(`unknown synthetic wallbox ${wb}`);
+        },
         advance: async seconds => { for (let second = 0; second < seconds; second++) await tick(); },
         physical: () => ({allow: physicalAllow, amps: physicalA, miiAllow, miiAmps: miiA,
-            wbPowerW: physicalPowerAllow ? physicalA * 230 : 0, miiPowerW: miiAllow ? miiA * 230 : 0,
+            wbPowerW: physicalPowerAllow ? physicalA * 230 : 0, miiPowerW: miiPowerAllow ? miiA * 230 : 0,
             heaterW, heatingW, batteryW}),
         diagnostic: () => JSON.stringify(trace.slice(-12), null, 2)};
 }
@@ -373,10 +390,18 @@ test('prepared same-car continuation passes the real allocator but waits for OFF
     assert.equal(h.value('Devices.Wallbox2.SequenceResumePending'), false);
 });
 
-test('external manual Mii priority overrides a running EQE only through confirmed OFF and electrical zero', async () => {
-    const h = await plant({mii: true, startDelayS: 0, minimumRuntimeS: 600,
+test('qualified manual EQE to Mii handoff skips repeated start delay but waits for confirmed OFF and electrical zero', async () => {
+    const h = await plant({mii: true, startDelayS: 120, minimumRuntimeS: 600,
         split: false, wallboxStopResponseDelayMs: 10000, lpcLimitW: 4200});
+    h.setWallboxPhysical(0, {allow: 0, amps: 8});
+    const coldAt = h.now();
+    await h.advance(120);
+    assert.ok(!h.writes.some(row => row.id === 'goe.allow' && row.val === 1),
+        'an initial cold start still requires the configured continuous 120 seconds');
     await h.advance(40);
+    const coldOn = h.writes.find(row => row.id === 'goe.allow' && row.val === 1);
+    assert.ok(coldOn && coldOn.at >= coldAt + 120000, h.diagnostic());
+    await h.advance(60); // unchanged ownership is retained while the active-output heartbeat remains fresh
     assert.equal(h.physical().allow, 1, h.diagnostic());
     assert.equal(h.physical().miiAllow, 0, h.diagnostic());
     assert.equal(h.value('Control.SelectedWallbox'), 2);
@@ -399,10 +424,14 @@ test('external manual Mii priority overrides a running EQE only through confirme
     await h.advance(40);
     const on = h.writes.find(row => row.id === 'goe0.allow' && row.val === 1 && row.at > requestedAt);
     assert.ok(on, h.diagnostic());
+    assert.ok(on.at < requestedAt + 120000, 'a qualified vehicle handoff does not wait another 120 seconds');
     const zero = h.trace.find(row => row.at >= off.at + 4000 && row.physicalAllow === 0 && row.wbW === 0);
     assert.ok(zero, h.diagnostic());
     assert.ok(on.at >= zero.at, 'Mii ON cannot precede fresh physical EQE zero');
     assert.ok(on.at >= off.at + 14000, 'the delayed vehicle response is separate from its earlier OFF ACK');
+    const command = h.writes.find(row => row.id === 'goe0.cmd' && row.at > requestedAt);
+    assert.equal(command?.val, 6, 'the new vehicle starts at its physical 6 A minimum');
+    assert.ok(on.at >= command.at + 4000, 'new 6 A command ACK still precedes the charging permission');
     assert.equal(h.physical().allow, 0);
     assert.equal(h.physical().miiAllow, 1, h.diagnostic());
     assert.equal(h.value('Devices.Wallbox0.OutputOwned'), true);
@@ -420,6 +449,125 @@ test('external manual Mii priority overrides a running EQE only through confirme
     assert.ok(!h.writes.some(row => row.id === 'goe.allow' && row.val === 1 && row.at > requestedAt),
         'old still-released vehicle cannot automatically regain ownership');
     assert.ok(h.trace.every(row => row.phaseImportW.every(watts => watts <= 63 * 230)), 'phase fuse limits remain binding');
+});
+
+test('qualified Mii target end hands over to EQE without a second cold delay or electrical overlap', async () => {
+    const h = await plant({mii: true, startDelayS: 120, minimumRuntimeS: 600,
+        split: false, wallboxStopResponseDelayMs: 10000, lpcLimitW: 4200});
+    h.setWallboxPhysical(2, {allow: 0, amps: 8});
+    h.put('DP_WB_PRIORITY', 0);
+    const coldAt = h.now();
+    await h.advance(120);
+    assert.ok(!h.writes.some(row => row.id === 'goe0.allow' && row.val === 1));
+    await h.advance(40);
+    assert.equal(h.physical().miiAllow, 1, h.diagnostic());
+    assert.equal(h.physical().allow, 0);
+    assert.ok(h.writes.find(row => row.id === 'goe0.allow' && row.val === 1)?.at >= coldAt + 120000);
+    await h.advance(60);
+    assert.ok(h.value('Vehicles.Wallbox0.MinimumRunTimeRemaining_s') > 500);
+    const requestedAt = h.now();
+    h.put('DP_WB0_TARGET', 50);
+    await h.advance(2);
+    assert.equal(h.states.get('DP_WB_PRIORITY').val, 0, 'the target end, not a priority change, selects the next car');
+    assert.equal(h.value('Vehicles.Wallbox0.Release'), false);
+    assert.equal(h.value('Control.SelectedWallbox'), 2,
+        `${h.diagnostic()}\n${JSON.stringify(h.run('wallboxVehicleHandoffObservation'))}`);
+    const off = h.writes.find(row => row.id === 'goe0.allow' && row.val === 0 && row.at > requestedAt);
+    assert.ok(off, h.diagnostic());
+    await h.advance(4);
+    assert.equal(h.physical().miiAllow, 0);
+    assert.ok(h.physical().miiPowerW > 0, 'acknowledged OFF does not yet mean vehicle electrical zero');
+    assert.equal(h.value('Devices.Wallbox0.OutputOwned'), true);
+    assert.equal(h.value('Devices.Wallbox0.StopPowerPending'), true);
+    assert.ok(!h.writes.some(row => row.id === 'goe.allow' && row.val === 1 && row.at > requestedAt));
+    await h.advance(40);
+    const on = h.writes.find(row => row.id === 'goe.allow' && row.val === 1 && row.at > requestedAt);
+    const zero = h.trace.find(row => row.at >= off.at + 4000 && row.miiAllow === 0 && row.miiW === 0);
+    const command = h.writes.find(row => row.id === 'goe.cmd' && row.at > requestedAt);
+    assert.ok(on && zero, `${h.diagnostic()}\n${h.value('Control.Wallbox2.AllocationDiagnostics_JSON')}`
+        + `\n${JSON.stringify(h.run('wallboxVehicleHandoff'))}`);
+    assert.ok(on.at < requestedAt + 120000, 'a qualified target-end handoff avoids another full start delay');
+    assert.ok(on.at >= zero.at && on.at >= off.at + 14000);
+    assert.equal(command?.val, 6);
+    assert.ok(on.at >= command.at + 4000, 'fresh 6 A ACK remains required');
+    assert.equal(h.physical().allow, 1);
+    assert.equal(h.physical().miiAllow, 0);
+    assert.ok(h.trace.every(row => !(row.wbW > 20 && row.miiW > 20)));
+    assert.ok(h.trace.every(row => !(row.physicalAllow === 1 && row.miiAllow === 1)));
+    assert.ok(h.trace.every(row => row.wbW + row.miiW + row.heaterW <= 4200));
+    assert.ok(h.trace.every(row => row.phaseImportW.every(watts => watts <= 63 * 230)));
+});
+
+test('lost old-output evidence or control reset requires the full delay for the next vehicle', async () => {
+    for (const cause of ['missing-active', 'missing-owned', 'stale-active', 'control-reset']) {
+        const h = await plant({mii: true, startDelayS: 120, minimumRuntimeS: 600,
+            split: false, wallboxStopResponseDelayMs: 10000});
+        await h.advance(160);
+        assert.equal(h.physical().allow, 1, h.diagnostic());
+        if (cause === 'missing-active') h.states.delete('ems.0.Devices.Wallbox2.OutputActive');
+        if (cause === 'missing-owned') h.states.delete('ems.0.Devices.Wallbox2.OutputOwned');
+        if (cause === 'stale-active') h.put('ems.0.Devices.Wallbox2.OutputActive', true,
+            {ts: h.now() - 60000});
+        if (cause === 'control-reset') h.run('resetSlowTargets()');
+        const requestedAt = h.now();
+        h.put('DP_WB_PRIORITY', 0);
+        await h.advance(100);
+        assert.ok(!h.writes.some(row => row.id === 'goe0.allow' && row.val === 1 && row.at > requestedAt), cause);
+        await h.advance(70);
+        const on = h.writes.find(row => row.id === 'goe0.allow' && row.val === 1 && row.at > requestedAt);
+        assert.ok(on && on.at >= requestedAt + 120000, `${cause}: ${h.diagnostic()}`);
+        assert.ok(h.trace.every(row => !(row.wbW > 20 && row.miiW > 20)), cause);
+    }
+});
+
+test('a foreign running Mii never substitutes for a qualified EMS owner before an EQE cold start', async () => {
+    const h = await plant({mii: true, startDelayS: 120, split: false, wallboxStopResponseDelayMs: 10000});
+    h.setWallboxPhysical(0, {allow: 1, amps: 6});
+    const startedAt = h.now();
+    await h.advance(100);
+    assert.ok(!h.writes.some(row => row.id === 'goe.allow' && row.val === 1));
+    await h.advance(80);
+    const on = h.writes.find(row => row.id === 'goe.allow' && row.val === 1);
+    assert.ok(on && on.at >= startedAt + 120000, h.diagnostic());
+    assert.ok(h.trace.every(row => !(row.wbW > 20 && row.miiW > 20)));
+});
+
+test('budget loss while the old vehicle stops revokes the handoff shortcut instead of renewing it', async () => {
+    const h = await plant({mii: true, startDelayS: 120, minimumRuntimeS: 600,
+        split: false, wallboxStopResponseDelayMs: 10000, lpcLimitW: 4200});
+    await h.advance(160);
+    assert.equal(h.physical().allow, 1);
+    const requestedAt = h.now();
+    h.put('DP_WB_PRIORITY', 0);
+    await h.advance(2);
+    h.put('lpc.limit', 1000);
+    await h.advance(4);
+    const restoredAt = h.now();
+    h.put('lpc.limit', 4200);
+    await h.advance(100);
+    assert.ok(!h.writes.some(row => row.id === 'goe0.allow' && row.val === 1 && row.at > requestedAt));
+    await h.advance(70);
+    const on = h.writes.find(row => row.id === 'goe0.allow' && row.val === 1 && row.at > requestedAt);
+    assert.ok(on && on.at >= restoredAt + 120000, h.diagnostic());
+    assert.ok(h.trace.every(row => !(row.wbW > 20 && row.miiW > 20)));
+});
+
+test('expired price permission cannot be used by a prepared cross-vehicle handoff', async () => {
+    const h = await plant({mii: true, startDelayS: 120, minimumRuntimeS: 600,
+        split: false, wallboxStopResponseDelayMs: 10000, lpcLimitW: 4200});
+    h.put('DP_WB_PRIORITY', 0);
+    await h.advance(160);
+    assert.equal(h.physical().miiAllow, 1, h.diagnostic());
+    const requestedAt = h.now();
+    armPricePlans(h, {batteryW: 0, until: requestedAt + 10000});
+    h.setSurplus(-500);
+    h.put('DP_WB_PRIORITY', 2);
+    await h.advance(180);
+    assert.ok(!h.writes.some(row => row.id === 'goe.allow' && row.val === 1 && row.at > requestedAt),
+        'price expiry before old physical zero must not leak a charging permission');
+    assert.equal(h.physical().allow, 0);
+    assert.equal(h.physical().miiAllow, 0);
+    assert.ok(h.trace.every(row => !(row.wbW > 20 && row.miiW > 20)));
 });
 
 test('manual priority for an ineligible Mii or invalid index does not displace the eligible running EQE', async () => {

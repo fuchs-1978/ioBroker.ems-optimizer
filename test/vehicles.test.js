@@ -859,6 +859,179 @@ test('elapsed productive start countdown stays latched while EHZ handoff is stil
     assert.equal(h.run('wallboxStartCandidateSince[2]'),0,'real shortage must reset the ready latch');
 });
 
+function vehicleHandoffFixture({alreadyActive=false,foreign=false,shadow=false}={}) {
+    const h=productionEngine({dhwControlEnabled:false,wb0ControlEnabled:true,wb0ProductionArmed:true,
+        multiWallboxAlphaArmed:true,wallboxPrioritySource:'external',wallboxPriority:-2,
+        wb0AmpereFeedbackId:'wb0.feedback',wb0AllowOutputId:'wb0.allow',
+        wb2AmpereFeedbackId:'wb2.feedback',wb2AllowOutputId:'wb2.allow'});
+    const clock={now:Date.now()};
+    h.ctx.Date=class extends Date {static now(){return clock.now;}};
+    const state=(id,val,metadata={})=>h.states.set(id,{val,ack:true,q:0,ts:clock.now,...metadata});
+    h.put('ems.0.Control.Enabled',true);h.put('ems.0.System.DataValid',true);h.put('ems.0.Plan.Valid',true);
+    h.put('ems.0.Config.WallboxStartDelay_s',120);h.put('ems.0.Config.WallboxStartReserve_W',300);
+    state('DP_WB_PRIORITY',-1);
+    for(let wb=0;wb<3;wb++) {
+        for(const [key,value] of Object.entries({OutputActive:false,OutputOwned:false,
+            OutputCommand_A:0,OutputPhases:1,OutputFault:''}))state(`ems.0.Devices.Wallbox${wb}.${key}`,value);
+        state(`DP_WB${wb}_POWER`,0);
+        for(let phase=1;phase<=3;phase++)state(`DP_WB${wb}_L${phase}_A`,0);
+        state(`wb${wb}.feedback`,0);state(`wb${wb}.allow`,0);
+    }
+    if(shadow) {
+        h.ctx.getActualState=id=>h.states.get(id);
+        h.ctx.shadowElectricalResponseValid=true;
+    }
+    const active=(wb,owned=true)=>{
+        state(`ems.0.Devices.Wallbox${wb}.OutputActive`,true);
+        state(`ems.0.Devices.Wallbox${wb}.OutputOwned`,owned);
+        state(`ems.0.Devices.Wallbox${wb}.OutputCommand_A`,13);
+        state(`DP_WB${wb}_POWER`,2.99);state(`DP_WB${wb}_L1_A`,13);
+        state(`wb${wb}.feedback`,13);state(`wb${wb}.allow`,1);
+    };
+    const advance=ms=>{
+        clock.now+=ms;
+        for(const [id,value] of h.states) {
+            if(/^DP_WB[012]_(CAR|POWER|L[123]_A)$/.test(id)||/^wb[012]\.(feedback|allow)$/.test(id))
+                h.states.set(id,{...value,ts:clock.now});
+        }
+    };
+    const cycle=(watts=6000,cap=Infinity)=>h.run(`updateSlowTargets(${watts},
+        [{valueW:0},{valueW:0},{valueW:7000}],{valueW:0},${cap})`);
+    if(alreadyActive||foreign)active(2,!foreign);
+    cycle();
+    if(!alreadyActive&&!foreign) {advance(5000);active(2);cycle();}
+    const choose=(index=0,watts=6000,cap=Infinity)=>{
+        advance(1000);state('DP_WB_PRIORITY',index,{ack:false});cycle(watts,cap);
+    };
+    const diagnostic=()=>JSON.parse(h.states.get('ems.0.Control.Wallbox0.AllocationDiagnostics_JSON').val).start;
+    return {...h,clock,state,active,advance,cycle,choose,diagnostic};
+}
+
+test('observed running donor prepares manual vehicle handoff without a second full start delay',()=>{
+    const h=vehicleHandoffFixture();h.choose();
+    assert.ok(h.run('slowTargets.wallboxA[0]')>=6);
+    assert.equal(h.run('slowTargets.wallboxA[2]'),0);
+    let d=h.diagnostic();assert.equal(d.reason,'prepared-vehicle-handoff');
+    assert.equal(d.vehicleHandoff.eligible,true);assert.equal(d.vehicleHandoff.from,2);
+    assert.equal(d.vehicleHandoff.to,0);assert.equal(d.startDelayRemainingS,0);
+    const deadline=d.vehicleHandoff.until;
+    h.advance(5000);h.cycle();d=h.diagnostic();
+    assert.equal(d.vehicleHandoff.until,deadline,'repeated allocation cannot extend the preparation');
+    assert.equal(d.vehicleHandoff.eligible,true);
+});
+
+test('valid target SoC end can prepare the next vehicle while old ownership still waits for OFF',()=>{
+    const h=vehicleHandoffFixture();h.advance(1000);h.state('DP_WB2_SOC',80);h.cycle();
+    assert.equal(h.states.get('ems.0.Control.SelectedWallbox').val,0);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox2.OutputOwned').val,true,'selection never clears physical ownership');
+    assert.ok(h.run('slowTargets.wallboxA[0]')>=6);
+    assert.equal(h.diagnostic().vehicleHandoff.eligible,true);
+    assert.equal(h.diagnostic().vehicleHandoff.from,2);
+});
+
+test('cached startup or foreign real charging cannot donate a vehicle start qualification',()=>{
+    for(const config of [{alreadyActive:true},{foreign:true}]) {
+        const h=vehicleHandoffFixture(config);h.choose();
+        assert.equal(h.run('slowTargets.wallboxA[0]'),0,JSON.stringify(config));
+        assert.equal(h.diagnostic().vehicleHandoff.eligible,false);
+        assert.equal(h.diagnostic().startDelayRemainingS,120);
+    }
+});
+
+test('old active metadata predating the session stopped observation cannot qualify a donor',()=>{
+    const h=vehicleHandoffFixture();
+    h.run('resetSlowTargets()');h.state('ems.0.Devices.Wallbox2.OutputActive',false);
+    h.state('ems.0.Devices.Wallbox2.OutputOwned',false);h.cycle();
+    const oldTs=h.clock.now-1000;h.advance(1000);h.active(2);
+    h.states.get('ems.0.Devices.Wallbox2.OutputActive').ts=oldTs;
+    h.states.get('ems.0.Devices.Wallbox2.OutputCommand_A').ts=oldTs;
+    h.cycle();h.choose();
+    assert.equal(h.diagnostic().vehicleHandoff.eligible,false);
+    assert.equal(h.diagnostic().startDelayRemainingS,120);
+});
+
+test('retained ownership claim stays valid while active command evidence refreshes during a long charge',()=>{
+    const h=vehicleHandoffFixture();
+    const claimTs=h.states.get('ems.0.Devices.Wallbox2.OutputOwned').ts;
+    for(let tick=0;tick<10;tick++){
+        h.advance(5000);
+        h.state('ems.0.Devices.Wallbox2.OutputActive',true);
+        h.state('ems.0.Devices.Wallbox2.OutputCommand_A',13);
+        h.cycle();
+    }
+    assert.equal(h.states.get('ems.0.Devices.Wallbox2.OutputOwned').ts,claimTs);
+    h.choose();assert.equal(h.diagnostic().vehicleHandoff.eligible,true);
+});
+
+test('stale active or current-command heartbeat after a qualifying session start cannot donate',()=>{
+    for(const key of ['OutputActive','OutputCommand_A']) {
+        const h=vehicleHandoffFixture();
+        h.states.get(`ems.0.Devices.Wallbox2.${key}`).ts=h.clock.now-60000;
+        h.choose();
+        assert.equal(h.diagnostic().vehicleHandoff.eligible,false,key);
+        assert.equal(h.diagnostic().startDelayRemainingS,120);
+    }
+});
+
+test('initial handoff budget needs reserve and cannot acquire the shortcut later from the same donor',()=>{
+    for(const [watts,cap] of [[1379,Infinity],[1500,Infinity],[6000,1000]]) {
+        const h=vehicleHandoffFixture();h.choose(0,watts,cap);
+        assert.equal(h.diagnostic().vehicleHandoff.eligible,false,`${watts}/${cap}`);
+        h.advance(1000);h.cycle();
+        assert.equal(h.diagnostic().vehicleHandoff.eligible,false);
+        assert.equal(h.run('slowTargets.wallboxA[0]'),0,'restored budget must use ordinary qualification');
+    }
+});
+
+test('vehicle handoff keeps minimum-budget hysteresis but revokes permanently below minimum',()=>{
+    const h=vehicleHandoffFixture();h.choose();
+    h.advance(1000);h.cycle(1500);assert.equal(h.diagnostic().vehicleHandoff.eligible,true);
+    h.advance(1000);h.cycle(1379);assert.equal(h.diagnostic().vehicleHandoff.eligible,false);
+    h.advance(1000);h.cycle(6000);
+    assert.equal(h.diagnostic().vehicleHandoff.eligible,false);
+    assert.equal(h.run('slowTargets.wallboxA[0]'),0);
+    assert.equal(h.diagnostic().startDelayRemainingS,120);
+});
+
+test('unknown current-frame shadow response cannot qualify or retain a vehicle handoff',()=>{
+    for(const when of ['initial','during']) {
+        const h=vehicleHandoffFixture({shadow:true});
+        if(when==='initial')h.ctx.shadowElectricalResponseValid=false;
+        h.choose();
+        if(when==='during'){h.ctx.shadowElectricalResponseValid=false;h.advance(1000);h.cycle();}
+        assert.equal(h.diagnostic().vehicleHandoff.eligible,false,when);
+        h.ctx.shadowElectricalResponseValid=true;h.advance(1000);h.cycle();
+        assert.equal(h.diagnostic().vehicleHandoff.eligible,false);
+        assert.equal(h.run('slowTargets.wallboxA[0]'),0);
+    }
+});
+
+test('vehicle handoff expires and phase, price, source, eligibility or reset loss cannot renew it',()=>{
+    for(const cause of ['phase','price','source','donor-source','release','soc','fault','control','gap','expiry','reset']) {
+        const h=vehicleHandoffFixture();h.choose();assert.equal(h.diagnostic().vehicleHandoff.eligible,true);
+        h.advance(1000);
+        if(cause==='phase') {
+            h.state('ems.0.Vehicles.Wallbox0.PhaseSwitchEnabled',true);
+            h.state('ems.0.Vehicles.Wallbox0.MaximumPhases',3);
+            h.run('stableWallboxPhases[0]=3');
+        }
+        if(cause==='price')h.state('ems.0.Config.Wallbox0PriceChargingEnabled',true);
+        if(cause==='source')h.states.get('DP_WB0_L1_A').q=64;
+        if(cause==='donor-source')h.states.get('DP_WB2_L1_A').q=64;
+        if(cause==='release')h.state('DP_WB0_ALLOW',false);
+        if(cause==='soc')h.state('DP_WB0_SOC',80);
+        if(cause==='fault')h.state('ems.0.Devices.Wallbox0.OutputFault','fault');
+        if(cause==='control')h.state('ems.0.System.DataValid',false);
+        if(cause==='gap')h.advance(11000);
+        if(cause==='expiry')h.advance(300000);
+        if(cause==='reset')h.run('resetSlowTargets()');
+        h.cycle();
+        const pending=h.run('wallboxVehicleHandoff');
+        assert.ok(!pending||!pending.qualified,cause);
+        if(cause!=='release'&&cause!=='soc')assert.equal(h.run('slowTargets.wallboxA[0]'),0,cause);
+    }
+});
+
 function sequenceResumeFixture() {
     const h=productionEngine({dhwControlEnabled:false});
     const startedAt=Date.now();

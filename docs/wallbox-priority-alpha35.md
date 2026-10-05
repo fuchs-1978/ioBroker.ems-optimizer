@@ -22,10 +22,10 @@ Ohne manuelle Wahl bleibt die automatische Auswahl ruhig. Eine einmal begonnene 
 
 1. Die Auswahl wechselt auf das gültige bevorzugte Fahrzeug. Die bisherige Wallbox erhält AUS, auch während ihrer weichen Mindestlaufzeit.
 2. Die bisherige Wallbox bleibt verriegelt und ihr Leistungsbedarf reserviert, bis frisches `allow_charging = 0` sowie Leistung bis 20 W und Phasenströme bis 0,5 A ihre elektrische Abschaltung bestätigen.
-3. Die neue Wallbox durchläuft ihre normale Budgetqualifikation, Einschaltverzögerung und 6-A-Startsequenz. Ein noch offener AUS-Vorgang sperrt ihre Einschaltfreigabe.
+3. Die neue Wallbox durchläuft ihre Budgetqualifikation und 6-A-Startsequenz. In alpha.35 gilt auch die normale Einschaltverzögerung; ab alpha.36 kann diese bei einer [qualifizierten Fahrzeugübergabe](wallbox-handoff-alpha36.md) entfallen. Ein noch offener AUS-Vorgang sperrt ihre Einschaltfreigabe.
 4. Erst nach bestätigter Übernahme ist die Übergabe beendet. Bei unveränderter gültiger manueller Auswahl wird das alte Fahrzeug nicht automatisch wieder vorgeschoben.
 
-Das ist weiterhin Betrieb mit einer aktiven Wallbox. Eine Pause zwischen den Fahrzeugen kann wegen der konfigurierten Einschaltverzögerung und der Modbus-/Fahrzeugreaktion entstehen. Gleichzeitiges Zuschalten beider Fahrzeuge wird nicht eingeführt.
+Das ist weiterhin Betrieb mit einer aktiven Wallbox. Eine Pause zwischen den Fahrzeugen bleibt wegen der Modbus-/Fahrzeugreaktion erforderlich. Ohne gültige alpha.36-Übergabequalifikation kommt die konfigurierte Einschaltverzögerung hinzu. Gleichzeitiges Zuschalten beider Fahrzeuge wird nicht eingeführt.
 
 ## Nachweis und Grenzen
 

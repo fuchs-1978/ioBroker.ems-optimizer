@@ -369,6 +369,147 @@ async function startModel(h) {
     assert.ok(h.value('Modeled.Wallbox0_W') >= 1380, h.value('Wallbox0.ModelStatus'));
 }
 
+function addSecondWallbox(h) {
+    Object.assign(h.adapter.config, {multiWallboxAlphaArmed: true, wb1Present: true,
+        wb1ControlEnabled: true, wb1ProductionArmed: true, wb1MaxCurrent1pA: 32,
+        wb1MinCurrent1pA: 6, wb1CommissioningMaxA: 32, wb1MaxPowerW: 7360,
+        wb1PhaseSwitchEnabled: false, wb1ProductionPhases: 1});
+    h.own('Devices.Wallbox1.Present', true); h.own('Devices.Wallbox1.ControlEnabled', true);
+    h.put('goe1.connection', true); h.put('goe1.error', 0); h.put('goe1.allow', 0); h.put('goe1.current', 6);
+    h.adapter.wallboxOutput.devices.push({wb: 1, valid: true, owned: false,
+        ids: {connection: 'goe1.connection', error: 'goe1.error', allow: 'goe1.allow',
+            feedback: 'goe1.current', command: 'goe1.command'}});
+}
+
+test('current private electrical response is available before allocation despite contrary published diagnostics', async () => {
+    const h = await fixture();
+    const create = h.shadow.createContext;
+    h.shadow.createContext = sandbox => {
+        const ctx = create(sandbox);
+        ctx.testElectricalFrames = [];
+        vm.runInContext(`const realControlForFrameTest = realtimeControl;
+            realtimeControl = function () {
+                testElectricalFrames.push(shadowElectricalResponseValid);
+                return realControlForFrameTest();
+            };`, ctx);
+        return ctx;
+    };
+    h.own('Debug.Shadow.Response.Valid', false);
+    await h.tick();
+    assert.equal(h.shadow.model.response.valid, true);
+    assert.equal(h.shadow.context.testElectricalFrames.at(-1), true,
+        'the current valid private frame precedes allocation even when the last published marker is false');
+    h.own('Debug.Shadow.Response.Valid', true);
+    h.put('DP_WB0_POWER', 0, {q: 64});
+    h.advance(2000); await h.tick();
+    assert.equal(h.shadow.model.response.valid, false);
+    assert.equal(h.shadow.context.testElectricalFrames.at(-1), false,
+        'a previously published valid marker cannot repair this invalid electrical frame');
+    h.own('Debug.Shadow.Response.Valid', false);
+    h.put('DP_WB0_POWER', 0);
+    h.advance(2000); await h.tick();
+    assert.equal(h.shadow.context.testElectricalFrames.at(-1), true,
+        'recovery is taken from the newly prepared response rather than a cached flag');
+    assert.equal(h.states.get('goe.allow').val, 0);
+    assert.ok(h.writes.every(write => write.id.startsWith('ems.0.Debug.Shadow.')));
+});
+
+async function startColdHandoffModel(h) {
+    addSecondWallbox(h);
+    h.adapter.config.wallboxPrioritySource = 'external';
+    h.put('DP_WB_PRIORITY', 0);
+    await h.tick();
+    for (let elapsed = 2; elapsed < 120; elapsed += 2) {
+        h.advance(2000); await h.tick();
+        assert.equal(h.value('Modeled.Wallbox0_W'), 0, `cold start must wait at ${elapsed}s`);
+    }
+    for (let cycle = 0; cycle < 6 && !h.value('Modeled.Wallbox0_W'); cycle++) {
+        h.advance(2000); await h.tick();
+    }
+    assert.ok(h.value('Modeled.Wallbox0_W') >= 1380, h.value('Wallbox0.ModelStatus'));
+    h.advance(2000); await h.tick(); // Observe the owned active donor in this engine session.
+}
+
+test('valid private shadow handoff keeps the cold countdown but skips its repetition for manual priority', async () => {
+    const h = await fixture({delayS: 120});
+    await startColdHandoffModel(h);
+    assert.equal(h.states.get('DP_WB0_L1_A').val, 0,
+        'real zero current does not replace the explicitly valid private modeled donor response');
+    h.put('goe1.allow', 1); h.put('DP_WB1_POWER', 2.76); h.put('DP_WB1_L1_A', 12);
+    h.put('DP_WB_PRIORITY', 1);
+    let newActive = false, handoffSeen = false;
+    for (let cycle = 0; cycle < 15; cycle++) {
+        h.advance(2000); await h.tick();
+        const record = JSON.parse(h.value('DecisionRecord'));
+        const modeled = record.modeled;
+        assert.ok([modeled.Wallbox0, modeled.Wallbox1].filter(wb => wb.active).length <= 1,
+            'the shortcut never overlaps modeled active electrical draw');
+        const handoff = record.allocation?.Wallbox1?.start?.vehicleHandoff;
+        handoffSeen ||= handoff?.qualified === true && handoff.from === 0 && handoff.to === 1;
+        if (modeled.Wallbox1.active) { newActive = true; break; }
+    }
+    assert.ok(handoffSeen, 'the coherent record must show the qualified cross-vehicle handoff');
+    assert.ok(newActive, h.value('Wallbox1.ModelStatus'));
+    assert.equal(h.value('Modeled.Wallbox0_W'), 0);
+    assert.equal(h.states.get('goe.allow').val, 0);
+    assert.equal(h.states.get('goe1.allow').val, 1,
+        'the independently selected actual car remains controlled by the real script');
+    assert.equal(h.states.get('DP_WB1_POWER').val, 2.76);
+    assert.ok(h.writes.every(write => write.id.startsWith('ems.0.Debug.Shadow.')));
+});
+
+test('valid shadow target-SoC finish hands off without repeating the cold start countdown', async () => {
+    const h = await fixture({delayS: 120});
+    await startColdHandoffModel(h);
+    h.put('DP_WB0_SOC', 80);
+    let newActive = false, naturalHandoffSeen = false;
+    for (let cycle = 0; cycle < 15; cycle++) {
+        h.advance(2000); await h.tick();
+        const record = JSON.parse(h.value('DecisionRecord'));
+        const handoff = record.allocation?.Wallbox1?.start?.vehicleHandoff;
+        naturalHandoffSeen ||= handoff?.qualified === true && handoff.from === 0 && handoff.to === 1;
+        assert.ok([record.modeled.Wallbox0, record.modeled.Wallbox1].filter(wb => wb.active).length <= 1);
+        if (record.modeled.Wallbox1.active) { newActive = true; break; }
+    }
+    assert.ok(naturalHandoffSeen, 'the normal target-SoC finish must retain its qualified donor evidence');
+    assert.equal(h.states.get('DP_WB_PRIORITY').val, 0,
+        'the successor starts after target SoC despite retained priority for the completed donor');
+    assert.ok(newActive, h.value('Wallbox1.ModelStatus'));
+    assert.equal(h.states.get('goe.allow').val, 0);
+    assert.equal(h.states.get('goe1.allow').val, 0);
+});
+
+test('unknown shadow response revokes a prepared handoff and cannot confirm a modeled electrical stop', async () => {
+    const h = await fixture({delayS: 120});
+    await startColdHandoffModel(h);
+    h.put('DP_WB_PRIORITY', 1);
+    h.advance(2000); await h.tick();
+    let record = JSON.parse(h.value('DecisionRecord'));
+    assert.equal(record.allocation.Wallbox1.start.vehicleHandoff.qualified, true);
+    h.own('Debug.Shadow.Response.Valid', true);
+    h.put('DP_WB0_POWER', 0, {q: 64});
+    h.advance(2000); await h.tick();
+    record = JSON.parse(h.value('DecisionRecord'));
+    assert.equal(h.shadow.context.shadowElectricalResponseValid, false);
+    assert.equal(record.response.valid, false);
+    assert.equal(record.allocation.Wallbox1.start.vehicleHandoff.qualified, false);
+    assert.equal(record.modeled.Wallbox1.active, false);
+    assert.equal(record.modeled.Wallbox0.owned, true,
+        'an OFF ACK alone cannot release the donor when its electrical model is unknown');
+    assert.equal(record.modeled.Wallbox0.stopPowerPending, true);
+    h.put('DP_WB0_POWER', 0);
+    for (let cycle = 0; cycle < 15; cycle++) {
+        h.advance(2000); await h.tick();
+        record = JSON.parse(h.value('DecisionRecord'));
+        assert.equal(record.modeled.Wallbox1.active, false,
+            'restored data must use normal qualification, not resurrect the revoked shortcut');
+        assert.equal(record.allocation.Wallbox1.start.vehicleHandoff.qualified, false);
+    }
+    assert.equal(h.states.get('goe.allow').val, 0);
+    assert.equal(h.states.get('goe1.allow').val, 0);
+    assert.ok(h.writes.every(write => write.id.startsWith('ems.0.Debug.Shadow.')));
+});
+
 test('a sixteen-second historical frame does not turn fresh real grid protection stale', async () => {
     const h = await fixture();
     forceWallboxBudget(h);
@@ -488,15 +629,7 @@ test('minimum runtime eventually expires and persistent modeled deficit stops', 
 
 test('priority handoff preserves the production single-wallbox interlock in the model', async () => {
     const h = await fixture();
-    Object.assign(h.adapter.config, {multiWallboxAlphaArmed: true, wb1Present: true,
-        wb1ControlEnabled: true, wb1ProductionArmed: true, wb1MaxCurrent1pA: 32,
-        wb1MinCurrent1pA: 6, wb1CommissioningMaxA: 32, wb1MaxPowerW: 7360,
-        wb1PhaseSwitchEnabled: false, wb1ProductionPhases: 1});
-    h.own('Devices.Wallbox1.Present', true); h.own('Devices.Wallbox1.ControlEnabled', true);
-    h.put('goe1.connection', true); h.put('goe1.error', 0); h.put('goe1.allow', 0); h.put('goe1.current', 6);
-    h.adapter.wallboxOutput.devices.push({wb: 1, valid: true, owned: false,
-        ids: {connection: 'goe1.connection', error: 'goe1.error', allow: 'goe1.allow',
-            feedback: 'goe1.current', command: 'goe1.command'}});
+    addSecondWallbox(h);
     await startModel(h);
     assert.equal(h.value('SelectedWallbox'), 0);
     h.put('DP_WB0_SOC', 80);
