@@ -262,13 +262,19 @@ test('device fault is a truthful output blocker beside unmodified production all
 test('slow-cycle selections and start timers remain isolated across 2-second ticks', async () => {
     const h = await fixture({delayS: 30, slowS: 5});
     h.own('Control.SelectedWallbox', 2);
+    h.own('Control.WallboxSelectionReason', 'LIVE-Auswahl darf Schattenentscheidung nicht begruenden');
     h.own('Vehicles.Wallbox0.StartDelayRemaining_s', 999);
     await h.tick();
     assert.equal(h.value('SelectedWallbox'), 0);
+    const selectionReason = JSON.parse(h.value('Snapshot_JSON')).selectionReason;
+    assert.match(selectionReason, /Manuelle Prioritaet Wallbox 0/);
+    assert.equal(JSON.parse(h.value('DecisionRecord')).selectionReason, selectionReason);
     assert.equal(h.value('Wallbox0.StartDelayRemaining_s'), 30);
     for (const elapsed of [2, 4, 6]) {
         h.advance(2000); await h.tick();
         assert.equal(h.value('SelectedWallbox'), 0, `selected after ${elapsed}s`);
+        assert.equal(JSON.parse(h.value('Snapshot_JSON')).selectionReason, selectionReason,
+            'private selection reason survives between slow cycles without borrowing live Control');
         assert.ok(h.value('Wallbox0.StartDelayRemaining_s') > 0 && h.value('Wallbox0.StartDelayRemaining_s') <= 30);
         assert.equal(h.value('Wallbox0.MinimumRunTimeRemaining_s'), 0);
     }
@@ -584,6 +590,26 @@ test('DecisionRecord emits coherent transitions and bounded heartbeats including
     assert.equal(records().length, count + 3, 'real current changes are captured even while shadow is paused');
     h.put('goe.current', 9, {ack: false}); h.advance(2000); await h.tick();
     assert.equal(records().length, count + 4, 'quality transitions are captured without using changing timestamps as event keys');
+});
+
+test('DecisionRecord keeps selection reasons and emits reason changes with the same selected wallbox', async () => {
+    const h = await fixture();
+    const record = {valid: false, masterEnabled: false, selectedWallbox: 0,
+        selectionReason: 'Manuelle Prioritaet WB0', targets: {Wallbox0: 0},
+        modeled: {}, realFeedback: {}, response: {valid: false, applied: false, reason: 'Quelle fehlt'}};
+    const count = () => h.writes.filter(write => write.id.endsWith('.DecisionRecord')).length;
+    h.shadow.publishRecord(record); await h.flush();
+    const first = count();
+    assert.equal(JSON.parse(h.value('DecisionRecord')).selectionReason, record.selectionReason);
+    h.shadow.publishRecord(record); await h.flush();
+    assert.equal(count(), first, 'unchanged diagnostics do not create duplicate events');
+    record.selectionReason = 'Manuelle Uebergabe WB0 wird abgeschlossen';
+    h.shadow.publishRecord(record); await h.flush();
+    assert.equal(count(), first + 1, 'a new reason is retained even while the electrical model is invalid');
+    const persisted = JSON.parse(h.value('DecisionRecord'));
+    assert.equal(persisted.selectedWallbox, 0);
+    assert.equal(persisted.selectionReason, record.selectionReason);
+    assert.equal(persisted.valid, false);
 });
 
 test('invalid response records coalesce skew magnitudes but preserve model and real safety edges', async () => {

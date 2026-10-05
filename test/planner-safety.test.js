@@ -402,8 +402,8 @@ test('issue #59: insufficient PV leaves lower priority demand unplanned instead 
     balancedPlan(h, data);
 });
 
-test('issue #59: mandatory manual current outranks selected flexible charging', () => {
-    const h = engine({wallboxPriority: 1});
+test('automatic forecast gives mandatory manual current precedence over flexible charging', () => {
+    const h = engine({wallboxPriority: -1});
     h.put('ems.0.Devices.MyPV_DHW.Present', false);
     for (const wb of [0, 1]) vehicle(h, {wb, soc: 50, minimum: 20, target: 58,
         capacityKWh: 10, maximumW: 3680, maximum1pA: 16, maximumPhases: 1, phaseSwitch: false});
@@ -415,7 +415,7 @@ test('issue #59: mandatory manual current outranks selected flexible charging', 
     balancedPlan(h, data);
 });
 
-test('issue #59: simulated minimum SoC satisfaction restores flexible priority without more grid charge', () => {
+test('manual forecast choice precedes another car minimum need without borrowing its grid permission', () => {
     const h = engine({wallboxPriority: 1, wb0LowSocStepsEnabled: false});
     h.put('ems.0.Devices.MyPV_DHW.Present', false);
     vehicle(h, {wb: 0, soc: 49, minimum: 50, target: 58, capacityKWh: 10,
@@ -423,25 +423,68 @@ test('issue #59: simulated minimum SoC satisfaction restores flexible priority w
     vehicle(h, {wb: 1, soc: 50, minimum: 20, target: 58, capacityKWh: 10,
         maximumW: 3680, maximum1pA: 16, maximumPhases: 1, phaseSwitch: false});
     const data = h.plan({pvW: [0, 0, 3000, 3000, 3000, 3000], slots: 6});
-    assert.ok(h.series('Wallbox0')[0].valueW > 0, 'minimum SoC can use the grid');
-    assert.equal(h.series('Wallbox0')[1].valueW, 0, 'grid charging stops at the simulated minimum');
+    assert.equal(h.series('Wallbox0')[0].valueW, 0, 'explicit selection postpones the other car minimum policy');
+    assert.equal(h.series('Wallbox0')[1].valueW, 0);
+    assert.equal(h.series('Wallbox1')[0].valueW, 0, 'another car minimum cannot authorize grid for selected flexible car');
     assert.ok(h.series('Wallbox1')[2].valueW > 0, 'selected flexible car receives the next PV slot');
     assert.ok(h.series('Wallbox0')[4].valueW > 0, 'remaining first-car demand follows after selected car completes');
     balancedPlan(h, data);
 });
 
-test('issue #59: a future mandatory deadline outranks the selected flexible vehicle', () => {
-    const h = engine({wallboxPriority: 0, wb1DeadlineEnabled: true});
+test('automatic forecast stops mandatory grid energy at the simulated minimum SoC', () => {
+    const h = engine({wallboxPriority: -1, wb0LowSocStepsEnabled: false});
     h.put('ems.0.Devices.MyPV_DHW.Present', false);
-    vehicle(h, {wb: 0, soc: 50, minimum: 20, target: 80, capacityKWh: 50,
+    vehicle(h, {wb: 0, soc: 49, minimum: 50, target: 58, capacityKWh: 10,
         maximumW: 3680, maximum1pA: 16, maximumPhases: 1, phaseSwitch: false});
-    vehicle(h, {wb: 1, soc: 50, minimum: 20, target: 90, capacityKWh: 5.175,
-        maximumW: 4600, maximum1pA: 20, maximumPhases: 1, phaseSwitch: false, departure: '13:00'});
-    const data = h.plan({pvW: 3000, slots: 8});
-    assert.deepEqual(h.series('Wallbox1').map(slot => slot.valueW), [0, 0, 4600, 4600, 0, 0, 0, 0]);
-    assert.equal(h.series('Wallbox0')[2].valueW, 0);
-    assert.equal(h.series('Wallbox0')[3].valueW, 0);
-    assert.ok(h.series('Wallbox0')[4].valueW > 0);
+    vehicle(h, {wb: 1, soc: 50, minimum: 20, target: 58, capacityKWh: 10,
+        maximumW: 3680, maximum1pA: 16, maximumPhases: 1, phaseSwitch: false});
+    const data = h.plan({pvW: [0, 0, 3000, 3000, 3000, 3000], slots: 6});
+    assert.ok(h.series('Wallbox0')[0].valueW > 0, 'automatic minimum need is met even without PV');
+    assert.equal(h.series('Wallbox0')[1].valueW, 0, 'minimum satisfaction ends mandatory grid charging');
+    assert.equal(h.series('Wallbox1')[1].valueW, 0, 'another flexible car gains no grid permission');
+    assert.ok(h.series('GridPower')[0].valueW > 0);
+    assert.equal(h.series('GridPower')[1].valueW, 0);
+    assert.ok(h.series('Wallbox0').slice(2).some(slot => slot.valueW > 0));
+    assert.ok(h.series('Wallbox1').slice(2).some(slot => slot.valueW > 0));
+    balancedPlan(h, data);
+});
+
+test('manual choice overrides another vehicle deadline while automatic mode retains deadline precedence', () => {
+    for (const manual of [false, true]) {
+        const h = engine({wallboxPriority: manual ? 0 : -1, wb1DeadlineEnabled: true});
+        h.put('ems.0.Devices.MyPV_DHW.Present', false);
+        vehicle(h, {wb: 0, soc: 50, minimum: 20, target: 80, capacityKWh: 50,
+            maximumW: 3680, maximum1pA: 16, maximumPhases: 1, phaseSwitch: false});
+        vehicle(h, {wb: 1, soc: 50, minimum: 20, target: 90, capacityKWh: 5.175,
+            maximumW: 4600, maximum1pA: 20, maximumPhases: 1, phaseSwitch: false, departure: '13:00'});
+        const data = h.plan({pvW: 3000, slots: 8});
+        if (manual) {
+            assert.ok(h.series('Wallbox1').every(slot => slot.valueW === 0));
+            assert.ok(h.series('Wallbox0')[2].valueW > 0 && h.series('Wallbox0')[3].valueW > 0);
+            assert.ok(h.series('GridPower').every(slot => slot.valueW <= 0), 'unselected deadline grants no grid permission');
+        } else {
+            assert.deepEqual(h.series('Wallbox1').map(slot => slot.valueW), [0, 0, 4600, 4600, 0, 0, 0, 0]);
+            assert.equal(h.series('Wallbox0')[2].valueW, 0);
+            assert.equal(h.series('Wallbox0')[3].valueW, 0);
+            assert.ok(h.series('Wallbox0')[4].valueW > 0);
+        }
+        balancedPlan(h, data);
+    }
+});
+
+test('external manual Mii index zero leads the plan even when EQE is below minimum', () => {
+    const h = engine({wallboxPrioritySource: 'external'});
+    h.states.set('DP_WB_PRIORITY', {val: 0, ack: false, ts: h.now});
+    h.put('ems.0.Devices.MyPV_DHW.Present', false);
+    vehicle(h, {wb: 0, soc: 76.1, minimum: 50, target: 80, capacityKWh: 10,
+        maximumW: 3680, maximum1pA: 16, maximumPhases: 1, phaseSwitch: false});
+    vehicle(h, {wb: 2, soc: 10, minimum: 50, target: 95, capacityKWh: 50,
+        maximumW: 3680, maximum1pA: 16, maximumPhases: 1, phaseSwitch: false});
+    const data = h.plan({pvW: 3000, slots: 4});
+    assert.equal(h.series('Allocation')[0].activeWallbox, 0);
+    assert.ok(h.series('Wallbox0')[0].valueW > 0);
+    assert.equal(h.series('Wallbox2')[0].valueW, 0);
+    assert.ok(h.series('Wallbox2').slice(1).some(slot => slot.valueW > 0), 'normal remaining order resumes after Mii completes');
     balancedPlan(h, data);
 });
 

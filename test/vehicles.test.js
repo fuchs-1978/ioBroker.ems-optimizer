@@ -81,8 +81,8 @@ test('admin min/target override mapped values only when selected',()=>{
     assert.equal(h.run('vehicleState(0).mustCharge'),true);
     assert.equal(h.run('vehicleState(1).targetSocPct'),80);
 });
-test('below minimum outranks selected wallbox and previously planned slot',()=>{
-    const h=engine({wallboxPriority:1});h.put('DP_WB0_SOC',10);
+test('automatic choice gives below-minimum need precedence over a previous plan slot',()=>{
+    const h=engine({wallboxPriority:-1});h.put('DP_WB0_SOC',10);
     h.run('updateVehicles()');
     assert.equal(h.run('selectRealtimeWallboxes([{valueW:0},{valueW:6000},{valueW:0}])[0].wb'),0);
 });
@@ -200,10 +200,191 @@ test('realtime allocator never targets two wallboxes at once',()=>{
     h.run('updateSlowTargets(20000,[{valueW:7000},{valueW:7000},{valueW:6000}],{valueW:0},20000)');
     assert.equal(h.run('slowTargets.wallboxA.filter(value=>value>0).length'),1);
 });
-test('running productive wallbox remains selected until it is released',()=>{
-    const h=engine({wallboxPriority:1});h.put('ems.0.Devices.Wallbox0.OutputActive',true);
+test('automatic mode retains the running productive wallbox until it is released',()=>{
+    const h=engine({wallboxPriority:-1});h.put('ems.0.Devices.Wallbox0.OutputActive',true);
     h.put('ems.0.Devices.Wallbox0.OutputOwned',true);h.run('updateVehicles()');
     assert.equal(h.run('selectRealtimeWallboxes([{valueW:0},{valueW:7000},{valueW:0}])[0].wb'),0);
+});
+
+function manualHandoffEngine() {
+    const h=productionEngine({dhwControlEnabled:false,wb0ControlEnabled:true,wb0ProductionArmed:true,
+        multiWallboxAlphaArmed:true,wallboxPrioritySource:'external',wallboxPriority:-2});
+    h.put('DP_WB_PRIORITY',-1);
+    h.put('ems.0.Devices.Wallbox2.OutputActive',true);
+    h.put('ems.0.Devices.Wallbox2.OutputOwned',true);
+    h.put('ems.0.Devices.Wallbox2.OutputCommand_A',13);
+    h.put('ems.0.Devices.Wallbox2.OutputPhases',1);
+    h.put('DP_WB2_POWER',2.99);
+    h.put('ems.0.Config.WallboxMinimumRunTime_s',600);
+    h.run('updateVehicles()');
+    const choose=()=>h.run('selectRealtimeWallboxes([{valueW:0},{valueW:0},{valueW:7000}])[0]?.wb ?? -1');
+    return {...h,choose};
+}
+
+test('manual Mii zero preempts an active owned EQE even during minimum runtime',()=>{
+    const h=manualHandoffEngine();assert.equal(h.choose(),2);
+    // Commands intentionally use ack=false; this preference is not actuator
+    // feedback. The realtime path reads it before the next observer refresh.
+    h.states.set('DP_WB_PRIORITY',{val:0,ts:Date.now(),ack:false});
+    assert.equal(h.choose(),0);
+    assert.match(h.states.get('ems.0.Control.WallboxSelectionReason').val,/Manuelle Prioritaet Wallbox 0/);
+    h.run('updateSlowTargets(6000,[{valueW:0},{valueW:0},{valueW:7000}],{valueW:0})');
+    assert.equal(h.states.get('ems.0.Control.SelectedWallbox').val,0);
+    assert.equal(h.run('slowTargets.wallboxA[2]'),0,'old target must relinquish selection');
+    assert.ok(h.run('slowTargets.wallboxA[0]')>=6);
+    assert.ok(h.run('slowTargets.wallboxA.filter(amps=>amps>0).length')<=1);
+    assert.ok(h.run('slowTargets.wallboxExpectedW[2]')>=2990,'physical old load remains reserved until OFF');
+    const diag=JSON.parse(h.states.get('ems.0.Control.Wallbox0.AllocationDiagnostics_JSON').val);
+    assert.match(diag.selectionReason,/Manuelle Prioritaet Wallbox 0/);
+});
+
+test('manual choice overrides old minimum-SoC, mandatory deadline and manual-current policy',()=>{
+    for(const cause of ['minimum','deadline','amin']) {
+        const h=manualHandoffEngine();
+        if(cause==='minimum')h.put('DP_WB2_SOC',10);
+        if(cause==='deadline'){
+            h.run('nativeConfig.wb2DeadlineEnabled=true');
+            const departure=new Date(Date.now()+5*60000);
+            h.put('ems.0.Vehicles.Wallbox2.DepartureTime',
+                `${String(departure.getHours()).padStart(2,'0')}:${String(departure.getMinutes()).padStart(2,'0')}`);
+        }
+        if(cause==='amin')h.put('DP_WB2_AMIN',10);
+        h.run('updateVehicles()');
+        assert.equal(h.run('vehicleState(2).mustCharge'),true,cause);
+        h.put('DP_WB_PRIORITY',0);
+        assert.equal(h.choose(),0,cause);
+    }
+});
+
+test('ineligible manual target never displaces a running eligible owner',()=>{
+    for(const cause of ['disabled','disconnect','release','soc','target','unarmed','phase']) {
+        const h=manualHandoffEngine();
+        if(cause==='disabled')h.put('ems.0.Devices.Wallbox0.Present',false);
+        if(cause==='disconnect')h.put('DP_WB0_CAR',1);
+        if(cause==='release')h.put('DP_WB0_ALLOW',false);
+        if(cause==='soc')h.put('DP_WB0_SOC',null);
+        if(cause==='target')h.put('DP_WB0_SOC',80);
+        if(cause==='unarmed')h.put('ems.0.Devices.Wallbox0.ControlEnabled',false);
+        if(cause==='phase'){
+            h.run("nativeConfig.wb0PhaseControlMode='script';nativeConfig.wb0PhaseModeId='missing.phase'");
+            h.put('ems.0.Vehicles.Wallbox0.PhaseSwitchEnabled',true);
+        }
+        h.put('DP_WB_PRIORITY',0);h.run('updateVehicles()');
+        assert.equal(h.choose(),2,cause);
+        assert.match(h.states.get('ems.0.Control.WallboxSelectionReason').val,/derzeit nicht zulaessig/,cause);
+    }
+});
+
+test('fresh manual priority never uses stale observer eligibility for a disconnected or blocked target',()=>{
+    for(const cause of ['disconnect','release','soc','target']) {
+        const h=manualHandoffEngine();assert.equal(h.choose(),2);
+        assert.equal(h.run('vehicleState(0).release'),true);
+        if(cause==='disconnect')h.put('DP_WB0_CAR',1);
+        if(cause==='release')h.put('DP_WB0_ALLOW',false);
+        if(cause==='soc')h.put('DP_WB0_SOC',null);
+        if(cause==='target')h.put('DP_WB0_SOC',80);
+        h.put('DP_WB_PRIORITY',0);
+        // No updateVehicles call here: selection is itself the coherent
+        // boundary for a new command and the current raw input snapshots.
+        assert.equal(h.choose(),2,cause);
+        assert.equal(h.run('wallboxManualHandoff'),null,cause);
+    }
+});
+
+test('invalid current car evidence cannot start or retain a manual handoff',()=>{
+    const now=Date.now();
+    for(const sample of [{val:2,q:64},{val:2,ack:false},{val:2,ts:now+60000},
+        {val:2,ts:0},{val:null},{val:false}]) {
+        for(const pending of [false,true]) {
+            const h=manualHandoffEngine();assert.equal(h.choose(),2);
+            if(pending){h.put('DP_WB_PRIORITY',0);assert.equal(h.choose(),0);}
+            h.states.set('DP_WB0_CAR',{val:2,ts:now,ack:true,...sample});
+            h.put('DP_WB_PRIORITY',0);
+            assert.equal(h.choose(),2,JSON.stringify({sample,pending}));
+            assert.equal(h.run('wallboxManualHandoff'),null);
+        }
+    }
+    const h=manualHandoffEngine();
+    h.states.set('DP_WB0_CAR',{val:2,ack:true,ts:now-24*3600000,q:0});
+    h.put('DP_WB_PRIORITY',0);
+    assert.equal(h.choose(),0,'an unchanged confirmed plug status is retained; productive freshness gates still apply');
+});
+
+test('missing or invalid mapped user release cannot interrupt the healthy owner for manual priority',()=>{
+    const now=Date.now();
+    for(const sample of [null,{val:null},{val:''},{val:false},{val:0},{val:'0'},
+        {val:true,q:64},{val:true,ts:now+60000},{val:true,ts:0}]) {
+        for(const pending of [false,true]) {
+            const h=manualHandoffEngine();assert.equal(h.choose(),2);
+            if(pending){h.put('DP_WB_PRIORITY',0);assert.equal(h.choose(),0);}
+            if(sample===null)h.states.delete('DP_WB0_ALLOW');
+            else h.states.set('DP_WB0_ALLOW',{ts:now,ack:false,...sample});
+            h.put('DP_WB_PRIORITY',0);
+            assert.equal(h.choose(),2,JSON.stringify({sample,pending}));
+            assert.equal(h.run('wallboxManualHandoff'),null);
+        }
+    }
+    for(const value of [true,1,'1']) {
+        const h=manualHandoffEngine();
+        h.states.set('DP_WB0_ALLOW',{val:value,ack:false,q:0,ts:now-24*3600000});
+        h.put('DP_WB_PRIORITY',0);
+        assert.equal(h.choose(),0,'valid retained user commands need no actuator acknowledgement');
+    }
+});
+
+test('invalid and neutral priorities never create a false Mii choice or round a fractional index',()=>{
+    const now=Date.now();
+    for(const sample of [{val:null},{val:''},{val:false},{val:true},{val:0.4},{val:3},{val:-1},{val:-2},
+        {val:0,q:64},{val:0,ts:0},{val:0,ts:now+60000}]) {
+        const h=manualHandoffEngine();
+        h.states.set('DP_WB_PRIORITY',{ts:now,ack:false,...sample});
+        h.run('updateVehicles()');
+        assert.equal(h.run('vehicleState(0).selectedPriority'),false,JSON.stringify(sample));
+        assert.equal(h.choose(),2,JSON.stringify(sample));
+    }
+});
+
+test('neutral priority during manual handoff does not reselect the old stopping owned vehicle',()=>{
+    const h=manualHandoffEngine();assert.equal(h.choose(),2);
+    h.put('DP_WB_PRIORITY',0);assert.equal(h.choose(),0);
+    h.put('ems.0.Devices.Wallbox2.OutputActive',false);
+    h.put('DP_WB_PRIORITY',-1);h.run('updateVehicles()');
+    assert.equal(h.choose(),0);
+    h.put('DP_WB2_SOC',80);h.run('updateVehicles()');
+    assert.equal(h.choose(),0,'old owner awaiting OFF does not force selection back to old or -1');
+    h.put('ems.0.Devices.Wallbox2.OutputOwned',false);
+    assert.equal(h.choose(),0,'retain preparation through the normal initial start delay');
+    h.put('ems.0.Devices.Wallbox0.OutputOwned',true);
+    h.put('ems.0.Devices.Wallbox0.OutputActive',true);
+    assert.equal(h.choose(),0);
+    assert.equal(h.run('wallboxManualHandoff'),null,'new active ownership completes the manual transition');
+    assert.equal(h.choose(),0,'automatic mode now retains the new active owner');
+});
+
+test('manual preparation cancels on target ineligibility, timeout or control reset',()=>{
+    for(const cause of ['ineligible','timeout','reset']) {
+        const h=manualHandoffEngine();h.choose();
+        h.put('DP_WB_PRIORITY',0);assert.equal(h.choose(),0);
+        h.put('DP_WB_PRIORITY',-1);
+        if(cause==='ineligible')h.put('DP_WB0_ALLOW',false);
+        if(cause==='timeout')h.run('wallboxManualHandoff.until=Date.now()-1');
+        if(cause==='reset')h.run('resetSlowTargets()');
+        h.run('updateVehicles()');
+        assert.equal(h.choose(),2,cause);
+        assert.equal(h.run('wallboxManualHandoff'),null,cause);
+    }
+});
+
+test('a newer ineligible manual request cancels the superseded prepared vehicle',()=>{
+    const h=manualHandoffEngine();assert.equal(h.choose(),2);
+    h.put('DP_WB_PRIORITY',0);assert.equal(h.choose(),0);
+    assert.equal(h.run('wallboxManualHandoff.target'),0);
+    h.put('DP_WB_PRIORITY',1);
+    assert.equal(h.choose(),2,'ineligible EQV request must not finish the superseded Mii request');
+    assert.equal(h.run('wallboxManualHandoff'),null);
+    assert.match(h.states.get('ems.0.Control.WallboxSelectionReason').val,/Wallbox 1.*derzeit nicht zulaessig/);
+    h.put('ems.0.Devices.Wallbox2.OutputActive',false);
+    assert.equal(h.choose(),2,'the already stopping owner remains protected until its own OFF handshake completes');
 });
 test('default PV-only above minimum does not force charging at departure deadline',()=>{
     const h=engine();h.put('ems.0.Config.Wallbox0VehicleCapacity_kWh',100000);
