@@ -305,6 +305,38 @@ function armPricePlans(h, {batteryW = 1200, wallboxW = 2300, price = 15, limit =
     return {sessionId, until};
 }
 
+test('prepared same-car continuation passes the real allocator but waits for OFF ACK and physical zero', async () => {
+    const h = await plant({startDelayS: 120, split: false});
+    await h.advance(160);
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    assert.equal(h.value('Control.SelectedWallbox'), 2);
+    assert.equal(h.run('wallboxSequenceResume[2].qualified'), true,
+        'a real owned active edge was observed by this engine session');
+    const stoppedAt = h.now();
+    // Inject the known peer interlock at the output-state-machine boundary.
+    // The same real output then handles its delayed allow ACK and physical
+    // stop; the test does not replace either handshake with the resume token.
+    await h.output.stop(h.output.devices[2], 'Sequenzbetrieb: Ladefreigabe Wallbox 0 noch aktiv');
+    assert.equal(h.value('Devices.Wallbox2.SequenceResumePending'), true);
+    assert.equal(h.value('Devices.Wallbox2.OutputActive'), false);
+    assert.equal(h.physical().allow, 1, 'the stop command has not yet reached the car');
+    await h.advance(2);
+    const allocation = JSON.parse(h.value('Control.Wallbox2.AllocationDiagnostics_JSON'));
+    assert.equal(allocation.start.reason, 'prepared-sequence-resume', h.diagnostic());
+    assert.ok(allocation.targetA >= 6);
+    assert.equal(h.value('Devices.Wallbox2.OutputOwned'), true);
+    assert.equal(h.value('Devices.Wallbox2.StopConfirmedAt'), 0, 'OFF has not yet been acknowledged');
+    assert.equal(h.writes.filter(row => row.id === 'goe.allow' && row.val === 1
+        && row.at >= stoppedAt).length, 0, 'positive target cannot bypass pending OFF');
+    await h.advance(30);
+    const restart = h.writes.find(row => row.id === 'goe.allow' && row.val === 1 && row.at > stoppedAt);
+    assert.ok(restart, h.diagnostic());
+    assert.ok(restart.at >= stoppedAt + 4000, 'wait for the delayed OFF ACK and physical zero');
+    assert.ok(restart.at < stoppedAt + 120000, 'no duplicate two-minute start countdown');
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    assert.equal(h.value('Devices.Wallbox2.SequenceResumePending'), false);
+});
+
 test('price plans wait at an expensive dark hour then drive real EV and battery outputs in a cheap hour', async () => {
     const h = await plant({battery: true, startDelayS: 0, initialSurplusW: -500});
     armPricePlans(h, {price: 35});

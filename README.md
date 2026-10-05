@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.33**
+Aktuelle Version: **0.17.0-alpha.34**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -40,6 +40,16 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.34 – Bestätigte Wallbox-Abschaltung und kurze Sequenzsperren
+
+- Eine bereits bestätigte virtuelle Abschaltung wird noch im selben Zyklus abgeschlossen. Eine kurze Freigabe der abgesteckten Mii löst dadurch bei gültiger Nullantwort keine unnötige EQE-Unterbrechung mehr aus.
+- Im realen Ausgang sind AUS-Bestätigung und elektrische Abschaltung getrennt: Erst frische Leistung bis 20 W und Phasenströme bis 0,5 A bestätigen das Ende der Last. Bis dahin bleiben Verriegelung und Leistungsreserve bestehen; ein bestätigter AUS-Befehl wird nicht ständig wiederholt.
+- Nach einer kurzen Peer-Sequenzsperre kann dieselbe zuvor aktive, durchgehend budgetbereite Ladung ohne erneute vollständige Einschaltverzögerung fortgesetzt werden. Die Bereitschaft ist zeitlich begrenzt und verfällt bei Daten-/Budgetlücken, anderer Auswahl, Phasen- oder Preisänderung und Fehlern. Normale Erststarts und neue Fahrzeugwechsel behalten ihre Startbedingungen.
+- `SequenceResumePending`, `SequenceResumeUntil`, `StopConfirmedAt` und `StopPowerPending` erklären die Übergabe in den Diagnoseobjekten; das DecisionRecord enthält die entsprechenden modellierten Felder. Modellbestätigungen bleiben ausdrücklich angenommen, ungültige Schattenantworten bleiben unbekannt.
+- Eine explizite `.npmignore` beseitigt `gitignore-fallback` und schließt Entwicklungstests sowie lokale private Dateien aus dem Installationspaket aus. Andere npm-Warnungen zu Git-Integrität oder Installationsskripten werden dadurch nicht behoben.
+
+Es bleibt bei einer aktiven Wallbox im Sequenzbetrieb. Diese Version ergänzt keine überlappende Zwei-Fahrzeug-Ladung, aktiviert keine Freigaben und ersetzt keine begleitete reale Abnahme. Details: [Übergabe und Wiederaufnahme](docs/wallbox-handoff-alpha34.md).
 
 ## Neu in 0.17.0-alpha.33 – Wärmebedarf und Wallbox gemeinsam planen
 

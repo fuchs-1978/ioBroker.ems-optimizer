@@ -1,0 +1,23 @@
+# Development files do not belong in an installed adapter.
+node_modules/
+test/
+coverage/
+.github/
+.gitignore
+AGENTS.md
+.idea/
+.vscode/
+.DS_Store
+*.tgz
+*.log
+
+# Local credentials, environment settings and private diagnostic exports.
+.npmrc
+.env
+.env.*
+private/
+secrets/
+
+# Keep main.js, io-package.json, lib/, admin/, tools/, docs/ and the public
+# config.example.json: the engine reads its modules at runtime, Admin needs
+# its configuration/translations/icons, and the documented tools stay usable.
