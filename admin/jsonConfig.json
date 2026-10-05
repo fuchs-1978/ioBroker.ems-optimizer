@@ -948,7 +948,8 @@
         },
         "wallboxPriority": {
           "type": "select",
-          "label": "Preferred wallbox (below minimum SoC always wins)",
+          "label": "Preferred wallbox (manual selection takes priority)",
+          "help": "Manual priority: 0 = Mii, 1 = EQV, 2 = EQE. A valid selection of an eligible wallbox takes priority over automatic selection, the currently assigned wallbox, minimum-SoC charging and departure deadlines. Safety and source/charging eligibility checks remain active. Switching is coordinated so only one EMS-controlled wallbox is active.",
           "default": -1,
           "sm": 4,
           "options": [

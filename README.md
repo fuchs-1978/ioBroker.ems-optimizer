@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.34**
+Aktuelle Version: **0.17.0-alpha.35**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -40,6 +40,14 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.35 – Manuelle Priorität wechselt das Fahrzeug
+
+Eine gültige manuelle Auswahl `prio = 0 / 1 / 2` wählt das freigegebene Fahrzeug Mii / EQV / EQE auch dann aus, wenn eine andere Wallbox bereits vom EMS geladen wird. Sie steht vor der automatischen Mindest-SoC-/Abfahrtsreihenfolge und der Mindestlaufzeit der bisherigen Ladung. Ohne gültige manuelle Auswahl bleibt die automatische Auswahl mit ihrem Schutz gegen unnötige Wechsel erhalten.
+
+Die Übergabe bleibt sequenziell: Die alte Wallbox erhält AUS; die neue startet erst nach frischer AUS-Rückmeldung und bestätigter elektrischer Abschaltung. Die normale Einschaltverzögerung und alle Budget-, Quellen-, Phasen-, Preis- und Sicherheitsprüfungen gelten weiterhin. Eine abgesteckte, nicht freigegebene oder fertige bevorzugte Wallbox verdrängt keinen gültigen Ladeauftrag. Leere, fehlerhafte oder ungültige Prioritätswerte wählen nicht versehentlich WB0.
+
+`Control.WallboxSelectionReason` und `selectionReason` im Schatten-DecisionRecord erklären die Auswahl und einen laufenden Wechsel. Eine bewusst angeforderte Übergabe ist damit von einer internen Budgetpause unterscheidbar. Details: [Manuelle Priorität und Übergabe](docs/wallbox-priority-alpha35.md).
 
 ## Neu in 0.17.0-alpha.34 – Bestätigte Wallbox-Abschaltung und kurze Sequenzsperren
 
@@ -589,9 +597,10 @@ Restarts und GitHub-Updates die unterbrechungsfreie Übergabe.
 - WB0, WB1 und WB2 dürfen gleichzeitig zur Adaptersteuerung freigegeben werden.
   Der neue Schalter **Arm ALPHA control for all released wallboxes + DHW** muss
   dafür zusätzlich ausdrücklich gesetzt sein.
-- Produktiv lädt immer nur **eine** Wallbox. Auswahl: laufender EMS-Auftrag,
-  Mindest-SoC, Pflichtladung, Priorität und Fahrplan. Die nächste Wallbox erhält
-  erst nach bestätigtem `allow_charging = 0` der vorherigen eine Startfreigabe.
+- Produktiv lädt immer nur **eine** Wallbox. Seit alpha35 steht eine gültige
+  manuelle Fahrzeugwahl vor dem laufenden EMS-Auftrag und der automatischen
+  SoC-/Fahrplanreihenfolge. Die nächste Wallbox erhält erst nach bestätigtem
+  `allow_charging = 0` und elektrischer Abschaltung der vorherigen eine Startfreigabe.
 - Fahrplan und Echtzeitregler erzeugen ebenfalls nie parallele Wallbox-Sollwerte.
   Der EHZ bleibt parallel zulässig und regelt den nach der Ganzampere-Stufe
   verbleibenden Überschuss stufenlos aus.
@@ -903,8 +912,10 @@ bisherigen Freigabeobjekte bleiben erhalten.
   erfordert jetzt ausdrücklich **Allow grid charging to target before departure**
   (standardmäßig aus). Diese Änderung betrifft auch die Simulation.
 - **Preferred wallbox**: externes Prioritätsobjekt, automatisch oder Wallbox 0/1/2.
-  Unter Mindest-SoC hat ein Fahrzeug Vorrang vor der manuellen Auswahl und vor
-  einem früheren Fahrplan. Nach Erreichen der Mindestgrenze wird neu priorisiert.
+  Seit alpha35 hat eine gültige manuelle Auswahl Vorrang vor laufenden Ladeaufträgen
+  und der automatischen SoC-/Abfahrtsreihenfolge. Ohne manuelle Auswahl gelten
+  weiterhin die automatischen Laderegeln. Sicherheitsgrenzen, Ziel-SoC und
+  Geräte-/Benutzerfreigaben gelten bei jeder Auswahl.
 - **Reduce current near target SoC** aktiviert zwei Stufen je Fahrzeug.
   Abstand zum Ziel wird in Prozentpunkten, die Stromgrenze in A je Phase eingegeben.
   Beispiel aus dem aktiven Mii-Skript: Ziel minus 5 Punkte → höchstens 13 A;

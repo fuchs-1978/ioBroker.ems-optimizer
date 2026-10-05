@@ -11,11 +11,14 @@ const {createRequire} = require('node:module');
 // delayed ioBroker ack and delayed AC THOR power, no device/network writes.
 async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, diagnostics,
     battery = false, heating = false, wallbox = true, cheap = false,
+    mii = false, wallboxStopResponseDelayMs = 0,
     initialSurplusW = 6000, batteryPlanW = 0, lpcLimitW = null, phaseBiasW = [0, 0, 0],
     batteryDelayMs = 2000, heatingDelayMs = 4000, dhwDelayMs = 4000,
     batteryDcFactor = 1, batteryDcPvW = 0} = {}) {
     let now = Date.UTC(2026, 8, 21, 12), surplusW = 6000;
     let heaterW = 0, heaterCommandW = 0, physicalAllow = 0, physicalA = 6;
+    let physicalPowerAllow = 0, miiAllow = 0, miiA = 6;
+    let physicalStopResponseSequence = 0;
     let heatingW = 0, heatingCommandW = 0, batteryW = 0, batteryCommandW = 0;
     let batteryResponds = true, batteryHeartbeat = true;
     surplusW = initialSurplusW;
@@ -62,6 +65,13 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         heatingSetpointId: 'hk.setpoint', heatingConnectionId: 'hk.connected', heatingTempId: 'hk.temp',
         heatingCoolingActiveId: 'hk.cooling', heatingOutput1Id: 'hk.power1',
         heatingOutput2Id: 'hk.power2', heatingOutput3Id: 'hk.power3'};
+    if (mii) Object.assign(config, {multiWallboxAlphaArmed: true,
+        wallboxPrioritySource: 'external', wallboxPriorityId: 'DP_WB_PRIORITY',
+        wb0ControlEnabled: true, wb0ProductionArmed: true,
+        wb0CommissioningMaxA: 16, wb0MinCurrent1pA: 6, wb0MaxCurrent1pA: 16,
+        wb0MaxPowerW: 3680, wb0ProductionPhases: 1, wb0PhaseSwitchEnabled: false,
+        wb0AmpereOutputId: 'goe0.cmd', wb0AmpereFeedbackId: 'goe0.feedback',
+        wb0AllowOutputId: 'goe0.allow', wb0ConnectionId: 'goe0.connection', wb0ErrorId: 'goe0.error'});
     if (!wallbox) config.wb2ControlEnabled = false;
     const writeForeign = (id, val, callback) => {
         writes.push({id, val, at: now});
@@ -93,7 +103,23 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
             }});
         } else if (id === 'goe.allow') {
             put(id, val, {ack: false});
-            events.push({at: now + 4000, run: () => {physicalAllow = val; put(id, val);}});
+            events.push({at: now + 4000, run: () => {
+                physicalAllow = val; put(id, val);
+                const responseSequence = ++physicalStopResponseSequence;
+                if (val || wallboxStopResponseDelayMs === 0 || !physicalPowerAllow) physicalPowerAllow = val;
+                else events.push({at: now + wallboxStopResponseDelayMs,
+                    run: () => {
+                        if (responseSequence === physicalStopResponseSequence) physicalPowerAllow = 0;
+                    }});
+            }});
+        } else if (id === 'goe0.cmd') {
+            put(id, val, {ack: false});
+            events.push({at: now + 4000, run: () => {
+                miiA = val; put(id, val); put('goe0.feedback', val);
+            }});
+        } else if (id === 'goe0.allow') {
+            put(id, val, {ack: false});
+            events.push({at: now + 4000, run: () => { miiAllow = val; put(id, val); }});
         } else put(id, val);
         callback?.(null);
         return true;
@@ -156,12 +182,12 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
     }
     for (const wb of [0, 1, 2]) {
         own(`Devices.Wallbox${wb}.Present`, wb !== 1);
-        own(`Devices.Wallbox${wb}.ControlEnabled`, wb === 2 && wallbox);
+        own(`Devices.Wallbox${wb}.ControlEnabled`, wb === 2 && wallbox || wb === 0 && mii);
         own(`Vehicles.Wallbox${wb}.PhaseSwitchEnabled`, false);
         own(`Vehicles.Wallbox${wb}.MaximumPhases`, 1);
         own(`Vehicles.Wallbox${wb}.MinCurrent1P_A`, 6);
-        own(`Vehicles.Wallbox${wb}.MaxCurrent1P_A`, 32);
-        own(`Config.Wallbox${wb}MaxPower_W`, 7360);
+        own(`Vehicles.Wallbox${wb}.MaxCurrent1P_A`, wb === 0 && mii ? 16 : 32);
+        own(`Config.Wallbox${wb}MaxPower_W`, wb === 0 && mii ? 3680 : 7360);
         own(`Config.Wallbox${wb}VehicleCapacity_kWh`, 50);
         put(`DP_WB${wb}_CAR`, wb === 1 ? 1 : 2);
         put(`DP_WB${wb}_SOC`, 50); put(`DP_WB${wb}_MIN_SOC`, 20);
@@ -173,6 +199,10 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
     put('DP_HA_CRITICAL', false);
     put('goe.connection', true); put('goe.error', 0);
     put('goe.allow', 0); put('goe.feedback', 6);
+    if (mii) {
+        put('goe0.connection', true); put('goe0.error', 0);
+        put('goe0.allow', 0); put('goe0.feedback', 6); put('DP_WB_PRIORITY', 2);
+    }
     for (const id of vm.runInContext('CFG.dp.dhwTemps', ctx)) put(id, 50);
     put('DP_DHW_OUTLET_TEMP', 50);
     const slot = JSON.stringify([{timestamp: now - 1000, valueW: 6000, phases: 1}]);
@@ -218,8 +248,9 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         await recorder.initialize();
     }
     const refresh = () => {
-        const wbW = physicalAllow ? physicalA * 230 : 0;
-        const gridW = heaterW + heatingW + batteryW + wbW - surplusW;
+        const wbW = physicalPowerAllow ? physicalA * 230 : 0;
+        const miiW = miiAllow ? miiA * 230 : 0;
+        const gridW = heaterW + heatingW + batteryW + wbW + miiW - surplusW;
         for (const [id, state] of states) if (state.ack && !id.startsWith('ems.0.')) put(id, state.val);
         put('DP_GRID_IMPORT', Math.max(0, gridW)); put('DP_GRID_EXPORT', Math.max(0, -gridW));
         own('Actual.GridPower_W', gridW); own('Actual.MyPV_DHW_W', heaterW);
@@ -228,8 +259,8 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         put(config.batteryAcPowerId, -batteryW || 0);
         if (batteryHeartbeat) put(config.batteryHeartbeatId, now);
         for (const wb of [0, 1, 2]) {
-            put(`DP_WB${wb}_POWER`, wb === 2 ? wbW / 1000 : 0);
-            put(`DP_WB${wb}_L1_A`, wb === 2 && physicalAllow ? physicalA : 0);
+            put(`DP_WB${wb}_POWER`, (wb === 2 ? wbW : wb === 0 ? miiW : 0) / 1000);
+            put(`DP_WB${wb}_L1_A`, wb === 2 && physicalPowerAllow ? physicalA : wb === 0 && miiAllow ? miiA : 0);
             put(`DP_WB${wb}_L2_A`, 0); put(`DP_WB${wb}_L3_A`, 0);
         }
         const stagedPhases = (watts, stage) => watts <= stage ? [watts, 0, 0]
@@ -239,7 +270,7 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
             put(`DP_DHW_OUTPUT${phase + 1}`, wwPhases[phase]);
             put(`hk.power${phase + 1}`, hkPhases[phase]);
             const phasePowerW = -surplusW / 3 + phaseBiasW[phase]
-                + wwPhases[phase] + hkPhases[phase] + (phase === 0 ? wbW + batteryW : 0);
+                + wwPhases[phase] + hkPhases[phase] + (phase === 0 ? wbW + miiW + batteryW : 0);
             put(`DP_DHW_HA_L${phase + 1}_CURRENT_A`, Math.max(0, phasePowerW / 230));
         }
         for (const key of ['System.LastUpdate', 'Plan.LastUpdate']) own(key, now);
@@ -261,9 +292,12 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
             vm.runInContext('updateDhwProductionOutput();updateHeatingProductionOutput()', ctx);
             recorder?.sample();
         }
-        trace.push({at: now, wbW: physicalAllow ? physicalA * 230 : 0, heaterW, heatingW, batteryW,
-            gridW: heaterW + heatingW + batteryW + (physicalAllow ? physicalA * 230 : 0) - surplusW,
-            fine: value('Control.FineRegulator'), physicalAllow,
+        trace.push({at: now, wbW: physicalPowerAllow ? physicalA * 230 : 0,
+            miiW: miiAllow ? miiA * 230 : 0, heaterW, heatingW, batteryW,
+            gridW: heaterW + heatingW + batteryW + (physicalPowerAllow ? physicalA * 230 : 0)
+                + (miiAllow ? miiA * 230 : 0) - surplusW,
+            fine: value('Control.FineRegulator'), physicalAllow, miiAllow,
+            selectedWallbox: value('Control.SelectedWallbox'),
             phaseImportW: [1, 2, 3].map(p => Number(states.get(`DP_DHW_HA_L${p}_CURRENT_A`)?.val || 0) * 230),
             targetW: value('Control.Targets.Wallbox2_W'), heaterTargetW: value('Control.Targets.MyPV_DHW_W'),
             heatingTargetW: value('Control.Targets.MyPV_Heating_W'), batteryTargetW: value('Control.Targets.Battery_W'),
@@ -278,7 +312,9 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         setBatteryHeartbeat: value => { batteryHeartbeat = value; },
         setBatteryPower: value => { batteryW = value; },
         advance: async seconds => { for (let second = 0; second < seconds; second++) await tick(); },
-        physical: () => ({allow: physicalAllow, amps: physicalA, heaterW, heatingW, batteryW}),
+        physical: () => ({allow: physicalAllow, amps: physicalA, miiAllow, miiAmps: miiA,
+            wbPowerW: physicalPowerAllow ? physicalA * 230 : 0, miiPowerW: miiAllow ? miiA * 230 : 0,
+            heaterW, heatingW, batteryW}),
         diagnostic: () => JSON.stringify(trace.slice(-12), null, 2)};
 }
 
@@ -335,6 +371,80 @@ test('prepared same-car continuation passes the real allocator but waits for OFF
     assert.ok(restart.at < stoppedAt + 120000, 'no duplicate two-minute start countdown');
     assert.equal(h.physical().allow, 1, h.diagnostic());
     assert.equal(h.value('Devices.Wallbox2.SequenceResumePending'), false);
+});
+
+test('external manual Mii priority overrides a running EQE only through confirmed OFF and electrical zero', async () => {
+    const h = await plant({mii: true, startDelayS: 0, minimumRuntimeS: 600,
+        split: false, wallboxStopResponseDelayMs: 10000, lpcLimitW: 4200});
+    await h.advance(40);
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    assert.equal(h.physical().miiAllow, 0, h.diagnostic());
+    assert.equal(h.value('Control.SelectedWallbox'), 2);
+    assert.equal(h.value('Devices.Wallbox2.OutputOwned'), true);
+    assert.ok(h.value('Vehicles.Wallbox2.MinimumRunTimeRemaining_s') > 500);
+    const requestedAt = h.now();
+    h.put('DP_WB_PRIORITY', 0);
+    await h.advance(2);
+    assert.equal(h.value('Control.SelectedWallbox'), 0, 'explicit priority requests the other eligible car');
+    const off = h.writes.find(row => row.id === 'goe.allow' && row.val === 0 && row.at > requestedAt);
+    assert.ok(off, h.diagnostic());
+    await h.advance(4);
+    assert.equal(h.physical().allow, 0, 'old permission is now acknowledged OFF');
+    assert.ok(h.physical().wbPowerW > 0,
+        `the old vehicle still has delayed electrical uptake\n${h.diagnostic()}\n${JSON.stringify(h.writes.slice(-12))}`);
+    assert.equal(h.physical().miiAllow, 0);
+    assert.equal(h.value('Devices.Wallbox2.OutputOwned'), true, 'residual load keeps the interlock');
+    assert.equal(h.value('Devices.Wallbox2.StopPowerPending'), true);
+    assert.ok(!h.writes.some(row => row.id === 'goe0.allow' && row.val === 1 && row.at > requestedAt));
+    await h.advance(40);
+    const on = h.writes.find(row => row.id === 'goe0.allow' && row.val === 1 && row.at > requestedAt);
+    assert.ok(on, h.diagnostic());
+    const zero = h.trace.find(row => row.at >= off.at + 4000 && row.physicalAllow === 0 && row.wbW === 0);
+    assert.ok(zero, h.diagnostic());
+    assert.ok(on.at >= zero.at, 'Mii ON cannot precede fresh physical EQE zero');
+    assert.ok(on.at >= off.at + 14000, 'the delayed vehicle response is separate from its earlier OFF ACK');
+    assert.equal(h.physical().allow, 0);
+    assert.equal(h.physical().miiAllow, 1, h.diagnostic());
+    assert.equal(h.value('Devices.Wallbox0.OutputOwned'), true);
+    assert.equal(h.value('Devices.Wallbox2.OutputOwned'), false);
+    armPricePlans(h, {batteryW: 0});
+    assert.equal(h.run("priceChargingAuthorization('Wallbox2', currentPlanItem('Wallbox2', Date.now())).allowed"), true,
+        'the old EQE has a valid competing cheap-charge plan');
+    await h.advance(120);
+    assert.equal(h.value('Control.SelectedWallbox'), 0, 'persistent explicit priority cannot bounce back to the EQE');
+    assert.equal(h.physical().miiAllow, 1, h.diagnostic());
+    assert.ok(h.trace.every(row => !(row.wbW > 20 && row.miiW > 20)), 'no overlap of electrical vehicle loads');
+    assert.ok(h.trace.every(row => !(row.physicalAllow === 1 && row.miiAllow === 1)), 'no overlap of acknowledged permissions');
+    assert.ok(h.trace.every(row => row.wbW + row.miiW + row.heaterW <= 4200),
+        'the shared LPC limit cannot be reused by the new car or heater during handoff');
+    assert.ok(!h.writes.some(row => row.id === 'goe.allow' && row.val === 1 && row.at > requestedAt),
+        'old still-released vehicle cannot automatically regain ownership');
+    assert.ok(h.trace.every(row => row.phaseImportW.every(watts => watts <= 63 * 230)), 'phase fuse limits remain binding');
+});
+
+test('manual priority for an ineligible Mii or invalid index does not displace the eligible running EQE', async () => {
+    for (const cause of ['unplugged', 'unknown-car', 'target-reached', 'user-release-off',
+        'user-release-null', 'user-release-missing', 'invalid-index']) {
+        const h = await plant({mii: true, startDelayS: 0, minimumRuntimeS: 600, split: false});
+        await h.advance(40);
+        assert.equal(h.physical().allow, 1, h.diagnostic());
+        const requestedAt = h.now();
+        if (cause === 'unplugged') h.put('DP_WB0_CAR', 1);
+        if (cause === 'unknown-car') h.put('DP_WB0_CAR', null);
+        if (cause === 'target-reached') h.put('DP_WB0_SOC', 80);
+        if (cause === 'user-release-off') h.put('DP_WB0_ALLOW', false);
+        if (cause === 'user-release-null') h.put('DP_WB0_ALLOW', null);
+        if (cause === 'user-release-missing') h.states.delete('DP_WB0_ALLOW');
+        h.put('DP_WB_PRIORITY', cause === 'invalid-index' ? 9 : 0);
+        await h.advance(30);
+        assert.equal(h.value('Control.SelectedWallbox'), 2, `${cause}: ${h.diagnostic()}`);
+        assert.equal(h.physical().allow, 1, `${cause}: ${h.diagnostic()}`);
+        assert.equal(h.physical().miiAllow, 0);
+        assert.ok(!h.writes.some(row => row.id === 'goe.allow' && row.val === 0 && row.at > requestedAt),
+            `${cause}: ${JSON.stringify(h.trace.filter(row => row.at > requestedAt).slice(0, 8))}`
+                + `\n${JSON.stringify(h.writes.filter(row => row.id.startsWith('goe') && row.at > requestedAt))}`);
+        assert.ok(!h.writes.some(row => row.id === 'goe0.allow' && row.val === 1 && row.at > requestedAt), cause);
+    }
 });
 
 test('price plans wait at an expensive dark hour then drive real EV and battery outputs in a cheap hour', async () => {
@@ -518,6 +628,7 @@ test('fresh known-SoC session completion overrides stale Release and PV allocati
 
 test('scheduled lower-priority EV receives handoff from a still-released PV-only owner', async () => {
     const h = await plant({startDelayS: 0, initialSurplusW: -500});
+    h.config.wallboxPriority = -1; // automatic choice; a manual 0 would deliberately retain the old car
     armPricePlans(h, {batteryW: 0});
     h.own('Devices.Wallbox0.OutputOwned', true);
     h.own('Devices.Wallbox0.OutputActive', true);
