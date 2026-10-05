@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.32**
+Aktuelle Version: **0.17.0-alpha.33**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -40,6 +40,16 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.33 – Wärmebedarf und Wallbox gemeinsam planen
+
+Eine notwendige Nachheizung reserviert im 48-Stunden-Fahrplan jetzt den tatsächlich benötigten Wärmeanteil. Verbleibende PV kann im selben Viertelstundenfenster eine freigegebene Wallbox versorgen. Bisher konnte ein kleiner Fehlbetrag an der Warmwasserreserve den gesamten PV-Anteil dem Heizstab zuordnen und die Wallbox im Plan auf null setzen.
+
+Der Plan baut zusätzlich aus PV eine begrenzte Reserve für den angenommenen Wärmeverbrauch der nächsten Stunde auf. Dieser zusätzliche Anteil erhält bei ausreichender Leistung die Mindestladeleistung der ausgewählten Wallbox und verursacht keinen zusätzlichen Netzbezug. Eine wirklich kalte obere Speicherschicht und die benötigte Mindestreserve bleiben vorrangig. Reicht die verbleibende PV nicht für die bestätigte Phasenzahl und den Mindeststrom, bleibt eine Ladepause weiterhin möglich und erklärbar.
+
+Die Zuteilungsdiagnose unterscheidet benötigte Wärme, deren PV-/Netzanteile, zusätzlichen PV-Reserveaufbau und das danach verfügbare Wallboxbudget. Fehlende Strompreise erlauben keine Netz-Nachheizung; gültige Speicherwerte können trotzdem den notwendigen PV-Wärmevorrang begründen. Speichergrenzen, Ampere-Stufen, Ziel-SoC und Preisfenster bleiben berücksichtigt.
+
+Die Änderung betrifft die Prognose. Einstellungen, Gerätefreigaben und Echtzeit-Start-/Stoppzeiten werden nicht geändert. Die thermischen Annahmen bleiben ein vereinfachtes Modell; ein höherer Abnahmescore setzt neue nachvollziehbare Betriebsdaten voraus. Details: [Wärmeplanung und Prüfkriterien](docs/thermal-plan-alpha33.md).
 
 ## Neu in 0.17.0-alpha.32 – Wallbox-Rückmeldung und erklärbare Schattenläufe
 

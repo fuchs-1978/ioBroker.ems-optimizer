@@ -32,10 +32,10 @@ function engine(config = {}, clock = null) {
     for (let wb = 0; wb < 3; wb++) put(`ems.0.Devices.Wallbox${wb}.Present`, false);
     put('ems.0.Devices.Battery.Present', false);
     put('ems.0.Devices.MyPV_Heating.Present', false);
-    const plan = ({pvW = 10000, houseW = 0, price = 28.89, slots = 8} = {}) => {
+    const plan = ({pvW = 10000, houseW = 0, price = 28.89, slots = 8, offsetMin = 0} = {}) => {
         const at = (value, i) => Array.isArray(value) ? value[i] : value;
         const data = {
-            pv: Array.from({length: slots}, (_, i) => ({timestamp: now + i * 900000, valueW: at(pvW, i)})),
+            pv: Array.from({length: slots}, (_, i) => ({timestamp: now + offsetMin * 60000 + i * 900000, valueW: at(pvW, i)})),
             house: Array.from({length: slots}, (_, i) => ({valueW: at(houseW, i)})),
             prices: {total: Array.from({length: slots}, (_, i) => ({value_ct_kWh: at(price, i)}))}
         };
@@ -256,18 +256,20 @@ test('fractional final energy respects both storage caps and published slot bala
     assert.ok(allocations.slice(1).every(slot => slot.wallboxW === 0 && slot.dhwW === 0));
 });
 
-test('available PV restores cold-top service before mandatory vehicle grid charging', () => {
+test('available PV restores cold-top service before allocating mandatory vehicle grid charging', () => {
     const h = engine();
     vehicle(h);
     dhw(h, {temperature: 39});
     const data = h.plan({pvW: 2954, houseW: 615, price: [5, 35, 35, 35], slots: 4});
-    assert.deepEqual(h.series('MyPV_DHW').map(slot => slot.valueW), [2339, 0, 0, 0]);
-    assert.deepEqual(h.series('Wallbox2').map(slot => slot.valueW), [0, 4600, 4600, 4600]);
-    assert.deepEqual(h.series('GridPower').map(slot => slot.valueW), [0, 2261, 2261, 2261]);
+    assert.deepEqual(h.series('MyPV_DHW').map(slot => slot.valueW), [2326, 0, 0, 0]);
+    assert.deepEqual(h.series('Wallbox2').map(slot => slot.valueW), [4600, 4600, 4600, 4600]);
+    assert.deepEqual(h.series('GridPower').map(slot => slot.valueW), [4587, 2261, 2261, 2261]);
     const allocations = balancedPlan(h, data);
     assert.equal(allocations[0].dhwReason, 'minimum-reserve');
-    assert.equal(allocations[0].dhwPvW, 2339);
+    near(allocations[0].dhwPvW, 2326, 'only the exact cold-layer need receives first priority');
     assert.equal(allocations[0].dhwGridW, 0);
+    near(allocations[0].wallboxPvW, 13, 'mandatory charging uses only genuinely remaining PV');
+    near(allocations[0].wallboxGridW, 4587, 'the rest of mandatory charging is an explicit grid request');
     assert.equal(allocations[1].dhwReason, 'off');
 });
 
@@ -506,8 +508,8 @@ test('disabled phase switching ignores retained three-phase feedback in a fixed 
 });
 
 function thermalFixture({temperatures = [35.9, 40.1, 48.1, 55.2], demand = 20, loss = 2,
-    reserve = 0.5, start = '2026-10-03T19:15:00Z'} = {}) {
-    const h = engine({}, start);
+    reserve = 0.5, start = '2026-10-03T19:15:00Z', config = {}} = {}) {
+    const h = engine(config, start);
     h.put('ems.0.Devices.MyPV_DHW.Present', true);
     h.put('ems.0.Config.DHWMinTemperature_C', 40);
     h.put('ems.0.Config.DHWTargetTemperature_C', 76);
@@ -590,4 +592,148 @@ test('thermal forecast respects the configured heater cap for both PV and price 
         assert.ok(h.series('MyPV_DHW').every(p => p.valueW <= 3000));
         assert.ok(h.series('MyPV_DHW').some(p => p.valueW > 0));
     }
+});
+
+test('alpha33: near-reserve morning shares PV without alternating forecast wallbox pauses', () => {
+    const h = thermalFixture({temperatures: [39.2, 40.6, 41.5, 46.1], demand: 25,
+        start: '2026-10-05T06:45:00Z', config: {wb2PhaseControlMode: 'script'}});
+    h.put('DP_WB2_PHASE_MODE', 1);
+    vehicle(h, {soc: 87, minimum: 20, target: 95, capacityKWh: 90.6});
+    h.put('DP_DHW_PARALLEL_RELEASE', true);
+    const pvW = [3648, 3648, 3648, 3648, 7384, 7384, 7384, 7384, 9828, 9828, 9828, 9828];
+    const houseW = pvW.map((_, i) => i === 3 ? 1090 : 500);
+    const data = h.plan({pvW, houseW, price: 30.04, slots: pvW.length});
+    const allocations = balancedPlan(h, data), wb = h.series('Wallbox2'), r = h.report();
+    assert.ok(wb.slice(0, 8).every(p => p.valueW >= 1380),
+        'the still-unfinished vehicle stays above one-phase minimum through reserve refills');
+    assert.ok(wb.every(p => p.phases === 1), 'script-confirmed phases remain authoritative');
+    near(r.gridHeatingKWh, 0, 'thermal reserve only uses the available PV in this morning');
+    assert.ok(allocations.every(p => p.wallboxGridW === 0 && p.dhwGridW === 0));
+    assert.ok(r.minimumProjectedUsableKWh >= 0.5 - 1e-7, 'warm-water safety reserve stays covered');
+    assert.ok(allocations.some(p => p.reserveRefillPvW > 0), 'bounded lookahead replenishes PV reserve');
+    near(r.pvHeatingKWh, allocations.reduce((sum, p) => sum + p.dhwPvW / 4000, 0),
+        'thermal model and published allocation count the same solar energy');
+    assert.equal(r.pvReserveRefillHorizonMin, 60);
+    for (const p of allocations) {
+        assert.ok(p.reserveRefillPvW >= 0 && p.reserveRefillPvW <= p.dhwPvW + 1e-7);
+        near(p.mandatoryThermalW, p.mandatoryThermalPvW + p.mandatoryThermalGridW,
+            'mandatory heat source split');
+        assert.ok(p.mandatoryThermalW + p.reserveRefillPvW <= p.dhwW + 1e-7);
+    }
+    const originalPlan = JSON.stringify(wb);
+    h.plan({pvW, houseW, price: 30.04, slots: pvW.length});
+    assert.equal(JSON.stringify(h.series('Wallbox2')), originalPlan,
+        'identical sources do not create a different plan on a repeated calculation');
+});
+
+test('alpha33: unknown prices still protect known thermal reserve using PV only', () => {
+    const h = thermalFixture({temperatures: [40.9, 40.9, 40.9, 40.9], demand: 25,
+        start: '2026-10-05T06:45:00Z'});
+    vehicle(h, {soc: 60, minimum: 20, target: 95, capacityKWh: 90.6});
+    const data = h.plan({pvW: 3648, houseW: 500, price: null, slots: 4});
+    const a = balancedPlan(h, data);
+    assert.ok(a.every(p => p.dhwGridW === 0 && p.wallboxGridW === 0), 'unknown prices authorize no grid purchase');
+    assert.ok(a.some(p => p.mandatoryThermalPvW > 0 || p.reserveRefillPvW > 0));
+    assert.ok(h.series('Wallbox2').every(p => p.valueW >= 1380));
+    assert.ok(h.report().minimumProjectedUsableKWh >= 0.5 - 1e-7);
+    near(h.report().gridHeatingKWh, 0, 'missing prices cannot purchase heat');
+});
+
+test('alpha33: genuinely cold top takes priority when PV cannot cover heat and a wallbox minimum', () => {
+    const h = thermalFixture({temperatures: [39, 39, 39, 39], demand: 25});
+    vehicle(h, {soc: 60, minimum: 20, target: 95});
+    const data = h.plan({pvW: 3000, houseW: 500, price: null, slots: 4});
+    const a = balancedPlan(h, data);
+    assert.equal(a[0].wallboxW, 0, 'insufficient PV is an explained service-priority pause');
+    assert.equal(a[0].dhwPvW, 2500);
+    assert.equal(a[0].dhwGridW, 0);
+    assert.ok(a[0].mandatoryThermalPvW > 0);
+    assert.ok(h.report().minimumProjectedUsableKWh < 0.5,
+        'a resource shortfall remains visible rather than inventing stored heat');
+});
+
+test('alpha33: residual PV respects confirmed one- and three-phase minimum currents', () => {
+    for (const {phaseMode, pvW, expectedActive} of [
+        {phaseMode: 1, pvW: 5600, expectedActive: true},
+        {phaseMode: 2, pvW: 5600, expectedActive: false},
+        {phaseMode: 2, pvW: 5700, expectedActive: true}
+    ]) {
+        const h = thermalFixture({temperatures: [40.9, 40.9, 40.9, 40.9], demand: 25,
+            config: {wb2PhaseControlMode: 'script'}});
+        h.put('DP_WB2_PHASE_MODE', phaseMode);
+        vehicle(h, {soc: 60, minimum: 20, target: 95, capacityKWh: 90.6});
+        const data = h.plan({pvW, houseW: 500, price: 30.04, slots: 1});
+        balancedPlan(h, data);
+        const wb = h.series('Wallbox2')[0], phases = phaseMode === 2 ? 3 : 1;
+        assert.equal(wb.phases, phases);
+        assert.equal(wb.valueW > 0, expectedActive, `confirmed ${phases}P with ${pvW - 500}W net PV`);
+        if (expectedActive) assert.ok(wb.valueW >= 6 * 230 * phases);
+    }
+});
+
+test('alpha33: reserve sharing preserves a finite whole-amp short final charge', () => {
+    const h = thermalFixture({temperatures: [40.9, 40.9, 40.9, 40.9], demand: 25});
+    vehicle(h, {soc: 59.9, minimum: 20, target: 60.1, capacityKWh: 10});
+    const data = h.plan({pvW: 4000, houseW: 500, price: 30.04, slots: 4});
+    const a = balancedPlan(h, data), wb = h.series('Wallbox2');
+    near(a.reduce((sum, p) => sum + p.wallboxW * 0.9 / 4000, 0), 0.02,
+        'reserve refill cannot exceed the vehicle energy target');
+    assert.equal(wb[0].currentA, 6);
+    assert.ok(wb[0].chargingMinutes > 0 && wb[0].chargingMinutes < 1);
+    assert.ok(wb.slice(1).every(p => p.valueW === 0), 'zero after completion is a normal target finish');
+    assert.ok(a[0].dhwW > 0 && a[0].mandatoryThermalPvW > 0);
+});
+
+test('alpha33: anticipatory reserve respects a small heater cap and a short forecast horizon', () => {
+    const h = thermalFixture({temperatures: [42, 42, 42, 42], demand: 25});
+    h.put('ems.0.Config.DHWControllerMaxPower_W', 500);
+    vehicle(h, {soc: 60, minimum: 20, target: 95, capacityKWh: 90.6});
+    const data = h.plan({pvW: 4000, houseW: 500, price: null, slots: 2});
+    const a = balancedPlan(h, data), r = h.report();
+    assert.ok(a.every(p => p.dhwW <= 500 && p.dhwGridW === 0));
+    assert.ok(h.series('Wallbox2').every(p => p.valueW >= 1380));
+    near(r.expectedDemandKWh + r.expectedLossKWh, 27 / 24 * 0.5,
+        'no demand is extrapolated beyond the half-hour plan');
+    assert.ok(a.every((p, i) => p.thermalReserveTargetKWh <= 0.5 + (2 - i) * 27 / 24 / 4 + 1e-7));
+    near(r.pvHeatingKWh, a.reduce((sum, p) => sum + p.dhwPvW / 4000, 0), 'capped solar heat');
+});
+
+test('alpha33: thermal reserve counts only remaining time in the current forecast slot', () => {
+    const h = thermalFixture({temperatures: [40.9, 40.9, 40.9, 40.9], demand: 25});
+    vehicle(h, {soc: 60, minimum: 20, target: 95, capacityKWh: 90.6});
+    const data = h.plan({pvW: 4000, houseW: 500, price: null, slots: 3, offsetMin: -7.5});
+    const a = balancedPlan(h, data), r = h.report();
+    near(r.expectedDemandKWh + r.expectedLossKWh, 27 / 24 * 0.625,
+        'elapsed half of the first slot adds neither consumption nor loss');
+    near(r.pvHeatingKWh, a.reduce((sum, p, i) => sum + p.dhwPvW * (i === 0 ? 0.125 : 0.25) / 1000, 0),
+        'PV energy uses actual remaining slot hours');
+    assert.ok(r.minimumProjectedUsableKWh >= 0.5 - 1e-7);
+    assert.ok(h.series('Wallbox2').every(p => p.valueW >= 1380));
+});
+
+test('alpha33: EMS phase wish uses PV remaining after required heat rather than gross surplus', () => {
+    const h = thermalFixture({temperatures: [38, 38, 38, 38], demand: 25});
+    vehicle(h, {soc: 60, minimum: 20, target: 95, capacityKWh: 90.6});
+    const data = h.plan({pvW: 11000, houseW: 500, price: 30.04, slots: 1});
+    const a = balancedPlan(h, data), wb = h.series('Wallbox2')[0];
+    assert.equal(wb.phases, 1, 'remaining PV supports 1P while mandatory heat precludes 3P minimum');
+    assert.ok(wb.valueW >= 1380 && wb.valueW <= 4600);
+    assert.equal(a[0].wallboxGridW, 0);
+    assert.equal(a[0].dhwGridW, 0);
+    assert.ok(h.report().slots[0].usableKWh >= 0.5 - 1e-7);
+});
+
+test('alpha33: short final charging still needs instantaneous minimum after mandatory heat', () => {
+    const h = thermalFixture({temperatures: [41, 41, 41, 41], demand: 25});
+    vehicle(h, {soc: 59.9, minimum: 20, target: 60.1, capacityKWh: 10});
+    h.put('DP_DHW_PARALLEL_RELEASE', true);
+    h.put('ems.0.Config.DHWParallelStartPower1P_W', 500);
+    h.put('ems.0.Config.DHWParallelStopPower1P_W', 500);
+    const data = h.plan({pvW: [2400, 4000], houseW: 500, price: 30.04, slots: 2});
+    const a = balancedPlan(h, data), wb = h.series('Wallbox2');
+    assert.ok(a[0].wallboxPvAvailableW < 1380);
+    assert.equal(wb[0].valueW, 0, 'small final energy never bypasses the instantaneous phase minimum');
+    assert.equal(wb[1].currentA, 6);
+    assert.ok(wb[1].chargingMinutes > 0 && wb[1].chargingMinutes < 1);
+    near(a.reduce((sum, p) => sum + p.wallboxW * 0.9 / 4000, 0), 0.02, 'finish only when the minimum can be supplied');
 });
