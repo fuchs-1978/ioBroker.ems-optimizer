@@ -1,10 +1,39 @@
 'use strict';
 
+const issue98Timing = require('./fixtures/issue98-timing.json');
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {wallboxResponse} = require('../lib/shadow-wallbox-response');
 const ShadowSampleBuffer = require('../lib/shadow-sample-buffer');
 const ShadowWallboxModel = require('../lib/shadow-wallbox-model');
+
+test('issue98 original source frames reproduce small corrections and asynchronous 1290 W rejection', () => {
+    for (const frame of issue98Timing) {
+        const rawStates = new Map(), mapping = {DP_GRID_IMPORT: 'import', DP_GRID_EXPORT: 'export'},
+            config = {}, devices = [];
+        rawStates.set('import', frame.grid.gridImport); rawStates.set('export', frame.grid.gridExport);
+        for (const wb of [0, 1, 2]) {
+            devices.push({wb, valid: true}); config[`wb${wb}ProductionArmed`] = true;
+            mapping[`DP_WB${wb}_POWER`] = `power${wb}`;
+            rawStates.set(`power${wb}`, frame.wallboxes[wb].power);
+            rawStates.set(`ems.0.Devices.Wallbox${wb}.Present`, {val: true});
+            rawStates.set(`ems.0.Devices.Wallbox${wb}.ControlEnabled`, {val: true});
+        }
+        const original = structuredClone(rawStates);
+        const {response} = wallboxResponse({rawStates, states: structuredClone(rawStates),
+            devices, mapping, namespace: 'ems.0', config, now: frame.timestamp,
+            decision: wb => frame.wallboxes[wb].decision});
+        assert.equal(response.valid, frame.expected.valid, `Seq ${frame.sequence}`);
+        assert.equal(response.wallboxes.Wallbox2.gridPowerSkewMs, frame.expected.skew);
+        assert.equal(response.asynchronousCorrectionW, frame.expected.asynchronousCorrectionW);
+        assert.equal(frame.realAllow, 1, 'legacy real charger remains allowed');
+        assert.deepEqual(rawStates, original);
+        if (!response.valid) assert.match(response.reason, /aggregate 1290 W/);
+    }
+    // These are individual original current frames. Historical retry, missing
+    // source brackets and whole-pause durations cannot be inferred from them.
+});
 
 function fixture() {
     const now = 1000000, rawStates = new Map(), mapping = {}, config = {}, devices = [];

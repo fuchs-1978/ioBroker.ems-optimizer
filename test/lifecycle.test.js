@@ -28,6 +28,24 @@ function adapter() {
     return instance;
 }
 
+test('recorded foreign write distinguishes attempt/transport from raw actuator ACK and keeps safety errors', async () => {
+    const a = adapter(); const events = [];
+    a.shadowController.commandEvent = (stage, id, value, token, error) => {
+        events.push({stage, id, value, token, error}); return token || 'session:command:1';
+    };
+    a.setForeignStateAsync = async () => {};
+    await a.writeRecordedForeignState('charger', 6);
+    assert.deepEqual(events.map(e => e.stage), ['attempt', 'transport_complete']);
+    assert.equal(events[1].token, 'session:command:1');
+    events.length = 0; a.setForeignStateAsync = async () => {throw Error('transport failed');};
+    await assert.rejects(a.writeRecordedForeignState('charger', 6), /transport failed/);
+    assert.deepEqual(events.map(e => e.stage), ['attempt', 'transport_error']);
+    // Optional recording failure cannot reject the actual output operation.
+    a.shadowController.commandEvent = () => {throw Error('diagnostics unavailable');};
+    let writes = 0; a.setForeignStateAsync = async () => {writes++;};
+    await a.writeRecordedForeignState('charger', 0); assert.equal(writes, 1);
+});
+
 test('native settings and startup invalidation finish before outputs and schedules start', async () => {
     const a = adapter();
     const steps = [];

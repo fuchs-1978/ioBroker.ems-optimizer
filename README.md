@@ -2,6 +2,11 @@
 
 Aktuelle Version: **0.17.0-alpha.37**
 
+Prüfung zu Tages-Issue #98: [produktive Diagnose, Phasen-Rückfallvertrag,
+Reproduktion und nächste SQL-Abnahme](docs/issue98-live-diagnostics.md).
+Das dort verlinkte Phasenbeispiel ist standardmäßig deaktiviert und wird nicht
+vom Adapter installiert oder aktiviert; die reale Abnahme bleibt offen.
+
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
 Verbraucher in einem rollierenden 48-Stunden-Fahrplan zusammen.

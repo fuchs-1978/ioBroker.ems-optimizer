@@ -434,6 +434,20 @@ for (const [name, change] of [
     const h = setup(); await h.start(); h.writes.length = 0; change(h);
     await h.output.tick(); assert.deepEqual(h.writes, [{id:'allow', val:0}]);
 });
+test('600 s minimum runtime and 120 s stop delay expire in parallel without adding another stop timer', async () => {
+    let now = Date.now(); const h = setup({now: () => now});
+    h.config.wallboxMinimumRunTimeS = 600; h.config.wallboxStopDelayS = 120;
+    await h.start(); h.writes.length = 0;
+    h.put('ems.0.Control.Targets.Wallbox0_W', 0); h.put('export', 0);
+    await h.output.tick();
+    now += 120000; h.refresh(); await h.output.tick();
+    assert.deepEqual(h.writes, []);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.StopDelayRemaining_s').val, 0);
+    assert.ok(now - h.output.devices[0].activeSince < 600000);
+    now += 480000; h.refresh(); await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}], 'no additional 120 s after minimum runtime');
+});
+
 test('productive output keeps six amps during minimum runtime on a soft surplus drop', async () => {
     const h=setup();h.config.wallboxMinimumRunTimeS=600;await h.start();h.writes.length=0;
     h.put('ems.0.Control.Targets.Wallbox0_W',0);h.put('export',0);
