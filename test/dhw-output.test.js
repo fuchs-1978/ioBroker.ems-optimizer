@@ -102,6 +102,94 @@ function outputHarness({combined = false, simulate = false} = {}) {
     };
 }
 
+for (const sensor of ['t1', 't2', 't3', 't4', 'outlet']) {
+    for (const invalid of [-127, -0.1, 100.1, 65535]) {
+        test(`DHW blocks implausible ${sensor}=${invalid} in simulation and productive output`, () => {
+            for (const simulate of [true, false]) {
+                const h = outputHarness({simulate});
+                h.put(sensor, invalid);
+                if (simulate) {
+                    assert.equal(h.run('evaluateDhwSimulation().valid'), false);
+                    assert.equal(h.run('evaluateDhwSimulation().release'), false);
+                }
+                h.tick();
+                assert.ok(h.commands().every(value => value === 0));
+            }
+        });
+    }
+}
+
+test('DHW accepts plausible temperature boundaries and stops an already owned heater on sensor failure', () => {
+    const h = outputHarness({simulate: true});
+    for (const value of [0, 100]) {
+        h.put('outlet', value);
+        assert.equal(h.run('evaluateDhwSimulation().valid'), true);
+    }
+    h.put('outlet', 50);
+    h.tick();
+    assert.deepEqual(h.commands(), [3000]);
+    h.put('t2', -127);
+    h.tick();
+    assert.deepEqual(h.commands(), [3000, 0]);
+});
+
+for (const [stop, resume] of [[76, 80], [76, 76], [101, 75.5], [76, -1], [NaN, 75.5]]) {
+    test(`DHW rejects invalid hysteresis stop=${stop}, resume=${resume}`, () => {
+        const h = outputHarness({simulate: true});
+        h.own('Config.DHWControllerStopTemperature_C', stop);
+        h.own('Config.DHWControllerResumeTemperature_C', resume);
+        ['t1', 't2', 't3', 't4'].forEach(id => h.put(id, 77));
+        const status = h.run('evaluateDhwSimulation()');
+        assert.equal(status.release, false);
+        assert.equal(status.temperaturePowerLimitW, 0);
+        assert.match(status.reason, /konfiguration ungueltig/);
+        h.tick();
+        assert.ok(h.commands().every(value => value === 0));
+    });
+}
+
+test('DHW hysteresis retains shutdown until valid resume, including after configuration repair', () => {
+    const h = outputHarness({simulate: true});
+    h.put('t1', 76);
+    assert.equal(h.run('evaluateDhwSimulation().release'), false);
+    h.put('t1', 75.7);
+    assert.equal(h.run('evaluateDhwSimulation().release'), false);
+    h.put('t1', 75.5);
+    assert.equal(h.run('evaluateDhwSimulation().release'), true);
+    h.own('Config.DHWControllerResumeTemperature_C', 80);
+    assert.equal(h.run('evaluateDhwSimulation().release'), false);
+    h.own('Config.DHWControllerResumeTemperature_C', 75.5);
+    assert.equal(h.run('evaluateDhwSimulation().release'), true);
+});
+
+for (const [label, value, extra] of [
+    ['missing', undefined, {}], ['NULL', null, {}], ['active', true, {}],
+    ['unknown string', 'unknown', {}], ['unacknowledged', false, {ack: false}],
+    ['missing ack', false, {ack: undefined}], ['bad quality', false, {q: 128}]
+]) {
+    test(`DHW fails closed on configured protection signal: ${label}`, () => {
+        const h = outputHarness({simulate: true});
+        h.run("CFG.dp.haCritical='ha-critical'");
+        if (value !== undefined) h.put('ha-critical', value, extra);
+        h.tick();
+        assert.ok(h.commands().every(watts => watts === 0));
+        assert.match(h.states.get('ems.0.Devices.MyPV_DHW.OutputStatus').val, /Hausanschlussschutz/);
+    });
+}
+
+test('DHW accepts retained acknowledged inactive protection and stops when it becomes unknown', () => {
+    for (const value of [false, 0, '0']) {
+        const h = outputHarness({simulate: true});
+        h.run("CFG.dp.haCritical='ha-critical'");
+        h.put('ha-critical', value, {ts: 1, q: 0});
+        h.tick();
+        assert.deepEqual(h.commands(), [3000]);
+        h.states.delete('ha-critical');
+        h.tick();
+        assert.deepEqual(h.commands(), [3000, 0]);
+    }
+});
+
 test('turning the external 50/50 switch off preserves combined EHZ residual regulation', () => {
     const h = outputHarness({combined: true});
     h.put('split', false);

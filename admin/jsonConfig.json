@@ -2979,6 +2979,8 @@
           "label": "Resume below",
           "unit": "°C",
           "default": 75.5,
+          "min": 0,
+          "max": 100,
           "sm": 3,
           "newLine": true
         },
@@ -2987,6 +2989,8 @@
           "label": "Stop at",
           "unit": "°C",
           "default": 76,
+          "min": 0,
+          "max": 100,
           "sm": 3
         },
         "dhwTopEmergencyC": {
@@ -2994,6 +2998,8 @@
           "label": "Top emergency stop",
           "unit": "°C",
           "default": 82,
+          "min": 0,
+          "max": 100,
           "sm": 3
         },
         "dhwTemperatureMaxAgeMin": {

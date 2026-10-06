@@ -53,6 +53,53 @@ test('duplicate SQL boundary readings subtract a flexible load only once per slo
     assert.equal(result.baseloadValues[0].val, 2000);
 });
 
+test('missing flexible histories preserve total load but never fabricate a cleaned baseload', () => {
+    const run = engine();
+    for (const missing of ['[]', '[{ts:900000,val:null}]', '[{ts:1800000,val:0}]']) {
+        for (const index of [0, 1]) {
+            const flexible = [
+                '{series:[{ts:900000,val:0}],multiplier:1000}',
+                '{series:[{ts:900000,val:1000}],multiplier:1}'
+            ];
+            flexible[index] = `{series:${missing},multiplier:1}`;
+            const result = run(`mergeSubmeterProfile([[{ts:900000,val:5000}]], [${flexible}])`);
+            assert.equal(result.totalValues[0].val, 5000);
+            assert.equal(result.baseloadValues.length, 0);
+        }
+    }
+});
+
+test('only matching complete flexible slots enter the baseload profile; confirmed zero remains usable', () => {
+    const run = engine();
+    const result = run(`mergeSubmeterProfile([[{ts:900000,val:5000},{ts:1800000,val:4000}]], [
+        {series:[{ts:900000,val:0},{ts:1800000,val:1}],multiplier:1000},
+        {series:[{ts:900000,val:1000}],multiplier:1}])`);
+    assert.equal(result.totalValues.length, 2);
+    assert.equal(result.baseloadValues.length, 1);
+    assert.equal(result.baseloadValues[0].val, 4000);
+    assert.equal(run(`profile(${JSON.stringify(result.baseloadValues)}).filter(Number.isFinite).length`), 1);
+});
+
+test('history readiness requires enough cleaned samples and never skips an empty included heating source', async () => {
+    const meterRows = Array.from({length: 21 * 96}, (_, i) => ({
+        ts: Date.UTC(2026, 8, 21) + i * 900000, val: 5000
+    }));
+    for (const flexibleRows of [[], meterRows.slice(0, 7 * 96), meterRows]) {
+        const states = new Map();
+        const run = engine({meterRows, flexibleRows,
+            setState: (id, val) => states.set(id, {val}),
+            getState: id => ({val: id.endsWith('MyPV_Heating_IncludedInSubmeters')}),
+            buildForecast() {}, log() {}, setTimeout, clearTimeout});
+        run("CFG.dp.pvPower='pv'; CFG.dp.houseMetersW=['meter']; CFG.dp.wallboxesKW=[]; "
+            + "CFG.dp.myPvDhwHistoryW=''; CFG.dp.myPvHeatingHistoryW='heating'; "
+            + "getHistoryChunked=async id => id==='meter' ? meterRows : id==='heating' ? flexibleRows : []; pause=async () => {}; ");
+        await run('buildHistory()');
+        assert.equal(run('historyReady'), flexibleRows.length >= 1344);
+        assert.match([...states.values()].find(state => typeof state.val === 'string'
+            && state.val.includes('Grundlastwerte')).val, /Grundlastwerte/);
+    }
+});
+
 test('invalid history values cannot silently supply a zero submeter reading', () => {
     const run = engine();
     const result = run(`mergeSubmeterProfile([[{ts:900000,val:null}], [{ts:900000,val:1000}]], [])`);

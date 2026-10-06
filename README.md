@@ -1186,6 +1186,20 @@ positiver Wert Laden und ein negativer Wert Entladen.
 - Datenqualitäts-, Alters- und Plausibilitätskontrolle
 - keinerlei Schreibzugriff auf reale Geräteausgänge
 
+Wetter- und PV-Prognosen benötigen bestätigte Quellenwerte (`ack=true`), gültige
+Qualität und einen Veröffentlichungszeitstempel, der höchstens sechs Stunden
+alt ist. Der zukünftige Lieferzeitpunkt ist davon unabhängig. Wetter und alle
+PV-Flächen werden über diesen Lieferzeitpunkt zusammengeführt; verschobene
+`hourN`-Indizes werden nicht gleichgesetzt. `Forecast.WeatherValid` erfordert
+Abdeckung von mindestens 36 Stunden im aktuellen 48-Stunden-Horizont.
+
+Bei der Grundlastbereinigung muss für jeden eingeschlossenen flexiblen
+Verbraucher ein gültiger SQL-Wert derselben Viertelstunde vorliegen. Fehlende
+Werte bleiben unbekannt; ein aufgezeichneter Nullwert ist gültig. Die Hauslast
+bleibt bei fehlenden Subtraktionswerten erhalten, die Grundlast nicht.
+`History.Ready` benötigt ausreichende Hauslast- und Grundlastdaten sowie
+vollständige Wochentagsprofile.
+
 ## Grundprinzip
 
 > Historie vor Prognose vor Empfehlung.
@@ -1454,6 +1468,14 @@ Stromstärke jeder Phase. Die harten Stufen 2 und 3 besitzen wie im bisherigen
 Skript eine Wiederzuschaltverzögerung von 30 Sekunden. Bei Verlust einer
 Freigabe oder eines gültigen Messwerts sowie beim Adapterstopp wird ein zuvor
 aktiver Ausgang auf 0 W gesetzt.
+
+Alle fünf Temperaturwerte müssen zwischen 0 und 100 °C liegen. Für die
+Temperaturkonfiguration gilt: Wiederanlauf < Abschaltung ≤ Notabschaltung und
+Kennlinienbeginn < Leitungsschutz, jeweils innerhalb von 0–100 °C. Ungültige
+Einstellungen sperren die Heizfreigabe. Eine konfigurierte Hausanschluss-
+Schutzquelle muss einen bestätigten, qualitätsgültigen inaktiven Wert liefern;
+ein älterer, unveränderter Schutzstatus bleibt gültig. Diese Prüfungen werden
+auch nach Wartezeiten unmittelbar vor einem positiven Stellbefehl wiederholt.
 
 ```text
 ems-optimizer.0.System.RealOutputsEnabled
