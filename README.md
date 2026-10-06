@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.36**
+Aktuelle Version: **0.17.0-alpha.37**
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -40,6 +40,22 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.37 – Schutzprüfungen und nachvollziehbare Schatten-Zeitzuordnung
+
+Diese Alpha bündelt die Korrekturen aus [PR #93](https://github.com/fuchs-1978/ioBroker.ems-optimizer/pull/93)
+und [PR #96](https://github.com/fuchs-1978/ioBroker.ems-optimizer/pull/96):
+
+- Warmwasser benötigt plausible Temperaturen, eine gültige Hysterese und einen bestätigten inaktiven Hausanschlussschutz. Die Prüfungen greifen auch vor wartenden positiven Stellbefehlen.
+- Wetter-/PV-Quellen werden auf Bestätigung, Qualität und Veröffentlichungsalter geprüft. PV-Flächen werden nach Lieferzeit zugeordnet. Fehlende SQL-Subtraktionswerte bleiben unbekannt; Hauslast und bereinigte Grundlast werden getrennt auf ausreichende Daten geprüft.
+- Die Schatten-Netzzeit folgt der positiven Netzrichtung. Mehrere zeitversetzte Wallbox-Korrekturen werden gemeinsam geprüft; Quellenzeitpunkte und Korrekturbeträge stehen im DecisionRecord.
+
+Für den nächsten täglichen Probelauf sind die Vergleichskriterien in
+[Schatten-Zeitzuordnung und Tagesauswertung](docs/shadow-timing-daily-review.md)
+beschrieben. Die Versionsanzeige wird beim Start auf alpha.37 aktualisiert.
+Die praktische Fahrzeugübergabe, Phasenprüfung und Liveabnahme bleiben offen;
+Softwaretests erhöhen den Tages-Score nicht automatisch. Produktive Freigaben
+werden durch das Update nicht aktiviert.
 
 ## Neu in 0.17.0-alpha.36 – Qualifizierte Fahrzeugübergabe ohne zweiten Starttimer
 
@@ -1598,6 +1614,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.37 | Issues #87–#92 und #94–#95: Warmwasserschutz, gültige Hysterese, bestätigte Schutzquelle, qualitätsgesicherte und zeitlich passende Prognosen, vollständige SQL-Grundlastbereinigung und gemeinsame Schatten-Zeitprüfung. Vergleichskriterien für die täglichen Probeläufe ergänzt. |
 | 0.17.0-alpha.24 | Jahrestarife im Admin, direkte Viertelstundenpreise von Energy-Charts, gemeinsame Brutto-Preisberechnung und ausdrückliche Datenlücken ohne günstigen Ersatzpreis. |
 | 0.17.0-alpha.23 | Issue #66: begrenzte historische Messwertpaarung im Schattenmodell, getrennte Telemetrie-/Korrekturgültigkeit, Sitzungsabdeckung und ereignistreue Recordverdichtung. |
 | 0.17.0-alpha.22 | Issue #64: Plausibilitätsgrenze für zeitversetzte Netz-/WB-Messungen im Schattenmodell, aktuelle Versionsanzeige und korrekte Diagnose dauerhafter Benutzervorgaben. |
