@@ -164,6 +164,14 @@ test('storage plus both heaters use real coordination and cooling blocks heating
     assert.ok(h.value('Targets.MyPV_DHW_W') > 0);
 });
 
+test('productive diagnostics never call an armed controller SIMULATION', async () => {
+    const h = await fixture(); const direct = h.direct();
+    assert.equal(direct.get('ems.0.Control.Mode').val, 'PRODUKTIVFREIGABE');
+    assert.match(direct.get('ems.0.Control.Status').val, /^PRODUKTIVFREIGABE:/);
+    assert.doesNotMatch(direct.get('ems.0.Devices.MyPV_DHW.Status').val, /nur Simulation/);
+    await h.tick(); assert.match(h.value('Snapshot_JSON'), /virtueller/);
+});
+
 test('startup copies measured thermal hysteresis without changing live latches', async () => {
     const h = await fixture({heating: true, wallbox: false, surplusW: 9000});
     const live = vm.createContext({});
@@ -704,25 +712,25 @@ test('master switch resets virtual ownership while coherent real feedback remain
     assert.equal(record.modeled.Wallbox0.powerW, h.value('Modeled.Wallbox0_W'));
 });
 
-test('DecisionRecord emits coherent transitions and bounded heartbeats including paused real changes', async () => {
+test('productive DecisionRecord samples the paused model every tick and retains real changes', async () => {
     const h = await fixture();
     h.adapter.config.globalWriteEnabled = true;
     await h.tick();
     const records = () => h.writes.filter(write => write.id.endsWith('.DecisionRecord'));
     const count = records().length;
     for (let cycle = 0; cycle < 5; cycle++) { h.advance(2000); await h.tick(); }
-    assert.equal(records().length, count);
+    assert.equal(records().length, count + 5);
     h.put('DP_WB0_CAR', 1); h.advance(2000); await h.tick();
-    assert.equal(records().length, count + 1);
+    assert.equal(records().length, count + 6);
     const edge = JSON.parse(records().at(-1).val);
     assert.equal(edge.realFeedback.Wallbox0.car.value, 1);
     assert.equal(edge.realFeedback.Wallbox0.car.ts, edge.timestamp);
     h.advance(60000); await h.tick();
-    assert.equal(records().length, count + 2);
+    assert.equal(records().length, count + 7);
     h.put('goe.current', 9); h.advance(2000); await h.tick();
-    assert.equal(records().length, count + 3, 'real current changes are captured even while shadow is paused');
+    assert.equal(records().length, count + 8, 'real current changes are captured even while shadow is paused');
     h.put('goe.current', 9, {ack: false}); h.advance(2000); await h.tick();
-    assert.equal(records().length, count + 4, 'quality transitions are captured without using changing timestamps as event keys');
+    assert.equal(records().length, count + 9, 'quality transitions remain explicit during productive sampling');
 });
 
 test('DecisionRecord keeps selection reasons and emits reason changes with the same selected wallbox', async () => {

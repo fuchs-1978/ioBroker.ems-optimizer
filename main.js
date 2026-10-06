@@ -159,6 +159,20 @@ class EmsOptimizer extends utils.Adapter {
         }
     }
 
+    async writeRecordedForeignState(id, value) {
+        // Diagnostic persistence is not awaited and never authorizes or rejects an output.
+        // Transport completion is deliberately not called an actuator ACK.
+        const commandId = this.runShadow('commandEvent', 'attempt', id, value);
+        try {
+            const result = await this.setForeignStateAsync(id, value, false);
+            this.runShadow('commandEvent', 'transport_complete', id, value, commandId);
+            return result;
+        } catch (error) {
+            this.runShadow('commandEvent', 'transport_error', id, value, commandId, error.message || error);
+            throw error;
+        }
+    }
+
     async startShadow() {
         try {
             await this.shadowController.initialize();
@@ -511,6 +525,8 @@ class EmsOptimizer extends utils.Adapter {
         });
         if (relative !== null && !relative.startsWith('Debug.'))
             this.runDebug('capture', id, published, previous);
+        if (relative === 'System.RealOutputsEnabled' || relative?.startsWith('Devices.'))
+            this.runShadow('captureProduction', id, published, previous);
         return promise;
     }
 
@@ -641,7 +657,7 @@ class EmsOptimizer extends utils.Adapter {
                         throw new Error(electrical?.reason || 'Elektrische Grenze vor Ausgabe nicht bestaetigt');
                 }
             }
-            return this.setForeignStateAsync(id, value, false);
+            return this.writeRecordedForeignState(id, value);
         });
         this.foreignWriteQueues.set(id, promise);
         this.pendingForeignWrites.add(promise);
@@ -769,6 +785,7 @@ class EmsOptimizer extends utils.Adapter {
         if (this.runShadow('handleCommand', id, state)) return;
         if (this.runDebug('handleCommand', id, state)) return;
         this.runDebug('capture', id, state, previous);
+        this.runShadow('captureProduction', id, state, previous);
         for (const listener of this.listeners) {
             if (!listener.ids.has(id) || !state) continue;
             const changed = !previous || previous.val !== state.val;

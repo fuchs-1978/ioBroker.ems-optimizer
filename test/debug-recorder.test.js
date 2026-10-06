@@ -100,6 +100,19 @@ test('missing/blank/quality/ack/future measurement inputs remain unknown, never 
     assert.equal(f.recorder.snapshot().ehz.actual_W, null);
 });
 
+test('derived PV accepts fresh ack=false only for its measurement contract; grid ACK and PV quality remain binding', () => {
+    const f = fixture(); f.put('pv.power', 6000, {ack: false});
+    let s = f.recorder.snapshot();
+    assert.equal(s.power.pv_W, 6000); assert.equal(s.measurements.pv.ack, false);
+    assert.equal(s.measurements.pv.ackRequired, false);
+    f.put('grid.import', 0, {ack: false});
+    assert.equal(f.recorder.snapshot().power.grid_W, null);
+    for (const extra of [{q: 64}, {ts: f.clock.now - 120001}, {val: null}, {val: ''}]) {
+        f.put('pv.power', 6000, {ack: false, ...extra}); s = f.recorder.snapshot();
+        assert.equal(s.power.pv_W, null); assert.equal(s.measurements.pv.valid, false);
+    }
+});
+
 test('quality policies match static connection, user command, two-hour SoC and configured temperatures', async () => {
     const f = fixture();
     f.put('go-e.2.connection', true, {ts: f.clock.now - 86400000});

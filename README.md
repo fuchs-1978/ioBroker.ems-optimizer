@@ -1,6 +1,11 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.37**
+Aktuelle Version: **0.17.0-alpha.38**
+
+Prüfung zu Tages-Issue #98: [produktive Diagnose, Phasen-Rückfallvertrag,
+Reproduktion und nächste SQL-Abnahme](docs/issue98-live-diagnostics.md).
+Das dort verlinkte Phasenbeispiel ist standardmäßig deaktiviert und wird nicht
+vom Adapter installiert oder aktiviert; die reale Abnahme bleibt offen.
 
 Prognosebasierter Energiemanagement-Beobachter für ioBroker. Der Adapter führt
 Messwerte, SQL-Historie, Wetter- und PV-Prognosen, Strompreise sowie flexible
@@ -40,6 +45,17 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.38 – Produktive Diagnose und prüfbarer Phasenvertrag
+
+Diese Alpha übernimmt [PR #99](https://github.com/fuchs-1978/ioBroker.ems-optimizer/pull/99) zu Tages-Issue #98:
+
+- Der vorhandene DecisionRecord erfasst bei produktiver Freigabe Sitzung/Sequenz, Budget und Timer, Befehls-ID/-zeit, Transportergebnis, ACK/q/Quellenzeit sowie Fahrzeug- und elektrische Rückmeldungen. Die beabsichtigte Schattenmodellpause bleibt von fehlender Realtelemetrie getrennt; unbekannte Werte bleiben unbekannt.
+- Die Diagnose der skriptgenerierten PV-Summe folgt deren Quellenvertrag und zeigt ACK=false ausdrücklich. Andere Quellenprüfungen bleiben wirksam. Statusmeldungen benennen eine aktive Produktivfreigabe.
+- Ein standardmäßig deaktiviertes Phasenfolge-Beispiel prüft den Master und verlangt frische ACK=true/q=0-Rückmeldung nach dem Befehl. Es ersetzt oder aktiviert kein laufendes Skript. Bis zur geprüften lokalen Umsetzung gilt: zuerst Phasenskript AUS, danach Master AUS.
+- Regressionen reproduzieren die alpha.37-Zeitprüfung und parallel laufende Mindestlauf-/Stoppzeit. Reglerstrategie, Timer und Schutzgrenzen bleiben unverändert.
+
+[Belege, Reproduktion, Aufnahmegrenzen und SQL-Prüfpunkte](docs/issue98-live-diagnostics.md) beschreiben die nächste Tagesanalyse. Mehr Records verursachen zusätzliche SQL-Last; dauerhafte Speicherung und reale Lade-, Heiz-, Übergabe- und Phasenabnahme sind noch nachzuweisen. Softwaretests versprechen keine Scorepunkte. Ein Update aktiviert keine Freigaben.
 
 ## Neu in 0.17.0-alpha.37 – Schutzprüfungen und nachvollziehbare Schatten-Zeitzuordnung
 
@@ -1614,6 +1630,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.38 | Issue #98: produktive Ereigniskette im vorhandenen Recorder, PV-Quellenvertrag und klare Produktivtexte; deaktiviertes Master-gekoppeltes Phasenbeispiel und Asynchronie-/Timerregressionen. Reale Abnahme bleibt offen. |
 | 0.17.0-alpha.37 | Issues #87–#92 und #94–#95: Warmwasserschutz, gültige Hysterese, bestätigte Schutzquelle, qualitätsgesicherte und zeitlich passende Prognosen, vollständige SQL-Grundlastbereinigung und gemeinsame Schatten-Zeitprüfung. Vergleichskriterien für die täglichen Probeläufe ergänzt. |
 | 0.17.0-alpha.24 | Jahrestarife im Admin, direkte Viertelstundenpreise von Energy-Charts, gemeinsame Brutto-Preisberechnung und ausdrückliche Datenlücken ohne günstigen Ersatzpreis. |
 | 0.17.0-alpha.23 | Issue #66: begrenzte historische Messwertpaarung im Schattenmodell, getrennte Telemetrie-/Korrekturgültigkeit, Sitzungsabdeckung und ereignistreue Recordverdichtung. |

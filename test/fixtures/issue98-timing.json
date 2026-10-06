@@ -1,0 +1,337 @@
+[
+  {
+    "session": 1791252525845,
+    "sequence": 2528,
+    "timestamp": 1791275367085,
+    "grid": {
+      "gridImport": {
+        "val": 856.3000000000001,
+        "ts": 1791275366621,
+        "ack": true,
+        "q": 0
+      },
+      "gridExport": {
+        "val": 0,
+        "ts": 1791275366624,
+        "ack": true,
+        "q": 0
+      }
+    },
+    "wallboxes": {
+      "0": {
+        "power": {
+          "val": 0,
+          "ts": 1791275359766,
+          "ack": true,
+          "q": 0
+        },
+        "decision": {
+          "powerW": 0,
+          "amps": 0,
+          "phases": 1
+        }
+      },
+      "1": {
+        "power": {
+          "val": 0,
+          "ts": 1791275360449,
+          "ack": true,
+          "q": 0
+        },
+        "decision": {
+          "powerW": 0,
+          "amps": 0,
+          "phases": 1
+        }
+      },
+      "2": {
+        "power": {
+          "val": 1.29,
+          "ts": 1791275361568,
+          "ack": true,
+          "q": 0
+        },
+        "decision": {
+          "powerW": 1380,
+          "amps": 6,
+          "phases": 1
+        }
+      }
+    },
+    "expected": {
+      "valid": true,
+      "skew": 5053,
+      "asynchronousCorrectionW": 90
+    },
+    "realAllow": 1,
+    "modelBudgetW": 334
+  },
+  {
+    "session": 1791252525845,
+    "sequence": 2539,
+    "timestamp": 1791275405096,
+    "grid": {
+      "gridImport": {
+        "val": 920.6,
+        "ts": 1791275404621,
+        "ack": true,
+        "q": 0
+      },
+      "gridExport": {
+        "val": 0,
+        "ts": 1791275404625,
+        "ack": true,
+        "q": 0
+      }
+    },
+    "wallboxes": {
+      "0": {
+        "power": {
+          "val": 0,
+          "ts": 1791275404802,
+          "ack": true,
+          "q": 0
+        },
+        "decision": {
+          "powerW": 0,
+          "amps": 0,
+          "phases": 1
+        }
+      },
+      "1": {
+        "power": {
+          "val": 0,
+          "ts": 1791275390446,
+          "ack": true,
+          "q": 0
+        },
+        "decision": {
+          "powerW": 0,
+          "amps": 0,
+          "phases": 1
+        }
+      },
+      "2": {
+        "power": {
+          "val": 1.29,
+          "ts": 1791275391112,
+          "ack": true,
+          "q": 0
+        },
+        "decision": {
+          "powerW": 0,
+          "amps": 0,
+          "phases": 1
+        }
+      }
+    },
+    "expected": {
+      "valid": false,
+      "skew": 13509,
+      "asynchronousCorrectionW": 1290
+    },
+    "realAllow": 1,
+    "modelBudgetW": 269
+  },
+  {
+    "session": 1791252525845,
+    "sequence": 2540,
+    "timestamp": 1791275406134,
+    "grid": {
+      "gridImport": {
+        "val": 951.3000000000001,
+        "ts": 1791275405647,
+        "ack": true,
+        "q": 0
+      },
+      "gridExport": {
+        "val": 0,
+        "ts": 1791275405651,
+        "ack": true,
+        "q": 0
+      }
+    },
+    "wallboxes": {
+      "0": {
+        "power": {
+          "val": 0,
+          "ts": 1791275404802,
+          "ack": true,
+          "q": 0
+        },
+        "decision": {
+          "powerW": 0,
+          "amps": 0,
+          "phases": 1
+        }
+      },
+      "1": {
+        "power": {
+          "val": 0,
+          "ts": 1791275405594,
+          "ack": true,
+          "q": 0
+        },
+        "decision": {
+          "powerW": 0,
+          "amps": 0,
+          "phases": 1
+        }
+      },
+      "2": {
+        "power": {
+          "val": 1.29,
+          "ts": 1791275391112,
+          "ack": true,
+          "q": 0
+        },
+        "decision": {
+          "powerW": 0,
+          "amps": 0,
+          "phases": 1
+        }
+      }
+    },
+    "expected": {
+      "valid": false,
+      "skew": 14535,
+      "asynchronousCorrectionW": 1290
+    },
+    "realAllow": 1,
+    "modelBudgetW": 239
+  },
+  {
+    "session": 1791252525845,
+    "sequence": 2541,
+    "timestamp": 1791275407143,
+    "grid": {
+      "gridImport": {
+        "val": 887.6,
+        "ts": 1791275406628,
+        "ack": true,
+        "q": 0
+      },
+      "gridExport": {
+        "val": 0,
+        "ts": 1791275406638,
+        "ack": true,
+        "q": 0
+      }
+    },
+    "wallboxes": {
+      "0": {
+        "power": {
+          "val": 0,
+          "ts": 1791275404802,
+          "ack": true,
+          "q": 0
+        },
+        "decision": {
+          "powerW": 0,
+          "amps": 0,
+          "phases": 1
+        }
+      },
+      "1": {
+        "power": {
+          "val": 0,
+          "ts": 1791275405594,
+          "ack": true,
+          "q": 0
+        },
+        "decision": {
+          "powerW": 0,
+          "amps": 0,
+          "phases": 1
+        }
+      },
+      "2": {
+        "power": {
+          "val": 1.29,
+          "ts": 1791275406139,
+          "ack": true,
+          "q": 0
+        },
+        "decision": {
+          "powerW": 0,
+          "amps": 0,
+          "phases": 1
+        }
+      }
+    },
+    "expected": {
+      "valid": true,
+      "skew": 489,
+      "asynchronousCorrectionW": 0
+    },
+    "realAllow": 1,
+    "modelBudgetW": 302
+  },
+  {
+    "session": 1791285019906,
+    "sequence": 1990,
+    "timestamp": 1791289430093,
+    "grid": {
+      "gridImport": {
+        "val": 743.4000000000001,
+        "ts": 1791289429345,
+        "ack": true,
+        "q": 0
+      },
+      "gridExport": {
+        "val": 0,
+        "ts": 1791289429348,
+        "ack": true,
+        "q": 0
+      }
+    },
+    "wallboxes": {
+      "0": {
+        "power": {
+          "val": 0,
+          "ts": 1791289423615,
+          "ack": true,
+          "q": 0
+        },
+        "decision": {
+          "powerW": 0,
+          "amps": 0,
+          "phases": 1
+        }
+      },
+      "1": {
+        "power": {
+          "val": 0,
+          "ts": 1791289424101,
+          "ack": true,
+          "q": 0
+        },
+        "decision": {
+          "powerW": 0,
+          "amps": 0,
+          "phases": 1
+        }
+      },
+      "2": {
+        "power": {
+          "val": 1.28,
+          "ts": 1791289426568,
+          "ack": true,
+          "q": 0
+        },
+        "decision": {
+          "powerW": 1380,
+          "amps": 6,
+          "phases": 1
+        }
+      }
+    },
+    "expected": {
+      "valid": true,
+      "skew": 2777,
+      "asynchronousCorrectionW": 100
+    },
+    "realAllow": 1,
+    "modelBudgetW": 437
+  }
+]
