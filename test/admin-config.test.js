@@ -54,8 +54,12 @@ test('update defaults never arm a productive output', () => {
 });
 
 test('package manifests publish the same alpha version', () => {
-    assert.equal(packageJson.version, '0.17.0-alpha.36');
+    assert.equal(packageJson.version, '0.17.0-alpha.37');
     assert.equal(ioPackage.common.version, packageJson.version);
+    const core = fs.readFileSync('lib/engine/core.js', 'utf8');
+    const bootstrap = fs.readFileSync('lib/engine/bootstrap.js', 'utf8');
+    assert.ok(core.includes("stateDef(`${r}.System.Version`, '" + packageJson.version + "'"));
+    assert.ok(bootstrap.includes("write(`${CFG.root}.System.Version`, '" + packageJson.version + "'"));
 });
 
 test('optional BHKW inputs default disabled and expose explicit energy units', () => {
