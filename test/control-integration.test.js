@@ -1169,6 +1169,34 @@ test('queued electrical recheck uses current LPC, thermal cooling and latest tar
             'safety zero cannot be blocked by a stale or failsafe limit');
 });
 
+test('queued DHW writes recheck protection source, plausible temperatures and hysteresis settings', async () => {
+    const h = await plant({wallbox: false});
+    await h.advance(2);
+    h.own('Control.Targets.MyPV_DHW_W', 3000);
+    const allowed = watts => h.run(`checkQueuedElectricalOutput("MyPV_DHW", ${watts}).allowed`);
+    assert.equal(allowed(500), true);
+    for (const value of [null, true, 'unknown']) {
+        h.put('DP_HA_CRITICAL', value);
+        assert.equal(allowed(500), false);
+        assert.equal(allowed(0), true);
+    }
+    h.put('DP_HA_CRITICAL', false, {ack: false});
+    assert.equal(allowed(500), false);
+    h.put('DP_HA_CRITICAL', false, {q: 128});
+    assert.equal(allowed(500), false);
+    h.put('DP_HA_CRITICAL', false);
+    assert.equal(allowed(500), true);
+    h.run("CFG.dp.dhwTemps[0]='bad-temperature'");
+    h.put('bad-temperature', -127);
+    assert.equal(allowed(500), false);
+    assert.equal(allowed(0), true);
+    h.put('bad-temperature', 50);
+    assert.equal(allowed(500), true);
+    h.own('Config.DHWControllerResumeTemperature_C', 80);
+    assert.equal(allowed(500), false);
+    assert.equal(allowed(0), true);
+});
+
 test('passive diagnostics preserve all four actuator sequences in coordinated operation', async () => {
     const scenario = async diagnostics => {
         const h = await plant({battery: true, heating: true, cheap: true,

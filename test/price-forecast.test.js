@@ -48,6 +48,106 @@ function schedule(config = {}, clock) {
     return h;
 }
 
+function weatherFixture() {
+    const h = engine();
+    h.run("CFG.dp.weatherHourlyBase='wx'; CFG.dp.pvForecastBase='pv'; CFG.pvAreas=[{name:'Carport'},{name:'Roof'}]");
+    for (let hour = 0; hour < 48; hour++) {
+        const timestamp = h.now() + hour * 3600000;
+        h.put(`wx.hour${hour}.date`, timestamp);
+        h.put(`wx.hour${hour}.temperature_2m`, 10);
+        h.put(`wx.hour${hour}.wind_speed_10m`, 5);
+        for (const area of ['Carport', 'Roof']) {
+            h.put(`pv.${area}.hourly-forecast.hour${hour}.unix_time_stamp`, timestamp);
+            h.put(`pv.${area}.hourly-forecast.hour${hour}.global_tilted_irradiance`, 1000);
+        }
+    }
+    return h;
+}
+
+for (const [label, extra] of [
+    ['unacknowledged', {ack: false}], ['missing ACK', {ack: undefined}], ['bad quality', {q: 128}],
+    ['missing publication timestamp', {ts: undefined}], ['invalid timestamp', {ts: 'invalid'}],
+    ['future publication', {ts: Date.parse('2026-10-01T14:00:02Z')}],
+    ['old publication', {ts: Date.parse('2026-10-01T07:59:59Z')}]
+]) {
+    test(`weather/PV forecasts reject ${label} independently of future delivery times`, () => {
+        for (const source of ['weather', 'pv']) {
+            const h = weatherFixture();
+            for (const [id, state] of h.states) {
+                if (source === 'weather' ? id.startsWith('wx.') : id.startsWith('pv.'))
+                    h.put(id, state.val, extra);
+            }
+            assert.equal(h.run('weatherHours().length'), 0);
+            h.run('buildForecast()');
+            assert.equal(h.states.get('ems.0.Forecast.WeatherValid').val, false);
+            assert.ok(JSON.parse(h.states.get('ems.0.Forecast.PV_48h_JSON').val).every(slot => slot.valueW === 0));
+        }
+    });
+}
+
+test('acknowledged forecast publication stays usable for six hours, including future delivery', () => {
+    const h = weatherFixture();
+    for (const [id, state] of h.states) {
+        if (id.startsWith('wx.') || id.startsWith('pv.'))
+            h.put(id, state.val, {ts: h.now() - 6 * 3600000, q: '0'});
+    }
+    assert.equal(h.run('weatherHours().length'), 48);
+    assert.equal(h.run('weatherHours()[47].pvW'), 2000);
+    h.run('buildForecast()');
+    assert.equal(h.states.get('ems.0.Forecast.WeatherValid').val, true);
+    h.at('2026-10-01T14:00:01Z');
+    assert.equal(h.run('weatherHours().length'), 0);
+});
+
+test('PV areas join delivery times even when provider hour indices differ', () => {
+    const h = weatherFixture();
+    const prefix = 'pv.Roof.hourly-forecast';
+    h.put(`${prefix}.hour0.unix_time_stamp`, h.now() + 3600000);
+    h.put(`${prefix}.hour0.global_tilted_irradiance`, 7000);
+    h.put(`${prefix}.hour1.unix_time_stamp`, h.now());
+    h.put(`${prefix}.hour1.global_tilted_irradiance`, 3000);
+    const hours = h.run('weatherHours()');
+    assert.equal(hours[0].timestamp, h.now());
+    assert.equal(hours[0].pvW, 4000);
+    assert.equal(hours[1].pvW, 8000);
+});
+
+test('mismatched, missing or duplicated area delivery timestamps leave a gap', () => {
+    for (const invalid of [null, 'invalid', -1, 'yesterday', 'duplicate']) {
+        const h = weatherFixture();
+        const value = invalid === 'yesterday' ? h.now() - 86400000
+            : invalid === 'duplicate' ? h.now() + 3600000 : invalid;
+        h.put('pv.Roof.hourly-forecast.hour0.unix_time_stamp', value);
+        const hours = h.run('weatherHours()');
+        assert.ok(!hours.some(row => row.timestamp === h.now()));
+        if (invalid === 'duplicate') assert.ok(!hours.some(row => row.timestamp === h.now() + 3600000));
+        h.run('buildForecast()');
+        assert.equal(JSON.parse(h.states.get('ems.0.Forecast.PV_48h_JSON').val)[0].valueW, 0);
+    }
+});
+
+test('weather fallback uses the same delivery time instead of the same hour index', () => {
+    const h = weatherFixture();
+    h.put('wx.hour0.temperature_2m', null);
+    h.put('pv.Carport.hourly-forecast.hour1.temperature_2m', 99);
+    assert.ok(!h.run('weatherHours()').some(row => row.timestamp === h.now()));
+    h.put('pv.Carport.hourly-forecast.hour0.temperature_2m', 12);
+    assert.equal(h.run('weatherHours()[0].temperatureC'), 12);
+});
+
+test('historical delivery rows cannot mark the current 48h forecast valid', () => {
+    const h = weatherFixture();
+    for (let hour = 0; hour < 48; hour++) {
+        const timestamp = h.now() - 3 * 86400000 + hour * 3600000;
+        h.put(`wx.hour${hour}.date`, timestamp);
+        for (const area of ['Carport', 'Roof'])
+            h.put(`pv.${area}.hourly-forecast.hour${hour}.unix_time_stamp`, timestamp);
+    }
+    assert.equal(h.run('weatherHours().length'), 48);
+    h.run('buildForecast()');
+    assert.equal(h.states.get('ems.0.Forecast.WeatherValid').val, false);
+});
+
 test('annual network schedule preserves 16:30 boundary, midnight, quarters and a full independent 48h horizon', () => {
     const h = schedule();
     const forecast = h.forecast();
