@@ -167,6 +167,115 @@ test('small substitutions tolerate ordinary meter and wallbox poll skew', () => 
     assert.equal(h.run().response.valid, true);
 });
 
+for (const direction of ['import', 'export']) {
+    test(`a newer zero ${direction === 'import' ? 'export' : 'import'} sample cannot refresh an older active grid leg`, () => {
+        const h = fixture();
+        h.put(direction, 230, {ts: 995000});
+        h.put(direction === 'import' ? 'export' : 'import', 0);
+        const r = h.run();
+        assert.equal(r.response.valid, false);
+        assert.equal(r.response.applied, false);
+        assert.equal(r.response.wallboxes.Wallbox1.gridTs, 995000);
+        assert.equal(r.response.wallboxes.Wallbox1.gridPowerSkewMs, 5000);
+        assert.deepEqual(r.states, h.rawStates);
+    });
+}
+
+test('time-skewed positive import and export cannot form a valid net measurement', () => {
+    const h = fixture();
+    h.put('import', 2500, {ts: 995000});
+    h.put('export', 2400);
+    h.put('power1', 1.38); // No WB substitution is needed; the grid pair alone is invalid.
+    const r = h.run();
+    assert.equal(r.response.valid, false);
+    assert.match(r.response.reason, /grid-pair-asynchronous/);
+    assert.equal(r.response.applied, false);
+    assert.deepEqual(r.states, h.rawStates);
+});
+
+for (const wb1PowerKW of [2.08, 0.68]) {
+    test(`multiple asynchronous sub-kW substitutions are bounded together, WB1=${wb1PowerKW} kW`, () => {
+        const h = fixture();
+        h.put('power0', 0.7, {ts: 995000});
+        h.put('power1', wb1PowerKW, {ts: 995000});
+        const r = h.run();
+        assert.equal(r.response.valid, false);
+        assert.ok(Math.abs(r.response.asynchronousCorrectionW - 1400) < 0.001);
+        assert.equal(r.response.wallboxes.Wallbox0.correctionValid, false);
+        assert.equal(r.response.wallboxes.Wallbox1.correctionValid, false);
+        assert.equal(r.response.applied, false);
+        assert.deepEqual(r.states, h.rawStates);
+        assert.equal(r.currents.size, 0);
+    });
+}
+
+test('small asynchronous uncertainty remains usable alongside a synchronized large correction', () => {
+    const h = fixture();
+    h.put('power0', 0.7, {ts: 995000});
+    const r = h.run();
+    assert.equal(r.response.valid, true);
+    assert.equal(r.response.asynchronousCorrectionW, 700);
+});
+
+test('a bounded common frame repairs aggregate small-correction timing without repairing raw samples', () => {
+    const {h, buffer, ids} = bufferedFixture();
+    for (const id of ['power0', 'power1']) {
+        const value = id === 'power0' ? 0.7 : 2.08;
+        buffer.samples.set(id, [990000, 997000].map(ts => ({val: value, ts, ack: true, q: 0})));
+        h.put(id, value, {ts: 997000});
+    }
+    buffer.capture(h.rawStates, ids, 1000000);
+    const original = structuredClone(h.rawStates);
+    const r = h.run(buffer);
+    assert.equal(r.response.valid, true);
+    assert.equal(r.response.basis, 'bracketed-historical-input');
+    assert.equal(r.response.inputTimestamp, 992000);
+    assert.match(r.response.currentTimingReason, /grid-power-asynchronous/);
+    assert.equal(r.response.currentTiming.gridImportTs, 1000000);
+    assert.ok(Math.abs(r.response.currentTiming.asynchronousCorrectionW - 1400) < 0.001);
+    assert.deepEqual(h.rawStates, original);
+});
+
+test('aggregate asynchronous threshold is inclusive and preserves sub-threshold substitutions', () => {
+    for (const [powerKW, valid] of [[0.499, true], [0.5, false], [0.501, false]]) {
+        const h = fixture();
+        h.put('power0', powerKW, {ts: 995000});
+        h.put('power1', 1.38); // Zero correction on the selected WB.
+        h.put('power2', powerKW, {ts: 995000});
+        assert.equal(h.run().response.valid, valid);
+    }
+});
+
+test('positive directional grid readings use both source times and the existing two-second bound', () => {
+    for (const [skewMs, valid] of [[0, true], [2000, true], [2001, false]]) {
+        const h = fixture();
+        h.put('import', 2500, {ts: 1000000 - skewMs});
+        h.put('export', 2400);
+        const r = h.run();
+        assert.equal(r.response.valid, valid);
+        assert.equal(r.response.gridPairSkewMs, skewMs);
+        assert.equal(r.response.gridImportTs, 1000000 - skewMs);
+        assert.equal(r.response.gridExportTs, 1000000);
+        assert.equal(r.response.wallboxes.Wallbox1.gridPowerSkewMs, skewMs);
+    }
+});
+
+test('a common historical grid pair can repair directional skew without fabricating new grid times', () => {
+    const {h, buffer, ids} = bufferedFixture(0);
+    h.put('import', 300, {ts: 997000});
+    h.put('export', 100);
+    buffer.capture(h.rawStates, ids, 1000000);
+    const original = structuredClone(h.rawStates);
+    const r = h.run(buffer);
+    assert.equal(r.response.valid, true);
+    assert.equal(r.response.basis, 'bracketed-historical-input');
+    assert.equal(r.response.gridImportTs, 992000);
+    assert.equal(r.response.gridExportTs, 992000);
+    assert.equal(r.response.currentTiming.gridPairSkewMs, 3000);
+    assert.match(r.response.currentTimingReason, /grid-pair-asynchronous/);
+    assert.deepEqual(h.rawStates, original);
+});
+
 function slowPollingFixture() {
     const h = fixture(), buffer = new ShadowSampleBuffer();
     const ids = ['import', 'export', 'power0', 'power1', 'power2'];
