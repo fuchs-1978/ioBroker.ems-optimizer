@@ -3,9 +3,11 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const ShadowController = require('../lib/shadow-controller');
 const DebugRecorder = require('../lib/debug-recorder');
+const WallboxOutput = require('../lib/wallbox-output');
+const {WALLBOX_GRID_MAX_AGE_MS} = require('../lib/source-diagnostics');
 
-function fixture() {
-    let now = Date.now();
+function fixture(initialNow = Date.now()) {
+    let now = initialNow;
     const states = new Map(), writes = [];
     const mapping = {DP_GRID_IMPORT: 'import', DP_GRID_EXPORT: 'export', DP_PV_POWER: 'pv',
         DP_WB0_POWER: 'power', DP_WB0_CAR: 'car', DP_WB0_L1_A: 'l1', DP_WB0_L2_A: 'l2', DP_WB0_L3_A: 'l3'};
@@ -126,3 +128,133 @@ test('slow and failing persistence preserves command edges or reports losses exp
     h.adapter.setCompatState = realWrite; h.shadow.commandEvent('attempt', 'cmd', 6); await h.flush();
     assert.ok(h.records().at(-1).recording.writeErrors > 0);
 });
+
+test('grid protection, snapshot and operative wallbox freshness agree while the DHW gate is explicit', async t => {
+    const h = fixture(2000000);
+    t.mock.method(Date, 'now', h.now);
+    const output = new WallboxOutput(h.adapter, {now: h.now});
+    for (const id of ['import', 'export']) for (const ageMs of [10000, 12000, 30000, 30001]) {
+        h.put(id, 0, {ts: h.now() - ageMs, lc: h.now() - 50000});
+        h.shadow.productionRecord({type: 'decision'}); await h.flush();
+        const r = h.records().at(-1);
+        const field = id === 'import' ? 'gridImport' : 'gridExport';
+        const protection = r.protectionFeedback[field];
+        assert.equal(protection.maxAgeMs, WALLBOX_GRID_MAX_AGE_MS);
+        assert.equal(protection.valid, ageMs <= 30000);
+        assert.equal(r.production.measurements[field].valid, protection.valid);
+        assert.equal(output.number(id, WALLBOX_GRID_MAX_AGE_MS) !== null, protection.valid);
+        assert.equal(protection.id, id);
+        assert.equal(protection.lc, h.now() - 50000);
+        assert.match(protection.contract, /wallbox-total-grid/);
+        const dhw = r.protectionFeedback[id === 'import' ? 'dhwGridImport' : 'dhwGridExport'];
+        assert.equal(dhw.maxAgeMs, 10000);
+        assert.equal(dhw.valid, ageMs <= 10000);
+        assert.match(dhw.contract, /dhw-direct-grid.*stops heater/);
+    }
+});
+
+test('missing, NULL, unacknowledged and bad-quality grid sources cannot qualify either output contract', t => {
+    const h = fixture(2000000); t.mock.method(Date, 'now', h.now);
+    const output = new WallboxOutput(h.adapter, {now: h.now});
+    for (const id of ['import', 'export']) for (const invalid of ['missing', {val: null}, {ack: false}, {q: 64}]) {
+        h.put(id, 0, invalid === 'missing' ? {} : invalid);
+        if (invalid === 'missing') h.states.delete(id);
+        const p = h.shadow.realProtectionFeedback();
+        const field = id === 'import' ? 'gridImport' : 'gridExport';
+        assert.equal(p[field].valid, false);
+        assert.equal(p[id === 'import' ? 'dhwGridImport' : 'dhwGridExport'].valid, false);
+        assert.equal(h.adapter.debugRecorder.snapshot().measurements[field].valid, false);
+        assert.equal(output.number(id, WALLBOX_GRID_MAX_AGE_MS), null);
+    }
+    h.adapter.readMapping().DP_HA_L1_IMPORT_W = 'house';
+    h.put('house', 0, {ts: h.now() - 15001});
+    assert.equal(h.shadow.realProtectionFeedback().houseL1Import.maxAgeMs, 15000);
+    assert.equal(h.shadow.realProtectionFeedback().houseL1Import.valid, false);
+    assert.equal(output.number('house'), null);
+    h.put('power', 0, {ts: h.now() - 30001});
+    assert.equal(h.adapter.debugRecorder.snapshot().wallboxes[0].measurements.power.valid, false);
+    assert.equal(output.number('power', output.measurementMaxAgeMs()), null);
+});
+
+test('snapshot clock and derived ages do not create extra subsecond frames; timer and freshness edges do', async t => {
+    const h = fixture(2000000); t.mock.method(Date, 'now', h.now);
+    h.shadow.productionRecord();
+    h.advance(100); h.shadow.productionRecord();
+    h.advance(899); h.shadow.productionRecord(); await h.flush();
+    assert.equal(h.records().length, 1);
+    assert.equal(h.records()[0].production.measurements.gridImport.ageMs, 0);
+    h.advance(1); h.shadow.productionRecord(); await h.flush();
+    assert.equal(h.records().length, 2, 'the one-second heartbeat remains');
+    assert.equal(h.records()[1].production.measurements.gridImport.ageMs, 1000);
+    h.own('Vehicles.Wallbox0.StartDelayRemaining_s', 599);
+    h.shadow.productionRecord(); await h.flush();
+    assert.equal(h.records().at(-1).production.wallboxes[0].StartDelayRemaining_s, 599);
+    h.put('import', 0, {ts: h.now() - 30000});
+    h.shadow.productionRecord(); await h.flush();
+    h.advance(1); h.shadow.productionRecord(); await h.flush();
+    assert.equal(h.records().at(-1).production.measurements.gridImport.valid, false,
+        'a stale-validity edge is meaningful even before the next heartbeat');
+    h.adapter.readMapping().DP_HA_L1_IMPORT_W = 'house';
+    h.put('house', 0, {ts: h.now() - 15000});
+    h.shadow.productionRecord(); await h.flush();
+    const count = h.records().length;
+    h.advance(1); h.shadow.productionRecord(); await h.flush();
+    assert.equal(h.records().length, count + 1, 'independent house protection freshness must not wait for the heartbeat');
+    assert.equal(h.records().at(-1).protectionFeedback.houseL1Import.valid, false);
+    assert.equal(h.records().at(-1).production.measurements.haPhases[0].import.valid, true,
+        'generic snapshot freshness is broader than the operative phase gate');
+});
+
+test('unchanged source polls retain new timestamps, real ACK/q/NULL edges and every cyclic zero command completion', async t => {
+    const h = fixture(2000000); t.mock.method(Date, 'now', h.now);
+    h.shadow.productionRecord();
+    let previous = h.states.get('power');
+    h.shadow.captureProduction('power', previous, previous);
+    for (const extra of [{}, {ack: false}, {ack: true}, {q: 64}, {val: null}, {val: 0}]) {
+        previous = h.states.get('power'); h.advance(1); h.put('power', 0, extra);
+        h.shadow.captureProduction('power', h.states.get('power'), previous);
+    }
+    for (let i = 0; i < 2; i++) {
+        const token = h.shadow.commandEvent('attempt', 'cmd', 0);
+        h.shadow.commandEvent('transport_complete', 'cmd', 0, token);
+    }
+    await h.flush();
+    const r = h.records();
+    assert.equal(r.length, 11);
+    assert.deepEqual(r.map(x => x.recordSequence), Array.from({length: 11}, (_, i) => i + 1));
+    assert.equal(r[1].event.state.ts, 2000001);
+    assert.equal(r[2].event.state.ack, false);
+    assert.equal(r[4].event.state.q, 64);
+    assert.equal(r[5].production.wallboxes[0].actual_W, null);
+    assert.equal(r[6].production.wallboxes[0].actual_W, 0);
+    assert.equal(r[7].event.commandId, r[8].event.commandId);
+    assert.equal(r[9].event.commandId, r[10].event.commandId);
+    assert.notEqual(r[7].event.commandId, r[9].event.commandId);
+});
+
+test('deterministic full-record replay preserves events, timers and source ages under extra unchanged sampling', async t => {
+    let current;
+    t.mock.method(Date, 'now', () => current.now());
+    const replay = async dense => {
+        const h = fixture(2000000); current = h;
+        h.adapter.debugRecorder.session = 'deterministic-fixture';
+        h.shadow.productionRecord();
+        if (dense) {h.advance(100); h.shadow.productionRecord(); h.advance(100); h.shadow.productionRecord();}
+        h.advance(dense ? 50 : 250);
+        const token = h.shadow.commandEvent('attempt', 'cmd', 0);
+        h.advance(10); h.shadow.commandEvent('transport_complete', 'cmd', 0, token);
+        const previous = h.states.get('allow');
+        h.advance(10); h.put('allow', 0, {lc: h.now() - 100});
+        h.shadow.captureProduction('allow', h.states.get('allow'), previous);
+        h.advance(10); h.own('Vehicles.Wallbox0.StartDelayRemaining_s', 599);
+        h.shadow.productionRecord();
+        h.advance(1000); h.shadow.productionRecord(); await h.flush();
+        return h.records();
+    };
+    const sparse = await replay(false), dense = await replay(true);
+    assert.deepEqual(dense, sparse);
+    assert.equal(dense.at(-1).production.measurements.gridImport.ageMs, 1280);
+    assert.equal(dense.at(-1).production.wallboxes[0].StartDelayRemaining_s, 599);
+    assert.ok(dense.every(r => r.schema === 2 && r.production && r.realFeedback));
+});
+
