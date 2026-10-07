@@ -142,6 +142,63 @@ function outputHarness({combined = false, simulate = false} = {}) {
     };
 }
 
+test('DHW direct-grid contract keeps its independent ten-second limit and invalid feedback gates', () => {
+    for (const id of ['gridIn', 'gridOut']) for (const ageMs of [10000, 12000, 30000, 30001]) {
+        const h = outputHarness();
+        h.put(id, 0, {ts: 2000000 - ageMs});
+        assert.equal(h.run('directGridPowerW()') !== null, ageMs <= 10000);
+    }
+    for (const id of ['gridIn', 'gridOut']) for (const invalid of ['missing', {val: null}, {ack: false}, {q: 64}]) {
+        const h = outputHarness();
+        h.put(id, 0, invalid === 'missing' ? {} : invalid);
+        if (invalid === 'missing') h.states.delete(id);
+        assert.equal(h.run('directGridPowerW()'), null);
+    }
+});
+
+test('issue110 fresh zero outputs and NULL setpoint cannot erase an unseen rise, including after restart', () => {
+    const first = outputHarness(); first.tick(); first.complete();
+    first.own('Control.Targets.MyPV_DHW_W', 0);
+    first.put('setpoint', null); first.tick(); first.complete();
+    first.advance(1000); first.fresh(); first.put('setpoint', null); first.tick(); first.complete();
+    const assertPending = h => {
+        const r = JSON.parse(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservationState_JSON').val);
+        assert.deepEqual(r.highW, [3000, 0, 0]);
+        assert.deepEqual(r.seenAt, [0, 0, 0]);
+        assert.deepEqual(r.commandW, [0, 0, 0]);
+        assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservationPending').val, true);
+        assert.equal(h.states.get('setpoint').val, null);
+        for (const id of ['o1', 'o2', 'o3']) assert.equal(h.states.get(id).val, 0);
+    };
+    assertPending(first);
+    const restarted = outputHarness();
+    for (const [id, state] of first.states) restarted.states.set(id, {...state});
+    restarted.advance(2000); restarted.fresh(); restarted.tick(); restarted.complete();
+    assertPending(restarted);
+});
+
+test('DHW reservation witnesses each phase fully, rejects NULL proof and retains a renewed rise', () => {
+    const h = outputHarness();
+    h.run("reserveHeaterCommand('MyPV_DHW', 6000, ['o1','o2','o3'], 3000)");
+    h.advance(10); h.put('o1', 1500); h.put('o2', 3000);
+    h.run("refreshHeaterReservation('MyPV_DHW', ['o1','o2','o3'], 3000)");
+    h.run("reserveHeaterCommand('MyPV_DHW', 0, ['o1','o2','o3'], 3000); heaterZeroWriteCompleted('MyPV_DHW', ['o1','o2','o3'], 3000)");
+    h.advance(10); h.put('o1', 0); h.put('o2', null);
+    h.run("refreshHeaterReservation('MyPV_DHW', ['o1','o2','o3'], 3000)");
+    const record = () => JSON.parse(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservationState_JSON').val);
+    assert.deepEqual(record().highW, [3000, 3000, 0]);
+    h.advance(10); h.put('o2', 0);
+    h.run("refreshHeaterReservation('MyPV_DHW', ['o1','o2','o3'], 3000)");
+    assert.deepEqual(record().highW, [3000, 0, 0]);
+    h.run("reserveHeaterCommand('MyPV_DHW', 3000, ['o1','o2','o3'], 3000)");
+    assert.equal(record().seenAt[0], 0, 'new load needs its own electrical proof');
+    h.advance(10); h.put('o1', 3000);
+    h.run("refreshHeaterReservation('MyPV_DHW', ['o1','o2','o3'], 3000); reserveHeaterCommand('MyPV_DHW', 0, ['o1','o2','o3'], 3000); heaterZeroWriteCompleted('MyPV_DHW', ['o1','o2','o3'], 3000)");
+    h.advance(10); h.put('o1', 0);
+    h.run("refreshHeaterReservation('MyPV_DHW', ['o1','o2','o3'], 3000)");
+    assert.deepEqual(record().highW, [0, 0, 0]);
+});
+
 for (const sensor of ['t1', 't2', 't3', 't4', 'outlet']) {
     for (const invalid of [-127, -0.1, 100.1, 65535]) {
         test(`DHW blocks implausible ${sensor}=${invalid} in simulation and productive output`, () => {
@@ -594,3 +651,4 @@ test('combined EHZ accepts three armed wallboxes only in alpha mode', () => {
     vm.runInContext('nativeConfig.multiWallboxAlphaArmed=false',ctx);
     assert.equal(vm.runInContext('dhwCombinedProductionState().allowed',ctx),false);
 });
+

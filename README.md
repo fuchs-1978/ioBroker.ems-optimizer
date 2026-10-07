@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.48**
+Aktuelle Version: **0.17.0-alpha.49**
 
 Prüfung zu Tages-Issue #98: [produktive Diagnose, Phasen-Rückfallvertrag,
 Reproduktion und nächste SQL-Abnahme](docs/issue98-live-diagnostics.md).
@@ -45,6 +45,14 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.49 – Quellenverträge und produktive Aufzeichnung
+
+`protectionFeedback.gridImport/gridExport` verwendet jetzt denselben 30-s-Vertrag wie der operative Wallboxausgang und die produktive Messwertdiagnose. Die unabhängigen Felder `dhwGridImport/dhwGridExport` benennen den weiterhin geltenden 10-s-Vertrag des direkten EHZ-Netzreglers samt seiner Abschaltfolge. Hausphasen-, Geräte- und Anschlussgrenzen bleiben erhalten. Aus der alten Schutzdiagnose folgt keine reale 10-s-Wallboxabschaltung unter alpha.48.
+
+Der Vergleich unveränderter Produktivsnapshots ignoriert nur die Snapshotuhr und aus Quellenzeitstempeln ableitbare Alter. Der vollständige Record enthält diese Felder weiterhin. Quellenzeitstempel, Timeränderungen, Gültigkeitswechsel und alle Befehls-/Rückmeldeereignisse bleiben erhalten; unveränderte Frames werden weiterhin mindestens einmal pro Sekunde aufgezeichnet. Keine neue Delta-Datenstruktur und keine Unterdrückung zyklischer Nullbefehle.
+
+Die lesende Diagnose zu [#110](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/110) hat 15 Records von zusammen 512.990 UTF-8-Bytes mit begrenzter Pagination erneut gelesen. Die Ursache der früheren SQL-Zugriffsfehler bleibt offen. Die EHZ-Restreserve mit unbeobachteter Stellwirkung wurde reproduziert und nicht spekulativ gelöscht. [Belege, Regressionen, Grenzen und nächste Tagesprüfung](docs/issue110-recorder-source-contracts.md). Keine Installation oder Änderung produktiver Einstellungen; Softwaretests ersetzen keine reale Abnahme.
 
 ## Neu in 0.17.0-alpha.48 – SMA-Quellendiagnose beim Messwertfehler
 
@@ -1694,6 +1702,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.49 | Wallbox-Netzdiagnose mit operativen 30 s, unabhängigen EHZ-Vertrag getrennt ausweisen; unveränderte zusätzliche Subsekunden-Snapshots vermeiden, Ereignisse und volle Rohframes erhalten. |
 | 0.17.0-alpha.48 | SMA-Fehler mit Quellen- und Empfangszeit sowie einmaliger asynchroner ioBroker-Direktlesung diagnostizieren; Schutzpfad unverändert. |
 | 0.17.0-alpha.47 | Gesamtnetzbezug/-einspeisung bis 30 s Alter; passende Ausgangs-, Phasenbudget- und Diagnoseprüfung. |
 | 0.17.0-alpha.46 | Nutzbare Startphase für bestätigte gestoppte Zielwallbox vor Ladefreigabe nach Echtzeitbudget anfordern; laufende Phasenwechsel behalten ihre Timer. |
@@ -1768,3 +1777,4 @@ Adapters sind.
 ## Lizenz
 
 MIT
+
