@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.45**
+Aktuelle Version: **0.17.0-alpha.46**
 
 Prüfung zu Tages-Issue #98: [produktive Diagnose, Phasen-Rückfallvertrag,
 Reproduktion und nächste SQL-Abnahme](docs/issue98-live-diagnostics.md).
@@ -45,6 +45,12 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.46 – Startphase vor der Leistungsübergabe wählen
+
+Eine ausgewählte, angeschlossene und freigegebene EMS-Wallbox mit bestätigtem AUS, elektrischer Ruhe und abgeschlossenem Ausgangsbesitz wählt vor dem Start die nutzbare Phase nach gültigem Echtzeitbudget. Reicht es für 1P samt Startreserve, aber nicht für die 3P-Mindestleistung samt Reserve, wird unmittelbar 1P angefordert. Die 120-s-Abwärtsqualifikation und die Mindesthaltezeit für laufende Phasenwechsel verzögern diesen vorbereiteten Start nicht. Die reale Modus-ACK bleibt erforderlich; ein Schreibecho startet kein Auto. Bei hohem Budget über der nutzbaren 1P-Kapazität plus Reserve darf 3P vorbereitet werden.
+
+Eine qualifizierte Fahrzeugübergabe kann weiterhin die allgemeine Startverzögerung umgehen, braucht aber bestätigtes AUS und elektrische Ruhe des bisherigen Fahrzeugs. Ein Kaltstart behält seine normale Einschaltverzögerung. Pflicht-/Preisfreigaben, feste bzw. externe Phasenführung und laufende Wechsel behalten ihre bisherigen Regeln. [Grenzen und reale Prüfpunkte](docs/wallbox-start-phase-preparation.md). Keine automatische Installation oder Aktorschaltung.
 
 ## Neu in 0.17.0-alpha.45 – Zurückgenommene Stromschritte blockieren nicht dauerhaft
 
@@ -1676,6 +1682,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.46 | Nutzbare Startphase für bestätigte gestoppte Zielwallbox vor Ladefreigabe nach Echtzeitbudget anfordern; laufende Phasenwechsel behalten ihre Timer. |
 | 0.17.0-alpha.45 | Alte elektrische Schrittwartebedingung beim Ersetzen einer offenen Stromerhöhung entfernen; neue Schritte bleiben rückmelde- und budgetgebunden. |
 | 0.17.0-alpha.44 | Gemessene Ein-Ampere-Nachführung laufender PV-Ladung mit elektrischer Schrittbestätigung und passenden EHZ-Reserven. |
 | 0.17.0-alpha.43 | Verzögerte Echtzeit-Phasenentscheidung mit gültigem Budget; Topologieübergänge getrennt reserviert und negative Stromschritte korrigiert. |

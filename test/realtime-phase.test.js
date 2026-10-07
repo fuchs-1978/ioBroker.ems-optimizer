@@ -172,3 +172,49 @@ test('phase budget rejects stale, unacknowledged or poor-quality reclaimed sourc
     }
     assert.equal(valid(h.start), true);
 });
+
+
+test('confirmed stopped target selects one phase immediately from a low real start budget despite hold', () => {
+    const h = phaseEngine({phaseSwitchMinHoldMin: 15});
+    vm.runInContext(`lastRealPhaseChangeAt[1] = ${h.start}`, h.ctx);
+    assert.equal(h.run(0, 2300, {preStartReady: true}), 1);
+    assert.equal(h.diagnostic().reason, 'pre-start-budget-phase');
+    assert.equal(h.diagnostic().remainingS, 0);
+    h.vehicle.phaseFeedbackValid = false;
+    assert.equal(h.run(5, 2300, {pending: true, valid: false, preStartReady: false}), 1,
+        'native phase echo cannot undo the prepared destination');
+    h.vehicle.phaseFeedbackValid = true; h.vehicle.confirmedPhases = 1;
+    assert.equal(h.run(10, 2300, {preStartReady: true}), 1);
+    assert.equal(h.run(15, 5500, {preStartReady: false}), 1,
+        'a running charger still observes real qualification and hold');
+});
+
+test('missing stop proof, invalid budget and insufficient start power do not bypass phase qualification', () => {
+    for (const context of [{preStartReady: false}, {preStartReady: true, valid: false},
+        {preStartReady: true, pending: true}]) {
+        const h = phaseEngine();
+        assert.equal(h.run(0, 2300, context), 3);
+    }
+    const h = phaseEngine();
+    assert.equal(h.run(0, 1500, {preStartReady: true}), 3);
+});
+
+test('pre-start topology proof rejects release echoes, residual draw and an unfinished owned stop', () => {
+    const h = phaseEngine();
+    h.ctx.CFG.dp = {wallboxesKW: ['p0', 'power', 'p2'], wallboxCar: ['c0', 'car', 'c2'],
+        wallboxPhaseCurrents: [[], ['i1', 'i2', 'i3'], []]};
+    h.ctx.nativeConfig.wb1AllowOutputId = 'allow';
+    for (const [id, val] of Object.entries({'ems.0.Devices.Wallbox1.OutputActive': false,
+        'ems.0.Devices.Wallbox1.OutputOwned': false, power: 0, car: 2, i1: 0, i2: 0, i3: 0, allow: 0}))
+        h.states.set(id, {val, ack: true, q: 0, ts: h.start});
+    const proof = () => vm.runInContext(`wallboxPreStartPhaseReady(1, ${h.start})`, h.ctx);
+    assert.equal(proof(), true);
+    for (const [id, change] of [['allow', {ack: false}], ['allow', {val: 1}],
+        ['power', {val: 0.1}], ['power', {val: null}], ['power', {ts: h.start - 31000}],
+        ['i2', {q: 64}], ['i3', {val: 0.6}], ['ems.0.Devices.Wallbox1.OutputOwned', {val: true}]]) {
+        const previous = h.states.get(id);
+        h.states.set(id, {...previous, ...change});
+        assert.equal(proof(), false, `${id}: ${JSON.stringify(change)}`);
+        h.states.set(id, previous);
+    }
+});
