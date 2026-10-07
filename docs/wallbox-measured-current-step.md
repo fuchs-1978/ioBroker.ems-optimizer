@@ -23,3 +23,11 @@ Die Ausnahme gilt nicht für einen Kaltstart, autorisierte Preis-/Pflichtladung,
 5. Im Kombibetrieb prüfen, dass EHZ-Rückgang und gemessenes Netzbudget vor einer Erhöhung wirksam sind. Alte Lasten dürfen während einer Übergabe nicht zweimal verteilt werden.
 
 Regressionstests reproduzieren den Mii-Befund, unveränderte ACK-/Messbilder, nachfolgende Zunahme, 3P-Schrittgröße, ungültige Quellen und harte Grenzen. Sie erteilen keine Livefreigabe und begründen allein keine neuen Scorepunkte.
+
+## Korrektur in alpha.45
+
+Am 07.10.2026 um etwa 13:55 Europe/Berlin zeigte alpha.44 beim Mii 9 A Vorgabe, rund 8,4 A und 1.910 W Aufnahme sowie rund 450–480 W Einspeisung bei −100 W Netz-Ziel. Der Verteiler verlangte 10 A; der Ausgang wartete aber auf eine alte elektrische Schrittantwort. Im produktiven DecisionRecord war noch ein 10-A-Schrittnachweis mit Ausgangsmessung 1.790 W / 7,9 A gespeichert, obwohl der aktuelle Befehl 9 A betrug. Der Snapshot belegt den widersprüchlichen Wartezustand, nicht den genauen Grund der vorherigen Befehlsrücknahme.
+
+Die Reproduktion zeigt: Beim Ersetzen eines offenen höheren Strombefehls läuft ein eigener Pending-Zweig. Die Rücknahme durchläuft nicht die normale Stromreduktionsstelle, die den Schrittnachweis bereits löscht. Alpha.45 löscht ihn daher auch beim Ersetzen des offenen Befehls. Die ACK-/elektrische Antwort des Ersatzbefehls werden weiterhin unabhängig geprüft; eine Rücknahme ist selbst kein Nachweis erfolgreicher Fahrzeugreaktion. Erst gültiges Budget und bestätigte aktuelle Rückmeldungen erlauben einen neuen Schritt. Danach gilt wieder die bestehende unabhängige elektrische Schrittprüfung.
+
+Nach manueller Installation prüfen: alte 10-A-Wartebedingung bleibt bei bestätigten 9 A nicht bestehen; bei ausreichendem Restbudget neuer 9→10-A-Befehl, passende ACK und anschließend reale Strom-/Leistungsantwort. Keine Freigabeunterbrechung aus der bloßen Befehlsersetzung. Keine weitere Erhöhung ohne neue Aufnahme, und keine Erhöhung über Schutzgrenzen. Tests ersetzen diesen realen Nachweis nicht.

@@ -1764,3 +1764,54 @@ test('invalid real power cannot qualify a measured budget step', async () => {
         assert.ok(!h.writes.some(x => x.id === 'cmd' && x.val > 15), JSON.stringify(invalid));
     }
 });
+
+test('superseding a pending measured increase discards its old proof and permits a fresh budget step', async () => {
+    const {h, d, advance} = await measuredRunningMii();
+    d.lastA = 9; h.ack('feedback', 9);
+    h.put('power', 1.79); h.put('i1', 7.9);
+    h.put('ems.0.Control.Targets.Wallbox0_W', 2300); h.put('export', 400);
+    await h.output.tick();
+    assert.equal(d.pending.amps, 10);
+    assert.equal(d.measuredBudgetStep.amps, 10);
+    // A falling allocation supersedes 10 A while its ACK is processed.
+    // Runtime lastA is still 9 A until the pending branch completes.
+    advance(); h.ack('feedback', 10); h.put('power', 1.89); h.put('i1', 8.3);
+    h.put('ems.0.Control.Targets.Wallbox0_W', 2070);
+    await h.output.tick();
+    assert.equal(d.pending.amps, 9);
+    assert.equal(d.measuredBudgetStep, null, 'withdrawn 10 A must not keep a permanent proof lock');
+    advance(); h.ack('feedback', 9); h.put('power', 1.91); h.put('i1', 8.4);
+    await h.output.tick();
+    advance(); h.put('ems.0.Control.Targets.Wallbox0_W', 2530); h.put('export', 448);
+    await h.output.tick();
+    assert.equal(h.writes.at(-1).val, 10);
+    assert.equal(d.measuredBudgetStep.amps, 10);
+    assert.equal(d.measuredBudgetStep.powerW, 1910, 'fresh step uses the current real response');
+    advance(); h.ack('feedback', 10); await h.output.tick();
+    advance(); await h.output.tick();
+    assert.ok(!h.writes.some(x => x.id === 'cmd' && x.val > 10),
+        'new ACK with unchanged car uptake does not grant repeated increases');
+    assert.ok(!h.writes.some(x => x.id === 'allow'), 'the replacement keeps the charge block');
+});
+
+test('a hard cap replacing an unacknowledged measured increase clears only the obsolete step proof', async () => {
+    const {h, d, advance} = await measuredRunningMii();
+    await h.output.tick();
+    assert.equal(d.pending.amps, 16);
+    assert.equal(d.measuredBudgetStep.amps, 16);
+    h.config.wb0CommissioningMaxA = 15;
+    await h.output.tick();
+    assert.equal(d.pending.amps, 15);
+    assert.equal(d.measuredBudgetStep, null);
+    assert.ok(d.response, 'replacement still needs its own current ACK and electrical response');
+    h.config.wb0CommissioningMaxA = 32;
+    const count = h.writes.length;
+    await h.output.tick();
+    assert.equal(h.writes.length, count, 'clearing proof cannot bypass an outstanding replacement response');
+    advance(); h.ack('feedback', 15); h.put('power', 3.15); h.put('i1', 13.9);
+    await h.output.tick();
+    advance(); await h.output.tick();
+    assert.equal(h.writes.at(-1).val, 16);
+    assert.equal(d.measuredBudgetStep.amps, 16);
+    assert.ok(!h.writes.some(x => x.id === 'allow'));
+});

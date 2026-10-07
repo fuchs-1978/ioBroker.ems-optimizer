@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.44**
+Aktuelle Version: **0.17.0-alpha.45**
 
 Prüfung zu Tages-Issue #98: [produktive Diagnose, Phasen-Rückfallvertrag,
 Reproduktion und nächste SQL-Abnahme](docs/issue98-live-diagnostics.md).
@@ -45,6 +45,12 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.45 – Zurückgenommene Stromschritte blockieren nicht dauerhaft
+
+Wird eine noch offene Stromerhöhung durch einen niedrigeren Befehl ersetzt, wird ihr alter elektrischer Schrittnachweis jetzt sofort verworfen. In alpha.44 konnte beispielsweise ein zurückgenommener 10-A-Schritt weitere Erhöhungen bei bestätigten 9 A blockieren. Nach ACK und frischer elektrischer Antwort des Ersatzbefehls darf der EMS bei ausreichendem gemessenem Budget wieder einen einzelnen Schritt versuchen. Eine unveränderte Aufnahme nach diesem neuen Schritt erlaubt weiterhin keine wiederholten Erhöhungen; Schutzgrenzen und Antwortfristen bleiben erhalten.
+
+Regressionen reproduzieren die Befehlsersetzung während der ACK-Verarbeitung und eine harte Begrenzung vor der ACK. [Reale Prüfpunkte](docs/wallbox-measured-current-step.md#korrektur-in-alpha45). Keine automatische Installation oder Änderung produktiver Einstellungen.
 
 ## Neu in 0.17.0-alpha.44 – Gemessener Überschuss für laufende Wallboxen
 
@@ -1670,6 +1676,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.45 | Alte elektrische Schrittwartebedingung beim Ersetzen einer offenen Stromerhöhung entfernen; neue Schritte bleiben rückmelde- und budgetgebunden. |
 | 0.17.0-alpha.44 | Gemessene Ein-Ampere-Nachführung laufender PV-Ladung mit elektrischer Schrittbestätigung und passenden EHZ-Reserven. |
 | 0.17.0-alpha.43 | Verzögerte Echtzeit-Phasenentscheidung mit gültigem Budget; Topologieübergänge getrennt reserviert und negative Stromschritte korrigiert. |
 | 0.17.0-alpha.42 | Gemessene Leistungsübergabe vom EHZ zur nächsten Wallboxstufe; qualifizierte Weitergabe nach Abstecken ohne erneuten vollständigen Starttimer. |
