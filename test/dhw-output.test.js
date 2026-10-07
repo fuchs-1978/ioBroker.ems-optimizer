@@ -11,6 +11,46 @@ vm.runInContext(fs.readFileSync(
     path.join(__dirname, '../lib/engine/dhw-output.js'), 'utf8'), context);
 const command = expression => vm.runInContext(expression, context);
 
+test('stable positive AC THOR offset resumes only a normal ramp after fresh evidence', () => {
+    const h = outputHarness();
+    h.run('dhwLastCommandW=3394; dhwLastCommandAt=1999000; dhwOutputWasActive=true');
+    for (let i = 0; i < 4; i++) {
+        h.put('o1', 428); h.put('o2', 3316); h.put('o3', 0);
+        h.tick(); h.complete();
+        if (i < 3) assert.equal(h.commands().at(-1), 3394);
+        h.advance(5000); h.fresh();
+    }
+    assert.equal(h.commands().at(-1), 4394);
+    assert.match(h.states.get('ems.0.Devices.MyPV_DHW.ControlReason').val, /stabile positive/);
+    assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.ActuatorSettled').val, false);
+    h.put('o1', 428); h.put('o2', 3316); h.tick();
+    assert.equal(h.commands().at(-1), 4394, 'old lower response cannot authorize another increase');
+});
+
+for (const scenario of ['unchanged timestamps', 'oscillation', 'large overshoot', 'underresponse', 'bad quality', 'budget cap', 'net import', 'master off']) {
+    test(`stable-offset recovery retains guards: ${scenario}`, () => {
+        const h = outputHarness();
+        h.run('dhwLastCommandW=3394; dhwLastCommandAt=1999000; dhwOutputWasActive=true');
+        for (let i = 0; i < 4; i++) {
+            if (scenario !== 'unchanged timestamps' || i === 0) {
+                h.put('o1', scenario === 'large overshoot' ? 1000
+                    : scenario === 'underresponse' ? 0
+                        : scenario === 'oscillation' && i % 2 ? 580 : 428);
+                h.put('o2', scenario === 'underresponse' ? 3000 : 3316);
+                h.put('o3', 0);
+            }
+            if (scenario === 'bad quality') h.put('o2', 3316, {q: 64});
+            if (scenario === 'budget cap') h.own('Control.Targets.MyPV_DHW_W', 3200);
+            if (scenario === 'net import') { h.put('gridOut', 0); h.put('gridIn', 1000); }
+            if (scenario === 'master off') h.own('System.RealOutputsEnabled', false);
+            h.tick(); h.complete(); h.advance(5000);
+            if (scenario !== 'unchanged timestamps') h.fresh();
+            else { h.own('System.LastUpdate', 2000000 + (i + 1) * 5000); h.own('Control.LastUpdate', 2000000 + (i + 1) * 5000); }
+        }
+        assert.ok(h.commands().every(w => w <= 3394));
+    });
+}
+
 function phaseLimit(direction) {
     const now = Date.now();
     const states = new Map();

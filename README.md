@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.38**
+Aktuelle Version: **0.17.0-alpha.39**
 
 Prüfung zu Tages-Issue #98: [produktive Diagnose, Phasen-Rückfallvertrag,
 Reproduktion und nächste SQL-Abnahme](docs/issue98-live-diagnostics.md).
@@ -45,6 +45,14 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.39 – EHZ-Wiederaufnahme bei stabiler Leistungsabweichung
+
+Am 07.10.2026 blieb der EHZ trotz Einspeisung bei 3.394 W Befehl stehen: Die gültige Ausgangssumme lag stabil rund 335–351 W darüber und überschritt die normale 300-W-Toleranz. Nach dem Timeout hielt der Regler bisher unbegrenzt denselben Befehl.
+
+Die Wiederaufnahme verlangt mindestens drei neue gültige Messsätze über mindestens 15 Sekunden (oder die längere konfigurierte Rückmeldefrist). Nur positive Abweichungen bis 15 % des Befehls, maximal 600 W, kommen infrage; die normale Toleranz bleibt unverändert. Messwerte müssen innerhalb 100 W des ersten Werts bleiben, Messlücken über 30 Sekunden setzen den Nachweis zurück. Jede Änderung des Befehls verlangt neue Evidenz. Die Erhöhung bleibt auf die normale Rampe begrenzt und ist keine Stell- oder Stillstandsbestätigung. Budget, Temperatur, Hausanschluss, §14a und Rückgabeprüfungen gelten weiterhin.
+
+[Reproduktion und reale Abnahmepunkte](docs/ehz-stable-deviation.md). Die Ursache der Geräteabweichung ist weiterhin offen. Keine automatische Installation und keine zugesagten Scorepunkte.
 
 ## Neu in 0.17.0-alpha.38 – Produktive Diagnose und prüfbarer Phasenvertrag
 
@@ -1630,6 +1638,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.39 | Begrenzte EHZ-Wiederaufnahme nach frischer stabiler positiver Leistungsabweichung; Schutz- und ACK-Prüfungen bleiben erhalten. |
 | 0.17.0-alpha.38 | Issue #98: produktive Ereigniskette im vorhandenen Recorder, PV-Quellenvertrag und klare Produktivtexte; deaktiviertes Master-gekoppeltes Phasenbeispiel und Asynchronie-/Timerregressionen. Reale Abnahme bleibt offen. |
 | 0.17.0-alpha.37 | Issues #87–#92 und #94–#95: Warmwasserschutz, gültige Hysterese, bestätigte Schutzquelle, qualitätsgesicherte und zeitlich passende Prognosen, vollständige SQL-Grundlastbereinigung und gemeinsame Schatten-Zeitprüfung. Vergleichskriterien für die täglichen Probeläufe ergänzt. |
 | 0.17.0-alpha.24 | Jahrestarife im Admin, direkte Viertelstundenpreise von Energy-Charts, gemeinsame Brutto-Preisberechnung und ausdrückliche Datenlücken ohne günstigen Ersatzpreis. |
