@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.47**
+Aktuelle Version: **0.17.0-alpha.48**
 
 Prüfung zu Tages-Issue #98: [produktive Diagnose, Phasen-Rückfallvertrag,
 Reproduktion und nächste SQL-Abnahme](docs/issue98-live-diagnostics.md).
@@ -45,6 +45,12 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.48 – SMA-Quellendiagnose beim Messwertfehler
+
+Beim Verwerfen von Gesamt-Netzbezug/-einspeisung ergänzt der reale Wallboxausgang die Fehlermeldung um Objekt-ID, Wert, Quellenzeit `ts`, letzte Wertänderung `lc`, ACK, Qualität, Alter und den im EMS beobachteten Empfangszeitpunkt. Pro zusammenhängendem Fehlerereignis wird jede betroffene Quelle einmal zusätzlich direkt aus ioBroker gelesen, mit maximal 5 s Wartezeit außerhalb der Steuerungssequenz. Ergebnis und Dauer erscheinen anschließend in einer ergänzenden Logmeldung und dem zugehörigen Abschaltgrund. Eine verspätete Antwort überschreibt kein späteres Ereignis.
+
+`Devices.WallboxN.LastStopSourceDiagnostics_JSON` enthält den ursprünglichen Cache-Snapshot, Empfangsart (`stateChange` oder initiales Einlesen), Prüfuhrzeit, direkte Antwort sowie den Cache-Stand bei Abschluss. Die Diagnose steht auch im produktiven DecisionRecord. Die Zusatzlesung fragt ioBroker ab, nicht den SMA-Sender, und erneuert keine operative Cache-Frische. Schutzabschaltung und 30-s-Altersgrenze bleiben erhalten. [Datenweg, Interpretation und reale Prüfpunkte](docs/sma-source-diagnostics.md). Keine automatische Installation oder Änderung produktiver Einstellungen.
 
 ## Neu in 0.17.0-alpha.47 – SMA-Netzwerte mit 30-s-Altersgrenze
 
@@ -1688,6 +1694,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.48 | SMA-Fehler mit Quellen- und Empfangszeit sowie einmaliger asynchroner ioBroker-Direktlesung diagnostizieren; Schutzpfad unverändert. |
 | 0.17.0-alpha.47 | Gesamtnetzbezug/-einspeisung bis 30 s Alter; passende Ausgangs-, Phasenbudget- und Diagnoseprüfung. |
 | 0.17.0-alpha.46 | Nutzbare Startphase für bestätigte gestoppte Zielwallbox vor Ladefreigabe nach Echtzeitbudget anfordern; laufende Phasenwechsel behalten ihre Timer. |
 | 0.17.0-alpha.45 | Alte elektrische Schrittwartebedingung beim Ersetzen einer offenen Stromerhöhung entfernen; neue Schritte bleiben rückmelde- und budgetgebunden. |
