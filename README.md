@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.39**
+Aktuelle Version: **0.17.0-alpha.40**
 
 Prüfung zu Tages-Issue #98: [produktive Diagnose, Phasen-Rückfallvertrag,
 Reproduktion und nächste SQL-Abnahme](docs/issue98-live-diagnostics.md).
@@ -45,6 +45,10 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.40 – Wallboxstart anhand gemessenen Netzbudgets
+
+Eine EHZ-Soll-Ist-Abweichung allein sperrt Wallboxstart und Stromerhöhung nicht mehr. Im Kombibetrieb werden gültige reale Heizstabmessungen und das gemessene verbleibende Netzbudget geprüft; explizite Pflicht-/Preisfreigaben sowie Hausanschluss-, Phasenreserve- und Netzbetreibergrenzen bleiben wirksam. Das Budget wird auch während der Startsequenz vor der Ladefreigabe erneut geprüft. Die Änderung bestätigt weder einen Heizstab-Stellbefehl noch dessen Abschaltung.
 
 ## Neu in 0.17.0-alpha.39 – EHZ-Wiederaufnahme bei stabiler Leistungsabweichung
 
@@ -1638,6 +1642,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.40 | Wallboxstart und Erhöhung nach realem Netzbudget statt nominaler EHZ-Sollabweichung; Startsequenz prüft Restleistung erneut. |
 | 0.17.0-alpha.39 | Begrenzte EHZ-Wiederaufnahme nach frischer stabiler positiver Leistungsabweichung; Schutz- und ACK-Prüfungen bleiben erhalten. |
 | 0.17.0-alpha.38 | Issue #98: produktive Ereigniskette im vorhandenen Recorder, PV-Quellenvertrag und klare Produktivtexte; deaktiviertes Master-gekoppeltes Phasenbeispiel und Asynchronie-/Timerregressionen. Reale Abnahme bleibt offen. |
 | 0.17.0-alpha.37 | Issues #87–#92 und #94–#95: Warmwasserschutz, gültige Hysterese, bestätigte Schutzquelle, qualitätsgesicherte und zeitlich passende Prognosen, vollständige SQL-Grundlastbereinigung und gemeinsame Schatten-Zeitprüfung. Vergleichskriterien für die täglichen Probeläufe ergänzt. |
