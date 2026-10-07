@@ -1441,6 +1441,102 @@ test('disconnected donor shortcut expires instead of turning a later cold start 
             token:h.run('wallboxDisconnectedDonor'), handoff:h.run('wallboxVehicleHandoff')}));
 });
 
+async function activeThreePhaseAllocationSnapshot(oldCurrentA = 6) {
+    const h = await plant({startDelayS: 300, split: false});
+    Object.assign(h.config, {wb2PhaseSwitchEnabled: true, wb2PhaseControlMode: 'ems',
+        wb2PhaseModeId: 'goe.phase', phaseSwitchMinHoldMin: 0,
+        phaseSwitchRealDownDelayS: 120, phaseSwitchRealUpDelayS: 300, wb2MaxPowerW: 11040});
+    h.own('Vehicles.Wallbox2.PhaseSwitchEnabled', true);
+    h.own('Vehicles.Wallbox2.MaximumPhases', 3);
+    h.own('Vehicles.Wallbox2.MinCurrent3P_A', 6);
+    h.own('Vehicles.Wallbox2.MaxCurrent3P_A', 32);
+    h.own('Vehicles.Wallbox2.MaxCurrent1P_A', 20);
+    h.own('Config.Wallbox2MaxPower_W', 11040);
+    h.own('Vehicles.Wallbox2.DepartureTime', '');
+    h.own('Devices.MyPV_DHW.Release', true);
+    h.own('Devices.MyPV_DHW.TemperaturePowerLimit_W', 9000);
+    for (const [key, value] of Object.entries({OutputOwned: true, OutputActive: true,
+        OutputCommand_A: oldCurrentA, OutputPhases: 3, ConfirmedPhases: 3,
+        PhaseSwitchPending: false, PhaseTransitionActive: false, OutputFault: ''}))
+        h.own(`Devices.Wallbox2.${key}`, value);
+    h.put('goe.allow', 1); h.put('goe.feedback', oldCurrentA); h.put('goe.phase', 2);
+    h.put('DP_WB2_POWER', oldCurrentA * 230 * 3 / 1000);
+    h.put('DP_GRID_IMPORT', oldCurrentA * 230 * 3 - 3600);
+    h.put('DP_GRID_EXPORT', 0);
+    for (const phase of [1, 2, 3]) h.put(`DP_WB2_L${phase}_A`, oldCurrentA);
+    const startedAt = h.now();
+    h.run(`wallboxRunStartedAt[2] = ${startedAt}; wallboxOutputWasActive[2] = true;
+        stableWallboxPhases[2] = 3; lastPhaseChangeAt[2] = 0;`);
+    const plan = Array.from({length: 3}, (_, index) => ({timestamp: startedAt + index * 900000,
+        valueW: 6210, phases: 3, chargingMinutes: 15}));
+    h.own('Plan.Wallbox2_48h_JSON', JSON.stringify(plan));
+    // Only the allocator is exercised here. These acknowledged source frames
+    // model a car whose old electrical topology has not responded yet; they
+    // do not claim that the fixed-1P synthetic plant switches physical phases.
+    const allocateAt = elapsedS => {
+        const at = startedAt + elapsedS * 1000;
+        for (const [id, state] of h.states) h.states.set(id, {...state, ts: at});
+        h.run(`Date.now = () => ${at}; updateSlowTargets(3500,
+            [{valueW: 0}, {valueW: 0}, {valueW: 6210, phases: 3}], {valueW: 0});`);
+        return JSON.parse(h.value('Control.Wallbox2.AllocationDiagnostics_JSON'));
+    };
+    return {h, startedAt, allocateAt};
+}
+
+test('live-budget three-to-one phase request preserves the active session and reserves old three-phase draw', async () => {
+    for (const oldCurrentA of [6, 16]) {
+        const {h, startedAt, allocateAt} = await activeThreePhaseAllocationSnapshot(oldCurrentA);
+        for (let second = 0; second < 120; second += 2) {
+            allocateAt(second);
+            assert.equal(h.run('slowTargets.wallboxPhases[2]'), 3,
+                'shortfall must persist for the configured phase qualification');
+        }
+        const allocation = allocateAt(120);
+        assert.equal(h.run('slowTargets.wallboxPhases[2]'), 1,
+            'real persistent budget must override the unchanged three-phase forecast');
+        assert.ok(allocation.targetA >= 6, JSON.stringify(allocation));
+        assert.notEqual(allocation.reason, 'quantized-below-minimum',
+            'old three-phase watts must not become a false one-phase ampere correction');
+        assert.equal(allocation.start.startDelayRemainingS, 0);
+        assert.equal(h.run('wallboxRunStartedAt[2]'), startedAt,
+            'the phase request does not create a new charging session');
+        assert.equal(h.value('Devices.Wallbox2.OutputOwned'), true);
+        assert.equal(h.value('Devices.Wallbox2.OutputActive'), true);
+        assert.equal(h.run('slowTargets.dhwW'), 0,
+            'the heater must not consume watts still drawn in the old three-phase topology');
+        h.own('Devices.Wallbox2.PhaseSwitchPending', true);
+        h.put('goe.phase', 1, {ack: false});
+        for (const second of [122, 124]) {
+            const pending = allocateAt(second);
+            assert.equal(h.run('slowTargets.wallboxPhases[2]'), 1);
+            assert.ok(pending.targetA >= 6, JSON.stringify(pending));
+            assert.equal(pending.start.startDelayRemainingS, 0);
+            assert.equal(h.run('slowTargets.dhwW'), 0);
+        }
+        assert.equal(h.writes.length, 0, 'allocator phase decisions never write physical actuators');
+    }
+});
+
+test('unacknowledged fresh SMA samples restart live phase qualification', async () => {
+    const {h, allocateAt} = await activeThreePhaseAllocationSnapshot();
+    for (let second = 0; second < 60; second += 2) allocateAt(second);
+    h.put('DP_GRID_IMPORT', 540, {ack: false});
+    const invalid = allocateAt(60);
+    assert.equal(invalid.phaseDecision.valid, false,
+        'a fresh write echo is not an acknowledged physical grid measurement');
+    assert.equal(h.run('wallboxRealPhaseCandidate[2].since'), 0,
+        'the preceding sixty seconds cannot survive unknown grid evidence');
+    h.put('DP_GRID_IMPORT', 540, {ack: true});
+    for (let second = 62; second < 182; second += 2) {
+        allocateAt(second);
+        assert.equal(h.run('slowTargets.wallboxPhases[2]'), 3,
+            'a restored source must supply a new uninterrupted qualification window');
+    }
+    allocateAt(182);
+    assert.equal(h.run('slowTargets.wallboxPhases[2]'), 1);
+    assert.equal(h.writes.length, 0);
+});
+
 test('lowered grid-charge SoC ceiling revokes a still-current battery price plan immediately', async () => {
     const h = await plant({battery: true, wallbox: false, initialSurplusW: -500});
     armPricePlans(h, {wallboxW: 0});

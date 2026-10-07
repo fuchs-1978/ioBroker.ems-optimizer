@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.42**
+Aktuelle Version: **0.17.0-alpha.43**
 
 Prüfung zu Tages-Issue #98: [produktive Diagnose, Phasen-Rückfallvertrag,
 Reproduktion und nächste SQL-Abnahme](docs/issue98-live-diagnostics.md).
@@ -45,6 +45,14 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.43 – Phasenwahl mit Echtzeitbudget
+
+Im EMS-Phasenmodus berücksichtigt die ausgewählte Wallbox das gültige reale Leistungsbudget einschließlich der bereits laufenden Ladung. Ein ausreichend nutzbares 1P-Budget unter der 3P-Mindestleistung muss durchgehend bestehen, bevor 1P angefordert wird. Für 3P muss das Budget über der nutzbaren 1P-Kapazität plus Reserve liegen. Die getrennten Admin-Verzögerungen betragen standardmäßig 120 s abwärts und 300 s aufwärts; die vorhandene Mindesthaltezeit bleibt zusätzlich wirksam. Datenlücken und offene Phasenübergänge setzen den Nachweis zurück. Eine qualifizierte Echtzeitentscheidung hat im Livebetrieb Vorrang vor der Prognose; feste Phasen und externe Skriptführung behalten ihre Zuständigkeit.
+
+`Control.WallboxN.PhaseDecision_JSON`, `PhaseDecisionStatus` und `PhaseDecisionRemaining_s` erklären Budget, Schwellen und Wartezeiten. Die Entscheidung steht außerdem im bestehenden `AllocationDiagnostics_JSON` für den DecisionRecord. Während eines Topologiewechsels wird die alte gemessene Last weiter reserviert; ein 3P-Messwert wird nicht als Antwort auf einen noch unbestätigten 1P-Befehl gerechnet. Negative Stromschritte außerhalb des Totbands führen nun bereits bei weniger als einem ganzen Ampere Leistungsdefizit zu einer passenden Reduktion.
+
+[Reproduktion und reale Prüfpunkte](docs/wallbox-real-phase-budget.md). Keine automatische Installation oder produktive Einstellungsänderung. Die konservative Nennleistungsprüfung des realen Wallboxausgangs bleibt bestehen; verfügbare Nettoeinspeisung allein garantiert deshalb keinen zusätzlichen Ampere-Schritt.
 
 ## Neu in 0.17.0-alpha.42 – Leistungsübergabe und Abstecken
 
@@ -1656,6 +1664,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.43 | Verzögerte Echtzeit-Phasenentscheidung mit gültigem Budget; Topologieübergänge getrennt reserviert und negative Stromschritte korrigiert. |
 | 0.17.0-alpha.42 | Gemessene Leistungsübergabe vom EHZ zur nächsten Wallboxstufe; qualifizierte Weitergabe nach Abstecken ohne erneuten vollständigen Starttimer. |
 | 0.17.0-alpha.41 | Erwartete Phasen-Schreibechos und Ladepause als begrenzter Übergang; Ladeblock erhalten, Modus-ACK und elektrische Antwort getrennt. |
 | 0.17.0-alpha.40 | Wallboxstart und Erhöhung nach realem Netzbudget statt nominaler EHZ-Sollabweichung; Startsequenz prüft Restleistung erneut. |

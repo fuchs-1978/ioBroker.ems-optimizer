@@ -1105,6 +1105,26 @@
           "max": 240,
           "sm": 4
         },
+        "phaseSwitchRealDownDelayS": {
+          "type": "number",
+          "label": "Measured budget delay before switching to 1 phase",
+          "help": "A continuously valid measured budget below the three-phase minimum qualifies a single-phase request after this delay. Missing or invalid samples cancel the timer. The minimum time between phase changes still applies. Forecast recommendations do not override a qualified real request.",
+          "unit": "s",
+          "default": 120,
+          "min": 15,
+          "max": 900,
+          "sm": 4
+        },
+        "phaseSwitchRealUpDelayS": {
+          "type": "number",
+          "label": "Measured budget delay before switching to 3 phases",
+          "help": "A continuously valid measured budget sufficient for three-phase charging qualifies a three-phase request after this delay. Missing or invalid samples cancel the timer. The minimum time between phase changes still applies. Forecast recommendations do not override a qualified real request.",
+          "unit": "s",
+          "default": 300,
+          "min": 30,
+          "max": 1800,
+          "sm": 4
+        },
         "phaseSwitchMinHoldMin": {
           "type": "number",
           "label": "Minimum time between phase changes",

@@ -28,6 +28,27 @@ test('dynamic production phase feedback is configurable for every wallbox', () =
     assert.equal(allFields.wallboxPhaseSwitchTimeoutS.default, ioPackage.native.wallboxPhaseSwitchTimeoutS);
 });
 
+test('measured phase decision delays expose bounded defaults and translated guidance', () => {
+    const translations = ['de', 'en'].map(locale =>
+        JSON.parse(fs.readFileSync(`admin/i18n/${locale}/translations.json`, 'utf8')));
+    for (const [name, defaultS, minS, maxS] of [
+        ['phaseSwitchRealDownDelayS', 120, 15, 900],
+        ['phaseSwitchRealUpDelayS', 300, 30, 1800],
+    ]) {
+        const field = allFields[name];
+        assert.equal(ioPackage.native[name], defaultS);
+        assert.equal(field.type, 'number');
+        assert.equal(field.unit, 's');
+        assert.equal(field.default, defaultS);
+        assert.equal(field.min, minS);
+        assert.equal(field.max, maxS);
+        for (const text of [field.label, field.help]) {
+            assert.ok(text);
+            for (const locale of translations) assert.ok(locale[text], `missing translation: ${text}`);
+        }
+    }
+});
+
 test('AP2 admin exposes all vehicle input mappings', () => {
     for (let wb = 0; wb < 3; wb++) for (const suffix of ['SocId', 'MinSocId', 'TargetSocId',
         'ReleaseId', 'UserAllowId', 'CarStateId', 'PhaseStateId', 'PowerId', 'L1CurrentId',
@@ -54,7 +75,7 @@ test('update defaults never arm a productive output', () => {
 });
 
 test('package manifests publish the same alpha version', () => {
-    assert.equal(packageJson.version, '0.17.0-alpha.42');
+    assert.equal(packageJson.version, '0.17.0-alpha.43');
     assert.equal(ioPackage.common.version, packageJson.version);
     const core = fs.readFileSync('lib/engine/core.js', 'utf8');
     const bootstrap = fs.readFileSync('lib/engine/bootstrap.js', 'utf8');
