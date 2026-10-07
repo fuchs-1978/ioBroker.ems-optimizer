@@ -146,6 +146,56 @@ test('running wallbox follows actual power response instead of nominal command p
     assert.equal(result.powerW,2760);
     assert.equal(result.expectedPowerW,2180);
 });
+test('running three-phase EQE reduces a sub-amp deficit beyond the control deadband',()=>{
+    const h=engine();
+    h.put('ems.0.Vehicles.Wallbox2.PhaseSwitchEnabled',true);
+    h.put('ems.0.Vehicles.Wallbox2.MaximumPhases',3);
+    h.put('ems.0.Control.Deadband_W',100);h.run('updateVehicles()');
+    // Observed live case: 9 A command, 5890 W response, 5283 W budget.
+    // Keeping 9 A would retain 607 W of unwanted budget excess.
+    const reduced=h.run('quantizeWallbox(5283,vehicleState(2),9,3,5890)');
+    assert.equal(reduced.amps,8);
+    assert.equal(reduced.diagnostics.deltaA,-1);
+    assert.equal(reduced.diagnostics.deadbandW,100);
+    assert.equal(reduced.expectedPowerW,5200);
+    // After the vehicle responds, the 83 W remainder cannot provoke an
+    // immediate increase: increases still require a complete 690 W step.
+    assert.equal(h.run('quantizeWallbox(5283,vehicleState(2),8,3,5200).amps'),8);
+});
+test('measured wallbox deficits respect the configured noise band and minimum current',()=>{
+    const h=engine();h.run('updateVehicles()');
+    h.put('ems.0.Control.Deadband_W',100);
+    for(const deficit of [1,20,100]) {
+        const held=h.run(`quantizeWallbox(${2300-deficit},vehicleState(0),10,1,2300)`);
+        assert.equal(held.amps,10,`${deficit} W is within the deadband`);
+        assert.equal(held.diagnostics.deltaA,0);
+    }
+    assert.equal(h.run('quantizeWallbox(2199,vehicleState(0),10,1,2300).amps'),9);
+    // A 240 W deficit only needs one 230 W decrease; the remaining 10 W
+    // falls within the configured band instead of causing a second step.
+    assert.equal(h.run('quantizeWallbox(2060,vehicleState(0),10,1,2300).amps'),9);
+    h.put('ems.0.Control.Deadband_W',250);
+    assert.equal(h.run('quantizeWallbox(2060,vehicleState(0),10,1,2300).amps'),10);
+    h.put('ems.0.Control.Deadband_W',0);
+    assert.equal(h.run('quantizeWallbox(2299,vehicleState(0),10,1,2300).amps'),9);
+    h.put('ems.0.Control.Deadband_W',100);
+    assert.equal(h.run('quantizeWallbox(1279,vehicleState(0),6,1,1380).amps'),0);
+    assert.equal(h.run('quantizeWallbox(2300+229,vehicleState(0),10,1,2300).amps'),10);
+    assert.equal(h.run('quantizeWallbox(2300+230,vehicleState(0),10,1,2300).amps'),11);
+});
+test('non-finite or unusable actual power retains nominal quantization',()=>{
+    const h=engine();h.run('updateVehicles()');
+    for(const actual of ['null','undefined','NaN','Infinity','-Infinity','-1']) {
+        const result=h.run(`quantizeWallbox(2256,vehicleState(0),10,1,${actual})`);
+        assert.equal(result.amps,9,actual);
+        assert.equal(result.expectedPowerW,2070,actual);
+        assert.equal(result.diagnostics.responseBasis,'nominal',actual);
+    }
+    h.put('ems.0.Control.Deadband_W',Infinity);
+    const result=h.run('quantizeWallbox(2199,vehicleState(0),10,1,2300)');
+    assert.equal(result.amps,9);
+    assert.equal(result.diagnostics.deadbandW,100);
+});
 test('allocation diagnostics explain a mismatched command and response without changing quantization',()=>{
     const h=engine();h.run('updateVehicles()');
     // Independently constructed nominal powers: 12 A budget, 16 A real load,
