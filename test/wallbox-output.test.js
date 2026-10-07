@@ -1549,3 +1549,119 @@ test('combined start rechecks real budget before enabling charging', async () =>
     await h.output.tick();
     assert.ok(!h.writes.some(w=>w.id==='allow'&&w.val===1));
 });
+
+for (const [from, to] of [[1,3],[3,1]]) {
+    test(`expected ${from}P-to-${to}P unacknowledged phase write and zero-power pause keep the charging session`, async () => {
+        let now=Date.now();const h=setup({now:()=>now});
+        Object.assign(h.config,{wb0PhaseSwitchEnabled:true,wb0PhaseModeId:'phaseMode',
+            wb0MinCurrent3pA:6,wb0MaxCurrent3pA:11,wallboxStartDelayS:600,
+            wallboxPhaseSwitchTimeoutS:180});
+        h.put('phaseMode',from===3?2:1);h.put('ems.0.Control.Targets.Wallbox0_Phases',from);
+        h.put('ems.0.Control.Targets.Wallbox0_W',6*230*from);
+        await h.start();h.writes.length=0;
+        const d=h.output.devices[0], originalSince=d.activeSince;
+        now+=1000;h.refresh();
+        h.put('ems.0.Control.Targets.Wallbox0_Phases',to);
+        h.put('ems.0.Control.Targets.Wallbox0_W',6*230*to);
+        // Request and its write echo can precede the first output tick.
+        h.put('phaseMode',to===3?2:1,{ack:false});
+        h.put('power',0);h.put('i1',0);h.put('i2',0);h.put('i3',0);
+        await h.output.tick();
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.ConfirmedPhases').val,from);
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,true);
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.PhaseSwitchPending').val,true);
+        assert.deepEqual(h.writes,[]);
+        now+=50000;h.refresh();await h.output.tick();
+        assert.equal(d.activeSince,originalSince);
+        assert.deepEqual(h.writes,[]);
+        now+=1000;h.refresh();h.put('phaseMode',to===3?2:1);await h.output.tick();
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.ConfirmedPhases').val,to);
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseConfirmedAt').val,0);
+        now+=1000;h.refresh();h.put('i1',6);h.put('i2',to===3?6:0);h.put('i3',to===3?6:0);
+        h.put('power',6*230*to/1000);await h.output.tick();
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val,'confirmed');
+        assert.equal(d.activeSince,originalSince);
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.LastStopAt').val,0);
+        assert.ok(!h.writes.some(w=>w.id==='allow'&&w.val===0));
+    });
+}
+test('repeated unacknowledged matching mode echoes do not renew the phase deadline', async () => {
+    let now=Date.now();const h=setup({now:()=>now});
+    Object.assign(h.config,{wb0PhaseSwitchEnabled:true,wb0PhaseModeId:'phaseMode',wallboxPhaseSwitchTimeoutS:180});
+    h.put('phaseMode',1);await h.start();h.writes.length=0;
+    now+=1000;h.refresh();h.put('ems.0.Control.Targets.Wallbox0_Phases',3);
+    h.put('phaseMode',2,{ack:false});await h.output.tick();
+    now+=179000;h.refresh();h.put('phaseMode',2,{ack:false});await h.output.tick();
+    assert.deepEqual(h.writes,[]);
+    now+=1000;h.refresh();h.put('phaseMode',2,{ack:false});await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'allow',val:0}]);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val,/Zeitlimit/);
+});
+for (const invalid of [{val:1,ack:false},{val:2,ack:false,q:64},{val:null,ack:false}]) {
+    test(`an unexpected or invalid phase write is not repaired: ${JSON.stringify(invalid)}`, async () => {
+        const h=setup();Object.assign(h.config,{wb0PhaseSwitchEnabled:true,wb0PhaseModeId:'phaseMode'});
+        h.put('phaseMode',1);await h.start();h.writes.length=0;
+        h.put('ems.0.Control.Targets.Wallbox0_Phases',3);
+        h.put('phaseMode',invalid.val,invalid);await h.output.tick();
+        assert.deepEqual(h.writes,[{id:'allow',val:0}]);
+    });
+}
+test('an expected phase echo cannot bypass a hard grid-operator cap', async () => {
+    const h=setup();Object.assign(h.config,{wb0PhaseSwitchEnabled:true,wb0PhaseModeId:'phaseMode'});
+    h.put('phaseMode',1);await h.start();h.writes.length=0;
+    h.put('ems.0.Control.Targets.Wallbox0_Phases',3);h.put('phaseMode',2,{ack:false});
+    h.put('lpc','limited');h.put('lpcLimit',1000);await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'allow',val:0}]);
+});
+
+test('phase waiting cannot defer sustained electrical overdraw past its independent response deadline', async () => {
+    let now=Date.now();const h=setup({now:()=>now});
+    Object.assign(h.config,{wb0PhaseSwitchEnabled:true,wb0PhaseModeId:'phaseMode',wb0MaxCurrent3pA:11});
+    h.put('phaseMode',1);await h.start();h.writes.length=0;
+    now+=1000;h.refresh();h.put('ems.0.Control.Targets.Wallbox0_Phases',3);
+    h.put('phaseMode',2,{ack:false});h.put('i1',16);h.put('i2',16);h.put('i3',16);h.put('power',11.04);
+    await h.output.tick();now+=46000;h.refresh();await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'allow',val:0}]);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val,/Fahrzeugstrom/);
+});
+
+test('an old mode ACK cannot complete a newer EMS phase request', async () => {
+    let now=Date.now();const h=setup({now:()=>now});
+    Object.assign(h.config,{wb0PhaseSwitchEnabled:true,wb0PhaseModeId:'phaseMode'});
+    h.put('phaseMode',1);await h.start();h.writes.length=0;
+    now+=1000;h.refresh();h.put('ems.0.Control.Targets.Wallbox0_Phases',3);
+    await h.output.tick();h.put('phaseMode',2,{ts:now-100});await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ConfirmedPhases').val,1);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.PhaseSwitchPending').val,true);
+    assert.deepEqual(h.writes,[]);
+});
+test('a configured 3P ACK with only one electrically active phase earns no electrical confirmation or increase', async () => {
+    let now=Date.now();const h=setup({now:()=>now});
+    Object.assign(h.config,{wb0PhaseSwitchEnabled:true,wb0PhaseModeId:'phaseMode'});
+    h.put('phaseMode',1);await h.start();h.writes.length=0;
+    now+=1000;h.refresh();h.put('ems.0.Control.Targets.Wallbox0_Phases',3);
+    await h.output.tick();now+=1000;h.refresh();h.put('phaseMode',2);await h.output.tick();
+    now+=1000;h.refresh();h.put('i1',6);h.put('i2',0);h.put('i3',0);h.put('power',1.38);await h.output.tick();
+    now+=46000;h.refresh();await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val,'limited');
+    assert.ok(!h.writes.some(w=>w.id==='cmd'&&w.val>6));
+    assert.ok(!h.writes.some(w=>w.id==='allow'&&w.val===0));
+});
+
+test('current reductions retain the outstanding electrical phase proof across command replacement', async () => {
+    let now=Date.now();const h=setup({now:()=>now});
+    Object.assign(h.config,{wb0PhaseSwitchEnabled:true,wb0PhaseModeId:'phaseMode',wb0AvailableCurrentId:'available'});
+    h.put('available',32);h.put('phaseMode',1);await h.start();h.writes.length=0;
+    const d=h.output.devices[0];d.lastA=14;d.response=null;d.lastAt=now-10000;
+    h.put('feedback',14);h.put('i1',14);h.put('power',3.22);
+    now+=1000;h.refresh();h.put('ems.0.Control.Targets.Wallbox0_Phases',3);await h.output.tick();
+    now+=1000;h.refresh();h.put('phaseMode',2);h.put('available',6);await h.output.tick();
+    assert.ok(h.writes.some(w=>w.id==='cmd'&&w.val===6));
+    assert.equal(d.response.phaseChange,true);
+    now+=1000;h.refresh();h.put('feedback',6);h.put('i1',6);h.put('i2',0);h.put('i3',0);h.put('power',1.38);
+    await h.output.tick();h.writes.length=0;
+    now+=46000;h.refresh();h.put('available',32);await h.output.tick();
+    assert.equal(d.response.phaseChange,true);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val,'limited');
+    assert.ok(!h.writes.some(w=>w.id==='cmd'&&w.val>6));
+});
