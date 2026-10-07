@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.40**
+Aktuelle Version: **0.17.0-alpha.41**
 
 Prüfung zu Tages-Issue #98: [produktive Diagnose, Phasen-Rückfallvertrag,
 Reproduktion und nächste SQL-Abnahme](docs/issue98-live-diagnostics.md).
@@ -45,6 +45,12 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.41 – Erwartete go-e-Phasenpause
+
+Während eines angeforderten EMS-Phasenwechsels gilt das passende `ack=false`-Schreibecho innerhalb der bestehenden Bestätigungsfrist als Übergang. Die letzte bestätigte Phasenstellung bleibt getrennt von der angeforderten Stellung. Der bestehende Ladeblock und seine Laufzeit bleiben während der normalen Nullleistungspause erhalten; ein zusätzlicher Fehlerstopp und eine dadurch neu gestartete Einschaltverzögerung entfallen.
+
+Die Berechnung schützt konservativ beide möglichen Phasenstellungen und deren kleinere Stromgrenze. Nach einer echten Modus-ACK werden frische Strom-/Leistungsmessungen separat geprüft. Fehlende unabhängige Strombefehls-ACKs, Gerätefehler, Freigabeentzug, Zeitüberschreitungen und harte Grenzen bleiben wirksam. Ein Modus-ACK beweist keinen abgeschlossenen elektrischen Phasenwechsel. Details: [Phasenübergang](docs/wallbox-phase-transition.md).
 
 ## Neu in 0.17.0-alpha.40 – Wallboxstart anhand gemessenen Netzbudgets
 
@@ -1642,6 +1648,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.41 | Erwartete Phasen-Schreibechos und Ladepause als begrenzter Übergang; Ladeblock erhalten, Modus-ACK und elektrische Antwort getrennt. |
 | 0.17.0-alpha.40 | Wallboxstart und Erhöhung nach realem Netzbudget statt nominaler EHZ-Sollabweichung; Startsequenz prüft Restleistung erneut. |
 | 0.17.0-alpha.39 | Begrenzte EHZ-Wiederaufnahme nach frischer stabiler positiver Leistungsabweichung; Schutz- und ACK-Prüfungen bleiben erhalten. |
 | 0.17.0-alpha.38 | Issue #98: produktive Ereigniskette im vorhandenen Recorder, PV-Quellenvertrag und klare Produktivtexte; deaktiviertes Master-gekoppeltes Phasenbeispiel und Asynchronie-/Timerregressionen. Reale Abnahme bleibt offen. |
