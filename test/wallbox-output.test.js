@@ -1829,3 +1829,51 @@ test('SMA total import and export remain usable through 30 seconds then trigger 
             /veraltet.*maximal 30 s/);
     }
 });
+
+test('stale SMA diagnostic stops without waiting for direct read and never writes the read into control cache', async () => {
+    let now = 1000000; const h = setup({now: () => now});
+    await h.start(); h.writes.length = 0;
+    const old = {val: 8000, ts: now - 31000, lc: now - 40000, ack: true, q: 0};
+    h.put('export', old.val, old);
+    h.adapter.getCachedStateReceipt = () => ({receivedAt: now - 31000, via: 'stateChange'});
+    let resolveRead; let reads = 0;
+    h.adapter.getForeignStateAsync = async () => {reads++; return new Promise(resolve => {resolveRead = resolve;});};
+    await h.output.tick();
+    assert.ok(h.writes.some(x => x.id === 'allow' && x.val === 0), 'protection must not await diagnostic IO');
+    let diag = JSON.parse(h.states.get('ems.0.Devices.Wallbox0.LastStopSourceDiagnostics_JSON').val);
+    assert.equal(diag.sources[0].cached.ageMs, 31000);
+    assert.equal(diag.sources[0].receipt.via, 'stateChange');
+    assert.equal(diag.sources[0].direct.status, 'pending');
+    await h.output.tick(); assert.equal(reads, 1, 'one read per continuous source-fault episode');
+    resolveRead({val: 700, ts: now, lc: now - 20, ack: true, q: 0});
+    for (let i = 0; i < 15; i++) await Promise.resolve();
+    diag = JSON.parse(h.states.get('ems.0.Devices.Wallbox0.LastStopSourceDiagnostics_JSON').val);
+    assert.equal(diag.sources[0].direct.status, 'read');
+    assert.equal(diag.sources[0].direct.snapshot.val, 700);
+    assert.equal(diag.sources[0].cacheAtCompletion.ageMs, 31000);
+    assert.equal(h.states.get('export').ts, old.ts, 'diagnostic cannot grant operative freshness');
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val, /export: Wert=8000.*Direktlesung=read/);
+    assert.ok(!h.writes.some(x => x.id === 'allow' && x.val === 1));
+});
+
+test('completed diagnostic survives recovery but cannot overwrite a newer source-fault event', async () => {
+    const h = setup(); await h.start();
+    const d = h.output.devices[0];
+    const pending = [];
+    h.adapter.getForeignStateAsync = () => new Promise(resolve => pending.push(resolve));
+    h.output.measurementFaultDiagnostic(d, [{id: 'export', maxAgeMs: 30000}], 'old fault');
+    for (let i = 0; i < 4; i++) await Promise.resolve();
+    d.sourceFaultEpisode = null; // valid current sources ended the active fault.
+    pending.shift()({val: 20, ts: Date.now(), ack: true, q: 0});
+    for (let i = 0; i < 15; i++) await Promise.resolve();
+    let diag = JSON.parse(h.states.get('ems.0.Devices.Wallbox0.LastStopSourceDiagnostics_JSON').val);
+    assert.equal(diag.sources[0].direct.status, 'read', 'retain outcome even after the source recovered');
+    h.output.measurementFaultDiagnostic(d, [{id: 'export', maxAgeMs: 30000}], 'another fault');
+    for (let i = 0; i < 4; i++) await Promise.resolve();
+    h.put('ems.0.Devices.Wallbox0.LastStopSourceDiagnostics_JSON', JSON.stringify({key: 'newer-event'}));
+    d.sourceFaultEpisode = null;
+    pending.shift()({val: 30, ts: Date.now(), ack: true, q: 0});
+    for (let i = 0; i < 15; i++) await Promise.resolve();
+    diag = JSON.parse(h.states.get('ems.0.Devices.Wallbox0.LastStopSourceDiagnostics_JSON').val);
+    assert.equal(diag.key, 'newer-event', 'late read must not overwrite a subsequent diagnostic');
+});

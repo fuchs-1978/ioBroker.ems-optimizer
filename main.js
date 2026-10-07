@@ -22,6 +22,7 @@ class EmsOptimizer extends utils.Adapter {
     constructor(options = {}) {
         super({...options, name: "ems-optimizer"});
         this.stateCache = new Map();
+        this.stateReceiptCache = new Map();
         this.knownObjects = new Set();
         this.objectPromises = new Map();
         this.listeners = [];
@@ -212,6 +213,7 @@ class EmsOptimizer extends utils.Adapter {
                 const states = await this.getForeignStatesAsync(pattern);
                 for (const [id, state] of Object.entries(states || {})) {
                     this.stateCache.set(id, state);
+                    this.stateReceiptCache.set(id, {receivedAt: Date.now(), via: 'initial-read'});
                     this.knownObjects.add(id);
                 }
                 await this.subscribeForeignStatesAsync(pattern);
@@ -451,6 +453,10 @@ class EmsOptimizer extends utils.Adapter {
     ownRelative(id) {
         return id === this.namespace ? "" : id.startsWith(`${this.namespace}.`)
             ? id.slice(this.namespace.length + 1) : null;
+    }
+
+    getCachedStateReceipt(id) {
+        return this.stateReceiptCache?.get(id) || null;
     }
 
     getCachedState(id) {
@@ -779,8 +785,13 @@ class EmsOptimizer extends utils.Adapter {
         if (this.ownRelative(id) !== null && state && previous && state.ack === true
             && (Number(state.ts) < Number(previous.ts)
                 || (this.pendingOwnWrites.has(id) && state.val !== previous.val))) return;
-        if (state) this.stateCache.set(id, state);
-        else this.stateCache.delete(id);
+        if (state) {
+            this.stateCache.set(id, state);
+            this.stateReceiptCache?.set(id, {receivedAt: Date.now(), via: 'stateChange'});
+        } else {
+            this.stateCache.delete(id);
+            this.stateReceiptCache?.delete(id);
+        }
         if (this.unloading) return;
         if (this.runShadow('handleCommand', id, state)) return;
         if (this.runDebug('handleCommand', id, state)) return;

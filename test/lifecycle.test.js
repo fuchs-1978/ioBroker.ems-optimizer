@@ -767,3 +767,14 @@ test('real Debug.Clear is acknowledged again when pressed during an older reset 
     assert.equal(a.getCachedState('ems.0.Debug.Clear').ack, true);
     assert.equal(a.getCachedState('ems.0.System.RealOutputsEnabled'), null);
 });
+
+test('foreign source receipt tracks EMS arrival without renewing the original measurement timestamp', () => {
+    const a = adapter();
+    const id = 'sma-em.0.meter.psurplus';
+    a.onStateChange(id, {val: 400, ts: 100, lc: 80, ack: true, q: 0});
+    assert.equal(a.getCachedState(id).ts, 100);
+    assert.equal(a.getCachedStateReceipt(id).via, 'stateChange');
+    assert.ok(a.getCachedStateReceipt(id).receivedAt > 100);
+    a.onStateChange(id, null);
+    assert.equal(a.getCachedStateReceipt(id), null);
+});
