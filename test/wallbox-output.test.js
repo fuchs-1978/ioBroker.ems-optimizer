@@ -1665,3 +1665,102 @@ test('current reductions retain the outstanding electrical phase proof across co
     assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val,'limited');
     assert.ok(!h.writes.some(w=>w.id==='cmd'&&w.val>6));
 });
+
+async function measuredRunningMii() {
+    let now = 1000000;
+    const h = setup({now: () => now});
+    h.config.combinedProductionArmed = true;
+    h.put('split', 1);
+    h.put('ems.0.Config.DHWParallelDistributionEnabled', true);
+    h.put('ems.0.Devices.MyPV_DHW.ControlEnabled', true);
+    await h.start();
+    const d = h.output.devices[0];
+    d.lastA = 15; d.lastAt = now - 10000; d.pending = null; d.response = null;
+    d.owned = true; d.activeSince = now - 10000;
+    h.ack('allow', 1); h.ack('feedback', 15);
+    h.put('power', 3.15); h.put('i1', 13.9);
+    h.put('ems.0.Control.Targets.Wallbox0_W', 3910);
+    h.put('export', 573); h.put('import', 0);
+    h.writes.length = 0;
+    return {h, d, advance: () => { now += 6000; h.refresh(); }};
+}
+
+test('running measured Mii budget advances one amp despite insufficient whole nominal target', async () => {
+    const {h, d} = await measuredRunningMii();
+    await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'cmd', val: 16}]);
+    assert.equal(d.measuredBudgetStep.amps, 16);
+    const budget = JSON.parse(h.states.get('ems.0.Devices.Wallbox0.IncreaseBudget_JSON').val);
+    assert.equal(budget.basis, 'measured-one-amp-step');
+    assert.equal(budget.requiredW, 3380);
+    assert.equal(budget.availableW, 3623);
+    assert.ok(!h.writes.some(x => x.id === 'allow'), 'keep the running charge block');
+});
+
+test('a command ACK or unchanged fresh car poll cannot replenish measured-step permission', async () => {
+    const {h, d, advance} = await measuredRunningMii();
+    await h.output.tick();
+    advance(); h.ack('feedback', 16);
+    h.put('power', 3.15); h.put('i1', 13.9);
+    await h.output.tick();
+    advance(); await h.output.tick();
+    assert.equal(h.writes.filter(x => x.id === 'cmd' && x.val > 16).length, 0);
+    assert.ok(d.measuredBudgetStep, 'unchanged uptake remains unknown, even with ACK');
+    h.put('power', 3.38); h.put('i1', 14.9);
+    await h.output.tick();
+    assert.equal(h.writes.at(-1).val, 17, 'new electrical uptake qualifies only the next step');
+    assert.equal(h.writes.filter(x => x.id === 'allow').length, 0);
+});
+
+test('measured step remains bounded by actual surplus, phase limits and operator limits', async () => {
+    for (const mutate of [
+        h => h.put('export', 300),
+        h => {h.config.wb0CommissioningMaxA = 15;},
+        h => {h.put('lpc', 'limited'); h.put('lpcLimit', 3400);}
+    ]) {
+        const {h} = await measuredRunningMii();
+        mutate(h);
+        await h.output.tick();
+        assert.ok(!h.writes.some(x => x.id === 'cmd' && x.val > 15), JSON.stringify(h.writes));
+    }
+});
+
+test('a pending measured step never blocks a necessary downward command', async () => {
+    const {h, advance} = await measuredRunningMii();
+    await h.output.tick();
+    advance(); h.ack('feedback', 16); h.put('power', 3.15); h.put('i1', 13.9);
+    await h.output.tick();
+    advance(); h.put('ems.0.Control.Targets.Wallbox0_W', 3220);
+    h.put('export', 0); h.put('import', 500);
+    await h.output.tick();
+    assert.ok(h.writes.some(x => x.id === 'cmd' && x.val < 16));
+});
+
+
+test('measured three-phase increase reserves a full 690 W step and retains nominal hard caps', async () => {
+    const {h, d} = await measuredRunningMii();
+    Object.assign(h.config, {wb0PhaseControlMode: 'fixed', wb0PhaseSwitchEnabled: true, wb0ProductionPhases: 3,
+        wb0MaxPowerW: 22080, wb0MaxCurrent3pA: 32});
+    h.put('ems.0.Control.Targets.Wallbox0_Phases', 3);
+    d.confirmedPhases = 3; d.phaseTransitionUntil = 0;
+    d.lastA = 7; h.ack('feedback', 7);
+    for (const id of ['i1', 'i2', 'i3']) h.put(id, 6.4);
+    h.put('power', 4.39); h.put('ems.0.Control.Targets.Wallbox0_W', 6210);
+    h.put('export', 789);
+    await h.output.tick();
+    assert.ok(!h.writes.some(x => x.id === 'cmd' && x.val > 7));
+    h.put('export', 857);
+    await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'cmd', val: 8}]);
+    assert.equal(d.measuredBudgetStep.phases, 3);
+    assert.equal(JSON.parse(h.states.get('ems.0.Devices.Wallbox0.IncreaseBudget_JSON').val).requiredW, 5080);
+});
+
+test('invalid real power cannot qualify a measured budget step', async () => {
+    for (const invalid of [{ack: false}, {q: 64}, {val: null}, {ts: 1}]) {
+        const {h} = await measuredRunningMii();
+        h.put('power', 3.15, invalid);
+        await h.output.tick();
+        assert.ok(!h.writes.some(x => x.id === 'cmd' && x.val > 15), JSON.stringify(invalid));
+    }
+});
