@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.43**
+Aktuelle Version: **0.17.0-alpha.44**
 
 Prüfung zu Tages-Issue #98: [produktive Diagnose, Phasen-Rückfallvertrag,
 Reproduktion und nächste SQL-Abnahme](docs/issue98-live-diagnostics.md).
@@ -45,6 +45,12 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.44 – Gemessener Überschuss für laufende Wallboxen
+
+Eine laufende PV-Ladung kann bei gültigen realen Rückmeldungen einen zusätzlichen Ampere-Schritt erhalten, wenn das gemessene Restbudget diesen Schritt deckt, aber die bisherige vollständige Nennleistungsprüfung ihn blockiert. Bei 1P werden 230 W, bei 3P 690 W zusätzlich zur gemessenen laufenden Leistung reserviert. Der Verteiler berücksichtigt diese Reserve auch beim EHZ-Restbudget. Weitere Erhöhungen brauchen eine frische Strom-ACK und eine danach gemessene elektrische Zunahme; eine unveränderte Fahrzeugaufnahme erlaubt kein wiederholtes Hochregeln. Normale Rampen bei ausreichend nominal gedecktem Budget bleiben erhalten.
+
+Hausanschluss-, Geräte- und gemeinsame §14a-/LPC-Grenzen bleiben nominal abgesichert. Starts, Preis-/Pflichtladung, unbestätigte Phasenwechsel und idealisierte Schattenantworten erhalten keine neue Messwertausnahme. `Devices.WallboxN.IncreaseBudget_JSON` und der produktive DecisionRecord zeigen Rechenbasis und offene Schrittantwort. [Befund, Grenzen und nächste reale Prüfung](docs/wallbox-measured-current-step.md). Keine automatische Installation; Softwaretests ersetzen keine reale Abnahme.
 
 ## Neu in 0.17.0-alpha.43 – Phasenwahl mit Echtzeitbudget
 
@@ -1664,6 +1670,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.44 | Gemessene Ein-Ampere-Nachführung laufender PV-Ladung mit elektrischer Schrittbestätigung und passenden EHZ-Reserven. |
 | 0.17.0-alpha.43 | Verzögerte Echtzeit-Phasenentscheidung mit gültigem Budget; Topologieübergänge getrennt reserviert und negative Stromschritte korrigiert. |
 | 0.17.0-alpha.42 | Gemessene Leistungsübergabe vom EHZ zur nächsten Wallboxstufe; qualifizierte Weitergabe nach Abstecken ohne erneuten vollständigen Starttimer. |
 | 0.17.0-alpha.41 | Erwartete Phasen-Schreibechos und Ladepause als begrenzter Übergang; Ladeblock erhalten, Modus-ACK und elektrische Antwort getrennt. |
