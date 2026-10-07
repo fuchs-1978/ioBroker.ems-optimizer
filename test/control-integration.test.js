@@ -1384,6 +1384,63 @@ test('countdown diagnostics retain budget-reset history without bypassing start 
 });
 
 
+test('parallel heater yields power before an already charging Mii increases from six amps', async () => {
+    const h = await plant({mii: true, startDelayS: 0, initialSurplusW: 6800, dhwDelayMs: 15000});
+    h.put('DP_WB2_CAR', 1);
+    h.put('DP_WB_PRIORITY', 0);
+    await h.advance(180);
+    assert.equal(h.physical().miiAllow, 1, h.diagnostic());
+    assert.ok(h.physical().miiAmps >= 12, `heater must not trap Mii at 6 A: ${h.diagnostic()}`);
+    assert.ok(h.physical().heaterW > 2000, h.diagnostic());
+    const start = h.writes.find(x => x.id === 'goe0.allow' && x.val === 1);
+    const increases = h.writes.filter(x => x.id === 'goe0.cmd' && x.val > 6 && x.at > start.at);
+    assert.ok(increases.length > 0);
+    for (const command of increases) {
+        const prior = h.trace.findLast(x => x.at <= command.at);
+        assert.ok(prior && prior.miiW - prior.gridW - 100 >= command.val * 230 - 1,
+            'current increase needs measured budget, not a merely planned heater reduction');
+    }
+    assert.equal(h.writes.filter(x => x.id === 'goe0.allow' && x.val === 0 && x.at > start.at).length, 0,
+        'redistribution keeps the charging block alive');
+});
+
+test('unplugged qualified donor hands over across an empty selection without another 300s delay', async () => {
+    const h = await plant({mii: true, startDelayS: 300, split: false,
+        wallboxStopResponseDelayMs: 10000});
+    await h.advance(400);
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    const at = h.now();
+    assert.ok(h.run('wallboxVehicleHandoffObservation[2].qualified'), JSON.stringify(h.run('wallboxVehicleHandoffObservation')));
+    h.put('DP_WB2_CAR', 1);
+    h.put('DP_WB0_ALLOW', 0);
+    await h.advance(2);
+    assert.equal(h.value('Control.SelectedWallbox'), -1);
+    assert.ok(h.run('wallboxDisconnectedDonor'), 'retain recent disconnected donor: ' + JSON.stringify(h.run('wallboxVehicleHandoffObservation')));
+    h.put('DP_WB0_ALLOW', 1);
+    await h.advance(60);
+    const on = h.writes.find(x => x.id === 'goe0.allow' && x.val === 1 && x.at > at);
+    assert.ok(on && on.at < at + 300000, h.diagnostic() + '\n' + JSON.stringify(h.run('wallboxVehicleHandoff')) + '\n' + JSON.stringify(h.run('wallboxDisconnectedDonor')));
+    const zero = h.trace.find(x => x.at > at && x.physicalAllow === 0 && x.wbW === 0);
+    assert.ok(zero && on.at >= zero.at, 'OFF and real zero remain mandatory');
+    assert.ok(!h.trace.some(x => x.wbW > 0 && x.miiW > 0), 'no overlapping vehicle draw');
+});
+
+test('disconnected donor shortcut expires instead of turning a later cold start into a handoff', async () => {
+    const h = await plant({mii: true, startDelayS: 300, split: false});
+    await h.advance(400);
+    h.put('DP_WB2_CAR', 1);
+    h.put('DP_WB0_ALLOW', 0);
+    await h.advance(120);
+    const at = h.now();
+    h.put('DP_WB0_ALLOW', 1);
+    await h.advance(60);
+    assert.ok(!h.writes.some(x => x.id === 'goe0.allow' && x.val === 1 && x.at > at));
+    assert.ok(h.value('Vehicles.Wallbox0.StartDelayRemaining_s') > 200,
+        JSON.stringify({timer:h.value('Vehicles.Wallbox0.StartDelayRemaining_s'),
+            allocation:h.value('Control.Wallbox0.AllocationDiagnostics_JSON'),
+            token:h.run('wallboxDisconnectedDonor'), handoff:h.run('wallboxVehicleHandoff')}));
+});
+
 test('lowered grid-charge SoC ceiling revokes a still-current battery price plan immediately', async () => {
     const h = await plant({battery: true, wallbox: false, initialSurplusW: -500});
     armPricePlans(h, {wallboxW: 0});

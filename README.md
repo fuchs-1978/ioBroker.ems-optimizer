@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.41**
+Aktuelle Version: **0.17.0-alpha.42**
 
 Prüfung zu Tages-Issue #98: [produktive Diagnose, Phasen-Rückfallvertrag,
 Reproduktion und nächste SQL-Abnahme](docs/issue98-live-diagnostics.md).
@@ -45,6 +45,14 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.42 – Leistungsübergabe und Abstecken
+
+Im 50/50-Kombibetrieb reserviert der Verteiler die nächste erlaubte Wallbox-Ampere-Stufe vor der Erhöhung. Der EHZ erhält ein entsprechend kleineres Restbudget und reduziert zuerst; die Wallbox erhöht erst nach ausreichend gemessenem Netzbudget. Eine geplante Reduktion ersetzt keine gemessene Stellwirkung. Bei Rücknahme eines Wallboxbefehls bleibt ihre reale Last weiter reserviert. `Control.WallboxN.AllocationDiagnostics_JSON` enthält `increaseReserveW` und `increaseNextA`.
+
+Ein frisch bestätigtes Abstecken eines in derselben Sitzung qualifiziert beobachteten Ladeauftrags kann die Startbereitschaft an die nächste zulässige Wallbox weitergeben, auch über die kurze leere Auswahl während der Abschaltung. Bestätigtes AUS, elektrische Ruhe, gültige Quellen und ausreichendes Budget bleiben erforderlich. Die Bereitschaft hat eine feste, aus ACK-/Reaktionsfristen begrenzte Laufzeit; Lücken, ungültige Quellen, erneutes Anstecken oder Neustart verwerfen sie. Normale Erststarts behalten ihren Timer. Die letzte Phasenstellung wird beim Abstecken nicht automatisch zurückgesetzt.
+
+Softwaretests ersetzen keine reale Abnahme. Keine produktive Konfiguration oder Installation wird automatisch geändert.
 
 ## Neu in 0.17.0-alpha.41 – Erwartete go-e-Phasenpause
 
@@ -1648,6 +1656,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.42 | Gemessene Leistungsübergabe vom EHZ zur nächsten Wallboxstufe; qualifizierte Weitergabe nach Abstecken ohne erneuten vollständigen Starttimer. |
 | 0.17.0-alpha.41 | Erwartete Phasen-Schreibechos und Ladepause als begrenzter Übergang; Ladeblock erhalten, Modus-ACK und elektrische Antwort getrennt. |
 | 0.17.0-alpha.40 | Wallboxstart und Erhöhung nach realem Netzbudget statt nominaler EHZ-Sollabweichung; Startsequenz prüft Restleistung erneut. |
 | 0.17.0-alpha.39 | Begrenzte EHZ-Wiederaufnahme nach frischer stabiler positiver Leistungsabweichung; Schutz- und ACK-Prüfungen bleiben erhalten. |
