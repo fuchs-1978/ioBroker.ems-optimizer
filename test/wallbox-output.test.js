@@ -648,15 +648,15 @@ test('combined wallbox need not wait for a heater ramp-up or disabled thermal ou
     assert.deepEqual(h.writes,[{id:'allow',val:0}]);
     assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,/Start/);
 });
-test('combined wallbox also waits for residual DHW power at a zero target', async () => {
+test('combined wallbox starts despite residual DHW power when measured net budget is sufficient', async () => {
     const h=setup();h.config.combinedProductionArmed=true;h.put('split',1);
     h.put('ems.0.Config.DHWParallelDistributionEnabled',true);
     h.put('ems.0.Devices.MyPV_DHW.ControlEnabled',true);
     h.put('ems.0.Control.Targets.MyPV_DHW_W',0);
     h.put('ems.0.Actual.MyPV_DHW_W',1000);
     await h.output.initialize();await h.output.tick();
-    assert.equal(h.writes.length,0);
-    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,/EHZ-Feinregler/);
+    assert.deepEqual(h.writes,[{id:'allow',val:0}]);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,/Start/);
 });
 
 test('alpha mode arms all wallboxes but starts only the selected one', async () => {
@@ -1513,4 +1513,39 @@ test('enabled price option without a price session preserves PV minimum runtime 
     await h.output.tick();
     assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
     assert.doesNotMatch(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val, /Preisfenster/);
+});
+
+for (const residualW of [5424, 9000]) {
+    test(`heater command deviation ${residualW} W does not block minimum-current start`, async () => {
+        const h=setup();h.config.combinedProductionArmed=true;h.put('split',1);
+        h.put('ems.0.Config.DHWParallelDistributionEnabled',true);
+        h.put('ems.0.Devices.MyPV_DHW.ControlEnabled',true);
+        h.put('ems.0.Control.Targets.MyPV_DHW_W',5000);
+        h.put('ems.0.Actual.MyPV_DHW_W',residualW);
+        h.put('ems.0.Control.Targets.Wallbox0_W',1380);h.put('export',1800);
+        await h.start();
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,true);
+        assert.ok(h.writes.some(w=>w.id==='allow'&&w.val===1));
+    });
+}
+test('combined start waits for real net budget even if planned allocation is positive', async () => {
+    const h=setup();h.config.combinedProductionArmed=true;h.put('split',1);
+    h.put('ems.0.Config.DHWParallelDistributionEnabled',true);
+    h.put('ems.0.Devices.MyPV_DHW.ControlEnabled',true);
+    h.put('ems.0.Control.Targets.MyPV_DHW_W',5000);
+    h.put('ems.0.Actual.MyPV_DHW_W',5424);h.put('export',1143);
+    h.put('ems.0.Control.Targets.Wallbox0_W',1380);
+    await h.output.initialize();await h.output.tick();
+    assert.deepEqual(h.writes,[]);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,/Netzbudget/);
+});
+test('combined start rechecks real budget before enabling charging', async () => {
+    const h=setup();h.config.combinedProductionArmed=true;h.put('split',1);
+    h.put('ems.0.Config.DHWParallelDistributionEnabled',true);
+    h.put('ems.0.Devices.MyPV_DHW.ControlEnabled',true);
+    h.put('ems.0.Control.Targets.MyPV_DHW_W',0);h.put('ems.0.Actual.MyPV_DHW_W',1000);
+    await h.output.initialize();await h.output.tick();h.ack('allow',0);
+    await h.output.tick();h.ack('feedback',6);h.put('export',500);
+    await h.output.tick();
+    assert.ok(!h.writes.some(w=>w.id==='allow'&&w.val===1));
 });
