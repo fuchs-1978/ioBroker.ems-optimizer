@@ -1549,3 +1549,40 @@ test('lowered grid-charge SoC ceiling revokes a still-current battery price plan
     h.put(h.run('CFG.dp.batterySoc'), 65);
     assert.equal(h.run("priceChargingAuthorization('Battery').allowed"), false);
 });
+
+test('handoff prepares a stopped three-phase receiver for one phase before its charging release', async () => {
+    const h = await plant({mii: true, startDelayS: 300, split: false,
+        initialSurplusW: 2400, wallboxStopResponseDelayMs: 10000});
+    h.put('DP_WB2_CAR', 1); h.put('DP_WB_PRIORITY', 0);
+    await h.advance(380);
+    assert.equal(h.physical().miiAllow, 1, h.diagnostic());
+    Object.assign(h.config, {wb2PhaseSwitchEnabled: true, wb2PhaseControlMode: 'ems',
+        wb2PhaseModeId: 'goe.phase', phaseSwitchMinHoldMin: 15,
+        phaseSwitchRealDownDelayS: 120});
+    const receiver = h.output.devices.find(d => d.wb === 2);
+    receiver.ids.phaseMode = 'goe.phase'; receiver.confirmedPhases = 3;
+    h.own('Vehicles.Wallbox2.PhaseSwitchEnabled', true);
+    h.own('Vehicles.Wallbox2.MaximumPhases', 3);
+    h.own('Vehicles.Wallbox2.MinCurrent3P_A', 6);
+    h.own('Vehicles.Wallbox2.MaxCurrent3P_A', 32);
+    h.put('goe.phase', 2);
+    h.own('Devices.Wallbox2.ConfirmedPhases', 3);
+    h.own('Devices.Wallbox2.OutputPhases', 3);
+    const at = h.now();
+    h.put('DP_WB2_CAR', 2); h.put('DP_WB_PRIORITY', 2);
+    await h.advance(2);
+    assert.equal(h.value('Control.Targets.Wallbox2_Phases'), 1, h.diagnostic());
+    assert.equal(h.physical().allow, 0, 'old 3P setting cannot authorize the receiving car');
+    const phase = JSON.parse(h.value('Control.Wallbox2.PhaseDecision_JSON'));
+    assert.equal(phase.reason, 'pre-start-budget-phase');
+    h.put('goe.phase', 1, {ack: false});
+    await h.advance(4);
+    assert.equal(h.physical().allow, 0, 'phase write echo is not confirmation');
+    h.put('goe.phase', 1, {ack: true});
+    await h.advance(35);
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    const enable = h.writes.find(x => x.id === 'goe.allow' && x.val === 1 && x.at > at);
+    assert.ok(enable && enable.at - at < 120000, 'no running-phase or new 300s start delay');
+    const before = h.trace.findLast(x => x.at <= enable.at);
+    assert.equal(before.miiW, 0, 'donor must be electrically quiet before receiver starts');
+});
