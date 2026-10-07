@@ -160,8 +160,8 @@ test('phase budget rejects stale, unacknowledged or poor-quality reclaimed sourc
     const valid = now => vm.runInContext(
         `wallboxPhaseBudgetSourcesValid({wallboxes:[0,1],dhw:true},${now})`, h.ctx);
     assert.equal(valid(h.start), true);
-    assert.equal(valid(h.start + 10001), false, 'NVP must meet the output guard 10-second source contract');
-    assert.equal(valid(h.start + 10000), true);
+    assert.equal(valid(h.start + 30001), false, 'NVP must meet the output guard 30-second source contract');
+    assert.equal(valid(h.start + 30000), true);
     for (const id of ['grid.in', 'grid.out', 'wb0.power', 'ehz.l2']) {
         const original = h.states.get(id);
         for (const overrides of [{ack: false}, {q: 64}, {val: null}, {ts: h.start + 2000}]) {
