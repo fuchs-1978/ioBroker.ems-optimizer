@@ -90,7 +90,7 @@ test('missing/blank/quality/ack/future measurement inputs remain unknown, never 
     const f = fixture();
     await f.recorder.initialize();
     for (const extra of [{val: null}, {val: ''}, {val: ' '}, {val: 0, q: 64},
-        {val: 0, ack: false}, {val: 0, ts: f.clock.now + 500}, {val: 0, ts: f.clock.now - 10001}]) {
+        {val: 0, ack: false}, {val: 0, ts: f.clock.now + 500}, {val: 0, ts: f.clock.now - 30001}]) {
         f.put('grid.export', extra.val, extra);
         const s = f.recorder.snapshot();
         assert.equal(s.power.grid_W, null);
@@ -638,4 +638,18 @@ test('unobserved-command power reservations stay visible at zero target without 
     assert.equal(trace.ehz.reservedPower_W, 3000);
     assert.equal(trace.heating.reservedPhase1_W, 3000);
     assert.ok(f.cache.get('ems.0.Debug.Battery.Summary').val.includes('reservierte Ladung 2000 W'));
+});
+
+
+test('grid diagnostic accepts SMA age up to 30 seconds and rejects older readings', async () => {
+    const f = fixture(); await f.recorder.initialize();
+    for (const ageMs of [12000, 30000, 30001]) {
+        for (const id of ['grid.import', 'grid.export']) f.put(id, 0, {ts: f.clock.now - ageMs});
+        const s = f.recorder.snapshot();
+        for (const key of ['gridImport', 'gridExport']) {
+            assert.equal(s.measurements[key].maxAgeMs, 30000);
+            assert.equal(s.measurements[key].valid, ageMs <= 30000);
+        }
+        assert.equal(s.power.grid_W, ageMs <= 30000 ? 0 : null);
+    }
 });

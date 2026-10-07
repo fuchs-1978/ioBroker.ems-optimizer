@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.46**
+Aktuelle Version: **0.17.0-alpha.47**
 
 Prüfung zu Tages-Issue #98: [produktive Diagnose, Phasen-Rückfallvertrag,
 Reproduktion und nächste SQL-Abnahme](docs/issue98-live-diagnostics.md).
@@ -45,6 +45,12 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.47 – SMA-Netzwerte mit 30-s-Altersgrenze
+
+Der reale Wallboxausgang akzeptiert Gesamt-Netzbezug und -einspeisung bis einschließlich 30 s Quellenalter statt 10 s. Phasenbudgetprüfung und produktive Diagnose verwenden dieselbe Grenze. Anlass war am 07.10.2026 um 15:14:22 ein EQV-Schutzstopp wegen 12 s altem SMA-Einspeisewert. Auf ausdrücklichen Nutzerauftrag wird eine solche kurze Aktualisierungslücke toleriert; die Ursache des ausgebliebenen Updates ist damit nicht behoben. Nach mehr als 30 s bleiben die Werte ungültig. ACK-false, schlechte Qualität, fehlende/nichtnumerische oder zukünftige Werte erhalten keine neue Freigabe.
+
+Geändert wird ausschließlich die Altersgrenze der zwei Gesamtnetzquellen. Die unabhängigen Hausanschluss-Phasenprüfungen, Wallboxmessungen, Regelzyklus- und Kommunikationsfristen bleiben erhalten. Kein nachträgliches Erfinden von Daten und keine Änderung der SQL-Historie. Mit einem älteren Wert kann das Momentanbudget inzwischen abweichen; nächste reale Prüfung: Aktualisierungslücken, Quellenalter und zugehörige Befehls-/Netzantwort zeitlich vergleichen. Keine automatische Installation.
 
 ## Neu in 0.17.0-alpha.46 – Startphase vor der Leistungsübergabe wählen
 
@@ -1682,6 +1688,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.47 | Gesamtnetzbezug/-einspeisung bis 30 s Alter; passende Ausgangs-, Phasenbudget- und Diagnoseprüfung. |
 | 0.17.0-alpha.46 | Nutzbare Startphase für bestätigte gestoppte Zielwallbox vor Ladefreigabe nach Echtzeitbudget anfordern; laufende Phasenwechsel behalten ihre Timer. |
 | 0.17.0-alpha.45 | Alte elektrische Schrittwartebedingung beim Ersetzen einer offenen Stromerhöhung entfernen; neue Schritte bleiben rückmelde- und budgetgebunden. |
 | 0.17.0-alpha.44 | Gemessene Ein-Ampere-Nachführung laufender PV-Ladung mit elektrischer Schrittbestätigung und passenden EHZ-Reserven. |

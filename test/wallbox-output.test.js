@@ -1815,3 +1815,17 @@ test('a hard cap replacing an unacknowledged measured increase clears only the o
     assert.equal(d.measuredBudgetStep.amps, 16);
     assert.ok(!h.writes.some(x => x.id === 'allow'));
 });
+
+
+test('SMA total import and export remain usable through 30 seconds then trigger the stale-source stop', async () => {
+    for (const id of ['import', 'export']) for (const ageMs of [12000, 30000, 30001]) {
+        let now = 1000000; const h = setup({now: () => now});
+        await h.start(); h.writes.length = 0;
+        h.put(id, id === 'export' ? 8000 : 0, {ts: now - ageMs});
+        await h.output.tick();
+        const stopped = h.writes.some(x => x.id === 'allow' && x.val === 0);
+        assert.equal(stopped, ageMs > 30000, `${id}: ${ageMs}`);
+        if (stopped) assert.match(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val,
+            /veraltet.*maximal 30 s/);
+    }
+});
