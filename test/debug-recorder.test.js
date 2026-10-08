@@ -653,3 +653,75 @@ test('grid diagnostic accepts SMA age up to 30 seconds and rejects older reading
         assert.equal(s.power.grid_W, ageMs <= 30000 ? 0 : null);
     }
 });
+
+test('parallel planned allocations retain floors and limits independently from real outputs', async () => {
+    const allocation = {schema: 1, timestamp: 12345, valid: true, order: [0, 1, 2], budgetW: 10000, hardBudgetW: 12000,
+        slowBudgetW: 11000, voltage: 240,
+        allocations: [{wb: 0, authorized: true, targetA: 32, phases: 1, reservedW: 7360, minimumW: 1380},
+            {wb: 1, authorized: true, targetA: 11, phases: 1, reservedW: 2530, minimumW: 1380}],
+        waiting: [{wb: 2, reason: 'Kein Fahrzeug angeschlossen'}], secret: 'NEVER-EXPORT'};
+    const f = fixture({'ems.0.Config.WallboxParallelChargingEnabled': true,
+        'ems.0.Control.ActiveWallboxes_JSON': '[0,1]',
+        'ems.0.Control.ParallelWallboxAllocation_JSON': JSON.stringify(allocation),
+        'ems.0.Control.ParallelWallboxStatus': 'Mindestladung reserviert; restliche Leistung nach Prioritaet',
+        'ems.0.Devices.Wallbox0.OutputActive': true, 'ems.0.Devices.Wallbox1.OutputActive': false,
+        'ems.0.Vehicles.Wallbox1.SoC_pct': 79, 'ems.0.Vehicles.Wallbox1.SoCValid': true,
+        'ems.0.Vehicles.Wallbox1.MinimumSoC_pct': 80, 'ems.0.Vehicles.Wallbox1.TargetSoC_pct': 90,
+        'ems.0.Vehicles.Wallbox1.BelowMinimum': true, 'ems.0.Vehicles.Wallbox1.TaperCurrentLimit_A': 16,
+        'ems.0.Vehicles.Wallbox1.MaximumPower_W': 11000,
+        'ems.0.Vehicles.Wallbox1.CurrentConstraintStatus': 'Geraetegrenze'});
+    await f.recorder.initialize();
+    const snapshot = f.recorder.snapshot();
+    const planned = snapshot.control.parallelWallboxes;
+    assert.deepEqual(Array.from(planned.active), [0, 1]);
+    assert.equal(planned.allocation.allocations[1].minimumW, 1380);
+    assert.equal(planned.allocation.hardBudgetW, 12000);
+    assert.equal(planned.allocation.slowBudgetW, 11000, 'battery-reduced budget is distinct from gross protection');
+    assert.equal(planned.allocation.voltage, 240);
+    assert.equal(snapshot.wallboxes[1].OutputActive, false, 'planned participant is not measured charging');
+    assert.equal(snapshot.wallboxes[1].SoC_pct, 79);
+    assert.equal(snapshot.wallboxes[1].MaximumPower_W, 11000);
+    assert.ok(!JSON.stringify(snapshot).includes('NEVER-EXPORT'));
+    const restored = f.recorder.copyContext(f.recorder.context(snapshot));
+    assert.equal(restored.parallelWallboxes.allocation.allocations[0].targetA, 32);
+    assert.equal(restored.wallboxes[1].soc_pct, 79);
+    assert.equal(restored.wallboxes[1].constraintStatus, 'Geraetegrenze');
+    const count = f.recorder.eventCount;
+    f.change('Control.ActiveWallboxes_JSON', '[0]');
+    assert.ok(f.recorder.eventCount > count);
+});
+
+test('missing or malformed parallel diagnosis stays unknown and is bounded', async () => {
+    const f = fixture(); await f.recorder.initialize();
+    assert.equal(f.recorder.snapshot().control.parallelWallboxes.allocation, null);
+    assert.equal(f.recorder.snapshot().control.parallelWallboxes.active, null);
+    f.put('ems.0.Control.ActiveWallboxes_JSON', '{invalid');
+    f.put('ems.0.Control.ParallelWallboxAllocation_JSON', JSON.stringify({schema: 2, valid: true}));
+    assert.equal(f.recorder.snapshot().control.parallelWallboxes.active, null);
+    assert.equal(f.recorder.snapshot().control.parallelWallboxes.allocation, null);
+    f.put('ems.0.Control.ActiveWallboxes_JSON', '[0,0,1,2,3]');
+    f.put('ems.0.Control.ParallelWallboxAllocation_JSON', JSON.stringify({schema: 1, valid: false,
+        allocations: Array.from({length: 10}, (_, i) => ({wb: i % 3, targetA: null, phases: 2})),
+        waiting: [{wb: 1, reason: 'x'.repeat(1000)}]}));
+    const diagnosed = f.recorder.snapshot().control.parallelWallboxes;
+    assert.deepEqual(Array.from(diagnosed.active), [0, 1, 2]);
+    assert.equal(diagnosed.allocation.allocations.length, 3);
+    assert.equal(diagnosed.allocation.allocations[0].targetA, null);
+    assert.equal(diagnosed.allocation.allocations[0].phases, null);
+    assert.equal(diagnosed.allocation.waiting[0].reason.length, 600);
+});
+
+test('per-vehicle allocation and increase-budget JSON retain diagnostic detail beyond text truncation', async () => {
+    const f = fixture(); await f.recorder.initialize();
+    const detail = {timestamp: 12345, valid: true, minimumW: 1380, preferred: false, order: 1,
+        safetyBudgetW: 2760, reservedW: 1380, phasePreparationCurrentA: 6,
+        phasePreparationReason: 'awaiting-confirmed-1p', reason: 'x'.repeat(800)};
+    for (const id of ['Control.Wallbox1.AllocationDiagnostics_JSON', 'Devices.Wallbox1.IncreaseBudget_JSON'])
+        f.put(`ems.0.${id}`, JSON.stringify(detail));
+    const snapshot = f.recorder.snapshot();
+    assert.equal(snapshot.wallboxes[1].allocation.minimumW, 1380);
+    assert.equal(snapshot.wallboxes[1].allocation.reason.length, 800);
+    assert.equal(snapshot.wallboxes[1].increaseBudget.phasePreparationReason, 'awaiting-confirmed-1p');
+    f.put('ems.0.Control.Wallbox1.AllocationDiagnostics_JSON', 'x'.repeat(20001));
+    assert.equal(f.recorder.snapshot().wallboxes[1].allocation, null);
+});

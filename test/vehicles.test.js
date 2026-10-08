@@ -1316,3 +1316,34 @@ test('reaching minimum SoC ends mandatory import despite retained legacy socfrei
     h.put('DP_WB2_AMIN',12);h.run('updateVehicles()');
     assert.equal(h.run('vehicleState(2).mustCharge'),true,'explicit manual minimum is still authoritative');
 });
+
+test('parallel minimum-SoC diagnostics reserve six amps while retained EQV low-SoC boost remains advisory',()=>{
+    const h=engine({wallboxParallelChargingEnabled:true});
+    h.put('DP_WB1_SOC',8);h.put('DP_WB1_RELEASE',2);
+    h.put('ems.0.Config.Wallbox1MaxPower_W',11040);h.run('updateVehicles()');
+    assert.equal(h.run('vehicleState(1).requestedMinimumCurrentA'),6);
+    assert.equal(h.run('vehicleState(1).minCurrent1pA'),6);
+    assert.equal(h.run('vehicleState(1).minimumPowerW'),1380);
+    assert.equal(h.run('vehicleState(1).lowSocMinimumCurrentA'),25);
+    assert.match(h.run('vehicleState(1).status'),/Parallele Mindestladung.*6 A einphasig/);
+    assert.match(h.states.get('ems.0.Vehicles.Wallbox1.CurrentConstraintStatus').val,/Boost 25 A nur im sequenziellen Betrieb/);
+    h.put('ems.0.Config.WallboxParallelChargingEnabled',false);h.run('updateVehicles()');
+    assert.equal(h.run('vehicleState(1).requestedMinimumCurrentA'),25);
+    assert.equal(h.run('vehicleState(1).minCurrent1pA'),25);
+    assert.equal(h.run('vehicleState(1).minimumPowerW'),5750);
+    assert.match(h.run('vehicleState(1).status'),/Pflichtladung.*25 A/);
+});
+
+test('parallel minimum-SoC diagnostics preserve explicit manual/device minimum and configured nominal voltage',()=>{
+    const h=engine({wallboxParallelChargingEnabled:true});h.put('DP_WB1_SOC',8);
+    h.put('DP_WB1_AMIN',12);h.put('ems.0.Config.WallboxNominalVoltage_V',240);
+    h.put('DP_WB1_PHASES',3);h.put('ems.0.Vehicles.Wallbox1.MinCurrent1P_A',8);
+    h.run('updateVehicles()');
+    assert.equal(h.run('vehicleState(1).requestedMinimumCurrentA'),12);
+    assert.equal(h.run('vehicleState(1).minimumPowerW'),2880);
+    assert.equal(h.run('vehicleState(1).lowSocMinimumCurrentA'),25);
+    assert.match(h.run('vehicleState(1).status'),/12 A einphasig/);
+    h.put('DP_WB1_AMIN',0);h.run('updateVehicles()');
+    assert.equal(h.run('vehicleState(1).requestedMinimumCurrentA'),8);
+    assert.equal(h.run('vehicleState(1).minimumPowerW'),1920);
+});

@@ -1326,3 +1326,91 @@ test('unload cancels queued scalar frames without committing an incomplete cycle
     assert.equal(writes.some(w => w.value === 2000), false);
     assert.equal(writes.some(w => w.id.endsWith('.ScalarCycleId')), false);
 });
+
+test('parallel shadow starts two minimum-SoC cars with isolated virtual confirmations and full allocation diagnosis', async () => {
+    const h = await fixture({surplusW: 0});
+    addSecondWallbox(h);
+    h.adapter.config.wallboxParallelChargingEnabled = true;
+    h.own('Config.WallboxParallelChargingEnabled', true);
+    for (const wb of [0, 1]) h.put(`DP_WB${wb}_MIN_SOC`, 70);
+    h.own('Devices.MyPV_DHW.ControlEnabled', false);
+    h.adapter.config.dhwControlEnabled = false;
+    const devicesBefore = structuredClone(h.adapter.wallboxOutput.devices);
+    for (let cycle = 0; cycle < 14; cycle++) { h.advance(2000); await h.tick(); }
+    const snapshot = JSON.parse(h.value('Snapshot_JSON'));
+    assert.equal(snapshot.valid, true, snapshot.reason);
+    assert.equal(snapshot.parallelWallboxes.enabled, true);
+    assert.deepEqual(snapshot.parallelWallboxes.active, [0, 1]);
+    assert.equal(snapshot.parallelWallboxes.allocation.allocations.find(a => a.wb === 0).minimumW, 1380);
+    assert.equal(snapshot.parallelWallboxes.allocation.allocations.find(a => a.wb === 1).minimumW, 1380);
+    for (const wb of [0, 1]) {
+        assert.equal(snapshot.targets[`Wallbox${wb}`], 1380);
+        assert.equal(snapshot.modeled[`Wallbox${wb}`].amps, 6, snapshot.modeled[`Wallbox${wb}`].status);
+        assert.equal(snapshot.modeled[`Wallbox${wb}`].active, true);
+        assert.equal(snapshot.modeled[`Wallbox${wb}`].responseAssumed, true);
+        assert.equal(snapshot.actuals[`Wallbox${wb}`], 0, 'model output is not an observed real charging watt');
+        assert.equal(snapshot.realFeedback[`Wallbox${wb}`].allow.value, 0);
+        assert.equal(snapshot.allocation[`Wallbox${wb}`].distributionReason, 'parallel-minimum-soc');
+    }
+    assert.match(h.value('Summary'), /WB0 1380 W, WB1 1380 W/);
+    assert.deepEqual(JSON.parse(h.value('ActiveWallboxes_JSON')), [0, 1]);
+    const record = latestRecord(h);
+    assert.deepEqual(record.parallelWallboxes.active, [0, 1]);
+    assert.equal(record.parallelWallboxes.allocation.minimumTotalW, 2760);
+    assert.equal(record.masterEnabled, false);
+    assert.equal(h.states.get('goe.allow').val, 0);
+    assert.equal(h.states.get('goe1.allow').val, 0);
+    assert.deepEqual(h.adapter.wallboxOutput.devices, devicesBefore, 'private output state cannot mutate live devices');
+    assert.ok(h.writes.every(w => w.id.startsWith('ems.0.Debug.Shadow.')));
+});
+
+test('parallel shadow excludes borrowed live grants and does not record timestamp-only allocation changes', async () => {
+    const h = await fixture({surplusW: 0});
+    addSecondWallbox(h); h.adapter.config.wallboxParallelChargingEnabled = true;
+    h.own('Config.WallboxParallelChargingEnabled', true);
+    h.own('Control.ParallelWallboxAllocation_JSON', JSON.stringify({schema: 1, valid: true, order: [2],
+        allocations: [{wb: 2, authorized: true, targetA: 32, phases: 3}], secret: 'FOREIGN-GRANT'}));
+    h.own('Control.ActiveWallboxes_JSON', '[2]');
+    for (const wb of [0, 1]) h.put(`DP_WB${wb}_MIN_SOC`, 70);
+    h.adapter.config.dhwControlEnabled = false; h.own('Devices.MyPV_DHW.ControlEnabled', false);
+    for (let cycle = 0; cycle < 14; cycle++) { h.advance(2000); await h.tick(); }
+    const snapshot = JSON.parse(h.value('Snapshot_JSON'));
+    assert.deepEqual(snapshot.parallelWallboxes.allocation.order, [0, 1]);
+    assert.ok(!JSON.stringify(snapshot).includes('FOREIGN-GRANT'));
+    const before = h.writes.filter(w => w.id.endsWith('.DecisionRecord')).length;
+    const same = structuredClone(snapshot);
+    same.parallelWallboxes.allocation.timestamp += 100;
+    same.parallelWallboxes.status += ' ';
+    h.shadow.publishRecord(same);
+    await h.flush();
+    assert.equal(h.writes.filter(w => w.id.endsWith('.DecisionRecord')).length, before,
+        'a timestamp or formatted status alone cannot become a new SQL edge');
+});
+
+test('productive SQL record carries bounded central and complete per-vehicle allocation diagnostics while model is paused', async () => {
+    const h = await fixture();
+    h.adapter.config.globalWriteEnabled = true;
+    h.own('System.RealOutputsEnabled', true);
+    h.own('Config.WallboxParallelChargingEnabled', true);
+    h.own('Control.ActiveWallboxes_JSON', '[0,1]');
+    const allocation = {schema: 1, timestamp: Date.now(), valid: true, order: [0, 1], budgetW: 2760,
+        hardBudgetW: 10000, minimumTotalW: 2760, mandatoryGridW: 2760,
+        allocations: [0, 1].map(wb => ({wb, authorized: true, targetA: 6, phases: 1, reservedW: 1380, minimumW: 1380})),
+        waiting: [], secret: 'UNEXPECTED-KEY'};
+    h.own('Control.ParallelWallboxAllocation_JSON', JSON.stringify(allocation));
+    h.own('Control.ParallelWallboxStatus', 'Mindestladung beider Fahrzeuge');
+    h.own('Control.Wallbox1.AllocationDiagnostics_JSON', JSON.stringify({valid: true, minimumW: 1380,
+        phasePreparationReason: 'awaiting-confirmed-1p', reason: 'x'.repeat(800)}));
+    const DebugRecorder = require('../lib/debug-recorder');
+    h.adapter.debugRecorder = new DebugRecorder(h.adapter);
+    await h.tick();
+    const record = latestRecord(h);
+    assert.equal(record.mode, 'PRODUCTION');
+    assert.equal(record.modelPaused, true);
+    assert.equal(record.masterEnabled, true);
+    assert.deepEqual(record.production.control.parallelWallboxes.active, [0, 1]);
+    assert.equal(record.production.control.parallelWallboxes.allocation.minimumTotalW, 2760);
+    assert.equal(record.production.wallboxes[1].allocation.reason.length, 800);
+    assert.equal(record.production.wallboxes[1].allocation.phasePreparationReason, 'awaiting-confirmed-1p');
+    assert.ok(!JSON.stringify(record.production.control.parallelWallboxes).includes('UNEXPECTED-KEY'));
+});

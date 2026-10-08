@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.52",
+    "version": "0.17.0-alpha.53",
     "titleLang": {
       "en": "EMS Optimizer",
       "de": "EMS-Optimierer"
@@ -43,6 +43,7 @@
     "observerOnly": true,
     "globalWriteEnabled": false,
     "multiWallboxAlphaArmed": false,
+    "wallboxParallelChargingEnabled": true,
     "historyInstance": "",
     "historyDays": 84,
     "pvPowerId": "",
@@ -531,5 +532,3 @@
     }
   ]
 }
-
-
