@@ -58,11 +58,13 @@ function setup({now: readNow = () => Date.now(), responseCurrentA = null, respon
         for (const [id, s] of states) if (s.ack) put(id, s.val);
         for (const key of ['System.LastUpdate', 'Control.LastUpdate', 'Plan.LastUpdate']) put(`ems.0.${key}`, now);
     };
-    const start = async () => {
+    const start = async (wb = 0) => {
+        const allowId = wb === 0 ? 'allow' : `allow${wb}`;
+        const feedbackId = wb === 0 ? 'feedback' : `feedback${wb}`;
         await output.initialize();
-        await output.tick(); ack('allow', 0);
-        await output.tick(); ack('feedback', 6);
-        await output.tick(); ack('allow', 1);
+        await output.tick(); ack(allowId, 0);
+        await output.tick(); ack(feedbackId, 6);
+        await output.tick(); ack(allowId, 1);
         await output.tick();
     };
     const enableWallbox = wb => {
@@ -1142,6 +1144,261 @@ test('an established selected charger survives an idle peer telemetry gap',async
     h.writes.length=0;h.put('allow1',0,{ts:Date.now()-31000});await h.output.tick();
     assert.deepEqual(h.writes,[]);
     assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,true);
+});
+
+// Reproduce the observed EQV interruption with the selected WB1 already
+// charging. A disconnected peer's allow=1 is only benign when every source
+// independently proves it is idle after the release edge. Exercise both
+// device orders: WB0 is processed before the EQV, WB2 afterwards.
+async function establishedEqvWithIdleRelease(peer = 2) {
+    let now = 1000000;
+    const h = setup({now: () => now});
+    h.enableWallbox(1);
+    if (peer === 2) h.enableWallbox(2);
+    h.config.multiWallboxAlphaArmed = true;
+    h.put('ems.0.Control.SelectedWallbox', 1);
+    h.put('ems.0.Control.Targets.Wallbox1_W', 1380);
+    await h.start(1);
+    now += 1000; h.refresh();
+    h.put('power1', 1.38); h.put('i11', 6);
+    await h.output.tick();
+    const activeSince = h.output.devices[1].activeSince;
+    assert.equal(h.states.get('ems.0.Devices.Wallbox1.OutputActive').val, true);
+    const id = kind => peer === 0 ? ({car: 'car', allow: 'allow', power: 'power',
+        L1: 'i1', L2: 'i2', L3: 'i3', connection: 'connection', error: 'error'})[kind]
+        : ({car: `car${peer}`, allow: `allow${peer}`, power: `power${peer}`,
+            L1: `i${peer}1`, L2: `i${peer}2`, L3: `i${peer}3`, connection: `connection${peer}`,
+            error: `error${peer}`})[kind];
+    now += 1000; h.refresh();
+    const edge = now;
+    h.put(id('allow'), 1, {lc: edge, ts: edge + 1, q: 0});
+    h.put(id('car'), 1, {ts: edge + 1, q: 0});
+    h.put(id('connection'), true, {ts: edge + 1, q: 0});
+    for (const kind of ['power', 'L1', 'L2', 'L3'])
+        h.put(id(kind), 0, {ts: edge + 2, q: 0});
+    h.writes.length = 0;
+    const advance = (ms = 1000) => { now += ms; h.refresh(); };
+    return {h, peer, id, edge, activeSince, advance};
+}
+
+for (const peer of [0, 2]) test(`established EQV survives confirmed no-car idle release from WB${peer}`, async () => {
+    const {h, id, edge, activeSince, advance} = await establishedEqvWithIdleRelease(peer);
+    for (let tick = 0; tick < 4; tick++) {
+        if (tick > 0) {
+            advance();
+            h.put(id('allow'), 1, {lc: edge, q: 0});
+        }
+        await h.output.tick();
+        assert.ok(!h.writes.some(write => write.id === 'allow1' && write.val === 0),
+            'idle peer cleanup must not revoke the selected EQV release');
+        assert.equal(h.states.get('ems.0.Devices.Wallbox1.OutputActive').val, true);
+        assert.equal(h.output.devices[1].activeSince, activeSince,
+            'running EQV must retain its original minimum-runtime clock');
+        assert.equal(h.states.get('ems.0.Devices.Wallbox1.SequenceResumePending').val, false);
+        assert.equal(h.output.devices[peer].owned, false,
+            'an idle peer must not become an owned takeover stop on the next tick');
+    }
+});
+
+test('no-car idle exception uses release ts when lc is absent and requires electrical samples after it', async () => {
+    const {h, id, edge, activeSince} = await establishedEqvWithIdleRelease();
+    h.put(id('allow'), 1, {ts: edge + 1, q: 0});
+    await h.output.tick();
+    assert.ok(!h.writes.some(write => write.id === 'allow1' && write.val === 0));
+    assert.equal(h.output.devices[1].activeSince, activeSince);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox1.OutputActive').val, true);
+});
+
+test('unchanged release polling does not demand electrical samples after the newer allow ts', async () => {
+    const {h, id, edge, activeSince} = await establishedEqvWithIdleRelease();
+    h.put(id('allow'), 1, {lc: edge - 1000, ts: edge + 1, q: 0});
+    for (const kind of ['power', 'L1', 'L2', 'L3'])
+        h.put(id(kind), 0, {ts: edge - 500, q: 0});
+    await h.output.tick();
+    assert.ok(!h.writes.some(write => write.id === 'allow1' && write.val === 0));
+    assert.equal(h.output.devices[1].activeSince, activeSince);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox1.OutputActive').val, true);
+});
+
+test('small signed power noise and bounded nonnegative currents remain idle', async () => {
+    const {h, id, activeSince} = await establishedEqvWithIdleRelease();
+    h.put(id('power'), -0.02, {q: 0});
+    h.put(id('L1'), 0, {q: 0}); h.put(id('L2'), 0.5, {q: 0});
+    await h.output.tick();
+    assert.ok(!h.writes.some(write => write.id === 'allow1' && write.val === 0));
+    assert.equal(h.output.devices[1].activeSince, activeSince);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox1.OutputActive').val, true);
+});
+
+for (const car of [2, 3, 4]) test(`EQV still stops for an ON peer reporting connected car state ${car}`, async () => {
+    const {h, id} = await establishedEqvWithIdleRelease();
+    h.put(id('car'), car, {q: 0});
+    await h.output.tick();
+    assert.ok(h.writes.some(write => write.id === 'allow1' && write.val === 0));
+    assert.equal(h.states.get('ems.0.Devices.Wallbox1.OutputActive').val, false);
+});
+
+for (const [name, change] of [
+    ['missing car', ({h, id}) => h.states.delete(id('car'))],
+    ['null car', ({h, id}) => h.put(id('car'), null, {q: 0})],
+    ['stale car', ({h, id, edge}) => h.put(id('car'), 1, {ts: edge - 31000, q: 0})],
+    ['car sample before allow edge', ({h, id, edge}) => h.put(id('car'), 1, {ts: edge - 1, q: 0})],
+    ['unacknowledged car', ({h, id}) => h.put(id('car'), 1, {ack: false, q: 0})],
+    ['bad car quality', ({h, id}) => h.put(id('car'), 1, {q: 0x40})],
+    ['device reports an error', ({h, id}) => h.put(id('error'), 5, {q: 0})],
+    ['missing device error status', ({h, id}) => h.states.delete(id('error'))],
+    ['stale device error status', ({h, id, edge}) => h.put(id('error'), 0, {ts: edge - 31000, q: 0})],
+    ['unacknowledged device error status', ({h, id}) => h.put(id('error'), 0, {ack: false, q: 0})],
+    ['bad device error status quality', ({h, id}) => h.put(id('error'), 0, {q: 0x40})],
+    ['future car sample', ({h, id, edge}) => h.put(id('car'), 1, {ts: edge + 2000, q: 0})],
+    ['null power', ({h, id}) => h.put(id('power'), null, {q: 0})],
+    ['bad power quality', ({h, id}) => h.put(id('power'), 0, {q: 0x40})],
+    ['future power sample', ({h, id, edge}) => h.put(id('power'), 0, {ts: edge + 2000, q: 0})],
+    ['missing L1 current', ({h, id}) => h.states.delete(id('L1'))],
+    ['unacknowledged L2 current', ({h, id}) => h.put(id('L2'), 0, {ack: false, q: 0})],
+    ['stale L3 current', ({h, id, edge}) => h.put(id('L3'), 0, {ts: edge - 31000, q: 0})],
+    ['bad L3 current quality', ({h, id}) => h.put(id('L3'), 0, {q: 0x40})],
+    ['missing connection', ({h, id}) => h.states.delete(id('connection'))],
+    ['null connection', ({h, id}) => h.put(id('connection'), null, {q: 0})],
+    ['offline connection', ({h, id}) => h.put(id('connection'), false, {q: 0})],
+    ['unacknowledged connection', ({h, id}) => h.put(id('connection'), true, {ack: false, q: 0})],
+    ['bad connection quality', ({h, id}) => h.put(id('connection'), true, {q: 0x40})],
+    ['stale connection', ({h, id, edge}) => h.put(id('connection'), true, {ts: edge - 31000, q: 0})],
+    ['future connection sample', ({h, id, edge}) => h.put(id('connection'), true, {ts: edge + 2000, q: 0})],
+    ['electrical sample before allow edge', ({h, id, edge}) => h.put(id('L2'), 0, {ts: edge - 1, q: 0})],
+    ['power despite no-car status', ({h, id}) => h.put(id('power'), 0.2, {q: 0})],
+    ['invalid negative power', ({h, id}) => h.put(id('power'), -0.03, {q: 0})],
+    ['phase current despite no-car status', ({h, id}) => h.put(id('L3'), 0.6, {q: 0})],
+    ['invalid negative phase current', ({h, id}) => h.put(id('L1'), -0.1, {q: 0})],
+    ['invalid release edge', ({h, id, edge}) => h.put(id('allow'), 1, {lc: edge + 60000, q: 0})],
+    ['release edge newer than release sample', ({h, id, edge}) => h.put(id('allow'), 1, {lc: edge + 2, q: 0})],
+    ['nonfinite release edge', ({h, id}) => h.put(id('allow'), 1, {lc: NaN, q: 0})],
+    ['null release edge', ({h, id}) => h.put(id('allow'), 1, {lc: null, q: 0})],
+    ['zero release edge', ({h, id}) => h.put(id('allow'), 1, {lc: 0, q: 0})],
+    ['string release edge', ({h, id, edge}) => h.put(id('allow'), 1, {lc: String(edge), q: 0})]
+]) test(`idle peer exception fails closed: ${name}`, async () => {
+    const fixture = await establishedEqvWithIdleRelease();
+    change(fixture);
+    await fixture.h.output.tick();
+    assert.ok(fixture.h.writes.some(write => write.id === 'allow1' && write.val === 0),
+        'unproven no-car electrical rest must retain the release interlock');
+    assert.equal(fixture.h.states.get('ems.0.Devices.Wallbox1.OutputActive').val, false);
+});
+
+test('replugging an idle peer immediately restores the active-release interlock', async () => {
+    const {h, id} = await establishedEqvWithIdleRelease();
+    // Check the previously ignored peer again without letting the cleanup
+    // command replace its observed allow=1 first.
+    assert.equal(h.output.gate(h.output.devices[1], h.mapping,
+        h.output.gridOperatorLimit(h.mapping)), '');
+    h.put(id('car'), 2, {q: 0});
+    await h.output.tick();
+    assert.ok(h.writes.some(write => write.id === 'allow1' && write.val === 0));
+    assert.equal(h.states.get('ems.0.Devices.Wallbox1.OutputActive').val, false);
+});
+
+for (const peer of [0, 2]) for (const [name, change] of [
+    ['a vehicle reconnects', ({h, id}) => h.put(id('car'), 2, {q: 0})],
+    ['power appears despite no-car', ({h, id}) => h.put(id('power'), 0.2, {q: 0})]
+]) test(`previously idle WB${peer} restores takeover and stops EQV when ${name}`, async () => {
+    const fixture = await establishedEqvWithIdleRelease(peer);
+    const {h, id} = fixture;
+    await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox1.OutputActive').val, true);
+    assert.equal(h.output.devices[peer].owned, false);
+    h.writes.length = 0;
+    change(fixture);
+    await h.output.tick();
+    assert.ok(h.writes.some(write => write.id === 'allow1' && write.val === 0),
+        'evidence must be rechecked on the next regulation tick');
+    assert.ok(h.writes.some(write => write.id === id('allow') && write.val === 0),
+        'the non-idle unknown peer returns to the normal confirmed-OFF takeover');
+    assert.equal(h.states.get('ems.0.Devices.Wallbox1.OutputActive').val, false);
+    assert.equal(h.output.devices[peer].owned, true,
+        'peer OFF operation retains ownership until its real ACK');
+});
+
+test('a new EQV start remains blocked by an idle no-car ON peer', async () => {
+    const {h, id} = await establishedEqvWithIdleRelease();
+    const eqv = h.output.devices[1];
+    eqv.owned = false; eqv.activeSince = 0; eqv.pending = null;
+    h.put('ems.0.Devices.Wallbox1.OutputOwned', false);
+    h.put('ems.0.Devices.Wallbox1.OutputActive', false);
+    h.put('allow1', 0, {q: 0});
+    h.writes.length = 0;
+    await h.output.tick();
+    assert.ok(!h.writes.some(write => ['cmd1', 'allow1'].includes(write.id)),
+        'new start must first obtain genuine peer OFF confirmation');
+    assert.equal(h.states.get('ems.0.Devices.Wallbox1.OutputActive').val, false);
+    assert.equal(h.states.get(id('car')).val, 1);
+});
+
+for (const [name, change] of [
+    ['owned peer', d => { d.owned = true; }],
+    ['pending peer start', d => { d.pending = {stage: 'allow', amps: 6, start: true, at: 1000000}; }],
+    ['peer restart recovery', d => { d.recovering = true; }],
+    ['pending peer stop', d => { d.stopRequest = {reason: 'stop pending', lastAttempt: 1000000}; }],
+    ['pending peer electrical response', d => { d.response = {at: 1000000, amps: 6, ackAt: 0}; }],
+    ['pending peer phase request', d => { d.phaseRequest = {at: 1000000, desired: 3}; }],
+    ['active peer phase transition', d => { d.phaseTransitionUntil = 1030000; }]
+]) test(`no-car exception cannot bypass ${name}`, async () => {
+    const {h, peer} = await establishedEqvWithIdleRelease();
+    change(h.output.devices[peer]);
+    const reason = h.output.gate(h.output.devices[1], h.mapping,
+        h.output.gridOperatorLimit(h.mapping));
+    assert.match(reason, /^Sequenzbetrieb:/);
+});
+
+for (const state of ['OutputActive', 'OutputOwned', 'StopPowerPending', 'ResponsePending', 'PhaseSwitchPending'])
+    test(`no-car exception cannot override published peer ${state}`, async () => {
+        const {h, peer} = await establishedEqvWithIdleRelease();
+        h.put(`ems.0.Devices.Wallbox${peer}.${state}`, true);
+        assert.match(h.output.gate(h.output.devices[1], h.mapping,
+            h.output.gridOperatorLimit(h.mapping)), /^Sequenzbetrieb:/);
+    });
+
+test('assumed shadow zero cannot authorize the physical idle-peer exception', async () => {
+    const {h, peer} = await establishedEqvWithIdleRelease();
+    h.output.responseEvidence = wb => wb === peer
+        ? {valid: true, assumed: true, currentA: 0} : null;
+    await h.output.tick();
+    assert.ok(h.writes.some(write => write.id === 'allow1' && write.val === 0));
+    assert.equal(h.states.get('ems.0.Devices.Wallbox1.OutputActive').val, false);
+});
+
+test('an assumed active owner cannot authorize the physical idle-peer exception', async () => {
+    const {h} = await establishedEqvWithIdleRelease();
+    h.output.responseEvidence = wb => wb === 1
+        ? {valid: true, assumed: true, currentA: 6} : null;
+    await h.output.tick();
+    assert.ok(h.writes.some(write => write.id === 'allow1' && write.val === 0));
+    assert.equal(h.states.get('ems.0.Devices.Wallbox1.OutputActive').val, false);
+});
+
+for (const [name, change, reason] of [
+    ['external EQV release withdrawn', h => h.ack('allow1', 0), /Ladefreigabe extern entzogen/],
+    ['external EQV current changed', h => h.ack('feedback1', 9), /Ladestrom extern veraendert/]
+]) test(`idle peer exception cannot mask ${name}`, async () => {
+    const {h} = await establishedEqvWithIdleRelease();
+    change(h);
+    await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox1.OutputActive').val, false);
+    assert.match(h.states.get('ems.0.Devices.Wallbox1.LastStopReason').val, reason);
+});
+
+for (const [name, change] of [
+    ['not selected', h => h.put('ems.0.Control.SelectedWallbox', 0)],
+    ['restart recovery', h => { h.output.devices[1].recovering = true; }],
+    ['not EMS-owned', h => { h.output.devices[1].owned = false; }],
+    ['still in a start transaction', h => {
+        h.output.devices[1].pending = {stage: 'allow', amps: 6, start: true, at: 1002000};
+    }],
+    ['not established active', h => h.put('ems.0.Devices.Wallbox1.OutputActive', false)]
+]) test(`idle peer exception applies only to an established selected EQV: ${name}`, async () => {
+    const {h} = await establishedEqvWithIdleRelease();
+    change(h);
+    assert.match(h.output.gate(h.output.devices[1], h.mapping,
+        h.output.gridOperatorLimit(h.mapping)), /^Sequenzbetrieb:/);
 });
 
 test('peer OFF polling jitter uses the configured thirty-second go-e window',async()=>{
