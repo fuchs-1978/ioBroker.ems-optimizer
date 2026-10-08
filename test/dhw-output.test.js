@@ -5,8 +5,9 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const {SMA_GRID_MAX_AGE_MS} = require('../lib/source-diagnostics');
 
-const context = vm.createContext({Math, gridConstraints: require('../lib/grid-constraints')});
+const context = vm.createContext({Math, SMA_GRID_MAX_AGE_MS, gridConstraints: require('../lib/grid-constraints')});
 vm.runInContext(fs.readFileSync(
     path.join(__dirname, '../lib/engine/dhw-output.js'), 'utf8'), context);
 const command = expression => vm.runInContext(expression, context);
@@ -61,7 +62,7 @@ function phaseLimit(direction) {
         ['pi1', 'pi2', 'pi3'].forEach(id => put(id, direction === 'import' ? 11270 : 0));
         ['pe1', 'pe2', 'pe3'].forEach(id => put(id, direction === 'export' ? 11270 : 0));
     }
-    const ctx = vm.createContext({Math, Date, gridConstraints: require('../lib/grid-constraints'),
+    const ctx = vm.createContext({Math, Date, SMA_GRID_MAX_AGE_MS, gridConstraints: require('../lib/grid-constraints'),
         CFG: {root: 'ems.0', dataMaxAgeMs: 120000, dp: {
             myPvDhwHaCurrentA: ['h1','h2','h3'], myPvDhwOutputW: ['o1','o2','o3'],
             haPhaseImportW: direction ? ['pi1','pi2','pi3'] : [],
@@ -83,7 +84,7 @@ test('EHZ increases are ramped but import reductions are immediate', () => {
     assert.equal(command('limitedDhwCommand(6000, 3000, 6000, 500, 1000)'), 1000);
 });
 
-function outputHarness({combined = false, simulate = false} = {}) {
+function outputHarness({combined = false, simulate = false, directional = false} = {}) {
     let now = 2000000;
     const states = new Map();
     const writes = [];
@@ -101,16 +102,21 @@ function outputHarness({combined = false, simulate = false} = {}) {
     own('Devices.Wallbox0.ControlEnabled', combined);
     own('Devices.Wallbox0.Present', combined);
     for (const id of ['o1', 'o2', 'o3', 'h1', 'h2', 'h3', 'gridIn']) put(id, 0);
+    if (directional) for (const phase of [1, 2, 3]) {
+        put(`pi${phase}`, 0); put(`pe${phase}`, 0);
+    }
     ['t1', 't2', 't3', 't4', 'outlet'].forEach(id => put(id, 50));
     put('connection', true);
     put('gridOut', 6100);
     put('split', true);
     const nativeConfig = {combinedProductionArmed: true, wb0ProductionArmed: true};
     const consumptionLimit = {valid: true, active: false, budgetW: null};
-    const ctx = vm.createContext({Math, Date: {now: () => now},
+    const ctx = vm.createContext({Math, Date: {now: () => now}, SMA_GRID_MAX_AGE_MS,
         gridConstraints: require('../lib/grid-constraints'), nativeConfig,
         CFG: {root: 'ems.0', dataMaxAgeMs: 120000, limits: {myPvDhwMaxW: 9000}, dp: {
             myPvDhwHaCurrentA: ['h1', 'h2', 'h3'], myPvDhwOutputW: ['o1', 'o2', 'o3'],
+            haPhaseImportW: directional ? ['pi1', 'pi2', 'pi3'] : [],
+            haPhaseExportW: directional ? ['pe1', 'pe2', 'pe3'] : [],
             dhwTemps: ['t1', 't2', 't3', 't4'], myPvDhwOutletTemp: 'outlet',
             myPvDhwConnection: 'connection', myPvDhwSetpoint: 'setpoint',
             myPvDhwActualMirror: 'mirror', gridImport: 'gridIn', gridExport: 'gridOut',
@@ -142,17 +148,49 @@ function outputHarness({combined = false, simulate = false} = {}) {
     };
 }
 
-test('DHW direct-grid contract keeps its independent ten-second limit and invalid feedback gates', () => {
-    for (const id of ['gridIn', 'gridOut']) for (const ageMs of [10000, 12000, 30000, 30001]) {
+test('DHW direct-grid contract accepts SMA samples through thirty seconds and retains invalid-feedback gates', () => {
+    for (const id of ['gridIn', 'gridOut']) for (const ageMs of [10000, 16000, 29999, 30000, 30001]) {
         const h = outputHarness();
         h.put(id, 0, {ts: 2000000 - ageMs});
-        assert.equal(h.run('directGridPowerW()') !== null, ageMs <= 10000);
+        assert.equal(h.run('directGridPowerW()') !== null, ageMs <= 30000, `${id}: ${ageMs}`);
     }
     for (const id of ['gridIn', 'gridOut']) for (const invalid of ['missing', {val: null}, {ack: false}, {q: 64}]) {
         const h = outputHarness();
         h.put(id, 0, invalid === 'missing' ? {} : invalid);
         if (invalid === 'missing') h.states.delete(id);
         assert.equal(h.run('directGridPowerW()'), null);
+    }
+});
+
+test('DHW house-phase import, export and fallback current share the thirty-second SMA boundary', () => {
+    for (const directional of [true, false]) {
+        const ids = directional ? ['pi1', 'pe1', 'pi2', 'pe2', 'pi3', 'pe3'] : ['h1', 'h2', 'h3'];
+        for (const id of ids) for (const ageMs of [16000, 29999, 30000, 30001]) {
+            const h = outputHarness({directional});
+            h.put(id, 0, {ts: 2000000 - ageMs, ack: true, q: 0});
+            assert.equal(h.run('phaseLimitedDhwPower(3000)'), ageMs <= 30000 ? 3000 : 0, `${id}: ${ageMs}`);
+        }
+        const invalidValues = [{val: null}, {ack: false}, {q: 64}, ...(directional ? [{val: -1}] : [])];
+        for (const id of ids) for (const invalid of invalidValues) {
+            const h = outputHarness({directional});
+            h.put(id, 0, {ts: 1984000, ack: true, q: 0, ...invalid});
+            assert.equal(h.run('phaseLimitedDhwPower(3000)'), 0, `${id}: ${JSON.stringify(invalid)}`);
+        }
+    }
+});
+
+test('a running DHW heater accepts older valid SMA telemetry but relinquishes output beyond thirty seconds', () => {
+    for (const directional of [true, false]) {
+        const phaseIds = directional ? ['pi1', 'pe1', 'pi2', 'pe2', 'pi3', 'pe3'] : ['h1', 'h2', 'h3'];
+        for (const id of ['gridIn', 'gridOut', ...phaseIds]) for (const ageMs of [16000, 30000, 30001]) {
+            const h = outputHarness({directional});
+            h.run('dhwLastCommandW=3000; dhwLastCommandAt=1999000; dhwOutputWasActive=true');
+            h.put('o1', 3000);
+            h.put(id, id === 'gridOut' ? 6100 : 0, {ts: 2000000 - ageMs, ack: true, q: 0});
+            h.tick(); h.complete();
+            assert.equal(h.commands().at(-1) > 0, ageMs <= 30000, `${id}: ${ageMs}`);
+            if (ageMs > 30000) assert.equal(h.commands().at(-1), 0, 'stale SMA data cannot continue a heater output');
+        }
     }
 });
 

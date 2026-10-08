@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const {SMA_GRID_MAX_AGE_MS} = require('../lib/source-diagnostics');
 
 function setup() {
     let now = 2000000;
@@ -25,7 +26,7 @@ function setup() {
     for (const [id, value] of Object.entries({hkOnline: true, cooling: false, hkTemp: 40,
         hk1: 0, hk2: 0, hk3: 0, h1: 10, h2: 10, h3: 10, gridIn: 0, gridOut: 6100,
         ww1: 0, ww2: 0, ww3: 0, critical: false})) put(id, value);
-    const ctx = vm.createContext({Math, Number, Date: {now: () => now}, nativeConfig,
+    const ctx = vm.createContext({SMA_GRID_MAX_AGE_MS, Math, Number, Date: {now: () => now}, nativeConfig,
         gridConstraints: require('../lib/grid-constraints'),
         CFG: {root: 'ems.0', dataMaxAgeMs: 120000, dp: {
             myPvHeatingTemp: 'hkTemp', myPvDhwOutputW: ['ww1', 'ww2', 'ww3'],
@@ -65,6 +66,32 @@ test('independent HK controller follows budget while battery absorbs NVP residua
     h.tick(); h.complete();
     assert.equal(h.command(), 2000);
     assert.equal(h.states.get('ems.0.Devices.MyPV_Heating.OutputOwned').val, true);
+});
+
+test('heating house-connection phase imports/exports and fallback currents use exactly 30 s', () => {
+    for (const directional of [false, true]) {
+        const h = setup();
+        if (directional) {
+            h.run('CFG.dp.haPhaseImportW=["in1","in2","in3"]; CFG.dp.haPhaseExportW=["out1","out2","out3"]');
+            for (const p of [1, 2, 3]) { h.put(`in${p}`, 0); h.put(`out${p}`, 0); }
+        }
+        h.advance(30000);
+        assert.equal(h.run('heatingPhaseLimitW(6000,[0,0,0])'), 6000);
+        h.advance(1);
+        assert.equal(h.run('heatingPhaseLimitW(6000,[0,0,0])'), 0);
+    }
+});
+
+test('heating phase-source quality gates and myPV measurement age remain independent', () => {
+    for (const extra of [{val: null}, {ack: false}, {q: 2}, {ts: 0}, {ts: 2100000}]) {
+        const h = setup();
+        h.put('h3', 0, extra);
+        assert.equal(h.run('heatingPhaseLimitW(6000,[0,0,0])'), 0, JSON.stringify(extra));
+    }
+    const h = setup();
+    h.advance(60000);
+    assert.equal(h.run('heatingActualPower().valid'), true,
+        'myPV output measurements retain their independent 120 s device contract');
 });
 
 test('HK cooling interlock and manual inhibit stop an active heater immediately', () => {

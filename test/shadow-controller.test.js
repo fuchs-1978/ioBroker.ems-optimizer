@@ -1223,7 +1223,7 @@ test('real protection sources record ACK, quality, allowed age and stale transit
     const quality = h.shadow.realProtectionFeedback();
     assert.equal(quality.houseL2Import.issue, 'quality');
     assert.equal(quality.houseL2Import.q, 0x82);
-    assert.equal(quality.houseL2Import.maxAgeMs, 15000);
+    assert.equal(quality.houseL2Import.maxAgeMs, 30000);
     assert.equal(quality.houseL2Export.issue, 'stale');
     await h.tick();
     const r = latestRecord(h);

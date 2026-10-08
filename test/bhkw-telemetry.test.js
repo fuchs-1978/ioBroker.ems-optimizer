@@ -2,6 +2,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const vm = require('node:vm');
+const {SMA_GRID_MAX_AGE_MS} = require('../lib/source-diagnostics');
 const fs = require('node:fs');
 
 function fixture(config = {}) {
@@ -9,7 +10,7 @@ function fixture(config = {}) {
     class Clock extends Date { static now() { return now; } }
     const states = new Map();
     const nativeConfig = {bhkwPresent: true, bhkwEnergyUnit: 'J', ...config};
-    const context = vm.createContext({Date: Clock, nativeConfig,
+    const context = vm.createContext({SMA_GRID_MAX_AGE_MS, Date: Clock, nativeConfig,
         getState: id => states.get(id), existsState: id => states.has(id),
         setState: (id, val) => states.set(id, {val, ts: now, ack: true}), log: () => {}});
     for (const file of ['core', 'observer'])

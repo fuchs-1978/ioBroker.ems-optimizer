@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const {SMA_GRID_MAX_AGE_MS} = require('../lib/source-diagnostics');
 const {createRequire} = require('node:module');
 
 // Shared, deterministic plant: real allocator + real output state machines,
@@ -132,7 +133,7 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         callback?.(null);
         return true;
     };
-    const ctx = vm.createContext({Date: Clock, console, nativeConfig: config,
+    const ctx = vm.createContext({SMA_GRID_MAX_AGE_MS, Date: Clock, console, nativeConfig: config,
         gridConstraints: require('../lib/grid-constraints'),
         getState: id => states.get(id), existsState: id => states.has(id),
         createState: (id, val) => { if (!states.has(id)) put(id, val); }, setState: put,

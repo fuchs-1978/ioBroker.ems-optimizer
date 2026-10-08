@@ -2,13 +2,14 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const vm=require('node:vm');
+const {SMA_GRID_MAX_AGE_MS} = require('../lib/source-diagnostics');
 const fs=require('node:fs');
 const path=require('node:path');
 
 function engine(config={}) {
     const states=new Map();
     const put=(id,val)=>states.set(id,{val,ts:Date.now(),ack:true});
-    const ctx=vm.createContext({nativeConfig:config,Date,console,
+    const ctx=vm.createContext({SMA_GRID_MAX_AGE_MS, nativeConfig:config,Date,console,
         gridConstraints:require('../lib/grid-constraints'),
         getState:id=>states.get(id),existsState:id=>states.has(id),
         createState:(id,val)=>{if(!states.has(id))put(id,val);},setState:put,
