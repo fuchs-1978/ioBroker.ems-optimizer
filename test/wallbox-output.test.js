@@ -2075,7 +2075,7 @@ test('a hard cap replacing an unacknowledged measured increase clears only the o
 
 
 test('SMA total import and export remain usable through 30 seconds then trigger the stale-source stop', async () => {
-    for (const id of ['import', 'export']) for (const ageMs of [12000, 30000, 30001]) {
+    for (const id of ['import', 'export']) for (const ageMs of [16000, 29999, 30000, 30001, 31000]) {
         let now = 1000000; const h = setup({now: () => now});
         await h.start(); h.writes.length = 0;
         h.put(id, id === 'export' ? 8000 : 0, {ts: now - ageMs});
@@ -2085,6 +2085,116 @@ test('SMA total import and export remain usable through 30 seconds then trigger 
         if (stopped) assert.match(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val,
             /veraltet.*maximal 30 s/);
     }
+});
+
+function configureSmaHouseSources(h, directional) {
+    if (!directional) return ['h1', 'h2', 'h3'];
+    const ids = [];
+    for (const phase of [1, 2, 3]) for (const direction of ['IMPORT', 'EXPORT']) {
+        const id = `house.${phase}.${direction.toLowerCase()}`;
+        h.mapping[`DP_HA_L${phase}_${direction}_W`] = id;
+        h.put(id, 0);
+        ids.push(id);
+    }
+    return ids;
+}
+
+test('every SMA house phase and current fallback keeps a running charge through thirty seconds', async t => {
+    for (const directional of [true, false]) {
+        const ids = directional
+            ? [1, 2, 3].flatMap(phase => ['import', 'export'].map(direction => `house.${phase}.${direction}`))
+            : ['h1', 'h2', 'h3'];
+        for (const id of ids) for (const ageMs of [16000, 29999, 30000, 30001, 31000])
+            await t.test(`${id}: ${ageMs} ms`, async () => {
+                const now = 1000000;
+                const h = setup({now: () => now});
+                configureSmaHouseSources(h, directional);
+                await h.start(); h.writes.length = 0;
+                const activeSince = h.output.devices[0].activeSince;
+                h.put(id, 0, {ts: now - ageMs, ack: true, q: 0});
+                await h.output.tick();
+                const stopped = h.writes.some(x => x.id === 'allow' && x.val === 0);
+                assert.equal(stopped, ageMs > 30000);
+                if (stopped) assert.match(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val,
+                    /Hausanschluss L[123]:.*veraltet.*maximal 30 s/);
+                else {
+                    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, true);
+                    assert.equal(h.output.devices[0].activeSince, activeSince, 'a valid older SMA poll does not reset the charge block');
+                }
+            });
+    }
+});
+
+test('the SMA age extension retains phase value, ACK, quality and timestamp safeguards', async t => {
+    const cases = [
+        ['NULL', {val: null}], ['unacknowledged', {ack: false}], ['bad quality', {q: 64}],
+        ['negative', {val: -1}], ['missing timestamp', {ts: undefined}], ['future timestamp', {ts: 1001001}]
+    ];
+    for (const directional of [true, false]) for (const [name, extra] of cases)
+        await t.test(`${directional ? 'L3 export' : 'L3 current'}: ${name}`, async () => {
+            const now = 1000000;
+            const h = setup({now: () => now});
+            const ids = configureSmaHouseSources(h, directional);
+            await h.start(); h.writes.length = 0;
+            h.put(ids.at(-1), 0, {ts: now - 16000, ack: true, q: 0, ...extra});
+            await h.output.tick();
+            assert.ok(h.writes.some(x => x.id === 'allow' && x.val === 0));
+            assert.match(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val, /Hausanschluss L3/);
+        });
+});
+
+test('a sixteen-second SMA phase sample still enforces the configured house limit and separate device-age limit', async () => {
+    const now = 1000000;
+    const h = setup({now: () => now});
+    configureSmaHouseSources(h, true);
+    await h.start(); h.writes.length = 0;
+    h.put('house.1.import', 49 * 230, {ts: now - 16000, ack: true, q: 0});
+    await h.output.tick();
+    assert.ok(h.writes.some(x => x.id === 'allow' && x.val === 0), 'an accepted older SMA sample cannot defeat house protection');
+    const device = setup({now: () => now});
+    device.config.wallboxMeasurementMaxAgeS = 15;
+    await device.start(); device.writes.length = 0;
+    device.put('power', 0, {ts: now - 16000, ack: true, q: 0});
+    await device.output.tick();
+    assert.ok(device.writes.some(x => x.id === 'allow' && x.val === 0), 'the configured device age remains independent');
+    assert.match(device.states.get('ems.0.Devices.Wallbox0.LastStopReason').val,
+        /Wallbox-Leistung: veraltet.*maximal 15 s/);
+});
+
+test('an L3-only stale SMA phase launches a bounded direct diagnostic without delaying stop or refreshing the cache', async () => {
+    const now = 1000000;
+    const h = setup({now: () => now});
+    configureSmaHouseSources(h, true);
+    await h.start(); h.writes.length = 0;
+    const id = 'house.3.export';
+    const cached = {val: 0, ts: now - 31000, lc: now - 40000, ack: true, q: 0};
+    h.put(id, cached.val, cached);
+    h.adapter.getCachedStateReceipt = sourceId => sourceId === id
+        ? {receivedAt: now - 31000, via: 'stateChange'} : null;
+    let resolveRead;
+    const reads = [];
+    h.adapter.getForeignStateAsync = async sourceId => {
+        reads.push(sourceId);
+        return new Promise(resolve => {resolveRead = resolve;});
+    };
+    await h.output.tick();
+    assert.ok(h.writes.some(x => x.id === 'allow' && x.val === 0), 'protection does not await diagnostic IO');
+    let diag = JSON.parse(h.states.get('ems.0.Devices.Wallbox0.LastStopSourceDiagnostics_JSON').val);
+    assert.deepEqual(diag.sources.map(s => s.id), [id], 'fresh total-grid sources need no direct diagnostic');
+    assert.equal(diag.sources[0].maxAgeMs, 30000);
+    assert.equal(diag.sources[0].cached.ageMs, 31000);
+    assert.equal(diag.sources[0].receipt.via, 'stateChange');
+    assert.equal(diag.sources[0].direct.status, 'pending');
+    await h.output.tick(); assert.deepEqual(reads, [id], 'one direct read per continuous phase fault');
+    resolveRead({val: 100, ts: now, lc: now - 20, ack: true, q: 0});
+    for (let i = 0; i < 15; i++) await Promise.resolve();
+    diag = JSON.parse(h.states.get('ems.0.Devices.Wallbox0.LastStopSourceDiagnostics_JSON').val);
+    assert.equal(diag.sources[0].direct.status, 'read');
+    assert.equal(diag.sources[0].direct.snapshot.val, 100);
+    assert.equal(diag.sources[0].cacheAtCompletion.ageMs, 31000);
+    assert.equal(h.states.get(id).ts, cached.ts, 'read-only diagnostic is not operative source freshness');
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val, /house\.3\.export:.*Direktlesung=read/);
+    assert.ok(!h.writes.some(x => x.id === 'allow' && x.val === 1));
 });
 
 test('stale SMA diagnostic stops without waiting for direct read and never writes the read into control cache', async () => {

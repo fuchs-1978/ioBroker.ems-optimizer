@@ -179,11 +179,11 @@ test('serialization failure is counted and cannot wedge the queue or reject comm
     assert.equal(h.records().at(-1).recording.writeErrors, 1);
 });
 
-test('grid protection, snapshot and operative wallbox freshness agree while the DHW gate is explicit', async t => {
+test('SMA total-grid protection, snapshot, wallbox and DHW freshness share the thirty-second contract', async t => {
     const h = fixture(2000000);
     t.mock.method(Date, 'now', h.now);
     const output = new WallboxOutput(h.adapter, {now: h.now});
-    for (const id of ['import', 'export']) for (const ageMs of [10000, 12000, 30000, 30001]) {
+    for (const id of ['import', 'export']) for (const ageMs of [10000, 16000, 29999, 30000, 30001]) {
         h.put(id, 0, {ts: h.now() - ageMs, lc: h.now() - 50000});
         h.shadow.productionRecord({type: 'decision'}); await h.flush();
         const r = h.records().at(-1);
@@ -197,8 +197,8 @@ test('grid protection, snapshot and operative wallbox freshness agree while the 
         assert.equal(protection.lc, h.now() - 50000);
         assert.match(protection.contract, /wallbox-total-grid/);
         const dhw = r.protectionFeedback[id === 'import' ? 'dhwGridImport' : 'dhwGridExport'];
-        assert.equal(dhw.maxAgeMs, 10000);
-        assert.equal(dhw.valid, ageMs <= 10000);
+        assert.equal(dhw.maxAgeMs, 30000);
+        assert.equal(dhw.valid, ageMs <= 30000);
         assert.match(dhw.contract, /dhw-direct-grid.*stops heater/);
     }
 });
@@ -217,13 +217,47 @@ test('missing, NULL, unacknowledged and bad-quality grid sources cannot qualify 
         assert.equal(output.number(id, WALLBOX_GRID_MAX_AGE_MS), null);
     }
     h.adapter.readMapping().DP_HA_L1_IMPORT_W = 'house';
-    h.put('house', 0, {ts: h.now() - 15001});
-    assert.equal(h.shadow.realProtectionFeedback().houseL1Import.maxAgeMs, 15000);
+    h.put('house', 0, {ts: h.now() - 30001});
+    assert.equal(h.shadow.realProtectionFeedback().houseL1Import.maxAgeMs, 30000);
     assert.equal(h.shadow.realProtectionFeedback().houseL1Import.valid, false);
-    assert.equal(output.number('house'), null);
+    assert.equal(output.number('house', WALLBOX_GRID_MAX_AGE_MS), null);
     h.put('power', 0, {ts: h.now() - 30001});
     assert.equal(h.adapter.debugRecorder.snapshot().wallboxes[0].measurements.power.valid, false);
     assert.equal(output.number('power', output.measurementMaxAgeMs()), null);
+});
+
+test('all SMA phase protection fields and recorded snapshots cross the thirty-second boundary together', async t => {
+    const h = fixture(2000000); t.mock.method(Date, 'now', h.now);
+    const mapping = h.adapter.readMapping();
+    const fields = [];
+    for (const phase of [1, 2, 3]) {
+        for (const direction of ['Import', 'Export']) {
+            const id = `house.${phase}.${direction.toLowerCase()}`;
+            mapping[`DP_HA_L${phase}_${direction.toUpperCase()}_W`] = id;
+            fields.push({id, phase, direction: direction.toLowerCase(), field: `houseL${phase}${direction}`});
+        }
+        const id = `house.${phase}.current`;
+        h.adapter.config[`dhwHaL${phase}CurrentId`] = id;
+        fields.push({id, phase, direction: 'current', field: `houseL${phase}Current`});
+    }
+    for (const {id} of fields) h.put(id, 0);
+    for (const {id, phase, direction, field} of fields) {
+        for (const ageMs of [16000, 29999, 30000, 30001]) {
+            h.put(id, 0, {ts: h.now() - ageMs, lc: h.now() - 60000, ack: true, q: 0});
+            h.shadow.productionRecord({type: 'decision'}); await h.flush();
+            const record = h.records().at(-1);
+            const protection = record.protectionFeedback[field];
+            const snapshot = record.production.measurements.haPhases[phase - 1][direction];
+            assert.equal(protection.id, id);
+            assert.equal(protection.maxAgeMs, 30000);
+            assert.equal(protection.valid, ageMs <= 30000, `${field}: ${ageMs}`);
+            assert.equal(snapshot.id, id, `${field}: snapshot preserves the actual configured source`);
+            assert.equal(snapshot.maxAgeMs, 30000);
+            assert.equal(snapshot.valid, protection.valid, `${field}: ${ageMs}`);
+            assert.equal(protection.issue, ageMs > 30000 ? 'stale' : '');
+        }
+        h.put(id, 0);
+    }
 });
 
 test('snapshot clock and derived ages do not create extra subsecond frames; timer and freshness edges do', async t => {
@@ -245,14 +279,14 @@ test('snapshot clock and derived ages do not create extra subsecond frames; time
     assert.equal(h.records().at(-1).production.measurements.gridImport.valid, false,
         'a stale-validity edge is meaningful even before the next heartbeat');
     h.adapter.readMapping().DP_HA_L1_IMPORT_W = 'house';
-    h.put('house', 0, {ts: h.now() - 15000});
+    h.put('house', 0, {ts: h.now() - 30000});
     h.shadow.productionRecord(); await h.flush();
     const count = h.records().length;
     h.advance(1); h.shadow.productionRecord(); await h.flush();
     assert.equal(h.records().length, count + 1, 'independent house protection freshness must not wait for the heartbeat');
     assert.equal(h.records().at(-1).protectionFeedback.houseL1Import.valid, false);
-    assert.equal(h.records().at(-1).production.measurements.haPhases[0].import.valid, true,
-        'generic snapshot freshness is broader than the operative phase gate');
+    assert.equal(h.records().at(-1).production.measurements.haPhases[0].import.valid, false,
+        'phase snapshot and operative protection reject the same stale source');
 });
 
 test('unchanged source polls retain new timestamps, real ACK/q/NULL edges and every cyclic zero command completion', async t => {

@@ -3,6 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const vm = require('node:vm');
+const {SMA_GRID_MAX_AGE_MS} = require('../lib/source-diagnostics');
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -17,7 +18,7 @@ function engine(overrides = {}) {
         static now() { return now; }
     }
     const put = (id, val, extra = {}) => states.set(id, {val, ts: now, ack: true, ...extra});
-    const context = vm.createContext({nativeConfig: config, Date: Clock,
+    const context = vm.createContext({SMA_GRID_MAX_AGE_MS, nativeConfig: config, Date: Clock,
         getState: id => states.get(id), existsState: id => states.has(id),
         createState: (id, val) => { if (!states.has(id)) put(id, val); },
         setState: put, writeForeignState: (...args) => foreignWrites.push(args), log: () => {}});
@@ -49,6 +50,21 @@ function engine(overrides = {}) {
             put('DP_ENERGY_PRICE_SERIES', JSON.stringify([{ts: now, val: rawCt}]));
         }};
 }
+
+test('WP advice consumes total-grid measurements up to 30 s and rejects older or bad data', () => {
+    for (const [ageMs, valid] of [[16000, true], [30000, true], [30001, false]]) {
+        const h = engine();
+        h.advance(ageMs / 1000, false);
+        h.put('ems.0.System.LastUpdate', h.now());
+        assert.equal(h.update().valid, valid, `grid age ${ageMs}`);
+        assert.equal(h.foreignWrites.length, 0);
+    }
+    for (const extra of [{val: null}, {ack: false}, {q: 2}, {ts: 0}]) {
+        const h = engine();
+        h.put('DP_GRID_EXPORT', 3000, extra);
+        assert.equal(h.update().valid, false, JSON.stringify(extra));
+    }
+});
 
 test('WP high PV recommends BOOST without any foreign write or output ownership', () => {
     const h = engine();
@@ -89,7 +105,7 @@ for (const [label, change] of [
     ['stale cooling', h => h.put('cooling', false, {ts: h.now() - 121000})],
     ['invalid thermal value', h => h.put('buffer', null)],
     ['stale thermal value', h => h.put('buffer', 40, {ts: h.now() - 3601000})],
-    ['stale grid value', h => h.put('DP_GRID_EXPORT', 3000, {ts: h.now() - 11000})],
+    ['stale grid value', h => h.put('DP_GRID_EXPORT', 3000, {ts: h.now() - SMA_GRID_MAX_AGE_MS - 1})],
     ['stale system observer', h => h.put('ems.0.System.LastUpdate', h.now() - 31000)]
 ]) test(`WP ${label} returns NORMAL immediately despite active hold`, () => {
     const h = engine(); assert.equal(h.update().mode, 'BOOST');

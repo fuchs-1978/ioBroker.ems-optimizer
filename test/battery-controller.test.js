@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const {SMA_GRID_MAX_AGE_MS} = require('../lib/source-diagnostics');
 
 const source = fs.readFileSync(path.join(__dirname, '../lib/engine/battery-controller.js'), 'utf8');
 
@@ -49,7 +50,7 @@ function harness() {
     const loads = {batteryW: 0, dhwW: 0, heatingW: 0, wallboxW: 0, totalW: 0};
     const reservations = {valid: true, otherW: [0, 0, 0]};
     let accepted = true;
-    const ctx = vm.createContext({Math, Date: {now: () => now, parse: Date.parse}, nativeConfig,
+    const ctx = vm.createContext({SMA_GRID_MAX_AGE_MS, Math, Date: {now: () => now, parse: Date.parse}, nativeConfig,
         CFG: {root: 'ems.0', dp: {batterySoc: ids.soc, batteryAcPower: ids.power,
             batteryPower: 'sunenergyxt500.0.total.batteryPower',
             myPvDhwHaCurrentA: ['ha1', 'ha2', 'ha3']}},
@@ -98,6 +99,32 @@ test('battery uses SunEnergy GS sign and never sends the requested target into a
     discharge.own('Control.Targets.Battery_W', -1000);
     discharge.tick();
     assert.deepEqual(discharge.commands(), [100]);
+});
+
+test('battery house-connection sources use 30 s independently of SunEnergy measurement age', () => {
+    for (const directional of [false, true]) {
+        for (const deviceAgeS of [5, 120]) {
+            const h = harness();
+            h.own('Config.BatteryMeasurementMaxAge_s', deviceAgeS);
+            if (directional) {
+                h.run('CFG.dp.haPhaseImportW=["in1","in2","in3"]; CFG.dp.haPhaseExportW=["out1","out2","out3"]');
+                for (const p of [1, 2, 3]) { h.put(`in${p}`, 0); h.put(`out${p}`, 0); }
+            }
+            h.advance(30000);
+            assert.equal(h.run('batteryHouseConnectionCapW(0)'), 46 * 230,
+                `directional ${directional}, device age ${deviceAgeS}`);
+            h.advance(1);
+            assert.equal(h.run('batteryHouseConnectionCapW(0)'), null);
+        }
+    }
+});
+
+test('battery phase sources still reject missing, unacknowledged, quality-bad and invalid measurements', () => {
+    for (const extra of [{val: null}, {ack: false}, {q: 2}, {ts: 0}, {ts: 2100000}]) {
+        const h = harness();
+        h.put('ha3', 0, extra);
+        assert.equal(h.run('batteryHouseConnectionCapW(0)'), null, JSON.stringify(extra));
+    }
 });
 
 test('fine regulation waits for transport and real measured feedback before increasing', () => {

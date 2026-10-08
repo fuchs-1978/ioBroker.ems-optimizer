@@ -3,18 +3,34 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const vm = require('node:vm');
+const {SMA_GRID_MAX_AGE_MS} = require('../lib/source-diagnostics');
 const fs = require('node:fs');
 const path = require('node:path');
 
-function engine() {
+function engine(now = null) {
     const states = new Map();
-    const context = vm.createContext({nativeConfig: {}, Date,
+    const Clock = now === null ? Date : class extends Date { static now() { return now; } };
+    const context = vm.createContext({SMA_GRID_MAX_AGE_MS, nativeConfig: {}, Date: Clock,
         getState: id => states.get(id), existsState: id => states.has(id)});
     for (const file of ['core', 'prices', 'forecast', 'planner']) {
         vm.runInContext(fs.readFileSync(path.join(__dirname, '../lib/engine', `${file}.js`), 'utf8'), context);
     }
     return {states, run: source => vm.runInContext(source, context)};
 }
+
+test('observer/realtime total-grid sources share the 30 s contract without shortening other sensors', () => {
+    const now = 2000000;
+    const h = engine(now);
+    for (const id of ['__DP_GRID_IMPORT__', '__DP_GRID_EXPORT__']) {
+        for (const [ageMs, expectedInvalid] of [[16000, 0], [30000, 0], [30001, 1]]) {
+            h.states.set(id, {val: 1000, ts: now - ageMs, ack: true, q: 0});
+            const result = h.run(`(() => { const invalid = []; readFreshNumber(${JSON.stringify(id)}, invalid); return invalid; })()`);
+            assert.equal(result.length, expectedInvalid, `${id} age ${ageMs}`);
+        }
+    }
+    h.states.set('temperature', {val: 40, ts: now - 60000, ack: true, q: 0});
+    assert.equal(h.run('(() => { const invalid = []; readFreshNumber("temperature", invalid); return invalid.length; })()'), 0);
+});
 
 test('required live measurements reject null, empty, boolean and non-numeric values', () => {
     const h = engine();

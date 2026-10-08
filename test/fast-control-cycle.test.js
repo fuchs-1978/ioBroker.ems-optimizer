@@ -5,12 +5,13 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const {SMA_GRID_MAX_AGE_MS} = require('../lib/source-diagnostics');
 
 const source = name => fs.readFileSync(path.join(__dirname, '../lib/engine', `${name}.js`), 'utf8');
 
 function bootstrapHarness() {
     const jobs = [], timers = [], calls = [], writes = [], messages = [];
-    const context = vm.createContext({
+    const context = vm.createContext({SMA_GRID_MAX_AGE_MS,
         CFG: {root: 'ems.0', refreshSeconds: 10, forecastRefreshMinutes: 15,
             dp: new Proxy({}, {get: () => []})},
         write(id, value) { writes.push({id, value}); }, on() {}, log(message) { messages.push(message); },
@@ -65,7 +66,7 @@ test('failed fast calculation invalidates old budgets before the battery stop gu
 
 function gridHarness() {
     const states = new Map();
-    const context = vm.createContext({nativeConfig: {}, Date,
+    const context = vm.createContext({SMA_GRID_MAX_AGE_MS, nativeConfig: {}, Date,
         getState: id => states.get(id), existsState: id => states.has(id)});
     vm.runInContext(source('core'), context);
     vm.runInContext(source('realtime'), context);

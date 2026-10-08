@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.51**
+Aktuelle Version: **0.17.0-alpha.52**
 
 Prüfung zu Tages-Issue #98: [produktive Diagnose, Phasen-Rückfallvertrag,
 Reproduktion und nächste SQL-Abnahme](docs/issue98-live-diagnostics.md).
@@ -45,6 +45,14 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.52 – Einheitlich 30 s für SMA-Netzquellen
+
+Gesamtbezug/-einspeisung, die getrennten Bezugs-/Einspeiseleistungen von L1–L3 und der Hausanschluss-Stromfallback verwenden jetzt durchgehend höchstens 30 s Quellenalter. Wallbox-, EHZ- und Echtzeitregelung sowie die entsprechenden Produktiv-, Schutz- und Schattendiagnosen verwenden denselben Vertrag. Die optionale Speicher-/Heizpufferregelung und passive Wärmepumpenempfehlung verwenden für diese Netzquellen ebenfalls 30 s. Bisher galten für den Wallbox-Gesamtnetzwert bereits 30 s, für dessen Hausphasen jedoch 15 s und für den direkten EHZ-Netzregler 10 s; andere Verbraucher hatten wiederum eigene Grenzen. [Der Vertragsvergleich](docs/sma-source-freshness.md) weist diese getrennt aus.
+
+Anlass war der belegte EQV-Stopp unter alpha.51 am 08.10.2026 um 10:21:04: L3-Bezug und -einspeisung waren laut EMS etwa 16 s alt und überschritten deren bisherige 15-s-Grenze. Die neue Grenze vermeidet ausschließlich diesen widersprüchlichen Frischevertrag. Fehlende, nichtnumerische, unbestätigte, qualitätsungültige, unplausible oder mehr als 30 s alte Netzquellen bleiben gesperrt; Quellenzeiten und bestehende Uhrtoleranzen werden nicht verändert. Geräte-, Phasen-ACK-, Fahrzeugreaktions- und Regeltaktfristen bleiben separat.
+
+Bei Hausphasen-Quellenfehlern ergänzt der Wallboxausgang jetzt ebenfalls die vorhandene asynchrone ioBroker-Direktlesung. Sie dokumentiert Quellenzeit, ACK, Qualität und EMS-Empfang, ohne den operativen Cache zu erneuern oder eine Schutzentscheidung zu verzögern. Der Ursprung ausbleibender Updates bleibt offen; weder SMA-Sendestopp noch tatsächliche Überlast sind durch das Ereignis belegt. [Frischevertrag, Ereignis und nächste reale Prüfung](docs/sma-source-freshness.md). Keine automatische Installation oder Anlagenänderung; Softwaretests ersetzen keine Betriebsabnahme.
 
 ## Neu in 0.17.0-alpha.51 – Keine Ladepause durch eine belegbar abgesteckte Wallbox
 
@@ -1455,6 +1463,12 @@ ems-optimizer.0.History.LastBuild
 
 ## Zentrale Ergebnisobjekte
 
+Seit alpha.52 gilt für die zugeordneten SMA-Gesamt-/Phasen-Netzquellen und den
+Hausanschluss-Stromfallback eine einheitliche Frischegrenze von 30 s. Produktive
+Steuerung, Schutz- und Messwertdiagnose zeigen denselben Vertrag. Andere
+Quellentypen und Kommunikationsfristen behalten ihre eigenen Grenzen.
+[Gültigkeitsregeln und Quellenfehlerdiagnose](docs/sma-source-freshness.md).
+
 Aktuelle, normierte Messwerte:
 
 ```text
@@ -1718,6 +1732,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.52 | Einheitlich 30 s Quellenalter für zugeordnete SMA-Gesamt-/Phasen-Netzwerte und Hausanschluss-Stromfallback in Regelung, Schutz und Diagnose; asynchrone Quellenfehlerdiagnose auch für Hausphasen. |
 | 0.17.0-alpha.51 | Eine frische, belegbar abgesteckte und elektrisch ruhende fremde Wallbox mit allow=1 unterbricht keine bereits aktive ausgewählte EMS-Ladung; neue Starts und offene Peeraktionen bleiben verriegelt. |
 | 0.17.0-alpha.50 | Kompakte produktive Schema-3-Snapshots/Deltas mit verlustfreiem Replay, 30-s-Vollbasis und lesendem JSON-Decoder; Regelung und SQL-Einstellungen unverändert. |
 | 0.17.0-alpha.49 | Wallbox-Netzdiagnose mit operativen 30 s, unabhängigen EHZ-Vertrag getrennt ausweisen; unveränderte zusätzliche Subsekunden-Snapshots vermeiden, Ereignisse und volle Rohframes erhalten. |

@@ -75,6 +75,38 @@ test('private load substitution preserves exogenous balance for all three wallbo
     assert.equal(r.currents.get(1), 6, 'only the separate vehicle-response hook assumes modeled current');
 });
 
+test('current SMA grid readings share the thirty-second limit without requiring a historical baseline', () => {
+    for (const id of ['import', 'export']) for (const ageMs of [16000, 30000, 30001]) {
+        const h = fixture();
+        // No load correction is necessary: this isolates current-source
+        // freshness from the independent large-correction alignment guard.
+        h.put('power1', 1.38);
+        h.put(id, id === 'import' ? 230 : 0, {ts: 1000000 - ageMs, ack: true, q: 0});
+        const original = structuredClone(h.rawStates);
+        const r = h.run();
+        assert.equal(r.response.valid, ageMs <= 30000, `${id}: ${ageMs}`);
+        assert.equal(r.response.applied, ageMs <= 30000);
+        assert.equal(r.response.basis, 'previous-output');
+        assert.deepEqual(h.rawStates, original, 'accepted source age never refreshes the original telemetry');
+        assert.equal(r.states.get(id).ts, original.get(id).ts);
+        if (ageMs > 30000) {
+            assert.match(r.response.reason, new RegExp(`grid${id === 'import' ? 'Import' : 'Export'}:stale`));
+            assert.deepEqual(r.states, original, 'expired source does not authorize a partial substitution');
+        }
+    }
+});
+
+test('the thirty-second SMA freshness limit does not widen the two-second large-correction skew bound', () => {
+    const h = fixture();
+    h.put('import', 230, {ts: 984000});
+    const r = h.run();
+    assert.equal(r.response.valid, false);
+    assert.equal(r.response.applied, false);
+    assert.match(r.response.reason, /grid-power-asynchronous \(16000 ms/);
+    assert.doesNotMatch(r.response.reason, /gridImport:stale/);
+    assert.deepEqual(r.states, h.rawStates);
+});
+
 function bufferedFixture(spread = 0.02) {
     const h = fixture(), buffer = new ShadowSampleBuffer();
     const ids = ['import', 'export', 'power0', 'power1', 'power2'];
@@ -354,7 +386,7 @@ test('slow-poll alignment rejects load steps, grid drift and gaps instead of ext
 });
 
 test('historical frames never repair stale current grid or latest telemetry quality', () => {
-    for (const [id, extra] of [['import', {ts: 989999}], ['export', {ack: false}],
+    for (const [id, extra] of [['import', {ts: 969999}], ['export', {ack: false}],
         ['power1', {q: 64}], ['power1', {ts: 1001001}], ['power1', {val: null}]]) {
         const {h, buffer} = slowPollingFixture();
         h.put(id, h.rawStates.get(id).val, extra);
