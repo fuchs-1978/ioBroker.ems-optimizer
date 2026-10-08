@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.50**
+Aktuelle Version: **0.17.0-alpha.51**
 
 Prüfung zu Tages-Issue #98: [produktive Diagnose, Phasen-Rückfallvertrag,
 Reproduktion und nächste SQL-Abnahme](docs/issue98-live-diagnostics.md).
@@ -45,6 +45,14 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.51 – Keine Ladepause durch eine belegbar abgesteckte Wallbox
+
+Eine fremde Ladefreigabe einer abgesteckten Wallbox beendet eine bereits aktive, ausgewählte EMS-eigene Ladung nicht mehr, wenn frische reale Rückmeldungen eindeutig „kein Fahrzeug“ und elektrische Ruhe bestätigen. Die Ausnahme erfordert ACK und gültige Qualität, eine gültige Verbindung, Gerätefehlerstatus 0, höchstens 20 W Leistung und auf jeder Phase höchstens 0,5 A. Fahrzeugstatus, Leistung und alle Phasenströme müssen nach der tatsächlichen ON-Kante der fremden Freigabe beobachtet worden sein. Eine bloß modellierte Nullantwort genügt nicht.
+
+Die abgesteckte Wallbox erhält in diesem eng begrenzten Fall auch keinen administrativen Abschaltauftrag, der die laufende Ladung anschließend über eine vorübergehende Eigentümerschaft sperren würde. Bei weiterhin bestätigter Freigabe und Anstecken, gemessener Last, veralteten oder unbekannten Ruhebelegen sowie offenen Peeraktionen gilt wieder die normale Sequenzverriegelung. Neue Starts benötigen weiterhin bestätigtes AUS und elektrische Ruhe der anderen Wallboxen. Start-, Stopp- und Mindestlaufzeiten sowie Schutzgrenzen bleiben erhalten.
+
+Anlass war der reale EQV-Stopp am 08.10.2026 um 08:50:32 nach einer EQE-Freigabemeldung bei bereits bestätigtem „kein Fahrzeug“ und 0 W. Der Ursprung dieser Freigabemeldung ist weiterhin ungeklärt. [Ereignis, Prüfkriterien und Grenzen](docs/wallbox-idle-peer-release.md). Softwaretests ersetzen keine Betriebsabnahme; kein zugesagter Score-Anstieg und keine automatische Installation.
 
 ## Neu in 0.17.0-alpha.50 – Rekonstruierbare kompakte SQL-Diagnose
 
@@ -1710,6 +1718,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.51 | Eine frische, belegbar abgesteckte und elektrisch ruhende fremde Wallbox mit allow=1 unterbricht keine bereits aktive ausgewählte EMS-Ladung; neue Starts und offene Peeraktionen bleiben verriegelt. |
 | 0.17.0-alpha.50 | Kompakte produktive Schema-3-Snapshots/Deltas mit verlustfreiem Replay, 30-s-Vollbasis und lesendem JSON-Decoder; Regelung und SQL-Einstellungen unverändert. |
 | 0.17.0-alpha.49 | Wallbox-Netzdiagnose mit operativen 30 s, unabhängigen EHZ-Vertrag getrennt ausweisen; unveränderte zusätzliche Subsekunden-Snapshots vermeiden, Ereignisse und volle Rohframes erhalten. |
 | 0.17.0-alpha.48 | SMA-Fehler mit Quellen- und Empfangszeit sowie einmaliger asynchroner ioBroker-Direktlesung diagnostizieren; Schutzpfad unverändert. |
