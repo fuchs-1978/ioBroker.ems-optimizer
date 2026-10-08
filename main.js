@@ -354,6 +354,7 @@ class EmsOptimizer extends utils.Adapter {
             DHWHouseConnectionLimit_A: ["__legacyDhwHouseConnectionLimitA", houseConnection.increaseLimitA],
             DHWTemperatureMaxAge_min: ["dhwTemperatureMaxAgeMin", 60],
             DHWParallelDistributionEnabled: ["dhwParallelDistributionEnabled", true],
+            WallboxParallelChargingEnabled: ["wallboxParallelChargingEnabled", false],
             DHWParallelStartPower1P_W: ["dhwParallelStartPower1PW", 4000],
             DHWParallelStopPower1P_W: ["dhwParallelStopPower1PW", 3000],
             DHWParallelStartPower3P_W: ["dhwParallelStartPower3PW", 9000],

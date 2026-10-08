@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.52**
+Aktuelle Version: **0.17.0-alpha.53**
 
 Prüfung zu Tages-Issue #98: [produktive Diagnose, Phasen-Rückfallvertrag,
 Reproduktion und nächste SQL-Abnahme](docs/issue98-live-diagnostics.md).
@@ -45,6 +45,16 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.53 – Parallele Mindestladung und Prioritätsverteilung
+
+Mehrere angeschlossene, freigegebene Fahrzeuge unter ihrem gültigen Mindest-SoC erhalten gemeinsam eine Grundladung, grundsätzlich 6 A einphasig. Danach bekommt das bevorzugte Fahrzeug die verfügbare Mehrleistung bis zu seiner wirksamen Grenze; nutzbarer Rest geht an die nächsten Fahrzeuge. Auch oberhalb des Mindest-SoC sind parallele PV-Ladungen bis zum jeweiligen Ziel-SoC möglich. Ohne Wärmebedarf kann das Fahrzeugbudget vollständig für die Autos verwendet werden. Explizite manuelle Mindestströme bleiben wirksam; die alten automatischen 10-/16-/25-A-SoC-Stufen werden in dieser Parallelpolitik nicht als gemeinsame Grundladung erzwungen.
+
+Die neue Admin-Option **Wallboxen allgemein → Wallboxen parallel laden** ist im Paketstandard aktiviert. Bei ausgeschalteter Option gilt weiterhin der sequenzielle Betrieb. Eine alte Konfiguration ohne den neuen Wert verwendet den sequenziellen Fallback; den tatsächlich angezeigten Wert nach einer manuellen Installation prüfen. Master Control und Gerätefreigaben werden dadurch nicht aktiviert.
+
+Gemeinsame Hausanschluss-/§14a-/Gerätegrenzen, offene Befehlsreserven und reale Phasen-/Fahrzeugantworten begrenzen jede Zuteilung. Eine Stromreduzierung gibt Leistung erst nach bestätigter elektrischer Antwort frei. Vor 1P→3P wird erforderlichenfalls zuerst der Strom gesenkt; eine noch zurückgehaltene Phasenanforderung startet keine neue Phasenhaltezeit. Heizstab-Eigenreserven und koordinierte Batterieanteile werden nicht doppelt vom gemeinsamen Budget abgezogen.
+
+Prognose, isoliertes Schattenmodell und kompakte produktive DecisionRecords enthalten die gemeinsame Teilnehmerliste und Zuteilung. Positive Ziele sind kein Nachweis realer Ladung. [Einstellung, Beispiele, Diagnose und nächste Betriebsprüfung](docs/parallel-wallbox-charging.md). Keine automatische Installation; Softwaretests ersetzen keine reale Mehrfahrzeugabnahme und begründen keine Scorepunkte.
 
 ## Neu in 0.17.0-alpha.52 – Einheitlich 30 s für SMA-Netzquellen
 
@@ -1732,6 +1742,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.53 | Parallele Mindest-SoC-Grundladung, Mehrleistung nach bestehender Priorität, sichere gemeinsame Last-/Phasenreservierung und passende Prognose-/SQL-Diagnose; sequenzieller Fallback bleibt einstellbar. |
 | 0.17.0-alpha.52 | Einheitlich 30 s Quellenalter für zugeordnete SMA-Gesamt-/Phasen-Netzwerte und Hausanschluss-Stromfallback in Regelung, Schutz und Diagnose; asynchrone Quellenfehlerdiagnose auch für Hausphasen. |
 | 0.17.0-alpha.51 | Eine frische, belegbar abgesteckte und elektrisch ruhende fremde Wallbox mit allow=1 unterbricht keine bereits aktive ausgewählte EMS-Ladung; neue Starts und offene Peeraktionen bleiben verriegelt. |
 | 0.17.0-alpha.50 | Kompakte produktive Schema-3-Snapshots/Deltas mit verlustfreiem Replay, 30-s-Vollbasis und lesendem JSON-Decoder; Regelung und SQL-Einstellungen unverändert. |

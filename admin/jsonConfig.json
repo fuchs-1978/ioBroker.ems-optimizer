@@ -925,6 +925,14 @@
           "size": 2,
           "newLine": true
         },
+        "wallboxParallelChargingEnabled": {
+          "type": "checkbox",
+          "label": "Parallel wallbox charging",
+          "help": "Reserve at least 6 A single-phase for each eligible released vehicle below its minimum SoC, subject to house-connection, grid-operator and device limits. Remaining power goes to the preferred vehicle, then to the next automatically ranked vehicles. Target SoC remains binding. When disabled, only one EMS-controlled wallbox charges at a time. This option does not enable Master Control or arm outputs.",
+          "default": true,
+          "sm": 12,
+          "newLine": true
+        },
         "wallboxPrioritySource": {
           "type": "select",
           "label": "Priority source",
@@ -949,7 +957,7 @@
         "wallboxPriority": {
           "type": "select",
           "label": "Preferred wallbox (manual selection takes priority)",
-          "help": "Manual priority: 0 = Mii, 1 = EQV, 2 = EQE. A valid selection of an eligible wallbox takes priority over automatic selection, the currently assigned wallbox, minimum-SoC charging and departure deadlines. Safety and source/charging eligibility checks remain active. Switching is coordinated so only one EMS-controlled wallbox is active.",
+          "help": "Manual priority: 0 = Mii, 1 = EQV, 2 = EQE. In parallel mode, a valid preferred vehicle receives remaining power after the minimum-SoC reservations; other vehicles follow the automatic ranking. In sequential mode, the selected eligible vehicle takes priority over other vehicles, including minimum-SoC charging. Target SoC, safety limits and source/charging eligibility checks always apply.",
           "default": -1,
           "sm": 4,
           "options": [

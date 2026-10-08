@@ -75,7 +75,7 @@ test('update defaults never arm a productive output', () => {
 });
 
 test('package manifests publish the same alpha version', () => {
-    assert.equal(packageJson.version, '0.17.0-alpha.52');
+    assert.equal(packageJson.version, '0.17.0-alpha.53');
     assert.equal(ioPackage.common.version, packageJson.version);
     const core = fs.readFileSync('lib/engine/core.js', 'utf8');
     const bootstrap = fs.readFileSync('lib/engine/bootstrap.js', 'utf8');
@@ -92,3 +92,19 @@ test('optional BHKW inputs default disabled and expose explicit energy units', (
     assert.deepEqual(allFields.bhkwEnergyUnit.options.map(option => option.value), ['kWh', 'Wh', 'J']);
 });
 
+
+// Parallel mode changes allocation, never the independent production gates.
+test('parallel wallbox mode exposes translated native default and mode-dependent priority', () => {
+    const field = allFields.wallboxParallelChargingEnabled;
+    assert.equal(field.type, 'checkbox');
+    assert.equal(field.default, true);
+    assert.equal(ioPackage.native.wallboxParallelChargingEnabled, true);
+    for (const lang of ['de', 'en']) {
+        const translations = JSON.parse(fs.readFileSync(`admin/i18n/${lang}/translations.json`, 'utf8'));
+        for (const key of [field.label, field.help, allFields.wallboxPriority.help])
+            assert.ok(translations[key], `${lang}: missing translation ${key}`);
+    }
+    assert.match(allFields.wallboxPriority.help, /after the minimum-SoC reservations/);
+    assert.match(allFields.wallboxPriority.help, /In sequential mode/);
+    assert.match(field.help, /does not enable Master Control or arm outputs/);
+});
