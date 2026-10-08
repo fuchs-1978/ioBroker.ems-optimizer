@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.49**
+Aktuelle Version: **0.17.0-alpha.50**
 
 Prüfung zu Tages-Issue #98: [produktive Diagnose, Phasen-Rückfallvertrag,
 Reproduktion und nächste SQL-Abnahme](docs/issue98-live-diagnostics.md).
@@ -45,6 +45,14 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.50 – Rekonstruierbare kompakte SQL-Diagnose
+
+Der produktive DecisionRecord verwendet Schema 3: Ein vollständiger Snapshot eröffnet jede Aufzeichnungssitzung; während laufender Aufzeichnung liefert der nächste Record nach Ablauf des 30-s-Intervalls wieder eine vollständige Basis. Dazwischen tragen kompakte Deltas die Änderungen. Befehlsversuche, Transportabschlüsse und Quellenereignisse werden weiterhin einzeln aufgezeichnet; der 1-s-Heartbeat bleibt erhalten. Quellenzeitstempel, ACK, Qualität, NULL-Werte, Timer und Masterwechsel bleiben rekonstruierbar. Die Zahl der Records wird dadurch nicht pauschal reduziert; das Ziel sind kleinere Nutzdaten pro Zwischenrecord.
+
+Die Auswertung muss die Records in Sitzungs- und Sequenzfolge rekonstruieren. Eine Sequenzlücke oder fehlende Basis macht die betroffenen Deltas unbekannt, bis der nächste vollständige Snapshot eine neue Basis liefert. Nach Queueverlust oder Schreibfehler erzwingt der Recorder einen neuen vollständigen Snapshot. Das Schattenformat Schema 1 bleibt unverändert; bestehende volle Schema-2-Records bleiben lesbar.
+
+Das lesende Werkzeug `npm run decode:records -- <export.json>` rekonstruiert einen vorhandenen JSON-Export in vollständige Schema-2-Records und kennzeichnet nicht rekonstruierbare Stellen. Es öffnet keine Datenbank und verändert keine SQL-Einstellungen. [Format, Replay und nächste SQL-Prüfung](docs/compact-decision-records.md). Die Ursache der bisherigen SQL-Zugriffsfehler ist damit nicht bewiesen oder behoben; Softwaretests ersetzen keine reale Abnahme und begründen keine Scorepunkte. Keine automatische Installation oder Änderung der Anlagensteuerung.
 
 ## Neu in 0.17.0-alpha.49 – Quellenverträge und produktive Aufzeichnung
 
@@ -1702,6 +1710,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.50 | Kompakte produktive Schema-3-Snapshots/Deltas mit verlustfreiem Replay, 30-s-Vollbasis und lesendem JSON-Decoder; Regelung und SQL-Einstellungen unverändert. |
 | 0.17.0-alpha.49 | Wallbox-Netzdiagnose mit operativen 30 s, unabhängigen EHZ-Vertrag getrennt ausweisen; unveränderte zusätzliche Subsekunden-Snapshots vermeiden, Ereignisse und volle Rohframes erhalten. |
 | 0.17.0-alpha.48 | SMA-Fehler mit Quellen- und Empfangszeit sowie einmaliger asynchroner ioBroker-Direktlesung diagnostizieren; Schutzpfad unverändert. |
 | 0.17.0-alpha.47 | Gesamtnetzbezug/-einspeisung bis 30 s Alter; passende Ausgangs-, Phasenbudget- und Diagnoseprüfung. |

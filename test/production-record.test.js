@@ -3,6 +3,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const ShadowController = require('../lib/shadow-controller');
 const DebugRecorder = require('../lib/debug-recorder');
+const {DecisionRecordDecoder} = require('../lib/decision-record-codec');
 const WallboxOutput = require('../lib/wallbox-output');
 const {WALLBOX_GRID_MAX_AGE_MS} = require('../lib/source-diagnostics');
 
@@ -25,9 +26,13 @@ function fixture(initialNow = Date.now()) {
     own('Config.WallboxStartDelay_s', 600); own('Config.WallboxMinimumRunTime_s', 600); own('Config.WallboxStopDelay_s', 600);
     for (const [id, value] of Object.entries({import: 500, export: 0, pv: 6000, power: 0,
         car: 2, l1: 0, l2: 0, l3: 0, cmd: 6, amps: 6, allow: 0, phase: 1})) put(id, value);
-    const flush = async () => {for (let i = 0; i < 80; i++) await Promise.resolve();};
-    const records = () => writes.filter(w => w.id.endsWith('.DecisionRecord')).map(w => JSON.parse(w.value));
-    return {shadow, adapter, put, own, states, device, writes, flush, records,
+    const flush = async () => {for (let i = 0; i < 800; i++) await Promise.resolve();};
+    const rawRecords = () => writes.filter(w => w.id.endsWith('.DecisionRecord')).map(w => JSON.parse(w.value));
+    const records = () => {
+        const decoder = new DecisionRecordDecoder();
+        return rawRecords().map(record => decoder.decode(record));
+    };
+    return {shadow, adapter, put, own, states, device, writes, flush, records, rawRecords,
         advance: ms => {now += ms;}, now: () => now};
 }
 
@@ -122,11 +127,56 @@ test('slow and failing persistence preserves command edges or reports losses exp
     for (let i = 0; i < 140; i++) h.shadow.commandEvent('attempt', 'cmd', 6);
     assert.equal(h.shadow.recordDropped, 11); release(); await h.flush();
     assert.equal(h.records()[0].recordSequence, 13); assert.equal(h.records()[0].recording.dropped, 11);
+    assert.equal(h.rawRecords()[0].frameType, 'snapshot', 'queue gap starts with an independent full frame');
     h.adapter.setCompatState = id => id.endsWith('.DecisionRecord') ? Promise.reject(Error('test failure')) : Promise.resolve();
     h.shadow.commandEvent('attempt', 'cmd', 7); await h.flush();
     assert.ok(h.shadow.recordWriteErrors > 0);
     h.adapter.setCompatState = realWrite; h.shadow.commandEvent('attempt', 'cmd', 6); await h.flush();
     assert.ok(h.records().at(-1).recording.writeErrors > 0);
+    assert.equal(h.rawRecords().at(-1).frameType, 'snapshot', 'failed publish invalidates the delta base');
+});
+
+test('productive dispatch retains every event in compact frames and checkpoints without touching inputs', async t => {
+    const h = fixture(2000000); t.mock.method(Date, 'now', h.now);
+    const before = structuredClone([...h.states]);
+    h.shadow.productionRecord(); await h.flush();
+    for (let i = 0; i < 5; i++) {
+        h.advance(1000);
+        const command = h.shadow.commandEvent('attempt', 'cmd', 0);
+        h.shadow.commandEvent('transport_complete', 'cmd', 0, command);
+        await h.flush();
+    }
+    assert.deepEqual([...h.states], before, 'recording does not mutate cached inputs or control states');
+    const frames = h.rawRecords();
+    assert.equal(frames[0].frameType, 'snapshot');
+    assert.ok(frames.slice(1).every(r => r.schema === 3 && r.frameType === 'delta'));
+    assert.equal(h.records().filter(r => r.event?.type.startsWith('command.')).length, 10);
+    const fullBytes = h.records().reduce((n, r) => n + Buffer.byteLength(JSON.stringify(r)), 0);
+    const compactBytes = frames.reduce((n, r) => n + Buffer.byteLength(JSON.stringify(r)), 0);
+    assert.ok(compactBytes < fullBytes / 2, 'fixture bytes are substantially smaller without removing events');
+    h.advance(25000); h.shadow.productionRecord(); await h.flush();
+    assert.equal(h.rawRecords().at(-1).frameType, 'snapshot', '30-second checkpoint is independent');
+    const decoder = new DecisionRecordDecoder();
+    const missing = decoder.decode(frames[1]);
+    assert.equal(missing.reconstruction.valid, false);
+    assert.equal(missing.production, undefined, 'a missing base supplies no synthetic real values');
+    const recovered = decoder.decode(h.rawRecords().at(-1));
+    assert.equal(recovered.production.timers.WallboxStopDelay_s, 600);
+});
+
+test('serialization failure is counted and cannot wedge the queue or reject command tracking', async () => {
+    const h = fixture();
+    const encode = h.shadow.recordEncoder.encode.bind(h.shadow.recordEncoder);
+    h.shadow.recordEncoder.encode = () => {throw Error('simulated serialization failure');};
+    assert.doesNotThrow(() => h.shadow.commandEvent('attempt', 'cmd', 0));
+    await h.flush();
+    assert.equal(h.shadow.recordWriteErrors, 1);
+    assert.equal(h.shadow.recordWriting, false);
+    assert.equal(h.shadow.recordQueue.length, 0);
+    h.shadow.recordEncoder.encode = encode;
+    h.shadow.commandEvent('attempt', 'cmd', 0); await h.flush();
+    assert.equal(h.rawRecords().at(-1).frameType, 'snapshot');
+    assert.equal(h.records().at(-1).recording.writeErrors, 1);
 });
 
 test('grid protection, snapshot and operative wallbox freshness agree while the DHW gate is explicit', async t => {

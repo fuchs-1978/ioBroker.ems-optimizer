@@ -6,6 +6,13 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const ShadowController = require('../lib/shadow-controller');
+const {DecisionRecordDecoder} = require('../lib/decision-record-codec');
+
+function latestRecord(h) {
+    const decoder = new DecisionRecordDecoder();
+    return h.writes.filter(w => w.id.endsWith('.DecisionRecord'))
+        .map(w => decoder.decode(JSON.parse(w.val))).at(-1);
+}
 const {createEngineContext, MODULES} = require('../lib/engine-loader');
 const gridConstraints = require('../lib/grid-constraints');
 
@@ -276,7 +283,7 @@ test('slow-cycle selections and start timers remain isolated across 2-second tic
     assert.equal(h.value('SelectedWallbox'), 0);
     const selectionReason = JSON.parse(h.value('Snapshot_JSON')).selectionReason;
     assert.match(selectionReason, /Manuelle Prioritaet Wallbox 0/);
-    assert.equal(JSON.parse(h.value('DecisionRecord')).selectionReason, selectionReason);
+    assert.equal(latestRecord(h).selectionReason, selectionReason);
     assert.equal(h.value('Wallbox0.StartDelayRemaining_s'), 30);
     for (const elapsed of [2, 4, 6]) {
         h.advance(2000); await h.tick();
@@ -448,7 +455,7 @@ test('valid private shadow handoff keeps the cold countdown but skips its repeti
     let newActive = false, handoffSeen = false;
     for (let cycle = 0; cycle < 15; cycle++) {
         h.advance(2000); await h.tick();
-        const record = JSON.parse(h.value('DecisionRecord'));
+        const record = latestRecord(h);
         const modeled = record.modeled;
         assert.ok([modeled.Wallbox0, modeled.Wallbox1].filter(wb => wb.active).length <= 1,
             'the shortcut never overlaps modeled active electrical draw');
@@ -473,7 +480,7 @@ test('valid shadow target-SoC finish hands off without repeating the cold start 
     let newActive = false, naturalHandoffSeen = false;
     for (let cycle = 0; cycle < 15; cycle++) {
         h.advance(2000); await h.tick();
-        const record = JSON.parse(h.value('DecisionRecord'));
+        const record = latestRecord(h);
         const handoff = record.allocation?.Wallbox1?.start?.vehicleHandoff;
         naturalHandoffSeen ||= handoff?.qualified === true && handoff.from === 0 && handoff.to === 1;
         assert.ok([record.modeled.Wallbox0, record.modeled.Wallbox1].filter(wb => wb.active).length <= 1);
@@ -492,12 +499,12 @@ test('unknown shadow response revokes a prepared handoff and cannot confirm a mo
     await startColdHandoffModel(h);
     h.put('DP_WB_PRIORITY', 1);
     h.advance(2000); await h.tick();
-    let record = JSON.parse(h.value('DecisionRecord'));
+    let record = latestRecord(h);
     assert.equal(record.allocation.Wallbox1.start.vehicleHandoff.qualified, true);
     h.own('Debug.Shadow.Response.Valid', true);
     h.put('DP_WB0_POWER', 0, {q: 64});
     h.advance(2000); await h.tick();
-    record = JSON.parse(h.value('DecisionRecord'));
+    record = latestRecord(h);
     assert.equal(h.shadow.context.shadowElectricalResponseValid, false);
     assert.equal(record.response.valid, false);
     assert.equal(record.allocation.Wallbox1.start.vehicleHandoff.qualified, false);
@@ -508,7 +515,7 @@ test('unknown shadow response revokes a prepared handoff and cannot confirm a mo
     h.put('DP_WB0_POWER', 0);
     for (let cycle = 0; cycle < 15; cycle++) {
         h.advance(2000); await h.tick();
-        record = JSON.parse(h.value('DecisionRecord'));
+        record = latestRecord(h);
         assert.equal(record.modeled.Wallbox1.active, false,
             'restored data must use normal qualification, not resurrect the revoked shortcut');
         assert.equal(record.allocation.Wallbox1.start.vehicleHandoff.qualified, false);
@@ -696,7 +703,7 @@ test('master switch resets virtual ownership while coherent real feedback remain
     h.adapter.config.globalWriteEnabled = true;
     h.put('goe.allow', 1); h.put('DP_WB0_POWER', 2.5);
     h.advance(2000); await h.tick();
-    let record = JSON.parse(h.value('DecisionRecord'));
+    let record = latestRecord(h);
     assert.equal(record.valid, false);
     assert.equal(record.masterEnabled, true);
     assert.equal(record.realFeedback.Wallbox0.allow.value, 1);
@@ -705,7 +712,7 @@ test('master switch resets virtual ownership while coherent real feedback remain
     assert.equal(h.shadow.model, null);
     h.adapter.config.globalWriteEnabled = false;
     h.put('goe.allow', 0); h.advance(2000); await h.tick();
-    record = JSON.parse(h.value('DecisionRecord'));
+    record = latestRecord(h);
     assert.equal(record.valid, true);
     assert.equal(record.modeled.Wallbox0.active, false, 'restart begins a fresh modeled handshake');
     assert.equal(record.targets.Wallbox0, h.value('Targets.Wallbox0_W'));
@@ -722,7 +729,7 @@ test('productive DecisionRecord samples the paused model every tick and retains 
     assert.equal(records().length, count + 5);
     h.put('DP_WB0_CAR', 1); h.advance(2000); await h.tick();
     assert.equal(records().length, count + 6);
-    const edge = JSON.parse(records().at(-1).val);
+    const edge = latestRecord(h);
     assert.equal(edge.realFeedback.Wallbox0.car.value, 1);
     assert.equal(edge.realFeedback.Wallbox0.car.ts, edge.timestamp);
     h.advance(60000); await h.tick();
@@ -741,13 +748,13 @@ test('DecisionRecord keeps selection reasons and emits reason changes with the s
     const count = () => h.writes.filter(write => write.id.endsWith('.DecisionRecord')).length;
     h.shadow.publishRecord(record); await h.flush();
     const first = count();
-    assert.equal(JSON.parse(h.value('DecisionRecord')).selectionReason, record.selectionReason);
+    assert.equal(latestRecord(h).selectionReason, record.selectionReason);
     h.shadow.publishRecord(record); await h.flush();
     assert.equal(count(), first, 'unchanged diagnostics do not create duplicate events');
     record.selectionReason = 'Manuelle Uebergabe WB0 wird abgeschlossen';
     h.shadow.publishRecord(record); await h.flush();
     assert.equal(count(), first + 1, 'a new reason is retained even while the electrical model is invalid');
-    const persisted = JSON.parse(h.value('DecisionRecord'));
+    const persisted = latestRecord(h);
     assert.equal(persisted.selectedWallbox, 0);
     assert.equal(persisted.selectionReason, record.selectionReason);
     assert.equal(persisted.valid, false);
@@ -786,7 +793,7 @@ test('invalid response records coalesce skew magnitudes but preserve model and r
     record.modeled.Wallbox0.responseState = 'modeled';
     record.modeled.Wallbox0.responseConfirmedAt = 130;
     h.shadow.publishRecord(record); await h.flush(); assert.equal(count(), first + 8);
-    const persisted = JSON.parse(h.value('DecisionRecord')).modeled.Wallbox0;
+    const persisted = latestRecord(h).modeled.Wallbox0;
     assert.equal(persisted.responseState, 'modeled');
     assert.equal(persisted.responseAcknowledgedAt, 115);
     assert.equal(persisted.responseConfirmedAt, 130);
@@ -966,7 +973,7 @@ test('assumed response retains real source faults, error changes and phase prote
     ]) {
         const h = await fixture(); syntheticWallboxInputs(h); await startModel(h);
         h.advance(2000); change(h); await h.tick();
-        const record = JSON.parse(h.value('DecisionRecord'));
+        const record = latestRecord(h);
         assert.equal(h.value('Modeled.Wallbox0_W'), 0, h.value('Wallbox0.ModelStatus'));
         assert.equal(record.modeled.Wallbox0.active, false);
         assert.equal(record.realFeedback.Wallbox0.error.value, h.states.get('goe.error').val);
@@ -985,7 +992,7 @@ test('private acknowledgements do not hide out-of-range real actuator feedback',
         const h = await fixture(); forceWallboxBudget(h); await startModel(h);
         h.advance(2000); h.put(id, value); await h.tick();
         assert.equal(h.value('Modeled.Wallbox0_W'), 0, `invalid ${id} must stop`);
-        const record = JSON.parse(h.value('DecisionRecord'));
+        const record = latestRecord(h);
         assert.equal(record.realFeedback.Wallbox0[id === 'goe.allow' ? 'allow' : 'currentA'].value, value);
     }
 });
@@ -1001,7 +1008,7 @@ test('coherent feedback distinguishes stale/numeric/negative sources and keeps s
     assert.equal(feedback.powerKW.issue, '');
     for (const [value, extra, issue] of [[-0.021, {}, 'negative'], ['bad', {}, 'numeric'], [1, {ts: 1}, 'stale']]) {
         h.put('DP_WB0_POWER', value, extra); await h.tick();
-        feedback = JSON.parse(h.value('DecisionRecord')).realFeedback.Wallbox0;
+        feedback = latestRecord(h).realFeedback.Wallbox0;
         assert.equal(feedback.powerKW.issue, issue);
         assert.equal(feedback.powerKW.value, value);
     }
@@ -1179,7 +1186,7 @@ test('BHKW shadow record contains separate valid counter and source quality with
     h.adapter.config.bhkwPresent = true; h.adapter.config.bhkwEnergyUnit = 'J';
     h.put('DP_BHKW_POWER', 920); h.put('DP_BHKW_ENERGY', 360000000);
     await h.tick(); await h.flush();
-    const record = JSON.parse(h.value('DecisionRecord'));
+    const record = latestRecord(h);
     assert.equal(record.actuals.BHKW, 920); assert.equal(record.bhkw.energyKWh, 100);
     assert.equal(record.bhkw.power.ack, true); assert.equal(record.bhkw.valid, true);
     assert.equal(h.value('BHKW.Energy_kWh'), 100);
@@ -1219,7 +1226,7 @@ test('real protection sources record ACK, quality, allowed age and stale transit
     assert.equal(quality.houseL2Import.maxAgeMs, 15000);
     assert.equal(quality.houseL2Export.issue, 'stale');
     await h.tick();
-    const r = JSON.parse(h.value('DecisionRecord'));
+    const r = latestRecord(h);
     assert.equal(r.adapterVersion, require('../package.json').version);
     assert.equal(r.protectionFeedback.houseL2Import.valid, false);
     assert.equal(r.masterEnabled, false);
@@ -1291,7 +1298,7 @@ test('decision publication records actual master enablement even if it changes a
         // next tick still pauses on master ON; the record must retain reality.
         h.shadow.publishDecision();
         for (let i = 0; i < 80; i++) await Promise.resolve();
-        const record = JSON.parse(h.value('DecisionRecord'));
+        const record = latestRecord(h);
         assert.equal(record.valid, true);
         assert.equal(record.masterEnabled, globalEnabled || realEnabled);
         assert.equal(record.controlState.globalWriteEnabled, globalEnabled);
