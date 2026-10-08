@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.53**
+Aktuelle Version: **0.17.0-alpha.54**
 
 Prüfung zu Tages-Issue #98: [produktive Diagnose, Phasen-Rückfallvertrag,
 Reproduktion und nächste SQL-Abnahme](docs/issue98-live-diagnostics.md).
@@ -45,6 +45,10 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.54 – go-e-Stoppdiagnose und bleibende Sperre
+
+Unabhängige, auf fünf Sekunden begrenzte Direktlesungen ergänzen go-e-Telemetriestopps und AUS-Timeouts im bestehenden Diagnosezustand und DecisionRecord. Quellenzeit, EMS-Empfang und Direktleseuhr bleiben getrennt; der Schutzstopp wartet nicht und der operative Cache wird nicht aufgefrischt. Spät bestätigtes AUS mit elektrischer Ruhe wird ausdrücklich als weiterhin gesperrt angezeigt. Keine automatische Entriegelung oder Fristverlängerung. [Prüfbericht und SQL-Abnahme](docs/issue116-goe-stop-diagnostics.md).
 
 ## Neu in 0.17.0-alpha.53 – Parallele Mindestladung und Prioritätsverteilung
 
@@ -1742,6 +1746,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.54 | Begrenzte unabhängige go-e-Quellendiagnose, erhaltener AUS-Timeoutbefund und klare Anzeige der bleibenden Sperre nach spätem AUS; Schutzvertrag unverändert. |
 | 0.17.0-alpha.53 | Parallele Mindest-SoC-Grundladung, Mehrleistung nach bestehender Priorität, sichere gemeinsame Last-/Phasenreservierung und passende Prognose-/SQL-Diagnose; sequenzieller Fallback bleibt einstellbar. |
 | 0.17.0-alpha.52 | Einheitlich 30 s Quellenalter für zugeordnete SMA-Gesamt-/Phasen-Netzwerte und Hausanschluss-Stromfallback in Regelung, Schutz und Diagnose; asynchrone Quellenfehlerdiagnose auch für Hausphasen. |
 | 0.17.0-alpha.51 | Eine frische, belegbar abgesteckte und elektrisch ruhende fremde Wallbox mit allow=1 unterbricht keine bereits aktive ausgewählte EMS-Ladung; neue Starts und offene Peeraktionen bleiben verriegelt. |
@@ -1821,4 +1826,5 @@ Adapters sind.
 ## Lizenz
 
 MIT
+
 

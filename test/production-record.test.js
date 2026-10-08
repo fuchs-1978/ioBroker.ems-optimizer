@@ -36,6 +36,27 @@ function fixture(initialNow = Date.now()) {
         advance: ms => {now += ms;}, now: () => now};
 }
 
+test('issue116 source diagnostic identity and late completion survive lossless production record replay', async () => {
+    const h = fixture(2000000);
+    const episode = {key: '0:2000000:1', checkedAt: 2000000, stopAt: 2000000,
+        recordSession: h.shadow.recordSession, recordSequenceAtCheck: 0, reason: 'go-e error stale',
+        sources: [{id: 'error', cached: {val: 0, ts: 1968000, lc: 1900000, ack: true, q: 0},
+            receipt: {receivedAt: 2000000, via: 'stateChange'}, direct: {status: 'pending'}}]};
+    h.own('Devices.Wallbox0.LastStopSourceDiagnostics_JSON', JSON.stringify(episode));
+    h.shadow.productionRecord({type: 'source_diagnostic.request', wb: 0, episode}); await h.flush();
+    h.advance(1000); h.own('Devices.Wallbox0.LastStopReason', 'new stop');
+    episode.sources[0].direct = {requestedAt: 2000000, completedAt: 2001000, status: 'read',
+        snapshot: {val: 0, ts: 1968000, lc: 1900000, ack: false, q: 64}};
+    h.shadow.productionRecord({type: 'source_diagnostic.complete', wb: 0, episode}); await h.flush();
+    const r = h.records();
+    assert.equal(r[0].event.episode.sources[0].direct.status, 'pending', 'queued event is immutable');
+    assert.deepEqual(r[1].event.episode, episode);
+    assert.equal(r[1].production.wallboxes[0].LastStopReason, 'new stop');
+    assert.equal(r[1].event.episode.reason, 'go-e error stale');
+    assert.equal(r[1].recordSession, episode.recordSession);
+    assert.equal(r[1].recordSequence, r[0].recordSequence + 1);
+});
+
 test('same persistent queue correlates trigger, command, raw ACK and electrical response without fabricating model validity', async () => {
     const h = fixture();
     h.shadow.productionRecord({type: 'decision'});
@@ -341,4 +362,5 @@ test('deterministic full-record replay preserves events, timers and source ages 
     assert.equal(dense.at(-1).production.wallboxes[0].StartDelayRemaining_s, 599);
     assert.ok(dense.every(r => r.schema === 2 && r.production && r.realFeedback));
 });
+
 

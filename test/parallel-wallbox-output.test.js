@@ -241,6 +241,25 @@ test('simultaneous pending starts cannot exceed the shared house phase fuse', as
     assert.match(h.states.get('ems.0.Devices.Wallbox1.OutputStatus').val, /Sicherheitsgrenze/);
 });
 
+test('issue116 late OFF releases only the stopped parallel car and preserves its lock and peer load', async () => {
+    const h = parallelSetup(); await h.startParallel();
+    h.grant([6, 0]); h.writes.length = 0; await h.output.tick();
+    h.advance(21000); h.grant([6, 0]); await h.output.tick();
+    const stopped = h.output.devices[1], peer = h.output.devices[0];
+    assert.match(stopped.fault, /AUS-Rueckmeldung/);
+    assert.equal(stopped.owned, true);
+    h.advance(1000); h.grant([6, 0]); h.ack('allow1', 0); h.electricalOff(1);
+    await h.output.tick();
+    assert.equal(stopped.owned, false);
+    assert.match(stopped.fault, /AUS-Rueckmeldung/);
+    assert.match(h.states.get('ems.0.Devices.Wallbox1.OutputStatus').val, /elektrisch ruhig, Wiederfreigabe gesperrt/);
+    assert.equal(peer.owned, true);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, true);
+    assert.ok(h.output.parallelLoadReservations(h.mapping, 1).wallboxesW[0] >= 1380);
+    assert.ok(!h.writes.some(w => w.id === 'allow' && w.val === 0));
+    assert.ok(!h.writes.some(w => w.id === 'allow1' && w.val === 1));
+});
+
 test('a withdrawn grant stops only its car while the other admitted car remains live', async () => {
     const h = parallelSetup(); await h.startParallel();
     h.grant([6, 0]); h.writes.length = 0; await h.output.tick();
@@ -470,3 +489,4 @@ test('idle-peer current exception never turns missing power or OFF acknowledgeme
         assert.equal(h.output.parallelLoadReservations(h.mapping, 0).valid, false);
     });
 });
+

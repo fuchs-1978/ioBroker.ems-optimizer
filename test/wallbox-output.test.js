@@ -2223,6 +2223,188 @@ test('stale SMA diagnostic stops without waiting for direct read and never write
     assert.ok(!h.writes.some(x => x.id === 'allow' && x.val === 1));
 });
 
+const flushDiagnostics = async () => {for (let i = 0; i < 40; i++) await Promise.resolve();};
+const readStopDiag = h => JSON.parse(h.states.get('ems.0.Devices.Wallbox0.LastStopSourceDiagnostics_JSON').val);
+
+test('issue116 old go-e source time remains stale despite fresh EMS receipt and independent delayed read', async () => {
+    let now = 1000000;
+    const h = setup({now: () => now}); await h.start(); h.writes.length = 0;
+    const events = [];
+    h.adapter.shadowController = {recordSession: 123, recordSequence: 77,
+        productionRecord: event => events.push(JSON.parse(JSON.stringify(event)))};
+    h.adapter.getCachedStateReceipt = () => ({receivedAt: now, via: 'stateChange'});
+    h.put('error', 0, {ts: now - 32000, lc: now - 100000, ack: true, q: 0});
+    let finish;
+    const reads = [];
+    h.adapter.getForeignStateAsync = id => {
+        reads.push(id);
+        return id === 'error' ? new Promise(resolve => {finish = resolve;}) : Promise.resolve(h.states.get(id));
+    };
+    await h.output.tick();
+    assert.ok(h.writes.some(w => w.id === 'allow' && w.val === 0));
+    assert.equal(h.states.get('allow').ack, false, 'write echo is not OFF proof');
+    assert.equal(h.output.devices[0].owned, true);
+    let diag = readStopDiag(h);
+    assert.equal(diag.sources[0].cached.ageMs, 32000);
+    assert.equal(diag.sources[0].receipt.receivedAt, now);
+    assert.equal(diag.recordSession, 123);
+    assert.equal(diag.recordSequenceAtCheck, 77);
+    assert.equal(diag.sources[0].direct.status, 'pending');
+    await h.output.tick();
+    assert.equal(reads.filter(id => id === 'error').length, 1);
+    now += 1000;
+    finish({val: 0, ts: now, lc: now - 100000, ack: true, q: 0});
+    await flushDiagnostics();
+    diag = readStopDiag(h);
+    assert.equal(diag.sources[0].direct.requestedAt, 1000000);
+    assert.equal(diag.sources[0].direct.completedAt, now);
+    assert.equal(diag.sources[0].direct.snapshot.ts, now);
+    assert.equal(h.states.get('error').ts, 968000, 'independent IO cannot refresh operative telemetry');
+    assert.ok(events.some(e => e.type === 'source_diagnostic.complete' && e.episode.key === diag.key));
+    assert.ok(!h.writes.some(w => w.id === 'allow' && w.val === 1));
+});
+
+test('issue116 stalled go-e diagnostic times out without blocking OFF and survives late electrical recovery', async t => {
+    t.mock.timers.enable({apis: ['setTimeout']});
+    let now = 1000000;
+    const h = setup({now: () => now}); await h.start(); h.writes.length = 0;
+    h.put('error', 0, {ts: now - 32000});
+    let finish;
+    h.adapter.getForeignStateAsync = id => id === 'error'
+        ? new Promise(resolve => {finish = resolve;}) : Promise.resolve(h.states.get(id));
+    await h.output.tick();
+    assert.equal(h.writes[0].val, 0);
+    now += 5001; t.mock.timers.tick(5001); await flushDiagnostics();
+    const key = readStopDiag(h).key;
+    assert.equal(readStopDiag(h).sources[0].direct.status, 'timeout');
+    finish({val: 0, ts: now, ack: true, q: 0}); await flushDiagnostics();
+    assert.equal(readStopDiag(h).sources[0].direct.status, 'timeout');
+    now += 16000; h.refresh(); await h.output.tick();
+    const fault = h.output.devices[0].fault;
+    assert.match(fault, /AUS-Rueckmeldung/);
+    await flushDiagnostics();
+    assert.equal(readStopDiag(h).offTimeout.cached.ack, false);
+    assert.equal(readStopDiag(h).offTimeout.direct.snapshot.ack, false);
+    assert.equal(h.output.devices[0].owned, true);
+    assert.doesNotMatch(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val, /elektrisch ruhig/);
+    now += 8000; h.refresh(); h.ack('allow', 0); h.electricalOff();
+    h.put('car', 1); await h.output.tick();
+    assert.equal(h.output.devices[0].owned, false);
+    assert.equal(h.output.devices[0].fault, fault, 'late OFF must not unlock');
+    await h.output.tick();
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val, /AUS inzwischen bestaetigt, elektrisch ruhig, Wiederfreigabe gesperrt/);
+    assert.equal(readStopDiag(h).key, key);
+    assert.equal(readStopDiag(h).sources[0].direct.status, 'timeout');
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val, 0);
+    assert.ok(!h.writes.some(w => w.id === 'allow' && w.val === 1));
+    h.put('i3', null); await h.output.tick();
+    assert.doesNotMatch(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val, /elektrisch ruhig/);
+});
+
+test('issue116 missing independent answer stays unknown and cannot prove OFF', async () => {
+    const h = setup({now: () => 1000000}); await h.start();
+    h.adapter.getForeignStateAsync = async () => null;
+    h.put('error', 0, {ack: false});
+    await h.output.tick(); await flushDiagnostics();
+    const diag = readStopDiag(h);
+    assert.equal(diag.sources[0].cached.ack, false);
+    assert.equal(diag.sources[0].direct.status, 'missing');
+    assert.equal(diag.sources[0].direct.snapshot, null);
+    assert.equal(h.output.devices[0].owned, true);
+});
+
+test('issue116 completion is attributed to original stop and cannot replace a later stop at same clock time', async () => {
+    const h = setup({now: () => 1000000}); await h.start();
+    const events = [];
+    h.adapter.shadowController = {productionRecord: e => events.push(JSON.parse(JSON.stringify(e)))};
+    let finish;
+    h.adapter.getForeignStateAsync = id => id === 'error'
+        ? new Promise(resolve => {finish = resolve;}) : Promise.resolve(h.states.get(id));
+    h.put('error', 0, {ts: 968000}); await h.output.tick();
+    const first = readStopDiag(h);
+    h.refresh(); h.ack('allow', 0); h.electricalOff(); await h.output.tick();
+    // Isolate the new productive stop from the separate restart-delay contract.
+    h.output.devices[0].owned = true;
+    h.output.devices[0].pending = null;
+    h.put('ems.0.Devices.Wallbox0.OutputActive', true);
+    h.ack('allow', 1);
+    h.put('connection', false); await h.output.tick();
+    const nextReason = h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val;
+    assert.match(nextReason, /offline/);
+    finish({val: 0, ts: 1000000, ack: true, q: 0}); await flushDiagnostics();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val, nextReason);
+    assert.equal(readStopDiag(h).key, first.key, 'retained evidence belongs to the original stop');
+    assert.equal(readStopDiag(h).sources[0].direct.status, 'read', 'original result can finish without replacing new stop reason');
+    assert.ok(events.some(e => e.type === 'source_diagnostic.complete' && e.episode.key === first.key
+        && e.episode.sources[0].direct.status === 'read'), 'old completion remains in the existing recorder');
+});
+
+for (const [name, change] of [
+    ['residual L1 current', h => h.put('i1', 1)],
+    ['unknown L2', h => h.put('i2', null)],
+    ['bad L3 quality', h => h.put('i3', 0, {q: 64})],
+    ['old electrical sample', h => h.put('power', 0, {ts: 999999})]
+]) test('issue116 late OFF retains lock and ownership with ' + name, async () => {
+    let now = 1000000;
+    const h = setup({now: () => now}); await h.start();
+    h.put('ems.0.Vehicles.Wallbox0.Release', false); await h.output.tick();
+    now += 21000; h.refresh(); await h.output.tick();
+    const fault = h.output.devices[0].fault;
+    h.ack('allow', 0); h.electricalOff(); change(h); await h.output.tick();
+    assert.equal(h.output.devices[0].owned, true);
+    assert.equal(h.output.devices[0].fault, fault);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.StopPowerPending').val, true);
+    assert.doesNotMatch(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val, /elektrisch ruhig/);
+});
+
+for (const [name, change] of [
+    ['unplugging', h => h.put('car', 1)],
+    ['device error', h => h.put('error', 5)],
+    ['unclear phases', h => {h.config.wb0PhaseControlMode = 'ems'; h.output.devices[0].ids.phaseMode = 'phase'; h.put('phase', 0);}]
+]) test('issue116 quiet late OFF never re-arms after ' + name, async () => {
+    let now = 1000000;
+    const h = setup({now: () => now}); await h.start(); h.writes.length = 0;
+    h.put('ems.0.Vehicles.Wallbox0.Release', false); await h.output.tick();
+    now += 21000; h.refresh(); await h.output.tick();
+    const fault = h.output.devices[0].fault;
+    h.ack('allow', 0); h.electricalOff(); change(h);
+    h.put('ems.0.Vehicles.Wallbox0.Release', true);
+    await h.output.tick(); await h.output.tick();
+    assert.equal(h.output.devices[0].owned, false);
+    assert.equal(h.output.devices[0].fault, fault);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val, /Wiederfreigabe gesperrt/);
+    assert.ok(!h.writes.some(w => w.id === 'allow' && w.val === 1));
+});
+
+test('issue116 diagnostic recorder and logger failures cannot block the protection OFF command', async () => {
+    const h = setup({now: () => 1000000}); await h.start(); h.writes.length = 0;
+    h.adapter.shadowController = {productionRecord() {throw new Error('recorder unavailable');}};
+    h.adapter.log.error = () => {throw new Error('logger unavailable');};
+    h.put('error', 0, {ts: 968000}); await h.output.tick(); await flushDiagnostics();
+    assert.ok(h.writes.some(w => w.id === 'allow' && w.val === 0));
+    assert.equal(h.output.devices[0].owned, true);
+    assert.equal(readStopDiag(h).sources[0].direct.status, 'read');
+});
+
+test('issue116 a new telemetry stop at the same time retains its own diagnostic against late older completion', async () => {
+    const h = setup({now: () => 1000000}); await h.start();
+    let finish;
+    h.adapter.getForeignStateAsync = id => id === 'error'
+        ? new Promise(resolve => {finish = resolve;}) : Promise.resolve(h.states.get(id));
+    h.put('error', 0, {ts: 968000}); await h.output.tick();
+    const oldKey = readStopDiag(h).key;
+    h.refresh(); h.ack('allow', 0); h.electricalOff(); await h.output.tick();
+    h.output.devices[0].owned = true; h.put('ems.0.Devices.Wallbox0.OutputActive', true); h.ack('allow', 1);
+    h.put('connection', true, {ack: false}); await h.output.tick();
+    const next = readStopDiag(h);
+    assert.notEqual(next.key, oldKey);
+    assert.match(next.reason, /Verbindungsstatus/);
+    finish({val: 0, ts: 1000000, ack: true, q: 0}); await flushDiagnostics();
+    assert.equal(readStopDiag(h).key, next.key);
+    assert.equal(readStopDiag(h).sources[0].id, 'connection');
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val, /Verbindungsstatus/);
+});
+
 test('completed diagnostic survives recovery but cannot overwrite a newer source-fault event', async () => {
     const h = setup(); await h.start();
     const d = h.output.devices[0];
@@ -2244,3 +2426,4 @@ test('completed diagnostic survives recovery but cannot overwrite a newer source
     diag = JSON.parse(h.states.get('ems.0.Devices.Wallbox0.LastStopSourceDiagnostics_JSON').val);
     assert.equal(diag.key, 'newer-event', 'late read must not overwrite a subsequent diagnostic');
 });
+
