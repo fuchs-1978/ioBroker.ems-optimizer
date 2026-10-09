@@ -237,6 +237,189 @@ test('DHW reservation witnesses each phase fully, rejects NULL proof and retains
     assert.deepEqual(record().highW, [0, 0, 0]);
 });
 
+test('issue123 identical zero completions cannot move the physical reduction proof boundary', () => {
+    const h = outputHarness();
+    h.run("reserveHeaterCommand('MyPV_DHW', 3000, ['o1','o2','o3'], 3000)");
+    h.advance(1000); h.put('o1', 3000);
+    h.run("refreshHeaterReservation('MyPV_DHW', ['o1','o2','o3'], 3000)");
+    h.advance(1000);
+    h.run("reserveHeaterCommand('MyPV_DHW', 0, ['o1','o2','o3'], 3000); heaterZeroWriteCompleted('MyPV_DHW', ['o1','o2','o3'], 3000)");
+    const record = () => JSON.parse(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservationState_JSON').val);
+    const firstZeroCompletion = record().zeroWriteAt;
+    h.advance(5000);
+    h.run("reserveHeaterCommand('MyPV_DHW', 0, ['o1','o2','o3'], 3000); heaterZeroWriteCompleted('MyPV_DHW', ['o1','o2','o3'], 3000)");
+    assert.equal(record().zeroWriteAt, firstZeroCompletion);
+    for (const id of ['o1', 'o2', 'o3']) h.put(id, 0, {ts: firstZeroCompletion + 4500});
+    h.put('setpoint', null);
+    h.run("refreshHeaterReservation('MyPV_DHW', ['o1','o2','o3'], 3000)");
+    assert.deepEqual(record().highW, [0, 0, 0], 'confirmed later physical reduction settles despite NULL setpoint');
+});
+
+test('issue123 a stale peak cannot witness a newly reserved positive command', () => {
+    const h = outputHarness();
+    h.put('o1', 3000, {ts: 1999999});
+    h.run("reserveHeaterCommand('MyPV_DHW', 3000, ['o1','o2','o3'], 3000); refreshHeaterReservation('MyPV_DHW', ['o1','o2','o3'], 3000)");
+    const record = () => JSON.parse(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservationState_JSON').val);
+    assert.equal(record().seenAt[0], 0);
+    h.advance(1000);
+    h.run("reserveHeaterCommand('MyPV_DHW', 0, ['o1','o2','o3'], 3000); heaterZeroWriteCompleted('MyPV_DHW', ['o1','o2','o3'], 3000)");
+    h.advance(30000); h.fresh();
+    for (const id of ['o1', 'o2', 'o3']) h.put(id, 0);
+    h.run("refreshHeaterReservation('MyPV_DHW', ['o1','o2','o3'], 3000)");
+    assert.deepEqual(record().highW, [3000, 0, 0], 'timeout plus fresh zero cannot cancel an unseen rise');
+});
+
+test('issue123 positive dispatch invalidates zero proof even within the same millisecond', () => {
+    const h = outputHarness();
+    h.run("reserveHeaterCommand('MyPV_DHW', 3000, ['o1','o2','o3'], 3000); reserveHeaterCommand('MyPV_DHW', 0, ['o1','o2','o3'], 3000); heaterZeroWriteCompleted('MyPV_DHW', ['o1','o2','o3'], 3000)");
+    const record = () => JSON.parse(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservationState_JSON').val);
+    assert.equal(record().zeroWriteAt, 2000000);
+    h.run("reserveHeaterCommand('MyPV_DHW', 3000, ['o1','o2','o3'], 3000); reserveHeaterCommand('MyPV_DHW', 0, ['o1','o2','o3'], 3000)");
+    h.advance(1000); h.put('o1', 3000);
+    h.run("refreshHeaterReservation('MyPV_DHW', ['o1','o2','o3'], 3000)");
+    h.advance(1000); h.put('o1', 0);
+    h.run("refreshHeaterReservation('MyPV_DHW', ['o1','o2','o3'], 3000)");
+    assert.deepEqual(record().highW, [3000, 0, 0], 'second stop needs its own successful completion');
+    h.run("heaterZeroWriteCompleted('MyPV_DHW', ['o1','o2','o3'], 3000)");
+    h.advance(1000); h.put('o1', 0);
+    h.run("refreshHeaterReservation('MyPV_DHW', ['o1','o2','o3'], 3000)");
+    assert.deepEqual(record().highW, [0, 0, 0]);
+});
+
+test('issue123 restart cannot reuse persisted zero completion to release a reservation', () => {
+    const first = outputHarness();
+    first.run("reserveHeaterCommand('MyPV_DHW', 3000, ['o1','o2','o3'], 3000)");
+    first.advance(1000); first.put('o1', 3000);
+    first.run("refreshHeaterReservation('MyPV_DHW', ['o1','o2','o3'], 3000); reserveHeaterCommand('MyPV_DHW', 0, ['o1','o2','o3'], 3000); heaterZeroWriteCompleted('MyPV_DHW', ['o1','o2','o3'], 3000)");
+    const h = outputHarness();
+    for (const [id, state] of first.states) h.states.set(id, {...state});
+    h.advance(3000); h.fresh();
+    for (const id of ['o1', 'o2', 'o3']) h.put(id, 0);
+    h.run("refreshHeaterReservation('MyPV_DHW', ['o1','o2','o3'], 3000)");
+    const record = () => JSON.parse(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservationState_JSON').val);
+    assert.deepEqual(record().highW, [3000, 0, 0]);
+    h.run("heaterZeroWriteCompleted('MyPV_DHW', ['o1','o2','o3'], 3000)");
+    h.advance(1000); h.fresh();
+    h.run("refreshHeaterReservation('MyPV_DHW', ['o1','o2','o3'], 3000)");
+    assert.deepEqual(record().highW, [0, 0, 0]);
+});
+
+for (const invalid of [{ack: false}, {ack: undefined}, {q: 64}, {val: null}, {ts: 3000000}]) {
+    test(`issue123 invalid peak is not physical proof: ${JSON.stringify(invalid)}`, () => {
+        const h = outputHarness();
+        h.run("reserveHeaterCommand('MyPV_DHW', 3000, ['o1','o2','o3'], 3000)");
+        h.advance(1000); h.put('o1', 3000, invalid);
+        h.run("refreshHeaterReservation('MyPV_DHW', ['o1','o2','o3'], 3000)");
+        const record = JSON.parse(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservationState_JSON').val);
+        assert.equal(record.seenAt[0], 0);
+    });
+    test(`issue123 invalid zero is not physical reduction proof: ${JSON.stringify(invalid)}`, () => {
+        const h = outputHarness();
+        h.run("reserveHeaterCommand('MyPV_DHW', 3000, ['o1','o2','o3'], 3000)");
+        h.advance(1000); h.put('o1', 3000);
+        h.run("refreshHeaterReservation('MyPV_DHW', ['o1','o2','o3'], 3000); reserveHeaterCommand('MyPV_DHW', 0, ['o1','o2','o3'], 3000); heaterZeroWriteCompleted('MyPV_DHW', ['o1','o2','o3'], 3000)");
+        h.advance(1000); h.put('o1', 0, invalid);
+        h.run("refreshHeaterReservation('MyPV_DHW', ['o1','o2','o3'], 3000)");
+        const record = JSON.parse(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservationState_JSON').val);
+        assert.deepEqual(record.highW, [3000, 0, 0]);
+    });
+}
+
+test('issue123 recovered zero-time record requires a real zero completion even for manual confirmation', () => {
+    const h = outputHarness();
+    h.own('Devices.MyPV_DHW.OutputReservedPhase1_W', 3000);
+    h.own('Devices.MyPV_DHW.OutputReservationState_JSON', JSON.stringify({
+        highW: [3000, 0, 0], seenAt: [1999000, 0, 0], commandW: [0, 0, 0], commandAt: 0,
+        ids: ['o1', 'o2', 'o3'], sinkId: 'setpoint'}));
+    h.nativeConfig.globalWriteEnabled = false;
+    h.own('System.RealOutputsEnabled', false);
+    h.own('Devices.MyPV_DHW.ConfirmPhysicalStop', true, {ack: false});
+    h.run("refreshHeaterReservation('MyPV_DHW', ['o1','o2','o3'], 3000)");
+    const record = () => JSON.parse(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservationState_JSON').val);
+    assert.deepEqual(record().highW, [3000, 0, 0]);
+    h.run("refreshHeaterReservation('MyPV_DHW', ['o1','o2','o3'], 3000)");
+    assert.deepEqual(record().highW, [3000, 0, 0], 'automatic zero release also rejects the sentinel timestamp');
+});
+
+test('issue123 shared heating reservation retains identical zero completion and rejects an unseen rise', () => {
+    const h = outputHarness();
+    h.nativeConfig.heatingSetpointId = 'hk-setpoint';
+    h.run("reserveHeaterCommand('MyPV_Heating', 2000, ['o1','o2','o3'], 2000)");
+    h.advance(1000); h.put('o1', 2000);
+    h.run("refreshHeaterReservation('MyPV_Heating', ['o1','o2','o3'], 2000); reserveHeaterCommand('MyPV_Heating', 0, ['o1','o2','o3'], 2000); heaterZeroWriteCompleted('MyPV_Heating', ['o1','o2','o3'], 2000)");
+    const record = () => JSON.parse(h.states.get('ems.0.Devices.MyPV_Heating.OutputReservationState_JSON').val);
+    const firstZero = record().zeroWriteAt;
+    h.advance(5000);
+    h.run("heaterZeroWriteCompleted('MyPV_Heating', ['o1','o2','o3'], 2000)");
+    h.put('o1', 0, {ts: firstZero + 4500});
+    h.run("refreshHeaterReservation('MyPV_Heating', ['o1','o2','o3'], 2000)");
+    assert.deepEqual(record().highW, [0, 0, 0]);
+    h.run("reserveHeaterCommand('MyPV_Heating', 2000, ['o1','o2','o3'], 2000); reserveHeaterCommand('MyPV_Heating', 0, ['o1','o2','o3'], 2000); heaterZeroWriteCompleted('MyPV_Heating', ['o1','o2','o3'], 2000)");
+    h.advance(30000); h.fresh();
+    h.run("refreshHeaterReservation('MyPV_Heating', ['o1','o2','o3'], 2000)");
+    assert.deepEqual(record().highW, [2000, 0, 0]);
+});
+
+test('issue123 obsolete zero callback cannot restore proof after a new positive command', () => {
+    const h = outputHarness(); h.tick(); h.complete();
+    h.own('Control.Targets.MyPV_DHW_W', 0); h.advance(1000); h.fresh(); h.tick();
+    h.complete(); h.advance(1000); h.fresh(); h.tick();
+    const obsoleteZero = h.pending.shift();
+    h.own('Control.Targets.MyPV_DHW_W', 9000); h.advance(1000); h.fresh(); h.tick();
+    obsoleteZero(null);
+    const record = JSON.parse(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservationState_JSON').val);
+    assert.deepEqual(record.commandW, [3000, 0, 0]);
+    assert.equal(record.zeroWriteAt, 0);
+});
+
+test('issue123 reservation status identifies missing full effect and unknown setpoint without unlocking', () => {
+    const h = outputHarness(); h.tick(); h.complete();
+    h.own('Control.Targets.MyPV_DHW_W', 0); h.put('setpoint', null); h.tick(); h.complete();
+    const status = h.states.get('ems.0.Devices.MyPV_DHW.OutputReservationStatus').val;
+    assert.match(status, /transportseitig abgeschlossen/);
+    assert.match(status, /volle fruehere Stellwirkung auf Phase 1 fehlt/);
+    assert.match(status, /Sollrueckmeldung fehlt\/NULL/);
+    assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservationPending').val, true);
+});
+
+test('issue123 delayed full-effect sample between rise and zero can complete its chronological reduction', () => {
+    const h = outputHarness();
+    h.run("reserveHeaterCommand('MyPV_DHW', 3000, ['o1','o2','o3'], 3000)");
+    h.advance(1000);
+    h.run("reserveHeaterCommand('MyPV_DHW', 0, ['o1','o2','o3'], 3000); heaterZeroWriteCompleted('MyPV_DHW', ['o1','o2','o3'], 3000)");
+    h.advance(1000); h.put('o1', 3000, {ts: 2000500});
+    h.run("refreshHeaterReservation('MyPV_DHW', ['o1','o2','o3'], 3000)");
+    const record = () => JSON.parse(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservationState_JSON').val);
+    assert.equal(record().seenAt[0], 2000500);
+    assert.deepEqual(record().riseAt, [2000000, 0, 0]);
+    h.advance(1000);
+    for (const id of ['o1', 'o2', 'o3']) h.put(id, 0);
+    h.run("refreshHeaterReservation('MyPV_DHW', ['o1','o2','o3'], 3000)");
+    assert.deepEqual(record().highW, [0, 0, 0]);
+});
+
+test('issue123 zero completion from a different written sink cannot prove the reserved output stopped', () => {
+    const h = outputHarness();
+    h.run("reserveHeaterCommand('MyPV_DHW', 3000, ['o1','o2','o3'], 3000)");
+    h.advance(1000); h.put('o1', 3000);
+    h.run("refreshHeaterReservation('MyPV_DHW', ['o1','o2','o3'], 3000); reserveHeaterCommand('MyPV_DHW', 0, ['o1','o2','o3'], 3000); heaterZeroWriteCompleted('MyPV_DHW', ['o1','o2','o3'], 3000, 'other-setpoint')");
+    h.advance(1000); h.put('o1', 0);
+    h.run("refreshHeaterReservation('MyPV_DHW', ['o1','o2','o3'], 3000)");
+    const record = JSON.parse(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservationState_JSON').val);
+    assert.equal(record.zeroWriteAt, 0);
+    assert.deepEqual(record.highW, [3000, 0, 0]);
+});
+
+test('issue123 a mapping change discards old zero completion even with an already free reservation', () => {
+    const h = outputHarness();
+    h.run("reserveHeaterCommand('MyPV_DHW', 0, ['o1','o2','o3'], 3000); heaterZeroWriteCompleted('MyPV_DHW', ['o1','o2','o3'], 3000)");
+    h.run("CFG.dp.myPvDhwSetpoint='newSet'; reserveHeaterCommand('MyPV_DHW', 0, ['new1','new2','new3'], 3000)");
+    const record = JSON.parse(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservationState_JSON').val);
+    assert.equal(record.zeroWriteAt, 0);
+    assert.equal(record.sinkId, 'newSet');
+    assert.deepEqual(record.ids, ['new1', 'new2', 'new3']);
+});
+
 for (const sensor of ['t1', 't2', 't3', 't4', 'outlet']) {
     for (const invalid of [-127, -0.1, 100.1, 65535]) {
         test(`DHW blocks implausible ${sensor}=${invalid} in simulation and productive output`, () => {

@@ -1,0 +1,29 @@
+{
+  "session": 1791548168417,
+  "adapterVersion": "0.17.0-alpha.58",
+  "timestamp_unit": "epoch milliseconds UTC",
+  "presentation_zone": "Europe/Berlin",
+  "date": "2026-10-09",
+  "command_id": "go-e.2.amperePV",
+  "import_id": "sma-em.0.1900232044.pregard",
+  "export_id": "sma-em.0.1900232044.psurplus",
+  "power_id": "go-e.2.energy.power",
+  "power_source_unit": "kW",
+  "actual_W_unit": "W",
+  "current1_id": "go-e.2.energy.phase1.ampere",
+  "response_timeout_s": 45,
+  "target_grid_power_W": -100,
+  "mandatory_minimum_A": 6,
+  "phase_count": 1,
+  "regulation_reason": "mandatory parallel / nominal quantization / budget",
+  "empty_cell_means": "unknown or not applicable, never numeric zero",
+  "completeness": "one separately replayed start command plus116 commands replayed after full basis26418; no claim of continuous sequences between15:27 and15:42",
+  "command_ack_timeout_s": 20,
+  "response_deadline_contract": {
+    "snapshot_basis": "Response fields are the historical response state at command.attempt and can describe the preceding command. Raw historical sent/ack/confirmed timestamps remain unchanged.",
+    "electrical-response": "Only when pending vehicle_response has an ACK at or after sentAt: ackAt + 45000 ms.",
+    "command-ack": "When a command is pending without a qualifying ACK: sentAt + 20000 ms.",
+    "inactive": "For confirmed/idle or any non-pending state, derived deadline is empty, never zero. Old raw response timestamps do not imply an active deadline.",
+    "unknown": "Missing required timestamp leaves the derived deadline empty; no clock is invented."
+  }
+}

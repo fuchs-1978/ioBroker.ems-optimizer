@@ -1,0 +1,688 @@
+{
+  "note": "Projection of real alpha58 schema3 records seq26826-26833. Only WB2 power/current metadata and EHZ reservation retained for transport tests; not a full replay of the live installation.",
+  "records": [
+    {
+      "ts": 1791553431609,
+      "val": "{\"schema\":3,\"frameType\":\"snapshot\",\"adapterVersion\":\"0.17.0-alpha.58\",\"timestamp\":1791553431608,\"cycleId\":32073,\"mode\":\"PRODUCTION\",\"masterEnabled\":true,\"event\":{\"type\":\"source.update\",\"id\":\"modbus.4.holdingRegisters.1000_Power\",\"state\":{\"val\":null,\"ack\":true,\"ts\":1791553431604,\"q\":0,\"from\":\"system.adapter.modbus.4\",\"user\":\"system.user.admin\",\"lc\":1791553431604}},\"recordSession\":1791548168417,\"recordSequence\":26826,\"recording\":{\"dropped\":0,\"writeErrors\":0,\"lastError\":\"\"},\"checkpointSequence\":26826,\"data\":{\"realFeedback\":{\"Wallbox2\":{\"powerKW\":{\"id\":\"go-e.2.energy.power\",\"value\":1.48,\"ts\":1791553425932,\"ack\":true,\"q\":0,\"ageMs\":5675,\"maxAgeMs\":30000,\"fresh\":true,\"issue\":\"\"},\"currentA\":{\"id\":\"go-e.2.ampere\",\"value\":6,\"ts\":1791553425789,\"ack\":true,\"q\":0,\"ageMs\":5818,\"maxAgeMs\":30000,\"fresh\":true,\"issue\":\"\"},\"commandA\":{\"id\":\"go-e.2.amperePV\",\"value\":6,\"ts\":1791553425787,\"ack\":true,\"q\":0,\"ageMs\":5820,\"maxAgeMs\":30000,\"fresh\":true,\"issue\":\"\"}}},\"production\":{\"wallboxes\":[{\"wb\":0},{\"wb\":1},{\"wb\":2,\"actual_W\":1480,\"allocation\":{\"actualPowerW\":null}}],\"ehz\":{\"actual_W\":0,\"OutputReservedPower_W\":3000}}}}"
+    },
+    {
+      "ts": 1791553432011,
+      "val": "{\"schema\":3,\"frameType\":\"delta\",\"adapterVersion\":\"0.17.0-alpha.58\",\"timestamp\":1791553432006,\"cycleId\":32075,\"mode\":\"PRODUCTION\",\"masterEnabled\":true,\"event\":null,\"recordSession\":1791548168417,\"recordSequence\":26827,\"recording\":{\"dropped\":0,\"writeErrors\":0,\"lastError\":\"\"},\"baseSequence\":26826,\"checkpointSequence\":26826,\"ops\":[{\"op\":\"set\",\"path\":[\"realFeedback\",\"Wallbox2\",\"powerKW\",\"ageMs\"],\"value\":6073},{\"op\":\"set\",\"path\":[\"realFeedback\",\"Wallbox2\",\"currentA\",\"ageMs\"],\"value\":6216},{\"op\":\"set\",\"path\":[\"realFeedback\",\"Wallbox2\",\"commandA\",\"ageMs\"],\"value\":6218}]}"
+    },
+    {
+      "ts": 1791553433009,
+      "val": "{\"schema\":3,\"frameType\":\"delta\",\"adapterVersion\":\"0.17.0-alpha.58\",\"timestamp\":1791553433004,\"cycleId\":32077,\"mode\":\"PRODUCTION\",\"masterEnabled\":true,\"event\":null,\"recordSession\":1791548168417,\"recordSequence\":26828,\"recording\":{\"dropped\":0,\"writeErrors\":0,\"lastError\":\"\"},\"baseSequence\":26827,\"checkpointSequence\":26826,\"ops\":[{\"op\":\"set\",\"path\":[\"realFeedback\",\"Wallbox2\",\"powerKW\",\"ageMs\"],\"value\":7071},{\"op\":\"set\",\"path\":[\"realFeedback\",\"Wallbox2\",\"currentA\",\"ageMs\"],\"value\":7214},{\"op\":\"set\",\"path\":[\"realFeedback\",\"Wallbox2\",\"commandA\",\"ageMs\"],\"value\":7216}]}"
+    },
+    {
+      "ts": 1791553434011,
+      "val": "{\"schema\":3,\"frameType\":\"delta\",\"adapterVersion\":\"0.17.0-alpha.58\",\"timestamp\":1791553434005,\"cycleId\":32079,\"mode\":\"PRODUCTION\",\"masterEnabled\":true,\"event\":null,\"recordSession\":1791548168417,\"recordSequence\":26829,\"recording\":{\"dropped\":0,\"writeErrors\":0,\"lastError\":\"\"},\"baseSequence\":26828,\"checkpointSequence\":26826,\"ops\":[{\"op\":\"set\",\"path\":[\"realFeedback\",\"Wallbox2\",\"powerKW\",\"ageMs\"],\"value\":8073},{\"op\":\"set\",\"path\":[\"realFeedback\",\"Wallbox2\",\"currentA\",\"ageMs\"],\"value\":8216},{\"op\":\"set\",\"path\":[\"realFeedback\",\"Wallbox2\",\"commandA\",\"ageMs\"],\"value\":8218}]}"
+    },
+    {
+      "ts": 1791553435009,
+      "val": "{\"schema\":3,\"frameType\":\"delta\",\"adapterVersion\":\"0.17.0-alpha.58\",\"timestamp\":1791553435004,\"cycleId\":32081,\"mode\":\"PRODUCTION\",\"masterEnabled\":true,\"event\":null,\"recordSession\":1791548168417,\"recordSequence\":26830,\"recording\":{\"dropped\":0,\"writeErrors\":0,\"lastError\":\"\"},\"baseSequence\":26829,\"checkpointSequence\":26826,\"ops\":[{\"op\":\"set\",\"path\":[\"realFeedback\",\"Wallbox2\",\"powerKW\",\"ageMs\"],\"value\":9071},{\"op\":\"set\",\"path\":[\"realFeedback\",\"Wallbox2\",\"currentA\",\"ageMs\"],\"value\":9214},{\"op\":\"set\",\"path\":[\"realFeedback\",\"Wallbox2\",\"commandA\",\"ageMs\"],\"value\":9216}]}"
+    },
+    {
+      "ts": 1791553435051,
+      "val": "{\"schema\":3,\"frameType\":\"delta\",\"adapterVersion\":\"0.17.0-alpha.58\",\"timestamp\":1791553435036,\"cycleId\":32082,\"mode\":\"PRODUCTION\",\"masterEnabled\":true,\"event\":{\"type\":\"command.attempt\",\"commandId\":\"1791548168417:command:2110\",\"id\":\"javascript.0.ehz.power\",\"value\":0,\"at\":1791553435033,\"error\":\"\"},\"recordSession\":1791548168417,\"recordSequence\":26831,\"recording\":{\"dropped\":0,\"writeErrors\":0,\"lastError\":\"\"},\"baseSequence\":26830,\"checkpointSequence\":26826,\"ops\":[{\"op\":\"set\",\"path\":[\"realFeedback\",\"Wallbox2\",\"powerKW\",\"ageMs\"],\"value\":9103},{\"op\":\"set\",\"path\":[\"realFeedback\",\"Wallbox2\",\"currentA\",\"ageMs\"],\"value\":9246},{\"op\":\"set\",\"path\":[\"realFeedback\",\"Wallbox2\",\"commandA\",\"ageMs\"],\"value\":9248}]}"
+    },
+    {
+      "ts": 1791553435225,
+      "val": "{\"schema\":3,\"frameType\":\"delta\",\"adapterVersion\":\"0.17.0-alpha.58\",\"timestamp\":1791553435039,\"cycleId\":32083,\"mode\":\"PRODUCTION\",\"masterEnabled\":true,\"event\":{\"type\":\"command.attempt\",\"commandId\":\"1791548168417:command:2111\",\"id\":\"modbus.4.holdingRegisters.1000_Power\",\"value\":0,\"at\":1791553435037,\"error\":\"\"},\"recordSession\":1791548168417,\"recordSequence\":26832,\"recording\":{\"dropped\":0,\"writeErrors\":0,\"lastError\":\"\"},\"baseSequence\":26831,\"checkpointSequence\":26826,\"ops\":[{\"op\":\"set\",\"path\":[\"realFeedback\",\"Wallbox2\",\"powerKW\",\"ageMs\"],\"value\":9106},{\"op\":\"set\",\"path\":[\"realFeedback\",\"Wallbox2\",\"currentA\",\"ageMs\"],\"value\":9249},{\"op\":\"set\",\"path\":[\"realFeedback\",\"Wallbox2\",\"commandA\",\"ageMs\"],\"value\":9251}]}"
+    },
+    {
+      "ts": 1791553435261,
+      "val": "{\"schema\":3,\"frameType\":\"delta\",\"adapterVersion\":\"0.17.0-alpha.58\",\"timestamp\":1791553435145,\"cycleId\":32084,\"mode\":\"PRODUCTION\",\"masterEnabled\":true,\"event\":{\"type\":\"command.transport_complete\",\"commandId\":\"1791548168417:command:2110\",\"id\":\"javascript.0.ehz.power\",\"value\":0,\"at\":1791553435142,\"error\":\"\"},\"recordSession\":1791548168417,\"recordSequence\":26833,\"recording\":{\"dropped\":0,\"writeErrors\":0,\"lastError\":\"\"},\"baseSequence\":26832,\"checkpointSequence\":26826,\"ops\":[{\"op\":\"set\",\"path\":[\"realFeedback\",\"Wallbox2\",\"powerKW\",\"ageMs\"],\"value\":9212},{\"op\":\"set\",\"path\":[\"realFeedback\",\"Wallbox2\",\"currentA\",\"ageMs\"],\"value\":9355},{\"op\":\"set\",\"path\":[\"realFeedback\",\"Wallbox2\",\"commandA\",\"ageMs\"],\"value\":9357}]}"
+    }
+  ],
+  "decoded": [
+    {
+      "ts": 1791553431609,
+      "val": {
+        "schema": 2,
+        "adapterVersion": "0.17.0-alpha.58",
+        "timestamp": 1791553431608,
+        "cycleId": 32073,
+        "mode": "PRODUCTION",
+        "masterEnabled": true,
+        "event": {
+          "type": "source.update",
+          "id": "modbus.4.holdingRegisters.1000_Power",
+          "state": {
+            "val": null,
+            "ack": true,
+            "ts": 1791553431604,
+            "q": 0,
+            "from": "system.adapter.modbus.4",
+            "user": "system.user.admin",
+            "lc": 1791553431604
+          }
+        },
+        "recordSession": 1791548168417,
+        "recordSequence": 26826,
+        "recording": {
+          "dropped": 0,
+          "writeErrors": 0,
+          "lastError": ""
+        },
+        "realFeedback": {
+          "Wallbox2": {
+            "powerKW": {
+              "id": "go-e.2.energy.power",
+              "value": 1.48,
+              "ts": 1791553425932,
+              "ack": true,
+              "q": 0,
+              "ageMs": 5675,
+              "maxAgeMs": 30000,
+              "fresh": true,
+              "issue": ""
+            },
+            "currentA": {
+              "id": "go-e.2.ampere",
+              "value": 6,
+              "ts": 1791553425789,
+              "ack": true,
+              "q": 0,
+              "ageMs": 5818,
+              "maxAgeMs": 30000,
+              "fresh": true,
+              "issue": ""
+            },
+            "commandA": {
+              "id": "go-e.2.amperePV",
+              "value": 6,
+              "ts": 1791553425787,
+              "ack": true,
+              "q": 0,
+              "ageMs": 5820,
+              "maxAgeMs": 30000,
+              "fresh": true,
+              "issue": ""
+            }
+          }
+        },
+        "production": {
+          "wallboxes": [
+            {
+              "wb": 0
+            },
+            {
+              "wb": 1
+            },
+            {
+              "wb": 2,
+              "actual_W": 1480,
+              "allocation": {
+                "actualPowerW": null
+              }
+            }
+          ],
+          "ehz": {
+            "actual_W": 0,
+            "OutputReservedPower_W": 3000
+          }
+        }
+      }
+    },
+    {
+      "ts": 1791553432011,
+      "val": {
+        "schema": 2,
+        "adapterVersion": "0.17.0-alpha.58",
+        "timestamp": 1791553432006,
+        "cycleId": 32075,
+        "mode": "PRODUCTION",
+        "masterEnabled": true,
+        "event": null,
+        "recordSession": 1791548168417,
+        "recordSequence": 26827,
+        "recording": {
+          "dropped": 0,
+          "writeErrors": 0,
+          "lastError": ""
+        },
+        "realFeedback": {
+          "Wallbox2": {
+            "powerKW": {
+              "id": "go-e.2.energy.power",
+              "value": 1.48,
+              "ts": 1791553425932,
+              "ack": true,
+              "q": 0,
+              "ageMs": 6073,
+              "maxAgeMs": 30000,
+              "fresh": true,
+              "issue": ""
+            },
+            "currentA": {
+              "id": "go-e.2.ampere",
+              "value": 6,
+              "ts": 1791553425789,
+              "ack": true,
+              "q": 0,
+              "ageMs": 6216,
+              "maxAgeMs": 30000,
+              "fresh": true,
+              "issue": ""
+            },
+            "commandA": {
+              "id": "go-e.2.amperePV",
+              "value": 6,
+              "ts": 1791553425787,
+              "ack": true,
+              "q": 0,
+              "ageMs": 6218,
+              "maxAgeMs": 30000,
+              "fresh": true,
+              "issue": ""
+            }
+          }
+        },
+        "production": {
+          "wallboxes": [
+            {
+              "wb": 0
+            },
+            {
+              "wb": 1
+            },
+            {
+              "wb": 2,
+              "actual_W": 1480,
+              "allocation": {
+                "actualPowerW": null
+              }
+            }
+          ],
+          "ehz": {
+            "actual_W": 0,
+            "OutputReservedPower_W": 3000
+          }
+        }
+      }
+    },
+    {
+      "ts": 1791553433009,
+      "val": {
+        "schema": 2,
+        "adapterVersion": "0.17.0-alpha.58",
+        "timestamp": 1791553433004,
+        "cycleId": 32077,
+        "mode": "PRODUCTION",
+        "masterEnabled": true,
+        "event": null,
+        "recordSession": 1791548168417,
+        "recordSequence": 26828,
+        "recording": {
+          "dropped": 0,
+          "writeErrors": 0,
+          "lastError": ""
+        },
+        "realFeedback": {
+          "Wallbox2": {
+            "powerKW": {
+              "id": "go-e.2.energy.power",
+              "value": 1.48,
+              "ts": 1791553425932,
+              "ack": true,
+              "q": 0,
+              "ageMs": 7071,
+              "maxAgeMs": 30000,
+              "fresh": true,
+              "issue": ""
+            },
+            "currentA": {
+              "id": "go-e.2.ampere",
+              "value": 6,
+              "ts": 1791553425789,
+              "ack": true,
+              "q": 0,
+              "ageMs": 7214,
+              "maxAgeMs": 30000,
+              "fresh": true,
+              "issue": ""
+            },
+            "commandA": {
+              "id": "go-e.2.amperePV",
+              "value": 6,
+              "ts": 1791553425787,
+              "ack": true,
+              "q": 0,
+              "ageMs": 7216,
+              "maxAgeMs": 30000,
+              "fresh": true,
+              "issue": ""
+            }
+          }
+        },
+        "production": {
+          "wallboxes": [
+            {
+              "wb": 0
+            },
+            {
+              "wb": 1
+            },
+            {
+              "wb": 2,
+              "actual_W": 1480,
+              "allocation": {
+                "actualPowerW": null
+              }
+            }
+          ],
+          "ehz": {
+            "actual_W": 0,
+            "OutputReservedPower_W": 3000
+          }
+        }
+      }
+    },
+    {
+      "ts": 1791553434011,
+      "val": {
+        "schema": 2,
+        "adapterVersion": "0.17.0-alpha.58",
+        "timestamp": 1791553434005,
+        "cycleId": 32079,
+        "mode": "PRODUCTION",
+        "masterEnabled": true,
+        "event": null,
+        "recordSession": 1791548168417,
+        "recordSequence": 26829,
+        "recording": {
+          "dropped": 0,
+          "writeErrors": 0,
+          "lastError": ""
+        },
+        "realFeedback": {
+          "Wallbox2": {
+            "powerKW": {
+              "id": "go-e.2.energy.power",
+              "value": 1.48,
+              "ts": 1791553425932,
+              "ack": true,
+              "q": 0,
+              "ageMs": 8073,
+              "maxAgeMs": 30000,
+              "fresh": true,
+              "issue": ""
+            },
+            "currentA": {
+              "id": "go-e.2.ampere",
+              "value": 6,
+              "ts": 1791553425789,
+              "ack": true,
+              "q": 0,
+              "ageMs": 8216,
+              "maxAgeMs": 30000,
+              "fresh": true,
+              "issue": ""
+            },
+            "commandA": {
+              "id": "go-e.2.amperePV",
+              "value": 6,
+              "ts": 1791553425787,
+              "ack": true,
+              "q": 0,
+              "ageMs": 8218,
+              "maxAgeMs": 30000,
+              "fresh": true,
+              "issue": ""
+            }
+          }
+        },
+        "production": {
+          "wallboxes": [
+            {
+              "wb": 0
+            },
+            {
+              "wb": 1
+            },
+            {
+              "wb": 2,
+              "actual_W": 1480,
+              "allocation": {
+                "actualPowerW": null
+              }
+            }
+          ],
+          "ehz": {
+            "actual_W": 0,
+            "OutputReservedPower_W": 3000
+          }
+        }
+      }
+    },
+    {
+      "ts": 1791553435009,
+      "val": {
+        "schema": 2,
+        "adapterVersion": "0.17.0-alpha.58",
+        "timestamp": 1791553435004,
+        "cycleId": 32081,
+        "mode": "PRODUCTION",
+        "masterEnabled": true,
+        "event": null,
+        "recordSession": 1791548168417,
+        "recordSequence": 26830,
+        "recording": {
+          "dropped": 0,
+          "writeErrors": 0,
+          "lastError": ""
+        },
+        "realFeedback": {
+          "Wallbox2": {
+            "powerKW": {
+              "id": "go-e.2.energy.power",
+              "value": 1.48,
+              "ts": 1791553425932,
+              "ack": true,
+              "q": 0,
+              "ageMs": 9071,
+              "maxAgeMs": 30000,
+              "fresh": true,
+              "issue": ""
+            },
+            "currentA": {
+              "id": "go-e.2.ampere",
+              "value": 6,
+              "ts": 1791553425789,
+              "ack": true,
+              "q": 0,
+              "ageMs": 9214,
+              "maxAgeMs": 30000,
+              "fresh": true,
+              "issue": ""
+            },
+            "commandA": {
+              "id": "go-e.2.amperePV",
+              "value": 6,
+              "ts": 1791553425787,
+              "ack": true,
+              "q": 0,
+              "ageMs": 9216,
+              "maxAgeMs": 30000,
+              "fresh": true,
+              "issue": ""
+            }
+          }
+        },
+        "production": {
+          "wallboxes": [
+            {
+              "wb": 0
+            },
+            {
+              "wb": 1
+            },
+            {
+              "wb": 2,
+              "actual_W": 1480,
+              "allocation": {
+                "actualPowerW": null
+              }
+            }
+          ],
+          "ehz": {
+            "actual_W": 0,
+            "OutputReservedPower_W": 3000
+          }
+        }
+      }
+    },
+    {
+      "ts": 1791553435051,
+      "val": {
+        "schema": 2,
+        "adapterVersion": "0.17.0-alpha.58",
+        "timestamp": 1791553435036,
+        "cycleId": 32082,
+        "mode": "PRODUCTION",
+        "masterEnabled": true,
+        "event": {
+          "type": "command.attempt",
+          "commandId": "1791548168417:command:2110",
+          "id": "javascript.0.ehz.power",
+          "value": 0,
+          "at": 1791553435033,
+          "error": ""
+        },
+        "recordSession": 1791548168417,
+        "recordSequence": 26831,
+        "recording": {
+          "dropped": 0,
+          "writeErrors": 0,
+          "lastError": ""
+        },
+        "realFeedback": {
+          "Wallbox2": {
+            "powerKW": {
+              "id": "go-e.2.energy.power",
+              "value": 1.48,
+              "ts": 1791553425932,
+              "ack": true,
+              "q": 0,
+              "ageMs": 9103,
+              "maxAgeMs": 30000,
+              "fresh": true,
+              "issue": ""
+            },
+            "currentA": {
+              "id": "go-e.2.ampere",
+              "value": 6,
+              "ts": 1791553425789,
+              "ack": true,
+              "q": 0,
+              "ageMs": 9246,
+              "maxAgeMs": 30000,
+              "fresh": true,
+              "issue": ""
+            },
+            "commandA": {
+              "id": "go-e.2.amperePV",
+              "value": 6,
+              "ts": 1791553425787,
+              "ack": true,
+              "q": 0,
+              "ageMs": 9248,
+              "maxAgeMs": 30000,
+              "fresh": true,
+              "issue": ""
+            }
+          }
+        },
+        "production": {
+          "wallboxes": [
+            {
+              "wb": 0
+            },
+            {
+              "wb": 1
+            },
+            {
+              "wb": 2,
+              "actual_W": 1480,
+              "allocation": {
+                "actualPowerW": null
+              }
+            }
+          ],
+          "ehz": {
+            "actual_W": 0,
+            "OutputReservedPower_W": 3000
+          }
+        }
+      }
+    },
+    {
+      "ts": 1791553435225,
+      "val": {
+        "schema": 2,
+        "adapterVersion": "0.17.0-alpha.58",
+        "timestamp": 1791553435039,
+        "cycleId": 32083,
+        "mode": "PRODUCTION",
+        "masterEnabled": true,
+        "event": {
+          "type": "command.attempt",
+          "commandId": "1791548168417:command:2111",
+          "id": "modbus.4.holdingRegisters.1000_Power",
+          "value": 0,
+          "at": 1791553435037,
+          "error": ""
+        },
+        "recordSession": 1791548168417,
+        "recordSequence": 26832,
+        "recording": {
+          "dropped": 0,
+          "writeErrors": 0,
+          "lastError": ""
+        },
+        "realFeedback": {
+          "Wallbox2": {
+            "powerKW": {
+              "id": "go-e.2.energy.power",
+              "value": 1.48,
+              "ts": 1791553425932,
+              "ack": true,
+              "q": 0,
+              "ageMs": 9106,
+              "maxAgeMs": 30000,
+              "fresh": true,
+              "issue": ""
+            },
+            "currentA": {
+              "id": "go-e.2.ampere",
+              "value": 6,
+              "ts": 1791553425789,
+              "ack": true,
+              "q": 0,
+              "ageMs": 9249,
+              "maxAgeMs": 30000,
+              "fresh": true,
+              "issue": ""
+            },
+            "commandA": {
+              "id": "go-e.2.amperePV",
+              "value": 6,
+              "ts": 1791553425787,
+              "ack": true,
+              "q": 0,
+              "ageMs": 9251,
+              "maxAgeMs": 30000,
+              "fresh": true,
+              "issue": ""
+            }
+          }
+        },
+        "production": {
+          "wallboxes": [
+            {
+              "wb": 0
+            },
+            {
+              "wb": 1
+            },
+            {
+              "wb": 2,
+              "actual_W": 1480,
+              "allocation": {
+                "actualPowerW": null
+              }
+            }
+          ],
+          "ehz": {
+            "actual_W": 0,
+            "OutputReservedPower_W": 3000
+          }
+        }
+      }
+    },
+    {
+      "ts": 1791553435261,
+      "val": {
+        "schema": 2,
+        "adapterVersion": "0.17.0-alpha.58",
+        "timestamp": 1791553435145,
+        "cycleId": 32084,
+        "mode": "PRODUCTION",
+        "masterEnabled": true,
+        "event": {
+          "type": "command.transport_complete",
+          "commandId": "1791548168417:command:2110",
+          "id": "javascript.0.ehz.power",
+          "value": 0,
+          "at": 1791553435142,
+          "error": ""
+        },
+        "recordSession": 1791548168417,
+        "recordSequence": 26833,
+        "recording": {
+          "dropped": 0,
+          "writeErrors": 0,
+          "lastError": ""
+        },
+        "realFeedback": {
+          "Wallbox2": {
+            "powerKW": {
+              "id": "go-e.2.energy.power",
+              "value": 1.48,
+              "ts": 1791553425932,
+              "ack": true,
+              "q": 0,
+              "ageMs": 9212,
+              "maxAgeMs": 30000,
+              "fresh": true,
+              "issue": ""
+            },
+            "currentA": {
+              "id": "go-e.2.ampere",
+              "value": 6,
+              "ts": 1791553425789,
+              "ack": true,
+              "q": 0,
+              "ageMs": 9355,
+              "maxAgeMs": 30000,
+              "fresh": true,
+              "issue": ""
+            },
+            "commandA": {
+              "id": "go-e.2.amperePV",
+              "value": 6,
+              "ts": 1791553425787,
+              "ack": true,
+              "q": 0,
+              "ageMs": 9357,
+              "maxAgeMs": 30000,
+              "fresh": true,
+              "issue": ""
+            }
+          }
+        },
+        "production": {
+          "wallboxes": [
+            {
+              "wb": 0
+            },
+            {
+              "wb": 1
+            },
+            {
+              "wb": 2,
+              "actual_W": 1480,
+              "allocation": {
+                "actualPowerW": null
+              }
+            }
+          ],
+          "ehz": {
+            "actual_W": 0,
+            "OutputReservedPower_W": 3000
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.59**
+Aktuelle Version: **0.17.0-alpha.60**
 
 Prüfung zu Tages-Issue #98: [produktive Diagnose, Phasen-Rückfallvertrag,
 Reproduktion und nächste SQL-Abnahme](docs/issue98-live-diagnostics.md).
@@ -45,6 +45,14 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.60 – Stromantwort und sichere Ausgangsreservierung
+
+Auch bei paralleler Mindestladung verwendet die laufende PV-Zuteilung die gemessene Fahrzeugleistung. Im Parallelbetrieb benötigen neue Stromerhöhungen ein frisches, ausreichendes Netzbudget und eine neue elektrische Antwort beziehungsweise einen ausdrücklich abgelaufenen Antwortzustand. Während einer offenen parallelen Antwort bleibt ein bereits gesendeter Befehl nur innerhalb der gemessenen Budget- und Schutzgrenzen erhalten. Echte Leistungsdefizite im Parallelbetrieb und sämtliche Hausanschluss-/§14a-/Gerätegrenzen reduzieren sofort. Quellenzeiten, Budgetbetrag und feste Antwortfrist stehen in der bestehenden Stromdiagnose und den DecisionRecords.
+
+Die EHZ erhält den ersten Transportabschluss einer unveränderten Nullfolge; zyklische Nullbefehle verschieben ihn nicht. Eine Ausgangsreserve sinkt weiterhin erst nach unabhängig belegter voller Stellwirkung und späterer physischer Reduktion. Die historische, nie voll bestätigte 3-kW-Reserve wird durch einen NULL-Sollwert oder bloße Nullmessungen nicht automatisch freigegeben. Der Status nennt den fehlenden Nachweis. Das lesende Abrufwerkzeug archiviert begrenzte SQL-Fenster und prüft Sitzung, Sequenz, Vollbasis und Duplikate; unbekannte Daten bleiben unbekannt.
+
+Die 117 historischen EQE-Befehle aus alpha.58 sind einzeln aufgearbeitet; der betroffene alpha.59-Codepfad wurde unverändert reproduziert. Vollständige Tageslesbarkeit, echte Regelruhe nach Installation und die reale alpha.59-Peer-Wechselabnahme bleiben offen. [Stromregelung](docs/issue123-current-response.md), [EHZ-Sicherheitsvertrag](docs/issue123-ehz-reservation.md), [SQL-Abrufgrenzen](docs/issue123-recorder-access.md). Keine automatische Installation oder Livefreigabe; Score unverändert 69/100.
 
 ## Neu in 0.17.0-alpha.59 – Begonnene Mindestladung erhalten
 
@@ -1776,6 +1784,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.60 | Laufende parallele Mindestladung mit gemessener Antwort und frischem Erhöhungsbudget; unveränderte EHZ-Nullfolge behält ihren Abschluss, unbeobachtete Reserven bleiben gesperrt; begrenzter lesender SQL-Abruf mit Sequenz-/Replaynachweis. |
 | 0.17.0-alpha.59 | Bereits autorisierter 1P-Mindestladestart bleibt während Peer-Abschaltung innerhalb fester Befehls-/Fahrzeugfristen reserviert; zusätzliche Startabbrüche vermeiden, neue ON-/Erhöhungsbefehle und sämtliche Schutzbudgets bleiben geprüft. |
 | 0.17.0-alpha.58 | Unbekannte EHZ-Temperaturen bleiben null; vollständige begrenzte Quellen-/Qualitätsdiagnose in Anzeige und produktiven Records, echte konstante Bestätigungen gültig, Schutzgrenzen unverändert. |
 | 0.17.0-alpha.57 | Passive WP-Mess-/SG-Ready-Vorbereitung, getrennte Heiz-/Kühlboostwünsche mit Taupunktgrenze und übersetzter Admin; normierte vollständige WP-Messung für §14a, keine externen WP-Schreibausgänge. |

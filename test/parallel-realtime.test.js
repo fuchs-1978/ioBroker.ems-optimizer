@@ -117,6 +117,22 @@ test('manual Mii priority cannot starve EQV below its minimum SoC', () => {
     assert.ok(targets.watts.reduce((a, b) => a + b, 0) <= 6000);
 });
 
+test('issue123 mandatory running allocation uses measured response and preserves its mandatory floor', () => {
+    const h = engine({production: true}); h.exclude(1); h.exclude(2);
+    h.put('DP_WB0_SOC', 10); h.owned(0, 9, 1290);
+    h.update(1657);
+    let diagnostic = JSON.parse(h.states.get('ems.0.Control.Wallbox0.AllocationDiagnostics_JSON').val);
+    assert.equal(diagnostic.actualPowerW, 1290);
+    assert.equal(diagnostic.responseBasis, 'power-response');
+    assert.equal(diagnostic.deltaW, 367);
+    assert.ok(diagnostic.measuredPowerAt > 0);
+    h.owned(0, 6, 1700);
+    const targets = h.update(0, 4200);
+    assert.equal(targets.amps[0], 6, 'measured overshoot cannot erase an admitted mandatory floor');
+    diagnostic = JSON.parse(h.states.get('ems.0.Control.Wallbox0.AllocationDiagnostics_JSON').val);
+    assert.equal(diagnostic.actualPowerW, 1700);
+});
+
 test('three below-minimum vehicles can import their 6 A floor without PV within a 4.2 kW hard cap', () => {
     for (const production of [false, true]) {
         const h = engine({production});

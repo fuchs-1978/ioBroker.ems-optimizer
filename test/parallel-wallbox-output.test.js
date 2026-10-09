@@ -835,3 +835,175 @@ test('a three-phase start records its actual three-phase reservation rather than
         assert.ok(h.states.get(`ems.0.Devices.Wallbox${wb}.OutputReservedPower_W`).val >= 4140);
     }
 });
+
+// Issue #123: alpha.58 live records at 15:43:08/14/22 Europe/Berlin
+// contain 6 -> 9 -> 7 -> 10 with a still-unanswered 9-A command at 14 s.
+// The same command path reproduced on unchanged alpha.59. The samples below
+// retain the raw ordering; an ACK is deliberately not a vehicle response.
+async function unansweredParallelIncrease({phases = 1, count = 1} = {}) {
+    const h = parallelSetup(count);
+    if (phases === 3) for (let wb = 0; wb < count; wb++) Object.assign(h.config, {
+        [`wb${wb}PhaseSwitchEnabled`]: true, [`wb${wb}ProductionPhases`]: 3,
+        [`wb${wb}MaxCurrent3pA`]: 32, [`wb${wb}MaxPowerW`]: 22080
+    });
+    const topology = Array(count).fill(phases);
+    // The helper's ordinary startup uses 1P; construct the same independent
+    // ACK sequence with explicitly matching 3P samples when required.
+    h.grant(Array(count).fill(6), {phases: topology});
+    await h.output.initialize(); await h.output.tick();
+    for (let wb = 0; wb < count; wb++) h.ack(wb === 0 ? 'allow' : `allow${wb}`, 0);
+    await h.output.tick();
+    for (let wb = 0; wb < count; wb++) h.ack(wb === 0 ? 'feedback' : `feedback${wb}`, 6);
+    await h.output.tick();
+    for (let wb = 0; wb < count; wb++) { h.ack(wb === 0 ? 'allow' : `allow${wb}`, 1); h.measure(wb, 6, phases); }
+    await h.output.tick();
+    h.put('soc', 10);
+    h.advance(6000);
+    h.grant([9, ...Array(count - 1).fill(6)], {phases: topology});
+    h.measure(0, 5.9, phases); h.ack('feedback', 6); h.put('power', 1.29 * phases);
+    h.put('export', 907.8 * phases); h.writes.length = 0;
+    await h.output.tick(); assert.deepEqual(h.writes, [{id: 'cmd', val: 9}]);
+    h.advance(6000); h.ack('feedback', 9);
+    h.measure(0, 5.8, phases); h.ack('feedback', 9); h.put('power', 1.29 * phases);
+    h.put('export', 471.4 * phases);
+    h.grant([7, ...Array(count - 1).fill(6)], {phases: topology});
+    h.writes.length = 0;
+    await h.output.tick();
+    h.writes.length = 0;
+    return h;
+}
+
+test('issue123 falling nominal PV target preserves an unanswered command with measured surplus in 1P and 3P', async t => {
+    for (const phases of [1, 3]) await t.test(`${phases}P`, async () => {
+        const h = await unansweredParallelIncrease({phases});
+        await h.output.tick();
+        assert.deepEqual(h.writes, []);
+        assert.equal(h.output.devices[0].lastA, 9);
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'vehicle_response');
+        assert.ok(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val >= 2070 * phases);
+        const diagnostic = JSON.parse(h.states.get('ems.0.Devices.Wallbox0.IncreaseBudget_JSON').val);
+        assert.equal(diagnostic.decision, 'await-electrical-response');
+        assert.equal(diagnostic.softTargetA, 7);
+        assert.equal(diagnostic.nextA, 9);
+        assert.equal(diagnostic.awaitingElectricalStep, true);
+        assert.equal(diagnostic.responseDeadlineAt,
+            h.output.devices[0].response.ackAt + h.output.responseSettleTimeoutMs());
+        assert.ok(diagnostic.budgetSources.every(source => source.ts > diagnostic.electricalCommandAt));
+        h.advance(6000); h.grant([10], {phases: [phases]});
+        await h.output.tick(); assert.deepEqual(h.writes, [], 'a PV jump still awaits the electrical response');
+        h.measure(0, 9, phases); await h.output.tick();
+        assert.deepEqual(h.writes, [{id: 'cmd', val: 10}], 'new electrical response permits the fresh budget immediately');
+    });
+});
+
+test('issue123 physical PV deficit and protection reductions supersede the response hold immediately', async t => {
+    for (const fault of ['PV deficit', 'house fuse', 'operator', 'device current']) await t.test(fault, async () => {
+        const h = await unansweredParallelIncrease();
+        if (fault === 'PV deficit') { h.put('import', 400); h.put('export', 0); }
+        if (fault === 'house fuse') h.put('h1', 48);
+        if (fault === 'operator') h.grant([7], {hardBudgetW: 1610});
+        if (fault === 'device current') h.put('feedbackAvailable', 7);
+        if (fault === 'device current') h.output.devices[0].ids.available = 'feedbackAvailable';
+        await h.output.tick();
+        assert.deepEqual(h.writes, fault === 'house fuse' ? [{id: 'allow', val: 0}]
+            : [{id: 'cmd', val: fault === 'PV deficit' ? 6 : 7}]);
+    });
+});
+
+test('issue123 a held response keeps its peer reservation until a new physical reply frees it', async () => {
+    const h = await unansweredParallelIncrease({count: 2});
+    h.grant([7, 8]); await h.output.tick();
+    assert.deepEqual(h.writes, [], 'peer cannot spend the held 9-A reservation');
+    assert.equal(h.output.devices[0].lastA, 9);
+    h.measure(0, 9); await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'cmd', val: 7}]);
+    h.ack('feedback', 7); await h.output.tick();
+    assert.equal(h.writes.some(write => write.id === 'cmd1'), false, 'current ACK alone cannot free watts');
+    h.measure(0, 7); h.put('export', 1000); await h.output.tick();
+    assert.ok(h.writes.some(write => write.id === 'cmd1' && write.val === 8));
+});
+
+test('issue123 expired electrical wait is explicit and does not refresh its deadline or fabricate confirmation', async () => {
+    const h = await unansweredParallelIncrease(); await h.output.tick();
+    const response = h.output.devices[0].response, deadline = response.ackAt + h.output.responseSettleTimeoutMs();
+    h.advance(46000); h.grant([7]); h.measure(0, 5.8); h.ack('feedback', 9);
+    await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'cmd', val: 7}]);
+    const diagnostic = JSON.parse(h.states.get('ems.0.Devices.Wallbox0.IncreaseBudget_JSON').val);
+    assert.equal(diagnostic.responseDeadlineAt, deadline);
+    assert.equal(diagnostic.responseState, 'limited');
+    assert.ok(diagnostic.timestamp > deadline);
+});
+
+test('issue123 a budget poll preceding the last command cannot fund a new increase despite valid source age', async () => {
+    const h = await unansweredParallelIncrease();
+    h.advance(6000); h.grant([10]); h.measure(0, 9); h.ack('feedback', 9);
+    const commandAt = h.output.devices[0].response.at;
+    h.put('import', 0, {ts: commandAt - 1}); h.put('export', 5000, {ts: commandAt - 1});
+    await h.output.tick(); assert.deepEqual(h.writes, []);
+    const diagnostic = JSON.parse(h.states.get('ems.0.Devices.Wallbox0.IncreaseBudget_JSON').val);
+    assert.equal(diagnostic.freshIncreaseBudget, false);
+    assert.equal(diagnostic.decision, 'await-new-budget');
+    h.put('import', 0); h.put('export', 5000); await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'cmd', val: 10}]);
+});
+
+test('issue123 pre-command current and power inside tolerance never count as a new response', async () => {
+    const h = await unansweredParallelIncrease();
+    h.advance(6000); h.grant([10]); h.measure(0, 9); h.ack('feedback', 9);
+    const commandAt = h.output.devices[0].response.at;
+    for (const id of ['power', 'i1', 'i2', 'i3']) h.put(id, h.states.get(id).val, {ts: commandAt - 1});
+    await h.output.tick(); assert.deepEqual(h.writes, []);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'vehicle_response');
+    h.measure(0, 9); await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'cmd', val: 10}]);
+});
+
+test('issue123 a hard current reduction smaller than a held command also obeys its new soft grant without OFF', async () => {
+    const h = await unansweredParallelIncrease();
+    h.output.devices[0].ids.available = 'feedbackAvailable';
+    h.put('feedbackAvailable', 8); // Hard 8 A, soft 7 A, unanswered old 9 A.
+    await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'cmd', val: 7}]);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputFault').val, '');
+});
+
+test('issue123 original live budgets cap mandatory increases below an older still-valid allocation', async t => {
+    const fixtures = [
+        {seq: 27749, at: 1791553594017, previousA: 7, targetA: 9, expectedA: 8,
+            commandAt: 1791553586022, ackAt: 1791553586171, allocationAt: 1791553591015,
+            powerW: 1470, powerAt: 1791553591246, currentA: 6.6, currentAt: 1791553591188,
+            importAt: 1791553593869, exportW: 666.1, exportAt: 1791553593871},
+        {seq: 27856, at: 1791553606022, previousA: 7, targetA: 10, expectedA: 8,
+            commandAt: 1791553598018, ackAt: 1791553598205, allocationAt: 1791553603017,
+            powerW: 1470, powerAt: 1791553605945, currentA: 6.6, currentAt: 1791553605907,
+            importAt: 1791553605876, exportW: 695.3, exportAt: 1791553605883},
+        {seq: 29220, at: 1791553834017, previousA: 6, targetA: 9, expectedA: 7,
+            commandAt: 1791553826021, ackAt: 1791553826199, allocationAt: 1791553831016,
+            powerW: 1290, powerAt: 1791553831031, currentA: 5.8, currentAt: 1791553831010,
+            importAt: 1791553833790, exportW: 590.6, exportAt: 1791553833792}
+    ];
+    for (const fixture of fixtures) await t.test(`raw session 1791548168417 / sequence ${fixture.seq}`, async () => {
+        const h = parallelSetup(1); h.put('soc', 10); await h.startParallel(); h.advance(6000);
+        const offset = 1006000 - fixture.at, raw = ts => ts + offset;
+        const d = h.output.devices[0];
+        d.lastA = fixture.previousA; d.pending = null; d.response = null;
+        d.lastAt = raw(fixture.ackAt); d.electricalCommandAt = raw(fixture.commandAt);
+        h.put('feedback', fixture.previousA, {ts: raw(fixture.ackAt)});
+        h.put('power', fixture.powerW / 1000, {ts: raw(fixture.powerAt)});
+        h.put('i1', fixture.currentA, {ts: raw(fixture.currentAt)});
+        h.put('import', 0, {ts: raw(fixture.importAt)});
+        h.put('export', fixture.exportW, {ts: raw(fixture.exportAt)});
+        h.grant([fixture.targetA]);
+        const id = 'ems.0.Control.ParallelWallboxAllocation_JSON';
+        const grant = JSON.parse(h.states.get(id).val); grant.timestamp = raw(fixture.allocationAt);
+        h.put(id, JSON.stringify(grant), {ts: raw(fixture.allocationAt)});
+        h.writes.length = 0; await h.output.tick();
+        assert.deepEqual(h.writes, [{id: 'cmd', val: fixture.expectedA}]);
+        const diagnostic = JSON.parse(h.states.get('ems.0.Devices.Wallbox0.IncreaseBudget_JSON').val);
+        assert.equal(diagnostic.liveBudgetW, fixture.powerW - 100 + fixture.exportW);
+        assert.ok(fixture.expectedA * 230 <= diagnostic.liveBudgetW);
+        assert.ok(fixture.targetA * 230 > diagnostic.liveBudgetW);
+        assert.equal(diagnostic.authorizedMinimumW, 1380);
+    });
+});
