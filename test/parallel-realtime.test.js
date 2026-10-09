@@ -367,6 +367,42 @@ test('coordinated battery keeps the 4.2 kW global cap separate from the 3.2 kW s
     assert.ok(targets.watts.reduce((sum, watts) => sum + watts, 0) + 1000 <= allocation.hardBudgetW);
 });
 
+test('parallel provenance never labels mandatory grid floors as available PV', () => {
+    const h = engine({production: true}); h.exclude(2);
+    h.put('DP_WB0_SOC', 10); h.put('DP_WB1_SOC', 10);
+    h.owned(0, 6); h.owned(1, 6);
+    let targets = h.update(0, 6000);
+    let grant = JSON.parse(h.states.get('ems.0.Control.ParallelWallboxAllocation_JSON').val);
+    assert.deepEqual(targets.amps, [6, 6, 0]);
+    assert.deepEqual(grant.allocations.map(entry => entry.pvBudgetW), [0, 0, 0],
+        'the forced grid floors authorize charging, but are not PV continuation proof');
+    targets = h.update(4140, 6000);
+    grant = JSON.parse(h.states.get('ems.0.Control.ParallelWallboxAllocation_JSON').val);
+    assert.ok(grant.allocations.reduce((sum, entry) => sum + entry.pvBudgetW, 0) <= 4140);
+    for (const entry of grant.allocations) {
+        assert.ok(entry.pvBudgetW >= 0 && entry.pvBudgetW <= targets.watts[entry.wb]);
+        if (entry.authorized)
+            assert.equal(JSON.parse(h.states.get(`ems.0.Control.Wallbox${entry.wb}.AllocationDiagnostics_JSON`).val).pvBudgetW,
+                entry.pvBudgetW, 'the per-car explanation uses the same independent PV share');
+    }
+});
+
+test('PV continuation proof uses confirmed three-phase capacity rather than the smaller one-phase cap', () => {
+    const h = engine({production: true, wallboxPriority: 1,
+        wb1PhaseControlMode: 'script', wb1PhaseModeId: 'raw.phase1'});
+    h.exclude(0); h.exclude(2);
+    h.put('ems.0.Vehicles.Wallbox1.PhaseSwitchEnabled', true);
+    h.put('ems.0.Vehicles.Wallbox1.MaximumPhases', 3);
+    h.put('ems.0.Vehicles.Wallbox1.MaxCurrent1P_A', 6);
+    h.put('raw.phase1', 2); h.owned(1, 6, 4140, 3);
+    const targets = h.update(4140);
+    const grant = JSON.parse(h.states.get('ems.0.Control.ParallelWallboxAllocation_JSON').val);
+    assert.equal(targets.phases[1], 3);
+    assert.equal(targets.amps[1], 6);
+    assert.equal(grant.allocations.find(entry => entry.wb === 1).pvBudgetW, 4140,
+        'a valid 6 A three-phase PV session needs 4140 W of continuation proof');
+});
+
 test('secondary minimum-SoC car requests one phase only under EMS phase authority', () => {
     for (const authority of ['ems', 'script']) {
         const h = engine({production: true, wb1PhaseControlMode: authority,

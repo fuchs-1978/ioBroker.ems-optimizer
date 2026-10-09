@@ -315,6 +315,119 @@ test('zero soft grants preserve an established minimum run/stop timer but never 
     assert.equal(waiting.writes.some(w => w.id === 'cmd' || w.id === 'allow'), false);
 });
 
+test('completed minimum charge stops only its own car while a below-minimum peer stays on six amps', async () => {
+    const h = parallelSetup();
+    h.config.wallboxMinimumRunTimeS = 600; h.config.wallboxStopDelayS = 600;
+    h.put('soc', 19); h.put('soc1', 19); h.put('export', 0); h.put('import', 2760);
+    await h.startParallel();
+    h.advance(1000); h.grant([6, 6]); await h.output.tick(); h.writes.length = 0;
+    const releaseCompletedDemand = () => {
+        // A soft zero target is still valid for an established output; its
+        // real residual load remains reserved until OFF and electrical quiet.
+        h.grant([0, 6], {budgetW: 2760});
+        const grant = JSON.parse(h.states.get('ems.0.Control.ParallelWallboxAllocation_JSON').val);
+        grant.allocations[0].authorized = true;
+        grant.allocations[0].minimumW = 1380;
+        h.put('ems.0.Control.ParallelWallboxAllocation_JSON', JSON.stringify(grant));
+    };
+    h.advance(1000); h.put('soc', 20); releaseCompletedDemand(); await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val, /Mindest-SoC/);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox1.OutputActive').val, true);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox1.OutputCommand_A').val, 6);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val, 1380);
+    h.advance(1000); h.ack('allow', 0); releaseCompletedDemand(); await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.StopPowerPending').val, true);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox1.OutputActive').val, true);
+    h.advance(1000); h.electricalOff(0); h.put('import', 1380);
+    releaseCompletedDemand(); await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val, 0);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputOwned').val, false);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox1.OutputActive').val, true);
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}], 'no OFF/ON or extra start delay for the peer');
+});
+
+test('a stale positive parallel grant containing no PV cannot prolong an ended grid minimum charge', async () => {
+    const h = parallelSetup();
+    h.config.wallboxMinimumRunTimeS = 600; h.config.wallboxStopDelayS = 600;
+    h.put('soc', 19); h.put('soc1', 19); h.put('export', 0); h.put('import', 2760);
+    await h.startParallel();
+    h.advance(1000); h.grant([6, 6]); await h.output.tick(); h.writes.length = 0;
+    h.advance(1000); h.put('soc', 20); h.grant([6, 6]);
+    const grant = JSON.parse(h.states.get('ems.0.Control.ParallelWallboxAllocation_JSON').val);
+    grant.allocations[0].pvBudgetW = 0;
+    h.put('ems.0.Control.ParallelWallboxAllocation_JSON', JSON.stringify(grant));
+    await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}],
+        'positive old mandatory allocation is not a new permission for grid energy');
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val, /Mindest-SoC/);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox1.OutputActive').val, true);
+});
+
+test('allocated PV continues above minimum despite a grid-backed peer, and a later PV dip uses 600 seconds', async () => {
+    const h = parallelSetup();
+    h.config.wallboxMinimumRunTimeS = 600; h.config.wallboxStopDelayS = 600;
+    h.put('soc', 19); h.put('soc1', 19); h.put('export', 0); h.put('import', 2760);
+    await h.startParallel();
+    h.advance(1000); h.grant([6, 6]); await h.output.tick(); h.writes.length = 0;
+    const assignPv = (pvW, targetA = 6) => {
+        h.grant([targetA, 6], {budgetW: 2760});
+        const grant = JSON.parse(h.states.get('ems.0.Control.ParallelWallboxAllocation_JSON').val);
+        grant.allocations[0].pvBudgetW = pvW;
+        grant.allocations[0].authorized = true;
+        grant.allocations[0].minimumW = 1380;
+        h.put('ems.0.Control.ParallelWallboxAllocation_JSON', JSON.stringify(grant));
+    };
+    h.advance(1000); h.put('soc', 20); h.put('import', 1380); assignPv(1380);
+    await h.output.tick();
+    assert.deepEqual(h.writes, [], 'the peer grid import does not cancel this car\'s allocated PV');
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, true);
+    h.advance(1000); h.put('import', 2760); assignPv(0, 0); await h.output.tick();
+    assert.deepEqual(h.writes, []);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.StopDelayRemaining_s').val, 600);
+    h.advance(599000); assignPv(0, 0); await h.output.tick();
+    assert.deepEqual(h.writes, []);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.StopDelayRemaining_s').val, 1);
+    h.advance(1000); assignPv(0, 0); await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox1.OutputActive').val, true);
+    assert.doesNotMatch(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val, /Mindest-SoC/);
+});
+
+test('a PV change after the last allocation is reconciled before deciding minimum-charge completion', async () => {
+    const h = parallelSetup();
+    h.config.wallboxMinimumRunTimeS = 600; h.config.wallboxStopDelayS = 600;
+    h.put('soc', 19); h.put('soc1', 19); h.put('export', 0); h.put('import', 2760);
+    await h.startParallel();
+    const assignPv = (pvW, targetA = 6) => {
+        h.grant([targetA, 6], {budgetW: 2760});
+        const grant = JSON.parse(h.states.get('ems.0.Control.ParallelWallboxAllocation_JSON').val);
+        grant.allocations[0].pvBudgetW = pvW;
+        grant.allocations[0].authorized = true;
+        grant.allocations[0].minimumW = 1380;
+        h.put('ems.0.Control.ParallelWallboxAllocation_JSON', JSON.stringify(grant));
+    };
+    h.advance(1000); assignPv(0); await h.output.tick(); h.writes.length = 0;
+    // Both the observed SoC edge and real PV recovery postdate this grant.
+    // Its old zero PV attribution cannot prove there is still no PV now.
+    h.advance(1000); h.put('soc', 20); h.put('import', 0); h.put('export', 200);
+    await h.output.tick();
+    assert.deepEqual(h.writes, []);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, true);
+    h.advance(1000); assignPv(1380); h.put('import', 1380); h.put('export', 0);
+    await h.output.tick();
+    assert.deepEqual(h.writes, [], 'a new qualified PV allocation continues the existing charging session');
+    h.advance(1000); assignPv(0, 0); h.put('import', 2760); await h.output.tick();
+    assert.deepEqual(h.writes, []);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.StopDelayRemaining_s').val, 600);
+    h.advance(599000); assignPv(0, 0); await h.output.tick();
+    assert.deepEqual(h.writes, []);
+    h.advance(1000); assignPv(0, 0); await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+    assert.doesNotMatch(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val, /Mindest-SoC/);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox1.OutputActive').val, true);
+});
+
 test('stale shared grants stop productive cars rather than maintaining an unprovable parallel allocation', async () => {
     const h = parallelSetup(); await h.startParallel();
     h.advance(10001); h.writes.length = 0; await h.output.tick();

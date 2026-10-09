@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.55**
+Aktuelle Version: **0.17.0-alpha.56**
 
 Prüfung zu Tages-Issue #98: [produktive Diagnose, Phasen-Rückfallvertrag,
 Reproduktion und nächste SQL-Abnahme](docs/issue98-live-diagnostics.md).
@@ -45,6 +45,12 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.56 – Netz-Mindestladung ohne Nachlauf beenden
+
+Erreicht eine beobachtete Mindest-SoC-Ladung ihren Mindestwert und besteht kein weiteres nutzbares PV-/Preisbudget oder anderer Pflichtladebedarf, sendet der Produktivausgang AUS ohne die eingestellte Mindestlaufzeit oder Ausschaltverzögerung abzuwarten. Im Parallelbetrieb wird dafür der unabhängig ausgewiesene PV-Anteil verwendet; Pflichtnetzladung anderer Fahrzeuge ist kein PV-Nachweis. Eine vor der SoC-Kante berechnete Zuteilung wird erst nach dem nächsten normalen Budgettakt beurteilt.
+
+Bei genügend PV oder einer anderen gültigen Ladepflicht wird weitergeladen. Nach belegter PV-Fortsetzung oberhalb Mindest-SoC behalten spätere Leistungsdellen die normalen Timer, beispielsweise 600 s. Ziel-SoC, Schutzgrenzen, AUS-Rückmeldung und elektrische Ruhe bleiben maßgeblich. Ein Neustart oberhalb Mindest-SoC erfindet keinen früheren Mindestabschluss. [Verhalten, Regressionen und nächste SQL-Prüfung](docs/minimum-grid-charge-end.md).
 
 ## Neu in 0.17.0-alpha.55 – Mindestladung während des Peer-Nachlaufs
 
@@ -1749,6 +1755,7 @@ Adapters sind.
 ## Entwicklungshistorie
 
 | Version | Änderung |
+| 0.17.0-alpha.56 | Beobachtete Netz-Mindestladung endet ohne Nachlauf; PV-Fortsetzung erhält normale Timer, andere Mindestladungen und bestätigte Leistungsreservierungen bleiben geschützt. |
 |---|---|
 | 0.17.0-alpha.55 | Bereits bestätigte laufende 1P-Mindestladung bleibt beim Nachlauf einer anderen Wallbox erhalten; neue Starts, Phasenwechsel und reale Schutzbudgets bleiben begrenzt. |
 | 0.17.0-alpha.54 | Begrenzte unabhängige go-e-Quellendiagnose, erhaltener AUS-Timeoutbefund und klare Anzeige der bleibenden Sperre nach spätem AUS; Schutzvertrag unverändert. |
