@@ -170,6 +170,135 @@ test('owned stopped or ineligible vehicle watts stay reserved until the real OFF
     assert.ok(targets.watts[0] + targets.reserve[1] <= 6000);
 });
 
+test('finishing Mii minimum charge does not interrupt the already charging EQV floor', () => {
+    for (const hardW of [Infinity, 4200]) {
+        const h = engine({production: true}); h.exclude(2);
+        h.put('ems.0.Config.WallboxStopDelay_s', 600);
+        h.put('ems.0.Config.Wallbox0PriceChargingEnabled', false);
+        h.put('ems.0.Config.Wallbox1PriceChargingEnabled', false);
+        h.put('DP_WB0_SOC', 70.2); h.put('DP_WB0_MIN_SOC', 70);
+        h.put('DP_WB1_SOC', 79); h.put('DP_WB1_MIN_SOC', 80);
+        h.owned(0, 6); h.owned(1, 6);
+
+        // Reproduce 09 October 03:01: Mii has met its minimum, but its real
+        // 6 A remains committed until the productive stop/response completes.
+        const targets = h.update(0, hardW);
+        assert.deepEqual(targets.amps, [0, 6, 0], `${hardW} W hard limit`);
+        assert.equal(targets.reserve[0], 1380, 'the Mii stop delay does not release physical watts');
+        assert.equal(targets.reserve[1], 1380, 'the EQV remains on its own minimum charge');
+        assert.equal(targets.dhw, 0, 'mandatory grid charging is not heater surplus');
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputCommand_A').val, 6,
+            'the allocator does not fabricate the Mii OFF acknowledgement');
+        assert.equal(h.states.get('ems.0.Devices.Wallbox1.OutputCommand_A').val, 6,
+            'allocation does not write productive ampere commands');
+    }
+});
+
+test('one finishing car preserves both running minimum charges regardless of priority order', () => {
+    for (const finishing of [0, 1, 2]) {
+        const h = engine({production: true, wallboxPriority: (finishing + 1) % 3});
+        for (let wb = 0; wb < 3; wb++) {
+            h.put(`DP_WB${wb}_SOC`, wb === finishing ? 70.2 : 69);
+            h.put(`DP_WB${wb}_MIN_SOC`, 70);
+            h.put(`ems.0.Config.Wallbox${wb}PriceChargingEnabled`, false);
+            h.owned(wb, 6);
+        }
+        const targets = h.update(0, 4200);
+        assert.deepEqual(targets.amps, [0, 1, 2].map(wb => wb === finishing ? 0 : 6),
+            `finishing Wallbox${finishing}`);
+        assert.deepEqual(targets.reserve, [1380, 1380, 1380]);
+        assert.ok(targets.reserve.reduce((sum, watts) => sum + watts, 0) <= 4200,
+            'three outstanding physical floors still fit the actual hard cap');
+    }
+});
+
+test('continuing minimum charge still waits for physical headroom under a real hard cap', () => {
+    for (const {hardW, heaterW} of [{hardW: 2500, heaterW: 0}, {hardW: 4200, heaterW: 1500}]) {
+        const h = engine({production: true, dhwControlEnabled: heaterW > 0}); h.exclude(2);
+        h.put('DP_WB0_SOC', 70.2); h.put('DP_WB0_MIN_SOC', 70);
+        h.put('DP_WB1_SOC', 79); h.put('DP_WB1_MIN_SOC', 80);
+        h.owned(0, 6); h.owned(1, 6);
+        h.put('ems.0.Devices.MyPV_DHW.OutputReservedPower_W', heaterW);
+        h.put('DP_DHW_OUTPUT1', heaterW);
+        let targets = h.update(0, hardW);
+        assert.deepEqual(targets.amps, [0, 0, 0], `${hardW} W hard cap with ${heaterW} W heater reserve`);
+        assert.equal(targets.reserve[0], 1380, 'a pending stop cannot free its physical reservation');
+
+        h.put('ems.0.Devices.Wallbox0.OutputActive', false);
+        h.put('ems.0.Devices.Wallbox0.OutputOwned', false);
+        h.put('ems.0.Devices.Wallbox0.OutputCommand_A', 0);
+        h.put('DP_WB0_POWER', 0); h.put('DP_WB0_L1_A', 0);
+        h.put('raw.allow0', 0); h.put('raw.amps0', 0);
+        targets = h.update(0, hardW);
+        assert.deepEqual(targets.amps, [0, 6, 0], 'confirmed physical Mii OFF restores enough headroom');
+        assert.equal(targets.reserve[0], 0);
+        assert.ok(targets.reserve[1] + heaterW <= hardW);
+    }
+});
+
+test('a new inactive minimum charge cannot reuse another cars pending stop reservation', () => {
+    const h = engine({production: true}); h.exclude(2);
+    h.put('DP_WB0_SOC', 70.2); h.put('DP_WB0_MIN_SOC', 70);
+    h.put('DP_WB1_SOC', 79); h.put('DP_WB1_MIN_SOC', 80);
+    h.owned(0, 6);
+    let targets = h.update(0, 4200);
+    assert.deepEqual(targets.amps, [0, 0, 0], 'continuation protection must not authorize a new start');
+    assert.equal(targets.reserve[0], 1380);
+
+    h.put('ems.0.Devices.Wallbox0.OutputActive', false);
+    h.put('ems.0.Devices.Wallbox0.OutputOwned', false);
+    h.put('ems.0.Devices.Wallbox0.OutputCommand_A', 0);
+    h.put('DP_WB0_POWER', 0); h.put('DP_WB0_L1_A', 0);
+    h.put('raw.allow0', 0); h.put('raw.amps0', 0);
+    targets = h.update(0, 4200);
+    assert.deepEqual(targets.amps, [0, 6, 0], 'a new minimum charge can start once old watts are really free');
+});
+
+test('running minimum floor protection never bypasses invalid productive sources', () => {
+    for (const cause of ['stale-power', 'unconfirmed-car', 'bad-quality-error']) {
+        const h = engine({production: true}); h.exclude(2);
+        h.put('DP_WB0_SOC', 70.2); h.put('DP_WB0_MIN_SOC', 70);
+        h.put('DP_WB1_SOC', 79); h.put('DP_WB1_MIN_SOC', 80);
+        h.owned(0, 6); h.owned(1, 6);
+        if (cause === 'stale-power') h.put('DP_WB1_POWER', 1.38, {ts: Date.now() - 31000});
+        if (cause === 'unconfirmed-car') h.put('DP_WB1_CAR', 2, {ack: false});
+        if (cause === 'bad-quality-error') h.put('raw.error1', 0, {q: 64});
+        const targets = h.update(0, 4200);
+        assert.equal(targets.amps[1], 0, cause);
+        assert.equal(targets.reserve[1], 1380, `${cause}: unknown physical load stays reserved`);
+        const allocation = JSON.parse(h.states.get('ems.0.Control.ParallelWallboxAllocation_JSON').val);
+        assert.equal(allocation.allocations.find(item => item.wb === 1).authorized, false, cause);
+    }
+});
+
+test('running minimum continuation cannot authorize a different topology or unconfirmed allow', () => {
+    for (const cause of ['three-phase', 'phase-pending', 'phase-transition', 'allow-command-echo']) {
+        const h = engine({production: true, wb1PhaseControlMode: 'ems', wb1PhaseModeId: 'raw.phase1'});
+        h.exclude(2);
+        h.put('DP_WB0_SOC', 70.2); h.put('DP_WB0_MIN_SOC', 70);
+        h.put('DP_WB1_SOC', 79); h.put('DP_WB1_MIN_SOC', 80);
+        h.owned(0, 6); h.owned(1, 6);
+        h.put('raw.phase1', 1);
+        if (cause === 'three-phase') {
+            h.put('ems.0.Vehicles.Wallbox1.PhaseSwitchEnabled', true);
+            h.put('ems.0.Vehicles.Wallbox1.MaximumPhases', 3);
+            h.put('raw.phase1', 2);
+            h.owned(1, 6, 4140, 3);
+            h.plans[1] = {valueW: 0, phases: 3};
+        }
+        if (cause === 'phase-pending') h.put('ems.0.Devices.Wallbox1.PhaseSwitchPending', true);
+        if (cause === 'phase-transition') h.put('ems.0.Devices.Wallbox1.PhaseTransitionActive', true);
+        if (cause === 'allow-command-echo') h.put('raw.allow1', 1, {ack: false});
+
+        // No restrictive hard cap: a zero target must come from the narrow
+        // continuation/feedback gate, not accidentally from capacity denial.
+        const targets = h.update(0, Infinity);
+        assert.equal(targets.amps[1], 0, cause);
+        assert.equal(targets.reserve[1], cause === 'three-phase' ? 4140 : 1380,
+            `${cause}: physical commitment is retained until real response`);
+    }
+});
+
 test('donor reduction reserves actual high-water draw before priority gets more watts', () => {
     const h = engine({production: true}); h.exclude(2);
     h.owned(0, 6); h.owned(1, 20);

@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.54**
+Aktuelle Version: **0.17.0-alpha.55**
 
 Prüfung zu Tages-Issue #98: [produktive Diagnose, Phasen-Rückfallvertrag,
 Reproduktion und nächste SQL-Abnahme](docs/issue98-live-diagnostics.md).
@@ -45,6 +45,10 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.55 – Mindestladung während des Peer-Nachlaufs
+
+Eine bereits bestätigte, laufende einphasige Mindest-SoC-Ladung behält ihr Mindestbudget, wenn ein anderes Fahrzeug seinen Mindest-SoC erreicht und während der Ausschaltverzögerung noch Leistung reserviert. Die auslaufende Wallbox darf ihre eingestellte Verzögerung durchlaufen; die weiterhin benötigte Mindestladung wird dadurch nicht ebenfalls zum Stopp gezwungen. Reale Hausanschluss-/§14a-/Gerätegrenzen und sämtliche offenen Leistungsreservierungen bleiben maßgeblich. Die Ausnahme gilt weder für neue Starts noch für unbestätigte Rückmeldungen oder Phasenwechsel. [Belegtes Nacht-Ereignis, Regressionen und nächste Betriebsprüfung](docs/parallel-minimum-retention.md). Keine automatische Installation oder zugesagten Scorepunkte.
 
 ## Neu in 0.17.0-alpha.54 – go-e-Stoppdiagnose und bleibende Sperre
 
@@ -1746,6 +1750,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.55 | Bereits bestätigte laufende 1P-Mindestladung bleibt beim Nachlauf einer anderen Wallbox erhalten; neue Starts, Phasenwechsel und reale Schutzbudgets bleiben begrenzt. |
 | 0.17.0-alpha.54 | Begrenzte unabhängige go-e-Quellendiagnose, erhaltener AUS-Timeoutbefund und klare Anzeige der bleibenden Sperre nach spätem AUS; Schutzvertrag unverändert. |
 | 0.17.0-alpha.53 | Parallele Mindest-SoC-Grundladung, Mehrleistung nach bestehender Priorität, sichere gemeinsame Last-/Phasenreservierung und passende Prognose-/SQL-Diagnose; sequenzieller Fallback bleibt einstellbar. |
 | 0.17.0-alpha.52 | Einheitlich 30 s Quellenalter für zugeordnete SMA-Gesamt-/Phasen-Netzwerte und Hausanschluss-Stromfallback in Regelung, Schutz und Diagnose; asynchrone Quellenfehlerdiagnose auch für Hausphasen. |
