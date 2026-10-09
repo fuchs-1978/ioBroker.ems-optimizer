@@ -755,6 +755,25 @@ test('heat-pump consumption is deducted from the shared LPC budget', async () =>
     await h.output.tick();
     assert.deepEqual(h.writes,[{id:'cmd',val:8}]);
 });
+test('wallbox shared budget normalizes WP kW and requires fresh total consumption', () => {
+    const h = setup(); h.mapping.DP_HEAT_PUMP_POWER = 'heatPump';
+    h.config.heatPumpPowerUnit = 'kW'; h.config.heatPumpPowerScope = 'total';
+    h.put('ems.0.Devices.HeatPump.Present', true); h.put('heatPump', 2);
+    h.put('par14a', true); h.put('lpc', 'limited'); h.put('lpcLimit', 4000);
+    assert.equal(h.output.gridOperatorLimit(h.mapping).budgetW, 2000);
+    for (const extra of [{val: null}, {ack: false}, {q: 2}, {ts: Date.now() - 31000}]) {
+        h.put('heatPump', 2, extra);
+        const limit = h.output.gridOperatorLimit(h.mapping);
+        assert.equal(limit.valid, false); assert.equal(limit.budgetW, 0);
+    }
+    h.put('heatPump', 2); h.config.heatPumpPowerScope = 'inverter';
+    assert.equal(h.output.gridOperatorLimit(h.mapping).valid, false);
+    h.put('ems.0.Devices.HeatPump.Present', false);
+    assert.equal(h.output.gridOperatorLimit(h.mapping).budgetW, 4000);
+    h.put('ems.0.Devices.HeatPump.Present', true); h.put('par14a', false);
+    h.put('lpc', 'unlimitedAutonomous');
+    assert.equal(h.output.gridOperatorLimit(h.mapping).valid, true);
+});
 test('directional phase power prevents export current from being mistaken for import', async () => {
     const h = setup();
     Object.assign(h.mapping, {DP_HA_L1_IMPORT_W:'pi1',DP_HA_L2_IMPORT_W:'pi2',DP_HA_L3_IMPORT_W:'pi3',

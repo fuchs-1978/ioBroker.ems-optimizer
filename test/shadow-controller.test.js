@@ -15,6 +15,7 @@ function latestRecord(h) {
 }
 const {createEngineContext, MODULES} = require('../lib/engine-loader');
 const gridConstraints = require('../lib/grid-constraints');
+const heatPumpTelemetryParser = require('../lib/heatpump-telemetry');
 
 async function fixture({battery = false, heating = false, wallbox = true, heatPump = false,
     surplusW = 6000, delayS = 0, slowS = 2, nowMs = Date.now()} = {}) {
@@ -54,7 +55,7 @@ async function fixture({battery = false, heating = false, wallbox = true, heatPu
         static now() { return now; }
     }
     const make = (target, nativeConfig = config) => createEngineContext('ems.0', mapping, {
-        Date: Clock, nativeConfig, gridConstraints,
+        Date: Clock, nativeConfig, gridConstraints, heatPumpTelemetryParser,
         getState: id => target.get(id), existsState: id => target.has(id),
         setState: (id, val) => target.set(id, {val, ack: true, ts: now, q: 0}),
         createState: (id, val) => { if (!target.has(id)) target.set(id, {val, ack: true, ts: now, q: 0}); },
@@ -66,6 +67,7 @@ async function fixture({battery = false, heating = false, wallbox = true, heatPu
     for (const key of ['System.DataValid', 'Plan.Valid', 'Control.Enabled', 'Config.DHWParallelDistributionEnabled',
         'Devices.MyPV_DHW.Present', 'Devices.MyPV_DHW.ControlEnabled']) own(key, true);
     own('System.RealOutputsEnabled', false); own('System.LastUpdate', now); own('Plan.LastUpdate', now);
+    own('Control.Valid', true); own('Control.LastUpdate', now);
     own('Config.DHWCommissioningMaxPower_W', 9000); own('Config.DHWControllerMaxPower_W', 9000);
     own('Config.SlowControlCycle_s', slowS); own('Config.WallboxStartDelay_s', delayS);
     own('Config.WallboxStartReserve_W', 300); own('Config.WallboxMaxStep_A', 6);
@@ -124,7 +126,8 @@ async function fixture({battery = false, heating = false, wallbox = true, heatPu
     const advance = ms => {
         now += ms;
         for (const s of states.values()) s.ts = now;
-        own('System.LastUpdate', now); own('Plan.LastUpdate', now); put(config.batteryHeartbeatId, now);
+        own('System.LastUpdate', now); own('Plan.LastUpdate', now); own('Control.LastUpdate', now);
+        put(config.batteryHeartbeatId, now);
     };
     const direct = () => {
         const copied = structuredClone(states);
@@ -225,8 +228,8 @@ test('heat pump uses the same coordinated PV budget and cooling protection', asy
     const h = await fixture({battery: true, heating: true, wallbox: false, heatPump: true, surplusW: 6000});
     const expected = h.direct();
     await h.tick();
-    assert.equal(h.value('HeatPump.Valid'), true);
-    assert.equal(h.value('Targets.HeatPumpMode'), 'BOOST');
+    assert.equal(h.value('HeatPump.Valid'), true, h.value('HeatPump.Summary'));
+    assert.equal(h.value('Targets.HeatPumpMode'), 'BOOST', h.value('HeatPump.Summary'));
     assert.equal(h.value('Targets.HeatPumpMode'), expected.get('ems.0.Devices.HeatPump.RequestedMode').val);
     h.put('hk.cooling', true); h.advance(2000); await h.tick();
     assert.equal(h.value('HeatPump.Valid'), false);
@@ -246,6 +249,32 @@ test('coordinated WP reclaimable PV is not overwritten by lower raw net export',
     assert.equal(h.value('Targets.MyPV_Heating_W'), 0);
     assert.equal(h.value('HeatPump.Valid'), false);
     assert.equal(h.value('Targets.HeatPumpMode'), 'NORMAL');
+});
+
+test('shadow WP actuals normalize assigned kW and retain stale power as unknown', async () => {
+    const h = await fixture({wallbox: false, heatPump: true, nowMs: 1000000});
+    h.adapter.config.heatPumpPowerUnit = 'kW';
+    h.adapter.config.heatPumpPowerScope = 'total';
+    h.put('DP_HEAT_PUMP_POWER', 2);
+    await h.tick();
+    assert.equal(h.value('Actuals.HeatPump_W'), 2000);
+    assert.equal(JSON.parse(h.value('Snapshot_JSON')).actuals.HeatPump, 2000);
+    assert.equal(JSON.parse(h.value('Snapshot_JSON')).consumers.HeatPump.powerScope, 'total');
+    assert.equal(JSON.parse(h.value('Snapshot_JSON')).consumers.HeatPump.powerValid, true);
+    h.advance(31000);
+    h.put('DP_HEAT_PUMP_POWER', 2, {ts: 1000000});
+    await h.tick();
+    assert.equal(h.value('Actuals.HeatPump_W'), null);
+    assert.equal(JSON.parse(h.value('Snapshot_JSON')).actuals.HeatPump, null,
+        'a fresh grid sample cannot refresh an old independent WP source');
+    assert.equal(JSON.parse(h.value('Snapshot_JSON')).consumers.HeatPump.powerValid, false);
+    h.put('DP_HEAT_PUMP_POWER', 0);
+    await h.tick();
+    assert.equal(h.value('Actuals.HeatPump_W'), 0);
+    h.own('Devices.HeatPump.Present', false);
+    await h.tick();
+    assert.equal(h.value('Actuals.HeatPump_W'), null,
+        'old source values of an absent future WP are not measured plant load');
 });
 
 test('fresh SoC, user release and device enable changes override previous shadow decisions', async () => {

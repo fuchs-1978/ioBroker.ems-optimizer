@@ -4,13 +4,14 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const vm = require('node:vm');
 const {SMA_GRID_MAX_AGE_MS} = require('../lib/source-diagnostics');
+const heatPumpTelemetryParser = require('../lib/heatpump-telemetry');
 const fs = require('node:fs');
 const path = require('node:path');
 
 function engine(overrides = {}) {
     let now = Date.UTC(2026, 8, 21, 12);
     const states = new Map(), foreignWrites = [];
-    const config = {globalWriteEnabled: true, heatPumpAdviceEnabled: true,
+    const config = {globalWriteEnabled: true, heatPumpAdviceEnabled: true, heatPumpPowerId: 'wpPower',
         heatPumpBufferTemperatureId: 'buffer', heatPumpHeatingTargetC: 45,
         heatingCoolingActiveId: 'cooling', ...overrides};
     class Clock extends Date {
@@ -18,7 +19,7 @@ function engine(overrides = {}) {
         static now() { return now; }
     }
     const put = (id, val, extra = {}) => states.set(id, {val, ts: now, ack: true, ...extra});
-    const context = vm.createContext({SMA_GRID_MAX_AGE_MS, nativeConfig: config, Date: Clock,
+    const context = vm.createContext({SMA_GRID_MAX_AGE_MS, heatPumpTelemetryParser, nativeConfig: config, Date: Clock,
         getState: id => states.get(id), existsState: id => states.has(id),
         createState: (id, val) => { if (!states.has(id)) put(id, val); },
         setState: put, writeForeignState: (...args) => foreignWrites.push(args), log: () => {}});
@@ -31,14 +32,16 @@ function engine(overrides = {}) {
     const run = source => vm.runInContext(source, context);
     run(`createStates(); createHeatPumpStates();
         CFG.dp.dynamicEnergyPriceEnabled='';CFG.dp.dynamicGridFeeEnabled='';`);
-    for (const suffix of ['System.RealOutputsEnabled', 'System.DataValid', 'Control.Enabled',
+    for (const suffix of ['System.RealOutputsEnabled', 'System.DataValid', 'Control.Enabled', 'Control.Valid',
         'Devices.HeatPump.Present', 'Devices.HeatPump.ControlEnabled']) put(`ems.0.${suffix}`, true);
     put('ems.0.System.LastUpdate', now);
+    put('ems.0.Control.LastUpdate', now);
     put('DP_GRID_IMPORT', 0); put('DP_GRID_EXPORT', 3000);
-    put('buffer', 40); put('cooling', false);
+    put('buffer', 40); put('cooling', false); put('wpPower', 0);
     const refresh = () => {
         for (const [id, state] of states) if (state.ack) put(id, state.val, {q: state.q});
         put('ems.0.System.LastUpdate', now);
+        put('ems.0.Control.LastUpdate', now);
     };
     return {run, put, states, config, foreignWrites, now: () => now,
         advance: (seconds, shouldRefresh = true) => { now += seconds * 1000; if (shouldRefresh) refresh(); },

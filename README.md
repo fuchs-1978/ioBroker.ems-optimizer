@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.56**
+Aktuelle Version: **0.17.0-alpha.57**
 
 Prüfung zu Tages-Issue #98: [produktive Diagnose, Phasen-Rückfallvertrag,
 Reproduktion und nächste SQL-Abnahme](docs/issue98-live-diagnostics.md).
@@ -45,6 +45,14 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.57 – Wärmepumpe und Admin vorbereiten
+
+Der Reiter **Wärmepumpe** trennt normierte W-/kW-Leistungsmessung mit Messumfang, optionale Verbindungs-/dekodierte SG-Ready-Rückmeldung, passive SG-Ready-2/3/4-Empfehlungen und getrennte Heiz-/Kühlboostwünsche. MAX benötigt eine eigene Freigabe und höhere PV-Hysterese. REDUCED ist weiterhin keine Abschaltung; eine automatische Preissperre in Zustand 1 ist noch nicht implementiert. Unbekannte Messwerte bleiben null, nur bestätigte gültige Nullmessungen sind 0 W.
+
+SG Ready 4 beeinflusst den Stiebel-Kühlbetrieb nicht. Ein eigener Kühlwunsch benötigt bestätigten Kühlbetrieb, frische Raum-/Taupunkt-/Vorlaufdaten, tatsächlichen PV-Spielraum und eine Taupunktgrenze. Boostwünsche verfallen bei ungültigen Daten, Master AUS oder aktiver/ungültiger Netzbetreiberbegrenzung. Für das gemeinsame §14a-/LPC-Restbudget ist eine gültige vollständige WP-Messung erforderlich; eine reine Invertermessung reicht nicht. Der gewöhnliche SMA-Netzfluss enthält den WP-Verbrauch bereits.
+
+Alle WP-Ausgaben bleiben **interne Empfehlungen**; es wird kein ISG-/Modbus-/KNX-Ausgang geschrieben. Alle neuen Freigaben sind standardmäßig AUS. Ungeklärte Einheit und Kodierung von Register 4259 werden nicht geraten. [Admin, Diagnoseobjekte, Registergrenzen und nächste Betriebsprüfung](docs/heatpump-preparation.md). Softwaretests ersetzen keine reale WP-Abnahme.
 
 ## Neu in 0.17.0-alpha.56 – Netz-Mindestladung ohne Nachlauf beenden
 
@@ -1755,8 +1763,9 @@ Adapters sind.
 ## Entwicklungshistorie
 
 | Version | Änderung |
-| 0.17.0-alpha.56 | Beobachtete Netz-Mindestladung endet ohne Nachlauf; PV-Fortsetzung erhält normale Timer, andere Mindestladungen und bestätigte Leistungsreservierungen bleiben geschützt. |
 |---|---|
+| 0.17.0-alpha.57 | Passive WP-Mess-/SG-Ready-Vorbereitung, getrennte Heiz-/Kühlboostwünsche mit Taupunktgrenze und übersetzter Admin; normierte vollständige WP-Messung für §14a, keine externen WP-Schreibausgänge. |
+| 0.17.0-alpha.56 | Beobachtete Netz-Mindestladung endet ohne Nachlauf; PV-Fortsetzung erhält normale Timer, andere Mindestladungen und bestätigte Leistungsreservierungen bleiben geschützt. |
 | 0.17.0-alpha.55 | Bereits bestätigte laufende 1P-Mindestladung bleibt beim Nachlauf einer anderen Wallbox erhalten; neue Starts, Phasenwechsel und reale Schutzbudgets bleiben begrenzt. |
 | 0.17.0-alpha.54 | Begrenzte unabhängige go-e-Quellendiagnose, erhaltener AUS-Timeoutbefund und klare Anzeige der bleibenden Sperre nach spätem AUS; Schutzvertrag unverändert. |
 | 0.17.0-alpha.53 | Parallele Mindest-SoC-Grundladung, Mehrleistung nach bestehender Priorität, sichere gemeinsame Last-/Phasenreservierung und passende Prognose-/SQL-Diagnose; sequenzieller Fallback bleibt einstellbar. |

@@ -1,5 +1,5 @@
 {
-  "$comment": "Unmodified definitions from the official ioBroker Admin JSON schema; pins the objectId/customFilter contract relevant to output selectors.",
+  "$comment": "Unmodified definitions from the official ioBroker Admin JSON schema; pins the objectId/customFilter contract relevant to output selectors and the state property contract for read-only status widgets.",
   "source": {
     "url": "https://github.com/ioBroker/ioBroker.admin/blob/master/packages/jsonConfig/schemas/jsonConfig.json",
     "blobSha": "d3eb132c450fb49833076fc4231de1520e2e7a0f",
@@ -282,6 +282,459 @@
         }
       },
       "additionalProperties": false
+    },
+    "stateProps": {
+      "type": "object",
+      "properties": {
+        "oid": {
+          "description": "Which object ID should be taken for the controlling. The ID is without \"adapter.X.\" prefix",
+          "type": "string"
+        },
+        "system": {
+          "description": "IF true, the state will be taken from system.adapter.XX.I. and not from XX.I",
+          "type": "boolean"
+        },
+        "control": {
+          "description": "How the value of the state should be shown",
+          "type": "string",
+          "enum": [
+            "text",
+            "html",
+            "input",
+            "number",
+            "slider",
+            "switch",
+            "select",
+            "button"
+          ]
+        },
+        "controlled": {
+          "description": "If false, the control will be read only",
+          "type": "boolean"
+        },
+        "unit": {
+          "description": "Unit (could be multi-language)",
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/definitions/multilingual"
+            }
+          ]
+        },
+        "trueText": {
+          "description": "This text will be shown if the value is true",
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/definitions/multilingual"
+            }
+          ]
+        },
+        "trueTextStyle": {
+          "description": "Style of the text if the value is true",
+          "type": "object"
+        },
+        "falseText": {
+          "description": "This text will be shown if the value is false",
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/definitions/multilingual"
+            }
+          ]
+        },
+        "falseTextStyle": {
+          "description": "Style of the text if the value is false",
+          "type": "object"
+        },
+        "trueImage": {
+          "description": "This image will be shown if the value is true. It could be base64 or URL",
+          "type": "string"
+        },
+        "falseImage": {
+          "description": "This image will be shown if the value is false. It could be base64 or URL",
+          "type": "string"
+        },
+        "min": {
+          "description": "Minimum value for number or slider",
+          "type": "number"
+        },
+        "max": {
+          "description": "Maximum value for number or slider",
+          "type": "number"
+        },
+        "step": {
+          "description": "Step for number or slider",
+          "type": "number"
+        },
+        "controlDelay": {
+          "description": "Delay in ms between the change and the command",
+          "type": "number"
+        },
+        "variant": {
+          "description": "Show spinner while request is in progress",
+          "type": "string",
+          "enum": [
+            "contained",
+            "outlined",
+            "text"
+          ]
+        },
+        "readOnly": {
+          "description": "Defines if the control is read-only. Applied only to 'input', 'slider', 'select', 'button', 'switch', 'number'",
+          "type": "boolean"
+        },
+        "foreign": {
+          "description": "The 'oid' is absolute and no need to add 'adapter.X' or 'system.adapter.X.' to oid",
+          "type": "boolean"
+        },
+        "narrow": {
+          "description": "With this flag, the value will appear just after the label",
+          "type": "boolean"
+        },
+        "blinkOnUpdate": {
+          "description": "Value should blink when updated (true or color). Only texts",
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "size": {
+          "description": "Font size: small, normal, large or number",
+          "oneOf": [
+            {
+              "default": "normal",
+              "type": "string",
+              "enum": [
+                "small",
+                "normal",
+                "large"
+              ]
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "addColon": {
+          "description": "Add to label the colon at the end if not exist in label",
+          "type": "boolean"
+        },
+        "labelIcon": {
+          "description": "Base64 icon for label",
+          "type": "string"
+        },
+        "buttonValue": {
+          "description": "Optional value, that will be sent for button",
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "showEnterButton": {
+          "description": "Show SET button. The value in this case will be sent only when the button is pressed. You can define the text of the button. Default text is \"Set\" (Only for \"input\", \"number\" or \"slider\")",
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/definitions/multilingual"
+            }
+          ]
+        },
+        "setOnEnterKey": {
+          "description": "The value in this case will be sent only when the \"Enter\" button is pressed. It can be combined with `showEnterButton`",
+          "type": "boolean"
+        },
+        "digits": {
+          "description": "Number of decimal places to display for numeric values in text/html mode",
+          "type": "number",
+          "minimum": 0
+        },
+        "ack": {
+          "description": "Write the value as acknowledged. By default, the control writes a command (`false`), so that the adapter reacts to it",
+          "type": "boolean"
+        },
+        "highlight": {
+          "description": "Highlight the line on mouse over",
+          "type": "boolean"
+        },
+        "options": {
+          "description": "Options for `select` in form `[\"value1\", \"value2\", ...]` or `[{\"value\": \"value\", \"label\": \"Value1\"}, \"value2\", ...]`. If not defiled, the `common.states` in the object must exist.",
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/definitions/selectOption"
+              },
+              {
+                "$ref": "#/definitions/selectOptionGroup"
+              }
+            ]
+          }
+        },
+        "label": true,
+        "type": true,
+        "xs": true,
+        "sm": true,
+        "md": true,
+        "lg": true,
+        "xl": true,
+        "newLine": true,
+        "hidden": true,
+        "dependsOnStates": true,
+        "debug": true,
+        "os": true,
+        "notOs": true,
+        "docker": true,
+        "hideOnlyControl": true,
+        "disabled": true,
+        "helpLink": true,
+        "help": true,
+        "style": true,
+        "darkStyle": true,
+        "tooltip": true,
+        "expertMode": true,
+        "noTranslation": true,
+        "confirm": true,
+        "defaultSendTo": true,
+        "allowSaveWithError": true,
+        "validator": true,
+        "validatorNoSaveOnError": true,
+        "validatorErrorText": true,
+        "noMultiEdit": true,
+        "default": true,
+        "defaultFunc": true,
+        "onChange": true,
+        "doNotSave": true,
+        "button": true,
+        "buttonTooltip": true,
+        "buttonTooltipNoTranslation": true,
+        "data": true,
+        "jsonData": true
+      },
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "oid"
+      ]
+    },
+    "selectOption": {
+      "type": "object",
+      "description": "A single selectable option of a `select` control.",
+      "additionalProperties": false,
+      "required": [
+        "label",
+        "value"
+      ],
+      "properties": {
+        "label": {
+          "description": "Label of the option",
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/definitions/multilingual"
+            }
+          ]
+        },
+        "value": {
+          "description": "Value of the option"
+        },
+        "hidden": {
+          "description": "Boolean or JS formula (may use `native.attribute`) to show or hide the option",
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "os": {
+          "$ref": "#/definitions/osFilter"
+        },
+        "notOs": {
+          "$ref": "#/definitions/notOsFilter"
+        },
+        "docker": {
+          "description": "Show this element only if the ioBroker runs (`true`) or does not run (`false`) in a docker container. If the docker state cannot be detected, the element will be shown.",
+          "type": "boolean"
+        },
+        "group": {
+          "description": "Is it a group or not",
+          "type": "boolean"
+        },
+        "color": {
+          "description": "Color of the option",
+          "type": "string"
+        },
+        "description": {
+          "description": "Description for the value, shown below the label",
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/definitions/multilingual"
+            }
+          ]
+        },
+        "icon": {
+          "description": "Icon URL to display next to the option",
+          "type": "string"
+        },
+        "noTranslation": {
+          "description": "Do not translate this one option",
+          "type": "boolean"
+        }
+      }
+    },
+    "osFilter": {
+      "description": "Show this element only on the given operating system(s) of the host, on which the instance runs, e.g. `win32` or `[\"linux\", \"darwin\"]`. If the operating system cannot be detected, the element will be shown.",
+      "oneOf": [
+        {
+          "$ref": "#/definitions/osName"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/osName"
+          }
+        }
+      ]
+    },
+    "osName": {
+      "type": "string",
+      "description": "Operating system of the host (node.js `process.platform`)",
+      "enum": [
+        "aix",
+        "android",
+        "cygwin",
+        "darwin",
+        "freebsd",
+        "haiku",
+        "linux",
+        "netbsd",
+        "openbsd",
+        "sunos",
+        "win32"
+      ]
+    },
+    "notOsFilter": {
+      "description": "Do not show this element on the given operating system(s) of the host, on which the instance runs, e.g. `win32` or `[\"linux\", \"darwin\"]`. If the operating system cannot be detected, the element will be shown.",
+      "oneOf": [
+        {
+          "$ref": "#/definitions/osName"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/osName"
+          }
+        }
+      ]
+    },
+    "selectOptionGroup": {
+      "type": "object",
+      "description": "A group of select options. `value` is not required when `items` are provided.",
+      "additionalProperties": false,
+      "required": [
+        "label",
+        "items"
+      ],
+      "properties": {
+        "label": {
+          "description": "Label of the group",
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/definitions/multilingual"
+            }
+          ]
+        },
+        "value": {
+          "description": "Optional value of the group header"
+        },
+        "hidden": {
+          "description": "Boolean or JS formula (may use `native.attribute`) to show or hide the group",
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "os": {
+          "$ref": "#/definitions/osFilter"
+        },
+        "notOs": {
+          "$ref": "#/definitions/notOsFilter"
+        },
+        "docker": {
+          "description": "Show this element only if the ioBroker runs (`true`) or does not run (`false`) in a docker container. If the docker state cannot be detected, the element will be shown.",
+          "type": "boolean"
+        },
+        "color": {
+          "description": "Color of the group",
+          "type": "string"
+        },
+        "description": {
+          "description": "Description for the group, shown below the label",
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/definitions/multilingual"
+            }
+          ]
+        },
+        "icon": {
+          "description": "Icon URL to display next to the group",
+          "type": "string"
+        },
+        "noTranslation": {
+          "description": "Do not translate this one option",
+          "type": "boolean"
+        },
+        "items": {
+          "description": "Sub-options of this group",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/selectOption"
+          }
+        }
+      }
     }
   }
 }

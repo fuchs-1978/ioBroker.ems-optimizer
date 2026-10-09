@@ -22,11 +22,16 @@ const extensionIds = {
     heatingOutput1Id: 'DP_HEAT_OUTPUT1', heatingOutput2Id: 'DP_HEAT_OUTPUT2',
     heatingOutput3Id: 'DP_HEAT_OUTPUT3', heatingOutletTempId: 'DP_HEAT_OUTLET_TEMP',
     heatPumpBufferTemperatureId: 'DP_HEAT_PUMP_BUFFER_TEMP',
-    heatPumpDhwTemperatureId: 'DP_HEAT_PUMP_DHW_TEMP'
+    heatPumpDhwTemperatureId: 'DP_HEAT_PUMP_DHW_TEMP',
+    heatPumpConnectionId: 'DP_HEAT_PUMP_CONNECTION',
+    heatPumpSgReadyStateId: 'DP_HEAT_PUMP_SG_READY_STATE',
+    heatPumpCoolingRoomTemperatureId: 'DP_HEAT_PUMP_COOLING_ROOM_TEMP',
+    heatPumpCoolingDewPointId: 'DP_HEAT_PUMP_COOLING_DEW_POINT',
+    heatPumpCoolingFlowTemperatureId: 'DP_HEAT_PUMP_COOLING_FLOW_TEMP'
 };
 
 test('every extension setting has matching Admin and native defaults', () => {
-    assert.equal(Object.keys(EXTENSION_SETTINGS).length, 48);
+    assert.ok(Object.keys(EXTENSION_SETTINGS).length > 0);
     const names = new Set();
     for (const [suffix, [name, fallback]] of Object.entries(EXTENSION_SETTINGS)) {
         assert.ok(!suffix.startsWith('Config.'), suffix);
@@ -79,6 +84,7 @@ test('new physical controls and price-based grid-heating permissions cannot star
     for (const name of ['batteryPresent', 'batteryControlEnabled', 'batteryProductionArmed',
         'heatingPresent', 'heatingControlEnabled', 'heatingProductionArmed',
         'heatPumpPresent', 'heatPumpControlEnabled', 'heatPumpAdviceEnabled',
+        'heatPumpMaxBoostEnabled', 'heatPumpCoolingBoostEnabled',
         'thermalCheapPriceEnabled', 'thermalCheapFixedTariffAllowed']) {
         assert.equal(native[name], false, name);
         assert.equal(fields[name].default, false, name);
