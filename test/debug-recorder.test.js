@@ -725,3 +725,29 @@ test('per-vehicle allocation and increase-budget JSON retain diagnostic detail b
     f.put('ems.0.Control.Wallbox1.AllocationDiagnostics_JSON', 'x'.repeat(20001));
     assert.equal(f.recorder.snapshot().wallboxes[1].allocation, null);
 });
+
+test('pending-start proof survives productive record replay without inventing electrical charging', async () => {
+    const {DecisionRecordEncoder, DecisionRecordDecoder} = require('../lib/decision-record-codec');
+    const f = fixture(); await f.recorder.initialize();
+    const proof = {schema: 1, pending: true, stage: 'allow', amps: 6, phases: 1,
+        stageAt: f.clock.now, validUntil: f.clock.now + 20000};
+    f.put('ems.0.Devices.Wallbox1.OutputStartReservation_JSON', JSON.stringify(proof));
+    f.put('ems.0.Devices.Wallbox1.OutputActive', false);
+    const encoder = new DecisionRecordEncoder();
+    const decoder = new DecisionRecordDecoder();
+    const record = {schema: 2, timestamp: f.clock.now, recordSession: 'start-proof', recordSequence: 1,
+        masterEnabled: true, production: f.recorder.snapshot()};
+    const restored = decoder.decode(encoder.encode(record));
+    assert.deepEqual(restored.production.wallboxes[1].startReservation, proof);
+    assert.equal(restored.production.wallboxes[1].OutputActive, false);
+    assert.equal(restored.production.wallboxes[1].actual_W, null);
+    const deadline = proof.validUntil;
+    f.clock.now += 2000;
+    const next = {...record, timestamp: f.clock.now, recordSequence: 2, production: f.recorder.snapshot()};
+    const delta = decoder.decode(encoder.encode(next));
+    assert.equal(delta.production.wallboxes[1].startReservation.validUntil, deadline,
+        'snapshot clocks cannot extend the original command deadline');
+    f.put('ems.0.Devices.Wallbox1.OutputStartReservation_JSON', '{"schema":1,"pending":false}');
+    const cleared = decoder.decode(encoder.encode({...next, recordSequence: 3, production: f.recorder.snapshot()}));
+    assert.equal(cleared.production.wallboxes[1].startReservation.pending, false);
+});

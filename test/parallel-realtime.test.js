@@ -299,6 +299,126 @@ test('running minimum continuation cannot authorize a different topology or unco
     }
 });
 
+// Preserve a start the real output driver has already authorized. Its own
+// 6 A reservation is not a second copy of the EQE's pending physical draw.
+function pendingMinimumStartFixture(stage = 'allow', {hardW = 4200, heaterW = 0} = {}) {
+    const h = engine({production: true, wallboxPriority: 1, dhwControlEnabled: heaterW > 0});
+    h.exclude(0);
+    h.put('DP_WB1_SOC', 85); h.put('DP_WB1_MIN_SOC', 90); h.put('DP_WB1_TARGET', 100);
+    h.put('DP_WB2_SOC', 90); h.put('DP_WB2_MIN_SOC', 95); h.put('DP_WB2_TARGET', 100);
+    h.owned(2, 6);
+    assert.deepEqual(h.update(0, 4200).amps, [0, 6, 6],
+        'both minimum floors are granted before the real start begins');
+    const now = Date.now();
+    h.put('ems.0.Devices.Wallbox1.OutputOwned', true);
+    h.put('ems.0.Devices.Wallbox1.OutputActive', stage === 'vehicle_response');
+    h.put('ems.0.Devices.Wallbox1.OutputCommand_A', stage === 'vehicle_response' ? 6 : 0);
+    h.put('ems.0.Devices.Wallbox1.OutputReservedPower_W', 1380);
+    h.put('raw.allow1', ['allow', 'vehicle_response'].includes(stage) ? 1 : 0);
+    h.put('raw.amps1', stage === 'stop' ? 0 : 6);
+    h.put('ems.0.Devices.Wallbox1.OutputStartReservation_JSON', JSON.stringify({schema: 1,
+        pending: true, stage, amps: 6, phases: 1, stageAt: now - 2000,
+        validUntil: now - 2000 + (stage === 'vehicle_response' ? 45000 : 20000)}));
+    // Reproduce 09 October 16:34:36-38: lowering EQE's minimum from 95 to
+    // its already attained 90 removes that floor while its 6 A still exist.
+    h.put('DP_WB2_MIN_SOC', 90);
+    h.put('ems.0.Devices.MyPV_DHW.OutputReservedPower_W', heaterW);
+    h.put('DP_DHW_OUTPUT1', heaterW);
+    return {h, hardW};
+}
+
+test('EQE minimum removal preserves the already reserved EQV asynchronous minimum start', () => {
+    for (const stage of ['current', 'allow', 'vehicle_response']) {
+        const {h, hardW} = pendingMinimumStartFixture(stage);
+        const targets = h.update(0, hardW);
+        assert.deepEqual(targets.amps, [0, 6, 0], stage);
+        assert.deepEqual(targets.reserve, [0, 1380, 1380],
+            `${stage}: each car keeps its own outstanding 1380 W exactly once`);
+        assert.equal(targets.dhw, 0, 'grid minimums do not create heater surplus');
+        const grant = JSON.parse(h.states.get('ems.0.Control.ParallelWallboxAllocation_JSON').val);
+        assert.equal(grant.allocations.find(entry => entry.wb === 1).pendingMinimumStartW, 1380,
+            'the shared diagnostic identifies an existing pending reservation, not free PV');
+        assert.equal(h.states.get('ems.0.Devices.Wallbox2.OutputActive').val, true,
+            'allocation does not manufacture donor electrical OFF');
+        assert.equal(h.states.get('ems.0.Devices.Wallbox1.OutputCommand_A').val,
+            stage === 'vehicle_response' ? 6 : 0, 'allocation never writes real current');
+    }
+});
+
+test('ordinary Modbus command ACK waits do not cancel a reserved pending minimum start', () => {
+    for (const stage of ['current', 'allow']) {
+        const {h} = pendingMinimumStartFixture(stage);
+        const awaitingId = stage === 'current' ? 'raw.amps1' : 'raw.allow1';
+        h.put(awaitingId, stage === 'current' ? 6 : 1, {ack: false});
+        assert.equal(h.update(0, 4200).amps[1], 6, `${stage}: ordinary write echo is not final feedback`);
+    }
+});
+
+test('acknowledged initial ON retains a minimum only within its genuine vehicle-response proof', () => {
+    for (const cause of ['good', 'unconfirmed-allow', 'old-allow', 'unconfirmed-current', 'changed-current', 'expired']) {
+        const {h} = pendingMinimumStartFixture('vehicle_response');
+        const proofId = 'ems.0.Devices.Wallbox1.OutputStartReservation_JSON';
+        const proof = JSON.parse(h.states.get(proofId).val);
+        if (cause === 'unconfirmed-allow') h.put('raw.allow1', 1, {ack: false});
+        if (cause === 'old-allow') h.put('raw.allow1', 1, {ts: proof.stageAt - 1});
+        if (cause === 'unconfirmed-current') h.put('raw.amps1', 6, {ack: false});
+        if (cause === 'changed-current') h.put('raw.amps1', 7);
+        if (cause === 'expired') h.put(proofId, JSON.stringify({...proof,
+            stageAt: Date.now() - 46000, validUntil: Date.now() - 1000}));
+        assert.equal(h.update(0, 4200).amps[1], cause === 'good' ? 6 : 0, cause);
+    }
+    const {h} = pendingMinimumStartFixture('vehicle_response');
+    h.owned(1, 6);
+    h.put('ems.0.Devices.Wallbox1.OutputStartReservation_JSON', JSON.stringify({schema: 1, pending: false}));
+    assert.equal(h.update(0, 4200).amps[1], 6, 'real vehicle draw restores the established running-floor path');
+});
+
+test('pending minimum-start preservation remains subordinate to real hard and heater reservations', () => {
+    for (const limits of [{hardW: 2500, heaterW: 0}, {hardW: 4200, heaterW: 1500}]) {
+        const {h, hardW} = pendingMinimumStartFixture('allow', limits);
+        const targets = h.update(0, hardW);
+        assert.equal(targets.amps[1], 0, JSON.stringify(limits));
+        assert.equal(targets.reserve[2], 1380, 'EQE physical reservation stays accounted for');
+        assert.equal(targets.reserve[1], 1380, 'unknown pending own power is not declared free');
+    }
+});
+
+test('only a current bounded own start proof retains an asynchronous minimum floor', () => {
+    for (const cause of ['no-proof', 'not-pending', 'stop-stage', 'expired', 'future-stage',
+        'unconfirmed-proof', 'bad-quality-proof', 'no-reservation', 'not-owned',
+        'no-minimum-need', 'stale-power', 'unconfirmed-car', 'bad-quality-error',
+        'phase-pending', 'phase-transition', 'unconfirmed-phase', 'bad-quality-allow',
+        'stale-allow', 'future-current', 'missing-current', 'extended-command-deadline']) {
+        const {h} = pendingMinimumStartFixture('allow');
+        const id = 'ems.0.Devices.Wallbox1.OutputStartReservation_JSON';
+        const proof = JSON.parse(h.states.get(id).val);
+        if (cause === 'no-proof') h.states.delete(id);
+        if (cause === 'not-pending') h.put(id, JSON.stringify({...proof, pending: false}));
+        if (cause === 'stop-stage') h.put(id, JSON.stringify({...proof, stage: 'stopping'}));
+        if (cause === 'expired') h.put(id, JSON.stringify({...proof,
+            stageAt: Date.now() - 21000, validUntil: Date.now() - 1000}));
+        if (cause === 'future-stage') h.put(id, JSON.stringify({...proof, stageAt: Date.now() + 2000}));
+        if (cause === 'unconfirmed-proof') h.put(id, JSON.stringify(proof), {ack: false});
+        if (cause === 'bad-quality-proof') h.put(id, JSON.stringify(proof), {q: 64});
+        if (cause === 'no-reservation') h.put('ems.0.Devices.Wallbox1.OutputReservedPower_W', 0);
+        if (cause === 'not-owned') h.put('ems.0.Devices.Wallbox1.OutputOwned', false);
+        if (cause === 'no-minimum-need') h.put('DP_WB1_SOC', 90);
+        if (cause === 'stale-power') h.put('DP_WB1_POWER', 0, {ts: Date.now() - 31000});
+        if (cause === 'unconfirmed-car') h.put('DP_WB1_CAR', 2, {ack: false});
+        if (cause === 'bad-quality-error') h.put('raw.error1', 0, {q: 64});
+        if (cause === 'phase-pending') h.put('ems.0.Devices.Wallbox1.PhaseSwitchPending', true);
+        if (cause === 'phase-transition') h.put('ems.0.Devices.Wallbox1.PhaseTransitionActive', true);
+        if (cause === 'unconfirmed-phase') h.put('DP_WB1_PHASE_MODE', 1, {ack: false});
+        if (cause === 'bad-quality-allow') h.put('raw.allow1', 1, {q: 64});
+        if (cause === 'stale-allow') h.put('raw.allow1', 1, {ts: Date.now() - 31000});
+        if (cause === 'future-current') h.put('raw.amps1', 6, {ts: Date.now() + 2000});
+        if (cause === 'missing-current') h.states.delete('raw.amps1');
+        if (cause === 'extended-command-deadline') h.put(id, JSON.stringify({...proof,
+            validUntil: proof.stageAt + 21000}));
+        assert.equal(h.update(0, Infinity).amps[1], 0, cause);
+    }
+});
+
 test('donor reduction reserves actual high-water draw before priority gets more watts', () => {
     const h = engine({production: true}); h.exclude(2);
     h.owned(0, 6); h.owned(1, 20);

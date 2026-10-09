@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.58**
+Aktuelle Version: **0.17.0-alpha.59**
 
 Prüfung zu Tages-Issue #98: [produktive Diagnose, Phasen-Rückfallvertrag,
 Reproduktion und nächste SQL-Abnahme](docs/issue98-live-diagnostics.md).
@@ -45,6 +45,12 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.59 – Begonnene Mindestladung erhalten
+
+Eine bereits autorisierte, begonnene einphasige Mindest-SoC-Ladung behält ihr eigenes Mindestbudget, wenn ein anderes Fahrzeug seinen Mindest-SoC erreicht und noch Leistung während der Abschaltung reserviert. Die Reservierung gilt nur innerhalb der festen Befehls- und Fahrzeugreaktionsfristen. Sie verhindert den zusätzlichen Startabbruch durch diese weiche Budgetänderung. Ein neuer ON-Befehl oder eine Erhöhung wartet weiterhin auf die erforderlichen unabhängigen AUS- und elektrischen Rückmeldungen; Hausanschluss-, §14a-/Geräte- und Quellenprüfungen bleiben wirksam.
+
+`Devices.Wallbox0/1/2.OutputStartReservation_JSON` und die produktiven DecisionRecords zeigen Startstufe und ursprüngliche Frist. Eine Reservierung beweist keine reale Ladeleistung. [Belegtes Ereignis, Regressionen und nächste SQL-Prüfung](docs/pending-minimum-start.md). Installation und reale Abnahme erfolgen getrennt.
 
 ## Neu in 0.17.0-alpha.58 – Temperaturquellen nachvollziehbar bewerten
 
@@ -1770,6 +1776,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.59 | Bereits autorisierter 1P-Mindestladestart bleibt während Peer-Abschaltung innerhalb fester Befehls-/Fahrzeugfristen reserviert; zusätzliche Startabbrüche vermeiden, neue ON-/Erhöhungsbefehle und sämtliche Schutzbudgets bleiben geprüft. |
 | 0.17.0-alpha.58 | Unbekannte EHZ-Temperaturen bleiben null; vollständige begrenzte Quellen-/Qualitätsdiagnose in Anzeige und produktiven Records, echte konstante Bestätigungen gültig, Schutzgrenzen unverändert. |
 | 0.17.0-alpha.57 | Passive WP-Mess-/SG-Ready-Vorbereitung, getrennte Heiz-/Kühlboostwünsche mit Taupunktgrenze und übersetzter Admin; normierte vollständige WP-Messung für §14a, keine externen WP-Schreibausgänge. |
 | 0.17.0-alpha.56 | Beobachtete Netz-Mindestladung endet ohne Nachlauf; PV-Fortsetzung erhält normale Timer, andere Mindestladungen und bestätigte Leistungsreservierungen bleiben geschützt. |
