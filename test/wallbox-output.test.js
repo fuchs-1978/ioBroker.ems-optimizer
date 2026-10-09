@@ -531,6 +531,197 @@ test('below minimum SoC can start without solar power', async () => {
     const h = setup(); h.put('soc',10); h.put('export',0); await h.start();
     assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, true);
 });
+
+// An ended minimum-SoC obligation is a completed demand, not a passing PV
+// dip. Exercise it with real ON/current ACKs and electrical load before
+// changing SoC; then require the ordinary OFF and zero-power evidence.
+async function runningMinimumGridCharge() {
+    let now = 1000000000000;
+    const h = setup({now: () => now});
+    h.advance = ms => { now += ms; h.refresh(); };
+    h.config.wallboxMinimumRunTimeS = 600;
+    h.config.wallboxStopDelayS = 600;
+    h.put('soc', 19); h.put('export', 0);
+    h.put('ems.0.Control.Targets.Wallbox0_W', 1380);
+    await h.start();
+    h.advance(1000); h.put('i1', 6); h.put('power', 1.38); h.put('import', 1380);
+    await h.output.tick(); h.writes.length = 0;
+    return h;
+}
+
+test('completed grid-backed minimum charge sends OFF immediately and still awaits real OFF evidence', async t => {
+    for (const oldPlanW of [0, 1380]) await t.test(`remaining plan ${oldPlanW} W`, async () => {
+        const h = await runningMinimumGridCharge();
+        h.advance(1000); h.put('soc', 20);
+        h.put('ems.0.Control.Targets.Wallbox0_W', oldPlanW);
+        await h.output.tick();
+        assert.deepEqual(h.writes, [{id: 'allow', val: 0}],
+            'completion must not wait for either the 600 s minimum runtime or the stop delay');
+        assert.match(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val, /Mindest-SoC/);
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.StopDelayActive').val, false);
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.StopDelayRemaining_s').val, 0);
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.StopConfirmedAt').val, 0);
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputOwned').val, true);
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val, 1380);
+        h.advance(1000); h.ack('allow', 0); await h.output.tick();
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.StopPowerPending').val, true);
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputOwned').val, true,
+            'the OFF transport ACK is not proof of electrical quiet');
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val, 1380);
+        h.advance(1000); h.electricalOff(); h.put('import', 0); await h.output.tick();
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputOwned').val, false);
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val, 0);
+        assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+    });
+});
+
+test('grid-backed minimum charge remains active while the confirmed SoC is still below minimum', async () => {
+    const h = await runningMinimumGridCharge();
+    h.advance(30000); h.put('ems.0.Control.Targets.Wallbox0_W', 0);
+    await h.output.tick();
+    assert.deepEqual(h.writes, []);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, true);
+});
+
+test('minimum completion continues on real PV and a later PV dip retains the full configured stop delay', async () => {
+    const h = await runningMinimumGridCharge();
+    h.advance(1000); h.put('soc', 20); h.put('import', 0); h.put('export', 200);
+    await h.output.tick();
+    assert.deepEqual(h.writes, []);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, true);
+    h.advance(1000); h.put('ems.0.Control.Targets.Wallbox0_W', 0);
+    h.put('import', 1380); h.put('export', 0); await h.output.tick();
+    assert.deepEqual(h.writes, [], 'a later PV shortfall is not minimum-demand completion');
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.StopDelayRemaining_s').val, 600);
+    h.advance(599000); await h.output.tick();
+    assert.deepEqual(h.writes, []);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.StopDelayRemaining_s').val, 1);
+    h.advance(1000); await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+    assert.doesNotMatch(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val, /Mindest-SoC/);
+});
+
+test('minimum completion does not revoke a currently authorized grid-price session', async () => {
+    const h = await runningMinimumGridCharge();
+    h.put('ems.0.Config.Wallbox0PriceChargingEnabled', true);
+    h.adapter.engineContext = {
+        vehicleState: () => ({release: true}),
+        priceChargingAuthorization: () => ({enabled: true, allowed: true, gridW: 1480})
+    };
+    h.advance(1000); h.put('soc', 20);
+    h.put('ems.0.Control.Targets.Wallbox0_W', 1480);
+    h.put('ems.0.Control.Wallbox0PriceGridCharge_W', 1480);
+    await h.output.tick();
+    assert.deepEqual(h.writes, []);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, true);
+});
+
+test('minimum completion preserves separate manual-minimum and deadline obligations', async t => {
+    for (const obligation of ['manual', 'deadline']) await t.test(obligation, async () => {
+        const h = await runningMinimumGridCharge();
+        if (obligation === 'manual') h.put('ems.0.Vehicles.Wallbox0.ManualMinimumCurrent_A', 6);
+        else {
+            h.config.wb0DeadlineEnabled = true;
+            h.put('ems.0.Vehicles.Wallbox0.MustCharge', true);
+        }
+        h.advance(1000); h.put('soc', 20); h.put('ems.0.Control.Targets.Wallbox0_W', 0);
+        await h.output.tick();
+        assert.deepEqual(h.writes, []);
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, true);
+    });
+});
+
+test('missing or unacknowledged SoC cannot be reported as successful minimum completion', async t => {
+    for (const mode of ['missing', 'unacknowledged']) await t.test(mode, async () => {
+        const h = await runningMinimumGridCharge();
+        h.advance(1000); h.put('ems.0.Control.Targets.Wallbox0_W', 0);
+        h.put('soc', mode === 'missing' ? null : 20, {ack: mode !== 'unacknowledged'});
+        await h.output.tick();
+        assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+        assert.match(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val, /SoC/);
+        assert.doesNotMatch(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val, /Mindest-SoC erreicht/);
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.StopConfirmedAt').val, 0);
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputOwned').val, true);
+    });
+});
+
+test('a simultaneous physical protection trip remains the reason when minimum SoC is reached', async () => {
+    const h = await runningMinimumGridCharge();
+    h.advance(1000); h.put('soc', 20); h.put('critical', true);
+    await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val, /Hausanschlussschutz/);
+});
+
+test('restart adoption above minimum cannot manufacture a past minimum-completion edge', async () => {
+    let now = 1000000000000;
+    const h = setup({now: () => now});
+    h.config.wallboxMinimumRunTimeS = 600; h.config.wallboxStopDelayS = 600;
+    h.put('ems.0.Control.RestartHandoffActive', true);
+    h.put('ems.0.Control.RestartHandoffSince', now);
+    h.put('ems.0.Devices.Wallbox0.OutputOwned', true);
+    h.put('ems.0.Devices.Wallbox0.OutputActive', true);
+    h.put('allow', 1); h.put('feedback', 6); h.put('i1', 6); h.put('power', 1.38);
+    h.put('import', 1380); h.put('export', 0); h.put('ems.0.Control.Targets.Wallbox0_W', 0);
+    await h.output.initialize(); await h.output.tick();
+    assert.deepEqual(h.writes, [], 'current SoC above minimum is not a previously observed grid-charge completion');
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, true);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.StopDelayRemaining_s').val, 600);
+    now += 600000; h.refresh(); await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+    assert.doesNotMatch(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val, /Mindest-SoC/);
+});
+
+test('unplugging ends the observed minimum obligation before a new above-minimum PV start', async () => {
+    const h = await runningMinimumGridCharge();
+    h.advance(1000); h.put('car', 1); await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+    h.advance(1000); h.ack('allow', 0); h.electricalOff(); h.put('import', 0);
+    await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputOwned').val, false);
+    // Reuse this controller and device: initializing a fresh object here would
+    // conceal a marker that incorrectly survived the completed physical stop.
+    h.advance(1000); h.put('car', 2); h.put('soc', 50);
+    h.put('export', 1600); h.put('ems.0.Control.Targets.Wallbox0_W', 1380);
+    await h.output.tick(); h.ack('allow', 0);
+    await h.output.tick(); h.ack('feedback', 6);
+    await h.output.tick();
+    assert.equal(h.writes.at(-1).id, 'allow');
+    assert.equal(h.writes.at(-1).val, 1);
+    // Clouds arrive between ON command and its physical response. This new
+    // PV session receives its normal timers; it never crossed minimum SoC.
+    h.advance(1000); h.ack('allow', 1); h.put('i1', 6); h.put('power', 1.38);
+    h.put('import', 1380); h.put('export', 0); h.put('ems.0.Control.Targets.Wallbox0_W', 0);
+    h.writes.length = 0; await h.output.tick();
+    assert.deepEqual(h.writes, []);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, true);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.StopDelayRemaining_s').val, 600);
+    h.advance(600000); await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+    assert.doesNotMatch(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val, /Mindest-SoC/);
+});
+
+test('minimum-SoC configuration requires a qualified source but retained values do not expire like telemetry', async t => {
+    for (const mode of ['missing', 'null', 'unacknowledged', 'bad_quality', 'retained']) await t.test(mode, async () => {
+        const h = await runningMinimumGridCharge();
+        h.advance(1000); h.put('soc', 20); h.put('ems.0.Control.Targets.Wallbox0_W', 0);
+        if (mode === 'missing') h.states.delete('ems.0.Vehicles.Wallbox0.MinimumSoC_pct');
+        else if (mode === 'null') h.put('ems.0.Vehicles.Wallbox0.MinimumSoC_pct', null);
+        else h.put('ems.0.Vehicles.Wallbox0.MinimumSoC_pct', 20,
+            mode === 'unacknowledged' ? {ack: false} : mode === 'bad_quality' ? {q: 0x40}
+                : {ts: 1000000000000 - 86400000});
+        await h.output.tick();
+        if (mode !== 'retained') {
+            assert.deepEqual(h.writes, [], 'unknown threshold does not prove a successfully completed obligation');
+            assert.equal(h.states.get('ems.0.Devices.Wallbox0.StopDelayRemaining_s').val, 600);
+            h.advance(1000); h.put('ems.0.Vehicles.Wallbox0.MinimumSoC_pct', 20);
+            await h.output.tick();
+        }
+        assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+        assert.match(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val, /Mindest-SoC/);
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.StopConfirmedAt').val, 0);
+    });
+});
 test('HA cap cannot be defeated by minimum-SoC charging', async () => {
     const h = setup(); h.put('soc',10); h.put('h1',49); await h.output.initialize(); await h.output.tick();
     assert.equal(h.writes.length, 0);
