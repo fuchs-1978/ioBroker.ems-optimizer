@@ -7,6 +7,7 @@ const schedule = require("node-schedule");
 const utils = require("@iobroker/adapter-core");
 const WallboxOutput = require("./lib/wallbox-output");
 const DebugRecorder = require("./lib/debug-recorder");
+const {LatestStateWriter, isDisplaySeries} = require("./lib/latest-state-writer");
 const ShadowController = require("./lib/shadow-controller");
 const ShadowHistory = require("./lib/shadow-history");
 const {createEngineContext} = require("./lib/engine-loader");
@@ -36,6 +37,10 @@ class EmsOptimizer extends utils.Adapter {
         this.foreignWriteQueues = new Map();
         this.foreignWriteGeneration = new Map();
         this.pendingOwnWrites = new Map();
+        this.displayWriter = new LatestStateWriter(async (id, state) => {
+            await (this.objectPromises.get(id) || Promise.resolve());
+            return this.setStateAsync(this.ownRelative(id), state);
+        });
         this.failedOwnWrites = new Set();
         this.unloading = false;
         this.outputInitialization = null;
@@ -517,20 +522,26 @@ class EmsOptimizer extends utils.Adapter {
         const relative = this.ownRelative(id);
         const ready = this.objectPromises.get(id) || Promise.resolve();
         const previousWrite = this.pendingOwnWrites.get(id) || Promise.resolve();
-        const promise = relative === null ? Promise.resolve()
+        const promise = isDisplaySeries(relative, ack)
+            ? this.displayWriter.enqueue(id, published)
+            : relative === null ? Promise.resolve()
             : Promise.all([ready, previousWrite.catch(() => {})]).then(() =>
                 // Keep the decision timestamp on the database echo, which can
                 // arrive AFTER the write promise resolves and a newer decision.
                 this.setStateAsync(relative, published));
         this.pendingOwnWrites.set(id, promise);
-        void promise.then(() => this.failedOwnWrites.delete(id), () => this.failedOwnWrites.add(id));
-        void promise.finally(() => {
-            if (this.pendingOwnWrites.get(id) === promise) this.pendingOwnWrites.delete(id);
-        }).catch(() => {});
-        void promise.catch(error => {
-            if (relative !== null && relative.startsWith('Debug.')) this.warnDebug(error);
-            else this.log.warn(`Cannot write ${id}: ${error.message}`);
-        });
+        // A coalesced display burst shares one drain promise; attaching handlers
+        // on every update would itself retain an unbounded callback queue.
+        if (this.pendingOwnWrites.get(id) !== previousWrite) {
+            void promise.then(() => this.failedOwnWrites.delete(id), () => this.failedOwnWrites.add(id));
+            void promise.finally(() => {
+                if (this.pendingOwnWrites.get(id) === promise) this.pendingOwnWrites.delete(id);
+            }).catch(() => {});
+            void promise.catch(error => {
+                if (relative !== null && relative.startsWith('Debug.')) this.warnDebug(error);
+                else this.log.warn(`Cannot write ${id}: ${error.message}`);
+            });
+        }
         if (relative !== null && !relative.startsWith('Debug.'))
             this.runDebug('capture', id, published, previous);
         if (relative === 'System.RealOutputsEnabled' || relative?.startsWith('Devices.'))
@@ -882,3 +893,4 @@ class EmsOptimizer extends utils.Adapter {
 
 if (require.main !== module) module.exports = options => new EmsOptimizer(options);
 else new EmsOptimizer();
+

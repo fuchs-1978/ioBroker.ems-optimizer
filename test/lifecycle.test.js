@@ -778,3 +778,32 @@ test('foreign source receipt tracks EMS arrival without renewing the original me
     a.onStateChange(id, null);
     assert.equal(a.getCachedStateReceipt(id), null);
 });
+
+
+test('slow display persistence coalesces large series while safety edges and records retain FIFO', async () => {
+    const a = adapter(); const writes = []; let release;
+    a.setStateAsync = async (id, state) => {
+        writes.push({id, state});
+        if (id === 'Forecast.PV_48h_JSON' && writes.length === 1)
+            await new Promise(resolve => {release = resolve;});
+    };
+    const drain = a.setCompatState('ems.0.Forecast.PV_48h_JSON', 'first');
+    await new Promise(resolve => setImmediate(resolve));
+    for (let i = 0; i < 2000; i++)
+        assert.equal(a.setCompatState('ems.0.Forecast.PV_48h_JSON', String(i)), drain);
+    const first = a.setCompatState('ems.0.System.RealOutputsEnabled', false);
+    const second = a.setCompatState('ems.0.System.RealOutputsEnabled', true);
+    const record1 = a.setCompatState('ems.0.Debug.Shadow.DecisionRecord', 'record1');
+    const record2 = a.setCompatState('ems.0.Debug.Shadow.DecisionRecord', 'record2');
+    await Promise.all([first, second, record1, record2]);
+    assert.deepEqual(writes.filter(w => w.id === 'System.RealOutputsEnabled').map(w => w.state.val), [false, true]);
+    assert.deepEqual(writes.filter(w => w.id === 'Debug.Shadow.DecisionRecord').map(w => w.state.val), ['record1', 'record2']);
+    let flushed = false;
+    const flush = a.flushOwnWrites().then(() => {flushed = true;});
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(flushed, false);
+    release(); await flush;
+    assert.deepEqual(writes.filter(w => w.id === 'Forecast.PV_48h_JSON').map(w => w.state.val), ['first', '1999']);
+    assert.equal(a.getCachedState('ems.0.Forecast.PV_48h_JSON').val, '1999');
+    assert.equal(a.displayWriter.entries.size, 0);
+});
