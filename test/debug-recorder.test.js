@@ -751,3 +751,27 @@ test('pending-start proof survives productive record replay without inventing el
     const cleared = decoder.decode(encoder.encode({...next, recordSequence: 3, production: f.recorder.snapshot()}));
     assert.equal(cleared.production.wallboxes[1].startReservation.pending, false);
 });
+
+
+test('history serialization reuses unchanged rings but preserves enriched stop reasons and new trace samples', async () => {
+    const h = fixture(); await h.recorder.initialize(); await h.settle();
+    let serializations = 0;
+    const serialize = h.recorder.serializeRing.bind(h.recorder);
+    h.recorder.serializeRing = ring => {serializations++; return serialize(ring);};
+    h.recorder.publishHistory(); await h.settle();
+    const initial = serializations;
+    h.recorder.publishHistory(); h.recorder.publishHistory(); await h.settle();
+    assert.equal(serializations, initial, 'unchanged exports do not allocate another whole JSON string');
+    h.change('Devices.MyPV_DHW.OutputActive', false);
+    h.recorder.publishHistory(); await h.settle();
+    const beforeReason = serializations;
+    h.change('Devices.MyPV_DHW.OutputStatus', 'confirmed thermal stop');
+    h.recorder.publishHistory(); await h.settle();
+    assert.equal(serializations, beforeReason + 1);
+    assert.equal(h.json('Events_JSON').at(-1).to, 'confirmed thermal stop');
+    h.clock.now += 10000;
+    h.recorder.sample(); await h.settle();
+    assert.ok(h.json('PowerTrace_JSON').some(row => row.ts === h.clock.now));
+    h.command('Clear', true); await h.settle();
+    assert.deepEqual(h.json('PowerTrace_JSON'), []);
+});

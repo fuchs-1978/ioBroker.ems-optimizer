@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.60**
+Aktuelle Version: **0.17.0-alpha.61**
 
 Prüfung zu Tages-Issue #98: [produktive Diagnose, Phasen-Rückfallvertrag,
 Reproduktion und nächste SQL-Abnahme](docs/issue98-live-diagnostics.md).
@@ -45,6 +45,10 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.61 – begrenzte Anzeige-Schreiblast
+
+Grosse abgeleitete Forecast-/Plan-/Chart-JSONs behalten bei langsamer Persistierung nur einen laufenden Schreibvorgang und den neuesten wartenden Wert. Stellbefehle, Schutz-/Freigabewechsel, Reservierungen und DecisionRecords bleiben geordnet. Unveraenderte Diagnoseverlaeufe werden nicht erneut vollstaendig serialisiert; neue Ereignisse, ergaenzte Stoppgruende und Leistungspunkte bleiben erhalten. Die reale RSS-Ersparnis muss nach Installation gemessen werden; kein Nachweis eines behobenen Speicherlecks oder vollstaendigen 24-h-SQL-Abrufs.
 
 ## Neu in 0.17.0-alpha.60 – Stromantwort und sichere Ausgangsreservierung
 
@@ -1870,5 +1874,6 @@ Adapters sind.
 ## Lizenz
 
 MIT
+
 
 
