@@ -603,3 +603,235 @@ test('idle-peer current exception never turns missing power or OFF acknowledgeme
     });
 });
 
+
+// Reproduce an actual second-car start while the first car is still drawing.
+// Every pending stage is reached through real driver writes and acknowledgements;
+// no manually fabricated ownership/start reservation can make this pass.
+async function startBesideDonor(stage = 'current') {
+    const h = parallelSetup();
+    h.config.wallboxMinimumRunTimeS = 600;
+    h.config.wallboxStopDelayS = 600;
+    await h.startParallel();
+    h.put('ems.0.Vehicles.Wallbox1.Release', false);
+    h.grant([6, 0], {budgetW: 2760});
+    await h.output.tick();
+    h.ack('allow1', 0); h.electricalOff(1);
+    await h.output.tick();
+    assert.equal(h.output.devices[1].owned, false);
+    h.put('ems.0.Vehicles.Wallbox1.Release', true);
+    h.grant([6, 6], {budgetW: 2760});
+    await h.output.tick();
+    h.ack('allow1', 0); await h.output.tick();
+    assert.equal(h.output.devices[1].pending.stage, 'current');
+    if (stage !== 'current') {
+        h.ack('feedback1', 6); await h.output.tick();
+        assert.equal(h.output.devices[1].pending.stage, 'allow');
+    }
+    if (stage === 'vehicle_response') {
+        h.ack('allow1', 1); await h.output.tick();
+        assert.equal(h.output.devices[1].pending, null);
+        assert.equal(h.output.devices[1].response.ackId, 'allow1');
+    }
+    h.writes.length = 0;
+    return h;
+}
+
+test('a real pending minimum-current start waits through donor OFF without an extra OFF or ON', async () => {
+    const h = await startBesideDonor('current');
+    const before = h.states.get('ems.0.Devices.Wallbox1.OutputStartReservation_JSON')?.val;
+    h.grant([0, 6], {budgetW: 2760});
+    await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+    assert.equal(h.output.devices[1].pending.stage, 'current');
+    assert.match(h.states.get('ems.0.Devices.Wallbox1.OutputStatus').val, /Startauftrag erhalten.*AUS.*elektrisch/);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox1.OutputStartReservation_JSON').val, before,
+        'waiting cannot refresh the stage deadline');
+    h.ack('allow', 0); await h.output.tick();
+    assert.equal(h.output.devices[1].pending.stage, 'current', 'OFF ACK alone does not free donor power');
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+    h.electricalOff(0); h.ack('feedback1', 6); await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}, {id: 'allow1', val: 1}]);
+    h.ack('allow1', 1); h.measure(1, 6); await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox1.OutputActive').val, true);
+});
+
+test('already issued ON remains reserved during donor OFF and observes its own ACK without cycling', async () => {
+    const h = await startBesideDonor('allow');
+    h.grant([0, 6], {budgetW: 2760});
+    await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+    assert.equal(h.output.devices[1].pending.stage, 'allow');
+    assert.ok(h.states.get('ems.0.Devices.Wallbox1.OutputReservedPower_W').val >= 1380);
+    h.ack('allow1', 1); await h.output.tick();
+    assert.equal(h.output.devices[1].pending, null, 'its existing ON acknowledgement is consumed while peer stops');
+    const proof = JSON.parse(h.states.get('ems.0.Devices.Wallbox1.OutputStartReservation_JSON').val);
+    assert.equal(proof.stage, 'vehicle_response');
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+    h.ack('allow', 0); h.electricalOff(0); h.measure(1, 6); await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox1.OutputActive').val, true);
+    assert.deepEqual(JSON.parse(h.states.get('ems.0.Devices.Wallbox1.OutputStartReservation_JSON').val),
+        {schema: 1, pending: false});
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+});
+
+test('the initial electrical-response window keeps a fixed truthful start proof after ON ACK', async () => {
+    const h = await startBesideDonor('vehicle_response');
+    const before = JSON.parse(h.states.get('ems.0.Devices.Wallbox1.OutputStartReservation_JSON').val);
+    assert.deepEqual(before, {schema: 1, pending: true, stage: 'vehicle_response', amps: 6,
+        phases: 1, stageAt: h.states.get('allow1').ts,
+        validUntil: h.states.get('allow1').ts + 45000});
+    h.advance(2000); h.grant([0, 6], {budgetW: 2760}); await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+    assert.deepEqual(JSON.parse(h.states.get('ems.0.Devices.Wallbox1.OutputStartReservation_JSON').val), before);
+});
+
+test('waiting start reservations never weaken source, device, target, operator or house protection', async t => {
+    for (const fault of ['source', 'device', 'release', 'target', 'operator', 'house', 'master']) await t.test(fault, async () => {
+        const h = await startBesideDonor('allow');
+        h.grant([0, 6], {budgetW: 2760, hardBudgetW: fault === 'operator' ? 1000 : null});
+        if (fault === 'source') h.put('import', 0, {ts: 960000});
+        if (fault === 'device') h.put('error1', 5);
+        if (fault === 'release') h.put('ems.0.Vehicles.Wallbox1.Release', false);
+        if (fault === 'target') h.put('soc1', 80);
+        if (fault === 'house') h.put('h2', 70);
+        if (fault === 'master') h.put('ems.0.Control.Enabled', false);
+        await h.output.tick();
+        assert.ok(h.writes.some(w => w.id === 'allow1' && w.val === 0), `${fault} must stop its owned start`);
+        assert.deepEqual(JSON.parse(h.states.get('ems.0.Devices.Wallbox1.OutputStartReservation_JSON').val),
+            {schema: 1, pending: false});
+        assert.equal(h.writes.some(w => w.id === 'allow1' && w.val === 1), false);
+    });
+});
+
+test('waiting for donor OFF does not extend the pending current ACK deadline', async () => {
+    const h = await startBesideDonor('current');
+    const proof = JSON.parse(h.states.get('ems.0.Devices.Wallbox1.OutputStartReservation_JSON').val);
+    h.put('feedback1', 6, {ts: 999999});
+    h.grant([0, 6], {budgetW: 2760}); await h.output.tick();
+    h.advance(21000); h.put('feedback1', 6, {ts: 999999}); h.grant([0, 6], {budgetW: 2760}); await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox1.ResponseState').val, 'timeout');
+    assert.match(h.output.devices[1].fault, /Rueckmeldung.*gesperrt/);
+    assert.equal(proof.validUntil, proof.stageAt + 20000);
+    assert.deepEqual(JSON.parse(h.states.get('ems.0.Devices.Wallbox1.OutputStartReservation_JSON').val),
+        {schema: 1, pending: false});
+    assert.equal(h.output.devices[1].pending, null);
+    assert.equal(h.output.devices[1].owned, false, 'an already OFF current stage needs no redundant OFF write');
+});
+
+test('a fresh idle car without a previously written start remains blocked by donor OFF', async () => {
+    const h = parallelSetup();
+    h.grant([6, 0], {budgetW: 2760});
+    await h.output.initialize();
+    await h.output.tick(); h.ack('allow', 0); await h.output.tick();
+    h.ack('feedback', 6); await h.output.tick();
+    h.ack('allow', 1); h.measure(0, 6); await h.output.tick();
+    h.grant([0, 6], {budgetW: 2760}); h.writes.length = 0; await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+    assert.equal(h.output.devices[1].owned, false);
+    assert.deepEqual(JSON.parse(h.states.get('ems.0.Devices.Wallbox1.OutputStartReservation_JSON').val),
+        {schema: 1, pending: false});
+});
+
+
+test('an acknowledged current that cannot reach ON expires as a bounded handover wait, not a missing ACK', async () => {
+    const h = await startBesideDonor('current');
+    h.grant([0, 6], {budgetW: 2760}); await h.output.tick();
+    h.advance(2000); h.ack('feedback1', 6); h.grant([0, 6], {budgetW: 2760}); await h.output.tick();
+    // The original ACK at two seconds is kept, rather than renewed each tick.
+    const ackAt = h.states.get('feedback1').ts;
+    h.advance(19000); h.ack('feedback1', 6);
+    assert.ok(h.states.get('feedback1').ts > ackAt);
+    h.grant([0, 6], {budgetW: 2760}); await h.output.tick();
+    assert.equal(h.output.devices[1].pending, null);
+    assert.equal(h.output.devices[1].fault, '', 'a timely ACK is not labelled a go-e communication fault');
+    assert.match(h.states.get('ems.0.Devices.Wallbox1.OutputStatus').val, /Start-Uebergabe-Frist abgelaufen trotz bestaetigtem/);
+    assert.equal(h.writes.some(w => w.id === 'allow1' && w.val === 1), false);
+    assert.deepEqual(JSON.parse(h.states.get('ems.0.Devices.Wallbox1.OutputStartReservation_JSON').val),
+        {schema: 1, pending: false});
+});
+
+test('a timely ON ACK read by a delayed tick keeps its actual vehicle deadline without a second ON', async () => {
+    const h = await startBesideDonor('allow');
+    h.grant([0, 6], {budgetW: 2760}); await h.output.tick();
+    h.advance(18000); h.ack('allow1', 1);
+    const ackAt = h.states.get('allow1').ts;
+    h.advance(3000); h.put('allow1', 1, {ts: ackAt}); h.grant([0, 6], {budgetW: 2760});
+    await h.output.tick();
+    assert.equal(h.output.devices[1].fault, '');
+    assert.equal(h.output.devices[1].pending, null);
+    const proof = JSON.parse(h.states.get('ems.0.Devices.Wallbox1.OutputStartReservation_JSON').val);
+    assert.equal(proof.stage, 'vehicle_response');
+    assert.equal(proof.stageAt, ackAt);
+    assert.equal(proof.validUntil, ackAt + 45000);
+    assert.equal(h.writes.some(w => w.id === 'allow1'), false);
+});
+
+test('start evidence is published only after a successful command write and cleared after a failed ON', async t => {
+    await t.test('failed current write', async () => {
+        const h = parallelSetup();
+        await h.output.initialize(); await h.output.tick();
+        h.ack('allow', 0); h.ack('allow1', 0);
+        const write = h.adapter.setForeignStateAsync;
+        h.adapter.setForeignStateAsync = async (id, value, ack) => {
+            if (id === 'cmd1') throw new Error('test transport rejected current');
+            return write(id, value, ack);
+        };
+        await h.output.tick();
+        assert.match(h.output.devices[1].fault, /transport rejected current/);
+        assert.deepEqual(JSON.parse(h.states.get('ems.0.Devices.Wallbox1.OutputStartReservation_JSON').val),
+            {schema: 1, pending: false});
+        assert.equal(h.writes.some(w => w.id === 'allow1' && w.val === 1), false);
+    });
+    await t.test('failed ON write', async () => {
+        const h = await startBesideDonor('current');
+        const write = h.adapter.setForeignStateAsync;
+        h.adapter.setForeignStateAsync = async (id, value, ack) => {
+            if (id === 'allow1' && value === 1) throw new Error('test transport rejected ON');
+            return write(id, value, ack);
+        };
+        h.ack('feedback1', 6); await h.output.tick();
+        assert.match(h.output.devices[1].fault, /transport rejected ON/);
+        assert.deepEqual(JSON.parse(h.states.get('ems.0.Devices.Wallbox1.OutputStartReservation_JSON').val),
+            {schema: 1, pending: false});
+    });
+});
+
+test('initial vehicle deadline expiry clears startup evidence without claiming a new electrical response', async () => {
+    const h = await startBesideDonor('vehicle_response');
+    const oldProof = JSON.parse(h.states.get('ems.0.Devices.Wallbox1.OutputStartReservation_JSON').val);
+    h.advance(46000); h.grant([6, 6], {budgetW: 2760});
+    h.put('power1', 0); h.put('i11', 0); h.put('i12', 0); h.put('i13', 0);
+    await h.output.tick();
+    assert.deepEqual(JSON.parse(h.states.get('ems.0.Devices.Wallbox1.OutputStartReservation_JSON').val),
+        {schema: 1, pending: false});
+    assert.equal(h.states.get('ems.0.Devices.Wallbox1.ResponseState').val, 'limited');
+    assert.notEqual(h.states.get('ems.0.Devices.Wallbox1.ResponseConfirmedAt').val, oldProof.validUntil);
+    assert.equal(h.writes.some(w => w.id === 'allow1'), false);
+});
+
+test('adapter initialization clears an old startup proof instead of adopting its timer', async () => {
+    const h = await startBesideDonor('allow');
+    const restarted = new WallboxOutput(h.adapter, {now: h.output.now});
+    await restarted.initialize();
+    assert.deepEqual(JSON.parse(h.states.get('ems.0.Devices.Wallbox1.OutputStartReservation_JSON').val),
+        {schema: 1, pending: false});
+    assert.equal(restarted.devices[1].startReservation, null);
+});
+
+test('a three-phase start records its actual three-phase reservation rather than a one-phase floor', async () => {
+    const h = parallelSetup();
+    for (let wb = 0; wb < 2; wb++) Object.assign(h.config, {
+        [`wb${wb}PhaseSwitchEnabled`]: true, [`wb${wb}PhaseControlMode`]: 'fixed',
+        [`wb${wb}ProductionPhases`]: 3, [`wb${wb}MaxCurrent3pA`]: 32, [`wb${wb}MaxPowerW`]: 22080
+    });
+    h.grant([6, 6], {phases: [3, 3], budgetW: 8280});
+    await h.output.initialize(); await h.output.tick();
+    h.ack('allow', 0); h.ack('allow1', 0); await h.output.tick();
+    for (const wb of [0, 1]) {
+        const proof = JSON.parse(h.states.get(`ems.0.Devices.Wallbox${wb}.OutputStartReservation_JSON`).val);
+        assert.equal(proof.stage, 'current');
+        assert.equal(proof.phases, 3);
+        assert.equal(proof.amps, 6);
+        assert.ok(h.states.get(`ems.0.Devices.Wallbox${wb}.OutputReservedPower_W`).val >= 4140);
+    }
+});
