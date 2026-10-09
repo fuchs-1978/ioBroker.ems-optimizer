@@ -7,15 +7,15 @@ const path = require('node:path');
 const config = JSON.parse(fs.readFileSync(path.join(__dirname, '../admin/jsonConfig.json'), 'utf8'));
 const official = require('./fixtures/admin-object-id-schema.json');
 
-function collectFields(value, result = []) {
+function collectFields(value, type = 'objectId', result = []) {
     if (!value || typeof value !== 'object') return result;
-    if (value.type === 'objectId') result.push(value);
-    for (const child of Object.values(value)) collectFields(child, result);
+    if (value.type === type) result.push(value);
+    for (const child of Object.values(value)) collectFields(child, type, result);
     return result;
 }
 
 // Check the exact property contracts from Admin, including nested customFilter
-// objects. Common UI layout/label properties are delegated to the full schema;
+// objects and state displays. Common UI layout/label properties are delegated to the full schema;
 // this targeted regression has no validator dependency or network access.
 function checkProperties(value, schema, location) {
     if (schema === true) return;
@@ -27,6 +27,13 @@ function checkProperties(value, schema, location) {
             catch { return false; }
         });
         assert.equal(matches.length, 1, `${location}: no unique supported schema branch`);
+        return;
+    }
+    if (schema.anyOf) {
+        assert.ok(schema.anyOf.some(candidate => {
+            try { checkProperties(value, candidate, location); return true; }
+            catch { return false; }
+        }), `${location}: no supported schema branch`);
         return;
     }
     if (schema.type) {
@@ -60,6 +67,42 @@ test('all object selectors follow the pinned official Admin objectId property co
         if (field.filterFunc || field.customFilter)
             assert.ok(!Object.hasOwn(field, 'types'), 'Admin forbids types together with customFilter/filterFunc');
     }
+});
+
+test('all state displays follow the pinned official Admin state property contract', () => {
+    const fields = collectFields(config, 'state');
+    assert.ok(fields.length > 0);
+    for (const [i, field] of fields.entries())
+        checkProperties(field, official.definitions.stateProps, `state[${i}]`);
+});
+
+test('heat-pump status widgets only display internal states without write or save controls', () => {
+    const fields = collectFields(config.items.heatPumpTab, 'state');
+    const expected = [
+        'PowerStatus', 'Power_W', 'SGReadyFeedbackState', 'SGReadyFeedbackStatus',
+        'SGReadyRequestedState', 'SGReadyRecommendationValid', 'SGReadyRecommendationReason',
+        'HeatingBoostRequested', 'CoolingBoostRequested', 'CoolingBoostReason', 'CoolingBoostValid',
+    ].map(suffix => `Devices.HeatPump.${suffix}`);
+    assert.deepEqual(fields.map(field => field.oid).sort(), expected.sort(),
+        'all expected WP displays must reference the existing internal state contract');
+    for (const field of fields) {
+        assert.equal(field.control, 'text', field.oid);
+        assert.equal(field.controlled, false, field.oid);
+        assert.equal(field.doNotSave, true, field.oid);
+        assert.equal(field.foreign ?? false, false, field.oid);
+        assert.equal(field.system ?? false, false, field.oid);
+        assert.ok(!Object.hasOwn(field, 'default') && !Object.hasOwn(field, 'defaultFunc'),
+            `${field.oid}: unknown telemetry must not be replaced by an Admin default`);
+    }
+});
+
+test('the official state schema rejects unsupported controls, missing IDs and unknown properties', () => {
+    for (const invalid of [
+        {type: 'state', control: 'text'},
+        {type: 'state', oid: 'Devices.HeatPump.Power_W', control: 'readOnlyText'},
+        {type: 'state', oid: 'Devices.HeatPump.Power_W', controlled: 'false'},
+        {type: 'state', oid: 'Devices.HeatPump.Power_W', writable: false},
+    ]) assert.throws(() => checkProperties(invalid, official.definitions.stateProps, 'state'));
 });
 
 test('the official schema rejects the former customFilter.common.write configuration', () => {

@@ -17,6 +17,7 @@ const {shouldPreserveWallboxOnUnload} = require("./lib/unload-policy");
 const {EXTENSION_SETTINGS} = require("./lib/extension-settings");
 const {OutputMetadata} = require("./lib/output-metadata");
 const {MarketPrices} = require("./lib/market-prices");
+const heatPumpTelemetryParser = require("./lib/heatpump-telemetry");
 
 class EmsOptimizer extends utils.Adapter {
     constructor(options = {}) {
@@ -734,6 +735,7 @@ class EmsOptimizer extends utils.Adapter {
             Set,
             Promise,
             gridConstraints,
+            heatPumpTelemetryParser,
             Infinity,
             NaN,
             parseInt,

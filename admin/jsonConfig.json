@@ -3776,7 +3776,7 @@
       "items": {
         "heatPumpHeader": {
           "type": "header",
-          "text": "Heat pump: slow mode advice only",
+          "text": "1. Measurements and actual feedback",
           "size": 2,
           "newLine": true
         },
@@ -3787,28 +3787,85 @@
           "sm": 4,
           "newLine": true
         },
-        "heatPumpControlEnabled": {
-          "type": "checkbox",
-          "label": "Heat pump strategy release (no external actuator write)",
-          "default": false,
+        "heatPumpPowerId": {
+          "type": "objectId",
+          "label": "Measured electrical heat-pump power",
+          "types": [
+            "state"
+          ],
+          "default": "",
+          "sm": 8
+        },
+        "heatPumpPowerUnit": {
+          "type": "select",
+          "label": "Heat-pump power source unit",
+          "default": "W",
+          "sm": 4,
+          "newLine": true,
+          "options": [
+            {
+              "value": "W",
+              "label": "W"
+            },
+            {
+              "value": "kW",
+              "label": "kW"
+            }
+          ]
+        },
+        "heatPumpPowerScope": {
+          "type": "select",
+          "label": "Scope of the electrical power measurement",
+          "default": "total",
+          "sm": 4,
+          "options": [
+            {
+              "value": "total",
+              "label": "Total heat-pump electrical power"
+            },
+            {
+              "value": "inverter",
+              "label": "Inverter only (not complete §14a telemetry)"
+            }
+          ]
+        },
+        "heatPumpPowerMaxAgeS": {
+          "type": "number",
+          "label": "Maximum electrical power measurement age",
+          "unit": "s",
+          "default": 30,
+          "min": 5,
+          "max": 300,
           "sm": 4
         },
-        "heatPumpPowerId": {
-          "type": "text",
-          "label": "Current electrical heat-pump power for §14a budget",
-          "default": "",
-          "sm": 8,
-          "newLine": true
-        },
-        "_heatPumpAdviceHelp": {
+        "_heatPumpPowerHelp": {
           "type": "staticText",
-          "text": "NORMAL / BOOST / REDUCED are EMS-owned recommendations, not commands to the heat pump. No ISG mode endpoint is written. Advice uses measured buffer/DHW temperatures, PV surplus, the optional shared cheap-price policy and the cooling status configured in Thermal strategy. Independent heat-pump safety and its own temperature control remain authoritative.",
+          "text": "Select the source unit explicitly: W or kW. ISG register 3680 reports IWS inverter power, not proven total heat-pump consumption including auxiliary heaters and pumps. Select inverter scope for that source unless a separate total measurement is verified. Inverter scope is not complete §14a telemetry. Missing, stale, unacknowledged or bad-quality power remains unknown, never 0 W. Valid measured power is required for SG Ready 3/4 recommendations.",
+          "sm": 12,
           "newLine": true
         },
-        "heatPumpAdviceEnabled": {
-          "type": "checkbox",
-          "label": "Enable heat-pump mode recommendations",
-          "default": false,
+        "heatPumpConnectionId": {
+          "type": "objectId",
+          "label": "Optional heat-pump connection status (confirmed true when configured)",
+          "types": [
+            "state"
+          ],
+          "default": "",
+          "sm": 6,
+          "newLine": true
+        },
+        "heatPumpSgReadyStateId": {
+          "type": "objectId",
+          "label": "Actual SG Ready feedback (decoded integer 1–4)",
+          "types": [
+            "state"
+          ],
+          "default": "",
+          "sm": 6
+        },
+        "_heatPumpFeedbackHelp": {
+          "type": "staticText",
+          "text": "An empty connection mapping is optional; a configured source must confirm a valid online state. SG Ready feedback must already be decoded to logical state 1, 2, 3 or 4; do not map raw input bits, an unrelated operating status or legacy EMS mode values. Device feedback describes the actual state, not acknowledgement of an EMS command. No command is sent.",
           "sm": 12,
           "newLine": true
         },
@@ -3819,7 +3876,7 @@
             "state"
           ],
           "default": "",
-          "sm": 12,
+          "sm": 6,
           "newLine": true
         },
         "heatPumpDhwTemperatureId": {
@@ -3829,6 +3886,93 @@
             "state"
           ],
           "default": "",
+          "sm": 6
+        },
+        "heatPumpFeedbackMaxAgeS": {
+          "type": "number",
+          "label": "Maximum connection/SG Ready feedback age",
+          "unit": "s",
+          "default": 120,
+          "min": 5,
+          "max": 3600,
+          "sm": 6,
+          "newLine": true
+        },
+        "heatPumpTemperatureMaxAgeS": {
+          "type": "number",
+          "label": "Maximum heat-pump temperature age",
+          "unit": "s",
+          "default": 3600,
+          "min": 10,
+          "max": 7200,
+          "sm": 6
+        },
+        "_heatPumpPowerStatus": {
+          "type": "state",
+          "label": "Measured power and source quality",
+          "oid": "Devices.HeatPump.PowerStatus",
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true,
+          "sm": 8,
+          "newLine": true
+        },
+        "_heatPumpPowerValue": {
+          "type": "state",
+          "label": "Validated electrical power (W; unknown remains empty)",
+          "oid": "Devices.HeatPump.Power_W",
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true,
+          "sm": 4
+        },
+        "_heatPumpActualSgFeedback": {
+          "type": "state",
+          "label": "Actual decoded SG Ready state",
+          "oid": "Devices.HeatPump.SGReadyFeedbackState",
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true,
+          "sm": 4,
+          "newLine": true
+        },
+        "_heatPumpActualSgStatus": {
+          "type": "state",
+          "label": "SG Ready feedback quality",
+          "oid": "Devices.HeatPump.SGReadyFeedbackStatus",
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true,
+          "sm": 8
+        },
+        "_heatPumpSgReadyHeader": {
+          "type": "header",
+          "text": "2. Passive SG Ready recommendations",
+          "size": 2,
+          "newLine": true
+        },
+        "heatPumpControlEnabled": {
+          "type": "checkbox",
+          "label": "Participate in EMS recommendations (no external actuator write)",
+          "default": false,
+          "sm": 6,
+          "newLine": true
+        },
+        "heatPumpAdviceEnabled": {
+          "type": "checkbox",
+          "label": "Enable passive SG Ready recommendations",
+          "default": false,
+          "sm": 6
+        },
+        "_heatPumpAdviceHelp": {
+          "type": "staticText",
+          "text": "Recommendations are EMS-owned information, not commands to the heat pump. No ISG mode endpoint is written. Advice uses measured electrical power, buffer/DHW temperatures, PV surplus, the optional shared cheap-price policy and the cooling status configured in Thermal strategy. Independent heat-pump safety and its own temperature control remain authoritative.",
+          "sm": 12,
+          "newLine": true
+        },
+        "_heatPumpSgReadyHelp": {
+          "type": "staticText",
+          "text": "SG Ready 1 = block; 2 = normal; 3 = raised heating/DHW request; 4 = maximum heating/DHW request. These states are demand levels, not exact watt targets. SG Ready 4 is not a cooling request. Automatic price-based SG Ready 1 blocking is not implemented. Legacy REDUCED = 0 is an internal EMS inhibition recommendation, never SG Ready 1.",
           "sm": 12,
           "newLine": true
         },
@@ -3839,7 +3983,7 @@
           "default": 45,
           "min": 10,
           "max": 70,
-          "sm": 4,
+          "sm": 6,
           "newLine": true
         },
         "heatPumpDhwTargetC": {
@@ -3849,20 +3993,11 @@
           "default": 60,
           "min": 10,
           "max": 80,
-          "sm": 4
-        },
-        "heatPumpTemperatureMaxAgeS": {
-          "type": "number",
-          "label": "Maximum heat-pump temperature age",
-          "unit": "s",
-          "default": 3600,
-          "min": 10,
-          "max": 7200,
-          "sm": 4
+          "sm": 6
         },
         "heatPumpMinHoldS": {
           "type": "number",
-          "label": "Minimum normal mode-advice holding time",
+          "label": "Minimum recommendation holding time",
           "unit": "s",
           "default": 300,
           "min": 60,
@@ -3872,7 +4007,7 @@
         },
         "heatPumpPvBoostOnW": {
           "type": "number",
-          "label": "PV surplus to enter BOOST advice",
+          "label": "PV surplus to enter SG Ready 3 advice",
           "unit": "W",
           "default": 2500,
           "min": 1,
@@ -3881,16 +4016,205 @@
         },
         "heatPumpPvBoostOffW": {
           "type": "number",
-          "label": "PV surplus to leave BOOST advice",
+          "label": "PV surplus to leave SG Ready 3 advice",
           "unit": "W",
           "default": 1200,
           "min": 0,
           "max": 30000,
           "sm": 4
         },
+        "heatPumpMaxBoostEnabled": {
+          "type": "checkbox",
+          "label": "Allow SG Ready 4 maximum-demand recommendation (heating/DHW only)",
+          "default": false,
+          "sm": 12,
+          "newLine": true
+        },
+        "heatPumpMaxBoostOnW": {
+          "type": "number",
+          "label": "PV surplus to enter SG Ready 4 advice",
+          "unit": "W",
+          "default": 5000,
+          "min": 1,
+          "max": 30000,
+          "sm": 6,
+          "newLine": true
+        },
+        "heatPumpMaxBoostOffW": {
+          "type": "number",
+          "label": "PV surplus to leave SG Ready 4 advice",
+          "unit": "W",
+          "default": 4000,
+          "min": 0,
+          "max": 30000,
+          "sm": 6
+        },
         "_heatPumpHysteresisHelp": {
           "type": "staticText",
-          "text": "The BOOST entry threshold must be positive and greater than the exit threshold. Safety blocks and loss of price permission can end advice before the normal holding time expires.",
+          "text": "For SG Ready 3 and 4, each entry threshold must be positive and greater than its exit threshold. The maximum-demand recommendation has a separate opt-in and remains a heating/DHW request. Safety blocks, unavailable sources and loss of price permission can end advice before the normal holding time expires.",
+          "sm": 12,
+          "newLine": true
+        },
+        "_heatPumpRecommendedSgState": {
+          "type": "state",
+          "label": "Recommended SG Ready state (internal only)",
+          "oid": "Devices.HeatPump.SGReadyRequestedState",
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true,
+          "sm": 4,
+          "newLine": true
+        },
+        "_heatPumpSgAdviceValidity": {
+          "type": "state",
+          "label": "SG Ready recommendation valid",
+          "oid": "Devices.HeatPump.SGReadyRecommendationValid",
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true,
+          "sm": 8
+        },
+        "_heatPumpSgAdviceReason": {
+          "type": "state",
+          "label": "SG Ready recommendation reason",
+          "oid": "Devices.HeatPump.SGReadyRecommendationReason",
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true,
+          "sm": 12,
+          "newLine": true
+        },
+        "_heatPumpKnxHeader": {
+          "type": "header",
+          "text": "3. Separate KNX heating and cooling boost requests",
+          "size": 2,
+          "newLine": true
+        },
+        "_heatPumpKnxHelp": {
+          "type": "staticText",
+          "text": "These are internal request/status states only. There is no KNX output mapping or external write release in this version. Heating boost requests available heating-buffer capacity; a DHW-only SG Ready recommendation does not set the KNX heating flag. Cooling boost is a separate optional request and is never SG Ready 4. Cooling requires valid room, flow and dew-point measurements, confirmed cooling status and measured electrical power. The flow target must respect dew point plus safety margin. Existing heat-pump, FET and dew-point protection remains authoritative.",
+          "sm": 12,
+          "newLine": true
+        },
+        "heatPumpCoolingBoostEnabled": {
+          "type": "checkbox",
+          "label": "Enable separate cooling boost recommendation (internal only)",
+          "default": false,
+          "sm": 12,
+          "newLine": true
+        },
+        "heatPumpCoolingRoomTemperatureId": {
+          "type": "objectId",
+          "label": "Room temperature for cooling boost (°C)",
+          "types": [
+            "state"
+          ],
+          "default": "",
+          "sm": 6,
+          "newLine": true
+        },
+        "heatPumpCoolingDewPointId": {
+          "type": "objectId",
+          "label": "Dew-point temperature for cooling boost (°C)",
+          "types": [
+            "state"
+          ],
+          "default": "",
+          "sm": 6
+        },
+        "heatPumpCoolingFlowTemperatureId": {
+          "type": "objectId",
+          "label": "Measured cooling flow temperature (°C)",
+          "types": [
+            "state"
+          ],
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "heatPumpCoolingRoomTargetC": {
+          "type": "number",
+          "label": "Requested cooling room target",
+          "unit": "°C",
+          "default": 23,
+          "min": 16,
+          "max": 30,
+          "sm": 4,
+          "newLine": true
+        },
+        "heatPumpCoolingFlowTargetC": {
+          "type": "number",
+          "label": "Requested cooling flow target",
+          "unit": "°C",
+          "default": 20,
+          "min": 15,
+          "max": 30,
+          "sm": 4
+        },
+        "heatPumpCoolingDewPointMarginK": {
+          "type": "number",
+          "label": "Cooling dew-point safety margin",
+          "unit": "K",
+          "default": 2,
+          "min": 0.5,
+          "max": 10,
+          "sm": 4
+        },
+        "_heatPumpKnxHeatingStatus": {
+          "type": "state",
+          "label": "Internal KNX heating boost request",
+          "oid": "Devices.HeatPump.HeatingBoostRequested",
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true,
+          "sm": 6,
+          "newLine": true
+        },
+        "_heatPumpKnxCoolingStatus": {
+          "type": "state",
+          "label": "Internal KNX cooling boost request",
+          "oid": "Devices.HeatPump.CoolingBoostRequested",
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true,
+          "sm": 6
+        },
+        "_heatPumpCoolingStatus": {
+          "type": "state",
+          "label": "Cooling boost reason",
+          "oid": "Devices.HeatPump.CoolingBoostReason",
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true,
+          "sm": 12,
+          "newLine": true
+        },
+        "_heatPumpCoolingValidity": {
+          "type": "state",
+          "label": "Cooling boost recommendation valid",
+          "oid": "Devices.HeatPump.CoolingBoostValid",
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true,
+          "sm": 12,
+          "newLine": true
+        },
+        "_heatPumpInterfaceHeader": {
+          "type": "header",
+          "text": "4. ISG interface and §14a limits (information only)",
+          "size": 2,
+          "newLine": true
+        },
+        "_heatPumpInterfaceHelp": {
+          "type": "staticText",
+          "text": "ISG register 4258 selects the input mode: SG Ready and PL/LU interpret the input bits differently. In PL/LU mode, input bits 11 mean a power limit, not SG Ready 4. Decode feedback according to the actual configured interface mode. Register 4259 is not implemented here; its unit/scaling is not confirmed, so no writable power-limit field is offered. SG Ready recommendations do not establish a §14a power limit or prove compliance.",
+          "sm": 12,
+          "newLine": true
+        },
+        "_heatPumpReadOnlyHelp": {
+          "type": "staticText",
+          "text": "The status rows above are read-only Devices.HeatPump states. They show recommendation and feedback separately and do not enable any heat-pump, KNX or ISG output. Source mappings remain visible while recommendations are disabled, so they can be configured and checked before use.",
+          "sm": 12,
           "newLine": true
         }
       }
