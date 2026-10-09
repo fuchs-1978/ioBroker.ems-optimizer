@@ -36,6 +36,33 @@ function fixture(initialNow = Date.now()) {
         advance: ms => {now += ms;}, now: () => now};
 }
 
+test('DHW unknown temperatures and full source diagnostics survive production delta replay', async () => {
+    const h = fixture(5000000);
+    const sources = [0, 1, 2, 3, 4].map(index => ({
+        id: `source.${index}.` + 'long-name.'.repeat(14), name: `Temperature ${index}`,
+        rawValue: index ? 45 : 39.9, valueC: index ? 45 : null, valid: Boolean(index),
+        status: index ? 'valid' : 'stale', reason: index ? 'gueltig' : 'veraltet',
+        ts: index ? 4999000 : 1, lc: 1, ageMs: index ? 1000 : 4999999,
+        maxAgeMs: index === 4 ? 120000 : 3600000, ack: true, q: 0}));
+    const diagnostics = {evaluatedAt: 5000000, sources};
+    const json = JSON.stringify(diagnostics);
+    assert.ok(json.length > 600, 'exercise the ordinary scalar text limit');
+    h.own('Devices.MyPV_DHW.BottomTemperature_C', null);
+    h.own('Devices.MyPV_DHW.TopTemperature_C', 45);
+    h.own('Devices.MyPV_DHW.TemperatureValid', false);
+    h.own('Devices.MyPV_DHW.TemperatureSources_JSON', json);
+    h.shadow.productionRecord({type: 'decision'}); await h.flush();
+    h.advance(1000);
+    h.own('Devices.MyPV_DHW.TopTemperature_C', 46);
+    h.shadow.productionRecord({type: 'decision'}); await h.flush();
+    const record = h.records().at(-1);
+    assert.equal(record.production.ehz.BottomTemperature_C, null);
+    assert.equal(record.production.ehz.TopTemperature_C, 46);
+    assert.equal(record.production.ehz.TemperatureValid, false);
+    assert.deepEqual(record.production.ehz.temperatureSources, diagnostics);
+    assert.equal(record.production.ehz.temperatureSources.sources[4].id, sources[4].id);
+});
+
 test('issue116 source diagnostic identity and late completion survive lossless production record replay', async () => {
     const h = fixture(2000000);
     const episode = {key: '0:2000000:1', checkedAt: 2000000, stopAt: 2000000,

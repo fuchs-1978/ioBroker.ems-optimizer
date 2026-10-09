@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.57**
+Aktuelle Version: **0.17.0-alpha.58**
 
 Prüfung zu Tages-Issue #98: [produktive Diagnose, Phasen-Rückfallvertrag,
 Reproduktion und nächste SQL-Abnahme](docs/issue98-live-diagnostics.md).
@@ -45,6 +45,12 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.58 – Temperaturquellen nachvollziehbar bewerten
+
+Fehlende, veraltete, unbestätigte oder unplausible EHZ-Temperaturen werden als `null` statt als scheinbare 0 °C angezeigt. Ein bestätigter gültiger 0-°C-Wert bleibt 0. `Devices.MyPV_DHW.TemperatureValid` und `TemperatureSources_JSON` nennen die betroffene Quelle, Rohwert, Quellen- und Änderungszeit (`ts`/`lc`), Alter, ACK, Qualität und Fehlergrund. Die produktiven DecisionRecords erhalten die vollständige strukturierte Diagnose und unbekannte Werte auch im kompakten Replay. Reine Altersfortschreibung wird höchstens minütlich veröffentlicht; echte Quellen- und Qualitätswechsel sofort.
+
+Ein unveränderter Sensorwert mit echter neuer Quellenbestätigung bleibt gültig. Der Adapter erneuert keine fremden Zeitstempel. Die vorhandenen Temperatur-, Verbindungs-, Hausanschluss- und §14a-Grenzen sowie Wallboxtimer bleiben maßgeblich. [Diagnosevertrag, Regressionen und nächste Betriebsprüfung](docs/temperature-source-diagnostics.md).
 
 ## Neu in 0.17.0-alpha.57 – Wärmepumpe und Admin vorbereiten
 
@@ -1764,6 +1770,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.58 | Unbekannte EHZ-Temperaturen bleiben null; vollständige begrenzte Quellen-/Qualitätsdiagnose in Anzeige und produktiven Records, echte konstante Bestätigungen gültig, Schutzgrenzen unverändert. |
 | 0.17.0-alpha.57 | Passive WP-Mess-/SG-Ready-Vorbereitung, getrennte Heiz-/Kühlboostwünsche mit Taupunktgrenze und übersetzter Admin; normierte vollständige WP-Messung für §14a, keine externen WP-Schreibausgänge. |
 | 0.17.0-alpha.56 | Beobachtete Netz-Mindestladung endet ohne Nachlauf; PV-Fortsetzung erhält normale Timer, andere Mindestladungen und bestätigte Leistungsreservierungen bleiben geschützt. |
 | 0.17.0-alpha.55 | Bereits bestätigte laufende 1P-Mindestladung bleibt beim Nachlauf einer anderen Wallbox erhalten; neue Starts, Phasenwechsel und reale Schutzbudgets bleiben begrenzt. |
