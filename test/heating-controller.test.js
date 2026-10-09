@@ -68,6 +68,41 @@ test('independent HK controller follows budget while battery absorbs NVP residua
     assert.equal(h.states.get('ems.0.Devices.MyPV_Heating.OutputOwned').val, true);
 });
 
+test('issue123 HK completed zero is bound to the sink actually written after recovery', () => {
+    const h = setup();
+    h.own('Devices.MyPV_Heating.OutputOwned', true);
+    h.own('Devices.MyPV_Heating.OutputSetpointId', 'oldSet');
+    h.own('Devices.MyPV_Heating.OutputCommand_W', 1000);
+    h.own('Devices.MyPV_Heating.OutputReservationState_JSON', JSON.stringify({
+        highW: [1000, 0, 0], seenAt: [1999000, 0, 0], riseAt: [1998000, 0, 0],
+        commandW: [1000, 0, 0], commandAt: 1998000,
+        ids: ['hk1', 'hk2', 'hk3'], sinkId: 'hkSet'}));
+    h.own('System.RealOutputsEnabled', false); h.tick(); h.complete();
+    assert.deepEqual(h.writes, [{id: 'oldSet', value: 0}]);
+    h.advance(1000); h.fresh(); h.tick();
+    const record = JSON.parse(h.states.get('ems.0.Devices.MyPV_Heating.OutputReservationState_JSON').val);
+    assert.equal(record.zeroWriteAt, 0, 'a different output sink did not acknowledge this reservation');
+    assert.deepEqual(record.highW, [1000, 0, 0]);
+});
+
+test('issue123 HK late zero callback cannot prove stop after the target is remapped', () => {
+    const h = setup(); h.tick(); h.complete();
+    h.advance(1000); h.fresh(); h.put('hk1', 1000);
+    h.own('System.RealOutputsEnabled', false); h.tick();
+    h.nativeConfig.heatingSetpointId = 'newSet';
+    h.nativeConfig.heatingOutput1Id = 'new1';
+    h.nativeConfig.heatingOutput2Id = 'new2';
+    h.nativeConfig.heatingOutput3Id = 'new3';
+    h.complete(); h.advance(1000); h.fresh();
+    for (const id of ['new1', 'new2', 'new3']) h.put(id, 0);
+    h.tick();
+    const record = JSON.parse(h.states.get('ems.0.Devices.MyPV_Heating.OutputReservationState_JSON').val);
+    assert.equal(record.zeroWriteAt, 0);
+    assert.equal(record.sinkId, 'hkSet');
+    assert.deepEqual(record.highW, [1000, 0, 0]);
+    assert.equal(h.writes.some(w => w.id === 'newSet'), false);
+});
+
 test('heating house-connection phase imports/exports and fallback currents use exactly 30 s', () => {
     for (const directional of [false, true]) {
         const h = setup();
