@@ -346,6 +346,8 @@ class EmsOptimizer extends utils.Adapter {
         const settings = {
             ...EXTENSION_SETTINGS,
             BatteryCapacity_kWh: ["batteryCapacityKWh", 10],
+            BatteryCapacitySource: ["batteryCapacitySource", "manual"],
+            BatteryPackCapacity_kWh: ["batteryPackCapacityKWh", 0],
             BatteryMaxCharge_W: ["batteryMaxChargeW", 2400],
             BatteryMaxDischarge_W: ["batteryMaxDischargeW", 2400],
             BatteryMinSoC_pct: ["batteryMinSocPct", 15],

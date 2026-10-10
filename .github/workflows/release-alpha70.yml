@@ -1,0 +1,52 @@
+name: Publish validated alpha.70
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - package.json
+      - .github/workflows/release-alpha70.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-alpha70
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+      - id: version
+        run: echo "version=$(node -p 'require("./package.json").version')" >> "$GITHUB_OUTPUT"
+      - run: npm install
+      - run: npm test
+      - run: npm run test:package
+      - run: npm pack --dry-run --json > "$RUNNER_TEMP/ems-package.json"
+
+  publish:
+    needs: validate
+    if: needs.validate.outputs.version == '0.17.0-alpha.70'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+      - name: Publish tag and prerelease for this validated main commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag=v0.17.0-alpha.70
+          main_sha=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')
+          test "$main_sha" = "$GITHUB_SHA"
+          gh release create "$tag" --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" --prerelease --title "0.17.0-alpha.70" \
+            --notes-file docs/releases/0.17.0-alpha.70.md

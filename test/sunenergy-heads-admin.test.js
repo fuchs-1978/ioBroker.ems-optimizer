@@ -39,13 +39,16 @@ test('one, two or three heads show only the corresponding limits and preserve to
             }
         }
     }
-    for (const name of ['batteryCapacityKWh', 'batteryMaxChargeW', 'batteryMaxDischargeW',
-        'batterySocId', 'batteryPowerId']) assert.equal(fields[name].hidden, undefined);
+    for (const name of ['batteryMaxChargeW', 'batteryMaxDischargeW'])
+        assert.equal(fields[name].hidden, undefined);
+    assert.equal(hidden(fields.batteryCapacityKWh, {batteryDispatchMode: 'sunenergy-heads',
+        batteryCapacitySource: 'manual'}), false);
 });
 
 test('automatic head telemetry hides conflicting legacy actuator mappings only in the new mode', () => {
     for (const name of ['batterySetpointId', 'batteryAcPowerId', 'batteryHeartbeatId',
-        'batteryOnlineId', 'batteryManualModeId', 'batteryLocalModeId']) {
+        'batteryOnlineId', 'batteryManualModeId', 'batteryLocalModeId',
+        'batterySocId', 'batteryPowerId', 'batteryPowerSign']) {
         assert.equal(hidden(fields[name], {batteryDispatchMode: 'sunenergy-heads'}), true);
         assert.equal(hidden(fields[name], {batteryDispatchMode: 'single-head'}), false);
     }

@@ -482,5 +482,12 @@
   "Head 2: maximum discharge power": "Head 2: maximum discharge power",
   "SunEnergy head 3: power limits": "SunEnergy head 3: power limits",
   "Head 3: maximum charge power": "Head 3: maximum charge power",
-  "Head 3: maximum discharge power": "Head 3: maximum discharge power"
+  "Head 3: maximum discharge power": "Head 3: maximum discharge power",
+  "In this mode the EMS reads SoC (SC), online pack count (ON), actual AC power (GP), device SoC limits and device/model power limits from coherent per-head responses. Separate SoC and DC-power mappings are not used. User targets, permissions and additional power limits remain unchanged. No dynamic BMS charge limit, efficiency or battery temperature is inferred.": "In this mode the EMS reads SoC (SC), online pack count (ON), actual AC power (GP), device SoC limits and device/model power limits from coherent per-head responses. Separate SoC and DC-power mappings are not used. User targets, permissions and additional power limits remain unchanged. No dynamic BMS charge limit, efficiency or battery temperature is inferred.",
+  "Automatic capacity is the sum of online packs (ON) multiplied by the explicitly entered capacity of one equal-sized pack. ON is an online pack count, not the nominal installed capacity. Confirm the pack size from your device documentation; no default pack size is assumed. Missing or invalid data for any selected head, or a missing pack size, makes automatic capacity unknown and prevents a valid battery forecast. The manual capacity is not used as a silent fallback.": "Automatic capacity is the sum of online packs (ON) multiplied by the explicitly entered capacity of one equal-sized pack. ON is an online pack count, not the nominal installed capacity. Confirm the pack size from your device documentation; no default pack size is assumed. Missing or invalid data for any selected head, or a missing pack size, makes automatic capacity unknown and prevents a valid battery forecast. The manual capacity is not used as a silent fallback.",
+  "Battery capacity source": "Battery capacity source",
+  "Manually entered total capacity": "Manually entered total capacity",
+  "Online packs from the SunEnergy adapter": "Online packs from the SunEnergy adapter",
+  "Confirmed capacity per equal-sized battery pack": "Confirmed capacity per equal-sized battery pack",
+  "Enter a positive kWh value from the pack documentation. Zero means not specified, not zero-capacity hardware.": "Enter a positive kWh value from the pack documentation. Zero means not specified, not zero-capacity hardware."
 }

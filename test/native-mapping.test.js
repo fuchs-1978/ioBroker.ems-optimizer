@@ -44,6 +44,25 @@ test('central house-connection settings derive one working limit', () => {
         wallboxHaIncreaseLimitA: 58}), {fuseA: 63, reserveA: 5, increaseLimitA: 58});
 });
 
+test('SunEnergy head mode derives historical sources from the selected instance only', () => {
+    const mapping = buildNativeMapping({batteryDispatchMode: 'sunenergy-heads',
+        batterySunEnergyInstance: 'sunenergyxt500.2', batterySocId: 'wrong.soc', batteryPowerId: 'wrong.dc',
+        dataPointMapJson: '{"DP_BATTERY_SOC":"legacy.soc","DP_CUSTOM":"keep"}'});
+    assert.equal(mapping.DP_BATTERY_SOC, 'sunenergyxt500.2.total.soc');
+    assert.equal(mapping.DP_BATTERY_POWER, 'sunenergyxt500.2.total.batteryPower');
+    assert.equal(mapping.DP_CUSTOM, 'keep');
+    const invalid = buildNativeMapping({batteryDispatchMode: 'sunenergy-heads',
+        batterySunEnergyInstance: 'other.0', batterySocId: 'wrong.soc'});
+    assert.equal(invalid.DP_BATTERY_SOC, '');
+    assert.equal(invalid.DP_BATTERY_POWER, '');
+});
+
+test('legacy battery sources remain explicit outside SunEnergy head mode', () => {
+    const mapping = buildNativeMapping({batterySocId: 'legacy.soc', batteryPowerId: 'legacy.power'});
+    assert.equal(mapping.DP_BATTERY_SOC, 'legacy.soc');
+    assert.equal(mapping.DP_BATTERY_POWER, 'legacy.power');
+});
+
 test('BHKW power and counter explicit mappings override legacy sources independently', () => {
     const mapping = buildNativeMapping({bhkwPowerId: 'meter.power', bhkwEnergyId: 'meter.energy',
         dataPointMapJson: '{"DP_BHKW_POWER":"old.power","DP_BHKW_ENERGY":"old.energy"}'});
