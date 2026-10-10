@@ -1391,6 +1391,148 @@ async function establishedEqvWithIdleRelease(peer = 2) {
     return {h, peer, id, edge, activeSince, advance};
 }
 
+async function parallelEqvWithIdleRelease(peer = 2) {
+    const fixture = await establishedEqvWithIdleRelease(peer);
+    const {h} = fixture;
+    h.config.wallboxParallelChargingEnabled = true;
+    h.put('ems.0.Config.WallboxParallelChargingEnabled', true);
+    const publishAllocation = () => {
+        const allocations = h.output.enabledDevices().map(d => {
+            const targetA = d.wb === 1 ? 6 : 0;
+            h.put(`ems.0.Control.Targets.Wallbox${d.wb}_W`, targetA * 230);
+            h.put(`ems.0.Control.Targets.Wallbox${d.wb}_A`, targetA);
+            h.put(`ems.0.Control.Targets.Wallbox${d.wb}_Phases`, 1);
+            return {wb: d.wb, authorized: d.wb === 1, targetA, phases: 1,
+                reservedW: targetA * 230, minimumW: 0, pvBudgetW: targetA * 230};
+        });
+        h.put('ems.0.Control.ParallelWallboxAllocation_JSON', JSON.stringify({schema: 1, valid: true,
+            timestamp: h.states.get('ems.0.Control.LastUpdate').val, voltage: 230,
+            order: [1], budgetW: 1380, hardBudgetW: 8000, allocations}));
+    };
+    publishAllocation();
+    return {...fixture, publishAllocation, advance: (ms = 1000) => {
+        fixture.advance(ms); publishAllocation();
+    }};
+}
+
+for (const peer of [0, 2]) test(`parallel EQV charging actively clears idle WB${peer} release before replug`, async () => {
+    const {h, id, activeSince, advance} = await parallelEqvWithIdleRelease(peer);
+    assert.equal(h.output.parallelAllocation(1).valid, true,
+        'exercise the full productive update with a valid shared allocation');
+    await h.output.tick();
+    assert.deepEqual(h.writes.filter(write => write.id === id('allow')), [{id: id('allow'), val: 0}],
+        'a zero-budget empty peer must receive OFF even while an established selected charger runs');
+    assert.equal(h.output.devices[peer].owned, true,
+        'an OFF operation remains owned until the physical ACK');
+    assert.ok(h.output.devices[peer].stopRequest);
+    for (let tick = 0; tick < 3; tick++) {
+        advance(); await h.output.tick();
+        assert.equal(h.output.devices[peer].owned, true);
+        assert.ok(h.output.devices[peer].stopRequest);
+        assert.equal(h.output.devices[1].activeSince, activeSince);
+        assert.equal(h.states.get('ems.0.Devices.Wallbox1.OutputActive').val, true);
+        assert.equal(h.states.get('ems.0.Devices.Wallbox1.SequenceResumePending').val, false);
+    }
+    assert.equal(h.writes.filter(write => write.id === id('allow')).length, 1,
+        'normal Modbus latency must not rewrite OFF every controller tick');
+    assert.ok(!h.writes.some(write => write.id === 'allow1' && write.val === 0),
+        'cleaning an empty parallel peer must retain the established EQV session');
+
+    // A replug can happen while the OFF acknowledgement is still in flight.
+    // The zero shared allocation and explicit user release stay withdrawn.
+    h.put(id('car'), 2); h.put(peer === 0 ? 'userAllow' : `userAllow${peer}`, false);
+    h.put(`ems.0.Vehicles.Wallbox${peer}.Release`, false);
+    advance(); await h.output.tick();
+    assert.ok(!h.writes.some(write => write.id === id('allow') && write.val === 1));
+    assert.equal(h.output.devices[peer].owned, true);
+
+    h.ack(id('allow'), 0);
+    const offAckAt = h.states.get(id('allow')).ts;
+    for (const kind of ['power', 'L1', 'L2', 'L3'])
+        h.put(id(kind), 0, {ts: offAckAt - 1});
+    await h.output.tick();
+    assert.equal(h.output.devices[peer].owned, true,
+        'pre-ACK electrical zero samples cannot complete the stop');
+    assert.equal(h.states.get(`ems.0.Devices.Wallbox${peer}.StopPowerPending`).val, true);
+    for (const kind of ['power', 'L1', 'L2', 'L3'])
+        h.put(id(kind), 0, {ts: offAckAt + 1});
+    await h.output.tick();
+    assert.equal(h.output.devices[peer].owned, false);
+    assert.equal(h.output.devices[peer].stopRequest, null);
+    assert.equal(h.states.get(`ems.0.Devices.Wallbox${peer}.OutputReservedPower_W`).val, 0);
+    advance(); await h.output.tick();
+    assert.ok(!h.writes.some(write => write.id === id('allow') && write.val === 1),
+        'replug must not resurrect an ON command without a positive grant and user release');
+    assert.equal(h.output.devices[1].activeSince, activeSince);
+});
+
+test('parallel idle-peer OFF retains electrical draw reservation until fresh OFF and rest', async () => {
+    const {h, id, activeSince, advance} = await parallelEqvWithIdleRelease(2);
+    await h.output.tick();
+    assert.ok(h.writes.some(write => write.id === id('allow') && write.val === 0));
+    advance(); h.put(id('car'), 2); h.put(id('power'), 0.2); h.put(id('L1'), 1);
+    await h.output.tick();
+    const reservedW = h.output.parallelLoadReservations(h.mapping, 1).wallboxesW[2];
+    assert.ok(reservedW >= 230,
+        'unexpected draw during OFF response remains reserved in the common load budget');
+    assert.equal(h.output.devices[2].owned, true);
+    h.ack(id('allow'), 0); await h.output.tick();
+    assert.equal(h.output.devices[2].owned, true);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox2.StopPowerPending').val, true);
+    assert.ok(h.output.parallelLoadReservations(h.mapping, 1).wallboxesW[2] >= reservedW);
+    advance(); h.electricalOff(2); await h.output.tick();
+    assert.equal(h.output.devices[2].owned, false);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox2.OutputReservedPower_W').val, 0);
+    assert.ok(!h.writes.some(write => write.id === 'allow1' && write.val === 0));
+    assert.equal(h.output.devices[1].activeSince, activeSince);
+});
+
+test('parallel idle-peer missing OFF ACK retries only at its deadline and never releases the peer', async () => {
+    const {h, id, activeSince, advance} = await parallelEqvWithIdleRelease(2);
+    await h.output.tick();
+    assert.ok(h.writes.some(write => write.id === id('allow') && write.val === 0));
+    const firstAttempt = h.output.devices[2].stopRequest.lastAttempt;
+    advance(19000); await h.output.tick();
+    assert.equal(h.output.devices[2].stopRequest.lastAttempt, firstAttempt);
+    assert.equal(h.writes.filter(write => write.id === id('allow')).length, 1);
+    advance(1000); await h.output.tick();
+    assert.equal(h.writes.filter(write => write.id === id('allow')).length, 2,
+        'the actual configured feedback timeout permits one bounded OFF retry');
+    assert.match(h.output.devices[2].fault, /AUS-Rueckmeldung fehlt/);
+    const retryAttempt = h.output.devices[2].stopRequest.lastAttempt;
+    for (let tick = 0; tick < 3; tick++) {
+        advance(); await h.output.tick();
+        assert.equal(h.output.devices[2].stopRequest.lastAttempt, retryAttempt);
+        assert.equal(h.output.devices[2].owned, true);
+        assert.equal(h.output.devices[1].activeSince, activeSince);
+    }
+    h.ack(id('allow'), 0); h.electricalOff(2); await h.output.tick();
+    assert.equal(h.output.devices[2].owned, false);
+    assert.match(h.output.devices[2].fault, /AUS-Rueckmeldung fehlt/,
+        'a delayed stop ACK must not reset the existing fault lock');
+    h.put(id('car'), 2); advance(); await h.output.tick();
+    assert.ok(!h.writes.some(write => write.id === id('allow') && write.val === 1));
+    assert.ok(!h.writes.some(write => write.id === 'allow1' && write.val === 0));
+    assert.equal(h.output.devices[1].activeSince, activeSince);
+});
+
+for (const [name, change] of [
+    ['Master/output release OFF', ({h}) => h.put('ems.0.System.RealOutputsEnabled', false)],
+    ['global writing disabled', ({h}) => { h.config.globalWriteEnabled = false; }],
+    ['alpha authority not confirmed', ({h}) => { h.config.multiWallboxAlphaArmed = false; }],
+    ['peer not armed', ({h, peer}) => { h.config[`wb${peer}ProductionArmed`] = false; }],
+    ['peer control disabled', ({h, peer}) => { h.config[`wb${peer}ControlEnabled`] = false; }],
+    ['peer not present', ({h, peer}) => { h.config[`wb${peer}Present`] = false; }],
+    ['peer output configuration unconfirmed', ({h, peer}) => { h.output.devices[peer].valid = false; }]
+]) test(`parallel idle-peer cleanup makes no peer writes when ${name}`, async () => {
+    const fixture = await parallelEqvWithIdleRelease(2);
+    change(fixture);
+    await fixture.h.output.tick();
+    assert.ok(!fixture.h.writes.some(write => write.id === fixture.id('allow')),
+        'unowned peer cleanup must respect productive write authority');
+    assert.equal(fixture.h.output.devices[fixture.peer].owned, false);
+});
+
 for (const peer of [0, 2]) test(`established EQV survives confirmed no-car idle release from WB${peer}`, async () => {
     const {h, id, edge, activeSince, advance} = await establishedEqvWithIdleRelease(peer);
     for (let tick = 0; tick < 4; tick++) {
@@ -2636,4 +2778,5 @@ test('completed diagnostic survives recovery but cannot overwrite a newer source
     diag = JSON.parse(h.states.get('ems.0.Devices.Wallbox0.LastStopSourceDiagnostics_JSON').val);
     assert.equal(diag.key, 'newer-event', 'late read must not overwrite a subsequent diagnostic');
 });
+
 
