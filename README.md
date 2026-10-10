@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.66**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.67**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -658,7 +658,9 @@ Wallboxen arbeiten mit ganzen Ampere-Schritten: nominal 1 A ≈ 230 W bei 1P bzw
 
 ### Start, Stopp, Übergabe und Phasenwechsel
 
-Ein gewöhnlicher PV-Neustart benötigt Mindestleistung plus Reserve über die Startverzögerung. Ein laufender Ausgang kann weichen Budgetmangel nach seinen Timern überbrücken. Harte Schutzverletzung, Benutzersperre, Abstecken oder erreichte Ladegrenzen sind andere Ereignisse. Eine qualifizierte Übergabe kann ohne zweiten vollständigen Starttimer erfolgen, benötigt aber belegte sichere Zustände des abgebenden Ausgangs. Bewusste parallele Mindestladung ist kein solcher Einzel-Fahrzeugwechsel. Für den Entfall des zweiten Starttimers muss die abgebende EMS-Ladung in dieser Sitzung vom inaktiven zum aktiven Zustand mit gültiger realer Antwort beobachtet worden sein. Eine bloße laufende Momentaufnahme nach Neustart genügt nicht. Geänderte Priorität, ungültige oder veraltete Quellen, fehlende Bestätigungen oder verlorenes Budget widerrufen die Vorbereitung; ein gewöhnlicher Neustart behält seine Startverzögerung. Phasen-, Preis-, Geräte-, Hausanschluss- und §14a-Grenzen gelten auch während der Übergabe.
+Ein gewöhnlicher PV-Neustart benötigt Mindestleistung plus Reserve über die Startverzögerung. Ein laufender Ausgang kann weichen Budgetmangel nach seinen Timern überbrücken. Harte Schutzverletzung, Benutzersperre, Abstecken oder erreichte Ladegrenzen sind andere Ereignisse. Eine qualifizierte Übergabe kann ohne zweiten vollständigen Starttimer erfolgen, benötigt aber belegte sichere Zustände des abgebenden Ausgangs. Bewusste parallele Mindestladung ist kein solcher Einzel-Fahrzeugwechsel. Ab alpha.67 kann auch ein reguläres Ziel-SoC-Ende im Parallelbetrieb eine solche Übergabe an das nächste berechtigte Fahrzeug vorbereiten. Die Leistung des bisherigen Fahrzeugs bleibt bis zum unabhängigen AUS-ACK und zur danach bestätigten elektrischen Ruhe reserviert.
+
+Für den Entfall des zweiten Starttimers muss die abgebende EMS-Ladung in dieser Sitzung vom inaktiven zum aktiven Zustand mit gültiger realer Antwort beobachtet worden sein. Alternativ kann ab alpha.67 eine tatsächlich abgeschlossene Übernahme nach Neustart im aktuellen Prozess qualifizieren: Der Ausgangstreiber stellt dazu `Devices.WallboxX.OutputAdoptionProof_JSON` bereit; der Regler prüft Generation, Eigentum, Befehlsrückmeldung und elektrische Antwort unabhängig erneut. Gespeicherte Aktiv-/Eigentumsflags oder eine bloße laufende Momentaufnahme genügen weiterhin nicht. Geänderte Priorität, ungültige oder veraltete Quellen, fehlende Bestätigungen oder verlorenes Budget widerrufen die Vorbereitung; ein gewöhnlicher Neustart behält seine Startverzögerung. Phasen-, Preis-, Geräte-, Hausanschluss- und §14a-Grenzen gelten auch während der Übergabe.
 
 Ein Modbus-Schreibecho ist noch keine unabhängige Befehlsbestätigung. Nach ACK benötigt das Fahrzeug weitere Reaktionszeit. Beim internen go-e-Phasenwechsel ist eine begrenzte Ladepause erwartbar; Erfolg erst mit bestätigter neuer Stellung, realer elektrischer Phasenantwort und Wiederanlauf belegen. Ein angestecktes Fahrzeug ist noch kein erfolgreich gestartetes Fahrzeug.
 
@@ -681,6 +683,7 @@ Wichtige Bereiche unter `ems-optimizer.0`:
 | `Control.Valid`, `Control.Status`, `Control.ActualGridPower_W`, `Control.RemainingError_W` | Aktuelle Regelgültigkeit, Grund und verbleibende Netzabweichung; Snapshot ersetzt keine Tageshistorie. |
 | `Control.WallboxX.AllocationDiagnostics_JSON`, `Control.WallboxX.PhaseDecision_JSON` | Budget, Reservierung, Start-/Übergabebedingungen und Phasenentscheidung. |
 | `Devices.WallboxX.*` | Eigentum/ausgangsbezogene Zustände, Rückmeldungen, Fehler, Stop-/Antwort- und Timerdiagnosen. Tatsächlich existierende Unterobjekte im Objektbaum ansehen. |
+| `Devices.WallboxX.OutputAdoptionProof_JSON` | Begrenzter Nachweis einer tatsächlich abgeschlossenen Ausgangsübernahme im aktuellen Prozess; kein Ersatz für frische unabhängige Rückmeldungen und keine alleinige Startfreigabe. |
 | `Devices.MyPV_DHW.*`, `Devices.MyPV_Heating.*`, `Devices.Battery.*`, `Devices.HeatPump.*` | Geräte-/Quellenqualität, gemessene Antwort und Status; WP-Empfehlung getrennt vom Istzustand. |
 | `Debug.Shadow.DecisionRecord` und Record-Fehler-/Verlustzähler | Historische zusammengehörige Diagnose mit Ereigniszeit, Sitzung und Sequenz; Live-/Schattenphase anhand gespeicherter Flags trennen. |
 
@@ -690,9 +693,19 @@ Ab alpha.62/.63 wird ruhige **Live-Diagnose** in 30-s-Intervallen zusammengefass
 
 Schattenaufzeichnung und bereits vorhandene SQL-Skalarhistorien sind durch diese Verdichtung nicht automatisch umgestellt oder gelöscht. Die Historieninstanz, tatsächliche Aufzeichnung und Aufbewahrung kontrollieren. Die Diagnoseänderung garantiert keine Behebung sporadischer SQL-/Connector-Timeouts und keine bestimmte RAM-/Datenmengenersparnis. Energie bevorzugt aus gültigen Zählerdifferenzen bestimmen; grobe Intervallmittel nicht als genaue Tagesenergie ausgeben. Fehlend, NULL, veraltet oder unbestätigt bedeutet unbekannt, nicht AUS/0 W.
 
+Ab alpha.67 akzeptiert die zentrale Wallbox-Phasenbudgetprüfung dieselbe bestehende Leerlauftoleranz wie der Wallbox-Ausgang: bestätigte, frische, qualitativ gültige Leistungswerte zwischen −0,02 und 0 kW werden intern als 0 W behandelt. Die originale negative Rohmessung bleibt in der Diagnose erhalten. Größere negative Werte, fehlende/ungültige Werte, schlechtes q, fehlendes ACK und veraltete Quellen bleiben gesperrt. Diese Toleranz gilt für Wallboxleistung; die Verträge anderer Quellen werden dadurch nicht geändert.
+
 ## Changelog und historische Detaildokumentation
 
-Die folgenden Abschnitte bleiben als Entwicklungsgeschichte erhalten. Angaben wie „ausschließlich nacheinander“, alte Timer, damalige Defaultwerte oder „nur Simulation“ beschreiben **den jeweiligen Versionsstand**, nicht pauschal alpha.66. Für aktuelle Bedienung gilt die Admin-Anleitung oben. Historische Detailbeispiele sind vor Verwendung mit aktuellem Code und eigenen Objekten abzugleichen.
+Die folgenden Abschnitte bleiben als Entwicklungsgeschichte erhalten. Angaben wie „ausschließlich nacheinander“, alte Timer, damalige Defaultwerte oder „nur Simulation“ beschreiben **den jeweiligen Versionsstand**, nicht pauschal alpha.67. Für aktuelle Bedienung gilt die Admin-Anleitung oben. Historische Detailbeispiele sind vor Verwendung mit aktuellem Code und eigenen Objekten abzugleichen.
+
+## Neu in 0.17.0-alpha.67 – Ziel-SoC-Übergabe und Wallbox-Leerlauftoleranz
+
+Ein reguläres Ladeende durch Ziel-SoC kann im Parallelbetrieb die qualifizierte Übergabe an das nächste berechtigte Fahrzeug vorbereiten. Ein zweiter vollständiger Starttimer entfällt nur nach unabhängig bestätigtem AUS und danach bestätigter elektrischer Ruhe des bisherigen Fahrzeugs sowie gültigem realem Startbudget und bestätigter Phase des Empfängers. Die tatsächliche Leistungsreserve wird nicht vorzeitig freigegeben. Gewöhnliche Starts behalten ihre eingestellte Verzögerung.
+
+Eine abgeschlossene Ausgangsübernahme nach Neustart erhält einen begrenzten Nachweis für den aktuellen Prozess. Der Regler revalidiert diesen anhand der frischen Befehls- und elektrischen Antwort; gespeicherte Aktivflags allein qualifizieren keine verkürzte Übergabe. Der Nachweis wird in der produktiven Diagnose mitgeführt.
+
+Beim EQE führte am 10.10.2026 ein gültiger Leerlaufwert von −0,01 kW um 10:46:29.623 zur ungültigen zentralen Zuteilung und zum EMS-AUS um 10:46:32.034 (Europe/Berlin). Der Wallbox-Ausgang akzeptierte die bereits bestehende −20-W-Toleranz, die zentrale Phasenbudgetprüfung dagegen nicht. Diese Prüfung verwendet jetzt dieselbe Wallbox-Normierung; Rohwert, Quellenqualität und Altersgrenzen bleiben erhalten, größere negative Werte bleiben ungültig. Die qualifizierte Übergabe hält ihr notwendiges logisches Mindestbudget auch während einer begrenzten Phasenvorbereitung. Ein passendes Modbus-Schreibecho ist keine Phasenbestätigung; EIN setzt weiterhin einen unabhängigen Phasen-ACK voraus. [Releasehinweise und Prüfpunkte](docs/releases/0.17.0-alpha.67.md).
 
 ## Neu in 0.17.0-alpha.66 – Ungenutzte Wallbox im Parallelbetrieb bestätigt AUS
 
@@ -2470,6 +2483,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.67 | Qualifizierte Parallelübergabe nach Ziel-SoC-Ende und unabhängig geprüfter Übernahme im aktuellen Prozess; bestehende −20-W-Wallboxtoleranz auch im zentralen Phasenbudget, Rohwerte und Schutzgrenzen erhalten. |
 | 0.17.0-alpha.66 | Ungenutzte physisch freigegebene Wallboxen im Parallelbetrieb bestätigt AUS halten; bestehende Ladung erhalten, AUS-ACK und elektrische Ruhe abwarten, sequenzielle Leerlaufausnahme begrenzen. |
 | 0.17.0-alpha.65 | Kontrollierte manuelle Prioritätsübergabe optionaler Ladungen im Parallelbetrieb; Reservierung bis frischem AUS-ACK und elektrischer Ruhe, geschützte Pflichtladungen, qualifizierter Start ohne zweiten vollständigen Countdown. |
 | 0.17.0-alpha.60 | Laufende parallele Mindestladung mit gemessener Antwort und frischem Erhöhungsbudget; unveränderte EHZ-Nullfolge behält ihren Abschluss, unbeobachtete Reserven bleiben gesperrt; begrenzter lesender SQL-Abruf mit Sequenz-/Replaynachweis. |
@@ -2558,6 +2572,3 @@ Adapters sind.
 ## Lizenz
 
 MIT
-
-
-
