@@ -19,6 +19,7 @@ const {EXTENSION_SETTINGS} = require("./lib/extension-settings");
 const {OutputMetadata} = require("./lib/output-metadata");
 const {MarketPrices} = require("./lib/market-prices");
 const heatPumpTelemetryParser = require("./lib/heatpump-telemetry");
+const {normalizeWallboxPowerKW} = require("./lib/wallbox-measurement");
 
 class EmsOptimizer extends utils.Adapter {
     constructor(options = {}) {
@@ -747,6 +748,7 @@ class EmsOptimizer extends utils.Adapter {
             Promise,
             gridConstraints,
             heatPumpTelemetryParser,
+            normalizeWallboxPowerKW,
             Infinity,
             NaN,
             parseInt,
@@ -893,4 +895,3 @@ class EmsOptimizer extends utils.Adapter {
 
 if (require.main !== module) module.exports = options => new EmsOptimizer(options);
 else new EmsOptimizer();
-

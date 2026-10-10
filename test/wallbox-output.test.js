@@ -122,6 +122,111 @@ test('previously owned active wallbox is safely adopted after an unclean restart
     assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,
         /PRODUKTIV: 10 A.*nach Neustart uebernommen/);
 });
+
+function restartAdoptionHarness() {
+    let now = 1000000;
+    const h = setup({now: () => now});
+    h.advance = milliseconds => { now += milliseconds; };
+    h.put('ems.0.Control.RestartHandoffActive', true);
+    h.put('ems.0.Control.RestartHandoffSince', now - 100);
+    h.put('ems.0.Devices.Wallbox0.OutputOwned', true);
+    h.put('ems.0.Devices.Wallbox0.OutputActive', true);
+    h.put('allow', 1); h.put('feedback', 10); h.put('i1', 10); h.put('power', 2.3);
+    h.refresh();
+    h.adoptionProof = () => JSON.parse(h.states.get('ems.0.Devices.Wallbox0.OutputAdoptionProof_JSON').val);
+    return h;
+}
+
+test('restart adoption emits a current-process proof only after complete productive recovery', async () => {
+    const h = restartAdoptionHarness();
+    const publications = [];
+    const publish = h.adapter.setCompatState;
+    h.adapter.setCompatState = (id, value, ack) => {
+        if (id.endsWith('.OutputAdoptionProof_JSON')) publications.push({id, value});
+        return publish(id, value, ack);
+    };
+    await h.output.initialize();
+    assert.deepEqual(h.adoptionProof(), {schema: 1, valid: false});
+    assert.equal(h.output.devices[0].recovering, true);
+    await h.output.tick();
+    assert.deepEqual(h.adoptionProof(), {schema: 1, valid: true, generation: 999900,
+        adoptedAt: 1000000, wb: 0, amps: 10, phases: 1});
+    assert.equal(h.states.get('ems.0.Control.RestartHandoffActive').val, false);
+    assert.equal(h.output.devices[0].recovering, false);
+    const validPublications = publications.filter(item => JSON.parse(item.value).valid);
+    h.advance(1000); h.refresh(); await h.output.tick();
+    assert.equal(publications.filter(item => JSON.parse(item.value).valid).length,
+        validPublications.length, 'ordinary polls must not renew adoption evidence or emit more JSON');
+});
+
+test('restart initialize invalidates a retained adoption proof before foreign reads, even with the same generation', async () => {
+    const h = restartAdoptionHarness();
+    h.put('ems.0.Devices.Wallbox0.OutputAdoptionProof_JSON', JSON.stringify({schema: 1, valid: true,
+        generation: 999900, adoptedAt: 999950, wb: 0, amps: 10, phases: 1}));
+    const read = h.adapter.getForeignStateAsync;
+    h.adapter.getForeignStateAsync = async id => {
+        assert.equal(h.adoptionProof().valid, false, 'retained state must be invalid before any live source read');
+        return read(id);
+    };
+    await h.output.initialize();
+    assert.deepEqual(h.adoptionProof(), {schema: 1, valid: false});
+});
+
+test('restart adoption proof is invalidated immediately on stop and never restored by an ordinary new start', async () => {
+    const h = restartAdoptionHarness();
+    await h.output.initialize(); await h.output.tick();
+    assert.equal(h.adoptionProof().valid, true);
+    await h.output.stop(h.output.devices[0], 'test: target SoC reached');
+    assert.deepEqual(h.adoptionProof(), {schema: 1, valid: false});
+    h.ack('allow', 0); h.electricalOff(); await h.output.tick();
+    h.advance(1000); h.refresh(); await h.output.tick(); h.ack('allow', 0);
+    await h.output.tick(); h.ack('feedback', 6);
+    await h.output.tick(); h.ack('allow', 1); await h.output.tick();
+    assert.equal(h.adoptionProof().valid, false, 'a normal start is not a restart adoption');
+});
+
+for (const [name, change] of [
+    ['fresh control wait', h => h.put('ems.0.Plan.LastUpdate', 0)],
+    ['stabilization wait', h => { h.config.wallboxRestartHandoffSettleS = 10; }],
+    ['expired handoff', h => h.put('ems.0.Control.RestartHandoffSince', 800000)],
+    ['unowned wallbox', h => h.put('ems.0.Devices.Wallbox0.OutputOwned', false)],
+    ['master disabled', h => { h.config.globalWriteEnabled = false; }],
+    ['runtime outputs disabled', h => h.put('ems.0.System.RealOutputsEnabled', false)],
+    ['device fault', h => h.put('error', 8)],
+    ['missing generation', h => h.put('ems.0.Control.RestartHandoffSince', 0)],
+    ['no measured uptake', h => { h.put('power', 0); h.put('i1', 0); }],
+    ['pre-generation electrical values', h => {
+        h.put('power', 2.3, {ts: 999800}); h.put('i1', 10, {ts: 999800});
+    }],
+    ['pre-generation device acknowledgements', h => {
+        h.put('allow', 1, {ts: 999800}); h.put('feedback', 10, {ts: 999800});
+    }],
+    ['isolated shadow hooks', h => { h.output.responseEvidence = () => null; }]
+]) test(`restart adoption never publishes success for ${name}`, async () => {
+    const h = restartAdoptionHarness(); change(h);
+    await h.output.initialize(); await h.output.tick();
+    assert.equal(h.adoptionProof().valid, false);
+});
+
+test('restart adoption proof waits for real electrical evidence after an outstanding phase transition', async () => {
+    const h = restartAdoptionHarness();
+    Object.assign(h.config, {wb0PhaseSwitchEnabled: true, wb0PhaseModeId: 'phaseMode',
+        wb0MinCurrent3pA: 6, wb0MaxCurrent3pA: 32, wb0MaxPowerW: 22080});
+    h.put('phaseMode', 1); h.put('ems.0.Control.Targets.Wallbox0_Phases', 3);
+    await h.output.initialize(); await h.output.tick();
+    assert.equal(h.adoptionProof().valid, false);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.PhaseSwitchPending').val, true);
+});
+
+test('restart adoption proof is not published while a real command ACK remains outstanding', async () => {
+    const h = restartAdoptionHarness();
+    await h.output.initialize();
+    h.output.devices[0].response = {amps: 10, at: 1000000, ackAt: 0};
+    h.put('feedback', 10, {ts: 1000000});
+    await h.output.tick();
+    assert.equal(h.adoptionProof().valid, false);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponsePending').val, true);
+});
 test('restart handoff recognizes only an active EMS-owned wallbox', async () => {
     const h=setup();await h.output.initialize();
     assert.equal(h.output.hasActiveOwnedOutput(),false);
@@ -2778,5 +2883,3 @@ test('completed diagnostic survives recovery but cannot overwrite a newer source
     diag = JSON.parse(h.states.get('ems.0.Devices.Wallbox0.LastStopSourceDiagnostics_JSON').val);
     assert.equal(diag.key, 'newer-event', 'late read must not overwrite a subsequent diagnostic');
 });
-
-

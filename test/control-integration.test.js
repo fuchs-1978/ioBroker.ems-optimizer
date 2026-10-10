@@ -12,11 +12,11 @@ const {createRequire} = require('node:module');
 // delayed ioBroker ack and delayed AC THOR power, no device/network writes.
 async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, diagnostics,
     battery = false, heating = false, wallbox = true, cheap = false,
-    mii = false, wallboxStopResponseDelayMs = 0,
+    mii = false, adoptRunningMii = false, wallboxStopResponseDelayMs = 0,
     initialSurplusW = 6000, batteryPlanW = 0, lpcLimitW = null, phaseBiasW = [0, 0, 0],
     batteryDelayMs = 2000, heatingDelayMs = 4000, dhwDelayMs = 4000,
     batteryDcFactor = 1, batteryDcPvW = 0, wb2InitialPhaseMode = null} = {}) {
-    let now = Date.UTC(2026, 8, 21, 12), surplusW = 6000;
+    let now = Date.UTC(2026, 8, 21, 12), surplusW = 6000, idleWallboxNoiseKW = 0;
     let heaterW = 0, heaterCommandW = 0, physicalAllow = 0, physicalA = 6;
     let physicalPowerAllow = 0, miiAllow = 0, miiPowerAllow = 0, miiA = 6;
     const wallboxStopAck = [true, true, true];
@@ -77,6 +77,7 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         wb0MaxPowerW: 3680, wb0ProductionPhases: 1, wb0PhaseSwitchEnabled: false,
         wb0AmpereOutputId: 'goe0.cmd', wb0AmpereFeedbackId: 'goe0.feedback',
         wb0AllowOutputId: 'goe0.allow', wb0ConnectionId: 'goe0.connection', wb0ErrorId: 'goe0.error'});
+    if (adoptRunningMii) config.wallboxParallelChargingEnabled = true;
     if (!wallbox) config.wb2ControlEnabled = false;
     const writeForeign = (id, val, callback) => {
         writes.push({id, val, at: now});
@@ -141,6 +142,7 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
     };
     const ctx = vm.createContext({SMA_GRID_MAX_AGE_MS, Date: Clock, console, nativeConfig: config,
         gridConstraints: require('../lib/grid-constraints'),
+        normalizeWallboxPowerKW: require('../lib/wallbox-measurement').normalizeWallboxPowerKW,
         getState: id => states.get(id), existsState: id => states.has(id),
         createState: (id, val) => { if (!states.has(id)) put(id, val); }, setState: put,
         writeForeignState: writeForeign, log: () => {}, sendTo: () => {}});
@@ -275,7 +277,8 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         put(config.batteryAcPowerId, -batteryW || 0);
         if (batteryHeartbeat) put(config.batteryHeartbeatId, now);
         for (const wb of [0, 1, 2]) {
-            put(`DP_WB${wb}_POWER`, (wb === 2 ? wbW : wb === 0 ? miiW : 0) / 1000);
+            const powerW = wb === 2 ? wbW : wb === 0 ? miiW : 0;
+            put(`DP_WB${wb}_POWER`, powerW === 0 ? idleWallboxNoiseKW : powerW / 1000);
             const currentQuality = wallboxCurrentQuality[wb] ? {q: wallboxCurrentQuality[wb]} : {};
             put(`DP_WB${wb}_L1_A`, wb === 2 && physicalPowerAllow ? physicalA : wb === 0 && miiPowerAllow ? miiA : 0,
                 currentQuality);
@@ -293,6 +296,15 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         }
         for (const key of ['System.LastUpdate', 'Plan.LastUpdate']) own(key, now);
     };
+    if (adoptRunningMii) {
+        assert.ok(mii, 'the synthetic adopted running device must be configured');
+        miiAllow = miiPowerAllow = 1; miiA = 6;
+        put('goe0.allow', 1); put('goe0.feedback', 6); put('DP_WB_PRIORITY', 0);
+        put('DP_WB0_PHASE_MODE', 1);
+        own('Devices.Wallbox0.OutputOwned', true); own('Devices.Wallbox0.OutputActive', true);
+        own('Devices.Wallbox0.OutputCommand_A', 6); own('Devices.Wallbox0.OutputPhases', 1);
+        own('Control.RestartHandoffActive', true); own('Control.RestartHandoffSince', now);
+    }
     refresh();
     await output.initialize();
     const tick = async () => {
@@ -331,6 +343,7 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         setBatteryPower: value => { batteryW = value; },
         setWallboxStopAck: (wb, enabled) => { wallboxStopAck[wb] = enabled; },
         setWallboxCurrentQuality: (wb, quality) => { wallboxCurrentQuality[wb] = quality; },
+        setIdleWallboxNoise: kw => { idleWallboxNoiseKW = kw; },
         setWallboxPhysical: (wb, {allow = 1, amps = 6} = {}) => {
             if (wb === 0) {
                 miiAllow = miiPowerAllow = allow; miiA = amps; ++miiStopResponseSequence;
@@ -720,6 +733,215 @@ test('parallel priority cannot borrow an unobserved restart-owned charge as a co
     await h.advance(100);
     assert.ok(!h.writes.some(row => row.id === 'goe.allow' && row.val === 1 && row.at > requestedAt),
         'retained current after a restart is not this session\'s witnessed cold qualification');
+});
+
+test('automatic parallel target completion can reuse only an independently adopted current-process running charge', async () => {
+    for (const initialPhase of [null, 2]) {
+        const h = await plant({mii: true, adoptRunningMii: true,
+            startDelayS: 300, minimumRuntimeS: 600, split: false,
+            initialSurplusW: 3000, wallboxStopResponseDelayMs: 10000, lpcLimitW: 4200,
+            wb2InitialPhaseMode: initialPhase});
+        h.setWallboxPhysical(2, {allow: 0, amps: 8});
+        await h.advance(24);
+        const proof = JSON.parse(h.value('Devices.Wallbox0.OutputAdoptionProof_JSON'));
+        assert.equal(proof.valid, true, 'the real output driver completed fresh restart adoption');
+        assert.equal(proof.generation, h.value('Control.RestartHandoffSince'));
+        assert.equal(proof.wb, 0);
+        assert.ok(proof.adoptedAt > proof.generation);
+        assert.equal(h.value('Control.RestartHandoffActive'), false);
+        assert.ok(!h.writes.some(row => row.id === 'goe0.allow' && row.val === 1),
+            'adoption does not issue another ON to a genuinely running vehicle');
+        const endedAt = h.now();
+        h.put('DP_WB0_SOC', 80);
+        await h.advance(6);
+        const off = h.writes.find(row => row.id === 'goe0.allow' && row.val === 0 && row.at > endedAt);
+        assert.ok(off, 'target-SoC completion stops the adopted donor');
+        assert.equal(h.physical().miiAllow, 0, 'independent OFF ACK has arrived');
+        assert.ok(h.physical().miiPowerW > 0, 'vehicle response is still pending after the register ACK');
+        assert.equal(h.physical().allow, 0, 'the waiting EQE has no early release');
+        assert.equal(h.value('Devices.Wallbox0.OutputOwned'), true, 'pending physical draw keeps donor ownership');
+        await h.advance(55);
+        if (initialPhase === 2) {
+            assert.equal(h.value('Control.Targets.Wallbox2_Phases'), 1,
+                'the currently available 3000 W select 1P for the stopped receiver');
+            assert.equal(h.physical().allow, 0, 'retained 3P cannot authorize a new 1P charge');
+            assert.ok(!h.writes.some(row => row.id === 'goe.allow' && row.val === 1 && row.at > endedAt));
+            h.put('goe.phase', 1, {ack: false});
+            await h.advance(2);
+            assert.equal(h.physical().allow, 0, 'phase write echo is not independent phase confirmation');
+            const phaseConfirmedAt = h.now();
+            h.put('goe.phase', 1);
+            await h.advance(45);
+            const release = h.writes.find(row => row.id === 'goe.allow' && row.val === 1 && row.at > endedAt);
+            assert.ok(release && release.at >= phaseConfirmedAt,
+                'the phase ACK completes bounded prestart preparation before actual charging');
+        }
+        const on = h.writes.find(row => row.id === 'goe.allow' && row.val === 1 && row.at > endedAt);
+        const quiet = h.trace.find(row => row.at > endedAt && row.miiAllow === 0 && row.miiW === 0);
+        const current = h.writes.find(row => row.id === 'goe.cmd' && row.at > endedAt);
+        assert.ok(on && quiet && current, h.diagnostic() + '\n' + h.value('Control.ParallelWallboxAllocation_JSON'));
+        assert.ok(on.at < endedAt + 300000, 'confirmed current-process adoption permits a handoff, not a cold timer');
+        assert.ok(on.at >= quiet.at && on.at >= off.at + 14000, 'post-ACK electrical rest remains binding');
+        assert.equal(current.val, 6);
+        assert.ok(on.at >= current.at + 4000, 'the recipient current ACK remains independent');
+        assert.ok(h.trace.filter(row => row.at > endedAt).every(row => !(row.wbW > 20 && row.miiW > 20)));
+        assert.ok(h.trace.every(row => row.wbW + row.miiW + row.heaterW <= 4200));
+        assert.equal(JSON.parse(h.value('Devices.Wallbox0.OutputAdoptionProof_JSON')).valid, false,
+            'stopping the donor invalidates the driver proof rather than persisting future permission');
+    }
+});
+
+test('automatic prestart phase preparation cannot reuse invalid echoes or an unknown former mode', async () => {
+    for (const cause of ['wrong-mode', 'quality', 'future', 'before-request', 'expired', 'unknown-former-mode']) {
+        const h = await plant({mii: true, adoptRunningMii: true,
+            startDelayS: 300, minimumRuntimeS: 600, split: false,
+            initialSurplusW: 3000, wallboxStopResponseDelayMs: 10000,
+            wb2InitialPhaseMode: cause === 'unknown-former-mode' ? 0 : 2});
+        h.setWallboxPhysical(2, {allow: 0, amps: 8});
+        await h.advance(24);
+        assert.equal(JSON.parse(h.value('Devices.Wallbox0.OutputAdoptionProof_JSON')).valid, true);
+        const endedAt = h.now();
+        h.put('DP_WB0_SOC', 80);
+        await h.advance(61);
+        assert.equal(h.physical().miiPowerW, 0, 'the actual donor completed its OFF/response sequence');
+        assert.equal(h.physical().allow, 0, cause);
+        const requestedAt = h.run('wallboxVehicleHandoff?.phaseRequestedAt');
+        if (cause !== 'unknown-former-mode') {
+            assert.ok(requestedAt > endedAt, 'the exact phase request follows target completion');
+            const extra = {ack: false};
+            if (cause === 'quality') extra.q = 64;
+            if (cause === 'future') extra.ts = h.now() + 10000;
+            if (cause === 'before-request') extra.ts = requestedAt - 1;
+            h.put('goe.phase', cause === 'wrong-mode' ? 2 : 1, extra);
+            await h.advance(cause === 'expired' ? 181 : 2);
+            assert.equal(h.physical().allow, 0, `${cause}: a write echo cannot confirm electrical topology`);
+        }
+        const confirmedAt = h.now();
+        h.put('goe.phase', 1);
+        await h.advance(45);
+        assert.ok(!h.writes.some(row => row.id === 'goe.allow' && row.val === 1 && row.at > endedAt),
+            `${cause}: a later valid phase ACK cannot recreate a rejected transfer: ${h.diagnostic()}`);
+        assert.equal(h.physical().allow, 0, cause);
+        assert.ok(h.value('Vehicles.Wallbox2.StartDelayRemaining_s') > 0,
+            `${cause}: a new start still has its configured 300 second delay after ${confirmedAt}`);
+        assert.ok(h.trace.filter(row => row.at > endedAt).every(row => !(row.wbW > 20 && row.miiW > 20)));
+    }
+});
+
+test('automatic target-end handoff rejects old, mismatched or unconfirmed adoption markers', async () => {
+    for (const cause of ['missing', 'invalid', 'old-generation', 'wrong-wallbox', 'wrong-current',
+        'wrong-phases', 'future-adoption', 'unconfirmed', 'quality']) {
+        const h = await plant({mii: true, adoptRunningMii: true,
+            startDelayS: 300, minimumRuntimeS: 600, split: false, initialSurplusW: 3000});
+        // Stop at the first actual driver publication, before a subsequent
+        // engine cycle can accept it as session-local adoption evidence.
+        for (let seconds = 0; seconds < 30
+            && JSON.parse(h.value('Devices.Wallbox0.OutputAdoptionProof_JSON')).valid !== true; seconds++)
+            await h.advance(1);
+        const id = 'ems.0.Devices.Wallbox0.OutputAdoptionProof_JSON';
+        const proof = JSON.parse(h.states.get(id).val);
+        assert.equal(proof.valid, true, cause);
+        let corrupted = {...proof};
+        if (cause === 'invalid') corrupted.valid = false;
+        if (cause === 'old-generation') corrupted.generation -= 1000;
+        if (cause === 'wrong-wallbox') corrupted.wb = 2;
+        if (cause === 'wrong-current') corrupted.amps = 33;
+        if (cause === 'wrong-phases') corrupted.phases = 2;
+        if (cause === 'future-adoption') corrupted.adoptedAt = h.now() + 2000;
+        if (cause === 'missing') h.states.delete(id);
+        else h.put(id, JSON.stringify(corrupted),
+            cause === 'unconfirmed' ? {ack: false} : cause === 'quality' ? {q: 64} : {});
+        const endedAt = h.now();
+        h.put('DP_WB0_SOC', 80);
+        await h.advance(70);
+        assert.ok(!h.writes.some(row => row.id === 'goe.allow' && row.val === 1 && row.at > endedAt),
+            `${cause}: a marker cannot replace independently verified current-process adoption`);
+        assert.ok(h.trace.filter(row => row.at > endedAt).every(row => !(row.wbW > 20 && row.miiW > 20)), cause);
+    }
+});
+
+test('same-millisecond control reset cannot replay a real completed adoption marker', async () => {
+    const h = await plant({mii: true, adoptRunningMii: true,
+        startDelayS: 300, minimumRuntimeS: 600, split: false, initialSurplusW: 3000});
+    for (let seconds = 0; seconds < 30
+        && JSON.parse(h.value('Devices.Wallbox0.OutputAdoptionProof_JSON')).valid !== true; seconds++)
+        await h.advance(1);
+    const proof = JSON.parse(h.value('Devices.Wallbox0.OutputAdoptionProof_JSON'));
+    assert.equal(proof.valid, true);
+    assert.equal(proof.adoptedAt, h.now(), 'reset occurs in the exact clock millisecond of publication');
+    h.run('resetSlowTargets()');
+    assert.equal(h.run('wallboxCompletedAdoptionProof(0,Date.now(),wallboxVehicleHandoffObservation[0].adoptedGeneration)'), 0,
+        'reset consumes the existing generation without relying on a strict timestamp inequality');
+    await h.advance(2);
+    assert.equal(h.run('wallboxVehicleHandoffObservation[0].qualified'), false);
+    const endedAt = h.now();
+    h.put('DP_WB0_SOC', 80);
+    await h.advance(70);
+    assert.ok(!h.writes.some(row => row.id === 'goe.allow' && row.val === 1 && row.at > endedAt),
+        'the retained full donor cannot renew the consumed adoption proof');
+});
+
+test('adopted running proof needs independently known clear fault, response and phase flags', async () => {
+    for (const flag of ['OutputFault', 'ResponsePending', 'PhaseSwitchPending', 'PhaseTransitionActive']) {
+        for (const cause of ['missing', 'unconfirmed', 'quality']) {
+            const h = await plant({mii: true, adoptRunningMii: true,
+                startDelayS: 300, minimumRuntimeS: 600, split: false, initialSurplusW: 3000});
+            for (let seconds = 0; seconds < 30
+                && JSON.parse(h.value('Devices.Wallbox0.OutputAdoptionProof_JSON')).valid !== true; seconds++)
+                await h.advance(1);
+            const id = `ems.0.Devices.Wallbox0.${flag}`;
+            if (cause === 'missing') h.states.delete(id);
+            else h.put(id, flag === 'OutputFault' ? '' : false,
+                cause === 'unconfirmed' ? {ack: false} : {q: 64});
+            assert.equal(h.run('wallboxCompletedAdoptionProof(0,Date.now(),0)'), 0,
+                `${flag}/${cause}: absent confirmation is not a known safe state`);
+        }
+    }
+});
+
+test('bounded idle go-e zero noise does not withdraw another running cars real parallel release', async () => {
+    for (const rawKW of [-0.01, -0.02]) {
+        const h = await plant({mii: true, startDelayS: 0, minimumRuntimeS: 600,
+            split: false, initialSurplusW: 3000});
+        h.config.wallboxParallelChargingEnabled = true;
+        h.own('Config.WallboxParallelChargingEnabled', true);
+        h.put('DP_WB_PRIORITY', 0);
+        await h.advance(40);
+        assert.equal(h.physical().miiAllow, 1, h.diagnostic());
+        assert.equal(h.physical().allow, 0, 'the non-preferred box is idle');
+        const changedAt = h.now();
+        h.setIdleWallboxNoise(rawKW);
+        await h.advance(30);
+        assert.equal(h.states.get('DP_WB2_POWER').val, rawKW, 'the raw idle source is not rewritten');
+        assert.equal(JSON.parse(h.value('Control.ParallelWallboxAllocation_JSON')).valid, true);
+        assert.equal(h.physical().miiAllow, 1);
+        assert.ok(h.physical().miiPowerW > 0);
+        assert.ok(!h.writes.some(row => row.id === 'goe0.allow' && row.val === 0 && row.at > changedAt),
+            `${rawKW} kW from an idle peer cannot cause a spurious global source stop`);
+    }
+});
+
+test('larger negative idle go-e power still withdraws live release and identifies its unmodified source', async () => {
+    const h = await plant({mii: true, startDelayS: 0, minimumRuntimeS: 600,
+        split: false, initialSurplusW: 3000});
+    h.config.wallboxParallelChargingEnabled = true;
+    h.own('Config.WallboxParallelChargingEnabled', true);
+    h.put('DP_WB_PRIORITY', 0);
+    await h.advance(40);
+    assert.equal(h.physical().miiAllow, 1);
+    const changedAt = h.now();
+    h.setIdleWallboxNoise(-0.03);
+    await h.advance(2);
+    const grant = JSON.parse(h.value('Control.ParallelWallboxAllocation_JSON'));
+    assert.equal(grant.valid, false);
+    assert.equal(grant.sourceDiagnostics[0].id, 'DP_WB2_POWER');
+    assert.equal(grant.sourceDiagnostics[0].rawValue, -0.03);
+    assert.equal(grant.sourceDiagnostics[0].reason, 'source-value-invalid');
+    await h.advance(6);
+    assert.ok(h.writes.some(row => row.id === 'goe0.allow' && row.val === 0 && row.at > changedAt),
+        'a value outside the existing tolerance remains an actual safety stop');
+    assert.equal(h.physical().miiAllow, 0);
+    assert.equal(h.states.get('DP_WB2_POWER').val, -0.03);
 });
 
 test('parallel priority defers a new handoff while donor phase preparation is pending', async () => {
@@ -1883,7 +2105,7 @@ test('lowered grid-charge SoC ceiling revokes a still-current battery price plan
     assert.equal(h.run("priceChargingAuthorization('Battery').allowed"), false);
 });
 
-test('handoff prepares a stopped three-phase receiver for one phase before its charging release', async () => {
+test('sequential handoff preserves its logical minimum through a long exact phase echo before real confirmation', async () => {
     const h = await plant({mii: true, startDelayS: 300, split: false,
         initialSurplusW: 2400, wallboxStopResponseDelayMs: 10000});
     h.put('DP_WB2_CAR', 1); h.put('DP_WB_PRIORITY', 0);
@@ -1908,15 +2130,35 @@ test('handoff prepares a stopped three-phase receiver for one phase before its c
     assert.equal(h.physical().allow, 0, 'old 3P setting cannot authorize the receiving car');
     const phase = JSON.parse(h.value('Control.Wallbox2.PhaseDecision_JSON'));
     assert.equal(phase.reason, 'pre-start-budget-phase');
+    const echoAt = h.now();
     h.put('goe.phase', 1, {ack: false});
-    await h.advance(4);
-    assert.equal(h.physical().allow, 0, 'phase write echo is not confirmation');
+    let reservedTicks = 0;
+    for (let second = 0; second < 60; second++) {
+        await h.advance(1);
+        assert.equal(h.physical().allow, 0, 'even a long exact phase echo is not independent confirmation');
+        assert.ok(!h.writes.some(row => row.id === 'goe.allow' && row.val === 1 && row.at >= echoAt),
+            'the productive driver cannot issue ON during the phase write echo');
+        if (h.physical().miiPowerW === 0 && h.run('wallboxVehicleHandoff?.pending === false')) {
+            reservedTicks++;
+            assert.ok(h.value('Control.Targets.Wallbox2_A') >= 6,
+                'the qualified sequential handoff retains a logical minimum while real phase ACK is pending');
+            const allocation = JSON.parse(h.value('Control.Wallbox2.AllocationDiagnostics_JSON'));
+            assert.equal(allocation.start.vehicleHandoff.phaseConfirmationPending, true,
+                'public diagnostics distinguish the reserved logical target from a confirmed real phase');
+            const wallboxW = h.value('Control.Targets.Wallbox2_W');
+            assert.ok(wallboxW >= 1380);
+            assert.ok(h.value('Control.Targets.MyPV_DHW_W') + wallboxW <= 2400,
+                'the heater cannot consume the receiving vehicles reserved logical watts');
+        }
+    }
+    assert.ok(reservedTicks >= 30, 'the test observes a sustained logical reservation beyond command-poll delays');
+    const phaseConfirmedAt = h.now();
     h.put('goe.phase', 1, {ack: true});
     await h.advance(35);
     assert.equal(h.physical().allow, 1, h.diagnostic());
     const enable = h.writes.find(x => x.id === 'goe.allow' && x.val === 1 && x.at > at);
     assert.ok(enable && enable.at - at < 120000, 'no running-phase or new 300s start delay');
+    assert.ok(enable.at >= phaseConfirmedAt, 'independent phase confirmation precedes every productive ON');
     const before = h.trace.findLast(x => x.at <= enable.at);
     assert.equal(before.miiW, 0, 'donor must be electrically quiet before receiver starts');
 });
-

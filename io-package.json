@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.66",
+    "version": "0.17.0-alpha.67",
     "news": {
+      "0.17.0-alpha.67": {
+        "en": "Extend confirmed parallel handoffs to target-SoC completion and independently verified current-process adoption; accept existing wallbox idle-power noise tolerance in central budget validation while preserving source quality and safety limits.",
+        "de": "Bestätigte Parallelübergabe auch nach Ziel-SoC-Ende und unabhängig geprüfter Übernahme im aktuellen Prozess; bestehende Leerlauf-Messtoleranz der Wallbox auch im zentralen Budget prüfen, Quellenqualität und Schutzgrenzen erhalten."
+      },
       "0.17.0-alpha.66": {
         "en": "Confirm OFF for unused wallboxes in parallel operation to prevent charging on replug without an EMS budget; preserve active peers, OFF confirmation and electrical-rest checks.",
         "de": "Ungenutzte Wallboxen im Parallelbetrieb bestätigt ausschalten, damit Anstecken ohne EMS-Budget keine Ladung auslöst; laufende Fahrzeuge sowie AUS-Bestätigung und elektrische Ruhe weiterhin prüfen."

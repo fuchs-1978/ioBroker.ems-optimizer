@@ -75,7 +75,7 @@ test('update defaults never arm a productive output', () => {
 });
 
 test('package manifests publish the same alpha version', () => {
-    assert.equal(packageJson.version, '0.17.0-alpha.66');
+    assert.equal(packageJson.version, '0.17.0-alpha.67');
     assert.equal(ioPackage.common.version, packageJson.version);
     const core = fs.readFileSync('lib/engine/core.js', 'utf8');
     const bootstrap = fs.readFileSync('lib/engine/bootstrap.js', 'utf8');
@@ -108,5 +108,3 @@ test('parallel wallbox mode exposes translated native default and mode-dependent
     assert.match(allFields.wallboxPriority.help, /In sequential mode/);
     assert.match(field.help, /does not enable Master Control or arm outputs/);
 });
-
-

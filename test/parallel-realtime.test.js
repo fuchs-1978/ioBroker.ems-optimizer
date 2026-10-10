@@ -9,7 +9,7 @@ const {SMA_GRID_MAX_AGE_MS} = require('../lib/source-diagnostics');
 
 // Exercise the production engine files, with explicit source snapshots rather
 // than fabricated derived eligibility. No output-driver or ioBroker writes run.
-function engine({production = false, ...config} = {}) {
+function engine({production = false, clock = Date, ...config} = {}) {
     const nativeConfig = {
         wallboxParallelChargingEnabled: true,
         wallboxPrioritySource: 'internal', wallboxPriority: 0,
@@ -27,9 +27,10 @@ function engine({production = false, ...config} = {}) {
         nativeConfig[`wb${wb}ConnectionId`] = `raw.connected${wb}`;
     }
     const states = new Map();
-    const put = (id, val, overrides = {}) => states.set(id, {val, ts: Date.now(), ack: true, q: 0, ...overrides});
-    const ctx = vm.createContext({nativeConfig, SMA_GRID_MAX_AGE_MS, Date, console,
+    const put = (id, val, overrides = {}) => states.set(id, {val, ts: clock.now(), ack: true, q: 0, ...overrides});
+    const ctx = vm.createContext({nativeConfig, SMA_GRID_MAX_AGE_MS, Date: clock, console,
         gridConstraints: require('../lib/grid-constraints'),
+        normalizeWallboxPowerKW: require('../lib/wallbox-measurement').normalizeWallboxPowerKW,
         getState: id => states.get(id), existsState: id => states.has(id),
         createState: (id, val) => { if (!states.has(id)) put(id, val); }, setState: put,
         log: () => {}, sendTo: () => {}});
@@ -629,4 +630,265 @@ test('explicitly disabled policy retains the previous single-wallbox contract', 
     const h = engine({wallboxParallelChargingEnabled: false});
     const targets = h.update(20000);
     assert.equal(targets.amps.filter(a => a > 0).length, 1);
+});
+
+// The allocator consumes independent output facts. These fixtures deliberately
+// do not call a handoff helper or inject its private proof: the engine must see
+// an idle donor, a real running episode, target-SoC completion, then the output
+// guard's OFF/quiet ownership release in successive allocation cycles.
+function completedParallelChargeFixture({observeIdle = true} = {}) {
+    let at = Date.now();
+    class Clock extends Date { static now() { return at; } }
+    const h = engine({production: true, clock: Clock, wallboxPriority: 1,
+        wb2PhaseControlMode: 'ems', wb2PhaseModeId: 'raw.phase2'});
+    h.exclude(0);
+    h.put('DP_WB1_SOC', 90); h.put('DP_WB1_TARGET', 100);
+    h.put('DP_WB2_SOC', 90); h.put('DP_WB2_TARGET', 100);
+    h.put('ems.0.Vehicles.Wallbox2.PhaseSwitchEnabled', true);
+    h.put('ems.0.Vehicles.Wallbox2.MaximumPhases', 3);
+    h.put('raw.phase2', 1);
+    h.put('DP_WB2_ALLOW', false);
+    const step = (mutate = () => {}, watts = 4600, hard = 4600) => {
+        at += 1000;
+        for (const state of h.states.values()) state.ts = at;
+        mutate();
+        return h.update(watts, hard);
+    };
+    if (!observeIdle) h.owned(1, 20, 4600);
+    h.update(4600, 4600);
+    step(() => h.owned(1, 20, 4600));
+    h.put('ems.0.Config.WallboxStartDelay_s', 300);
+    step(() => h.put('DP_WB2_ALLOW', true));
+    const diagnostic = wb => JSON.parse(h.states.get(
+        `ems.0.Control.Wallbox${wb}.AllocationDiagnostics_JSON`).val);
+    const complete = () => step(() => h.put('DP_WB1_SOC', 100));
+    const acknowledgeStop = (watts = 4600, hard = 4600) => step(() => {
+        h.put('ems.0.Devices.Wallbox1.OutputActive', false);
+        h.put('ems.0.Devices.Wallbox1.OutputCommand_A', 0);
+        h.put('ems.0.Devices.Wallbox1.OutputReservedPower_W', 4600);
+        h.put('ems.0.Devices.Wallbox1.OutputStopPowerPending', true);
+        h.put('raw.allow1', 0);
+        h.put('ems.0.Devices.Wallbox1.OutputStopConfirmedAt', at);
+    }, watts, hard);
+    const releaseQuiet = () => {
+        h.put('ems.0.Devices.Wallbox1.OutputActive', false);
+        h.put('ems.0.Devices.Wallbox1.OutputOwned', false);
+        h.put('ems.0.Devices.Wallbox1.OutputReservedPower_W', 0);
+        h.put('ems.0.Devices.Wallbox1.OutputStopPowerPending', false);
+        h.put('raw.allow1', 0); h.put('raw.amps1', 0);
+        h.put('DP_WB1_POWER', 0); h.put('DP_WB1_CAR', 4);
+        for (const phase of [1, 2, 3]) h.put(`DP_WB1_L${phase}_A`, 0);
+    };
+    return {...h, step, diagnostic, complete, acknowledgeStop, releaseQuiet,
+        advance: ms => { at += ms; }, now: () => at};
+}
+
+test('parallel target-SoC completion transfers an observed charge without another 300 second start delay', () => {
+    const h = completedParallelChargeFixture();
+    let targets = h.complete();
+    assert.equal(targets.amps[1], 0, 'the completed EQV receives no new target');
+    assert.equal(targets.amps[2], 0, 'the recipient cannot spend the still running EQV watts');
+    assert.equal(targets.reserve[1], 4600, 'the entire physical donor draw stays reserved');
+    targets = h.acknowledgeStop();
+    assert.equal(targets.amps[2], 0, 'OFF register ACK is not electrical rest');
+    assert.equal(targets.reserve[1], 4600, 'post-ACK draw stays reserved');
+    targets = h.step(h.releaseQuiet);
+    assert.ok(targets.amps[2] >= 6, 'fresh confirmed OFF and quiet release permit the already prepared EQE');
+    assert.equal(h.diagnostic(2).start.reason, 'prepared-vehicle-handoff');
+    assert.equal(h.states.get('ems.0.Vehicles.Wallbox2.StartDelayRemaining_s').val, 0);
+    assert.equal(h.states.get('ems.0.Config.WallboxStartDelay_s').val, 300,
+        'the ordinary timer configuration is unchanged');
+    assert.ok(targets.watts.reduce((sum, watts) => sum + watts, 0) <= 4600);
+});
+
+test('a target-SoC completion with no observed idle-to-running donor cannot waive the ordinary timer', () => {
+    const h = completedParallelChargeFixture({observeIdle: false});
+    h.complete(); h.acknowledgeStop();
+    const targets = h.step(h.releaseQuiet);
+    assert.equal(targets.amps[2], 0, 'retained startup output is not an observed charge qualification');
+    assert.ok(h.states.get('ems.0.Vehicles.Wallbox2.StartDelayRemaining_s').val > 0);
+});
+
+test('unrelated new starts retain 300 seconds after a below-target donor loses release or is disabled', () => {
+    for (const cause of ['user-release', 'device-disabled']) {
+        const h = completedParallelChargeFixture();
+        h.step(() => {
+            if (cause === 'user-release') h.put('DP_WB1_ALLOW', false);
+            else h.put('ems.0.Devices.Wallbox1.Present', false);
+        });
+        h.acknowledgeStop();
+        const targets = h.step(h.releaseQuiet);
+        assert.equal(targets.amps[2], 0, cause);
+        assert.ok(h.states.get('ems.0.Vehicles.Wallbox2.StartDelayRemaining_s').val > 0, cause);
+    }
+});
+
+test('automatic completion handoff does not bypass independent donor OFF or electrical evidence', () => {
+    for (const cause of ['unconfirmed-off', 'bad-quality-off', 'stale-off', 'power-still-positive',
+        'phase-current-still-positive', 'retained-ownership', 'phase-transition']) {
+        const h = completedParallelChargeFixture();
+        h.complete(); h.acknowledgeStop();
+        const targets = h.step(() => {
+            h.releaseQuiet();
+            if (cause === 'unconfirmed-off') h.put('raw.allow1', 0, {ack: false});
+            if (cause === 'bad-quality-off') h.put('raw.allow1', 0, {q: 64});
+            if (cause === 'stale-off') h.put('raw.allow1', 0, {ts: h.now() - 31000});
+            if (cause === 'power-still-positive') h.put('DP_WB1_POWER', 0.3);
+            if (cause === 'phase-current-still-positive') h.put('DP_WB1_L3_A', 1.3);
+            if (cause === 'retained-ownership') h.put('ems.0.Devices.Wallbox1.OutputOwned', true);
+            if (cause === 'phase-transition') h.put('ems.0.Devices.Wallbox1.PhaseTransitionActive', true);
+        });
+        assert.equal(targets.amps[2], 0, cause);
+    }
+});
+
+test('automatic completion handoff keeps recipient phase, quality, release and safety gates binding', () => {
+    for (const cause of ['recipient-release', 'recipient-target', 'recipient-error', 'unconfirmed-phase',
+        'bad-phase-quality', 'future-phase', 'unsupported-phase',
+        'phase-pending', 'grid-quality', 'hard-cap', 'heater-reserve']) {
+        const h = completedParallelChargeFixture();
+        h.complete(); h.acknowledgeStop();
+        const targets = h.step(() => {
+            h.releaseQuiet();
+            if (cause === 'recipient-release') h.put('DP_WB2_ALLOW', false);
+            if (cause === 'recipient-target') h.put('DP_WB2_SOC', 100);
+            if (cause === 'recipient-error') h.put('raw.error2', 5);
+            if (cause === 'unconfirmed-phase') h.put('raw.phase2', 1, {ack: false});
+            if (cause === 'bad-phase-quality') h.put('raw.phase2', 1, {q: 64});
+            if (cause === 'future-phase') h.put('raw.phase2', 1, {ts: h.now() + 2000});
+            if (cause === 'unsupported-phase') h.put('raw.phase2', 0);
+            if (cause === 'phase-pending') h.put('ems.0.Devices.Wallbox2.PhaseSwitchPending', true);
+            if (cause === 'grid-quality') h.put('DP_GRID_IMPORT', 0, {q: 64});
+            if (cause === 'heater-reserve') h.put('ems.0.Devices.MyPV_DHW.OutputReservedPower_W', 3500);
+        }, 4600, cause === 'hard-cap' ? 1000 : 4600);
+        assert.equal(targets.amps[2], 0, cause);
+    }
+});
+
+test('automatic completion accepts an old independently confirmed retained go-e phase mode', () => {
+    const h = completedParallelChargeFixture();
+    h.complete(); h.acknowledgeStop();
+    const targets = h.step(() => {
+        h.releaseQuiet();
+        h.put('raw.phase2', 1, {ts: h.now() - 3600000});
+    });
+    assert.ok(targets.amps[2] >= 6,
+        'psm is a retained mode: old confirmed topology alone is not a missing periodic measurement');
+    assert.equal(h.diagnostic(2).start.reason, 'prepared-vehicle-handoff');
+});
+
+test('automatic target completion preserves a different running mandatory floor and its physical reservation', () => {
+    const h = completedParallelChargeFixture();
+    let targets = h.step(() => {
+        h.put('DP_WB1_SOC', 100);
+        h.put('ems.0.Devices.Wallbox0.Present', true);
+        h.put('DP_WB0_SOC', 10);
+        h.put('ems.0.Vehicles.Wallbox0.MaxCurrent1P_A', 6);
+        h.owned(0, 6, 1380);
+    }, 5980, 5980);
+    assert.equal(targets.amps[0], 6, 'the already charging mandatory peer is not a replacement donor');
+    assert.equal(targets.amps[2], 0, 'the EQV reservation plus Mii floor leave no premature recipient budget');
+    h.acknowledgeStop(5980, 5980);
+    targets = h.step(h.releaseQuiet, 5980, 5980);
+    assert.equal(targets.amps[0], 6, 'the Mii minimum is preserved after EQV target completion');
+    assert.ok(targets.amps[2] >= 6, 'the highest eligible inactive car can receive the completed charge');
+    assert.ok(targets.reserve[0] >= 1380);
+    assert.ok(targets.watts[2] + targets.reserve[0] <= 5980,
+        'the waiting recipient cannot consume an independent running peers watts');
+});
+
+test('automatic completion never derives target attainment from missing or invalid SoC samples', () => {
+    for (const cause of ['null', 'unconfirmed', 'quality', 'future']) {
+        const h = completedParallelChargeFixture();
+        h.step(() => h.put('DP_WB1_SOC', cause === 'null' ? null : 100,
+            cause === 'unconfirmed' ? {ack: false} : cause === 'quality' ? {q: 64}
+                : cause === 'future' ? {ts: h.now() + 2000} : {}));
+        h.acknowledgeStop();
+        const targets = h.step(h.releaseQuiet);
+        assert.equal(targets.amps[2], 0, cause);
+    }
+});
+
+test('natural target completion at the first quiet poll preserves only a previously qualified donor episode', () => {
+    for (const cause of ['good', 'bounded-zero-noise', 'unconfirmed-power', 'bad-current-quality', 'missing-power']) {
+        const h = completedParallelChargeFixture();
+        h.step(() => {
+            h.put('DP_WB1_SOC', 100);
+            h.put('DP_WB1_POWER', cause === 'bounded-zero-noise' ? -0.01 : 0,
+                cause === 'unconfirmed-power' ? {ack: false} : {});
+            for (const phase of [1, 2, 3]) h.put(`DP_WB1_L${phase}_A`, 0,
+                cause === 'bad-current-quality' && phase === 3 ? {q: 64} : {});
+            if (cause === 'missing-power') h.states.delete('DP_WB1_POWER');
+        });
+        h.acknowledgeStop();
+        const targets = h.step(h.releaseQuiet);
+        if (cause === 'good' || cause === 'bounded-zero-noise') assert.ok(targets.amps[2] >= 6,
+            'normal car completion may report zero before the EMS output flag is cleared');
+        else assert.equal(targets.amps[2], 0, `${cause}: unknown quiet is not an observed completion`);
+    }
+});
+
+test('expired or reset automatic completion evidence cannot be renewed by a still full donor', () => {
+    for (const cause of ['observation-gap', 'expired', 'reset']) {
+        const h = completedParallelChargeFixture();
+        h.complete(); h.acknowledgeStop();
+        if (cause === 'observation-gap') h.advance(11000);
+        if (cause === 'expired') h.advance(301000);
+        if (cause === 'reset') h.run('resetSlowTargets()');
+        let targets = h.step(h.releaseQuiet);
+        assert.equal(targets.amps[2], 0, cause);
+        targets = h.step();
+        assert.equal(targets.amps[2], 0, `${cause}: unchanged full SoC does not replenish a failed transfer`);
+        assert.ok(h.states.get('ems.0.Vehicles.Wallbox2.StartDelayRemaining_s').val > 0, cause);
+    }
+});
+
+test('central parallel budget accepts only bounded go-e zero noise while preserving the exact raw sample', () => {
+    for (const rawKW of [-0.01, -0.02, 0]) {
+        const h = engine({production: true}); h.exclude(1); h.exclude(2);
+        h.put('DP_WB0_POWER', rawKW);
+        const before = {...h.states.get('DP_WB0_POWER')};
+        const targets = h.update(3000, 3000);
+        const grant = JSON.parse(h.states.get('ems.0.Control.ParallelWallboxAllocation_JSON').val);
+        assert.equal(grant.valid, true, `${rawKW} kW is inside the shared zero-noise contract`);
+        assert.ok(targets.amps[0] >= 6, `${rawKW} kW does not manufacture a global source failure`);
+        assert.deepEqual(h.states.get('DP_WB0_POWER'), before, 'normalization cannot rewrite raw telemetry');
+        assert.ok(targets.watts[0] >= 1380 && targets.watts[0] <= 3000,
+            'operational zero is never negative available load or additional budget');
+    }
+});
+
+test('central budget zero-noise tolerance never accepts invalid wallbox, SMA or heater sources', () => {
+    const cases = [
+        {id: 'DP_WB0_POWER', value: -0.020001, reason: 'source-value-invalid'},
+        {id: 'DP_WB0_POWER', value: -0.03, reason: 'source-value-invalid'},
+        {id: 'DP_WB0_POWER', value: null, reason: 'source-value-invalid'},
+        {id: 'DP_WB0_POWER', value: -0.01, extra: {ack: false}, reason: 'source-unacknowledged'},
+        {id: 'DP_WB0_POWER', value: -0.01, extra: {q: 64}, reason: 'source-quality-invalid'},
+        {id: 'DP_WB0_POWER', value: -0.01, ageMs: 31000, reason: 'source-stale'},
+        {id: 'DP_WB0_POWER', value: -0.01, ageMs: -2000, reason: 'source-timestamp-invalid'},
+        {id: 'DP_GRID_IMPORT', value: -0.01, reason: 'source-value-invalid'},
+        {id: 'DP_GRID_EXPORT', value: -0.01, reason: 'source-value-invalid'},
+        {id: 'DP_DHW_OUTPUT1', value: -0.01, heater: true, reason: 'source-value-invalid'}
+    ];
+    for (const sample of cases) {
+        const h = engine({production: true, dhwControlEnabled: sample.heater === true});
+        h.exclude(1); h.exclude(2);
+        h.put(sample.id, sample.value, {...sample.extra,
+            ...(sample.ageMs === undefined ? {} : {ts: Date.now() - sample.ageMs})});
+        const before = {...h.states.get(sample.id)};
+        const diagnostic = h.run('(() => {const faults=[]; return {valid:wallboxPhaseBudgetSourcesValid('
+            + 'realtimeProductionScope(),Date.now(),null,faults),faults};})()');
+        assert.equal(diagnostic.valid, false, JSON.stringify(sample));
+        assert.equal(diagnostic.faults[0].id, sample.id);
+        assert.equal(diagnostic.faults[0].rawValue, sample.value);
+        assert.equal(diagnostic.faults[0].ack, before.ack);
+        assert.equal(diagnostic.faults[0].q, before.q);
+        assert.equal(diagnostic.faults[0].ts, before.ts);
+        assert.equal(diagnostic.faults[0].reason, sample.reason);
+        const targets = h.update(3000, 3000);
+        assert.equal(JSON.parse(h.states.get('ems.0.Control.ParallelWallboxAllocation_JSON').val).valid, false);
+        assert.deepEqual(targets.amps, [0, 0, 0]);
+        assert.deepEqual(h.states.get(sample.id), before, 'invalid raw evidence remains available for diagnosis');
+    }
 });

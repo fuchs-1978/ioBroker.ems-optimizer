@@ -753,6 +753,34 @@ test('pending-start proof survives productive record replay without inventing el
 });
 
 
+test('adoption evidence and bounded allocation source faults survive productive record replay', async () => {
+    const {DecisionRecordEncoder, DecisionRecordDecoder} = require('../lib/decision-record-codec');
+    const f = fixture(); await f.recorder.initialize();
+    const proof = {schema: 1, valid: true, generation: f.clock.now - 1000,
+        adoptedAt: f.clock.now, wb: 1, amps: 6, phases: 1};
+    f.put('ems.0.Devices.Wallbox1.OutputAdoptionProof_JSON', JSON.stringify(proof));
+    f.put('ems.0.Control.Wallbox1.AllocationDiagnostics_JSON', JSON.stringify({
+        start: {vehicleHandoff: {qualified: true, phaseConfirmationPending: true}}}));
+    const fault = {id: 'go-e.1.power', reason: 'negative', rawValue: -0.03, ack: true, q: 0,
+        ts: f.clock.now - 2000, ageMs: 2000, maximumAgeMs: 30000};
+    f.put('ems.0.Control.ParallelWallboxAllocation_JSON', JSON.stringify({schema: 1, valid: false,
+        sourceDiagnostics: Array.from({length: 20}, () => ({...fault, privatePayload: 'ignored'}))}));
+    const encoder = new DecisionRecordEncoder(); const decoder = new DecisionRecordDecoder();
+    const record = {schema: 2, timestamp: f.clock.now, recordSession: 'adoption-proof', recordSequence: 1,
+        masterEnabled: true, production: f.recorder.snapshot()};
+    const restored = decoder.decode(encoder.encode(record));
+    assert.deepEqual(restored.production.wallboxes[1].adoptionProof, proof);
+    assert.equal(restored.production.wallboxes[1].allocation.start.vehicleHandoff.phaseConfirmationPending, true);
+    const diagnostics = restored.production.control.parallelWallboxes.allocation.sourceDiagnostics;
+    assert.equal(diagnostics.length, 12);
+    assert.deepEqual(diagnostics[0], fault);
+    f.put('ems.0.Devices.Wallbox1.OutputAdoptionProof_JSON', '{"schema":1,"valid":false}');
+    const cleared = decoder.decode(encoder.encode({...record, recordSequence: 2,
+        production: f.recorder.snapshot()}));
+    assert.equal(cleared.production.wallboxes[1].adoptionProof.valid, false,
+        'delta replay must not retain an invalidated adoption proof');
+});
+
 test('history serialization reuses unchanged rings but preserves enriched stop reasons and new trace samples', async () => {
     const h = fixture(); await h.recorder.initialize(); await h.settle();
     let serializations = 0;
