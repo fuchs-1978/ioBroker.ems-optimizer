@@ -36,6 +36,50 @@ function fixture(initialNow = Date.now()) {
         advance: ms => {now += ms;}, now: () => now};
 }
 
+test('quiet polls reduce persisted full decisions while a dip restores exact prehistory and immediate response', async t => {
+    const h = fixture(2000000); t.mock.method(Date, 'now', h.now);
+    h.put('power', 1.38); h.shadow.productionRecord(); await h.flush();
+    for (let i = 0; i < 100; i++) {
+        const previous = h.states.get('power'); h.advance(100); h.put('power', 1.38);
+        h.shadow.captureProduction('power', h.states.get('power'), previous);
+        h.shadow.productionRecord();
+    }
+    await h.flush(); assert.equal(h.records().length, 1, '100 routine polls do not write 100 full frames');
+    const before = h.states.get('power'); h.advance(1); h.put('power', 0);
+    h.shadow.captureProduction('power', h.states.get('power'), before); await h.flush();
+    const decoded = h.records();
+    assert.ok(decoded.every(r => r.schema === 2 && !r.reconstruction));
+    const samples = decoded.flatMap(r => r.event?.samples || []);
+    assert.equal(samples.length, 101);
+    assert.equal(new Set(samples.map(s => s.sampleSequence)).size, 101);
+    assert.equal(samples[0].state.ts, 2000100);
+    assert.equal(samples.at(-1).state.val, 0);
+    assert.equal(decoded.at(-1).event.triggerReason, 'power-dip');
+    assert.equal(decoded.at(-1).production.wallboxes[0].actual_W, 0);
+    assert.equal(decoded.at(-1).sampling.postEventMs, 120000);
+    const previous = h.states.get('power'); h.advance(1000); h.put('power', 1.38);
+    h.shadow.captureProduction('power', h.states.get('power'), previous); await h.flush();
+    assert.equal(h.records().at(-1).event.state.val, 1.38, 'real restart is preserved in dense window');
+});
+
+test('quiet interval summary survives SQL codec with measured extrema and explicit resolution', async t => {
+    const h = fixture(2000000); t.mock.method(Date, 'now', h.now);
+    h.shadow.productionRecord();
+    for (let i = 0; i < 30; i++) {
+        const previous = h.states.get('power'); h.advance(1000); h.put('power', i / 100);
+        h.put('import', 500); h.put('export', 0);
+        h.shadow.captureProduction('power', h.states.get('power'), previous);
+        h.shadow.productionRecord();
+    }
+    h.advance(1000); h.shadow.productionRecord(); await h.flush();
+    const summary = h.records().find(r => r.event?.type === 'recording.interval');
+    assert.ok(summary); assert.equal(summary.event.summary.resolutionMs, 30000);
+    const source = summary.event.summary.sources.find(s => s.id === 'power');
+    assert.equal(source.count, 30); assert.equal(source.min, 0); assert.equal(source.max, 0.29);
+    assert.equal(source.maxSourceGapMs, 1000);
+    assert.match(summary.event.summary.validity, /freshness is not inferred/);
+});
+
 test('DHW unknown temperatures and full source diagnostics survive production delta replay', async () => {
     const h = fixture(5000000);
     const sources = [0, 1, 2, 3, 4].map(index => ({
@@ -100,9 +144,10 @@ test('same persistent queue correlates trigger, command, raw ACK and electrical 
     h.own('Devices.Wallbox0.ResponseConfirmedAt', h.now());
     h.shadow.captureProduction('power', h.states.get('power'), null);
     await h.flush();
-    const records = h.records();
+    const allRecords = h.records();
+    assert.deepEqual(allRecords.map(r => r.recordSequence), allRecords.map((_, i) => i + 1));
+    const records = allRecords.filter(r => r.event?.type !== 'recording.pre_event');
     assert.equal(records.length, 6);
-    assert.deepEqual(records.map(r => r.recordSequence), [1, 2, 3, 4, 5, 6]);
     assert.equal(new Set(records.map(r => r.recordSession)).size, 1);
     assert.ok(records.every(r => r.mode === 'PRODUCTION' && r.modelPaused && !r.valid));
     assert.equal(records[1].event.commandId, records[2].event.commandId);
@@ -316,11 +361,10 @@ test('snapshot clock and derived ages do not create extra subsecond frames; time
     assert.equal(h.records().length, 1);
     assert.equal(h.records()[0].production.measurements.gridImport.ageMs, 0);
     h.advance(1); h.shadow.productionRecord(); await h.flush();
-    assert.equal(h.records().length, 2, 'the one-second heartbeat remains');
-    assert.equal(h.records()[1].production.measurements.gridImport.ageMs, 1000);
-    h.own('Vehicles.Wallbox0.StartDelayRemaining_s', 599);
+    assert.equal(h.records().length, 1, 'quiet observations wait for the thirty-second interval');
+    h.own('Vehicles.Wallbox0.StartDelayRemaining_s', 0);
     h.shadow.productionRecord(); await h.flush();
-    assert.equal(h.records().at(-1).production.wallboxes[0].StartDelayRemaining_s, 599);
+    assert.equal(h.records().at(-1).production.wallboxes[0].StartDelayRemaining_s, 0, 'timer expiry is immediate');
     h.put('import', 0, {ts: h.now() - 30000});
     h.shadow.productionRecord(); await h.flush();
     h.advance(1); h.shadow.productionRecord(); await h.flush();
@@ -351,17 +395,18 @@ test('unchanged source polls retain new timestamps, real ACK/q/NULL edges and ev
         h.shadow.commandEvent('transport_complete', 'cmd', 0, token);
     }
     await h.flush();
-    const r = h.records();
-    assert.equal(r.length, 11);
-    assert.deepEqual(r.map(x => x.recordSequence), Array.from({length: 11}, (_, i) => i + 1));
-    assert.equal(r[1].event.state.ts, 2000001);
-    assert.equal(r[2].event.state.ack, false);
-    assert.equal(r[4].event.state.q, 64);
-    assert.equal(r[5].production.wallboxes[0].actual_W, null);
-    assert.equal(r[6].production.wallboxes[0].actual_W, 0);
-    assert.equal(r[7].event.commandId, r[8].event.commandId);
-    assert.equal(r[9].event.commandId, r[10].event.commandId);
-    assert.notEqual(r[7].event.commandId, r[9].event.commandId);
+    const all = h.records();
+    assert.deepEqual(all.map(x => x.recordSequence), all.map((_, i) => i + 1));
+    const r = all.filter(x => x.event?.type !== 'recording.pre_event');
+    assert.equal(r.length, 10, 'unchanged quiet poll is buffered; quality edges and commands survive');
+    assert.ok(all.some(x => x.event?.samples?.some(s => s.state?.ts === 2000001)));
+    assert.equal(r[1].event.state.ack, false);
+    assert.equal(r[3].event.state.q, 64);
+    assert.equal(r[4].production.wallboxes[0].actual_W, null);
+    assert.equal(r[5].production.wallboxes[0].actual_W, 0);
+    assert.equal(r[6].event.commandId, r[7].event.commandId);
+    assert.equal(r[8].event.commandId, r[9].event.commandId);
+    assert.notEqual(r[6].event.commandId, r[8].event.commandId);
 });
 
 test('deterministic full-record replay preserves events, timers and source ages under extra unchanged sampling', async t => {
@@ -389,5 +434,6 @@ test('deterministic full-record replay preserves events, timers and source ages 
     assert.equal(dense.at(-1).production.wallboxes[0].StartDelayRemaining_s, 599);
     assert.ok(dense.every(r => r.schema === 2 && r.production && r.realFeedback));
 });
+
 
 

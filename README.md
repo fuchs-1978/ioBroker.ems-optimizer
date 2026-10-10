@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.61**
+Aktuelle Version: **0.17.0-alpha.62**
 
 Prüfung zu Tages-Issue #98: [produktive Diagnose, Phasen-Rückfallvertrag,
 Reproduktion und nächste SQL-Abnahme](docs/issue98-live-diagnostics.md).
@@ -45,6 +45,14 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.62 – ereignisorientierte Live-Diagnose
+
+Produktive DecisionRecords werden im ruhigen Betrieb alle 30 Sekunden statt bei jedem Messupdate geschrieben. Befehle, Freigaben, ACK-/Qualitaetswechsel, Schutz- und Timergrenzen bleiben sofort sichtbar. Ein diagnostischer Ringpuffer (maximal 1 MiB / 4096 Samples) sichert bei Ereignissen bis zu 60 Sekunden vorherige rohe Quellenupdates; danach wird fuer 120 Sekunden dicht aufgezeichnet. Ueberlappende Vorlaeufe werden nach Sample-Sequenz dedupliziert. Neustarts erfinden keinen Vorlauf; Kapazitaetsverluste sind explizit markiert.
+
+`recording.interval` enthaelt pro beobachteter Quelle Anzahl, ACK-/q-/Wert-gueltige und ungueltige Samples, numerisches Minimum/Maximum/Mittel, Originalzeitgrenzen und interne sowie Rand-Messluecken. Diese Stichprobenstatistik ist keine kontinuierliche Gueltigkeitsquote und keine Energieintegration. `recording.pre_event` enthaelt rohe Quellenbeobachtungen mit originalem `state.ts`, `lc`, ACK/q und Empfangszeit; es sind keine nachtraeglich beobachteten vollstaendigen Reglerentscheidungen. `sampling` beschreibt Aufloesung, Zeitfenster und Pufferverluste im Record. Alte Recordformate bleiben dekodierbar.
+
+Regelung, Aktorbefehle, Schattenmodell und SQL-Einstellungen bleiben unveraendert. Aktive Regelvorgaenge mit vielen Befehlen koennen weiterhin dicht sein. Die Aenderung reduziert neue ruhige Aufzeichnungen; sie entfernt keine alten Daten und beweist weder die Ursache der Connector-Abbrueche noch eine reale Betriebsabnahme. Die bisherigen SQL-Skalarhistorien werden nicht umkonfiguriert.
 
 ## Neu in 0.17.0-alpha.61 – begrenzte Anzeige-Schreiblast
 
