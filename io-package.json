@@ -1,11 +1,11 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.65",
+    "version": "0.17.0-alpha.66",
     "news": {
-      "0.17.0-alpha.65": {
-        "en": "Controlled manual-priority handoff in parallel wallbox operation; retain donor power until confirmed OFF and electrical rest, preserve mandatory charging and all safety checks.",
-        "de": "Kontrollierte manuelle Prioritätsübergabe im Wallbox-Parallelbetrieb; Leistungsreserve bis bestätigtem AUS und elektrischer Ruhe erhalten, Pflichtladungen und Schutzprüfungen beibehalten."
+      "0.17.0-alpha.66": {
+        "en": "Confirm OFF for unused wallboxes in parallel operation to prevent charging on replug without an EMS budget; preserve active peers, OFF confirmation and electrical-rest checks.",
+        "de": "Ungenutzte Wallboxen im Parallelbetrieb bestätigt ausschalten, damit Anstecken ohne EMS-Budget keine Ladung auslöst; laufende Fahrzeuge sowie AUS-Bestätigung und elektrische Ruhe weiterhin prüfen."
       }
     },
     "titleLang": {
@@ -554,5 +554,3 @@
     }
   ]
 }
-
-

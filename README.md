@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.65**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.66**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -650,6 +650,8 @@ Für Fahrzeuge jeweils Preis-Netzladung und Abfahrts-Netzladung prüfen; Mindest
 
 Unter **Wallboxen allgemein** Quelle **Externer Datenpunkt** wählen und das tatsächlich vom Webinterface geschriebene Prioritätsobjekt zuordnen. 0/1/2 wählen WB0/WB1/WB2, −1 bedeutet automatische Auswahl. Unter `Control.WallboxPrioritySource` und `Control.WallboxSelectionReason` die wirksame Quelle/Entscheidung prüfen. Eine bevorzugte Box oberhalb Ziel-SoC oder ohne Fahrzeug wird dadurch nicht ladeberechtigt. Automatische Rangfolge verwendet Pflicht-/Mindestbedarf und Berechtigung, nicht nur die Fahrzeugnummer. Im Parallelmodus werden zuerst geschützte Mindestbedarfe berücksichtigt, dann Mehrleistung bevorzugt verteilt. Ab alpha.65 wartet ein bewusst angeforderter Wechsel einer optionalen Ladung bei knappem Budget nicht erst auf den gewöhnlichen PV-Mangel-Nachlauf. Das bisherige Fahrzeug erhält kontrolliert AUS; seine Leistung bleibt bis zum frischen AUS-ACK und zur bestätigten elektrischen Ruhe reserviert. Unter Mindest-SoC, bei bestehendem Abfahrts- oder manuellem Mindestbedarf wird die benötigte Grundladung nicht für diese Übergabe entzogen. Reicht das reale gemeinsame Budget für beide Fahrzeuge, ist kein erzwungener Stopp erforderlich.
 
+Ab alpha.66 schaltet der freigegebene produktive Wallbox-Ausgang im Parallelmodus eine ungenutzte, physisch freigegebene Wallbox kontrolliert AUS, auch wenn noch kein Fahrzeug angeschlossen ist. Dadurch bleibt keine alte Ladefreigabe für das nächste Anstecken stehen. Ein bereits laufendes anderes Fahrzeug wird durch diesen Abschaltauftrag nicht allein wegen der vorübergehenden Ausgangseigentümerschaft unterbrochen. AUS-ACK und elektrische Ruhe bleiben für den Abschluss erforderlich. Die enge historische Leerlaufausnahme aus alpha.51 gilt weiter ausschließlich für den sequenziellen Betrieb; neue Starts bleiben auch dort verriegelt.
+
 ### Warum sind 50/50 nicht exakt 50/50?
 
 Wallboxen arbeiten mit ganzen Ampere-Schritten: nominal 1 A ≈ 230 W bei 1P bzw. ≈ 690 W bei 3P. Mindeststrom, vorhandene Mindest-SoC-Ladungen, phasenabhängige Stromgrenzen, thermischer Bedarf und echte Fahrzeugantwort begrenzen die Aufteilung. Heizstab kann feinere Reste aufnehmen; ohne thermischen Bedarf bekommt er nicht allein wegen eines 50-%-Werts die Hälfte. Die Verteilungsschwellen sind keine Aussage „unter 9000 W darf kein Auto laden“.
@@ -690,7 +692,15 @@ Schattenaufzeichnung und bereits vorhandene SQL-Skalarhistorien sind durch diese
 
 ## Changelog und historische Detaildokumentation
 
-Die folgenden Abschnitte bleiben als Entwicklungsgeschichte erhalten. Angaben wie „ausschließlich nacheinander“, alte Timer, damalige Defaultwerte oder „nur Simulation“ beschreiben **den jeweiligen Versionsstand**, nicht pauschal alpha.65. Für aktuelle Bedienung gilt die Admin-Anleitung oben. Historische Detailbeispiele sind vor Verwendung mit aktuellem Code und eigenen Objekten abzugleichen.
+Die folgenden Abschnitte bleiben als Entwicklungsgeschichte erhalten. Angaben wie „ausschließlich nacheinander“, alte Timer, damalige Defaultwerte oder „nur Simulation“ beschreiben **den jeweiligen Versionsstand**, nicht pauschal alpha.66. Für aktuelle Bedienung gilt die Admin-Anleitung oben. Historische Detailbeispiele sind vor Verwendung mit aktuellem Code und eigenen Objekten abzugleichen.
+
+## Neu in 0.17.0-alpha.66 – Ungenutzte Wallbox im Parallelbetrieb bestätigt AUS
+
+Eine alte Leerlaufausnahme für den sequenziellen Betrieb war auch im Parallelmodus wirksam: Während ein ausgewähltes Fahrzeug bereits lud, konnte eine nachweislich abgesteckte andere Wallbox ihre physische Freigabe behalten. Beim späteren Anstecken konnte das Auto dadurch vor der nächsten Rückmeldung kurz laden, obwohl Benutzerfreigabe und EMS-Ziel AUS waren. Im Parallelbetrieb erhält diese ungenutzte Wallbox jetzt den vorhandenen bestätigten AUS-Ablauf; die laufende Ladung wird durch dessen vorübergehenden Besitz allein nicht gestoppt. Leistungsreserven bleiben bis zum frischen unabhängigen AUS-ACK und zur danach bestätigten elektrischen Ruhe erhalten.
+
+Anlass war der Mii am 10.10.2026: erste positive Messung um 09:39:40 mit 1,32 kW, EMS-AUS um 09:39:42.145, unabhängiger AUS-ACK um 09:39:42.302 und erste aufgezeichnete elektrische Ruhe um 09:39:55.389/411 (Europe/Berlin). Die etwa 15-s-Pollauflösung belegt keine exakte physische Ladedauer. Der Ursprung der älteren physischen EIN-Freigabe ist weiterhin unbekannt; im untersuchten Ereignisfenster wurde kein EMS-EIN-Befehl gefunden.
+
+Die Regressionen prüfen den vollständigen Parallel-Tick mit der ungenutzten Wallbox vor und nach dem aktiven Fahrzeug in der Geräteliste, verzögerte Bestätigung/Ruhe, erneutes Anstecken sowie Schreib- und Betriebsgrenzen. Die sequenzielle Ausnahme bleibt unverändert. Reale Abnahme erst nach manueller Installation anhand der Befehls-, ACK- und Leistungskette; keine zugesagten Scorepunkte. [Releasehinweise und Prüfpunkte](docs/releases/0.17.0-alpha.66.md).
 
 ## Neu in 0.17.0-alpha.65 – Direkte Prioritätsübergabe im Parallelbetrieb
 
@@ -2460,6 +2470,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.66 | Ungenutzte physisch freigegebene Wallboxen im Parallelbetrieb bestätigt AUS halten; bestehende Ladung erhalten, AUS-ACK und elektrische Ruhe abwarten, sequenzielle Leerlaufausnahme begrenzen. |
 | 0.17.0-alpha.65 | Kontrollierte manuelle Prioritätsübergabe optionaler Ladungen im Parallelbetrieb; Reservierung bis frischem AUS-ACK und elektrischer Ruhe, geschützte Pflichtladungen, qualifizierter Start ohne zweiten vollständigen Countdown. |
 | 0.17.0-alpha.60 | Laufende parallele Mindestladung mit gemessener Antwort und frischem Erhöhungsbudget; unveränderte EHZ-Nullfolge behält ihren Abschluss, unbeobachtete Reserven bleiben gesperrt; begrenzter lesender SQL-Abruf mit Sequenz-/Replaynachweis. |
 | 0.17.0-alpha.59 | Bereits autorisierter 1P-Mindestladestart bleibt während Peer-Abschaltung innerhalb fester Befehls-/Fahrzeugfristen reserviert; zusätzliche Startabbrüche vermeiden, neue ON-/Erhöhungsbefehle und sämtliche Schutzbudgets bleiben geprüft. |
