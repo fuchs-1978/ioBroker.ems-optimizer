@@ -65,6 +65,36 @@ function fixture(initial = {}) {
     return {adapter, recorder, cache, writes, definitions, clock, put, change, command, json, settle};
 }
 
+test('SunEnergy head diagnostics require every coherent source and never export private replies', () => {
+    const f = fixture();
+    Object.assign(f.adapter.config, {batteryDispatchMode: 'sunenergy-heads', batteryHeadCount: 2,
+        batterySunEnergyInstance: 'sunenergyxt500.0'});
+    const report = (index, GP, SC) => {
+        const base = `sunenergyxt500.0.heads.${index}`;
+        f.put(`${base}.info.online`, true);
+        f.put(`${base}.info.rawResponse`, JSON.stringify({state: {reported: {
+            GP, GS: GP, SC, ON: 1, MM: 0, LM: 1, MG: 800, IS: 2400,
+            LP: 0, SI: 10, SA: 100, PK: 1, privateAddress: 'PRIVATE-HEAD-CONFIG'}}}));
+    };
+    report(1, -600, 30); report(2, -400, 70);
+    let snapshot = f.recorder.snapshot();
+    assert.equal(snapshot.battery.actual_W, 1000);
+    assert.equal(snapshot.battery.soc_pct, 50);
+    assert.equal(snapshot.battery.headFeedback.heads[0].reportedGS_W, -600);
+    assert.equal(snapshot.battery.headFeedback.heads[0].manualMode, 0);
+    assert.equal(snapshot.battery.headFeedback.heads[0].localMode, 1);
+    assert.equal(JSON.stringify(snapshot).includes('PRIVATE-HEAD-CONFIG'), false);
+    const second = 'sunenergyxt500.0.heads.2.info.rawResponse';
+    f.put(second, f.cache.get(second).val, {ts: f.clock.now - 30001});
+    f.put('sunenergyxt500.0.info.lastUpdate', new Date(f.clock.now).toISOString());
+    snapshot = f.recorder.snapshot();
+    assert.equal(snapshot.battery.actual_W, null);
+    assert.equal(snapshot.battery.soc_pct, null);
+    assert.equal(snapshot.battery.headFeedback.heads[1].valid, false);
+    assert.equal(snapshot.battery.headFeedback.heads[1].actual_W, null);
+    assert.equal(snapshot.battery.headFeedback.heads[0].actual_W, 600);
+});
+
 test('creates only own diagnostic states and exposes current values without credentials', async () => {
     const f = fixture();
     await f.recorder.initialize();

@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.68**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.69**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -462,7 +462,7 @@ Eigener Aktor mit eigener Messung und Freigabe, getrennt vom Warmwasser. Der man
 
 ## Admin: Batteriespeicher
 
-Planung und realer Speichervertrag unterscheiden. Der vorbereitete Produktivausgang erwartet den unten beschriebenen sunenergyxt500-Kopfvertrag; die Existenz eines beliebigen Batterieadapters reicht nicht. Alle Kopffelder konsistent zuordnen. DC-Planungsleistung ist keine AC-Stellbestätigung.
+Planung und realen Speichervertrag unterscheiden. Das EMS unterstützt die bisherige Einzelkopf-Zuordnung sowie **einen, zwei oder drei Köpfe über den unveränderten SunEnergy-Standardadapter**. Der SunEnergy-Adapter übernimmt weiterhin Gerätekommunikation und Messwerte; im neuen Modus verteilt das EMS seinen Gesamtauftrag auf die Köpfe. Die Existenz eines beliebigen Batterieadapters reicht nicht. DC-Planungsleistung ist keine AC-Stellbestätigung.
 
 ### Hausbatteriespeicher
 
@@ -470,6 +470,7 @@ Planung und realer Speichervertrag unterscheiden. Der vorbereitete Produktivausg
 | --- | --- | --- |
 | Batteriespeicher vorhanden / in Planung berücksichtigen<br>`batteryPresent` | AUS | Kennzeichnet tatsächlich vorhandene Ressource für Planung/Diagnose. Bedeutet keine reale Regelfreigabe. Noch nicht eingebaute Geräte deaktiviert lassen; deren Nullplanung ist kein bestandener Gerätetest. |
 | Regelfreigabe Batteriespeicher<br>`batteryControlEnabled` | AUS | Gerätespezifische Teilnahme an der Regelung; für reale Ausgangsbefehle sind Master, Ausgangsfreigabe, gültige Quellen und Grenzen zusätzlich nötig. Planung/Anzeige und reale Aktorsteuerung unterscheiden. |
+| Verteilung des Speicherausgangs<br>`batteryDispatchMode` | `single-head` | `single-head` erhält die bisherige konsistente Einzelkopf-Zuordnung. `sunenergy-heads` steuert 1–3 Köpfe der ausgewählten Standardadapterinstanz; zugehörige Kopfgrenzen erscheinen darunter. Der Moduswechsel aktiviert keine Steuerung. |
 | Begleiteten Speicherausgang freigeben: GS-Zuordnung, Vorzeichen, Treibermodi und konkurrierende Schreiber geprüft<br>`batteryProductionArmed` | AUS | Begleitete reale Speicherfreigabe erst nach Prüfung der Kopfzuordnung, GS-Vorzeichen, Treibermodi, Rückmeldungen und konkurrierenden Schreiber. Existierende Planung beweist keine reale Speicherabnahme. |
 | Beschreibbarer sunenergyxt500.N.heads.H.control.GS (W: positiv = Entladung / negativ = Ladung)<br>`batterySetpointId` | leer | Beschreibbarer GS-Leistungsauftrag des gewählten sunenergyxt500-Kopfs in W: positiv entladen, negativ laden. Genau einen Kopf konsistent zuordnen; keine Gesamtanzeige als Stellregister. Unterstützter Treibervertrag ist spezifisch, nicht beliebiger Speicher. |
 | Erforderliche AC-Leistungsrückmeldung: grid.GP des gewählten Kopfs oder total.gridPower bei einem Kopf (W, positiv = Entladung)<br>`batteryAcPowerId` | leer | Echte AC-Netzleistungsrückmeldung des zugeordneten Kopfs in W: positiv Entladung. grid.GP oder bei nur einem Kopf total.gridPower. Bei mehreren Köpfen nicht Gesamtleistung als Antwort eines einzelnen Auftrags verwenden. |
@@ -482,9 +483,9 @@ Planung und realer Speichervertrag unterscheiden. Der vorbereitete Produktivausg
 | SoC-Datenpunkt<br>`batterySocId` | leer | Gemessener Speicher-SoC in % für Grenzen und Planung. Keine Fahrzeugquelle; Alter über eigenes SoC-Fristfeld. |
 | DC-Batterieleistung für Historie/Planung (BP / total.batteryPower, W; keine GS-Rückmeldung)<br>`batteryPowerId` | leer | DC-Batterieleistung BP/total.batteryPower in W für Historie/Planung. Nicht mit AC-GS-Rückmeldung verwechseln; Verluste bedeuten, dass DC und AC nicht identisch sind. |
 | Bisherige DC-Leistungskonvention (nie für GS-/AC-Rückmeldung verwendet)<br>`batteryPowerSign` | 1 | Vorzeichenkonvention ausschließlich der bisherigen DC-Planungsquelle gemäß angebotener Option. Beeinflusst niemals die feste GS-/AC-Konvention des realen Ausgangs. Auswahl: `1` = DC-Quelle positiv = Ladung (SunEnergy BP / total.batteryPower), `-1` = DC-Quelle positiv = Entladung. |
-| Kapazität<br>`batteryCapacityKWh` | 10 kWh | Tatsächliche Speicherkapazität in kWh für Energie-/SoC-Planung. SoC-Nutzfenster reduziert die nutzbare Energiemenge. |
-| Maximale Ladeleistung<br>`batteryMaxChargeW` | 2400 W | Getrennte maximale Lade-/Entladeleistung in W. Grenzen des tatsächlich angesteuerten Systems/Kopfs verwenden; keine Gesamtleistung mehrerer Köpfe einem einzelnen Ausgang zuschreiben. |
-| Maximale Entladeleistung<br>`batteryMaxDischargeW` | 2400 W | Getrennte maximale Lade-/Entladeleistung in W. Grenzen des tatsächlich angesteuerten Systems/Kopfs verwenden; keine Gesamtleistung mehrerer Köpfe einem einzelnen Ausgang zuschreiben. |
+| Kapazität<br>`batteryCapacityKWh` | 10 kWh | Tatsächliche gesamte Speicherkapazität aller ausgewählten Köpfe in kWh für Energie-/SoC-Planung. Die gemeldete ON-Paketanzahl bestimmt im Mehrkopfmodus die relative Kapazitätsgewichtung. Das SoC-Nutzfenster reduziert die nutzbare Energiemenge. |
+| Maximale Ladeleistung<br>`batteryMaxChargeW` | 2400 W | Getrennte maximale Gesamt-Lade-/Entladeleistung in W. Im Einzelkopfmodus gilt die Grenze für den gewählten Kopf; im Mehrkopfmodus zusätzlich zu allen Kopfgrenzen für die gesamte ausgewählte Gruppe. |
+| Maximale Entladeleistung<br>`batteryMaxDischargeW` | 2400 W | Getrennte maximale Gesamt-Lade-/Entladeleistung in W. Im Einzelkopfmodus gilt die Grenze für den gewählten Kopf; im Mehrkopfmodus zusätzlich zu allen Kopfgrenzen für die gesamte ausgewählte Gruppe. |
 | Bisheriger Wirkungsgrad je Richtung<br>`batteryEfficiencyPct` | 92 % | Bisheriger Wirkungsgrad je Richtung in %. Wenn kein eigener Round-Trip-Wert gesetzt ist, wird daraus der Zykluswirkungsgrad abgeleitet (z. B. 92 % × 92 % ≈ 84,6 %). Nicht mit Round-Trip-Prozent verwechseln. |
 | Mindest-SoC<br>`batteryMinSocPct` | 15 % | Untere SoC-Grenze in % bei ausgeschalteter Temperaturreserve. Bei aktivierter Temperaturreserve ist dies der sichtbare Ersatzwert, solange noch keine gültige Prognoseauswahl vorliegt. Eine gültige temperaturabhängige Auswahl ersetzt diese operative Untergrenze; zusätzliche Planungsreserven können darüber liegen. |
 | Maximaler SoC<br>`batteryMaxSocPct` | 100 % | Harte obere SoC-Grenze in %. Für normale Ladung maßgeblich; separates Netzlade-Maximum kann enger sein. |
@@ -494,6 +495,36 @@ Planung und realer Speichervertrag unterscheiden. Der vorbereitete Produktivausg
 | Reservezeit für die abschließende Ladung<br>`batteryReserveMin` | 45 min | Zeitreserve in Minuten für abschließende Ladung. Unterstützt die vorausschauende zeitliche Planung, nicht Mindest-SoC in Prozent. |
 | Prognose-Sicherheitsfaktor<br>`batterySafetyPct` | 80 % | Sicher nutzbarer Anteil des prognostizierten restlichen PV-Überschusses in %. 80 % rechnet vorsichtiger als 100 %; nicht ein pauschaler Wirkungsgrad oder Score. |
 | Für Eigenverbrauch entladen<br>`batterySelfConsumption` | EIN | Erlaubt geplante Entladung für Eigenverbrauch innerhalb SoC-/Leistungs-/Schutzgrenzen. Ohne real freigegebenen Ausgang bleibt dies Planung. |
+
+### SunEnergy-Standardadapter mit 1–3 Köpfen
+
+Im Reiter **Batteriespeicher → Verteilung des Speicherausgangs** die Auswahl **SunEnergy-Standardadapter: 1–3 Köpfe mit SoC-Ausgleich** wählen. Die bisherige Einzelkopf-Zuordnung bleibt der Auslieferungswert, damit ein Update keine bestehende Anlage automatisch auf mehrere Köpfe umstellt. Die Konfiguration muss den **vollständigen** aktiven Kopfbestand derselben SunEnergy-Instanz beschreiben: bei einem Kopf `heads.1`, bei zwei Köpfen `heads.1` und `heads.2`, bei drei Köpfen alle drei. Zusätzliche im Treiber konfigurierte, hier ausgelassene Köpfe sind nicht zulässig.
+
+| Feld / technischer Schlüssel | Auslieferung | Zweck und erwartete Eingabe |
+| --- | --- | --- |
+| SunEnergy-Adapterinstanz (ohne heads-Endung)<br>`batterySunEnergyInstance` | `sunenergyxt500.0` | Genau die Instanz des installierten Standardadapters, ohne `.heads.N` oder Objektendung. Das EMS leitet Kopfobjekte daraus ab. |
+| Anzahl der konfigurierten SunEnergy-Köpfe<br>`batteryHeadCount` | 1 | Ganzzahl 1, 2 oder 3; muss zu den tatsächlich im Standardadapter konfigurierten Köpfen passen. Keine Schätzung anhand vorhandener alter States. |
+| Kopf N: maximale Ladeleistung<br>`batteryHeadNMaxChargeW` | je 2400 W | Individuelle obere Ladegrenze für N = 1, 2 oder 3. Das EMS begrenzt zusätzlich auf die tatsächlich gemeldeten Modell-/Gerätegrenzen und das gemeinsame Gesamtbudget. 0 sperrt diese Richtung für den Kopf. |
+| Kopf N: maximale Entladeleistung<br>`batteryHeadNMaxDischargeW` | je 800 W | Individuelle obere Entladegrenze. Die konservative Auslieferung ist keine Aussage über eine Zulassung oder die mögliche Nennleistung des konkreten Geräts. Nur passend zum realen Aufbau einstellen. |
+
+Die Felder `batteryMaxChargeW` und `batteryMaxDischargeW` bleiben **Gesamtgrenzen**, keine Werte je Kopf. Beispiel: Zwei Köpfe mit jeweils 2400 W Ladegrenze ergeben erst dann einen Auftrag bis 4800 W, wenn auch die Gesamt-Ladegrenze mindestens 4800 W beträgt und das reale Budget sowie beide Geräte dies erlauben. Die gesamte nutzbare Kapazität aller Köpfe in `batteryCapacityKWh` eintragen.
+
+Der SunEnergy-Standardadapter benötigt **Steuermodus Aus**, damit sein eigener Regler und seine Geräte-Eigenregelung nicht gleichzeitig mit dem EMS schreiben. „Aus“ bedeutet hier: kein eigener automatischer Regler; bewusste Schreibbefehle auf `control.*` werden im Standardadapter weiterhin an das Gerät weitergegeben. Jeder ausgewählte Kopf muss **LM=1** (lokaler Modus) und **MM=0** bestätigen. Das EMS stellt diese Modi nicht eigenständig um. Der Quell-State Netzleistung des SunEnergy-Reglers wird für diese Anbindung nicht verwendet; es wird kein künstlicher NVP-/Delta-Wert erzeugt. Ein Fork oder ein zusätzlicher SunEnergy-Adapter ist nicht erforderlich.
+
+| Objekt je ausgewähltem Kopf N | Verwendung und Vorzeichen |
+| --- | --- |
+| `sunenergyxt500.0.heads.N.control.GS` | Direkter individueller Sollwert in W, Schreibbefehl mit `ack=false`: **negativ laden, positiv entladen**. Kein Gesamtleistungsobjekt beschreiben. |
+| `sunenergyxt500.0.heads.N.info.rawResponse` | Zusammengehörige Rückmeldung mit echten Daten des letzten erfolgreichen Kopfabrufs. Daraus werden SoC, AC-Leistung, Modus, Paketanzahl und Gerätegrenzen geprüft; ein frischer Aggregatwert ersetzt keinen fehlenden Kopf. |
+| `sunenergyxt500.0.heads.N.info.online` | Jeder ausgewählte Kopf muss bestätigt erreichbar sein. Frühere oder fehlende Verbindungswerte sind kein aktueller Verbindungsnachweis. |
+| `sunenergyxt500.0.heads.N.grid.GP` | Tatsächliche AC-Kopfleistung: **negativ laden, positiv entladen**. GS-Bestätigung und reale GP-Antwort getrennt betrachten. Intern rechnet das EMS Ladung positiv. |
+| `sunenergyxt500.0.total.soc` | Weiterhin mögliche SoC-Quelle für die Planung; ersetzt nicht die produktive Prüfung jedes ausgewählten Kopfs. |
+| `sunenergyxt500.0.total.batteryPower` | Weiterhin mögliche DC-Leistungsquelle für Historie/Planung. DC-Leistung ist wegen eigener PV-Eingänge und Verlusten nicht die AC-Netzantwort. |
+
+**SoC-Ausgleich:** Beim Laden bevorzugt die Verteilung den niedrigeren, beim Entladen den höheren Kopf-SoC. Die gemeldete **ON-Paketanzahl** gewichtet die relative Kapazität; ON ist kein Verbindungsstatus. Damit sollen sich die Kopf-SoCs annähern, statt bei gleicher Wattverteilung dauerhaft auseinanderzulaufen. Kopfgrenzen, individuelle SoC-Grenzen und das gemeinsame Budget gelten weiter. Alle Kopfsollwerte haben dieselbe Richtung; das EMS lädt keinen Kopf durch gleichzeitige Entladung eines anderen. Exakt gleiche SoCs sind bei unterschiedlichen Kapazitäten, Lasten, Verfügbarkeit oder begrenzter Leistung nicht garantiert.
+
+Der optionale zugeordnete Treiberfehler `batteryFaultId` bleibt als **gemeinsame zusätzliche Fehlerprüfung** auch im Mehrkopfmodus verwendbar und im Admin sichtbar. Wird er gesetzt, muss die Quelle gültig sein und 0 beziehungsweise false bestätigen; dies ersetzt weder die Prüfung aller Kopfantworten noch den Verbindungsstatus. Ein vorhandener optionaler Batterietemperaturfühler bleibt ebenfalls wirksam.
+
+Bei fehlenden, alten, NULL-, unbestätigten oder qualitativ ungültigen Daten eines ausgewählten Kopfs wird kein vollständiger Gruppenbetrieb behauptet. Unbestätigte Leistung bleibt im gemeinsamen Budget reserviert; ein Summenwert von 0 W beweist nicht, dass jeder Kopf elektrisch ruhig ist. Die begleiteten Freigaben, Quellfristen, Rückmeldeprüfung und Gesamtgrenzen gelten auch für einen einzelnen Kopf im neuen Modus. Ein Update installiert oder aktiviert keinen Speicher und ändert keine SunEnergy-Konfiguration. Direkte GS-Befehle bieten weiterhin **keine garantierte abschließende Abschaltung nach einem Hostabsturz**; ein unbeaufsichtigter Betrieb benötigt unabhängigen geräteseitigen Schutz.
 
 ### Temperaturabhängige Mindestreserve
 
@@ -743,6 +774,13 @@ Schattenaufzeichnung und bereits vorhandene SQL-Skalarhistorien sind durch diese
 Ab alpha.67 akzeptiert die zentrale Wallbox-Phasenbudgetprüfung dieselbe bestehende Leerlauftoleranz wie der Wallbox-Ausgang: bestätigte, frische, qualitativ gültige Leistungswerte zwischen −0,02 und 0 kW werden intern als 0 W behandelt. Die originale negative Rohmessung bleibt in der Diagnose erhalten. Größere negative Werte, fehlende/ungültige Werte, schlechtes q, fehlendes ACK und veraltete Quellen bleiben gesperrt. Diese Toleranz gilt für Wallboxleistung; die Verträge anderer Quellen werden dadurch nicht geändert.
 
 ## Changelog und historische Detaildokumentation
+
+### 0.17.0-alpha.69 (2026-10-10)
+
+- Optionale Anbindung von einem, zwei oder drei Köpfen über den unveränderten SunEnergy-Standardadapter; SoC- und Kapazitätsausgleich bei Laden und Entladen.
+- Zusammengehörige GS-/AC-GP-Rückmeldung je Kopf, gemeinsame Leistungsgrenzen und sichere schrittweise Umverteilung; unbekannte Quellen und offene Stopps behalten ihre Verantwortung und Reserve.
+- Admin-Einrichtung und begrenzte Kopfdiagnosen ergänzt; bestehende Einzelkopfzuordnung und ausgeschaltete Freigaben bleiben erhalten. Details: [Releasehinweise](docs/releases/0.17.0-alpha.69.md).
+
 
 Die folgenden Abschnitte bleiben als Entwicklungsgeschichte erhalten. Angaben wie „ausschließlich nacheinander“, alte Timer, damalige Defaultwerte oder „nur Simulation“ beschreiben **den jeweiligen Versionsstand**, nicht pauschal alpha.67. Für aktuelle Bedienung gilt die Admin-Anleitung oben. Historische Detailbeispiele sind vor Verwendung mit aktuellem Code und eigenen Objekten abzugleichen.
 

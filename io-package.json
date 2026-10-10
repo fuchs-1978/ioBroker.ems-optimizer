@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.68",
+    "version": "0.17.0-alpha.69",
     "news": {
+      "0.17.0-alpha.69": {
+        "en": "Add explicit standard SunEnergy adapter dispatch for one to three heads with capacity/SoC weighted balancing, individual coherent AC/GS response checks and retained stop ownership; preserve global budgets and disabled output defaults.",
+        "de": "Explizite Anbindung des SunEnergy-Standardadapters für ein bis drei Köpfe mit kapazitäts-/SoC-gewichteter Verteilung, zusammengehöriger AC-/GS-Rückmeldung je Kopf und erhaltener Stoppverantwortung; Gesamtbudgets und ausgeschaltete Ausgangsfreigaben bleiben erhalten."
+      },
       "0.17.0-alpha.68": {
         "en": "Add an optional configurable forecast-temperature minimum battery SoC reserve shared by planning and control, with Berlin 20:00 selection periods, qualified restart/hold diagnostics and no invented reserve energy; preserve maximum SoC, late targets and output gates.",
         "de": "Optionale einstellbare Mindest-SoC-Reserve nach Temperaturprognose für Planung und Regelung; Berliner 20-Uhr-Auswahlperioden, geprüfte Neustart-/Haltenachweise und keine erfundene Reserveenergie. Maximal-SoC, späte Tagesziele und Ausgangsfreigaben bleiben erhalten."
@@ -86,6 +90,15 @@
     "houseConnectionReserveA": 4,
     "batteryPresent": false,
     "batteryControlEnabled": false,
+    "batteryDispatchMode": "single-head",
+    "batterySunEnergyInstance": "sunenergyxt500.0",
+    "batteryHeadCount": 1,
+    "batteryHead1MaxChargeW": 2400,
+    "batteryHead1MaxDischargeW": 800,
+    "batteryHead2MaxChargeW": 2400,
+    "batteryHead2MaxDischargeW": 800,
+    "batteryHead3MaxChargeW": 2400,
+    "batteryHead3MaxDischargeW": 800,
     "batterySocId": "",
     "batteryPowerId": "",
     "batteryAcPowerId": "",

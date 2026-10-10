@@ -3401,10 +3401,140 @@
           "default": false,
           "sm": 4
         },
+        "batteryDispatchMode": {
+          "type": "select",
+          "label": "Battery output dispatch",
+          "default": "single-head",
+          "options": [
+            {
+              "value": "single-head",
+              "label": "Existing single-head mapping"
+            },
+            {
+              "value": "sunenergy-heads",
+              "label": "SunEnergy standard adapter: 1–3 heads, SoC balancing"
+            }
+          ],
+          "sm": 12,
+          "newLine": true
+        },
+        "batterySunEnergyInstance": {
+          "type": "text",
+          "label": "SunEnergy adapter instance (without heads suffix)",
+          "default": "sunenergyxt500.0",
+          "sm": 8,
+          "newLine": true,
+          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads'"
+        },
+        "batteryHeadCount": {
+          "type": "number",
+          "label": "Number of configured SunEnergy heads",
+          "default": 1,
+          "min": 1,
+          "max": 3,
+          "step": 1,
+          "sm": 4,
+          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads'",
+          "help": "Select exactly the heads configured in the standard driver: head 1, heads 1–2 or heads 1–3. Unselected configured heads are not permitted. This setting does not enable battery control."
+        },
+        "_batterySunEnergyHeadsHelp": {
+          "type": "staticText",
+          "newLine": true,
+          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads'",
+          "text": "The unchanged SunEnergy standard adapter remains the device driver. Set its control mode to Off, with each selected head in local mode LM=1 and manual grid mode MM=0. The EMS writes each heads.N.control.GS directly, never a virtual house-grid signal. GS and GP are positive for discharge and negative for charge; EMS internal power is positive for charge. Fresh per-head rawResponse and online feedback are required. Missing or invalid head data blocks the output and retains the unconfirmed power reserve. Acknowledged GS alone is not physical power feedback."
+        },
+        "_batterySunEnergyBalanceHelp": {
+          "type": "staticText",
+          "newLine": true,
+          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads'",
+          "text": "SoC balancing prefers lower-SoC heads when charging and higher-SoC heads when discharging. The reported ON pack count weights each head's relative capacity; it is not an online flag. Per-head limits, measured device limits and the shared total budget remain binding. All requested head powers have the same direction: the EMS does not charge one head while discharging another. Exact equality is not guaranteed while power, SoC or availability limits differ."
+        },
+        "_batteryHead1Header": {
+          "type": "header",
+          "text": "SunEnergy head 1: power limits",
+          "size": 3,
+          "newLine": true,
+          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads' || Number(data.batteryHeadCount) < 1"
+        },
+        "batteryHead1MaxChargeW": {
+          "type": "number",
+          "label": "Head 1: maximum charge power",
+          "unit": "W",
+          "default": 2400,
+          "min": 0,
+          "step": 1,
+          "sm": 6,
+          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads' || Number(data.batteryHeadCount) < 1"
+        },
+        "batteryHead1MaxDischargeW": {
+          "type": "number",
+          "label": "Head 1: maximum discharge power",
+          "unit": "W",
+          "default": 800,
+          "min": 0,
+          "step": 1,
+          "sm": 6,
+          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads' || Number(data.batteryHeadCount) < 1"
+        },
+        "_batteryHead2Header": {
+          "type": "header",
+          "text": "SunEnergy head 2: power limits",
+          "size": 3,
+          "newLine": true,
+          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads' || Number(data.batteryHeadCount) < 2"
+        },
+        "batteryHead2MaxChargeW": {
+          "type": "number",
+          "label": "Head 2: maximum charge power",
+          "unit": "W",
+          "default": 2400,
+          "min": 0,
+          "step": 1,
+          "sm": 6,
+          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads' || Number(data.batteryHeadCount) < 2"
+        },
+        "batteryHead2MaxDischargeW": {
+          "type": "number",
+          "label": "Head 2: maximum discharge power",
+          "unit": "W",
+          "default": 800,
+          "min": 0,
+          "step": 1,
+          "sm": 6,
+          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads' || Number(data.batteryHeadCount) < 2"
+        },
+        "_batteryHead3Header": {
+          "type": "header",
+          "text": "SunEnergy head 3: power limits",
+          "size": 3,
+          "newLine": true,
+          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads' || Number(data.batteryHeadCount) < 3"
+        },
+        "batteryHead3MaxChargeW": {
+          "type": "number",
+          "label": "Head 3: maximum charge power",
+          "unit": "W",
+          "default": 2400,
+          "min": 0,
+          "step": 1,
+          "sm": 6,
+          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads' || Number(data.batteryHeadCount) < 3"
+        },
+        "batteryHead3MaxDischargeW": {
+          "type": "number",
+          "label": "Head 3: maximum discharge power",
+          "unit": "W",
+          "default": 800,
+          "min": 0,
+          "step": 1,
+          "sm": 6,
+          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads' || Number(data.batteryHeadCount) < 3"
+        },
         "_batteryOutputHelp": {
           "type": "staticText",
           "text": "Supervised SunEnergy battery output: choose the exact sunenergyxt500.N.heads.H.control.GS endpoint and its mandatory AC power feedback heads.H.grid.GP (or total.gridPower only with exactly one configured head). Both GS and GP are positive for discharge/export; the EMS inverts GP to internal positive=charge. BP / total.batteryPower is DC telemetry for history/planning and must not replace AC command feedback. The SunEnergy adapter must use controlMode=off, a fresh info.lastUpdate heartbeat and the selected head must confirm online=true, MM=false and LM=true. A direct GS command has no EMS-side protection against a host crash: a device-side watchdog remains necessary for unattended operation.",
-          "newLine": true
+          "newLine": true,
+          "hidden": "data.batteryDispatchMode === 'sunenergy-heads'"
         },
         "batteryProductionArmed": {
           "type": "checkbox",
@@ -3419,7 +3549,8 @@
           "filterFunc": "obj.type === 'state' && !!obj.common && obj.common.type === 'number' && obj.common.write === true",
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "hidden": "data.batteryDispatchMode === 'sunenergy-heads'"
         },
         "batteryAcPowerId": {
           "type": "objectId",
@@ -3429,7 +3560,8 @@
           ],
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "hidden": "data.batteryDispatchMode === 'sunenergy-heads'"
         },
         "batteryHeartbeatId": {
           "type": "objectId",
@@ -3439,7 +3571,8 @@
           ],
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "hidden": "data.batteryDispatchMode === 'sunenergy-heads'"
         },
         "batteryOnlineId": {
           "type": "objectId",
@@ -3449,7 +3582,8 @@
           ],
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "hidden": "data.batteryDispatchMode === 'sunenergy-heads'"
         },
         "batteryManualModeId": {
           "type": "objectId",
@@ -3459,7 +3593,8 @@
           ],
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "hidden": "data.batteryDispatchMode === 'sunenergy-heads'"
         },
         "batteryLocalModeId": {
           "type": "objectId",
@@ -3469,7 +3604,8 @@
           ],
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "hidden": "data.batteryDispatchMode === 'sunenergy-heads'"
         },
         "batteryFaultId": {
           "type": "objectId",

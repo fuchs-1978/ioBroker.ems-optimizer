@@ -16,11 +16,12 @@ const {buildNativeMapping, houseConnectionSettings, FIELD_TO_MAPPING,
     WALLBOX_FIELDS} = require("./lib/native-mapping");
 const {shouldPreserveWallboxOnUnload} = require("./lib/unload-policy");
 const {EXTENSION_SETTINGS} = require("./lib/extension-settings");
-const {OutputMetadata} = require("./lib/output-metadata");
+const {OutputMetadata, SUN_SETPOINT, batteryHeadOwnership} = require("./lib/output-metadata");
 const {MarketPrices} = require("./lib/market-prices");
 const heatPumpTelemetryParser = require("./lib/heatpump-telemetry");
 const {normalizeWallboxPowerKW} = require("./lib/wallbox-measurement");
 const batteryTemperatureReserve = require("./lib/battery-temperature-reserve");
+const sunEnergyHeads = require("./lib/sunenergy-heads");
 
 class EmsOptimizer extends utils.Adapter {
     constructor(options = {}) {
@@ -215,7 +216,8 @@ class EmsOptimizer extends utils.Adapter {
         const patterns = [...new Set([
             `${this.namespace}.*`,
             ...configured,
-            ...configured.map(id => `${id}.*`)
+            ...configured.map(id => `${id}.*`),
+            ...this.batteryHeadSourceIds()
         ])];
         for (const pattern of patterns) {
             try {
@@ -226,10 +228,30 @@ class EmsOptimizer extends utils.Adapter {
                     this.knownObjects.add(id);
                 }
                 await this.subscribeForeignStatesAsync(pattern);
+                // The own-state read reveals persisted former ownership. Add
+                // only those exact foreign feedback states, even after changing
+                // back to the legacy mode or to another SunEnergy instance.
+                if (pattern === `${this.namespace}.*`) {
+                    for (const id of this.batteryHeadSourceIds())
+                        if (!patterns.includes(id)) patterns.push(id);
+                }
             } catch (error) {
                 this.log.debug(`Preload skipped for ${pattern}: ${error.message}`);
             }
         }
+    }
+
+    batteryHeadSourceIds() {
+        const topology = this.config.batteryDispatchMode === 'sunenergy-heads'
+            ? sunEnergyHeads.readTopology(this.config) : null;
+        const bases = new Set(topology?.valid ? topology.heads.map(head => head.baseId) : []);
+        try {
+            for (const former of batteryHeadOwnership(this))
+                bases.add(former.setpointId.slice(0, -'.control.GS'.length));
+        } catch { /* Metadata validation reports corrupt ownership and blocks arming. */ }
+        return [...bases].flatMap(baseId => ['info.rawResponse', 'info.online', 'info.timestamp',
+            'info.lastError', 'control.GS', 'control.MM', 'control.LM', 'grid.GP', 'battery.SC', 'battery.ON']
+            .map(suffix => `${baseId}.${suffix}`));
     }
 
     readMapping() {
@@ -596,7 +618,18 @@ class EmsOptimizer extends utils.Adapter {
         }
         if (typeof value !== 'number' || !Number.isFinite(value)) return false;
         const nonzero = value !== 0;
-        const device = id === String(this.config.batterySetpointId || '').trim() ? 'Battery'
+        const topology = this.config.batteryDispatchMode === 'sunenergy-heads'
+            ? sunEnergyHeads.readTopology(this.config) : null;
+        const head = topology?.valid ? topology.heads.find(candidate => candidate.setpointId === id) : null;
+        const legacyBatteryId = String(this.config.batterySetpointId || '').trim();
+        if (nonzero && id === legacyBatteryId
+            && !['single-head', 'single', 'sunenergy-heads'].includes(this.config.batteryDispatchMode || 'single-head')) return false;
+        // The allowlist also contains formerly owned heads for safe zeros. A
+        // changed topology must never turn an old GS into an unguarded generic
+        // positive-watt output while metadata is being refreshed.
+        if (nonzero && SUN_SETPOINT.test(id) && !head
+            && (this.config.batteryDispatchMode === 'sunenergy-heads' || id !== legacyBatteryId)) return false;
+        const device = head || id === String(this.config.batterySetpointId || '').trim() ? 'Battery'
             : id === String(this.config.heatingSetpointId || '').trim() ? 'MyPV_Heating'
                 : id === String(this.config.dhwSetpointId || '').trim() ? 'MyPV_DHW' : null;
         if (value < 0 && device !== 'Battery') return false;
@@ -604,7 +637,11 @@ class EmsOptimizer extends utils.Adapter {
         if (nonzero && (this.unloading || this.config.globalWriteEnabled !== true
             || this.getCachedState(`${this.namespace}.System.RealOutputsEnabled`)?.val !== true))
             return false;
-        const ownershipIds = device ? ['OutputOwned', 'OutputSetpointId']
+        const ownershipIds = head ? [`${this.namespace}.Devices.Battery.OutputOwned`,
+            `${this.namespace}.Devices.Battery.HeadOwnership_JSON`,
+            `${this.namespace}.Devices.Battery.Heads.${head.index}.OutputOwned`,
+            `${this.namespace}.Devices.Battery.Heads.${head.index}.OutputSetpointId`]
+            : device ? ['OutputOwned', 'OutputSetpointId']
             .map(key => `${this.namespace}.Devices.${device}.${key}`) : [];
         const reservationKeys = device === 'Battery'
             ? ['OutputReservedCharge_W', 'OutputUnobservedCommand_W', 'OutputUnobservedCommandSince']
@@ -612,6 +649,15 @@ class EmsOptimizer extends utils.Adapter {
                 'OutputReservedPhase3_W', 'OutputReservationState_JSON', 'OutputReservationPending'];
         const durableIds = device ? [...ownershipIds, ...reservationKeys.map(key =>
             `${this.namespace}.Devices.${device}.${key}`)] : [];
+        if (head) {
+            // Every peer's high-water reservation is part of the same physical
+            // battery budget. Wait for the whole plan, never merely this head.
+            for (const peer of topology.heads) {
+                for (const key of ['OutputOwned', 'OutputSetpointId', 'OutputCommandInternal_W',
+                    'OutputReservedCharge_W', 'OutputUnobservedCommand_W', 'OutputUnobservedCommandSince'])
+                    durableIds.push(`${this.namespace}.Devices.Battery.Heads.${peer.index}.${key}`);
+            }
+        }
         // Capture these promises now: a rejected durable ownership claim must
         // not disappear from pendingOwnWrites before a queued GS write runs.
         const ownershipWrites = nonzero ? durableIds.map(key => this.pendingOwnWrites.get(key)).filter(Boolean) : [];
@@ -621,9 +667,28 @@ class EmsOptimizer extends utils.Adapter {
         const promise = previousWrite.catch(() => {}).then(async () => {
             if (nonzero && device) {
                 await Promise.all(ownershipWrites);
+                if (head) {
+                    // A newer peer plan can be published while this command is
+                    // queued. Its current high-water reservation must also be
+                    // durable before an unchanged local command may run.
+                    let pending;
+                    do {
+                        pending = durableIds.map(key => this.pendingOwnWrites.get(key)).filter(Boolean);
+                        await Promise.all(pending);
+                    } while (durableIds.some(key => this.pendingOwnWrites.has(key)
+                        && !pending.includes(this.pendingOwnWrites.get(key))));
+                }
                 if (durableIds.some(key => this.failedOwnWrites.has(key)))
                     throw new Error('Ausgangsbesitz/Leistungsreserve nach Datenbankfehler noch nicht dauerhaft bestaetigt');
-                if (this.getCachedState(ownershipIds[0])?.val !== true
+                if (head) {
+                    const ownership = batteryHeadOwnership(this);
+                    if (this.getCachedState(ownershipIds[0])?.val !== true
+                        || !ownership.some(candidate => candidate.owned === true
+                            && candidate.index === head.index && candidate.setpointId === id)
+                        || this.getCachedState(ownershipIds[2])?.val !== true
+                        || this.getCachedState(ownershipIds[3])?.val !== id)
+                        throw new Error('Speicherkopf-Besitz und Ziel muessen vor dem Stellbefehl dokumentiert sein');
+                } else if (this.getCachedState(ownershipIds[0])?.val !== true
                     || this.getCachedState(ownershipIds[1])?.val !== id)
                     throw new Error('Ausgangsbesitz und Ziel muessen vor dem Stellbefehl dokumentiert sein');
             }
@@ -639,6 +704,13 @@ class EmsOptimizer extends utils.Adapter {
                 throw new Error('Stellbefehl durch neueren Sollwert ueberholt');
             if (nonzero && this.zeroOnlyForeignWriteIds.has(id))
                 throw new Error('Frueherer Ausgang nur fuer sichere Null freigegeben');
+            if (nonzero && head) {
+                const current = this.config.batteryDispatchMode === 'sunenergy-heads'
+                    ? sunEnergyHeads.readTopology(this.config) : null;
+                if (!current?.valid || current.instance !== topology.instance || current.count !== topology.count
+                    || !current.heads.some(candidate => candidate.index === head.index && candidate.setpointId === id))
+                    throw new Error('Speicherkopf-Zuordnung vor Ausgabe geaendert');
+            }
             if (nonzero && id === String(this.config.dhwSetpointId || '').trim()
                 && (this.config.dhwControlEnabled !== true || this.config.dhwPresent === false
                     || ['Present', 'ControlEnabled', 'Release'].some(key =>
@@ -652,7 +724,13 @@ class EmsOptimizer extends utils.Adapter {
                     || (device !== 'MyPV_DHW' && this.config[`${nativePrefix}ProductionArmed`] !== true)
                     || ['Present', 'ControlEnabled', 'DriverReady'].some(key => this.getCachedState(`${base}.${key}`)?.val !== true))
                     throw new Error(`${device}: Ausgabefreigabe vor Stellbefehl entzogen`);
-                if (this.engineContext && device === 'Battery') {
+                if (head) {
+                    if (!this.engineContext)
+                        throw new Error('Speicherkopf-Ausgabe ohne vollstaendige Reglerpruefung gesperrt');
+                    const check = this.runEngine(`batteryHeadsQueuedCheck(${JSON.stringify(id)}, ${value})`);
+                    if (!check?.allowed)
+                        throw new Error(check?.reason || 'Speicherkopf-/Gesamtgrenzen vor Ausgabe nicht bestaetigt');
+                } else if (this.engineContext && device === 'Battery') {
                     const state = this.runEngine('batteryRegulationState()');
                     if (!state.eligible || (value < 0 ? !state.canCharge : !state.canDischarge))
                         throw new Error(`Speicher vor Ausgabe gesperrt: ${state.reason}`);
@@ -673,7 +751,7 @@ class EmsOptimizer extends utils.Adapter {
                         || thermal.thermalCapW < 0 || value > thermal.thermalCapW))
                         throw new Error('Heizpuffer-Leistungsgrenze vor Ausgabe reduziert/ungueltig');
                 }
-                if (this.engineContext) {
+                if (this.engineContext && !head) {
                     const electrical = this.runEngine(`checkQueuedElectricalOutput(${JSON.stringify(device)}, ${value})`);
                     if (!electrical?.allowed)
                         throw new Error(electrical?.reason || 'Elektrische Grenze vor Ausgabe nicht bestaetigt');
@@ -752,6 +830,7 @@ class EmsOptimizer extends utils.Adapter {
             heatPumpTelemetryParser,
             normalizeWallboxPowerKW,
             batteryTemperatureReserve,
+            sunEnergyHeads,
             Infinity,
             NaN,
             parseInt,
