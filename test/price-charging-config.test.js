@@ -110,6 +110,7 @@ test('all price settings trigger session refresh before a deferred forecast rebu
         on: (spec, callback) => subscriptions.push({spec, callback}),
         updateVehicles: () => events.push('vehicles'), requestForecastRebuild: () => events.push('forecast'),
         buildHistory: noop, observe: noop, updateDhwSimulation: noop, updateHeatingSimulation: noop,
+        batteryEffectiveMinimumSoc: noop,
         updateHeatPumpAdvice: noop, updateDhwProductionOutput: noop, updateHeatingProductionOutput: noop,
         updateWallboxProductionOutput: noop, updateBatteryProductionOutput: noop, buildForecast: noop
     });

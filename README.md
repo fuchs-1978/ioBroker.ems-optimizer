@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.67**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.68**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -486,7 +486,7 @@ Planung und realer Speichervertrag unterscheiden. Der vorbereitete Produktivausg
 | Maximale Ladeleistung<br>`batteryMaxChargeW` | 2400 W | Getrennte maximale Lade-/Entladeleistung in W. Grenzen des tatsächlich angesteuerten Systems/Kopfs verwenden; keine Gesamtleistung mehrerer Köpfe einem einzelnen Ausgang zuschreiben. |
 | Maximale Entladeleistung<br>`batteryMaxDischargeW` | 2400 W | Getrennte maximale Lade-/Entladeleistung in W. Grenzen des tatsächlich angesteuerten Systems/Kopfs verwenden; keine Gesamtleistung mehrerer Köpfe einem einzelnen Ausgang zuschreiben. |
 | Bisheriger Wirkungsgrad je Richtung<br>`batteryEfficiencyPct` | 92 % | Bisheriger Wirkungsgrad je Richtung in %. Wenn kein eigener Round-Trip-Wert gesetzt ist, wird daraus der Zykluswirkungsgrad abgeleitet (z. B. 92 % × 92 % ≈ 84,6 %). Nicht mit Round-Trip-Prozent verwechseln. |
-| Mindest-SoC<br>`batteryMinSocPct` | 15 % | Harte untere SoC-Grenze in %. Unterhalb keine normale EMS-Entladung; zusätzliche Planungsreserve kann darüber liegen. |
+| Mindest-SoC<br>`batteryMinSocPct` | 15 % | Untere SoC-Grenze in % bei ausgeschalteter Temperaturreserve. Bei aktivierter Temperaturreserve ist dies der sichtbare Ersatzwert, solange noch keine gültige Prognoseauswahl vorliegt. Eine gültige temperaturabhängige Auswahl ersetzt diese operative Untergrenze; zusätzliche Planungsreserven können darüber liegen. |
 | Maximaler SoC<br>`batteryMaxSocPct` | 100 % | Harte obere SoC-Grenze in %. Für normale Ladung maßgeblich; separates Netzlade-Maximum kann enger sein. |
 | Morgendliches Ziel<br>`batteryMorningTargetPct` | 70 % | Planungsziel-SoC in % für morgens/nachmittags/späte Ladung. Ziele berücksichtigen erwartete PV und verfügbare Ladeleistung; keine garantierte tatsächliche Zielerreichung oder pauschale sofortige Netzladung. |
 | Nachmittägliches Ziel<br>`batteryAfternoonTargetPct` | 90 % | Planungsziel-SoC in % für morgens/nachmittags/späte Ladung. Ziele berücksichtigen erwartete PV und verfügbare Ladeleistung; keine garantierte tatsächliche Zielerreichung oder pauschale sofortige Netzladung. |
@@ -494,6 +494,53 @@ Planung und realer Speichervertrag unterscheiden. Der vorbereitete Produktivausg
 | Reservezeit für die abschließende Ladung<br>`batteryReserveMin` | 45 min | Zeitreserve in Minuten für abschließende Ladung. Unterstützt die vorausschauende zeitliche Planung, nicht Mindest-SoC in Prozent. |
 | Prognose-Sicherheitsfaktor<br>`batterySafetyPct` | 80 % | Sicher nutzbarer Anteil des prognostizierten restlichen PV-Überschusses in %. 80 % rechnet vorsichtiger als 100 %; nicht ein pauschaler Wirkungsgrad oder Score. |
 | Für Eigenverbrauch entladen<br>`batterySelfConsumption` | EIN | Erlaubt geplante Entladung für Eigenverbrauch innerhalb SoC-/Leistungs-/Schutzgrenzen. Ohne real freigegebenen Ausgang bleibt dies Planung. |
+
+### Temperaturabhängige Mindestreserve
+
+Ab alpha.68 kann der **operative Mindest-SoC** anhand einer zugeordneten Temperaturprognose gewählt werden. Die Funktion ist bei Auslieferung **AUS**. Sie ist eine einfache einstellbare Reservepolitik; sie berechnet weder den tatsächlichen Wärmeverbrauch noch einen garantierten Energiebedarf. Die Temperatur des Wetters und der getrennte Batterietemperaturfühler für Geräteschutz haben unterschiedliche Aufgaben.
+
+| Feld / technischer Schlüssel | Auslieferung | Zweck und erwartete Eingabe |
+| --- | --- | --- |
+| Temperaturabhängigen Mindest-SoC verwenden<br>`batteryTemperatureMinSocEnabled` | AUS | Aktiviert die folgende Dreistufenauswahl statt des statischen operativen Mindest-SoC. Aktiviert keine Speichersteuerung oder Netzladung. |
+| Temperaturprognose für die Mindestreserve<br>`batteryTemperatureForecastId` | leer | Bestätigter numerischer Prognosewert in °C, dessen Qualitätskennzeichen und echten Quellenzeitstempel das EMS prüft. Kein Batterietemperaturfühler, JSON-Prognosebaum oder vom EMS neu datierter Altwert. |
+| Maximales Alter der Temperaturprognose<br>`batteryTemperatureForecastMaxAgeH` | 24 h | Zulässiges Alter der Quelle in Stunden; im Admin 1–48 h. Die täglich verwendete Auswahl darf nicht durch künstliche Zeitstempel frisch erscheinen. |
+| Untere Temperaturschwelle<br>`batteryTemperatureLowerThresholdC` | 0 °C | Unterhalb dieser Schwelle gilt die kalte Stufe. Die Schwellen sind im Admin zwischen −50 und +50 °C einstellbar; die untere muss kleiner als die obere sein. |
+| Mindest-SoC unterhalb der unteren Schwelle<br>`batteryTemperatureColdMinSocPct` | 30 % | Operativer Mindest-SoC für die kalte Stufe, 0–100 %. Keine neue obere Ladegrenze. |
+| Obere Temperaturschwelle<br>`batteryTemperatureUpperThresholdC` | 5 °C | Oberhalb dieser Schwelle gilt die warme Stufe. Zwischen den Schwellen einschließlich ihrer Grenzwerte gilt die mittlere Stufe. |
+| Mindest-SoC zwischen den Schwellen<br>`batteryTemperatureCoolMinSocPct` | 20 % | Operativer Mindest-SoC für die mittlere Stufe, 0–100 %. |
+| Mindest-SoC oberhalb der oberen Schwelle<br>`batteryTemperatureWarmMinSocPct` | 10 % | Operativer Mindest-SoC für die warme Stufe, 0–100 %. |
+
+Mit den Standardwerten gilt **unter 0 °C → 30 %**, **0 bis einschließlich 5 °C → 20 %**, **über 5 °C → 10 %**. Diese Prozentwerte und beide Schwellen sind frei konfigurierbar. Der maximale SoC und die vorhandenen Morgen-/Nachmittags-/Spätziele werden nicht verändert; die bestehenden Ziele werden weiterhin innerhalb des gültigen SoC-Fensters geplant. Die späte Abschlussladung bleibt bestehen.
+
+Die drei SoC-Werte müssen nicht absteigend angeordnet sein; ihre gewünschte Bedeutung bewusst festlegen. Der bestehende produktive Speichervertrag verlangt für eine normale Entladung eine positive wirksame Reserve: **Ein Mindestwert von 0 % ist keine Erlaubnis zur Entladung bis 0 %, sondern lässt die normale Live-Entladung gesperrt.**
+
+Eine neue Auswahlperiode beginnt täglich um **20:00 Uhr Europe/Berlin**, unabhängig von der Zeitzone des Hosts und unter Berücksichtigung der Sommer-/Winterzeit. Je Periode und unverändertem Auswahlvertrag gibt es höchstens eine erfolgreiche Auswahl. Bei erster Aktivierung oder einem Start ohne passenden gültigen Auswahlbeleg wird die aktuelle gültige Quelle verwendet. Ein Neustart mit einem geprüften Auswahlbeleg der laufenden Periode behält diese Auswahl stabil bei; spätere Forecaständerungen derselben Periode ersetzen sie nicht laufend.
+
+Ist am Beginn einer Periode keine gültige Quelle verfügbar, bleibt die vorige Reserve gehalten bzw. der statische Ersatz wirksam. Eine später erstmals gültige Quelle kann die Auswahl für diese Periode nachholen; dokumentiert wird der **tatsächliche spätere Auswahlzeitpunkt**. Ausgelassene Termine während eines Adapterstillstands und verspätete Auswahlen werden nicht rückwirkend als erfolgreiche 20:00-Uhr-Auswertungen behauptet. Die Auswahl verwendet ausschließlich die beim tatsächlichen Auswählen verfügbare Quelle. Eine Änderung der zugeordneten Quelle oder Auswahlparameter wird als neuer Auswahlvertrag erneut geprüft.
+
+Die Quelle bestimmt den Prognosehorizont. Bei einem Wetteradapter bezeichnet `day0` üblicherweise den aktuellen Tag und `day1` den Folgetag: Für eine Auswahl am Abend mit Blick auf die kommende Nacht ist **eine dafür passende Folgetags-Minimumprognose** sinnvoll. Das konkrete Zeitintervall im verwendeten Wetteradapter kontrollieren, besonders über Mitternacht. Das EMS liest den zugeordneten Wert und verschiebt dessen Wetterhorizont nicht selbst.
+
+Fehlt eine gültige Quelle, bleibt die bisher gültig ausgewählte Reserve ausdrücklich als **gehaltene Auswahl** bestehen. Solange es noch keine solche Auswahl gibt, gilt der statische Mindest-SoC als klar ausgewiesener Ersatz. Fehlend, NULL, unbestätigt, qualitativ ungültig oder veraltet ist keine 0-°C-Prognose. Jede Temperaturstufe muss kleiner als der konfigurierte maximale SoC sein. Ist eine Stufe gleich dem Maximum oder größer, oder sind die Einstellungen anderweitig ungültig, bleiben Batterieplanung und produktiver Speicherausgang gesperrt. Die Planung anderer Geräte wird dadurch nicht pauschal abgeschaltet. Das EMS erhöht das Maximum nicht stillschweigend.
+
+Die wirksame Untergrenze gilt gleich für Fahrplan und Live-Entladung. Eine höhere Reserve erlaubt keine automatische Netzladung und setzt einen tatsächlich niedrigeren Speicher-SoC nicht rechnerisch auf den Mindestwert hoch. Die vorhandene Preis-Netzladefreigabe, Gerätefreigaben und Schutzgrenzen bleiben erforderlich. Dieses Feature schreibt **kein zusätzliches `control.SI`-Register** beim Speicheradapter; konkurrierende Skriptschreiber sind vor einer realen Freigabe weiterhin zu prüfen.
+
+Unter `Devices.Battery` und im Speicher-Reiter anzeigen:
+
+| Diagnose | Bedeutung |
+| --- | --- |
+| `EffectiveMinimumSoC_pct` | Tatsächlich für Planung und Entladung verwendete Untergrenze in %. |
+| `TemperatureReserveStatus` | Herkunft der Reserve, Ersatz-/Haltezustand oder konkreter ungültiger Zustand. |
+| `TemperatureReserveValid` | Gültige gewählte Reservepolitik, auch beim Halten einer früheren Auswahl. Bei ausgeschalteter Funktion oder reinem statischem Ersatz false; dies allein belegt keine allgemeine Speicherstörung. |
+| `TemperatureReserveHeld` | Die vorige gültige Prognoseauswahl wird gehalten; dies bestätigt keine neue frische Quelle. |
+| `TemperatureForecast_C` | Aktuell gelesener Prognosewert; unbekannt bleibt unbekannt. Bei gehaltenem Minimum ist dies keine neue Auswahlbestätigung. |
+| `TemperatureForecastAge_h` | Alter der aktuell gelesenen Prognosequelle in Stunden; von einem neuen EMS-Regeltakt nicht erneuert. |
+| `TemperatureReserveLastSelectionAt` | Zeitpunkt der letzten gültigen Auswahl in Epoch-Millisekunden; 0 bei fehlender Auswahl. Beim Halten bleibt der ursprüngliche Zeitpunkt erhalten. |
+| `TemperatureReservePeriod` | Zuordnung der gültigen Auswahl zum täglichen Auswahltermin; beim Halten bleibt die ursprüngliche Zuordnung erhalten. |
+| `TemperatureReserveSelection_JSON` | Zusammengehöriger Auswahlbeleg für die Reservepolitik; keine tatsächliche Speicher-Lade-/Entlademessung. |
+
+Die produktiven Diagnoseaufzeichnungen führen wirksames und statisches Minimum, die Auswahl mit ihrem echten Zeitpunkt sowie die Prognose-Originalquelle samt ACK/q und Quellenzeit mit. Für einen SQL-Nachweis zusammengehörige Records verwenden; aktuelle Admin-Anzeigen ersetzen keine fehlende Historie.
+
+Dies ist eine temperaturgestufte Mindestreserve. Eine umfassende Bedarfsplanung aus Hausverbrauch, zukünftigem WP-Verbrauch, PV-Prognosefehlern und Ladegelegenheiten ist damit nicht vollständig umgesetzt oder real abgenommen.
 
 ### Preisabhängiges Speicherladen
 
@@ -2483,6 +2530,7 @@ Adapters sind.
 
 | Version | Änderung |
 |---|---|
+| 0.17.0-alpha.68 | Optionale temperaturabhängige Batterie-Mindestreserve mit variablen Schwellen, Prozentwerten und Prognosequelle; tägliche Auswahlperiode ab 20 Uhr Europe/Berlin, gleiche wirksame Untergrenze in Planung/Live, transparente Halte-/Ersatzdiagnose. Maximum und bestehende Tagesziele bleiben erhalten; keine neue Netzladefreigabe oder zusätzlicher SI-Schreiber. |
 | 0.17.0-alpha.67 | Qualifizierte Parallelübergabe nach Ziel-SoC-Ende und unabhängig geprüfter Übernahme im aktuellen Prozess; bestehende −20-W-Wallboxtoleranz auch im zentralen Phasenbudget, Rohwerte und Schutzgrenzen erhalten. |
 | 0.17.0-alpha.66 | Ungenutzte physisch freigegebene Wallboxen im Parallelbetrieb bestätigt AUS halten; bestehende Ladung erhalten, AUS-ACK und elektrische Ruhe abwarten, sequenzielle Leerlaufausnahme begrenzen. |
 | 0.17.0-alpha.65 | Kontrollierte manuelle Prioritätsübergabe optionaler Ladungen im Parallelbetrieb; Reservierung bis frischem AUS-ACK und elektrischer Ruhe, geschützte Pflichtladungen, qualifizierter Start ohne zweiten vollständigen Countdown. |

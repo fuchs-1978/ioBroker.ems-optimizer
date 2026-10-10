@@ -124,3 +124,34 @@ test('heating and battery selectors accept only writable numeric states', () => 
         ]) assert.equal(filter(invalid), false, `${id}: ${JSON.stringify(invalid)}`);
     }
 });
+
+test('temperature reserve selector accepts numeric telemetry without requiring a writable actuator', () => {
+    const field = config.items.batteryTab.items.batteryTemperatureForecastId;
+    assert.equal(field.default, '');
+    assert.equal(field.type, 'objectId');
+    assert.ok(!Object.hasOwn(field, 'types'));
+    const filter = new Function('obj', `return (${field.filterFunc});`);
+    assert.equal(filter({type: 'state', common: {type: 'number', read: true, write: false, unit: '°C'}}), true);
+    for (const invalid of [
+        {type: 'state', common: {type: 'boolean'}},
+        {type: 'state', common: {type: 'string'}},
+        {type: 'channel', common: {type: 'number'}},
+        {type: 'state'},
+    ]) assert.equal(filter(invalid), false);
+});
+
+test('temperature reserve displays are read-only and never substitute defaults for missing diagnosis', () => {
+    const fields = collectFields(config.items.batteryTab, 'state');
+    const expected = ['EffectiveMinimumSoC_pct', 'TemperatureReserveStatus', 'TemperatureReserveValid',
+        'TemperatureReserveHeld', 'TemperatureForecast_C', 'TemperatureForecastAge_h',
+        'TemperatureReservePeriod'].map(suffix => `Devices.Battery.${suffix}`);
+    assert.deepEqual(fields.map(field => field.oid).sort(), expected.sort());
+    for (const field of fields) {
+        assert.equal(field.control, 'text', field.oid);
+        assert.equal(field.controlled, false, field.oid);
+        assert.equal(field.doNotSave, true, field.oid);
+        assert.equal(field.foreign ?? false, false, field.oid);
+        assert.equal(field.system ?? false, false, field.oid);
+        assert.ok(!Object.hasOwn(field, 'default') && !Object.hasOwn(field, 'defaultFunc'), field.oid);
+    }
+});

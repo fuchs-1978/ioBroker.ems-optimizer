@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.67",
+    "version": "0.17.0-alpha.68",
     "news": {
+      "0.17.0-alpha.68": {
+        "en": "Add an optional configurable forecast-temperature minimum battery SoC reserve shared by planning and control, with Berlin 20:00 selection periods, qualified restart/hold diagnostics and no invented reserve energy; preserve maximum SoC, late targets and output gates.",
+        "de": "Optionale einstellbare Mindest-SoC-Reserve nach Temperaturprognose für Planung und Regelung; Berliner 20-Uhr-Auswahlperioden, geprüfte Neustart-/Haltenachweise und keine erfundene Reserveenergie. Maximal-SoC, späte Tagesziele und Ausgangsfreigaben bleiben erhalten."
+      },
       "0.17.0-alpha.67": {
         "en": "Extend confirmed parallel handoffs to target-SoC completion and independently verified current-process adoption; accept existing wallbox idle-power noise tolerance in central budget validation while preserving source quality and safety limits.",
         "de": "Bestätigte Parallelübergabe auch nach Ziel-SoC-Ende und unabhängig geprüfter Übernahme im aktuellen Prozess; bestehende Leerlauf-Messtoleranz der Wallbox auch im zentralen Budget prüfen, Quellenqualität und Schutzgrenzen erhalten."
@@ -106,6 +110,14 @@
     "batteryMaxChargeW": 2400,
     "batteryMaxDischargeW": 2400,
     "batteryMinSocPct": 15,
+    "batteryTemperatureMinSocEnabled": false,
+    "batteryTemperatureForecastId": "",
+    "batteryTemperatureLowerThresholdC": 0,
+    "batteryTemperatureUpperThresholdC": 5,
+    "batteryTemperatureColdMinSocPct": 30,
+    "batteryTemperatureCoolMinSocPct": 20,
+    "batteryTemperatureWarmMinSocPct": 10,
+    "batteryTemperatureForecastMaxAgeH": 24,
     "batteryMaxSocPct": 100,
     "batteryMorningTargetPct": 70,
     "batteryAfternoonTargetPct": 90,
