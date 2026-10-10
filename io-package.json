@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.69",
+    "version": "0.17.0-alpha.70",
     "news": {
+      "0.17.0-alpha.70": {
+        "en": "Use coherent SunEnergy head data automatically for planning, expose effective device limits, and optionally derive capacity from online packs with an explicit pack size. Unknown data no longer falls back to a fictitious battery SOC in head mode.",
+        "de": "Zusammenhaengende SunEnergy-Kopfdaten automatisch in der Prognose nutzen, wirksame Geraetegrenzen anzeigen und Kapazitaet optional aus Online-Packs mit ausdruecklicher Packgroesse ableiten. Unbekannte Kopfdaten ergeben keinen erfundenen Ersatz-SoC."
+      },
       "0.17.0-alpha.69": {
         "en": "Add explicit standard SunEnergy adapter dispatch for one to three heads with capacity/SoC weighted balancing, individual coherent AC/GS response checks and retained stop ownership; preserve global budgets and disabled output defaults.",
         "de": "Explizite Anbindung des SunEnergy-Standardadapters für ein bis drei Köpfe mit kapazitäts-/SoC-gewichteter Verteilung, zusammengehöriger AC-/GS-Rückmeldung je Kopf und erhaltener Stoppverantwortung; Gesamtbudgets und ausgeschaltete Ausgangsfreigaben bleiben erhalten."
@@ -119,6 +123,8 @@
     "batteryMeasurementMaxAgeS": 30,
     "batterySoCMaxAgeS": 300,
     "batteryTemperatureMaxC": 50,
+    "batteryCapacitySource": "manual",
+    "batteryPackCapacityKWh": 0,
     "batteryCapacityKWh": 10,
     "batteryMaxChargeW": 2400,
     "batteryMaxDischargeW": 2400,

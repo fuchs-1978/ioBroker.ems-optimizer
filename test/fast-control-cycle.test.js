@@ -9,13 +9,15 @@ const {SMA_GRID_MAX_AGE_MS} = require('../lib/source-diagnostics');
 
 const source = name => fs.readFileSync(path.join(__dirname, '../lib/engine', `${name}.js`), 'utf8');
 
-function bootstrapHarness() {
+function bootstrapHarness({headMode = false} = {}) {
     const jobs = [], timers = [], calls = [], writes = [], messages = [];
+    const listeners = [];
     const context = vm.createContext({SMA_GRID_MAX_AGE_MS,
         CFG: {root: 'ems.0', refreshSeconds: 10, forecastRefreshMinutes: 15,
-            dp: new Proxy({}, {get: () => []})},
+            dp: new Proxy({}, {get: (target, key) => key === 'batterySoc' ? 'sunenergyxt500.0.total.soc' : []})},
         getState: () => null,
-        write(id, value) { writes.push({id, value}); }, on() {}, log(message) { messages.push(message); },
+        write(id, value) { writes.push({id, value}); }, on(spec, callback) { listeners.push({spec, callback}); }, log(message) { messages.push(message); },
+        batteryHeadsMode: () => headMode,
         schedule(expression, callback) { jobs.push({expression, callback}); },
         setTimeout(callback, delay) { timers.push({callback, delay}); }
     });
@@ -28,8 +30,19 @@ function bootstrapHarness() {
     }
     vm.runInContext(source('bootstrap'), context);
     calls.length = 0;
-    return {jobs, timers, calls, writes, messages, context};
+    return {jobs, timers, calls, writes, messages, context, listeners};
 }
+
+test('head-mode automatic total SOC polls do not trigger expensive forecast rebuilds', () => {
+    for (const headMode of [true, false]) {
+        const h = bootstrapHarness({headMode});
+        const listener = h.listeners.find(({spec}) => Array.isArray(spec.id)
+            && spec.id.includes('sunenergyxt500.0.total.soc'));
+        assert.equal(Boolean(listener), !headMode);
+        assert.ok(h.jobs.some(job => job.callback === h.context.buildForecast),
+            'the regular forecast schedule is retained');
+    }
+});
 
 test('bootstrap publishes the release version and never logs an obsolete version', () => {
     const h = bootstrapHarness();

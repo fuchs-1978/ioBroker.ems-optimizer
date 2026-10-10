@@ -68,7 +68,11 @@ function fixture(initial = {}) {
 test('SunEnergy head diagnostics require every coherent source and never export private replies', () => {
     const f = fixture();
     Object.assign(f.adapter.config, {batteryDispatchMode: 'sunenergy-heads', batteryHeadCount: 2,
-        batterySunEnergyInstance: 'sunenergyxt500.0'});
+        batterySunEnergyInstance: 'sunenergyxt500.0', batterySocId: 'old.soc', batteryPowerId: 'old.dc'});
+    f.adapter.readMapping = () => ({DP_BATTERY_SOC: 'sunenergyxt500.0.total.soc',
+        DP_BATTERY_POWER: 'sunenergyxt500.0.total.batteryPower'});
+    f.put('old.soc', 99); f.put('old.dc', 5000);
+    f.put('sunenergyxt500.0.total.soc', 50); f.put('sunenergyxt500.0.total.batteryPower', 1001);
     const report = (index, GP, SC) => {
         const base = `sunenergyxt500.0.heads.${index}`;
         f.put(`${base}.info.online`, true);
@@ -77,9 +81,17 @@ test('SunEnergy head diagnostics require every coherent source and never export 
             LP: 0, SI: 10, SA: 100, PK: 1, privateAddress: 'PRIVATE-HEAD-CONFIG'}}}));
     };
     report(1, -600, 30); report(2, -400, 70);
+    f.put('ems.0.Devices.Battery.Profile.Capacity_kWh', 4.8);
+    f.put('ems.0.Devices.Battery.Profile.CapacityValid', true);
+    f.put('ems.0.Devices.Battery.Profile.OldestSourceAt', f.clock.now - 2000);
     let snapshot = f.recorder.snapshot();
     assert.equal(snapshot.battery.actual_W, 1000);
     assert.equal(snapshot.battery.soc_pct, 50);
+    assert.equal(snapshot.battery.measurements.soc.id, 'sunenergyxt500.0.total.soc');
+    assert.equal(snapshot.battery.measurements.dcPower.id, 'sunenergyxt500.0.total.batteryPower');
+    assert.equal(snapshot.battery.deviceProfile.Capacity_kWh, 4.8);
+    assert.equal(snapshot.battery.deviceProfile.CapacityValid, true);
+    assert.equal(snapshot.battery.deviceProfile.OldestSourceAt, f.clock.now - 2000);
     assert.equal(snapshot.battery.headFeedback.heads[0].reportedGS_W, -600);
     assert.equal(snapshot.battery.headFeedback.heads[0].manualMode, 0);
     assert.equal(snapshot.battery.headFeedback.heads[0].localMode, 1);

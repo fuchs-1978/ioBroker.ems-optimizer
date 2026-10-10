@@ -3449,6 +3449,12 @@
           "hidden": "data.batteryDispatchMode !== 'sunenergy-heads'",
           "text": "SoC balancing prefers lower-SoC heads when charging and higher-SoC heads when discharging. The reported ON pack count weights each head's relative capacity; it is not an online flag. Per-head limits, measured device limits and the shared total budget remain binding. All requested head powers have the same direction: the EMS does not charge one head while discharging another. Exact equality is not guaranteed while power, SoC or availability limits differ."
         },
+        "_batterySunEnergyProfileHelp": {
+          "type": "staticText",
+          "newLine": true,
+          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads'",
+          "text": "In this mode the EMS reads SoC (SC), online pack count (ON), actual AC power (GP), device SoC limits and device/model power limits from coherent per-head responses. Separate SoC and DC-power mappings are not used. User targets, permissions and additional power limits remain unchanged. No dynamic BMS charge limit, efficiency or battery temperature is inferred."
+        },
         "_batteryHead1Header": {
           "type": "header",
           "text": "SunEnergy head 1: power limits",
@@ -3632,13 +3638,15 @@
           "label": "SoC data point",
           "default": "",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "hidden": "data.batteryDispatchMode === 'sunenergy-heads'"
         },
         "batteryPowerId": {
           "type": "text",
           "label": "Battery DC power for history/planning (BP / total.batteryPower, W; not GS feedback)",
           "default": "",
-          "sm": 6
+          "sm": 6,
+          "hidden": "data.batteryDispatchMode === 'sunenergy-heads'"
         },
         "batteryPowerSign": {
           "type": "select",
@@ -3655,7 +3663,43 @@
             }
           ],
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "hidden": "data.batteryDispatchMode === 'sunenergy-heads'"
+        },
+        "batteryCapacitySource": {
+          "type": "select",
+          "label": "Battery capacity source",
+          "default": "manual",
+          "options": [
+            {
+              "value": "manual",
+              "label": "Manually entered total capacity"
+            },
+            {
+              "value": "sunenergy-packs",
+              "label": "Online packs from the SunEnergy adapter"
+            }
+          ],
+          "sm": 6,
+          "newLine": true,
+          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads'"
+        },
+        "batteryPackCapacityKWh": {
+          "type": "number",
+          "label": "Confirmed capacity per equal-sized battery pack",
+          "unit": "kWh",
+          "default": 0,
+          "min": 0,
+          "step": 0.01,
+          "sm": 6,
+          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads' || data.batteryCapacitySource !== 'sunenergy-packs'",
+          "help": "Enter a positive kWh value from the pack documentation. Zero means not specified, not zero-capacity hardware."
+        },
+        "_batterySunEnergyCapacityHelp": {
+          "type": "staticText",
+          "newLine": true,
+          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads' || data.batteryCapacitySource !== 'sunenergy-packs'",
+          "text": "Automatic capacity is the sum of online packs (ON) multiplied by the explicitly entered capacity of one equal-sized pack. ON is an online pack count, not the nominal installed capacity. Confirm the pack size from your device documentation; no default pack size is assumed. Missing or invalid data for any selected head, or a missing pack size, makes automatic capacity unknown and prevents a valid battery forecast. The manual capacity is not used as a silent fallback."
         },
         "batteryCapacityKWh": {
           "type": "number",
@@ -3663,7 +3707,8 @@
           "unit": "kWh",
           "default": 10,
           "sm": 3,
-          "newLine": true
+          "newLine": true,
+          "hidden": "data.batteryDispatchMode === 'sunenergy-heads' && data.batteryCapacitySource === 'sunenergy-packs'"
         },
         "batteryMaxChargeW": {
           "type": "number",
