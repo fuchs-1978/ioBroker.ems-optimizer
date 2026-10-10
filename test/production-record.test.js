@@ -58,8 +58,13 @@ test('quiet polls reduce persisted full decisions while a dip restores exact pre
     assert.equal(decoded.at(-1).production.wallboxes[0].actual_W, 0);
     assert.equal(decoded.at(-1).sampling.postEventMs, 120000);
     const previous = h.states.get('power'); h.advance(1000); h.put('power', 1.38);
-    h.shadow.captureProduction('power', h.states.get('power'), previous); await h.flush();
-    assert.equal(h.records().at(-1).event.state.val, 1.38, 'real restart is preserved in dense window');
+    h.shadow.captureProduction('power', h.states.get('power'), previous);
+    h.advance(1000); h.shadow.productionRecord(); await h.flush();
+    const restart = h.records().flatMap(r => r.event?.type === 'recording.sources' ? r.event.samples : [])
+        .find(s => s.id === 'power' && s.state.val === 1.38);
+    assert.ok(restart, 'real restart is preserved in the bounded dense source batch');
+    assert.equal(restart.state.ts, previous.ts + 1000);
+    assert.equal(restart.receivedAt, previous.ts + 1000);
 });
 
 test('quiet interval summary survives SQL codec with measured extrema and explicit resolution', async t => {
@@ -433,6 +438,221 @@ test('deterministic full-record replay preserves events, timers and source ages 
     assert.equal(dense.at(-1).production.measurements.gridImport.ageMs, 1280);
     assert.equal(dense.at(-1).production.wallboxes[0].StartDelayRemaining_s, 599);
     assert.ok(dense.every(r => r.schema === 2 && r.production && r.realFeedback));
+});
+
+test('multi-source dense telemetry retains raw observations without flooding a slower record writer', async t => {
+    const h = fixture(2000000); t.mock.method(Date, 'now', h.now);
+    const mapping = h.adapter.readMapping();
+    const pollSources = ['import', 'export', 'pv'];
+    for (const p of [1, 2, 3]) {
+        for (const [suffix, key] of [['import', 'IMPORT_W'], ['export', 'EXPORT_W'], ['amps', 'A']]) {
+            const id = `house${p}.${suffix}`; mapping[`DP_HA_L${p}_${key}`] = id;
+            h.put(id, suffix === 'import' ? 100 : 0); pollSources.push(id);
+        }
+    }
+    for (const wb of [0, 1, 2]) {
+        const power = wb ? `power${wb}` : 'power';
+        mapping[`DP_WB${wb}_POWER`] = power; h.put(power, 1.38); pollSources.push(power);
+        for (const p of [1, 2, 3]) {
+            const id = wb ? `wb${wb}.l${p}` : `l${p}`;
+            mapping[`DP_WB${wb}_L${p}_A`] = id; h.put(id, p === 1 ? 6 : 0); pollSources.push(id);
+        }
+        if (wb) {
+            mapping[`DP_WB${wb}_CAR`] = `car${wb}`; h.put(`car${wb}`, 2);
+            const ids = {allow: `allow${wb}`, command: `cmd${wb}`, feedback: `amps${wb}`, phaseMode: `phase${wb}`};
+            for (const [key, id] of Object.entries(ids)) h.put(id, key === 'phaseMode' ? 1 : key === 'allow' ? 0 : 6);
+            h.adapter.wallboxOutput.devices.push({wb, ids, pending: null, response: null, stopRequest: null});
+        }
+    }
+    const pendingWrites = [], expected = new Map();
+    h.adapter.setCompatState = (id, value) => id.endsWith('.DecisionRecord')
+        ? new Promise(resolve => pendingWrites.push(() => {h.writes.push({id, value}); resolve();}))
+        : Promise.resolve();
+    const deliver = async capacity => {
+        for (let i = 0; i < capacity && pendingWrites.length; i++) {
+            pendingWrites.shift()(); await h.flush();
+        }
+    };
+    h.shadow.productionRecord(); h.shadow.commandEvent('attempt', 'cmd', 6);
+    let peakQueue = 0;
+    for (let second = 1; second <= 120; second++) {
+        h.advance(1000);
+        // The real adapter cache also receives unchanged discrete feedback.
+        for (const device of h.adapter.wallboxOutput.devices) {
+            for (const id of Object.values(device.ids)) h.put(id, h.states.get(id).val);
+            const car = mapping[`DP_WB${device.wb}_CAR`]; h.put(car, 2);
+        }
+        for (const id of pollSources) {
+            const previous = h.states.get(id);
+            h.put(id, previous.val, {lc: 1900000});
+            h.shadow.captureProduction(id, h.states.get(id), previous);
+            expected.set(h.shadow.diagnosticSampler.sequence, {id, receivedAt: h.now(), state: structuredClone(h.states.get(id))});
+        }
+        h.shadow.productionRecord(); peakQueue = Math.max(peakQueue, h.shadow.recordQueue.length);
+        // Three confirmed writes per second is slower than 24 raw callbacks
+        // per second; it must still keep up with bounded source batching.
+        await deliver(3);
+    }
+    h.advance(1000); h.shadow.productionRecord();
+    while (pendingWrites.length) await deliver(1);
+    assert.equal(h.shadow.recordDropped, 0, 'routine dense polls do not discard decision or command records');
+    assert.ok(peakQueue < 128, 'normal poll load stays below the existing decision queue capacity');
+    const records = h.records();
+    assert.ok(records.every(r => r.schema === 2 && !r.reconstruction), 'every surviving codec frame is independently replayable');
+    assert.deepEqual(records.map(r => r.recordSequence), records.map((_, i) => i + 1));
+    const observed = new Map();
+    for (const record of records) for (const sample of record.event?.samples || []) {
+        assert.ok(!observed.has(sample.sampleSequence), 'sent source batches are not repeated in later pre-event history');
+        observed.set(sample.sampleSequence, {id: sample.id, receivedAt: sample.receivedAt, state: sample.state});
+    }
+    assert.equal(expected.size, 2880);
+    assert.deepEqual(observed, expected, 'all raw source values, receipt times, source timestamps, lc, ACK and q survive');
+    assert.ok(records.length < expected.size / 5, 'dense callbacks share substantially fewer full production contexts');
+    assert.equal(records.filter(r => r.event?.type === 'command.attempt').length, 1);
+});
+
+test('a complete pre-event ring and immediate command fit the bounded queue while persistence is blocked', async () => {
+    const h = fixture(2000000); let release;
+    const realWrite = h.adapter.setCompatState;
+    h.adapter.setCompatState = (id, value) => {
+        if (id.endsWith('.DecisionRecord') && !release)
+            return new Promise(resolve => {release = () => {void realWrite(id, value).then(resolve);};});
+        return realWrite(id, value);
+    };
+    h.shadow.productionRecord();
+    const samples = [];
+    for (let i = 0; i < 4096; i++) {
+        const at = h.now() - 60000 + i;
+        const state = {val: 100, ts: at, lc: at - 100, ack: true, q: 0};
+        samples.push(h.shadow.diagnosticSampler.observe('import', state, {...state, ts: at - 1}, at).sample);
+    }
+    assert.equal(h.shadow.diagnosticSampler.ring.length, 4096);
+    const command = h.shadow.commandEvent('attempt', 'cmd', 7);
+    assert.equal(h.shadow.recordDropped, 0, 'a valid prebuffer cannot itself overflow the record queue');
+    assert.ok(h.shadow.recordQueue.length <= 128);
+    release(); await h.flush();
+    const records = h.records();
+    assert.ok(records.every(r => r.schema === 2 && !r.reconstruction));
+    assert.deepEqual(records.map(r => r.recordSequence), records.map((_, i) => i + 1));
+    const before = records.filter(r => r.event?.type === 'recording.pre_event');
+    assert.deepEqual(before.flatMap(r => r.event.samples), samples, 'the complete raw ring survives, in source receipt order');
+    assert.ok(before.every(r => r.event.samples.length <= 128));
+    assert.ok(before.every(r => Buffer.byteLength(JSON.stringify(r.event.samples)) <= 32768));
+    const event = records.find(r => r.event?.type === 'command.attempt');
+    assert.equal(event.event.commandId, command);
+    assert.ok(event.recordSequence > before.at(-1).recordSequence, 'all pre-event batches precede the actual command event');
+});
+
+test('important source edges flush preceding dense samples before commands and preserve raw ACK response order', async t => {
+    const h = fixture(2000000); t.mock.method(Date, 'now', h.now);
+    h.shadow.productionRecord(); await h.flush();
+    h.shadow.recordEventWindow();
+    let previous = h.states.get('power'); h.advance(10); h.put('power', 0.1, {lc: 1900000});
+    h.shadow.captureProduction('power', h.states.get('power'), previous);
+    const sourceSequence = h.shadow.diagnosticSampler.sequence;
+    h.advance(10); const token = h.shadow.commandEvent('attempt', 'cmd', 7);
+    h.advance(10); h.shadow.commandEvent('transport_complete', 'cmd', 7, token);
+    for (const extra of [{ack: false}, {ack: true}, {q: 64}, {q: 0}, {val: null}, {val: 7}]) {
+        previous = h.states.get('cmd'); h.advance(10); h.put('cmd', 7, {lc: 1900000, ...extra});
+        h.shadow.captureProduction('cmd', h.states.get('cmd'), previous);
+    }
+    previous = h.states.get('power'); h.advance(10); h.put('power', 1.61, {lc: 1900000});
+    h.shadow.captureProduction('power', h.states.get('power'), previous);
+    const responseSequence = h.shadow.diagnosticSampler.sequence;
+    h.advance(1000); h.shadow.productionRecord(); await h.flush();
+    const records = h.records();
+    assert.deepEqual(records.map(r => r.recordSequence), records.map((_, i) => i + 1));
+    assert.ok(records.every(r => r.schema === 2 && !r.reconstruction));
+    const preceding = records.find(r => r.event?.samples?.some(s => s.sampleSequence === sourceSequence));
+    const attempt = records.find(r => r.event?.type === 'command.attempt');
+    const completion = records.find(r => r.event?.type === 'command.transport_complete');
+    assert.ok(preceding.recordSequence < attempt.recordSequence);
+    assert.ok(attempt.recordSequence < completion.recordSequence);
+    assert.equal(attempt.event.commandId, completion.event.commandId);
+    const feedback = records.filter(r => r.event?.type === 'source.update' && r.event.id === 'cmd');
+    assert.deepEqual(feedback.map(r => [r.event.state.val, r.event.state.ack, r.event.state.q]),
+        [[7, false, 0], [7, true, 0], [7, true, 64], [7, true, 0], [null, true, 0], [7, true, 0]]);
+    assert.ok(feedback.every(r => r.recordSequence > completion.recordSequence));
+    assert.ok(feedback.every(r => r.event.state.ts === r.event.receivedAt && r.event.state.lc === 1900000));
+    const response = records.find(r => r.event?.samples?.some(s => s.sampleSequence === responseSequence));
+    assert.ok(response.recordSequence > feedback.at(-1).recordSequence);
+    assert.equal(response.production.wallboxes[0].actual_W, 1610);
+    assert.ok(records.every(r => r.valid === false && r.modelPaused), 'raw real observations do not fabricate shadow validity');
+});
+
+test('numeric-only stop-reason ages do not renew dense windows, while changed fault category does', async t => {
+    const h = fixture(2000000); t.mock.method(Date, 'now', h.now);
+    h.own('Devices.Wallbox0.LastStopReason', 'Hausanschluss L3: veraltet (Alter 31 s; maximal 30 s)');
+    h.shadow.productionRecord(); h.shadow.recordEventWindow(); await h.flush();
+    const deadline = h.shadow.diagnosticSampler.denseUntil;
+    h.advance(1000); h.own('Devices.Wallbox0.LastStopReason', 'Hausanschluss L3: veraltet (Alter 32 s; maximal 30 s)');
+    h.shadow.productionRecord(); await h.flush();
+    assert.equal(h.shadow.diagnosticSampler.denseUntil, deadline, 'a changing age in the same reason is not a new fault');
+    assert.equal(h.records().at(-1).production.wallboxes[0].LastStopReason,
+        'Hausanschluss L3: veraltet (Alter 32 s; maximal 30 s)', 'emitted context still retains the exact raw reason');
+    h.advance(1000); h.own('Devices.Wallbox0.LastStopReason', 'Hausanschluss L3: ungueltig (Alter 32 s; maximal 30 s)');
+    h.shadow.productionRecord(); await h.flush();
+    assert.ok(h.shadow.diagnosticSampler.denseUntil > deadline, 'a changed fault category opens a real event window');
+    const categoryDeadline = h.shadow.diagnosticSampler.denseUntil;
+    h.advance(1000); h.own('Devices.Wallbox0.LastStopReason', 'Hausanschluss L2: ungueltig (Alter 33 s; maximal 30 s)');
+    h.shadow.productionRecord(); await h.flush();
+    assert.ok(h.shadow.diagnosticSampler.denseUntil > categoryDeadline, 'L2 and L3 identities must not be normalized away');
+});
+
+test('shutdown explicitly counts unsent dense samples rather than claiming a complete event window', async t => {
+    const h = fixture(2000000); t.mock.method(Date, 'now', h.now);
+    h.shadow.productionRecord(); h.shadow.recordEventWindow(); await h.flush();
+    const previous = h.states.get('power'); h.advance(10); h.put('power', 0.1);
+    h.shadow.captureProduction('power', h.states.get('power'), previous);
+    const sequence = h.shadow.diagnosticSampler.sequence;
+    const recordsBeforeStop = h.rawRecords().length, lostBefore = h.shadow.diagnosticSampler.lost;
+    h.shadow.stop(); await h.flush();
+    assert.equal(h.rawRecords().length, recordsBeforeStop, 'shutdown does not fabricate confirmation of an unpersisted raw batch');
+    assert.equal(h.shadow.diagnosticSampler.lost, lostBefore + 1);
+    assert.equal(h.shadow.diagnosticSampler.ring.length, 0);
+    assert.equal(h.shadow.diagnosticSampler.bytes, 0);
+    assert.ok(!h.records().some(r => r.event?.samples?.some(s => s.sampleSequence === sequence)));
+});
+
+test('an event after a stalled dense flush retains pending raw samples older than the pre-event ring', async t => {
+    const h = fixture(2000000); t.mock.method(Date, 'now', h.now);
+    h.shadow.productionRecord(); h.shadow.recordEventWindow(); await h.flush();
+    const previous = h.states.get('pv'); h.advance(100); h.put('pv', 6000, {lc: 1900000});
+    h.shadow.captureProduction('pv', h.states.get('pv'), previous);
+    const expected = {id: 'pv', receivedAt: h.now(), state: structuredClone(h.states.get('pv'))};
+    const sequence = h.shadow.diagnosticSampler.sequence;
+    h.advance(70000); h.shadow.recordEventWindow(); await h.flush();
+    const samples = h.records().flatMap(r => r.event?.samples || []).filter(s => s.sampleSequence === sequence);
+    assert.equal(samples.length, 1, 'a stalled unsent batch is flushed before the ring expires, rather than silently cleared');
+    assert.deepEqual({id: samples[0].id, receivedAt: samples[0].receivedAt, state: samples[0].state}, expected);
+    assert.equal(h.shadow.diagnosticSampler.lost, 0);
+});
+
+test('the first matching post-command ACK observation is immediate and later unchanged polls remain batched', async t => {
+    const h = fixture(2000000); t.mock.method(Date, 'now', h.now);
+    h.shadow.productionRecord(); const command = h.shadow.commandEvent('attempt', 'cmd', 6);
+    let previous = h.states.get('cmd'); h.advance(1); h.put('cmd', 6, {lc: 1900000});
+    h.shadow.captureProduction('cmd', h.states.get('cmd'), previous); await h.flush();
+    let observations = h.records().filter(r => r.event?.type === 'source.update' && r.event.id === 'cmd');
+    assert.equal(observations.length, 1);
+    assert.equal(observations[0].event.triggerReason, 'post-command-observation');
+    assert.equal(observations[0].event.state.ts, 2000001);
+    assert.equal(observations[0].event.state.lc, 1900000);
+    assert.equal(observations[0].production.commands.cmd.commandId, command);
+    h.advance(1); h.shadow.commandEvent('transport_complete', 'cmd', 6, command);
+    previous = h.states.get('cmd'); h.advance(1); h.put('cmd', 6, {lc: 1900000});
+    h.shadow.captureProduction('cmd', h.states.get('cmd'), previous); await h.flush();
+    observations = h.records().filter(r => r.event?.type === 'source.update' && r.event.id === 'cmd');
+    assert.equal(observations.length, 1, 'transport completion does not reopen the same command observation');
+    const nextCommand = h.shadow.commandEvent('attempt', 'cmd', 6);
+    assert.notEqual(nextCommand, command);
+    previous = h.states.get('cmd'); h.advance(1); h.put('cmd', 6, {lc: 1900000});
+    h.shadow.captureProduction('cmd', h.states.get('cmd'), previous); await h.flush();
+    observations = h.records().filter(r => r.event?.type === 'source.update' && r.event.id === 'cmd');
+    assert.equal(observations.length, 2, 'a new token retains its own first matching observation even with the same commanded value');
+    assert.equal(observations[1].production.commands.cmd.commandId, nextCommand);
+    assert.ok(h.records().some(r => r.event?.samples?.some(s => s.id === 'cmd' && s.state.ts === 2000003)),
+        'the subsequent routine ACK poll remains available in the flushed raw source batch');
 });
 
 

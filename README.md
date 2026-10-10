@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.63**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.64**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -684,13 +684,19 @@ Wichtige Bereiche unter `ems-optimizer.0`:
 
 Ab alpha.62/.63 wird ruhige **Live-Diagnose** in 30-s-Intervallen zusammengefasst. Stellbefehle und relevante Zustands-/Qualitätswechsel bleiben unmittelbar. Ereignisse können bis 60 s Rohquellen-Vorlauf und 120 s dichteren Nachlauf erhalten. Puffergrenzen: 4096 Proben und 1 MiB. Überlauf und Schreib-/Queueverluste nicht als störungsfreien Abschnitt interpretieren. Ein Neustart kann unveröffentlichte Intervalle und Vorlauf verlieren.
 
-`recording.interval` enthält beobachtete Anzahl, Min/Max/Mittel und Lücken, keine vollständige sekundengenaue Historie. `recording.pre_event` enthält originale Quellenproben mit Quellenzeit, ACK/q und Empfangszeit, keine nachträglich erzeugten vollständigen historischen Reglerentscheidungen. Bei Replay Vollbasis suchen, Deltas rekonstruieren, Sitzungen/Sequenzen und Sample-Sequenzen deduplizieren. Eine reguläre 30-s-Quiet-Auflösung ist nicht automatisch eine 1-s-Sequenzlücke; echte Verluste müssen weiterhin geprüft werden.
+`recording.interval` enthält beobachtete Anzahl, Min/Max/Mittel und Lücken, keine vollständige sekundengenaue Historie. `recording.pre_event` und ab alpha.64 `recording.sources` enthalten originale Quellenproben mit Quellenzeit, ACK/q und Empfangszeit, keine nachträglich erzeugten vollständigen historischen Reglerentscheidungen. Bei Replay Vollbasis suchen, Deltas rekonstruieren, Sitzungen/Sequenzen und Sample-Sequenzen deduplizieren. Eine reguläre 30-s-Quiet-Auflösung ist nicht automatisch eine 1-s-Sequenzlücke; echte Verluste müssen weiterhin geprüft werden.
 
 Schattenaufzeichnung und bereits vorhandene SQL-Skalarhistorien sind durch diese Verdichtung nicht automatisch umgestellt oder gelöscht. Die Historieninstanz, tatsächliche Aufzeichnung und Aufbewahrung kontrollieren. Die Diagnoseänderung garantiert keine Behebung sporadischer SQL-/Connector-Timeouts und keine bestimmte RAM-/Datenmengenersparnis. Energie bevorzugt aus gültigen Zählerdifferenzen bestimmen; grobe Intervallmittel nicht als genaue Tagesenergie ausgeben. Fehlend, NULL, veraltet oder unbestätigt bedeutet unbekannt, nicht AUS/0 W.
 
 ## Changelog und historische Detaildokumentation
 
-Die folgenden Abschnitte bleiben als Entwicklungsgeschichte erhalten. Angaben wie „ausschließlich nacheinander“, alte Timer, damalige Defaultwerte oder „nur Simulation“ beschreiben **den jeweiligen Versionsstand**, nicht pauschal alpha.63. Für aktuelle Bedienung gilt die Admin-Anleitung oben. Historische Detailbeispiele sind vor Verwendung mit aktuellem Code und eigenen Objekten abzugleichen.
+Die folgenden Abschnitte bleiben als Entwicklungsgeschichte erhalten. Angaben wie „ausschließlich nacheinander“, alte Timer, damalige Defaultwerte oder „nur Simulation“ beschreiben **den jeweiligen Versionsstand**, nicht pauschal alpha.64. Für aktuelle Bedienung gilt die Admin-Anleitung oben. Historische Detailbeispiele sind vor Verwendung mit aktuellem Code und eigenen Objekten abzugleichen.
+
+## Neu in 0.17.0-alpha.64 – Rohquellen bündeln, Recorder-Warteschlange entlasten
+
+Dichte Live-Diagnose erstellt nicht mehr für jedes einzelne SMA-/go-e-Pollsignal einen vollständigen Cache-Datensatz. `recording.sources` bündelt originale Quellenproben bis etwa eine Sekunde oder eine Puffergrenze erreicht ist. Zeitstempel (`ts`, `lc`), Empfangszeit, ACK/q, NULL und Sample-Sequenz bleiben erhalten. Stellbefehle, wichtige Quellen-/Qualitätswechsel und Ausgangsbestätigungen bleiben unmittelbar. Vorereignisse verwenden ebenfalls größere begrenzte Gruppen, damit ein gültiger voller 4096-Proben-/1-MiB-Vorpuffer nicht bereits durch seine Aufteilung die 128er-Record-Warteschlange überfüllt. Zielgröße je Gruppe: 128 Proben oder 32 KiB Rohproben; eine einzelne größere Probe kann darüber liegen, der Vorpuffer bleibt insgesamt begrenzt.
+
+Bereits als Rohgruppe abgegebene Proben werden bei überlappenden Ereignisfenstern nicht erneut als Vorlauf kopiert. Für den Vergleich von Stoppgründen werden veränderliche Zahlen ausgeblendet; die vollständigen Originalgründe bleiben in den Datensätzen erhalten. Semantische Gründe, Zustände, Frische-/Schutzwechsel und Timergrenzen bleiben erkennbar. Unversendete Rohgruppen werden beim Beenden als diagnostischer Pufferverlust gezählt; ein Neustart garantiert keinen gespeicherten Restpuffer. Persistierungs-/Queueverluste bleiben explizit. Diese Korrektur ändert keine Regelung, Schutzfristen, Stellbefehle oder SQL-Einstellungen. Reale RAM-Ersparnis und SQL-Abdeckung müssen nach Installation neu gemessen werden.
 
 ## Neu in 0.17.0-alpha.63 – langsame Diagnosequellen
 
