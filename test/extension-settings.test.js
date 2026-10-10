@@ -40,7 +40,8 @@ test('every extension setting has matching Admin and native defaults', () => {
         assert.equal(native[name], fallback, `native ${name}`);
         assert.ok(fields[name], `missing Admin ${name}`);
         assert.equal(fields[name].default, fallback, `Admin ${name}`);
-        assert.equal(fields[name].type, typeof fallback === 'boolean' ? 'checkbox' : 'number', name);
+        assert.equal(fields[name].type, typeof fallback === 'boolean' ? 'checkbox'
+            : typeof fallback === 'string' ? 'objectId' : 'number', name);
         if (typeof fallback === 'number') {
             assert.ok(Number.isFinite(fallback), name);
             assert.ok(fields[name].min <= fallback && fields[name].max >= fallback, name);
@@ -137,4 +138,29 @@ test('battery fine reserve is an explicit PV power reserve, not an implicit grid
     assert.equal(fields.batteryFineReserveW.min, 0);
     assert.match(fields._batteryFineReserveHelp.text, /without available PV there is no reserve/);
     assert.match(fields._batteryFineReserveHelp.text, /not an additional SoC reserve/);
+});
+
+test('temperature minimum-SoC settings opt in separately without changing existing battery limits or targets', () => {
+    const expected = {
+        BatteryTemperatureMinSoCEnabled: ['batteryTemperatureMinSocEnabled', false],
+        BatteryTemperatureForecastId: ['batteryTemperatureForecastId', ''],
+        BatteryTemperatureLowerThreshold_C: ['batteryTemperatureLowerThresholdC', 0],
+        BatteryTemperatureUpperThreshold_C: ['batteryTemperatureUpperThresholdC', 5],
+        BatteryTemperatureColdMinSoC_pct: ['batteryTemperatureColdMinSocPct', 30],
+        BatteryTemperatureCoolMinSoC_pct: ['batteryTemperatureCoolMinSocPct', 20],
+        BatteryTemperatureWarmMinSoC_pct: ['batteryTemperatureWarmMinSocPct', 10],
+        BatteryTemperatureForecastMaxAge_h: ['batteryTemperatureForecastMaxAgeH', 24],
+    };
+    for (const [suffix, pair] of Object.entries(expected)) assert.deepEqual(EXTENSION_SETTINGS[suffix], pair, suffix);
+    assert.equal(native.batteryMinSocPct, 15);
+    assert.equal(native.batteryMaxSocPct, 100);
+    assert.equal(native.batteryMorningTargetPct, 70);
+    assert.equal(native.batteryAfternoonTargetPct, 90);
+    assert.equal(native.batteryLateTargetPct, 100);
+    assert.equal(native.batteryTemperatureId, '', 'hardware protection source remains separate');
+    assert.match(fields.batteryTemperatureId.label, /battery cell temperature.*thermal protection/);
+    assert.match(fields._batteryTemperatureMinSocHelp.text, /20:00 Europe\/Berlin/);
+    assert.match(fields._batteryTemperatureMinSocHelp.text, /day1 is tomorrow.*day0 is today/);
+    assert.match(fields._batteryTemperatureMinSocHelp.text, /maximum SoC and morning\/afternoon\/late targets remain unchanged/);
+    assert.match(fields._batteryTemperatureMinSocHelp.text, /No external SI endpoint is written/);
 });

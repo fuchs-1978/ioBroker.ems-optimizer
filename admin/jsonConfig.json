@@ -3483,7 +3483,7 @@
         },
         "batteryTemperatureId": {
           "type": "objectId",
-          "label": "Optional battery temperature (°C; configured source must be valid)",
+          "label": "Optional battery cell temperature for thermal protection (°C; configured source must be valid)",
           "types": [
             "state"
           ],
@@ -3610,6 +3610,154 @@
           "label": "Discharge for self-consumption",
           "default": true,
           "sm": 3
+        },
+        "_batteryTemperatureMinSocHeader": {
+          "type": "header",
+          "text": "Temperature-dependent minimum SoC",
+          "size": 3,
+          "newLine": true
+        },
+        "batteryTemperatureMinSocEnabled": {
+          "type": "checkbox",
+          "label": "Use forecast temperature for the minimum SoC",
+          "default": false,
+          "sm": 12,
+          "newLine": true
+        },
+        "batteryTemperatureForecastId": {
+          "type": "objectId",
+          "label": "Forecast minimum outside temperature for the upcoming night (°C)",
+          "filterFunc": "obj.type === 'state' && !!obj.common && obj.common.type === 'number'",
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "batteryTemperatureForecastMaxAgeH": {
+          "type": "number",
+          "label": "Maximum age of the temperature forecast",
+          "default": 24,
+          "min": 1,
+          "max": 48,
+          "unit": "h",
+          "sm": 4,
+          "newLine": true
+        },
+        "batteryTemperatureLowerThresholdC": {
+          "type": "number",
+          "label": "Cold band: forecast below this temperature",
+          "default": 0,
+          "min": -50,
+          "max": 50,
+          "unit": "°C",
+          "sm": 4,
+          "newLine": true
+        },
+        "batteryTemperatureColdMinSocPct": {
+          "type": "number",
+          "label": "Minimum SoC for the cold band",
+          "default": 30,
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "sm": 4
+        },
+        "batteryTemperatureUpperThresholdC": {
+          "type": "number",
+          "label": "Cool band: forecast up to and including this temperature",
+          "default": 5,
+          "min": -50,
+          "max": 50,
+          "unit": "°C",
+          "sm": 4,
+          "newLine": true
+        },
+        "batteryTemperatureCoolMinSocPct": {
+          "type": "number",
+          "label": "Minimum SoC for the cool band",
+          "default": 20,
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "sm": 4
+        },
+        "batteryTemperatureWarmMinSocPct": {
+          "type": "number",
+          "label": "Minimum SoC above the upper temperature threshold",
+          "default": 10,
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "sm": 4,
+          "newLine": true
+        },
+        "_batteryTemperatureMinSocHelp": {
+          "type": "staticText",
+          "text": "The daily selection period starts at 20:00 Europe/Berlin. At most one successful selection is made per unchanged source/settings contract and period. Initial activation uses a valid available forecast; a restart preserves a qualified selection for the same period. Defaults: below 0 °C = 30%, from 0 °C through 5 °C = 20%, above 5 °C = 10%. This replaces only the effective EMS minimum SoC; maximum SoC and morning/afternoon/late targets remain unchanged. Use a forecast for the upcoming night: day1 is tomorrow, while day0 is today. The source must be a confirmed, valid numeric value in °C within the configured maximum age. An invalid or missing forecast retains the last valid selection; before the first valid selection, the fixed minimum applies and the fallback is shown. A later valid forecast can complete the current period with its actual selection time. Thresholds must be ordered and all selected reserves must be below the configured maximum SoC. No external SI endpoint is written and no grid-charging or output release is enabled.",
+          "newLine": true
+        },
+        "_batteryEffectiveMinimumSoC": {
+          "type": "state",
+          "oid": "Devices.Battery.EffectiveMinimumSoC_pct",
+          "label": "Effective minimum SoC (%)",
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true,
+          "sm": 4,
+          "newLine": true
+        },
+        "_batteryTemperatureReserveStatus": {
+          "type": "state",
+          "oid": "Devices.Battery.TemperatureReserveStatus",
+          "label": "Temperature reserve status",
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true,
+          "sm": 4
+        },
+        "_batteryTemperatureReserveValid": {
+          "type": "state",
+          "oid": "Devices.Battery.TemperatureReserveValid",
+          "label": "Qualified temperature selection available",
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true,
+          "sm": 4
+        },
+        "_batteryTemperatureReserveHeld": {
+          "type": "state",
+          "oid": "Devices.Battery.TemperatureReserveHeld",
+          "label": "Previous temperature reserve retained",
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true,
+          "sm": 4
+        },
+        "_batteryTemperatureForecast": {
+          "type": "state",
+          "oid": "Devices.Battery.TemperatureForecast_C",
+          "label": "Currently read forecast temperature (°C)",
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true,
+          "sm": 4
+        },
+        "_batteryTemperatureForecastAge": {
+          "type": "state",
+          "oid": "Devices.Battery.TemperatureForecastAge_h",
+          "label": "Forecast source age (h)",
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true,
+          "sm": 4
+        },
+        "_batteryTemperatureReservePeriod": {
+          "type": "state",
+          "oid": "Devices.Battery.TemperatureReservePeriod",
+          "label": "Temperature reserve period (Berlin 20:00 date)",
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true,
+          "sm": 4
         },
         "_batteryPriceHeader": {
           "type": "header",
@@ -3755,7 +3903,7 @@
         },
         "batteryTemperatureMaxC": {
           "type": "number",
-          "label": "Optional battery temperature stop limit",
+          "label": "Optional battery cell temperature stop limit",
           "unit": "°C",
           "default": 50,
           "min": 10,

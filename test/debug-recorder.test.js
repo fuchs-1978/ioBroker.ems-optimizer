@@ -803,3 +803,66 @@ test('history serialization reuses unchanged rings but preserves enriched stop r
     h.command('Clear', true); await h.settle();
     assert.deepEqual(h.json('PowerTrace_JSON'), []);
 });
+
+test('temperature minimum, held reserve and raw forecast evidence survive productive snapshot delta replay', async () => {
+    const {DecisionRecordEncoder, DecisionRecordDecoder} = require('../lib/decision-record-codec');
+    const f = fixture();
+    const sourceId = 'weather.0.forecast.minimum';
+    const sourceTs = f.clock.now - 3600000;
+    f.adapter.config.batteryTemperatureForecastId = sourceId;
+    f.adapter.config.batteryTemperatureMinSocEnabled = true;
+    f.put('ems.0.Config.BatteryMinSoC_pct', 10);
+    f.put('ems.0.Config.BatteryTemperatureMinSoCEnabled', true);
+    f.put('ems.0.Config.BatteryTemperatureForecastId', sourceId);
+    f.put('ems.0.Config.BatteryTemperatureForecastMaxAge_h', 24);
+    const selection = {schema: 1, sourceId, minSoc: 30, temperatureC: -5,
+        sourceTs, sourceAck: true, sourceQ: 0, selectedAt: f.clock.now - 1000, periodKey: '2026-09-20',
+        privateConfig: 'MUST-NOT-PUBLISH'};
+    f.put(sourceId, -5, {ts: sourceTs, ack: true, q: 0});
+    f.put('ems.0.Devices.Battery.EffectiveMinimumSoC_pct', 30);
+    f.put('ems.0.Devices.Battery.TemperatureReserveValid', true);
+    f.put('ems.0.Devices.Battery.TemperatureReserveHeld', false);
+    f.put('ems.0.Devices.Battery.TemperatureReserveStatus', 'temperature-selection-applied');
+    f.put('ems.0.Devices.Battery.TemperatureReserveLastSelectionAt', selection.selectedAt);
+    f.put('ems.0.Devices.Battery.TemperatureReservePeriod', selection.periodKey);
+    f.put('ems.0.Devices.Battery.TemperatureReserveSelection_JSON', JSON.stringify(selection));
+    await f.recorder.initialize();
+    const encoder = new DecisionRecordEncoder(), decoder = new DecisionRecordDecoder();
+    const record = sequence => ({schema: 2, timestamp: f.clock.now,
+        recordSession: 'temperature-reserve-proof', recordSequence: sequence,
+        masterEnabled: true, production: f.recorder.snapshot()});
+    const first = decoder.decode(encoder.encode(record(1))).production.battery;
+    assert.equal(first.minimumSoC_pct, 30);
+    assert.equal(first.fixedMinimumSoC_pct, 10);
+    assert.equal(first.temperatureReserve.valid, true);
+    assert.equal(first.temperatureReserve.held, false);
+    assert.equal(first.temperatureReserve.selection.sourceTs, sourceTs);
+    assert.equal(first.temperatureReserve.selection.sourceAck, true);
+    assert.equal(first.temperatureReserve.selection.sourceQ, 0);
+    assert.equal(first.temperatureReserve.selection.privateConfig, undefined);
+    assert.equal(first.measurements.forecastTemperature.val, -5);
+    assert.equal(first.measurements.forecastTemperature.ts, sourceTs);
+    assert.equal(first.measurements.forecastTemperature.ack, true);
+    assert.equal(first.measurements.forecastTemperature.q, 0);
+    f.clock.now += 10000;
+    f.put(sourceId, -5, {ts: sourceTs, ack: false, q: 64});
+    f.put('ems.0.Devices.Battery.TemperatureReserveHeld', true);
+    f.put('ems.0.Devices.Battery.TemperatureReserveStatus', 'source-unknown-held-selection');
+    const held = decoder.decode(encoder.encode(record(2))).production.battery;
+    assert.equal(held.minimumSoC_pct, 30);
+    assert.equal(held.temperatureReserve.held, true);
+    assert.equal(held.temperatureReserve.selectedAt, selection.selectedAt);
+    assert.equal(held.temperatureReserve.selection.sourceAck, true);
+    assert.equal(held.temperatureReserve.selection.sourceQ, 0);
+    assert.equal(held.measurements.forecastTemperature.valid, false);
+    assert.equal(held.measurements.forecastTemperature.ack, false);
+    assert.equal(held.measurements.forecastTemperature.q, 64);
+    assert.equal(held.measurements.forecastTemperature.ts, sourceTs);
+    f.put('ems.0.Devices.Battery.EffectiveMinimumSoC_pct', null);
+    f.put('ems.0.Devices.Battery.TemperatureReserveValid', false);
+    f.put('ems.0.Devices.Battery.TemperatureReserveStatus', 'invalid-temperature-reserve-settings');
+    const invalid = decoder.decode(encoder.encode(record(3))).production.battery;
+    assert.equal(invalid.minimumSoC_pct, null, 'invalid effective min must not replay as the old 30% or static 10%');
+    assert.equal(invalid.fixedMinimumSoC_pct, 10);
+    assert.equal(invalid.temperatureReserve.valid, false);
+});

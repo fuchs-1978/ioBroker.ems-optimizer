@@ -20,6 +20,7 @@ const {OutputMetadata} = require("./lib/output-metadata");
 const {MarketPrices} = require("./lib/market-prices");
 const heatPumpTelemetryParser = require("./lib/heatpump-telemetry");
 const {normalizeWallboxPowerKW} = require("./lib/wallbox-measurement");
+const batteryTemperatureReserve = require("./lib/battery-temperature-reserve");
 
 class EmsOptimizer extends utils.Adapter {
     constructor(options = {}) {
@@ -209,7 +210,8 @@ class EmsOptimizer extends utils.Adapter {
 
     async preloadStates() {
         const mapping = this.readMapping();
-        const configured = Object.values(mapping).filter(value => typeof value === "string" && value);
+        const configured = [...Object.values(mapping), this.config.batteryTemperatureForecastId]
+            .filter(value => typeof value === "string" && value.trim()).map(value => value.trim());
         const patterns = [...new Set([
             `${this.namespace}.*`,
             ...configured,
@@ -749,6 +751,7 @@ class EmsOptimizer extends utils.Adapter {
             gridConstraints,
             heatPumpTelemetryParser,
             normalizeWallboxPowerKW,
+            batteryTemperatureReserve,
             Infinity,
             NaN,
             parseInt,

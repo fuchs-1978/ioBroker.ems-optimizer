@@ -14,6 +14,7 @@ function bootstrapHarness() {
     const context = vm.createContext({SMA_GRID_MAX_AGE_MS,
         CFG: {root: 'ems.0', refreshSeconds: 10, forecastRefreshMinutes: 15,
             dp: new Proxy({}, {get: () => []})},
+        getState: () => null,
         write(id, value) { writes.push({id, value}); }, on() {}, log(message) { messages.push(message); },
         schedule(expression, callback) { jobs.push({expression, callback}); },
         setTimeout(callback, delay) { timers.push({callback, delay}); }
@@ -22,7 +23,7 @@ function bootstrapHarness() {
         'updateDhwSimulation', 'observe', 'realtimeControl', 'zeroRealtimeTargets',
         'updateHeatingSimulation', 'updateHeatPumpAdvice', 'updateBatteryProductionOutput',
         'updateDhwProductionOutput', 'updateHeatingProductionOutput', 'updateWallboxProductionOutput',
-        'buildForecast', 'requestForecastRebuild']) {
+        'buildForecast', 'requestForecastRebuild', 'batteryEffectiveMinimumSoc']) {
         context[name] = () => calls.push(name);
     }
     vm.runInContext(source('bootstrap'), context);
@@ -50,7 +51,7 @@ test('one ordered one-second job computes fresh demand before the battery, retai
         || timer.callback === h.context.realtimeControl), false,
     'no startup timer duplicates the cron calculation');
     fast[0].callback();
-    assert.deepEqual(h.calls, ['realtimeControl', 'updateBatteryProductionOutput']);
+    assert.deepEqual(h.calls, ['batteryEffectiveMinimumSoc', 'realtimeControl', 'updateBatteryProductionOutput']);
     assert.equal(h.jobs.find(job => job.callback === h.context.updateDhwProductionOutput).expression,
         '*/5 * * * * *');
     assert.equal(h.jobs.find(job => job.callback === h.context.updateWallboxProductionOutput).expression,
@@ -58,10 +59,13 @@ test('one ordered one-second job computes fresh demand before the battery, retai
 });
 
 test('failed fast calculation invalidates old budgets before the battery stop guard still runs', () => {
-    const h = bootstrapHarness();
-    h.context.realtimeControl = () => { throw new Error('invalid allocation'); };
-    h.jobs.find(job => job.callback.name === 'fastControlCycle').callback();
-    assert.deepEqual(h.calls, ['zeroRealtimeTargets', 'updateBatteryProductionOutput']);
+    for (const failure of ['batteryEffectiveMinimumSoc', 'realtimeControl']) {
+        const h = bootstrapHarness();
+        h.context[failure] = () => { throw new Error('invalid allocation or reserve'); };
+        h.jobs.find(job => job.callback.name === 'fastControlCycle').callback();
+        const expected = failure === 'realtimeControl' ? ['batteryEffectiveMinimumSoc'] : [];
+        assert.deepEqual(h.calls, [...expected, 'zeroRealtimeTargets', 'updateBatteryProductionOutput'], failure);
+    }
 });
 
 function gridHarness() {
