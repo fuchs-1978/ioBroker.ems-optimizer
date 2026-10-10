@@ -75,7 +75,7 @@ test('update defaults never arm a productive output', () => {
 });
 
 test('package manifests publish the same alpha version', () => {
-    assert.equal(packageJson.version, '0.17.0-alpha.64');
+    assert.equal(packageJson.version, '0.17.0-alpha.65');
     assert.equal(ioPackage.common.version, packageJson.version);
     const core = fs.readFileSync('lib/engine/core.js', 'utf8');
     const bootstrap = fs.readFileSync('lib/engine/bootstrap.js', 'utf8');

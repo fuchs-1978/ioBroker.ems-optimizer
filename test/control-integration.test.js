@@ -15,10 +15,12 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
     mii = false, wallboxStopResponseDelayMs = 0,
     initialSurplusW = 6000, batteryPlanW = 0, lpcLimitW = null, phaseBiasW = [0, 0, 0],
     batteryDelayMs = 2000, heatingDelayMs = 4000, dhwDelayMs = 4000,
-    batteryDcFactor = 1, batteryDcPvW = 0} = {}) {
+    batteryDcFactor = 1, batteryDcPvW = 0, wb2InitialPhaseMode = null} = {}) {
     let now = Date.UTC(2026, 8, 21, 12), surplusW = 6000;
     let heaterW = 0, heaterCommandW = 0, physicalAllow = 0, physicalA = 6;
     let physicalPowerAllow = 0, miiAllow = 0, miiPowerAllow = 0, miiA = 6;
+    const wallboxStopAck = [true, true, true];
+    const wallboxCurrentQuality = [0, 0, 0];
     let physicalStopResponseSequence = 0, miiStopResponseSequence = 0;
     let heatingW = 0, heatingCommandW = 0, batteryW = 0, batteryCommandW = 0;
     let batteryResponds = true, batteryHeartbeat = true;
@@ -66,6 +68,8 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         heatingSetpointId: 'hk.setpoint', heatingConnectionId: 'hk.connected', heatingTempId: 'hk.temp',
         heatingCoolingActiveId: 'hk.cooling', heatingOutput1Id: 'hk.power1',
         heatingOutput2Id: 'hk.power2', heatingOutput3Id: 'hk.power3'};
+    if (wb2InitialPhaseMode !== null) Object.assign(config, {wb2PhaseSwitchEnabled: true,
+        wb2PhaseControlMode: 'ems', wb2PhaseModeId: 'goe.phase', phaseSwitchMinHoldMin: 0});
     if (mii) Object.assign(config, {multiWallboxAlphaArmed: true,
         wallboxPrioritySource: 'external', wallboxPriorityId: 'DP_WB_PRIORITY',
         wb0ControlEnabled: true, wb0ProductionArmed: true,
@@ -105,6 +109,7 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         } else if (id === 'goe.allow') {
             put(id, val, {ack: false});
             events.push({at: now + 4000, run: () => {
+                if (val === 0 && !wallboxStopAck[2]) return;
                 physicalAllow = val; put(id, val);
                 const responseSequence = ++physicalStopResponseSequence;
                 if (val || wallboxStopResponseDelayMs === 0 || !physicalPowerAllow) physicalPowerAllow = val;
@@ -121,6 +126,7 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         } else if (id === 'goe0.allow') {
             put(id, val, {ack: false});
             events.push({at: now + 4000, run: () => {
+                if (val === 0 && !wallboxStopAck[0]) return;
                 miiAllow = val; put(id, val);
                 const responseSequence = ++miiStopResponseSequence;
                 if (val || wallboxStopResponseDelayMs === 0 || !miiPowerAllow) miiPowerAllow = val;
@@ -192,8 +198,8 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
     for (const wb of [0, 1, 2]) {
         own(`Devices.Wallbox${wb}.Present`, wb !== 1);
         own(`Devices.Wallbox${wb}.ControlEnabled`, wb === 2 && wallbox || wb === 0 && mii);
-        own(`Vehicles.Wallbox${wb}.PhaseSwitchEnabled`, false);
-        own(`Vehicles.Wallbox${wb}.MaximumPhases`, 1);
+        own(`Vehicles.Wallbox${wb}.PhaseSwitchEnabled`, wb === 2 && wb2InitialPhaseMode !== null);
+        own(`Vehicles.Wallbox${wb}.MaximumPhases`, wb === 2 && wb2InitialPhaseMode !== null ? 3 : 1);
         own(`Vehicles.Wallbox${wb}.MinCurrent1P_A`, 6);
         own(`Vehicles.Wallbox${wb}.MaxCurrent1P_A`, wb === 0 && mii ? 16 : 32);
         own(`Config.Wallbox${wb}MaxPower_W`, wb === 0 && mii ? 3680 : 7360);
@@ -208,6 +214,7 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
     put('DP_HA_CRITICAL', false);
     put('goe.connection', true); put('goe.error', 0);
     put('goe.allow', 0); put('goe.feedback', 6);
+    if (wb2InitialPhaseMode !== null) put('goe.phase', wb2InitialPhaseMode);
     if (mii) {
         put('goe0.connection', true); put('goe0.error', 0);
         put('goe0.allow', 0); put('goe0.feedback', 6); put('DP_WB_PRIORITY', 2);
@@ -269,8 +276,10 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         if (batteryHeartbeat) put(config.batteryHeartbeatId, now);
         for (const wb of [0, 1, 2]) {
             put(`DP_WB${wb}_POWER`, (wb === 2 ? wbW : wb === 0 ? miiW : 0) / 1000);
-            put(`DP_WB${wb}_L1_A`, wb === 2 && physicalPowerAllow ? physicalA : wb === 0 && miiPowerAllow ? miiA : 0);
-            put(`DP_WB${wb}_L2_A`, 0); put(`DP_WB${wb}_L3_A`, 0);
+            const currentQuality = wallboxCurrentQuality[wb] ? {q: wallboxCurrentQuality[wb]} : {};
+            put(`DP_WB${wb}_L1_A`, wb === 2 && physicalPowerAllow ? physicalA : wb === 0 && miiPowerAllow ? miiA : 0,
+                currentQuality);
+            put(`DP_WB${wb}_L2_A`, 0, currentQuality); put(`DP_WB${wb}_L3_A`, 0, currentQuality);
         }
         const stagedPhases = (watts, stage) => watts <= stage ? [watts, 0, 0]
             : watts <= stage * 2 ? [watts - stage, stage, 0] : [watts - stage * 2, stage, stage];
@@ -320,6 +329,8 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         setBatteryResponse: value => { batteryResponds = value; },
         setBatteryHeartbeat: value => { batteryHeartbeat = value; },
         setBatteryPower: value => { batteryW = value; },
+        setWallboxStopAck: (wb, enabled) => { wallboxStopAck[wb] = enabled; },
+        setWallboxCurrentQuality: (wb, quality) => { wallboxCurrentQuality[wb] = quality; },
         setWallboxPhysical: (wb, {allow = 1, amps = 6} = {}) => {
             if (wb === 0) {
                 miiAllow = miiPowerAllow = allow; miiA = amps; ++miiStopResponseSequence;
@@ -497,6 +508,327 @@ test('qualified Mii target end hands over to EQE without a second cold delay or 
     assert.ok(h.trace.every(row => !(row.physicalAllow === 1 && row.miiAllow === 1)));
     assert.ok(h.trace.every(row => row.wbW + row.miiW + row.heaterW <= 4200));
     assert.ok(h.trace.every(row => row.phaseImportW.every(watts => watts <= 63 * 230)));
+});
+
+test('parallel priority handoff replaces above-minimum Mii before 600s hold and avoids a repeated 300s start', async () => {
+    const h = await plant({mii: true, startDelayS: 300, minimumRuntimeS: 600,
+        split: false, initialSurplusW: 3000, wallboxStopResponseDelayMs: 10000});
+    h.config.wallboxParallelChargingEnabled = true;
+    h.config.wallboxStopDelayS = 600;
+    h.own('Config.WallboxParallelChargingEnabled', true);
+    h.own('Config.WallboxStopDelay_s', 600);
+    h.setWallboxPhysical(2, {allow: 0, amps: 8});
+    h.put('DP_WB_PRIORITY', 0);
+    const coldAt = h.now();
+    await h.advance(350);
+    assert.equal(h.physical().miiAllow, 1, h.diagnostic());
+    assert.equal(h.physical().allow, 0, h.diagnostic());
+    assert.ok(h.writes.find(row => row.id === 'goe0.allow' && row.val === 1)?.at >= coldAt + 300000,
+        'parallel mode retains the configured cold start qualification');
+    assert.ok(h.value('Vehicles.Wallbox0.MinimumRunTimeRemaining_s') > 500);
+    const requestedAt = h.now();
+    h.put('DP_WB_PRIORITY', 2);
+    await h.advance(6);
+    const off = h.writes.find(row => row.id === 'goe0.allow' && row.val === 0 && row.at > requestedAt);
+    assert.ok(off, 'explicit above-minimum priority handoff must not be held by the donor timers: '
+        + h.diagnostic() + '\n' + h.value('Control.ParallelWallboxAllocation_JSON'));
+    assert.equal(h.physical().miiAllow, 0, 'fresh donor OFF ACK has arrived');
+    assert.ok(h.physical().miiPowerW > 0, 'vehicle uptake persists beyond the Modbus OFF ACK');
+    assert.equal(h.physical().allow, 0, 'recipient waits for electrical rest');
+    assert.equal(h.value('Devices.Wallbox0.OutputOwned'), true);
+    assert.equal(h.value('Devices.Wallbox0.StopPowerPending'), true);
+    assert.ok(h.value('Devices.Wallbox0.OutputReservedPower_W') >= h.physical().miiPowerW,
+        'pending donor current remains reserved');
+    await h.advance(50);
+    const on = h.writes.find(row => row.id === 'goe.allow' && row.val === 1 && row.at > requestedAt);
+    const zero = h.trace.find(row => row.at >= off.at + 4000 && row.miiAllow === 0 && row.miiW === 0);
+    const current = h.writes.find(row => row.id === 'goe.cmd' && row.at > requestedAt);
+    assert.ok(on && zero, h.diagnostic() + '\n' + h.value('Control.ParallelWallboxAllocation_JSON'));
+    assert.ok(on.at < requestedAt + 300000, 'qualified priority handoff has no second cold-start countdown');
+    assert.ok(on.at >= off.at + 14000 && on.at >= zero.at,
+        'fresh physical zero is distinct from the earlier OFF acknowledgement');
+    assert.equal(current?.val, 6, 'recipient starts at the physical six ampere minimum');
+    assert.ok(on.at >= current.at + 4000, 'fresh recipient current ACK remains mandatory: '
+        + JSON.stringify(h.writes.filter(row => row.id.startsWith('goe') && row.at > requestedAt)));
+    assert.equal(h.physical().miiAllow, 0);
+    assert.equal(h.physical().allow, 1);
+    assert.ok(h.trace.filter(row => row.at > requestedAt)
+        .every(row => !(row.wbW > 20 && row.miiW > 20)), 'single-car budget is not spent twice');
+    assert.ok(h.trace.filter(row => row.at > requestedAt)
+        .every(row => !(row.physicalAllow === 1 && row.miiAllow === 1)), 'no permission overlap during transfer');
+});
+
+test('parallel priority handoff cannot release recipient while donor OFF acknowledgement is missing', async () => {
+    const h = await plant({mii: true, startDelayS: 300, minimumRuntimeS: 600,
+        split: false, initialSurplusW: 3000});
+    h.config.wallboxParallelChargingEnabled = true;
+    h.own('Config.WallboxParallelChargingEnabled', true);
+    h.put('DP_WB_PRIORITY', 0);
+    await h.advance(350);
+    assert.equal(h.physical().miiAllow, 1, h.diagnostic());
+    h.setWallboxStopAck(0, false);
+    const requestedAt = h.now();
+    h.put('DP_WB_PRIORITY', 2);
+    await h.advance(18);
+    assert.ok(h.writes.some(row => row.id === 'goe0.allow' && row.val === 0 && row.at > requestedAt),
+        'priority handoff begins stopping the donor');
+    assert.equal(h.states.get('goe0.allow').ack, false, 'OFF is still unacknowledged');
+    assert.equal(h.physical().miiAllow, 1);
+    assert.equal(h.physical().allow, 0);
+    assert.ok(!h.writes.some(row => row.id === 'goe.allow' && row.val === 1 && row.at > requestedAt),
+        'allocation intent cannot replace the donor OFF acknowledgement');
+    assert.ok(h.value('Devices.Wallbox0.OutputReservedPower_W') >= h.physical().miiPowerW);
+});
+
+test('parallel below-minimum cars keep both physical floors when manual priority changes', async () => {
+    const h = await plant({mii: true, startDelayS: 0, minimumRuntimeS: 600,
+        split: false, initialSurplusW: 6000});
+    h.config.wallboxParallelChargingEnabled = true;
+    h.own('Config.WallboxParallelChargingEnabled', true);
+    h.put('DP_WB0_MIN_SOC', 60); h.put('DP_WB2_MIN_SOC', 60);
+    h.put('DP_WB_PRIORITY', 0);
+    await h.advance(100);
+    assert.equal(h.physical().miiAllow, 1, h.diagnostic());
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    assert.ok(h.physical().miiAmps >= 6 && h.physical().amps >= 6);
+    const requestedAt = h.now();
+    h.put('DP_WB_PRIORITY', 2);
+    await h.advance(60);
+    assert.equal(h.value('Control.SelectedWallbox'), 2);
+    assert.equal(h.physical().miiAllow, 1, h.diagnostic());
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    assert.ok(!h.writes.some(row => ['goe.allow', 'goe0.allow'].includes(row.id)
+        && row.val === 0 && row.at > requestedAt), 'mandatory peers are not priority-handoff donors');
+    const allocation = JSON.parse(h.value('Control.ParallelWallboxAllocation_JSON'));
+    assert.equal(allocation.minimumTotalW, 2760);
+    assert.ok(allocation.allocations.filter(item => item.wb === 0 || item.wb === 2)
+        .every(item => item.minimumW === 1380 && item.targetA >= 6));
+});
+
+test('parallel priority handoff cannot mistake invalid donor phase-current zeros for confirmed electrical rest', async () => {
+    const h = await plant({mii: true, startDelayS: 300, minimumRuntimeS: 600,
+        split: false, initialSurplusW: 3000, wallboxStopResponseDelayMs: 10000});
+    h.config.wallboxParallelChargingEnabled = true;
+    h.own('Config.WallboxParallelChargingEnabled', true);
+    h.put('DP_WB_PRIORITY', 0);
+    await h.advance(350);
+    const requestedAt = h.now();
+    h.put('DP_WB_PRIORITY', 2);
+    await h.advance(6);
+    assert.equal(h.physical().miiAllow, 0, 'the donor OFF ACK is valid');
+    h.setWallboxCurrentQuality(0, 64);
+    await h.advance(12);
+    assert.equal(h.physical().miiPowerW, 0, 'physical uptake has settled');
+    assert.equal(h.states.get('DP_WB0_L1_A').val, 0);
+    assert.equal(h.states.get('DP_WB0_L1_A').q, 64);
+    assert.equal(h.physical().allow, 0);
+    assert.ok(!h.writes.some(row => row.id === 'goe.allow' && row.val === 1 && row.at > requestedAt),
+        'bad quality zero currents cannot release the waiting recipient');
+    assert.equal(h.value('Devices.Wallbox0.OutputOwned'), true);
+    assert.ok(h.value('Devices.Wallbox0.OutputReservedPower_W') > 0,
+        'the unresolved electrical stop retains its reservation despite power=0');
+});
+
+test('parallel priority handoff loses its start shortcut when the shared budget disappears', async () => {
+    const h = await plant({mii: true, startDelayS: 300, minimumRuntimeS: 600,
+        split: false, initialSurplusW: 3000, wallboxStopResponseDelayMs: 10000});
+    h.config.wallboxParallelChargingEnabled = true;
+    h.own('Config.WallboxParallelChargingEnabled', true);
+    h.put('DP_WB_PRIORITY', 0);
+    await h.advance(350);
+    assert.equal(h.physical().miiAllow, 1, h.diagnostic());
+    const requestedAt = h.now();
+    h.put('DP_WB_PRIORITY', 2);
+    await h.advance(2);
+    assert.ok(h.writes.some(row => row.id === 'goe0.allow' && row.val === 0 && row.at > requestedAt));
+    h.setSurplus(500);
+    await h.advance(20);
+    assert.equal(h.physical().allow, 0);
+    const restoredAt = h.now();
+    h.setSurplus(3000);
+    await h.advance(100);
+    assert.ok(!h.writes.some(row => row.id === 'goe.allow' && row.val === 1 && row.at > requestedAt),
+        'restored sunlight cannot renew a revoked handoff token');
+    await h.advance(250);
+    const on = h.writes.find(row => row.id === 'goe.allow' && row.val === 1 && row.at > requestedAt);
+    assert.ok(on && on.at >= restoredAt + 300000, h.diagnostic());
+    assert.ok(h.trace.every(row => !(row.wbW > 20 && row.miiW > 20)));
+});
+
+test('parallel priority handoff cancels the old recipient when the manual choice changes during donor shutdown', async () => {
+    const h = await plant({mii: true, startDelayS: 300, minimumRuntimeS: 600,
+        split: false, initialSurplusW: 3000, wallboxStopResponseDelayMs: 10000});
+    h.config.wallboxParallelChargingEnabled = true;
+    h.own('Config.WallboxParallelChargingEnabled', true);
+    h.put('DP_WB_PRIORITY', 0);
+    await h.advance(350);
+    const requestedAt = h.now();
+    h.put('DP_WB_PRIORITY', 2);
+    await h.advance(2);
+    assert.ok(h.writes.some(row => row.id === 'goe0.allow' && row.val === 0 && row.at > requestedAt));
+    h.put('DP_WB_PRIORITY', 0);
+    await h.advance(1);
+    assert.equal(h.run('wallboxParallelPriorityRequest.index'), 0);
+    assert.equal(h.run('wallboxParallelPriorityRequest.pending'), true,
+        'canceling the superseded receiver must not consume the newer bounded priority request');
+    await h.advance(99);
+    assert.equal(h.value('Control.SelectedWallbox'), 0);
+    assert.ok(!h.writes.some(row => row.id === 'goe.allow' && row.val === 1 && row.at > requestedAt),
+        'a superseded request cannot release its previously prepared recipient');
+    assert.ok(h.trace.every(row => !(row.wbW > 20 && row.miiW > 20)));
+});
+
+test('parallel priority with genuinely free budget starts a second car without stopping the running donor', async () => {
+    const h = await plant({mii: true, startDelayS: 300, minimumRuntimeS: 600,
+        split: false, initialSurplusW: 10000});
+    h.config.wallboxParallelChargingEnabled = true;
+    h.own('Config.WallboxParallelChargingEnabled', true);
+    h.put('DP_WB_PRIORITY', 0);
+    h.put('DP_WB2_ALLOW', false);
+    for (const id of h.run('CFG.dp.dhwTemps')) h.put(id, 80);
+    await h.advance(350);
+    assert.equal(h.physical().miiAllow, 1, h.diagnostic());
+    assert.equal(h.physical().allow, 0);
+    assert.ok(10000 - h.physical().miiPowerW - h.physical().heaterW >= 1680,
+        'the second physical minimum has measured free PV, without borrowing donor reservation');
+    const requestedAt = h.now();
+    h.put('DP_WB2_ALLOW', true);
+    h.put('DP_WB_PRIORITY', 2);
+    await h.advance(350);
+    assert.ok(!h.writes.some(row => row.id === 'goe0.allow' && row.val === 0 && row.at > requestedAt),
+        'a supported second load needs no artificial first-car shutdown');
+    assert.equal(h.physical().miiAllow, 1, h.diagnostic());
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    const on = h.writes.find(row => row.id === 'goe.allow' && row.val === 1 && row.at > requestedAt);
+    assert.ok(on && on.at >= requestedAt + 300000, 'a new parallel start retains its normal qualification');
+});
+
+test('parallel priority cannot borrow an unobserved restart-owned charge as a completed start qualification', async () => {
+    const h = await plant({mii: true, startDelayS: 300, minimumRuntimeS: 600,
+        split: false, initialSurplusW: 3000});
+    h.config.wallboxParallelChargingEnabled = true;
+    h.own('Config.WallboxParallelChargingEnabled', true);
+    h.put('DP_WB_PRIORITY', 0);
+    h.setWallboxPhysical(0, {allow: 1, amps: 6});
+    h.output.devices[0].owned = true;
+    h.output.devices[0].lastA = 6;
+    h.own('Devices.Wallbox0.OutputOwned', true);
+    h.own('Devices.Wallbox0.OutputActive', true);
+    await h.advance(4);
+    const requestedAt = h.now();
+    h.put('DP_WB_PRIORITY', 2);
+    await h.advance(100);
+    assert.ok(!h.writes.some(row => row.id === 'goe.allow' && row.val === 1 && row.at > requestedAt),
+        'retained current after a restart is not this session\'s witnessed cold qualification');
+});
+
+test('parallel priority defers a new handoff while donor phase preparation is pending', async () => {
+    for (const phaseFlag of ['PhaseSwitchPending', 'PhaseTransitionActive']) {
+        const h = await plant({mii: true, startDelayS: 300, minimumRuntimeS: 600,
+            split: false, initialSurplusW: 3000});
+        h.config.wallboxParallelChargingEnabled = true;
+        h.own('Config.WallboxParallelChargingEnabled', true);
+        h.put('DP_WB_PRIORITY', 0);
+        await h.advance(350);
+        const requestedAt = h.now();
+        h.own(`Devices.Wallbox0.${phaseFlag}`, true);
+        h.put('DP_WB_PRIORITY', 2);
+        await h.advance(1);
+        assert.ok(!h.writes.some(row => row.id === 'goe0.allow' && row.val === 0 && row.at > requestedAt),
+            `${phaseFlag}: phase work must finish before preparing a new priority handoff`);
+        assert.ok(!h.run('typeof wallboxParallelPriorityHandoff === "undefined" ? null : wallboxParallelPriorityHandoff'),
+            `${phaseFlag}: no start-delay bypass token may be prepared from an unresolved topology`);
+    }
+});
+
+test('qualified parallel handoff remains armed inside the start-reserve band before recipient permission arrives', async () => {
+    const h = await plant({mii: true, startDelayS: 300, minimumRuntimeS: 600,
+        split: false, initialSurplusW: 3000, wallboxStopResponseDelayMs: 10000});
+    h.config.wallboxParallelChargingEnabled = true;
+    h.own('Config.WallboxParallelChargingEnabled', true);
+    h.setWallboxPhysical(2, {allow: 0, amps: 8});
+    h.put('DP_WB_PRIORITY', 0);
+    await h.advance(350);
+    const requestedAt = h.now();
+    h.put('DP_WB_PRIORITY', 2);
+    for (let seconds = 0; seconds < 60 && !h.run('wallboxVehicleHandoff?.qualified && wallboxVehicleHandoff?.pending === false'); seconds++)
+        await h.advance(1);
+    assert.equal(h.run('wallboxVehicleHandoff?.qualified'), true);
+    assert.equal(h.run('wallboxVehicleHandoff?.pending'), false);
+    assert.equal(h.physical().miiPowerW, 0, 'donor has reached confirmed electrical rest');
+    assert.equal(h.physical().allow, 0, 'recipient permission has not yet arrived');
+    const budgetReducedAt = h.now();
+    h.setSurplus(1500);
+    await h.advance(60);
+    const on = h.writes.find(row => row.id === 'goe.allow' && row.val === 1 && row.at > requestedAt);
+    assert.ok(on && on.at < budgetReducedAt + 300000,
+        'qualified transfer needs minimum power, not a second start reserve: ' + h.diagnostic());
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    assert.equal(h.physical().amps, 6, 'only the physical minimum fits the reduced budget');
+    assert.ok(h.trace.filter(row => row.at > requestedAt).every(row => !(row.wbW > 20 && row.miiW > 20)));
+});
+
+test('retained parallel priority after a control reset stops the optional donor without inheriting a witnessed start', async () => {
+    const h = await plant({mii: true, startDelayS: 300, minimumRuntimeS: 600,
+        split: false, initialSurplusW: 3000, wallboxStopResponseDelayMs: 10000});
+    h.config.wallboxParallelChargingEnabled = true;
+    h.config.wallboxStopDelayS = 600;
+    h.own('Config.WallboxParallelChargingEnabled', true);
+    h.own('Config.WallboxStopDelay_s', 600);
+    h.put('DP_WB_PRIORITY', 0);
+    await h.advance(350);
+    assert.equal(h.physical().miiAllow, 1, h.diagnostic());
+    h.put('DP_WB_PRIORITY', 2);
+    h.run('resetSlowTargets()');
+    assert.equal(h.run('wallboxVehicleHandoffObservation[0].qualified'), false);
+    const restartedAt = h.now();
+    await h.advance(6);
+    assert.ok(h.writes.some(row => row.id === 'goe0.allow' && row.val === 0 && row.at > restartedAt),
+        'retained priority is a bounded request to stop the optional restart-owned donor');
+    await h.advance(100);
+    assert.ok(!h.writes.some(row => row.id === 'goe.allow' && row.val === 1 && row.at > restartedAt),
+        'restart ownership cannot supply the missing start qualification');
+    await h.advance(300);
+    const on = h.writes.find(row => row.id === 'goe.allow' && row.val === 1 && row.at > restartedAt);
+    assert.ok(on && on.at >= restartedAt + 300000, h.diagnostic());
+    assert.ok(h.trace.filter(row => row.at > restartedAt).every(row => !(row.wbW > 20 && row.miiW > 20)));
+});
+
+test('parallel priority handoff chooses one phase for a stopped three-phase recipient before its release', async () => {
+    const h = await plant({mii: true, startDelayS: 300, minimumRuntimeS: 600,
+        split: false, initialSurplusW: 3000, wallboxStopResponseDelayMs: 10000,
+        wb2InitialPhaseMode: 2});
+    h.config.wallboxParallelChargingEnabled = true;
+    h.own('Config.WallboxParallelChargingEnabled', true);
+    h.own('Vehicles.Wallbox2.MinCurrent3P_A', 6);
+    h.own('Vehicles.Wallbox2.MaxCurrent3P_A', 32);
+    h.put('DP_WB_PRIORITY', 0);
+    await h.advance(350);
+    assert.equal(h.physical().miiAllow, 1, h.diagnostic());
+    assert.equal(h.physical().allow, 0);
+    assert.equal(h.states.get('goe.phase').val, 2, 'stopped receiving charger still reports its retained 3P mode');
+    const requestedAt = h.now();
+    h.put('DP_WB_PRIORITY', 2);
+    for (let seconds = 0; seconds < 60 && !h.run('wallboxParallelPriorityHandoff?.phaseBasis === 1'); seconds++)
+        await h.advance(1);
+    assert.equal(h.value('Control.Targets.Wallbox2_Phases'), 1,
+        'live 3000 W budget selects 1P before recipient charging');
+    assert.equal(h.run('wallboxParallelPriorityHandoff?.phaseBasis'), 1,
+        'the transfer locks its usable requested topology after donor rest');
+    assert.equal(h.physical().miiPowerW, 0);
+    assert.equal(h.physical().allow, 0, 'the configured 1P request has not yet been confirmed by go-e');
+    assert.ok(!h.writes.some(row => row.id === 'goe.allow' && row.val === 1 && row.at > requestedAt));
+    const phaseConfirmedAt = h.now();
+    // The synthetic plant is permanently 1P. This fresh mode ACK models only
+    // the stopped follower's confirmation, not a successful loaded phase test.
+    h.put('goe.phase', 1);
+    await h.advance(60);
+    const on = h.writes.find(row => row.id === 'goe.allow' && row.val === 1 && row.at > requestedAt);
+    assert.ok(on && on.at >= phaseConfirmedAt && on.at < requestedAt + 300000,
+        'phase confirmation completes preparation without a repeated cold timer: ' + h.diagnostic());
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    assert.equal(h.value('Devices.Wallbox2.ConfirmedPhases'), 1);
+    assert.ok(h.trace.filter(row => row.at > requestedAt).every(row => !(row.wbW > 20 && row.miiW > 20)));
 });
 
 test('lost old-output evidence or control reset requires the full delay for the next vehicle', async () => {
@@ -1587,3 +1919,4 @@ test('handoff prepares a stopped three-phase receiver for one phase before its c
     const before = h.trace.findLast(x => x.at <= enable.at);
     assert.equal(before.miiW, 0, 'donor must be electrically quiet before receiver starts');
 });
+
