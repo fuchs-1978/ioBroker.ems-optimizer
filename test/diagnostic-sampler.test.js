@@ -61,3 +61,15 @@ test('expired prehistory is intentionally sampled, capacity drops stay explicit 
     s.observe('big', state('x'.repeat(1000), 4000), null, 4000);
     assert.equal(s.lost, 1); assert.ok(s.bytes <= 500);
 });
+
+test('normal minute-scale temperature updates do not force dense windows; late updates and quality edges still do', () => {
+    const s = new Sampler();
+    const previous = state(21, 1000);
+    assert.equal(s.observe('temperature', state(21, 61000), previous, 61000,
+        {maxGapMs: 120000}).important, false);
+    assert.equal(s.observe('temperature', state(21, 181001), state(21, 61000), 181001,
+        {maxGapMs: 120000}).reason, 'source-gap');
+    assert.equal(s.observe('temperature', state(21, 182000, {q: 64}), state(21, 181001), 182000,
+        {maxGapMs: 120000}).reason, 'quality-edge');
+    assert.equal(new Sampler().observe('grid', state(0, 61000), previous, 61000).reason, 'source-gap');
+});

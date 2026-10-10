@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Version: **0.17.0-alpha.62**
+Aktuelle Version: **0.17.0-alpha.63**
 
 Prüfung zu Tages-Issue #98: [produktive Diagnose, Phasen-Rückfallvertrag,
 Reproduktion und nächste SQL-Abnahme](docs/issue98-live-diagnostics.md).
@@ -45,6 +45,10 @@ Adapter wartet auf die Rückmeldung und rechnet 6 A dreiphasig als 4.140 W.
 Ab alpha17 sind Speicher und zweiter Heizstab separat freigebbare Testausgänge;
 die Wärmepumpe erhält zunächst ausschließlich eine EMS-Empfehlung als eigenes
 Objekt. Ein Update aktiviert keine neuen Ausgänge.
+
+## Neu in 0.17.0-alpha.63 – langsame Diagnosequellen
+
+Normale minuetliche Temperaturupdates loesen kein dauerhaftes dichtes Fenster aus. Reine Diagnose-Gap-Trigger unterscheiden schnelle Leistung-/Stellsignale (10 s) von sonstigen analogen Quellen (120 s); dies aendert keine operative Frist, Quellenvalidierung oder Schutzregel. ACK/q-/NULL-Wechsel und operative Frischegrenzen bleiben sofort sichtbar.
 
 ## Neu in 0.17.0-alpha.62 – ereignisorientierte Live-Diagnose
 
