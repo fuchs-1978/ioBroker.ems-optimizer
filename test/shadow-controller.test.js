@@ -748,25 +748,25 @@ test('master switch resets virtual ownership while coherent real feedback remain
     assert.equal(record.modeled.Wallbox0.powerW, h.value('Modeled.Wallbox0_W'));
 });
 
-test('productive DecisionRecord samples the paused model every tick and retains real changes', async () => {
+test('productive DecisionRecord samples quiet ticks sparsely and retains discrete and quality changes', async () => {
     const h = await fixture();
     h.adapter.config.globalWriteEnabled = true;
     await h.tick();
     const records = () => h.writes.filter(write => write.id.endsWith('.DecisionRecord'));
     const count = records().length;
     for (let cycle = 0; cycle < 5; cycle++) { h.advance(2000); await h.tick(); }
-    assert.equal(records().length, count + 5);
+    assert.equal(records().length, count, 'quiet ticks are not full-record heartbeats');
     h.put('DP_WB0_CAR', 1); h.advance(2000); await h.tick();
-    assert.equal(records().length, count + 6);
+    assert.equal(records().length, count + 1);
     const edge = latestRecord(h);
     assert.equal(edge.realFeedback.Wallbox0.car.value, 1);
     assert.equal(edge.realFeedback.Wallbox0.car.ts, edge.timestamp);
     h.advance(60000); await h.tick();
-    assert.equal(records().length, count + 7);
+    assert.equal(records().length, count + 2);
     h.put('goe.current', 9); h.advance(2000); await h.tick();
-    assert.equal(records().length, count + 8, 'real current changes are captured even while shadow is paused');
+    assert.equal(records().length, count + 3, 'real current changes are captured even while shadow is paused');
     h.put('goe.current', 9, {ack: false}); h.advance(2000); await h.tick();
-    assert.equal(records().length, count + 9, 'quality transitions remain explicit during productive sampling');
+    assert.equal(records().length, count + 4, 'quality transitions remain explicit during productive sampling');
 });
 
 test('DecisionRecord keeps selection reasons and emits reason changes with the same selected wallbox', async () => {
@@ -1443,3 +1443,4 @@ test('productive SQL record carries bounded central and complete per-vehicle all
     assert.equal(record.production.wallboxes[1].allocation.phasePreparationReason, 'awaiting-confirmed-1p');
     assert.ok(!JSON.stringify(record.production.control.parallelWallboxes).includes('UNEXPECTED-KEY'));
 });
+
