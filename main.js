@@ -22,6 +22,9 @@ const heatPumpTelemetryParser = require("./lib/heatpump-telemetry");
 const {normalizeWallboxPowerKW} = require("./lib/wallbox-measurement");
 const batteryTemperatureReserve = require("./lib/battery-temperature-reserve");
 const sunEnergyHeads = require("./lib/sunenergy-heads");
+const DecisionRecordJournal = require("./lib/decision-record-journal");
+const DecisionRecordDelivery = require("./lib/decision-record-delivery");
+const {buildDiagnosticSourceContract} = require("./lib/diagnostic-source-contract");
 
 class EmsOptimizer extends utils.Adapter {
     constructor(options = {}) {
@@ -60,6 +63,8 @@ class EmsOptimizer extends utils.Adapter {
         }});
         this.marketInitialization = null;
         this.shadowInitialization = null;
+        this.decisionRecordJournal = null;
+        this.decisionRecordDelivery = null;
         this.debugInitialization = null;
         this.debugWarningAt = null;
         this.on("ready", this.onReady.bind(this));
@@ -185,15 +190,61 @@ class EmsOptimizer extends utils.Adapter {
 
     async startShadow() {
         try {
+            await this.startDecisionRecording();
+            if (this.unloading) return;
             await this.shadowController.initialize();
             if (this.unloading) return;
             this.runShadow('tick');
             this.registerSchedule('* * * * * *', () => this.runShadow('tick'));
+            this.registerSchedule('* * * * * *', () => {
+                void this.decisionRecordDelivery?.tick().then(() => this.runShadow('publishRecordHealth'))
+                    .catch(error => this.warnDebug(error));
+            });
             // SQL setup is optional diagnostics; actuator startup never waits for it.
             await this.shadowHistory.initialize(this.shadowController.historyIds);
         } catch (error) {
             this.warnDebug(error);
         }
+    }
+
+    async startDecisionRecording() {
+        // Only the adapter's private instance-data directory is used. These
+        // files never belong to the package or to public diagnostic reports.
+        try {
+            const dataDirectory = utils.getAbsoluteInstanceDataDir(this);
+            const journal = new DecisionRecordJournal({directory: path.join(dataDirectory, 'decision-record-journal'),
+                maxRecordBytes: 512 * 1024});
+            await journal.initialize();
+            if (this.unloading) { await journal.close(); return; }
+            this.decisionRecordJournal = journal;
+            this.decisionRecordDelivery = new DecisionRecordDelivery({journal, publishIntervalMs: 5000,
+                publish: async payload => {
+                    const id = `${this.namespace}.Debug.Shadow.DecisionRecord`;
+                    await this.setCompatState(id, payload, true);
+                    const cached = this.getCachedState(id);
+                    return cached?.val === payload && Number.isSafeInteger(cached.ts) && cached.ts >= 0
+                        ? {publishedAt: cached.ts} : {};
+                }, readHistory: options => this.readDecisionRecordHistory(options)});
+        } catch (error) {
+            this.warnDebug(error);
+        }
+    }
+
+    readDecisionRecordHistory({start, end, limit}) {
+        const instance = String(this.config.historyInstance || '').trim();
+        if (!/^sql\.\d+$/.test(instance)) return Promise.resolve({error: 'No SQL instance configured',
+            backendCompletionObserved: false, backendRequestIssued: false,
+            localNotIssuedEvidence: 'Local configuration validation: no SQL transport was invoked'});
+        return new Promise((resolve, reject) => {
+            try {
+                // A callback from SQL itself is an observed query completion.
+                // A local deadline in delivery is not a backend cancellation.
+                this.sendTo(instance, 'getHistory', {id: `${this.namespace}.Debug.Shadow.DecisionRecord`,
+                    options: {start, end, count: limit, limit, aggregate: 'none', ignoreNull: false,
+                        removeBorderValues: true, returnNewestEntries: false}}, response =>
+                    resolve({...response, backendCompletionObserved: true}));
+            } catch (error) { reject(error); }
+        });
     }
 
     async startMarketPrices() {
@@ -213,10 +264,13 @@ class EmsOptimizer extends utils.Adapter {
         const mapping = this.readMapping();
         const configured = [...Object.values(mapping), this.config.batteryTemperatureForecastId]
             .filter(value => typeof value === "string" && value.trim()).map(value => value.trim());
+        const diagnosticIds = buildDiagnosticSourceContract({namespace: this.namespace, config: this.config, mapping})
+            .map(source => source.id).filter(id => !id.startsWith(`${this.namespace}.`));
         const patterns = [...new Set([
             `${this.namespace}.*`,
             ...configured,
             ...configured.map(id => `${id}.*`),
+            ...diagnosticIds,
             ...this.batteryHeadSourceIds()
         ])];
         for (const pattern of patterns) {
@@ -571,7 +625,7 @@ class EmsOptimizer extends utils.Adapter {
         }
         if (relative !== null && !relative.startsWith('Debug.'))
             this.runDebug('capture', id, published, previous);
-        if (relative === 'System.RealOutputsEnabled' || relative?.startsWith('Devices.'))
+        if (relative !== null && !relative.startsWith('Debug.'))
             this.runShadow('captureProduction', id, published, previous);
         return promise;
     }
@@ -892,7 +946,10 @@ class EmsOptimizer extends utils.Adapter {
             this.stateCache.delete(id);
             this.stateReceiptCache?.delete(id);
         }
-        if (this.unloading) return;
+        if (this.unloading) {
+            this.runShadow('captureProduction', id, state, previous);
+            return;
+        }
         if (this.runShadow('handleCommand', id, state)) return;
         if (this.runDebug('handleCommand', id, state)) return;
         this.runDebug('capture', id, state, previous);
@@ -915,8 +972,9 @@ class EmsOptimizer extends utils.Adapter {
     }
 
     async prepareUnload({allowHandoff = true} = {}) {
+        this.runShadow('beginShutdown');
         this.unloading = true;
-        this.runShadow('stop');
+        this.decisionRecordDelivery?.stop();
         this.marketPrices?.stop();
         try { this.shadowHistory?.stop(); }
         catch (error) { this.warnDebug(error); }
@@ -970,6 +1028,18 @@ class EmsOptimizer extends utils.Adapter {
         const results = await Promise.allSettled(stops);
         for (const result of results) if (result.status === "rejected")
             this.log.error(`Cannot stop output on unload: ${result.reason}`);
+        // Real independent stops always precede diagnostic disk completion.
+        await this.runShadow('finishRecording');
+        if (this.decisionRecordJournal) {
+            let timer;
+            try {
+                const closed = await Promise.race([this.decisionRecordJournal.close().then(() => true),
+                    new Promise(resolve => {timer = setTimeout(() => resolve(false), 250);})]);
+                if (!closed) this.warnDebug(new Error('Lokaler Journalabschluss noch offen; keine Speicherbestaetigung'));
+            }
+            catch (error) { this.warnDebug(error); }
+            finally { clearTimeout(timer); }
+        }
         await this.flushOwnWrites();
         this.runDebug('stop', handoffPrepared ? 'Adapter-Neustart mit gepruefter Wallbox-Uebergabe'
             : 'Adapter beendet; Ausgangsbereinigung abgeschlossen, Rueckmeldungen siehe Snapshot');

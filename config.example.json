@@ -1,5 +1,6 @@
 {
   "DP_SQL_INSTANCE": "",
+  "diagnosticPumpSourcesJson": "[]",
   "DP_PV_POWER": "", "DP_GRID_IMPORT": "", "DP_GRID_EXPORT": "",
   "DP_OUTSIDE_TEMP": "", "DP_DHW_TEMP": "", "DP_ENERGY_PRICE_SERIES": "",
   "DP_GRID_FEE_SERIES": "", "DP_DYNAMIC_ENERGY_ENABLED": "",

@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-function adapter() {
+function adapter(adapterCore = {}) {
     const adapterModule = {exports: {}};
     class Adapter {
         constructor() {
@@ -16,7 +16,7 @@ function adapter() {
         on() {}
     }
     const source = fs.readFileSync(path.join(__dirname, '../main.js'), 'utf8');
-    const customRequire = name => name === '@iobroker/adapter-core' ? {Adapter}
+    const customRequire = name => name === '@iobroker/adapter-core' ? {Adapter, ...adapterCore}
         : name === 'node-schedule' ? {scheduleJob: () => ({cancel() {}})}
         : name.startsWith('./') ? require(path.join(__dirname, '..', name)) : require(name);
     vm.runInNewContext(source, {require: customRequire, module: adapterModule,
@@ -27,6 +27,92 @@ function adapter() {
     instance.getStateAsync = async () => null;
     return instance;
 }
+
+test('recording integration uses private instance data and a matching published state timestamp only', async () => {
+    const directory = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'ems-recording-integration-'));
+    const a = adapter({getAbsoluteInstanceDataDir: instance => {
+        assert.equal(instance.namespace, 'ems.0'); return directory;
+    }});
+    try {
+        await a.startDecisionRecording();
+        assert.ok(a.decisionRecordJournal);
+        assert.equal(a.decisionRecordDelivery.publishIntervalMs, 5000);
+        const payload = '{"recordSession":"integration","recordSequence":1}';
+        const receipt = await a.decisionRecordDelivery.publish(payload);
+        assert.equal(receipt.publishedAt, a.getCachedState('ems.0.Debug.Shadow.DecisionRecord').ts);
+        a.setCompatState = async () => {};
+        const unknown = await a.decisionRecordDelivery.publish('different payload');
+        assert.equal(unknown.publishedAt, undefined, 'an older cached publication cannot timestamp a new record');
+        assert.ok(fs.existsSync(path.join(directory, 'decision-record-journal')));
+    } finally {
+        a.decisionRecordDelivery?.stop();
+        await a.decisionRecordJournal?.close();
+        fs.rmSync(directory, {recursive: true, force: true});
+    }
+});
+
+test('independent SQL verification uses bounded raw history reads and observes completion only in callback', async () => {
+    const a = adapter(); a.config.historyInstance = 'sql.0';
+    let complete; const calls = [];
+    a.sendTo = (instance, command, message, callback) => {calls.push({instance, command, message}); complete = callback;};
+    let done = false;
+    const reading = a.readDecisionRecordHistory({start: 1000, end: 3000, limit: 32}).then(value => {
+        done = true; return value;
+    });
+    await Promise.resolve();
+    assert.equal(done, false, 'issuing a query cannot prove backend completion');
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].command, 'getHistory');
+    assert.equal(calls[0].message.id, 'ems.0.Debug.Shadow.DecisionRecord');
+    assert.equal(calls[0].message.options.aggregate, 'none');
+    assert.equal(calls[0].message.options.ignoreNull, false);
+    assert.equal(calls[0].message.options.count, 32);
+    complete({result: [{ts: 2000, val: null, ack: false, q: 64}]});
+    const response = await reading;
+    assert.equal(response.backendCompletionObserved, true);
+    assert.equal(response.result[0].val, null);
+    assert.equal(response.result[0].q, 64);
+});
+
+test('missing SQL configuration proves only a local non-invocation, never backend completion', async () => {
+    const a = adapter(); let calls = 0; a.sendTo = () => {calls++;};
+    const response = await a.readDecisionRecordHistory({start: 1000, end: 3000, limit: 32});
+    assert.equal(calls, 0);
+    assert.equal(response.backendCompletionObserved, false);
+    assert.equal(response.backendRequestIssued, false);
+    assert.match(response.localNotIssuedEvidence, /configuration/i);
+});
+
+test('diagnostic pump sources are read and subscribed by exact ID without namespace expansion', async () => {
+    const a = adapter(); a.config.diagnosticPumpSourcesJson = '["pump.namespace"]';
+    a.readMapping = () => ({}); a.batteryHeadSourceIds = () => [];
+    const reads = [], subscriptions = [];
+    a.getForeignStatesAsync = async pattern => {reads.push(pattern); return {};};
+    a.subscribeForeignStatesAsync = async pattern => {subscriptions.push(pattern);};
+    await a.preloadStates();
+    assert.ok(reads.includes('pump.namespace'));
+    assert.ok(subscriptions.includes('pump.namespace'));
+    assert.equal(reads.includes('pump.namespace.*'), false);
+    assert.equal(subscriptions.includes('pump.namespace.*'), false);
+});
+
+test('unload requests every independent actuator stop before waiting for journal completion', async () => {
+    const a = adapter(); const steps = [];
+    a.engineContext = {};
+    a.runEngine = source => steps.push(source.match(/stop\w+Output/)[0]);
+    a.wallboxOutput.waitForIdle = async () => {};
+    a.wallboxOutput.stopAll = async () => steps.push('wallbox');
+    a.getForeignObjectAsync = async () => null;
+    a.runShadow = method => {steps.push(method);};
+    a.decisionRecordDelivery = {stop: () => steps.push('delivery-stop')};
+    a.decisionRecordJournal = {close: async () => steps.push('journal-close')};
+    await a.prepareUnload({allowHandoff: false});
+    for (const stop of ['stopDhwOutput', 'stopBatteryOutput', 'stopHeatingOutput', 'stopHeatPumpOutput', 'wallbox'])
+        assert.ok(steps.indexOf(stop) < steps.indexOf('finishRecording'), stop);
+    assert.ok(steps.indexOf('delivery-stop') < steps.indexOf('stopDhwOutput'), 'quiesce diagnostic transport without awaiting it');
+    assert.ok(steps.indexOf('beginShutdown') < steps.indexOf('stopDhwOutput'));
+    assert.ok(steps.indexOf('finishRecording') < steps.indexOf('journal-close'));
+});
 
 test('recorded foreign write distinguishes attempt/transport from raw actuator ACK and keeps safety errors', async () => {
     const a = adapter(); const events = [];
@@ -352,6 +438,7 @@ test('late history response after unload cannot restart planner or outputs', asy
 
 test('shadow initialization schedules only diagnostics and passes its own series to SQL', async () => {
     const a = adapter();
+    a.startDecisionRecording = async () => {};
     const order = [];
     const ids = ['ems.0.Debug.Shadow.Targets.Wallbox0_W', 'ems.0.Debug.Shadow.Valid'];
     a.shadowController = {
@@ -363,30 +450,34 @@ test('shadow initialization schedules only diagnostics and passes its own series
         assert.deepEqual(actual, ids);
         order.push('sql');
     }};
-    let scheduled;
+    const scheduled = [];
     a.registerSchedule = (expression, callback) => {
         assert.equal(expression, '* * * * * *');
-        scheduled = callback;
+        scheduled.push(callback);
         order.push('schedule');
     };
     a.setForeignStateAsync = () => assert.fail('shadow setup wrote an actuator');
     a.runEngine = () => assert.fail('shadow setup ran production code in live context');
     await a.startShadow();
-    assert.deepEqual(order, ['objects', 'preview', 'schedule', 'sql']);
-    scheduled();
+    assert.deepEqual(order, ['objects', 'preview', 'schedule', 'schedule', 'sql']);
+    scheduled[0]();
     assert.equal(order.at(-1), 'preview');
 });
 
 test('unload during shadow initialization prevents later preview, schedules and SQL setup', async () => {
     const a = adapter();
+    a.startDecisionRecording = async () => {};
     let ready;
+    let announce;
+    const initialized = new Promise(resolve => { announce = resolve; });
     a.shadowController = {
-        initialize: () => new Promise(resolve => { ready = resolve; }),
+        initialize: () => new Promise(resolve => { ready = resolve; announce(); }),
         tick: () => assert.fail('late preview')
     };
     a.shadowHistory = {initialize: () => assert.fail('late SQL setup')};
     a.registerSchedule = () => assert.fail('late diagnostic schedule');
     const pending = a.startShadow();
+    await initialized;
     a.unloading = true;
     ready();
     await pending;

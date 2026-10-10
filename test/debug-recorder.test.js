@@ -142,6 +142,72 @@ test('missing/blank/quality/ack/future measurement inputs remain unknown, never 
     assert.equal(f.recorder.snapshot().ehz.actual_W, null);
 });
 
+test('diagnostic snapshot preserves the complete heater reservation witness and original source state', () => {
+    const f = fixture();
+    const id = 'ems.0.Devices.MyPV_DHW.OutputReservationState_JSON';
+    const witness = {highW: [3000, 0, 0], riseAt: [f.clock.now - 60000, 0, 0],
+        seenAt: [0, 0, 0], commandW: [0, 0, 0], commandAt: f.clock.now - 20000,
+        zeroWriteAt: f.clock.now - 19000, ids: ['ehz.1', 'ehz.2', 'ehz.3'], sinkId: 'ehz.setpoint'};
+    f.put(id, JSON.stringify(witness), {ts: f.clock.now - 18000, lc: f.clock.now - 19000, ack: false, q: 64});
+    const original = structuredClone(f.cache.get(id));
+    const snapshot = f.recorder.snapshot();
+    assert.deepEqual(JSON.parse(JSON.stringify(snapshot.ehz.reservationState)), witness);
+    assert.deepEqual(JSON.parse(JSON.stringify(snapshot.ehz.reservationSource)), {id, state: original});
+    f.cache.get(id).val = null;
+    assert.deepEqual(snapshot.ehz.reservationSource.state, original, 'snapshot must not share mutable cache objects');
+    const unknown = f.recorder.snapshot();
+    assert.equal(unknown.ehz.reservationState, null);
+    assert.equal(unknown.ehz.reservationSource.state.val, null, 'observed NULL remains an observed NULL');
+    f.cache.delete(id);
+    assert.equal(f.recorder.snapshot().ehz.reservationSource.state, null, 'absent source is not a zero witness');
+});
+
+test('source witnesses clone in an isolated VM without a global structuredClone and retain undefined metadata', () => {
+    const f = fixture();
+    const id = 'heater.original';
+    f.put(id, null, {lc: f.clock.now - 1000, ack: false, q: undefined,
+        metadata: {origin: ['driver', 'bus']}});
+    const original = structuredClone(f.cache.get(id));
+    const witness = f.recorder.sourceState(id);
+    assert.deepEqual(witness.state, original);
+    assert.equal(Object.hasOwn(witness.state, 'q'), true);
+    assert.equal(witness.state.q, undefined);
+    f.cache.get(id).metadata.origin[0] = 'changed';
+    assert.deepEqual(witness.state, original);
+    assert.equal(witness.state.val, null);
+});
+
+test('snapshot exposes version, manual priority provenance and retained vehicle inputs without rewriting source metadata', () => {
+    const f = fixture();
+    const mapping = {...f.adapter.readMapping(), DP_WB_PRIORITY: 'priority.request',
+        DP_WB2_TARGET: 'target.eqe', DP_WB2_MIN_SOC: 'minimum.eqe', DP_WB2_PHASES: 'phase.eqe',
+        DP_WB2_RELEASE: 'release.derived', DP_WB2_AMIN: 'minimum.current'};
+    f.adapter.readMapping = () => mapping;
+    Object.assign(f.adapter.config, {wallboxPriority: -2, wallboxPrioritySource: 'external'});
+    f.put('ems.0.System.Version', '0.17.0-alpha.71', {lc: f.clock.now - 30000});
+    f.put('priority.request', 2, {ack: false, lc: f.clock.now - 20000});
+    f.put('ems.0.Control.WallboxPrioritySource', 'extern: priority.request');
+    f.put('target.eqe', 80, {ack: false, lc: f.clock.now - 10000});
+    f.put('minimum.eqe', 20, {ack: true, lc: f.clock.now - 9000});
+    f.put('phase.eqe', 3, {ack: true, lc: f.clock.now - 8000});
+    f.put('release.derived', null, {ack: false, q: 64, lc: f.clock.now - 7000});
+    f.put('minimum.current', 6, {ack: false, lc: f.clock.now - 6000});
+    const snapshot = JSON.parse(JSON.stringify(f.recorder.snapshot()));
+    assert.equal(snapshot.system.Version, '0.17.0-alpha.71');
+    assert.deepEqual(snapshot.safetyConfig, {fuseA: 50, reserveA: 4, increaseLimitA: 46,
+        par14aLimitW: 4200, par14aActiveHigh: true});
+    assert.deepEqual(snapshot.system.versionSource.state, f.cache.get('ems.0.System.Version'));
+    assert.deepEqual(snapshot.control.priorityRequest, {configuredValue: -2, configuredSource: 'external',
+        effectiveSource: 'extern: priority.request', external: {id: 'priority.request', state: f.cache.get('priority.request')}});
+    const inputs = snapshot.wallboxes[2].inputSources;
+    for (const [key, id] of Object.entries({userRelease: 'release.eqe', soc: 'soc.eqe', targetSoc: 'target.eqe',
+        minimumSoc: 'minimum.eqe', release: 'release.derived', configuredPhases: 'phase.eqe', manualMinimumCurrent: 'minimum.current'}))
+        assert.deepEqual(inputs[key], {id, state: f.cache.get(id)});
+    assert.equal(snapshot.wallboxes[2].measurements.soc.lc, null, 'missing lc must remain missing');
+    assert.equal(snapshot.wallboxes[2].measurements.userRelease.ack, true);
+    assert.equal(JSON.stringify(snapshot).includes('NEVER-EXPORT'), false);
+});
+
 test('derived PV accepts fresh ack=false only for its measurement contract; grid ACK and PV quality remain binding', () => {
     const f = fixture(); f.put('pv.power', 6000, {ack: false});
     let s = f.recorder.snapshot();

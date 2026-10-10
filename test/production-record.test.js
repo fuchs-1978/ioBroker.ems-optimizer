@@ -44,7 +44,7 @@ test('quiet polls reduce persisted full decisions while a dip restores exact pre
         h.shadow.captureProduction('power', h.states.get('power'), previous);
         h.shadow.productionRecord();
     }
-    await h.flush(); assert.equal(h.records().length, 1, '100 routine polls do not write 100 full frames');
+    await h.flush(); assert.ok(h.records().length <= 11, '100 routine polls share one-second raw batches instead of 100 full frames');
     const before = h.states.get('power'); h.advance(1); h.put('power', 0);
     h.shadow.captureProduction('power', h.states.get('power'), before); await h.flush();
     const decoded = h.records();
@@ -61,7 +61,7 @@ test('quiet polls reduce persisted full decisions while a dip restores exact pre
     h.shadow.captureProduction('power', h.states.get('power'), previous);
     h.advance(1000); h.shadow.productionRecord(); await h.flush();
     const restart = h.records().flatMap(r => r.event?.type === 'recording.sources' ? r.event.samples : [])
-        .find(s => s.id === 'power' && s.state.val === 1.38);
+        .find(s => s.id === 'power' && s.state.val === 1.38 && s.state.ts === previous.ts + 1000);
     assert.ok(restart, 'real restart is preserved in the bounded dense source batch');
     assert.equal(restart.state.ts, previous.ts + 1000);
     assert.equal(restart.receivedAt, previous.ts + 1000);
@@ -211,7 +211,7 @@ test('Master OFF retains pending shutdown ACK and the final electrical-off edge'
     h.own('Devices.Wallbox0.OutputOwned', false);
     h.shadow.captureProduction('ems.0.Devices.Wallbox0.OutputOwned',
         h.states.get('ems.0.Devices.Wallbox0.OutputOwned'), previous); await h.flush();
-    assert.equal(h.records().at(-1).event.type, 'output.state');
+    assert.ok(h.records().some(r => r.event?.type === 'output.state' && r.event.id.endsWith('.OutputOwned')));
     assert.equal(h.records().at(-1).production.wallboxes[0].OutputOwned, false);
 });
 
@@ -402,8 +402,9 @@ test('unchanged source polls retain new timestamps, real ACK/q/NULL edges and ev
     await h.flush();
     const all = h.records();
     assert.deepEqual(all.map(x => x.recordSequence), all.map((_, i) => i + 1));
-    const r = all.filter(x => x.event?.type !== 'recording.pre_event');
-    assert.equal(r.length, 10, 'unchanged quiet poll is buffered; quality edges and commands survive');
+    const r = all.filter(x => !['recording.pre_event', 'recording.sources'].includes(x.event?.type));
+    assert.equal(r.length, 10, 'quality edges and commands survive alongside additional quiet raw batches');
+    assert.ok(all.some(x => x.event?.type === 'recording.sources'));
     assert.ok(all.some(x => x.event?.samples?.some(s => s.state?.ts === 2000001)));
     assert.equal(r[1].event.state.ack, false);
     assert.equal(r[3].event.state.q, 64);
