@@ -73,3 +73,29 @@ test('normal minute-scale temperature updates do not force dense windows; late u
         {maxGapMs: 120000}).reason, 'quality-edge');
     assert.equal(new Sampler().observe('grid', state(0, 61000), previous, 61000).reason, 'source-gap');
 });
+
+test('statistics capacity does not discard raw source samples or claim raw loss', () => {
+    const s = new Sampler({maxSources: 1});
+    s.observe('first', state(1, 1000), state(1, 999), 1000);
+    const raw = state(null, 2000, {ack: false, q: 64, lc: 1500});
+    const observation = s.observe('second', raw, null, 2000);
+    assert.deepEqual(observation.sample.state, raw);
+    assert.equal(observation.sample.sampleSequence, 2);
+    assert.equal(observation.reason, 'statistics-source-limit');
+    s.markDelivered(2);
+    assert.equal(s.lost, 0);
+    const interval = s.summary(31000);
+    assert.equal(interval.statisticsLost, 1);
+    assert.equal(interval.bufferLost, 0);
+    assert.deepEqual(interval.sources.map(source => source.id), ['first']);
+});
+
+test('evicting an already delivered source sample does not claim an unrecorded raw gap', () => {
+    const s = new Sampler({maxSamples: 1});
+    const first = s.observe('source', state(1, 1000), null, 1000);
+    s.markDelivered(first.sample.sampleSequence);
+    s.observe('source', state(2, 2000), state(1, 1000), 2000);
+    assert.equal(s.lost, 0);
+    s.observe('source', state(3, 3000), state(2, 2000), 3000);
+    assert.equal(s.lost, 1, 'a sample without a delivery marker remains an explicit loss');
+});

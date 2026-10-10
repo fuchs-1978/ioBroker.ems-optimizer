@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.70",
+    "version": "0.17.0-alpha.71",
     "news": {
+      "0.17.0-alpha.71": {
+        "en": "Record selected original source observations continuously, retain complete checkpoint chains in a bounded durable journal until closed and independently confirmed in SQL, and use sequential bounded history reads. Unknown backend completion stays blocked across restart. Optional pump source IDs remain unconfigured and read-only; operational acceptance remains open.",
+        "de": "Ausgewählte Originalquellen kontinuierlich aufzeichnen, vollständige Checkpointketten bis zum Abschluss und unabhängigen SQL-Nachweis in einem begrenzten dauerhaften Journal erhalten und Historie sequenziell begrenzt lesen. Unbekannter Backendabschluss bleibt über Neustarts gesperrt. Optionale Pumpenquellen bleiben unkonfiguriert und rein lesend; die reale Abnahme bleibt offen."
+      },
       "0.17.0-alpha.70": {
         "en": "Use coherent SunEnergy head data automatically for planning, expose effective device limits, and optionally derive capacity from online packs with an explicit pack size. Unknown data no longer falls back to a fictitious battery SOC in head mode.",
         "de": "Zusammenhaengende SunEnergy-Kopfdaten automatisch in der Prognose nutzen, wirksame Geraetegrenzen anzeigen und Kapazitaet optional aus Online-Packs mit ausdruecklicher Packgroesse ableiten. Unbekannte Kopfdaten ergeben keinen erfundenen Ersatz-SoC."
@@ -68,6 +72,7 @@
     "wallboxParallelChargingEnabled": true,
     "historyInstance": "",
     "historyDays": 84,
+    "diagnosticPumpSourcesJson": "[]",
     "pvPowerId": "",
     "gridImportId": "",
     "gridExportId": "",
