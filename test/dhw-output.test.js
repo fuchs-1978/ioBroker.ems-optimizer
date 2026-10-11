@@ -873,3 +873,106 @@ test('combined EHZ accepts three armed wallboxes only in alpha mode', () => {
     assert.equal(vm.runInContext('dhwCombinedProductionState().allowed',ctx),false);
 });
 
+
+
+test('bounded stable resistive underresponse witnesses a phase without demanding exact nominal watts', () => {
+    const h = outputHarness();
+    h.run("reserveHeaterCommand('MyPV_DHW', 3000, ['o1','o2','o3'], 3000)");
+    for (let i=0;i<3;i++) {
+        h.advance(i ? 8000 : 1000); h.put('o1', 2800);
+        h.run("refreshHeaterReservation('MyPV_DHW', ['o1','o2','o3'], 3000)");
+    }
+    assert.ok(JSON.parse(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservationState_JSON').val).seenAt[0]>0);
+    h.advance(1000);h.run("reserveHeaterCommand('MyPV_DHW', 0, ['o1','o2','o3'], 3000); heaterZeroWriteCompleted('MyPV_DHW', ['o1','o2','o3'], 3000)");
+    h.advance(1000);for(const id of ['o1','o2','o3'])h.put(id,0);h.put('setpoint',null);
+    h.run("refreshHeaterReservation('MyPV_DHW', ['o1','o2','o3'], 3000)");
+    assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservedPower_W').val,0);
+});
+
+for (const scenario of ['single sample','unchanged ts','large underresponse','oscillation','NULL','bad q','no ACK','gap','new rise','restart']) {
+    test(`bounded physical plateau does not invent proof: ${scenario}`, () => {
+        const h=outputHarness();h.run("reserveHeaterCommand('MyPV_DHW', 3000, ['o1','o2','o3'], 3000)");
+        let firstAt;
+        for(let i=0;i<3;i++) {
+            h.advance(i ? scenario==='gap' ? 31000 : 8000 : 1000);
+            const at=2001000+i*8000;firstAt??=at;
+            h.put('o1',scenario==='large underresponse'?1500:scenario==='NULL'?null:scenario==='oscillation'&&i%2?2700:2850,
+                scenario==='unchanged ts'?{ts:firstAt}:scenario==='bad q'?{q:64}:scenario==='no ACK'?{ack:false}:{});
+            if(scenario!=='single sample'||i===0)h.run("refreshHeaterReservation('MyPV_DHW', ['o1','o2','o3'], 3000)");
+            if(i===1&&scenario==='new rise')h.run("reserveHeaterCommand('MyPV_DHW', 1000, ['o1','o2','o3'], 3000); reserveHeaterCommand('MyPV_DHW', 3000, ['o1','o2','o3'], 3000)");
+            if(i===1&&scenario==='restart')h.run('heaterReservationRecords.clear(); heaterReservationEvidence.clear()');
+        }
+        assert.equal(JSON.parse(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservationState_JSON').val).seenAt[0],0);
+    });
+}
+
+function confirmedZeroStep(h, advance=8000, overrides={}) {
+    h.advance(advance);
+    for(const id of ['o1','o2','o3'])h.put(id,0,overrides[id]||{});
+    h.put('setpoint',0,overrides.setpoint||{});
+    if(overrides.connection)h.put('connection',true,overrides.connection);
+    h.run("refreshHeaterReservation('MyPV_DHW', ['o1','o2','o3'], 3000)");
+}
+function unseenStopped(h) {
+    h.run("reserveHeaterCommand('MyPV_DHW', 3000, ['o1','o2','o3'], 3000)");h.advance(1000);
+    h.run("reserveHeaterCommand('MyPV_DHW', 0, ['o1','o2','o3'], 3000); heaterZeroWriteCompleted('MyPV_DHW', ['o1','o2','o3'], 3000)");
+}
+
+test('unseen old reserve releases only after fresh zero setpoint ACK and sustained new zero measurements on all phases',()=>{
+    const h=outputHarness();unseenStopped(h);
+    confirmedZeroStep(h,1000);assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservedPower_W').val,3000);
+    confirmedZeroStep(h);assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservedPower_W').val,3000);
+    confirmedZeroStep(h);assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservedPower_W').val,0);
+    assert.match(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservationStatus').val,/Null-Sollrueckmeldung/);
+    assert.equal(h.writes.length,0,'proof must not send a physical command');
+});
+
+for (const scenario of ['NULL setpoint','unacknowledged setpoint','setpoint before zero','bad phase q','no phase ACK','one phase live','unchanged samples','missing completion','new positive','long gap','mapping changed','bad connection']) {
+    test(`zero-ACK recovery preserves protective reserve: ${scenario}`,()=>{
+        const h=outputHarness();unseenStopped(h);
+        for(let i=0;i<3;i++) {
+            const overrides={};
+            if(scenario==='NULL setpoint')overrides.setpoint={val:null};
+            if(scenario==='unacknowledged setpoint')overrides.setpoint={ack:false};
+            if(scenario==='setpoint before zero')overrides.setpoint={ts:2000000};
+            if(scenario==='bad phase q')overrides.o3={q:64};
+            if(scenario==='no phase ACK')overrides.o2={ack:false};
+            if(scenario==='one phase live')overrides.o2={val:100};
+            if(scenario==='unchanged samples')for(const id of ['o1','o2','o3'])overrides[id]={ts:2002000};
+            if(scenario==='bad connection')overrides.connection={val:false};
+            if(scenario==='missing completion')h.run("heaterReservationRecord('MyPV_DHW',['o1','o2','o3'],3000).zeroWriteAt=0");
+            if(scenario==='new positive'&&i===1)h.run("reserveHeaterCommand('MyPV_DHW',3000,['o1','o2','o3'],3000)");
+            if(scenario==='mapping changed')h.run("CFG.dp.myPvDhwSetpoint='anotherSink'");
+            confirmedZeroStep(h,i?scenario==='long gap'?31000:8000:1000,overrides);
+        }
+        assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservedPower_W').val,3000);
+    });
+}
+
+for (const invalid of [{q:null},{q:64},{ack:false}]) {
+    test(`zero-ACK plateau rejects missing or invalid quality: ${JSON.stringify(invalid)}`,()=>{
+        const h=outputHarness();unseenStopped(h);
+        for(let i=0;i<3;i++)confirmedZeroStep(h,i?8000:1000,{setpoint:invalid});
+        assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservedPower_W').val,3000);
+    });
+}
+
+test('zero-ACK proof cannot borrow its plateau across an interrupted process or a longer configured reaction deadline',()=>{
+    for(const scenario of ['restart','long timeout']) {
+        const h=outputHarness();unseenStopped(h);
+        if(scenario==='long timeout')h.own('Config.DHWSettleTimeout_s',60);
+        confirmedZeroStep(h,1000);confirmedZeroStep(h);
+        if(scenario==='restart')h.run('heaterReservationRecords.clear();heaterReservationEvidence.clear()');
+        confirmedZeroStep(h);
+        assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservedPower_W').val,3000);
+    }
+});
+
+test('shared heating reservation accepts a bounded stable stage deviation then requires a later physical zero',()=>{
+    const h=outputHarness();h.nativeConfig.heatingSetpointId='heatingSetpoint';h.nativeConfig.heatingConnectionId='connection';
+    h.run("reserveHeaterCommand('MyPV_Heating',2000,['o1','o2','o3'],2000)");
+    for(let i=0;i<3;i++) {h.advance(i?8000:1000);h.put('o1',1800);h.run("refreshHeaterReservation('MyPV_Heating',['o1','o2','o3'],2000)");}
+    h.advance(1000);h.run("reserveHeaterCommand('MyPV_Heating',0,['o1','o2','o3'],2000);heaterZeroWriteCompleted('MyPV_Heating',['o1','o2','o3'],2000)");
+    h.advance(1000);for(const id of ['o1','o2','o3'])h.put(id,0);h.run("refreshHeaterReservation('MyPV_Heating',['o1','o2','o3'],2000)");
+    assert.equal(h.states.get('ems.0.Devices.MyPV_Heating.OutputReservedPower_W').val,0);
+});

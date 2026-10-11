@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.73",
+    "version": "0.17.0-alpha.74",
     "news": {
+      "0.17.0-alpha.74": {
+        "de": "EHZ-Leistungsreservierungen werden nach stabil belegter begrenzter Heizstababweichung und späterer Reduktion freigegeben; alternative Nullfreigabe benötigt frischen Soll-ACK und wiederholten elektrischen Stillstand.",
+        "en": "Release heater reservations after stable bounded resistive underresponse and later physical reduction; alternative zero release requires fresh setpoint ACK and repeated electrical standstill."
+      },
       "0.17.0-alpha.73": {
         "de": "Lokale Diagnosepuffer-Frist von 24 Stunden mit dauerhaften Verlustmarkierungen, vollständiger Kettenbereinigung und Alters-/Abbaudiagnose.",
         "en": "Bound local diagnostic retention to 24 hours with durable explicit loss markers, whole-chain cleanup and age/progress diagnostics."

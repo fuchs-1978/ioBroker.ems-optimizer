@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.73**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.74**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -802,6 +802,13 @@ Bereits vorhandene SQL-Skalarhistorien, Retention und Anlagenkonfiguration werde
 Ab alpha.67 akzeptiert die zentrale Wallbox-Phasenbudgetprüfung dieselbe bestehende Leerlauftoleranz wie der Wallbox-Ausgang: bestätigte, frische, qualitativ gültige Leistungswerte zwischen −0,02 und 0 kW werden intern als 0 W behandelt. Die originale negative Rohmessung bleibt in der Diagnose erhalten. Größere negative Werte, fehlende/ungültige Werte, schlechtes q, fehlendes ACK und veraltete Quellen bleiben gesperrt. Diese Toleranz gilt für Wallboxleistung; die Verträge anderer Quellen werden dadurch nicht geändert.
 
 ## Changelog und historische Detaildokumentation
+
+### 0.17.0-alpha.74 (2026-10-11)
+
+- EHZ-Reservierungen verlangen nicht mehr zwingend exakt die nominelle elektrische Stufenleistung: mindestens drei frische Messungen einer stabilen positiven Stellwirkung über mindestens 15 Sekunden (oder die längere konfigurierte Rückmeldefrist) dürfen eine begrenzte Unterantwort belegen. Toleranz je Phase höchstens konfigurierte Toleranz, 300 W und 15 % des reservierten Auftrags. Einzelwerte, starke Unterantwort, Schwankungen, Zeitlücken und ungültige Qualität reichen nicht. Die nominelle Reserve bleibt bis zur später belegten Rücknahme bestehen.
+- Eine alte, zuvor nicht elektrisch bestätigte Reserve kann alternativ mit frischem bestätigtem Null-Sollwert nach abgeschlossenem Nulltransport und mindestens drei neuen Nullmessungen auf allen drei Phasen über dieselbe Mindestfrist freigegeben werden. NULL, bloßer Schreibabschluss und Zeitablauf allein reichen weiterhin nicht. Neuauftrag, Zuordnungswechsel, Neustart und ungültige Quellen verwerfen den neuen Nachweis.
+- `OutputReservationState_JSON` unterscheidet nominell gemessene Stellwirkung, stabil begrenzte Unterantwort und die alternative Nullfreigabe samt Zeitgrenzen. Diese Prüfung sendet selbst keine Aktorbefehle. HA-/§14a-/Temperatur-/9-kW-Grenzen bleiben bestehen.
+- Der beobachtete Altbestand von 3.000 W mit `seenAt=[0,0,0]` wird nicht pauschal gelöscht: bei NULL-Sollrückmeldung fehlt weiterhin ein automatischer Rücknahmenachweis. Ziel ist mehr nutzbarer Eigenverbrauch nach belastbarer Rückmeldung, keine Garantie von 100 % Eigenverbrauch. [Releasehinweise](docs/release-0.17.0-alpha.74.md).
 
 ### 0.17.0-alpha.73 (2026-10-11)
 
