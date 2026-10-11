@@ -532,3 +532,33 @@ test('an observed completed SQL error narrows its next query without retrying in
     assert.equal(h.confirmations.length, 0, 'an error or empty response cannot delete an original');
     h.delivery.stop();
 });
+
+test('local expiry removes delivery tracking and replay references without SQL success or a fast maintenance loop', async () => {
+    const h = fixture(1, {readHistory: async () => ({result: [], backendCompletionObserved: true})});
+    await h.delivery.tick({force: true});
+    const id = h.entries[0].id;
+    h.delivery.replayIds.add(id);
+    h.delivery.replayGroups.set(id, {pending: new Set([id]), requests: 1});
+    let maintenance = 0;
+    h.journal.expireOldGroups = async () => {maintenance++; h.stored.delete(id); return [id];};
+    await h.delivery.tick({force: true});
+    assert.equal(h.delivery.entries.size, 0);
+    assert.equal(h.delivery.identities.size, 0);
+    assert.equal(h.delivery.replayIds.size, 0);
+    assert.equal(h.delivery.replayGroups.size, 0);
+    assert.equal(h.confirmations.length, 0);
+    assert.equal(h.delivery.health().sqlConfirmed, 0);
+    await h.delivery.tick({force: true});
+    assert.equal(maintenance, 1);
+    h.advance(60000); await h.delivery.tick({force: true});
+    assert.equal(maintenance, 2);
+});
+
+test('local expiry does not race an active verification or an unresolved publication', async () => {
+    const h = fixture(); let maintenance = 0;
+    h.journal.expireOldGroups = async () => {maintenance++; return [];};
+    h.delivery.verificationBusy = true;
+    await h.delivery.tick({force: true});assert.equal(maintenance, 0);
+    h.delivery.verificationBusy = false;h.delivery.publicationBlocked = true;
+    await h.delivery.tick({force: true});assert.equal(maintenance, 0);
+});
