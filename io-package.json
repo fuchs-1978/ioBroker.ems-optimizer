@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.74",
+    "version": "0.17.0-alpha.75",
     "news": {
+      "0.17.0-alpha.75": {
+        "en": "Back off diagnostic SQL traffic after observed database errors; bound recovery probes and slow shadow scalar publication without changing live control.",
+        "de": "SQL-Diagnoseverkehr bei beobachteten Datenbankfehlern pausieren; Wiederanlauf begrenzen und Schatten-Skalarpublikation verlangsamen, ohne Live-Regelung zu ändern."
+      },
       "0.17.0-alpha.74": {
         "de": "EHZ-Leistungsreservierungen werden nach stabil belegter begrenzter Heizstababweichung und späterer Reduktion freigegeben; alternative Nullfreigabe benötigt frischen Soll-ACK und wiederholten elektrischen Stillstand.",
         "en": "Release heater reservations after stable bounded resistive underresponse and later physical reduction; alternative zero release requires fresh setpoint ACK and repeated electrical standstill."
@@ -75,7 +79,8 @@
       {
         "admin": ">=6.13.16"
       }
-    ]
+    ],
+    "logTransporter": true
   },
   "native": {
     "observerOnly": true,

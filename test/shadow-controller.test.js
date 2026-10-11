@@ -1444,3 +1444,29 @@ test('productive SQL record carries bounded central and complete per-vehicle all
     assert.ok(!JSON.stringify(record.production.control.parallelWallboxes).includes('UNEXPECTED-KEY'));
 });
 
+
+
+test('SQL degradation slows shadow scalars and health while leaving computation and record path separate', async () => {
+    let now = 100000;
+    const writes = [];
+    const adapter = {namespace: 'ems.0', sqlDiagnosticBackoff: {degraded: true},
+        setCompatState: async (id, value) => writes.push({id, value})};
+    const shadow = new ShadowController(adapter, {now: () => now});
+    const frame = cycle => {
+        shadow.beginScalarFrame(); shadow.publish('Valid', false);
+        shadow.publish('LastUpdate', now); shadow.publish('CycleId', cycle); shadow.finishScalarFrame();
+    };
+    frame(1); await new Promise(resolve => setImmediate(resolve));
+    frame(2); shadow.publishRecordHealth();
+    const firstCount = writes.length;
+    now += 1000; frame(3); shadow.publishRecordHealth();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(writes.length, firstCount);
+    assert.equal(shadow.scalarSkippedCycles, 2);
+    now += 29000; frame(4); shadow.publishRecordHealth();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.deepEqual(writes.filter(w => w.id.endsWith('.ScalarCycleId')).map(w => w.value), [1, 4]);
+    adapter.sqlDiagnosticBackoff.degraded = false;
+    now += 1000; frame(5); await new Promise(resolve => setImmediate(resolve));
+    assert.equal(writes.filter(w => w.id.endsWith('.ScalarCycleId')).at(-1).value, 5);
+});
