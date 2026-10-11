@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.72",
+    "version": "0.17.0-alpha.73",
     "news": {
+      "0.17.0-alpha.73": {
+        "de": "Lokale Diagnosepuffer-Frist von 24 Stunden mit dauerhaften Verlustmarkierungen, vollständiger Kettenbereinigung und Alters-/Abbaudiagnose.",
+        "en": "Bound local diagnostic retention to 24 hours with durable explicit loss markers, whole-chain cleanup and age/progress diagnostics."
+      },
       "0.17.0-alpha.72": {
         "en": "Avoid false recorder quality edges from absent versus zero q, pause futile writes at journal capacity with explicit batched loss counters and a fresh recovery snapshot, and narrow failed SQL verification windows only after observed backend completion. Unknown SQL completion remains fenced; no actuator changes.",
         "de": "Falsche Diagnose-Qualitätswechsel zwischen fehlendem q und q=0 vermeiden; aussichtslose Schreibversuche bei vollem Journal mit expliziten Verlustzählern pausieren und mit neuem Snapshot fortsetzen. Fehlgeschlagene SQL-Nachweisfenster nur nach beobachtetem Backendabschluss verkleinern. Unbekannter SQL-Abschluss bleibt gesperrt; keine Regleränderung."
@@ -598,4 +602,3 @@
     }
   ]
 }
-
