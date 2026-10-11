@@ -803,6 +803,12 @@ Ab alpha.67 akzeptiert die zentrale Wallbox-Phasenbudgetprüfung dieselbe besteh
 
 ## Changelog und historische Detaildokumentation
 
+### 0.17.0-alpha.75 (2026-10-11)
+
+Bei frischen Fehlerlogs der konfigurierten SQL-Instanz wird eigener Diagnoseverkehr begrenzt: 60–300 Sekunden Pause, danach kleine sequenzielle Wiederanlaufversuche. Schatten-Skalarwerte werden während der Störung höchstens alle 30 Sekunden veröffentlicht; produktive Geräte- und Schutzregelung bleiben unverändert. Eine erfolgreiche Verbindung oder ein alter SQL-Datensatz beweist keine Erholung. Erst ein seit dem Fehler frisch und unabhängig nachgewiesener Originalrecord beendet die Drosselung. `Debug.Shadow.RecordSQLLastError` enthält dazu JSON `{error, backoff}`. Bereits bestehende lokale Puffer- und Aufzeichnungslücken bleiben ausdrücklich unbekannt. Die Änderung behebt keine Dateihandlegrenze des Datenbankservers und begrenzt nicht sämtliche anderen SQL-Quellen.
+
+Details: [Releasehinweise alpha.75](docs/release-0.17.0-alpha.75.md).
+
 ### 0.17.0-alpha.74 (2026-10-11)
 
 - EHZ-Reservierungen verlangen nicht mehr zwingend exakt die nominelle elektrische Stufenleistung: mindestens drei frische Messungen einer stabilen positiven Stellwirkung über mindestens 15 Sekunden (oder die längere konfigurierte Rückmeldefrist) dürfen eine begrenzte Unterantwort belegen. Toleranz je Phase höchstens konfigurierte Toleranz, 300 W und 15 % des reservierten Auftrags. Einzelwerte, starke Unterantwort, Schwankungen, Zeitlücken und ungültige Qualität reichen nicht. Die nominelle Reserve bleibt bis zur später belegten Rücknahme bestehen.

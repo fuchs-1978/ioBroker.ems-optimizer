@@ -24,6 +24,7 @@ const batteryTemperatureReserve = require("./lib/battery-temperature-reserve");
 const sunEnergyHeads = require("./lib/sunenergy-heads");
 const DecisionRecordJournal = require("./lib/decision-record-journal");
 const DecisionRecordDelivery = require("./lib/decision-record-delivery");
+const SqlDiagnosticBackoff = require("./lib/sql-diagnostic-backoff");
 const {buildDiagnosticSourceContract} = require("./lib/diagnostic-source-contract");
 
 class EmsOptimizer extends utils.Adapter {
@@ -65,8 +66,10 @@ class EmsOptimizer extends utils.Adapter {
         this.shadowInitialization = null;
         this.decisionRecordJournal = null;
         this.decisionRecordDelivery = null;
+        this.sqlDiagnosticBackoff = new SqlDiagnosticBackoff();
         this.debugInitialization = null;
         this.debugWarningAt = null;
+        this.on("log", entry => this.sqlDiagnosticBackoff.observeLog(entry, String(this.config.historyInstance || "").trim()));
         this.on("ready", this.onReady.bind(this));
         this.on("stateChange", this.onStateChange.bind(this));
         this.on("objectChange", id => this.outputMetadata.changed(id));
@@ -75,6 +78,7 @@ class EmsOptimizer extends utils.Adapter {
 
     async onReady() {
         try {
+            if (typeof this.requireLog === "function") this.requireLog(true);
             await this.initializeAdapter();
         } catch (error) {
             this.log.error(`EMS startup failed; stopping owned outputs: ${error.message}`);
@@ -218,6 +222,8 @@ class EmsOptimizer extends utils.Adapter {
             if (this.unloading) { await journal.close(); return; }
             this.decisionRecordJournal = journal;
             this.decisionRecordDelivery = new DecisionRecordDelivery({journal, publishIntervalMs: 5000,
+                backoff: this.sqlDiagnosticBackoff, maxPublishPerTick: 4, maxQueriesPerTick: 1,
+                maxBatchBytes: 512 * 1024,
                 publish: async payload => {
                     const id = `${this.namespace}.Debug.Shadow.DecisionRecord`;
                     await this.setCompatState(id, payload, true);
@@ -972,6 +978,7 @@ class EmsOptimizer extends utils.Adapter {
     }
 
     async prepareUnload({allowHandoff = true} = {}) {
+        if (typeof this.requireLog === "function") this.requireLog(false);
         this.runShadow('beginShutdown');
         this.unloading = true;
         this.decisionRecordDelivery?.stop();

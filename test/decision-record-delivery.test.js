@@ -562,3 +562,70 @@ test('local expiry does not race an active verification or an unresolved publica
     h.delivery.verificationBusy = false;h.delivery.publicationBlocked = true;
     await h.delivery.tick({force: true});assert.equal(maintenance, 0);
 });
+
+test('observed SQL failure pauses publication and verification even under forced ticks; originals retained', async () => {
+    const Backoff = require('../lib/sql-diagnostic-backoff');
+    let clock = 100000;
+    const backoff = new Backoff({now: () => clock});
+    const h = fixture(2, {now: () => clock, backoff, readHistory: async () =>
+        ({error: 'Out of resources (Errcode: 24)', backendCompletionObserved: true})});
+    await h.delivery.tick({force: true});
+    const before = h.delivery.health();
+    assert.equal(backoff.paused(), true);
+    for (let n = 0; n < 20; n++) await h.delivery.tick({force: true});
+    assert.equal(h.delivery.health().queryCount, before.queryCount);
+    assert.equal(h.delivery.health().publicationAttempts, before.publicationAttempts);
+    assert.equal(h.stored.size, 2);
+    clock += 60000;
+    await h.delivery.tick({force: true});
+    assert.equal(h.delivery.health().queryCount, before.queryCount + 1);
+    assert.equal(backoff.health().failures, 2);
+});
+
+test('SQL log pause suppresses writes before any history request; exact proof is required for recovery', async () => {
+    const Backoff = require('../lib/sql-diagnostic-backoff');
+    let clock = 100000;
+    const backoff = new Backoff({now: () => clock});
+    let h;
+    h = fixture(4, {now: () => clock, backoff, readHistory: async () =>
+        ({result: h.publications.map(val => ({ts: clock, val})), backendCompletionObserved: true})});
+    backoff.fail('sql-open-files-error-24');
+    await h.delivery.tick({force: true});
+    assert.equal(h.publications.length, 0); assert.equal(h.queries.length, 0);
+    clock += 60000; h.advance(60000);
+    await h.delivery.tick({force: true});
+    assert.equal(h.publications.length, 1);
+    assert.equal(h.confirmations.length, 1);
+    assert.equal(backoff.degraded, false);
+    assert.equal(h.stored.size, 3);
+});
+
+test('a completed empty history response does not prove database recovery or erase originals', async () => {
+    const Backoff = require('../lib/sql-diagnostic-backoff');
+    let clock = 100000;
+    const backoff = new Backoff({now: () => clock});
+    const h = fixture(4, {now: () => clock, backoff,
+        readHistory: async () => ({result: [], backendCompletionObserved: true})});
+    backoff.fail(); clock += 60000;
+    await h.delivery.tick({force: true});
+    await h.delivery.tick({force: true});
+    assert.equal(h.publications.length, 1);
+    assert.equal(h.delivery.health().queryCount, 1);
+    assert.equal(backoff.degraded, true); assert.equal(h.stored.size, 4);
+});
+
+
+test('cooldown cannot override unknown backend completion or resume publications behind its fence', async () => {
+    const Backoff = require('../lib/sql-diagnostic-backoff');
+    let clock = 100000;
+    const backoff = new Backoff({now: () => clock});
+    const h = fixture(8, {now: () => clock, backoff, maxPublishPerTick: 1,
+        readHistory: async () => ({error: 'connector failure', backendCompletionObserved: false})});
+    await h.delivery.tick({force: true});
+    assert.equal(h.delivery.health().backendBlocked, true);
+    clock += 600000; await h.delivery.tick({force: true});
+    assert.equal(h.publications.length, 1);
+    assert.equal(h.delivery.health().queryCount, 1);
+    assert.equal(h.stored.size, 8);
+    assert.equal(backoff.degraded, true);
+});
