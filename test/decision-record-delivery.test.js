@@ -629,3 +629,21 @@ test('cooldown cannot override unknown backend completion or resume publications
     assert.equal(h.stored.size, 8);
     assert.equal(backoff.degraded, true);
 });
+
+test('degraded verification cadence applies across different queued windows, including forced ticks', async () => {
+    const Backoff = require('../lib/sql-diagnostic-backoff');
+    let clock = 100000;
+    const backoff = new Backoff({now: () => clock});
+    const h = fixture(4, {now: () => clock, backoff,
+        readHistory: async () => ({result: [], backendCompletionObserved: true})});
+    backoff.fail(); clock += 60000; h.advance(60000);
+    await h.delivery.tick({force: true});
+    const entry = [...h.delivery.entries.values()][0];
+    h.delivery.addWindow(clock + 2000, clock + 3000, entry.id);
+    for (let i = 0; i < 10; i++) {clock += 1000; await h.delivery.tick({force: true});}
+    assert.equal(h.delivery.health().queryCount, 1);
+    clock += 20000; h.advance(30000);
+    await h.delivery.tick({force: true});
+    assert.equal(h.delivery.health().queryCount, 2);
+    assert.equal(backoff.degraded, true);
+});
