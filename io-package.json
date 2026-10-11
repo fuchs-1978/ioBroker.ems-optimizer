@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.71",
+    "version": "0.17.0-alpha.72",
     "news": {
+      "0.17.0-alpha.72": {
+        "en": "Avoid false recorder quality edges from absent versus zero q, pause futile writes at journal capacity with explicit batched loss counters and a fresh recovery snapshot, and narrow failed SQL verification windows only after observed backend completion. Unknown SQL completion remains fenced; no actuator changes.",
+        "de": "Falsche Diagnose-Qualitätswechsel zwischen fehlendem q und q=0 vermeiden; aussichtslose Schreibversuche bei vollem Journal mit expliziten Verlustzählern pausieren und mit neuem Snapshot fortsetzen. Fehlgeschlagene SQL-Nachweisfenster nur nach beobachtetem Backendabschluss verkleinern. Unbekannter SQL-Abschluss bleibt gesperrt; keine Regleränderung."
+      },
       "0.17.0-alpha.71": {
         "en": "Record selected original source observations continuously, retain complete checkpoint chains in a bounded durable journal until closed and independently confirmed in SQL, and use sequential bounded history reads. Unknown backend completion stays blocked across restart. Optional pump source IDs remain unconfigured and read-only; operational acceptance remains open.",
         "de": "Ausgewählte Originalquellen kontinuierlich aufzeichnen, vollständige Checkpointketten bis zum Abschluss und unabhängigen SQL-Nachweis in einem begrenzten dauerhaften Journal erhalten und Historie sequenziell begrenzt lesen. Unbekannter Backendabschluss bleibt über Neustarts gesperrt. Optionale Pumpenquellen bleiben unkonfiguriert und rein lesend; die reale Abnahme bleibt offen."
@@ -594,3 +598,4 @@
     }
   ]
 }
+

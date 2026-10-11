@@ -597,7 +597,7 @@ class EmsOptimizer extends utils.Adapter {
     setCompatState(id, value, ack = true) {
         const previous = this.stateCache.get(id);
         const now = Math.max(Date.now(), Number(previous?.ts || 0) + 1);
-        const published = {val: value, ack: Boolean(ack), ts: now,
+        const published = {val: value, ack: Boolean(ack), q: 0, ts: now,
             lc: previous?.val === value ? previous.lc ?? previous.ts ?? now : now};
         this.stateCache.set(id, published);
         const relative = this.ownRelative(id);
@@ -1049,3 +1049,4 @@ class EmsOptimizer extends utils.Adapter {
 
 if (require.main !== module) module.exports = options => new EmsOptimizer(options);
 else new EmsOptimizer();
+

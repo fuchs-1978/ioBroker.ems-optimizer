@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.71**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.72**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -802,6 +802,13 @@ Bereits vorhandene SQL-Skalarhistorien, Retention und Anlagenkonfiguration werde
 Ab alpha.67 akzeptiert die zentrale Wallbox-Phasenbudgetprüfung dieselbe bestehende Leerlauftoleranz wie der Wallbox-Ausgang: bestätigte, frische, qualitativ gültige Leistungswerte zwischen −0,02 und 0 kW werden intern als 0 W behandelt. Die originale negative Rohmessung bleibt in der Diagnose erhalten. Größere negative Werte, fehlende/ungültige Werte, schlechtes q, fehlendes ACK und veraltete Quellen bleiben gesperrt. Diese Toleranz gilt für Wallboxleistung; die Verträge anderer Quellen werden dadurch nicht geändert.
 
 ## Changelog und historische Detaildokumentation
+
+### 0.17.0-alpha.72 (2026-10-11)
+
+- Gleichwertige gültige Qualitätswerte (fehlendes `q` und `q=0`) lösen keine künstlichen Ereignisfenster aus; originale Quellenmetadaten bleiben erhalten.
+- Bei voller lokaler Journal-Kapazität pausieren aussichtslose Append-/Encode-Versuche. `Debug.Shadow.RecordBackpressure` zeigt die Pause; fehlende Records bleiben durch Sequenz-/Verlustzähler unbekannt. Verlustmeldungen werden gebündelt. Nach unabhängig freigewordenem Platz startet die Aufzeichnung mit einem neuen Snapshot.
+- Ein abgeschlossener SQL-Fehler verkleinert das nächste Nachweisfenster und Limit. Eine bloße Zeitüberschreitung ohne Backend-Abschluss erlaubt weiterhin keine neue Abfrage, auch nicht nach Neustart.
+- Keine Änderung von Leistungsregelung, Freigaben, SQL-Konfiguration oder Journalgröße. Bereits fehlende Historie wird nicht rekonstruiert oder als beobachtet ausgegeben. [Releasehinweise](docs/release-0.17.0-alpha.72.md).
 
 ### 0.17.0-alpha.71 (2026-10-10)
 
@@ -2698,3 +2705,4 @@ Adapters sind.
 ## Lizenz
 
 MIT
+

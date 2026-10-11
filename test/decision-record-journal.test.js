@@ -503,3 +503,15 @@ test('unreadable or conflicting verification metadata remains a restart blocker,
         verificationId: query.verificationId, evidence: 'known callback'}), /match/i);
     await restarted.close();
 });
+
+
+
+test('batched backpressure losses survive restart without inventing stored records', async t => {
+    const dir = await directory(t), first = new DecisionRecordJournal({directory: dir});
+    await first.initialize(); first.reportLoss('capacity pause', 500); await first.close();
+    const next = new DecisionRecordJournal({directory: dir}); await next.initialize();
+    assert.equal(next.health().rejectedRecords, 500);
+    assert.equal(next.health().records, 0);
+    assert.throws(() => next.reportLoss('bad count', 0), /positive/);
+    await next.close();
+});

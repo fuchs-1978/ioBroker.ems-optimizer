@@ -513,3 +513,22 @@ test('an explicitly observed local no-SQL branch cancels an unissued intent with
     assert.equal(h.delivery.health().lastQuery.backendCompletionObserved, false);
     assert.equal(h.stored.size, 1);
 });
+
+
+
+test('an observed completed SQL error narrows its next query without retrying inside the failed tick', async () => {
+    let failed = false;
+    const h = fixture(1, {readHistory: async request => {
+        if (!failed) {failed = true; return {error: 'SQL read failed', backendCompletionObserved: true};}
+        h.queries.push(request);
+        return {result: [], backendCompletionObserved: true};
+    }});
+    await h.delivery.tick();
+    assert.equal(h.delivery.health().backendBlocked, false);
+    assert.equal(h.delivery.health().queryCount, 1);
+    h.advance(100); await h.delivery.tick();
+    assert.ok(h.queries.length > 0);
+    assert.ok(h.queries.every(q => q.end - q.start <= 1000 && q.limit <= 16));
+    assert.equal(h.confirmations.length, 0, 'an error or empty response cannot delete an original');
+    h.delivery.stop();
+});
