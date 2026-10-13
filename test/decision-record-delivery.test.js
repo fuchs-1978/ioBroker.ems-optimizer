@@ -600,6 +600,56 @@ test('SQL log pause suppresses writes before any history request; exact proof is
     assert.equal(h.stored.size, 3);
 });
 
+test('outage recovery resumes bounded backlog delivery only after a fresh exact storage proof', async () => {
+    const Backoff = require('../lib/sql-diagnostic-backoff');
+    let clock = 100000, healthy = false, active = 0, peakActive = 0, h;
+    const sqlRows = [];
+    const backoff = new Backoff({now: () => clock});
+    h = fixture(12, {now: () => clock, backoff, maxPublishPerTick: 4, maxQueriesPerTick: 1,
+        publish: async val => {
+            h.publications.push(val);
+            if (healthy) sqlRows.push({ts: clock, val});
+            return {publishedAt: clock};
+        },
+        readHistory: async q => {
+            active++; peakActive = Math.max(peakActive, active);
+            try {
+                if (!healthy) return {error: 'controlled database outage', backendCompletionObserved: true};
+                return {result: sqlRows.filter(row => row.ts >= q.start && row.ts <= q.end),
+                    backendCompletionObserved: true};
+            } finally {active--;}
+        }});
+    await h.delivery.tick({force: true});
+    assert.equal(h.confirmations.length, 0);
+    assert.equal(h.stored.size, 12, 'an error is never a persistence proof');
+    const attempts = h.delivery.health().publicationAttempts;
+    for (let n = 0; n < 10; n++) await h.delivery.tick({force: true});
+    assert.equal(h.delivery.health().publicationAttempts, attempts);
+    healthy = true; clock += 60000; h.advance(60000);
+    await h.delivery.tick({force: true});
+    for (let n = 0; n < 12 && backoff.degraded; n++) {
+        clock += 30000; h.advance(30000);
+        const before = h.delivery.health();
+        await h.delivery.tick({force: true});
+        const after = h.delivery.health();
+        assert.ok(after.queryCount - before.queryCount <= 1);
+        assert.ok(after.publicationAttempts - before.publicationAttempts <= 1);
+    }
+    assert.equal(backoff.degraded, false, 'new exact storage match clears diagnostic pause');
+    assert.ok(h.confirmations.length > 0);
+    for (let n = 0; n < 60 && h.stored.size; n++) {
+        clock += 61000; h.advance(61000);
+        const before = h.delivery.health();
+        await h.delivery.tick({force: true});
+        const after = h.delivery.health();
+        assert.ok(after.publicationAttempts - before.publicationAttempts <= 4);
+        assert.ok(after.queryCount - before.queryCount <= 1);
+    }
+    assert.equal(h.stored.size, 0, 'healthy backend eventually drains a finite backlog');
+    assert.equal(peakActive, 1);
+    assert.equal(new Set(h.confirmations.map(e => e.id)).size, 12);
+});
+
 test('a completed empty history response does not prove database recovery or erase originals', async () => {
     const Backoff = require('../lib/sql-diagnostic-backoff');
     let clock = 100000;
@@ -647,3 +697,4 @@ test('degraded verification cadence applies across different queued windows, inc
     assert.equal(h.delivery.health().queryCount, 2);
     assert.equal(backoff.degraded, true);
 });
+
