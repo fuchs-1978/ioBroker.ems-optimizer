@@ -360,6 +360,23 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         diagnostic: () => JSON.stringify(trace.slice(-12), null, 2)};
 }
 
+test('NVP diagnostic mode cannot oscillate the output-owner mode during a quiet plant', async () => {
+    const h = await plant({wallbox: false, mii: true, initialSurplusW: 0});
+    h.run('dhwOutputStatus(false, 0, "idle")');
+    const ownerMode = h.value('Control.Mode');
+    for (let n = 0; n < 10; n++) {
+        h.run('realtimeControl()');
+        assert.equal(h.value('Control.Mode'), ownerMode,
+            'NVP tick must not create a false ownership-mode edge');
+        assert.equal(h.value('Control.RegulatorMode'), 'PRODUKTIVFREIGABE');
+        h.run('dhwOutputStatus(false, 0, "idle")');
+        assert.equal(h.value('Control.Mode'), ownerMode);
+    }
+    h.own('System.RealOutputsEnabled', false);
+    h.run('realtimeControl()');
+    assert.equal(h.value('Control.RegulatorMode'), 'SIMULATION', 'real master change remains visible');
+});
+
 function armPricePlans(h, {batteryW = 1200, wallboxW = 2300, price = 15, limit = 15,
     until = h.now() + 15 * 60000, floor = 60} = {}) {
     h.run("CFG.dp.dynamicEnergyPriceEnabled='';CFG.dp.dynamicGridFeeEnabled=''");
@@ -2162,3 +2179,4 @@ test('sequential handoff preserves its logical minimum through a long exact phas
     const before = h.trace.findLast(x => x.at <= enable.at);
     assert.equal(before.miiW, 0, 'donor must be electrically quiet before receiver starts');
 });
+

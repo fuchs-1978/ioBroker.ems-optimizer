@@ -176,7 +176,7 @@ test('storage plus both heaters use real coordination and cooling blocks heating
 
 test('productive diagnostics never call an armed controller SIMULATION', async () => {
     const h = await fixture(); const direct = h.direct();
-    assert.equal(direct.get('ems.0.Control.Mode').val, 'PRODUKTIVFREIGABE');
+    assert.equal(direct.get('ems.0.Control.RegulatorMode').val, 'PRODUKTIVFREIGABE');
     assert.match(direct.get('ems.0.Control.Status').val, /^PRODUKTIVFREIGABE:/);
     assert.doesNotMatch(direct.get('ems.0.Devices.MyPV_DHW.Status').val, /nur Simulation/);
     await h.tick(); assert.match(h.value('Snapshot_JSON'), /virtueller/);
@@ -1470,3 +1470,4 @@ test('SQL degradation slows shadow scalars and health while leaving computation 
     now += 1000; frame(5); await new Promise(resolve => setImmediate(resolve));
     assert.equal(writes.filter(w => w.id.endsWith('.ScalarCycleId')).at(-1).value, 5);
 });
+
