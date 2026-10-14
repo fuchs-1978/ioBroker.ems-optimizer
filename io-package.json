@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.77",
+    "version": "0.17.0-alpha.78",
     "news": {
+      "0.17.0-alpha.78": {
+        "de": "SQL-Wiederaufnahme ohne NAS-Zugriff nach belegtem Adapterprozesswechsel und lesender globaler Ruheprüfung; begrenzter Historien-Startup-Wiederanlauf nach bestätigtem Fehlerabschluss.",
+        "en": "Recover orphan SQL verification without NAS access after observed adapter generation change and read-only global quiescence proof; bound startup history retries after confirmed error completion."
+      },
       "0.17.0-alpha.77": {
         "de": "Unveränderte Diagnoseoriginale in begrenzten SQL-Transportpaketen bündeln, ohne mehr Schreibaufrufe oder parallele Abfragen; EHZ-Besitzanzeige vereinheitlichen und Transportfortschritt sichtbar machen.",
         "en": "Bundle unchanged diagnostic originals into bounded SQL transport packets without more write calls or parallel queries; align heater ownership mode and expose delivery progress."

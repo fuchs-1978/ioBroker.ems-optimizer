@@ -456,14 +456,14 @@ test('shadow initialization schedules only diagnostics and passes its own series
     }};
     const scheduled = [];
     a.registerSchedule = (expression, callback) => {
-        assert.equal(expression, '* * * * * *');
+        assert.ok(['* * * * * *', '*/1 * * * *'].includes(expression));
         scheduled.push(callback);
         order.push('schedule');
     };
     a.setForeignStateAsync = () => assert.fail('shadow setup wrote an actuator');
     a.runEngine = () => assert.fail('shadow setup ran production code in live context');
     await a.startShadow();
-    assert.deepEqual(order, ['objects', 'preview', 'schedule', 'schedule', 'sql']);
+    assert.deepEqual(order, ['objects', 'preview', 'schedule', 'schedule', 'schedule', 'sql']);
     scheduled[0]();
     assert.equal(order.at(-1), 'preview');
 });
