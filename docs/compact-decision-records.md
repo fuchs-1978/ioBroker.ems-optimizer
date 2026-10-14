@@ -1,5 +1,13 @@
 # Kompakte produktive DecisionRecords ab alpha.50
 
+## SQL-Transportpakete ab alpha.77
+
+Ein SQL-Wert kann zusätzlich ein Transportpaket `{schema:4,frameType:"transport-bundle",records:[originalJSONStrings]}` sein. Erst die begrenzte Paketstruktur vollständig validieren, dann die unveränderten Originalstrings als einzelne Schema-1/2/3-Records behandeln. Keine verschachtelten Pakete oder teilweise gültigen Präfixe akzeptieren. Höchstens 16 Originale und 128 KiB je Paket; Einzeloriginale bleiben abwärtskompatibel.
+
+Alle enthaltenen Originale teilen den SQL-Transportzeitstempel, behalten jedoch ihre jeweiligen Ereignis-/Quellenzeiten, Session/Sequenz, NULL, ACK/q, Verlustmarker und exakten Hash. Ein Paket ist keine simultane Entscheidung. Rohseitenzahl und Abfragelimit beziehen sich auf SQL-Werte, nicht auf die größere Zahl enthaltener Originale. `decodeDecisionRecords` und der sequenzielle Historienleser expandieren diese Werte vor Deduplizierung/Rekonstruktion; der einzelne `DecisionRecordDecoder.decode` erwartet weiterhin ein entpacktes Original.
+
+Das lokale Journal enthält weiterhin einzelne unveränderte Originalrecords; SQL-Bestätigung erfolgt pro Original, Bereinigung wie bisher pro vollständiger geschlossener Kette. Der normale Versand hat höchstens vier State-Schreibaufrufe pro fünf Sekunden und 512 KiB einschließlich Verpackung; Fehlerbetrieb bleibt ein Original je 30 Sekunden. `RecordDeliveryStatus` trennt Originalversuche und tatsächliche Transportaufrufe. Alte Einzelwerte und neue Pakete können im selben Auswertungszeitraum vorkommen.
+
 ## Zweck und Grenzen
 
 `ems-optimizer.0.Debug.Shadow.DecisionRecord` bleibt der bestehende Aufzeichnungskanal. Im produktiven Betrieb ersetzt Schema 3 die wiederholte vollständige Serialisierung durch selbstständige Vollsnapshots und rekonstruierbare Deltas. Die Steuerung, Befehle, Schutzgrenzen, Reaktionsfristen und vorhandenen SQL-Einstellungen werden dadurch nicht geändert.

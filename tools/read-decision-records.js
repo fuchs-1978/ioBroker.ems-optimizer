@@ -2,6 +2,7 @@
 
 const {createHash} = require('node:crypto');
 const {DecisionRecordDecoder} = require('../lib/decision-record-codec');
+const {expandTransportRows} = require('../lib/decision-record-transport');
 
 function integer(value, name, minimum = 1) {
     if (!Number.isSafeInteger(value) || value < minimum) throw new Error(`${name} must be an integer >= ${minimum}`);
@@ -170,7 +171,7 @@ async function readDecisionRecordHistory({readHistory, start, end, windowMs = 20
         const emitted = [], sourceSamples = [];
         // SQL timestamps determine page membership. Sequence resolves equal-ms
         // rows; the original SQL ts and event/source timestamps stay untouched.
-        const parsed = rows.map(row => {
+        const parsed = expandTransportRows(rows).map(row => {
             let frame = row.val;
             try { if (typeof frame === 'string') frame = JSON.parse(frame); } catch { frame = null; }
             return {row, frame};
@@ -422,3 +423,4 @@ async function readDecisionRecordHistory({readHistory, start, end, windowMs = 20
 }
 
 module.exports = {readDecisionRecordHistory};
+
