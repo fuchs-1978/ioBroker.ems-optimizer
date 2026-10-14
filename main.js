@@ -222,7 +222,8 @@ class EmsOptimizer extends utils.Adapter {
             if (this.unloading) { await journal.close(); return; }
             this.decisionRecordJournal = journal;
             this.decisionRecordDelivery = new DecisionRecordDelivery({journal, publishIntervalMs: 5000,
-                backoff: this.sqlDiagnosticBackoff, maxPublishPerTick: 4, maxQueriesPerTick: 1,
+                backoff: this.sqlDiagnosticBackoff, maxPublishPerTick: 16, maxWritesPerTick: 4,
+                bundleOriginals: true, maxQueriesPerTick: 1,
                 maxBatchBytes: 512 * 1024,
                 publish: async payload => {
                     const id = `${this.namespace}.Debug.Shadow.DecisionRecord`;
@@ -1056,4 +1057,5 @@ class EmsOptimizer extends utils.Adapter {
 
 if (require.main !== module) module.exports = options => new EmsOptimizer(options);
 else new EmsOptimizer();
+
 

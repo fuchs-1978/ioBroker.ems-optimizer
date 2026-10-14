@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.76",
+    "version": "0.17.0-alpha.77",
     "news": {
+      "0.17.0-alpha.77": {
+        "de": "Unveränderte Diagnoseoriginale in begrenzten SQL-Transportpaketen bündeln, ohne mehr Schreibaufrufe oder parallele Abfragen; EHZ-Besitzanzeige vereinheitlichen und Transportfortschritt sichtbar machen.",
+        "en": "Bundle unchanged diagnostic originals into bounded SQL transport packets without more write calls or parallel queries; align heater ownership mode and expose delivery progress."
+      },
       "0.17.0-alpha.76": {
         "de": "NVP-Reglermodus separat anzeigen, künstliche Recorder-Moduswechsel vermeiden und SQL-Nachweisfenster für begrenzte Erholung fair abarbeiten.",
         "en": "Separate NVP diagnostic mode from output ownership, avoid synthetic recorder mode edges and fairly schedule bounded SQL recovery verification."

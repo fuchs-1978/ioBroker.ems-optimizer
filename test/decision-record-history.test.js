@@ -45,6 +45,21 @@ function sourceRows(events, {session = 'source-session', sampling = {schema: 1, 
         mode: 'PRODUCTION', masterEnabled: true, recording: {dropped: 0, writeErrors: 0}, event})}));
 }
 
+test('streaming history expands bundled originals but keeps raw SQL pages and their limits unchanged', async () => {
+    const {packOriginals} = require('../lib/decision-record-transport');
+    const original = records([1000, 1001, 1002, 1003]);
+    const rows = [{ts: 5000, val: packOriginals(original.map(row => row.val))}];
+    const result = await collect(rows);
+    assert.equal(result.raw[0].rows.length, 1, 'raw transport provenance is not fabricated as four SQL rows');
+    assert.equal(result.report.rawRows, 1);
+    assert.equal(result.output.length, 4);
+    assert.ok(result.output.every(row => row.ts === 5000));
+    assert.deepEqual(decodeDecisionRecords(result.output),
+        decodeDecisionRecords(original.map(row => ({...row, ts: 5000}))));
+    assert.equal(result.report.missingIdentity, 0);
+    assert.equal(result.report.unknownReplayRecords, 0);
+});
+
 test('overlapping pre-event/source batches and single updates deduplicate actual probes without altering NULL or source fields', async () => {
     const first = {sampleSequence: 11, id: 'power', receivedAt: 900,
         state: {val: 0, ts: 890, lc: 800, ack: true, q: 0}};
@@ -474,3 +489,4 @@ test('a never-resolving or unconfirmed failed transport stops after one request 
     assert.equal(rejected.report.queryCoverageComplete, false);
     assert.match(rejected.report.stoppedReason, /backend status unknown/);
 });
+

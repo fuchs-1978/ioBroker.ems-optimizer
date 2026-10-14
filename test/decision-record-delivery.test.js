@@ -48,6 +48,117 @@ function fixture(count = 1, options = {}) {
         now: () => clock, advance: ms => {clock += ms;}};
 }
 
+test('bounded bundled transport drains a healthy backlog without increasing the write/query call budget', async () => {
+    const sql = [], {unpackOriginals} = require('../lib/decision-record-transport');
+    const h = fixture(64, {bundleOriginals: true, maxPublishPerTick: 16, maxWritesPerTick: 4,
+        publishIntervalMs: 5000, maxQueriesPerTick: 1,
+        publish: async val => {sql.push({ts: h.now(), val}); return {publishedAt: h.now()};},
+        readHistory: async q => ({result: sql.filter(row => row.ts >= q.start && row.ts <= q.end),
+            backendCompletionObserved: true})});
+    for (let n = 0; n < 4; n++) {
+        const writes = sql.length;
+        await h.delivery.tick();
+        assert.ok(sql.length - writes <= 4);
+        h.advance(5000);
+    }
+    assert.equal(h.stored.size, 0, 'all original records require real exact SQL proof');
+    assert.equal(sql.length, 4, 'sixteen originals fit one bounded state write');
+    assert.deepEqual(sql.flatMap(row => unpackOriginals(row.val)), h.entries.map(entry => entry.payload));
+    assert.equal(h.delivery.health().queryCount, 4);
+    const oldSql = [];
+    const old = fixture(64, {maxPublishPerTick: 4, maxWritesPerTick: 4, publishIntervalMs: 5000,
+        maxQueriesPerTick: 1,
+        publish: async val => {oldSql.push({ts: old.now(), val}); return {publishedAt: old.now()};},
+        readHistory: async q => ({result: oldSql.filter(row => row.ts >= q.start && row.ts <= q.end),
+            backendCompletionObserved: true})});
+    for (let n = 0; n < 4; n++) {await old.delivery.tick(); old.advance(5000);}
+    assert.equal(old.stored.size, 48, 'former four-individual-record contract cannot drain this backlog in the same rounds');
+});
+
+test('real retained checkpoint groups retire after bounded bundled SQL proof, not from publication or age', async () => {
+    const fs = require('node:fs/promises'), os = require('node:os'), path = require('node:path');
+    const Journal = require('../lib/decision-record-journal');
+    const {DecisionRecordEncoder, decodeDecisionRecords} = require('../lib/decision-record-codec');
+    const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'ems-bundle-backlog-'));
+    let clock = 100000;
+    const journal = new Journal({directory, now: () => clock});
+    const sql = [], encoder = new DecisionRecordEncoder({checkpointMs: 10000}), original = [];
+    try {
+        await journal.initialize();
+        for (let n = 1; n <= 64; n++) {
+            const record = {schema: 2, recordSession: 'backlog', recordSequence: n, timestamp: n * 1000,
+                mode: 'PRODUCTION', masterEnabled: true, production: {stable: 'x'.repeat(12000), value: n},
+                event: {type: 'source.update', state: {val: n % 2 ? null : 0, ts: n * 1000 - 1, lc: 900,
+                    ack: n % 2 === 0, q: n % 2 ? 64 : 0}}, recording: {bufferLost: 1}};
+            original.push(record); await journal.append(JSON.stringify(encoder.encode(record)));
+        }
+        const delivery = new DecisionRecordDelivery({journal, now: () => clock,
+            bundleOriginals: true, maxPublishPerTick: 16, maxWritesPerTick: 4, maxQueriesPerTick: 1,
+            publishIntervalMs: 5000, minQueryGapMs: 1, wait: async ms => {clock += ms;},
+            publish: async val => {sql.push({ts: clock, val}); return {publishedAt: clock};},
+            readHistory: async q => ({result: sql.filter(row => row.ts >= q.start && row.ts <= q.end),
+                backendCompletionObserved: true})});
+        for (let n = 0; n < 8 && journal.health().unconfirmedRecords; n++) {
+            const writes = sql.length;
+            await delivery.tick(); assert.ok(sql.length - writes <= 4); clock += 5000;
+        }
+        delivery.stop();
+        assert.equal(journal.health().unconfirmedRecords, 0);
+        assert.equal(journal.health().records, 4, 'latest dependency basis remains; all closed groups retire');
+        assert.equal(journal.health().expiredRecords, 0);
+        assert.equal(journal.health().rejectedRecords, 0);
+        assert.deepEqual(decodeDecisionRecords(sql).map(row => row.val), original);
+    } finally {await journal.close(); await fs.rm(directory, {recursive: true, force: true});}
+});
+
+test('a replay cursor reset walks a tracked unresolved prefix without starving the unsent suffix', async () => {
+    const sql = [];
+    const h = fixture(32, {bundleOriginals: true, maxPublishPerTick: 16, maxWritesPerTick: 4,
+        publish: async val => {sql.push(val); return {publishedAt: h.now()};},
+        readHistory: async () => ({result: [], backendCompletionObserved: true})});
+    await h.delivery.tick(); assert.equal(sql.length, 1);
+    h.delivery.cursor = null;
+    h.advance(20); await h.delivery.tick();
+    assert.equal(sql.length, 1, 'tracked missing originals are not spuriously republished');
+    assert.equal(h.delivery.cursor, h.entries[15].id);
+    h.advance(20); await h.delivery.tick();
+    assert.equal(sql.length, 2, 'fresh suffix can still supply a future recovery proof');
+    assert.equal(h.confirmations.length, 0);
+});
+
+test('bundle size, transport-write and actual byte ceilings retain an unsent suffix for the next tick', async () => {
+    const sql = [];
+    const h = fixture(16, {bundleOriginals: true, maxWritesPerTick: 2, maxPublishPerTick: 16,
+        publish: async val => {sql.push(val); return {publishedAt: h.now()};},
+        readHistory: async () => ({result: [], backendCompletionObserved: true})});
+    for (const entry of h.entries) {
+        const frame = JSON.parse(entry.payload); frame.padding = 'x'.repeat(70000);
+        entry.payload = JSON.stringify(frame); entry.payloadBytes = Buffer.byteLength(entry.payload);
+        entry.sha256 = createHash('sha256').update(entry.payload).digest('hex');
+    }
+    await h.delivery.tick();
+    assert.equal(sql.length, 2, 'large originals remain individual, never oversized bundles');
+    assert.equal(h.delivery.cursor, h.entries[1].id);
+    h.advance(20); await h.delivery.tick();
+    assert.equal(sql.length, 4); assert.equal(h.delivery.cursor, h.entries[3].id);
+    assert.equal(h.confirmations.length, 0, 'publication never proves SQL storage');
+});
+
+test('malformed bundle suffix never confirms its valid prefix and degradation still sends one original', async () => {
+    const h = fixture(2, {bundleOriginals: true,
+        readHistory: async () => ({result: [{ts: h.now(), val: JSON.stringify({schema: 4,
+            frameType: 'transport-bundle', records: [h.entries[0].payload, '{bad']})}], backendCompletionObserved: true})});
+    await h.delivery.tick(); assert.equal(h.confirmations.length, 0);
+    assert.equal(h.delivery.health().lastQuery.malformedPayloads, 1);
+    h.delivery.backoff = {degraded: true, paused: () => false, health: () => ({}), fail() {}};
+    h.advance(30000); await h.delivery.tick();
+    assert.equal(h.delivery.health().transportWrites, 1, 'already tracked originals are not republished without complete miss proof');
+    const d = fixture(10, {bundleOriginals: true, backoff: h.delivery.backoff});
+    await d.delivery.tick();
+    assert.equal(d.publications.length, 1);
+    assert.equal(JSON.parse(d.publications[0]).recordSequence, 1, 'degraded recovery never bundles a burst');
+});
+
 test('ioBroker publication alone never removes a locally durable record or repeats publication', async () => {
     const h = fixture(1, {readHistory: async () => ({result: [], backendCompletionObserved: true})});
     await h.delivery.tick({force: true});

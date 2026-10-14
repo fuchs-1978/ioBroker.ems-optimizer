@@ -37,6 +37,10 @@ test('recording integration uses private instance data and a matching published 
         await a.startDecisionRecording();
         assert.ok(a.decisionRecordJournal);
         assert.equal(a.decisionRecordDelivery.publishIntervalMs, 5000);
+        assert.equal(a.decisionRecordDelivery.maxPublishPerTick, 16);
+        assert.equal(a.decisionRecordDelivery.maxWritesPerTick, 4);
+        assert.equal(a.decisionRecordDelivery.bundleOriginals, true);
+        assert.equal(a.decisionRecordDelivery.maxQueriesPerTick, 1);
         const payload = '{"recordSession":"integration","recordSequence":1}';
         const receipt = await a.decisionRecordDelivery.publish(payload);
         assert.equal(receipt.publishedAt, a.getCachedState('ems.0.Debug.Shadow.DecisionRecord').ts);

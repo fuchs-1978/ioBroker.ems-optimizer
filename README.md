@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.76**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.77**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -788,6 +788,7 @@ Wichtige Bereiche unter `ems-optimizer.0`:
 | `Devices.MyPV_DHW.*`, `Devices.MyPV_Heating.*`, `Devices.Battery.*`, `Devices.HeatPump.*` | Geräte-/Quellenqualität, gemessene Antwort und Status; WP-Empfehlung getrennt vom Istzustand. |
 | `Debug.Shadow.DecisionRecord` und Record-Fehler-/Verlustzähler | Historische zusammengehörige Diagnose mit Ereigniszeit, Sitzung und Sequenz; Live-/Schattenphase anhand gespeicherter Flags trennen. |
 | `Debug.Shadow.RecordJournalStatus`, `RecordJournalBytes`, `RecordJournalRecords`, `RecordSQLConfirmed`, `RecordSQLPending`, `RecordSQLLastError` | Lokale Haltbarkeit, Kapazität, Verluste und unabhängiger SQL-Nachweis getrennt beurteilen. Ein bestätigter State-Schreibaufruf ist kein SQL-Speichernachweis. |
+| `Debug.Shadow.RecordDeliveryStatus` | Seit alpha.77: Originalrecordversuche und tatsächliche Transport-Schreibaufrufe getrennt; außerdem Bestätigungen, Rückstau, Prüffenster, letzte Abfrage und Transportgrenzen. SQL-Pakete enthalten unveränderte Originale, keine simultane Entscheidung. |
 
 Vollständige ruhige **Live-Cacheframes** bleiben in 30-s-Intervallen zusammengefasst; Stellbefehle und relevante Zustands-/Qualitätswechsel bleiben unmittelbar. Ab alpha.71 werden empfangene Originalproben der ausgewählten Quellen auch außerhalb der Ereignisfenster in begrenzten Batches aufgezeichnet. Dazu gehören konfigurierte Fahrzeugfreigaben, Priorität, SoC-/Timer-/Phasen- und Stromquellen, Schutzwerte sowie EHZ-Auftrag, Reserve und physische Leistung. Der gespeicherte Quellenvertrag zeigt die konkrete Auswahl; fehlende oder nicht zugeordnete Quellen bleiben unbekannt. Ereignisse behalten bis 60 s Vorlauf und 120 s Nachlauf. Die Vorlaufgrenzen von 4096 Proben und 1 MiB sowie alle Verlustzähler bleiben sichtbar.
 
@@ -802,6 +803,10 @@ Bereits vorhandene SQL-Skalarhistorien, Retention und Anlagenkonfiguration werde
 Ab alpha.67 akzeptiert die zentrale Wallbox-Phasenbudgetprüfung dieselbe bestehende Leerlauftoleranz wie der Wallbox-Ausgang: bestätigte, frische, qualitativ gültige Leistungswerte zwischen −0,02 und 0 kW werden intern als 0 W behandelt. Die originale negative Rohmessung bleibt in der Diagnose erhalten. Größere negative Werte, fehlende/ungültige Werte, schlechtes q, fehlendes ACK und veraltete Quellen bleiben gesperrt. Diese Toleranz gilt für Wallboxleistung; die Verträge anderer Quellen werden dadurch nicht geändert.
 
 ## Changelog und historische Detaildokumentation
+
+### 0.17.0-alpha.77 (2026-10-14)
+
+Diagnoseoriginale werden verlustfrei in begrenzten SQL-Transportpaketen gebündelt. Bis zu 16 Originalrecords pro Versandrunde werden mit höchstens vier Schreibaufrufen alle fünf Sekunden übertragen; Abfragen bleiben sequenziell und der Fehler-Wiederanlauf gedrosselt. Die EHZ-Modusanzeige nutzt denselben Besitzvertrag wie der Wallboxtreiber, damit ein ausgeschalteter, noch verantworteter EHZ keine künstlichen Wechsel erzeugt. `Debug.Shadow.RecordDeliveryStatus` trennt Originalrecords, Transportaufrufe und SQL-Nachweise. Das bisherige Journal wird übernommen; Altersverluste bleiben unbekannt. [Releasehinweise](docs/release-0.17.0-alpha.77.md).
 
 ### 0.17.0-alpha.76 (2026-10-13)
 

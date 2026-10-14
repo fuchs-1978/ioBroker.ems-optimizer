@@ -377,6 +377,34 @@ test('NVP diagnostic mode cannot oscillate the output-owner mode during a quiet 
     assert.equal(h.value('Control.RegulatorMode'), 'SIMULATION', 'real master change remains visible');
 });
 
+test('idle retained heater ownership cannot oscillate mode between the two output drivers', async () => {
+    for (const alpha of [false, true]) {
+        const h = await plant({wallbox: false, initialSurplusW: 0});
+        h.config.multiWallboxAlphaArmed = alpha;
+        h.run('dhwOutputWasActive=false; dhwStopPending=true');
+        h.run('dhwOutputStatus(false, 0, "awaiting independent stop proof")');
+        const expected = alpha ? 'ALPHA_DHW' : 'DHW_PRODUCTION';
+        assert.equal(h.value('Devices.MyPV_DHW.OutputActive'), false);
+        assert.equal(h.value('Devices.MyPV_DHW.OutputOwned'), true);
+        const before = h.writes.length;
+        for (let n = 0; n < 20; n++) {
+            assert.equal(h.value('Control.Mode'), expected, 'idle ownership is distinct from electrical activity');
+            await h.output.tick();
+            assert.equal(h.value('Control.Mode'), expected, 'wallbox driver uses the same ownership contract');
+            h.run('dhwOutputStatus(false, 0, "awaiting independent stop proof")');
+        }
+        assert.equal(h.writes.length, before, 'diagnostic ownership reporting sends no new device commands');
+        h.run('dhwStopPending=false; dhwOutputWasActive=false');
+        h.run('heaterReservationRecords.clear()');
+        h.own('Devices.MyPV_DHW.OutputReservationState_JSON', '');
+        h.run('dhwOutputStatus(false, 0, "released")');
+        assert.equal(h.value('Devices.MyPV_DHW.OutputOwned'), false);
+        assert.equal(h.value('Control.Mode'), alpha ? 'ALPHA_READY' : 'SIMULATION');
+        await h.output.tick();
+        assert.equal(h.value('Control.Mode'), alpha ? 'ALPHA_READY' : 'SIMULATION');
+    }
+});
+
 function armPricePlans(h, {batteryW = 1200, wallboxW = 2300, price = 15, limit = 15,
     until = h.now() + 15 * 60000, floor = 60} = {}) {
     h.run("CFG.dp.dynamicEnergyPriceEnabled='';CFG.dp.dynamicGridFeeEnabled=''");
