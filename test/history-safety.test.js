@@ -38,6 +38,26 @@ test('unresponsive SQL history query has a bounded timeout and ignores a late re
     assert.doesNotThrow(() => response({result: [{val: 10, ts: 100}]}));
 });
 
+test('confirmed startup SQL error permits only three paced history retries and never fabricates readiness', async () => {
+    let now = 1000;
+    class Clock extends Date {static now() {return now;}}
+    const run = engine({Date: Clock, setState() {}, log() {}, historyRetryAllowed: () => true});
+    run("CFG.dp.pvPower='pv'; CFG.dp.houseMetersW=[]; CFG.dp.wallboxesKW=[]; CFG.dp.myPvDhwHistoryW=''; CFG.dp.myPvHeatingHistoryW=''; pause=async()=>{};");
+    run("getHistoryChunked=async()=>{const e=new Error('No database connection'); e.backendCompletionObserved=true; throw e;}");
+    await run('buildHistory()');
+    assert.equal(run('historyReady'), false);
+    run('retryStartupHistory()'); assert.equal(run('historyRetryAttempts'), 0);
+    for (let n = 0; n < 5; n++) {now += 60000; run('retryStartupHistory()'); for (let j = 0; j < 10; j++) await Promise.resolve();}
+    assert.equal(run('historyRetryAttempts'), 3); assert.equal(run('historyReady'), false);
+});
+
+test('unknown startup SQL completion forbids automatic retry even when connection returns', async () => {
+    const run = engine({setState() {}, log() {}, historyRetryAllowed: () => true});
+    run("CFG.dp.pvPower='pv'; getHistoryChunked=async()=>{const e=new Error('deadline');e.backendCompletionObserved=false;throw e;};");
+    await run('buildHistory()');
+    assert.equal(run('historyRetryAt'), null); assert.equal(run('historyReady'), false);
+});
+
 test('SQL query failure is reported, not silently treated as empty history', async () => {
     const run = engine({setTimeout: () => 1, clearTimeout: () => {},
         sendTo: (instance, command, options, callback) => callback({error: 'connection lost'})});

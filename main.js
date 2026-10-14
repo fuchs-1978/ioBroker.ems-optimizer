@@ -24,6 +24,7 @@ const batteryTemperatureReserve = require("./lib/battery-temperature-reserve");
 const sunEnergyHeads = require("./lib/sunenergy-heads");
 const DecisionRecordJournal = require("./lib/decision-record-journal");
 const DecisionRecordDelivery = require("./lib/decision-record-delivery");
+const {SqlVerificationRecovery} = require("./lib/sql-verification-recovery");
 const SqlDiagnosticBackoff = require("./lib/sql-diagnostic-backoff");
 const {buildDiagnosticSourceContract} = require("./lib/diagnostic-source-contract");
 
@@ -204,6 +205,12 @@ class EmsOptimizer extends utils.Adapter {
                 void this.decisionRecordDelivery?.tick().then(() => this.runShadow('publishRecordHealth'))
                     .catch(error => this.warnDebug(error));
             });
+            this.registerSchedule('*/1 * * * *', () => {
+                if (this.getCachedState(`${this.namespace}.History.Building`)?.val === true) return;
+                void this.sqlVerificationRecovery?.tick().then(status =>
+                    this.setCompatState(`${this.namespace}.Debug.Shadow.RecordSQLRecoveryStatus`, JSON.stringify(status), true))
+                    .catch(error => this.warnDebug(error));
+            });
             // SQL setup is optional diagnostics; actuator startup never waits for it.
             await this.shadowHistory.initialize(this.shadowController.historyIds);
         } catch (error) {
@@ -232,6 +239,27 @@ class EmsOptimizer extends utils.Adapter {
                     return cached?.val === payload && Number.isSafeInteger(cached.ts) && cached.ts >= 0
                         ? {publishedAt: cached.ts} : {};
                 }, readHistory: options => this.readDecisionRecordHistory(options)});
+            const instance = String(this.config.historyInstance || '').trim();
+            this.sqlVerificationRecovery = new SqlVerificationRecovery({journal,
+                delivery: this.decisionRecordDelivery,
+                query: sql => new Promise((resolve, reject) => {
+                    if (this.unloading) return resolve({backendRequestIssued: false,
+                        localNotIssuedEvidence: 'EMS unload gate before invoking SQL metadata transport'});
+                    try {this.sendTo(instance, 'query', sql, response => resolve({...response, backendCompletionObserved: true}));}
+                    catch (error) {reject(error);}
+                }),
+                states: async () => {
+                    if (this.unloading) throw new Error('EMS unloading; recovery inspection stopped');
+                    const object = await this.getForeignObjectAsync(`system.adapter.${instance}`);
+                    if (!/^sql\.\d+$/.test(instance) || object?.native?.dbtype !== 'mysql')
+                        throw new Error('Read-only recovery is supported for a configured MySQL/MariaDB SQL adapter only');
+                    const [alive, kill, connection, uptime] = await Promise.all([
+                        this.getForeignStateAsync(`system.adapter.${instance}.alive`),
+                        this.getForeignStateAsync(`system.adapter.${instance}.sigKill`),
+                        this.getForeignStateAsync(`${instance}.info.connection`),
+                        this.getForeignStateAsync(`system.adapter.${instance}.uptime`)]);
+                    return {alive, kill, connection, uptime};
+                }});
         } catch (error) {
             this.warnDebug(error);
         }
@@ -905,6 +933,10 @@ class EmsOptimizer extends utils.Adapter {
             async historySourceEnabled(id, instance) {
                 const object = await adapter.getForeignObjectAsync(id);
                 return object?.type === 'state' && object.common?.custom?.[instance]?.enabled === true;
+            },
+            historyRetryAllowed() {
+                return !adapter.decisionRecordJournal?.health().sqlVerificationPending
+                    && !adapter.sqlVerificationRecovery?.busy;
             },
             createState(id, value, common) { void adapter.queueCompatState(id, value, common); },
             setState(id, value, ack) { adapter.setCompatState(id, value, ack); },
