@@ -23,13 +23,14 @@ test('transport bundle restores byte-exact originals and both SQL and source clo
     assert.deepEqual(decodeDecisionRecords([{ts: 5000, val: bundle}]),
         decodeDecisionRecords(raw.map(val => ({ts: 5000, val}))));
     assert.equal(decodeDecisionRecords([{ts: 5000, val: bundle}])[1].val.event.state.val, null);
-    assert.equal(packOriginals([raw[0]]), raw[0], 'singletons remain backward compatible');
+    assert.deepEqual(unpackOriginals(packOriginals([raw[0]])), [raw[0]], 'singletons also use SQL-safe transport');
+    assert.deepEqual(unpackOriginals(raw[0]), [raw[0]], 'legacy singleton remains readable');
 });
 
 test('bad suffix, nested bundle, excessive counts and bytes never expose a valid prefix', () => {
     const raw = originals();
     for (const records of [[raw[0], '{bad'], [raw[0], packOriginals(raw)],
-        [raw[0], null], Array(17).fill(raw[0]), [raw[0], JSON.stringify({schema: 2, value: 'x'.repeat(MAX_BUNDLE_BYTES)})]]) {
+        [raw[0], null], Array(17).fill(raw[0]), [raw[0], JSON.stringify({schema: 2, value: 'x'.repeat(128 * 1024)})]]) {
         const val = JSON.stringify({schema: 4, frameType: 'transport-bundle', records});
         assert.throws(() => unpackOriginals(val));
         assert.deepEqual(expandTransportRows([{ts: 5000, val}]), [{ts: 5000, val}]);
@@ -47,4 +48,32 @@ test('mixed legacy, bundles, border duplicates and conflicting inner identities 
     const wrong = JSON.parse(raw[0]); wrong.data.production.value = 999;
     const conflicted = decodeDecisionRecords([{ts: 5000, val: packOriginals(raw)}, {ts: 5001, val: JSON.stringify(wrong)}]);
     assert.ok(conflicted.every(row => row.val.reconstruction?.valid === false));
+});
+
+
+test('SQL transport survives backslash removal and TEXT length boundary with byte-exact Unicode originals', () => {
+    const original = JSON.stringify({schema: 2, recordSession: 's', recordSequence: 1,
+        timestamp: 1000, event: {type: 'command.attempt', state: {val: null, ack: false, q: 64}},
+        text: ('Grüße \\"quote\\" \\\\ path\n').repeat(9000)});
+    assert.ok(Buffer.byteLength(original) > 65535);
+    const packed = packOriginals([original]);
+    assert.ok(Buffer.byteLength(packed) <= MAX_BUNDLE_BYTES);
+    assert.equal(packed.includes('\\'), false);
+    const stored = packed.replace(/\\/g, '').slice(0, 65535);
+    assert.deepEqual(unpackOriginals(stored), [original]);
+    assert.deepEqual(unpackOriginals(JSON.parse(stored)), [original]);
+});
+
+test('encoded corrupt or oversized envelopes do not expose originals', () => {
+    const packed = packOriginals(originals());
+    assert.throws(() => unpackOriginals(packed.slice(0, -5)));
+    const envelope = JSON.parse(packed);
+    envelope.data = '!bad';
+    assert.throws(() => unpackOriginals(JSON.stringify(envelope)));
+    envelope.encoding = 'unknown';
+    assert.throws(() => unpackOriginals(JSON.stringify(envelope)));
+    const {deflateRawSync} = require('node:zlib');
+    envelope.encoding = 'deflate-raw-base64';
+    envelope.data = deflateRawSync(Buffer.from('x'.repeat(2 * 1024 * 1024 + 1))).toString('base64');
+    assert.throws(() => unpackOriginals(JSON.stringify(envelope)));
 });
