@@ -3,6 +3,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {createHash} = require('node:crypto');
+const {unpackOriginals} = require('../lib/decision-record-transport');
+const parsePublished = value => JSON.parse(unpackOriginals(value)[0]);
 const DecisionRecordDelivery = require('../lib/decision-record-delivery');
 
 function fixture(count = 1, options = {}) {
@@ -95,7 +97,7 @@ test('real retained checkpoint groups retire after bounded bundled SQL proof, no
         const delivery = new DecisionRecordDelivery({journal, now: () => clock,
             bundleOriginals: true, maxPublishPerTick: 16, maxWritesPerTick: 4, maxQueriesPerTick: 1,
             publishIntervalMs: 5000, minQueryGapMs: 1, wait: async ms => {clock += ms;},
-            publish: async val => {sql.push({ts: clock, val}); return {publishedAt: clock};},
+            publish: async val => {sql.push({ts: clock, val: val.replace(/\\/g, '').slice(0, 65535)}); return {publishedAt: clock};},
             readHistory: async q => ({result: sql.filter(row => row.ts >= q.start && row.ts <= q.end),
                 backendCompletionObserved: true})});
         for (let n = 0; n < 8 && journal.health().unconfirmedRecords; n++) {
@@ -132,7 +134,7 @@ test('bundle size, transport-write and actual byte ceilings retain an unsent suf
         publish: async val => {sql.push(val); return {publishedAt: h.now()};},
         readHistory: async () => ({result: [], backendCompletionObserved: true})});
     for (const entry of h.entries) {
-        const frame = JSON.parse(entry.payload); frame.padding = 'x'.repeat(70000);
+        const frame = JSON.parse(entry.payload); frame.padding = require('node:crypto').randomBytes(40000).toString('base64');
         entry.payload = JSON.stringify(frame); entry.payloadBytes = Buffer.byteLength(entry.payload);
         entry.sha256 = createHash('sha256').update(entry.payload).digest('hex');
     }
@@ -156,7 +158,7 @@ test('malformed bundle suffix never confirms its valid prefix and degradation st
     const d = fixture(10, {bundleOriginals: true, backoff: h.delivery.backoff});
     await d.delivery.tick();
     assert.equal(d.publications.length, 1);
-    assert.equal(JSON.parse(d.publications[0]).recordSequence, 1, 'degraded recovery never bundles a burst');
+    assert.equal(parsePublished(d.publications[0]).recordSequence, 1, 'degraded recovery never bundles a burst');
 });
 
 test('ioBroker publication alone never removes a locally durable record or repeats publication', async () => {
@@ -174,8 +176,8 @@ test('only exact independent history payload hash and session/sequence permit co
     await h.delivery.tick({force: true});
     assert.equal(h.confirmations.length, 1);
     assert.equal(h.stored.size, 0);
-    assert.equal(h.publications[0], h.entries[0].payload);
-    assert.deepEqual(JSON.parse(h.publications[0]).event.state,
+    assert.equal(unpackOriginals(h.publications[0])[0], h.entries[0].payload);
+    assert.deepEqual(parsePublished(h.publications[0]).event.state,
         {val: null, ts: 5, lc: 2, ack: false, q: 64});
     assert.equal(h.delivery.health().sqlConfirmed, 1);
 });
@@ -194,7 +196,7 @@ test('startup publication is limited to sixteen records and preserves sequence o
     const h = fixture(20, {readHistory: async () => ({result: [], backendCompletionObserved: true})});
     await h.delivery.tick({force: true});
     assert.equal(h.publications.length, 16);
-    assert.deepEqual(h.publications.map(p => JSON.parse(p).recordSequence), Array.from({length: 16}, (_, i) => i + 1));
+    assert.deepEqual(h.publications.map(p => parsePublished(p).recordSequence), Array.from({length: 16}, (_, i) => i + 1));
     h.advance(20); await h.delivery.tick({force: true});
     assert.equal(h.publications.length, 20);
     h.advance(20); await h.delivery.tick({force: true});
@@ -398,14 +400,14 @@ test('real journal survives publication-only restart and removes an original onl
         await journal.append(payload);
         let attempts = 0;
         const first = new DecisionRecordDelivery({journal, now: () => 100000,
-            publish: async value => {assert.equal(value, payload); attempts++; return {publishedAt: 100000};},
+            publish: async value => {assert.equal(unpackOriginals(value)[0], payload); attempts++; return {publishedAt: 100000};},
             readHistory: async () => ({result: [], backendCompletionObserved: true})});
         await first.tick({force: true}); first.stop();
         assert.equal(journal.health().records, 1);
         await journal.close();
         journal = new DecisionRecordJournal({directory}); await journal.initialize();
         const second = new DecisionRecordDelivery({journal, now: () => 102000,
-            publish: async value => {assert.equal(value, payload); attempts++; return {publishedAt: 102000};},
+            publish: async value => {assert.equal(unpackOriginals(value)[0], payload); attempts++; return {publishedAt: 102000};},
             readHistory: async () => ({result: [{ts: 102000, val: payload}], backendCompletionObserved: true})});
         await second.tick({force: true}); second.stop();
         assert.equal(attempts, 2, 'exact original is republished only once per process after recovery');
@@ -428,7 +430,7 @@ test('two complete observed misses permit exact bounded recovery after sixty sec
     assert.equal(h.publications.length, 1, 'no early retry after a missing row');
     sqlRecovered = true; h.advance(11); await h.delivery.tick();
     assert.equal(h.publications.length, 2);
-    assert.equal(h.publications[1], h.entries[0].payload);
+    assert.equal(unpackOriginals(h.publications[1])[0], h.entries[0].payload);
     assert.equal(h.delivery.health().republishAttempts, 1);
     assert.equal(h.delivery.health().sqlConfirmed, 1);
     assert.equal(h.delivery.health().pendingWindows, 0, 'old proof windows are removed');
@@ -466,7 +468,7 @@ test('three repeats exhaust the record budget until a fresh exact proof of a new
     h.advance(10); await h.delivery.tick();
     assert.equal(h.delivery.health().recoveryEpoch > 0, true);
     newerStored = false; h.advance(60000); await h.delivery.tick();
-    assert.equal(h.publications.filter(p => JSON.parse(p).recordSequence === 1).length, 5);
+    assert.equal(h.publications.filter(p => parsePublished(p).recordSequence === 1).length, 5);
 });
 
 test('a slow independent SQL proof cannot block new bounded publication or create overlapping SQL queries', async () => {
@@ -512,7 +514,7 @@ test('same-process SQL recovery republishes the retained original snapshot and e
             minQueryGapMs: 1, wait: async ms => {clock += ms;},
             publish: async payload => {
                 publications.push(payload);
-                if (recovered || JSON.parse(payload).recordSequence === 1) sql.push({ts: clock, val: payload});
+                if (recovered || parsePublished(payload).recordSequence === 1) sql.push({ts: clock, val: payload});
                 return {publishedAt: clock};
             }, readHistory: async q => ({result: sql.filter(row => row.ts >= q.start && row.ts <= q.end).slice(0, q.limit),
                 backendCompletionObserved: true})});
@@ -523,7 +525,7 @@ test('same-process SQL recovery republishes the retained original snapshot and e
         clock += 86400001; await delivery.tick();
         assert.equal(publications.length, 2, 'a single fully observed miss after expiry is insufficient');
         recovered = true; clock += 10; await delivery.tick(); delivery.stop();
-        assert.deepEqual(publications.slice(2), originals, 'byte-exact original snapshot precedes its delta');
+        assert.deepEqual(publications.slice(2).flatMap(unpackOriginals), originals, 'byte-exact original snapshot precedes its delta');
         assert.equal(journal.health().unconfirmedRecords, 0);
         assert.deepEqual(decodeDecisionRecords(sql).map(row => row.val.production.budgetW), [1, 2]);
     } finally {await journal.close(); await fs.rm(directory, {recursive: true, force: true});}
