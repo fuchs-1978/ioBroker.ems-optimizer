@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.82**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.83**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -803,6 +803,10 @@ Bereits vorhandene SQL-Skalarhistorien, Retention und Anlagenkonfiguration werde
 Ab alpha.67 akzeptiert die zentrale Wallbox-Phasenbudgetprüfung dieselbe bestehende Leerlauftoleranz wie der Wallbox-Ausgang: bestätigte, frische, qualitativ gültige Leistungswerte zwischen −0,02 und 0 kW werden intern als 0 W behandelt. Die originale negative Rohmessung bleibt in der Diagnose erhalten. Größere negative Werte, fehlende/ungültige Werte, schlechtes q, fehlendes ACK und veraltete Quellen bleiben gesperrt. Diese Toleranz gilt für Wallboxleistung; die Verträge anderer Quellen werden dadurch nicht geändert.
 
 ## Changelog und historische Detaildokumentation
+
+### 0.17.0-alpha.83 (2026-10-15)
+
+Wiederholte numerische Altersfelder werden im kompakten Delta verlustfrei als `age-shifts` statt vieler langer Pfadoperationen gespeichert. Der aktuelle Decoder rekonstruiert exakt aus der vorherigen Basis, ohne aktuelle Uhrzeit oder Schaetzung. Alte Decoder erkennen diese Operation nicht und muessen solche Deltas als unbekannt behandeln; fuer neue Aufzeichnungen aktuellen Decoder verwenden. Quellenzeiten, NULL/ACK/q, Originalereignisse, Checkpoints und Verlustmarker bleiben erhalten. Die sofortige Quellenprobe wird nicht zusaetzlich in den Vorlauf kopiert; fruehere Proben bleiben erhalten. Grosse Recorder-Status-JSONs samt Delivery-Gesundheitsberechnung werden maximal einmal pro Sekunde veroeffentlicht; unveraenderte Diagnose-Skalare werden nicht nochmals geschrieben. Keine Aenderung von SQL-Grenzen, Schutzregelung oder Journal-Dauerhaftigkeit. [Releasehinweise](docs/release-0.17.0-alpha.83.md).
 
 ### 0.17.0-alpha.82 (2026-10-15)
 

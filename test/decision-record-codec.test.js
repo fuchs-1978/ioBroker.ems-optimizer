@@ -272,3 +272,46 @@ test('synthetic 30 kB diagnosis replay quantifies byte reduction without a SQL l
     assert.ok(encodedBytes < fullBytes * 0.1);
     t.diagnostic(`${records} synthetic records: ${fullBytes} full bytes, ${encodedBytes} compact bytes, ${snapshots} checkpoints; reduction ${(100 * (1 - encodedBytes / fullBytes)).toFixed(1)}%. Not a measured SQL benchmark.`);
 });
+
+function agingRecord(sequence) {
+    const r = fixture(sequence);
+    r.production.measurements = Array.from({length: 128}, (_, i) => ({id: `source-${i}`,
+        state: {val: i % 3 ? null : 0, ts: 500, lc: 200, ack: i % 2 === 0, q: i % 2 ? 64 : 0},
+        ageMs: i * 100 + sequence * 7, nested: {ageS: i + sequence / 4}}));
+    return r;
+}
+
+test('compact age shifts restore exact numeric ages and every raw source and event', () => {
+    const encoder = new DecisionRecordEncoder(), decoder = new DecisionRecordDecoder();
+    let frame;
+    for (let seq = 1; seq <= 20; seq++) {
+        const r = agingRecord(seq); r.event = {type: 'source.update', state: {val: null, ts: 5, lc: 2, ack: false, q: 64}};
+        frame = encoder.encode(r); assert.deepEqual(decoder.decode(frame), r);
+        if (seq > 1) assert.ok(frame.ops.some(o => o.op === 'age-shifts'));
+    }
+    assert.ok(JSON.stringify(frame).length < 5000, 'hundreds of repeated age paths need no repeated verbose set operations');
+});
+
+test('age encoding preserves nulls, shape changes, unsafe arithmetic and checkpoint boundaries', () => {
+    const encoder = new DecisionRecordEncoder(), decoder = new DecisionRecordDecoder();
+    for (let seq = 1; seq <= 50; seq++) {
+        const r = agingRecord(seq);
+        if (seq % 3 === 0) r.production.measurements[0].ageMs = null;
+        if (seq % 4 === 0) r.production.measurements.pop();
+        r.production.measurements[1].nested.ageS = seq % 2 ? 0.1 : 0.3;
+        if (seq >= 30) r.recordSequence++;
+        assert.deepEqual(decoder.decode(encoder.encode(r)), r);
+    }
+});
+
+test('invalid age groups, duplicate indices and nonfinite results invalidate the entire delta', () => {
+    const first = agingRecord(1), next = agingRecord(2);
+    const encoder = new DecisionRecordEncoder(); const full = encoder.encode(first), delta = encoder.encode(next);
+    for (const groups of [[{by: 1, indices: [-1]}], [{by: 1, indices: [99999]}],
+        [{by: 1, indices: [0, 0]}], [{by: '1', indices: [0]}], []]) {
+        const decoder = new DecisionRecordDecoder(); decoder.decode(full);
+        const bad = structuredClone(delta); bad.ops[0] = {op: 'age-shifts', groups};
+        assert.equal(decoder.decode(bad).reconstruction.valid, false);
+        assert.equal(decoder.decode(delta).reconstruction.valid, false, 'a corrupt predecessor cannot be reused');
+    }
+});
