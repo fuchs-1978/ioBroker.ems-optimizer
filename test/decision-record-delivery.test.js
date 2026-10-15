@@ -96,6 +96,7 @@ test('real retained checkpoint groups retire after bounded bundled SQL proof, no
         }
         const delivery = new DecisionRecordDelivery({journal, now: () => clock,
             bundleOriginals: true, maxPublishPerTick: 16, maxWritesPerTick: 4, maxQueriesPerTick: 1,
+            maxOriginalsPerTick: 64, maxReadOriginalBytes: 2 * 1024 * 1024,
             publishIntervalMs: 5000, minQueryGapMs: 1, wait: async ms => {clock += ms;},
             publish: async val => {sql.push({ts: clock, val: val.replace(/\\/g, '').slice(0, 65535)}); return {publishedAt: clock};},
             readHistory: async q => ({result: sql.filter(row => row.ts >= q.start && row.ts <= q.end),
@@ -872,4 +873,119 @@ test('fresh-probe scheduling never invents recovery and still services old store
     assert.ok(r.h.confirmations.every(proof => Number(proof.id) <= 160), 'no new write is falsely confirmed');
     assert.equal(r.h.stored.size + r.after.sqlConfirmed, 1000, 'all unproven originals remain retained');
     assert.equal(r.peak, 1);
+});
+
+function multiBundleFixture(count, options = {}) {
+    const sql = [];
+    const h = fixture(count, {bundleOriginals: true, maxPublishPerTick: 16, maxWritesPerTick: 4,
+        maxOriginalsPerTick: 64, maxReadOriginalBytes: 2 * 1024 * 1024,
+        maxBatchBytes: 512 * 1024, publishIntervalMs: 5000, maxQueriesPerTick: 1,
+        publish: async val => {sql.push({ts: h.now(), val}); return {publishedAt: h.now()};},
+        readHistory: async q => ({result: sql.filter(row => row.ts >= q.start && row.ts <= q.end),
+            backendCompletionObserved: true}), ...options});
+    for (const entry of h.entries) {
+        const frame = JSON.parse(entry.payload); frame.production = {stable: 'x'.repeat(12000)};
+        entry.payload = JSON.stringify(frame); entry.payloadBytes = Buffer.byteLength(entry.payload);
+        entry.sha256 = createHash('sha256').update(entry.payload).digest('hex');
+    }
+    return {...h, sql};
+}
+
+test('multiple bounded bundles drain a backlog while forty new raw originals arrive every five seconds', async () => {
+    const h = multiBundleFixture(1200);
+    h.stored.clear();
+    for (const entry of h.entries.slice(0, 400)) h.stored.set(entry.id, entry);
+    for (let round = 0; round < 20; round++) {
+        for (const entry of h.entries.slice(400 + round * 40, 440 + round * 40)) h.stored.set(entry.id, entry);
+        const before = h.sql.length, queries = h.delivery.health().queryCount;
+        await h.delivery.tick();
+        const writes = h.sql.slice(before);
+        assert.ok(writes.length <= 4);
+        assert.ok(writes.reduce((n, r) => n + Buffer.byteLength(r.val), 0) <= 512 * 1024);
+        assert.ok(writes.every(r => Buffer.byteLength(r.val) <= 60 * 1024 && unpackOriginals(r.val).length <= 16));
+        assert.ok(h.delivery.health().queryCount - queries <= 1);
+        h.advance(5000);
+    }
+    assert.equal(h.stored.size, 0, 'finite initial backlog drains despite continuous new immutable observations');
+    assert.equal(h.confirmations.length, 1200);
+    assert.deepEqual(h.sql.flatMap(r => unpackOriginals(r.val)), h.entries.map(e => e.payload));
+    assert.equal(h.delivery.health().queryErrors, 0);
+});
+
+test('multiple-bundle delivery does not confirm or discard originals when SQL misses them', async () => {
+    const h = multiBundleFixture(128, {readHistory: async () => ({result: [], backendCompletionObserved: true})});
+    await h.delivery.tick(); h.advance(5000); await h.delivery.tick();
+    assert.equal(h.sql.length, 8);
+    assert.equal(h.stored.size, 128);
+    assert.equal(h.confirmations.length, 0);
+    assert.equal(h.delivery.health().publicationAttempts, 128);
+});
+
+test('multiple-bundle delivery preserves strict degraded single-original cadence', async () => {
+    const Backoff = require('../lib/sql-diagnostic-backoff');
+    let clock = 100000;
+    const backoff = new Backoff({now: () => clock}); backoff.fail('completed-error');
+    clock += 60000;
+    const h = multiBundleFixture(128, {now: () => clock, backoff,
+        publish: async () => ({publishedAt: clock}),
+        readHistory: async () => ({result: [], backendCompletionObserved: true})});
+    await h.delivery.tick();
+    assert.equal(h.delivery.health().publicationAttempts, 1);
+    clock += 5000; await h.delivery.tick();
+    assert.equal(h.delivery.health().publicationAttempts, 1);
+    clock += 25000; await h.delivery.tick();
+    assert.equal(h.delivery.health().publicationAttempts, 2);
+    assert.equal(backoff.degraded, true);
+});
+
+test('expanded original work still respects encoded size limits and retains a bounded unsent suffix', async () => {
+    const h = multiBundleFixture(64);
+    for (const e of h.entries) {
+        const f = JSON.parse(e.payload); f.production.stable = require('node:crypto').randomBytes(40000).toString('base64');
+        e.payload = JSON.stringify(f); e.payloadBytes = Buffer.byteLength(e.payload);
+        e.sha256 = createHash('sha256').update(e.payload).digest('hex');
+    }
+    await h.delivery.tick();
+    assert.equal(h.sql.length, 4);
+    assert.equal(h.confirmations.length, 4);
+    assert.equal(h.stored.size, 60);
+    assert.equal(h.delivery.cursor, h.entries[3].id);
+    h.advance(5000); await h.delivery.tick();
+    assert.equal(h.confirmations.length, 8);
+    assert.equal(h.stored.size, 56);
+});
+
+test('original-work expansion rejects unbounded or unbundled configurations', () => {
+    for (const options of [{maxOriginalsPerTick: 65}, {maxReadOriginalBytes: 2 * 1024 * 1024 + 1},
+        {bundleOriginals: false, maxOriginalsPerTick: 64},
+        {bundleOriginals: true, maxOriginalsPerTick: 64, maxWritesPerTick: 2}])
+        assert.throws(() => fixture(1, options), /bounded transport contract/);
+});
+
+test('SQL coalescing or loss of sibling bundles cannot falsely confirm the missing originals', async () => {
+    let last = null;
+    const h = multiBundleFixture(64, {
+        publish: async val => {last = {ts: h.now(), val}; return {publishedAt: h.now()};},
+        readHistory: async () => ({result: [last], backendCompletionObserved: true})});
+    await h.delivery.tick();
+    assert.equal(h.confirmations.length, 16, 'only the actually returned final bundle proves storage');
+    assert.equal(h.stored.size, 48, 'other successful state writes remain unconfirmed, not discarded');
+    assert.equal(h.delivery.health().pendingEntries, 48);
+});
+
+test('unresolved publication completion stops the expanded batch and retains every original', async () => {
+    let complete, calls = 0;
+    const h = multiBundleFixture(64, {publishTimeoutMs: 10,
+        publish: () => {calls++; return new Promise(resolve => {complete = resolve;});},
+        readHistory: async () => ({result: [], backendCompletionObserved: true})});
+    await h.delivery.tick();
+    assert.equal(calls, 1);
+    assert.equal(h.delivery.health().publicationBlocked, true);
+    assert.equal(h.delivery.health().publicationAttempts, 16);
+    h.advance(5000); await h.delivery.tick();
+    assert.equal(calls, 1, 'unknown write completion cannot launch sibling bundles');
+    assert.equal(h.stored.size, 64);
+    assert.equal(h.confirmations.length, 0);
+    complete({publishedAt: h.now()}); await new Promise(resolve => setImmediate(resolve));
+    h.delivery.stop();
 });
