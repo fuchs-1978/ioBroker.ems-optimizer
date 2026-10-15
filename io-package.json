@@ -1,8 +1,9 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.79",
+    "version": "0.17.0-alpha.80",
     "news": {
+      "0.17.0-alpha.80": {"en":"Recover SQL diagnostic backoff with timely fresh exact storage proof without increasing query budgets.","de":"SQL-Drosselung durch rechtzeitig geprüften frischen exakten Speichernachweis beenden; Abfragegrenzen bleiben erhalten."},
       "0.17.0-alpha.79": {"en": "SQL-safe lossless encoded record transport below TEXT limits; exact storage proof remains mandatory.", "de": "Verlustfreier SQL-sicherer Recordtransport unter TEXT-Grenzen; exakter Speichernachweis bleibt erforderlich."},
       "0.17.0-alpha.78": {
         "de": "SQL-Wiederaufnahme ohne NAS-Zugriff nach belegtem Adapterprozesswechsel und lesender globaler Ruheprüfung; begrenzter Historien-Startup-Wiederanlauf nach bestätigtem Fehlerabschluss.",
