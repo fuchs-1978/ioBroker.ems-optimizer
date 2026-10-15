@@ -1,8 +1,9 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.80",
+    "version": "0.17.0-alpha.81",
     "news": {
+      "0.17.0-alpha.81": {"en":"Use up to four bounded original bundles per delivery cycle; separate local work and encoded SQL budgets while preserving exact storage proof.","de":"Bis zu vier begrenzte Originalpakete pro Versandzyklus; lokales Arbeitsbudget und kodierte SQL-Datenmenge getrennt, exakter Speichernachweis bleibt Pflicht."},
       "0.17.0-alpha.80": {"en":"Recover SQL diagnostic backoff with timely fresh exact storage proof without increasing query budgets.","de":"SQL-Drosselung durch rechtzeitig geprüften frischen exakten Speichernachweis beenden; Abfragegrenzen bleiben erhalten."},
       "0.17.0-alpha.79": {"en": "SQL-safe lossless encoded record transport below TEXT limits; exact storage proof remains mandatory.", "de": "Verlustfreier SQL-sicherer Recordtransport unter TEXT-Grenzen; exakter Speichernachweis bleibt erforderlich."},
       "0.17.0-alpha.78": {
