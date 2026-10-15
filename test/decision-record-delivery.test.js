@@ -989,3 +989,96 @@ test('unresolved publication completion stops the expanded batch and retains eve
     complete({publishedAt: h.now()}); await new Promise(resolve => setImmediate(resolve));
     h.delivery.stop();
 });
+
+function spreadBundleFixture(count, options = {}) {
+    let h;
+    const read = options.readHistory || (async q => ({result: h.sql.filter(row => row.ts >= q.start && row.ts <= q.end),
+        backendCompletionObserved: true}));
+    h = multiBundleFixture(count, {maxVerificationSpanMs: 10000,
+        publish: async val => {h.advance(700); h.sql.push({ts: h.now(), val}); return {publishedAt: h.now()};},
+        ...options, readHistory: q => {h.queries.push(q); return read(q);}});
+    return h;
+}
+
+test('adjacent publication windows confirm all spread bundles in one bounded query per batch', async () => {
+    const h = spreadBundleFixture(640);
+    for (let round = 0; round < 10; round++) {
+        const queries = h.delivery.health().queryCount;
+        await h.delivery.tick(); h.advance(5000);
+        assert.equal(h.delivery.health().queryCount - queries, 1);
+    }
+    assert.equal(h.confirmations.length, 640);
+    assert.equal(h.stored.size, 0);
+    assert.ok(h.queries.every(q => q.end - q.start < 10000 && q.limit === 32));
+    assert.equal(h.delivery.health().pendingWindows, 0);
+    assert.ok(h.delivery.health().lastQuery.responseObservedMs >= 0);
+    assert.ok(h.delivery.health().lastQuery.proofProcessingMs >= 0);
+});
+
+test('coalesced exact proof leaves a missing sibling bundle and its original identities unknown', async () => {
+    let h;
+    h = spreadBundleFixture(64, {readHistory: async q => ({result: h.sql.slice(1)
+        .filter(row => row.ts >= q.start && row.ts <= q.end), backendCompletionObserved: true})});
+    await h.delivery.tick();
+    assert.equal(h.confirmations.length, 48);
+    assert.equal(h.stored.size, 16);
+    assert.ok(h.confirmations.every(p => Number(p.id) > 16));
+    assert.equal(h.delivery.health().pendingEntries, 16);
+});
+
+test('saturated coalesced windows split without remerging or claiming complete miss coverage', async () => {
+    let h;
+    h = spreadBundleFixture(64, {readHistory: async q => ({result: Array.from({length: q.limit}, () =>
+        ({ts: q.start, val: JSON.stringify({schema: 2, recordSession: 'unrelated', recordSequence: 1})})),
+        backendCompletionObserved: true})});
+    await h.delivery.tick();
+    assert.equal(h.confirmations.length, 0);
+    assert.equal(h.delivery.health().saturatedWindows, 1);
+    assert.ok([...h.delivery.windows.values()].every(w => w.depth === 1 && w.end - w.start <= 2000));
+    assert.ok([...h.delivery.entries.values()].every(e => e.completeMisses === 0));
+    h.advance(5000); await h.delivery.tick();
+    assert.ok(h.queries.at(-1).end - h.queries.at(-1).start <= 2000, 'split windows stay narrow');
+});
+
+test('coalescing respects due times, failure windows, ID limits and the ten-second ceiling', () => {
+    const h = spreadBundleFixture(1), d = h.delivery;
+    d.windows.clear();
+    d.addWindow(100000, 101999, 'a'); d.addWindow(108000, 109999, 'b'); d.addWindow(110000, 111999, 'c');
+    const first = d.windows.get('100000:101999');
+    const m = d.coalesceVerification(first, [...d.windows.values()]);
+    assert.equal(m.end, 109999); assert.deepEqual([...m.ids], ['a', 'b']);
+    assert.equal(d.windows.size, 2);
+    m.depth = 1;
+    assert.equal(d.coalesceVerification(m, [...d.windows.values()]), m);
+    m.depth = 0; d.backoff = {degraded: true};
+    assert.equal(d.coalesceVerification(m, [...d.windows.values()]), m);
+    assert.throws(() => fixture(1, {maxVerificationSpanMs: 10001}), /bounded transport/);
+});
+
+test('unknown completion of a coalesced read fences all later reads and retains every original', async () => {
+    let queries = 0, complete;
+    const h = spreadBundleFixture(64, {queryTimeoutMs: 10,
+        readHistory: () => {queries++; return new Promise(resolve => {complete = resolve;});}});
+    await h.delivery.tick();
+    assert.equal(h.delivery.health().backendBlocked, true);
+    assert.equal(h.confirmations.length, 0);
+    h.advance(5000); await h.delivery.tick();
+    assert.equal(queries, 1);
+    assert.equal(h.stored.size, 64);
+    complete({result: [], backendCompletionObserved: true});
+    await new Promise(resolve => setImmediate(resolve)); h.delivery.stop();
+});
+
+test('one independent SQL response submits a deduplicated exact proof batch once', async () => {
+    let h, calls = 0;
+    h = fixture(16, {bundleOriginals: true, readHistory: async () => ({
+        result: h.publications.flatMap(val => [{ts: h.now(), val}, {ts: h.now(), val}]),
+        backendCompletionObserved: true})});
+    h.journal.confirmStoredBatch = async proofs => {
+        calls++;
+        for (const {id, proof} of proofs) await h.journal.confirmStored(id, proof);
+        return {confirmedIds: proofs.map(p => p.id), cleanupError: ''};
+    };
+    await h.delivery.tick();
+    assert.equal(calls, 1); assert.equal(h.confirmations.length, 16); assert.equal(h.stored.size, 0);
+});
