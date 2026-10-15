@@ -811,3 +811,65 @@ test('degraded verification cadence applies across different queued windows, inc
     assert.equal(backoff.degraded, true);
 });
 
+
+// Regression: fresh persistence proof must not wait behind a stale verification
+// queue until its timestamp can no longer satisfy the unchanged recovery guard.
+async function recoveryBacklog({visibilityDelayMs = 0, withholdFresh = false} = {}) {
+    const Backoff = require('../lib/sql-diagnostic-backoff');
+    let clock = 100000, expose = false, active = 0, peak = 0;
+    const sql = [], requests = [];
+    const backoff = new Backoff({now: () => clock});
+    const h = fixture(1000, {now: () => clock, backoff, bundleOriginals: true,
+        maxPublishPerTick: 16, maxWritesPerTick: 4, maxQueriesPerTick: 1,
+        publishIntervalMs: 5000, checkIntervalMs: 30000, minQueryGapMs: 1,
+        publish: async val => {sql.push({ts: clock, val}); return {publishedAt: clock};},
+        readHistory: async q => {
+            active++; peak = Math.max(peak, active); requests.push({...q});
+            try {return {result: expose ? sql.filter(row => row.ts >= q.start && row.ts <= q.end
+                && row.ts <= clock - visibilityDelayMs
+                && (!withholdFresh || row.ts < backoff.lastFailureAt)) : [], backendCompletionObserved: true};}
+            finally {active--;}
+        }});
+    for (let n = 0; n < 10; n++) {await h.delivery.tick(); clock += 5000;}
+    assert.equal(h.delivery.health().pendingWindows, 10);
+    backoff.fail('controlled-completed-error'); expose = true; clock += 60000;
+    const before = h.delivery.health();
+    for (let n = 0; n < 180 && (n < 60 || h.stored.size); n++) {
+        const previous = h.delivery.health();
+        await h.delivery.tick();
+        const current = h.delivery.health();
+        assert.ok(current.queryCount - previous.queryCount <= 1, 'existing one-query budget');
+        assert.ok(current.transportWrites - previous.transportWrites <= 4, 'existing transport call budget');
+        if (previous.sqlBackoff.degraded) assert.ok(current.publicationAttempts - previous.publicationAttempts <= 1);
+        clock += 30000;
+    }
+    const after = h.delivery.health(); h.delivery.stop();
+    return {h, backoff, before, after, requests, peak};
+}
+
+test('healthy backend recovers from ten stale proof windows without raising SQL budgets', async () => {
+    const r = await recoveryBacklog();
+    assert.equal(r.backoff.degraded, false);
+    assert.equal(r.h.stored.size, 0, 'finite backlog drains through exact storage matches');
+    assert.equal(r.after.sqlConfirmed, 1000);
+    assert.equal(r.after.queryErrors, 0);
+    assert.equal(r.peak, 1);
+});
+
+test('fresh recovery proof tolerates asynchronous persistence within the unchanged freshness guard', async () => {
+    const r = await recoveryBacklog({visibilityDelayMs: 5000});
+    assert.equal(r.backoff.degraded, false, 'a just-published miss must not starve a committed recent original');
+    assert.ok(r.after.sqlConfirmed > 206);
+    assert.equal(r.after.queryErrors, 0);
+    assert.equal(r.peak, 1);
+});
+
+test('fresh-probe scheduling never invents recovery and still services old stored originals', async () => {
+    const r = await recoveryBacklog({withholdFresh: true});
+    assert.equal(r.backoff.degraded, true, 'old storage and empty recent windows cannot prove new writes');
+    assert.equal(r.backoff.lastProofAt, null);
+    assert.ok(r.after.sqlConfirmed >= 128 && r.after.sqlConfirmed <= 160, 'old proof work is not starved');
+    assert.ok(r.h.confirmations.every(proof => Number(proof.id) <= 160), 'no new write is falsely confirmed');
+    assert.equal(r.h.stored.size + r.after.sqlConfirmed, 1000, 'all unproven originals remain retained');
+    assert.equal(r.peak, 1);
+});
