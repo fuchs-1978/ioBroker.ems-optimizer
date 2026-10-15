@@ -231,6 +231,7 @@ class EmsOptimizer extends utils.Adapter {
             this.decisionRecordDelivery = new DecisionRecordDelivery({journal, publishIntervalMs: 5000,
                 backoff: this.sqlDiagnosticBackoff, maxPublishPerTick: 16, maxWritesPerTick: 4,
                 maxOriginalsPerTick: 64, maxReadOriginalBytes: 2 * 1024 * 1024,
+                maxVerificationSpanMs: 10000,
                 bundleOriginals: true, maxQueriesPerTick: 1,
                 maxBatchBytes: 512 * 1024,
                 publish: async payload => {

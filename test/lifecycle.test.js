@@ -40,6 +40,7 @@ test('recording integration uses private instance data and a matching published 
         assert.equal(a.decisionRecordDelivery.maxPublishPerTick, 16);
         assert.equal(a.decisionRecordDelivery.maxWritesPerTick, 4);
         assert.equal(a.decisionRecordDelivery.maxOriginalsPerTick, 64);
+        assert.equal(a.decisionRecordDelivery.maxVerificationSpanMs, 10000);
         assert.equal(a.decisionRecordDelivery.maxReadOriginalBytes, 2 * 1024 * 1024);
         assert.equal(a.decisionRecordDelivery.maxBatchBytes, 512 * 1024);
         assert.equal(a.decisionRecordDelivery.bundleOriginals, true);

@@ -515,3 +515,62 @@ test('batched backpressure losses survive restart without inventing stored recor
     assert.throws(() => next.reportLoss('bad count', 0), /positive/);
     await next.close();
 });
+
+const batchProofs = entries => entries.map(e => ({id: e.id, proof: {kind: 'independent-history-match',
+    recordSession: e.recordSession, recordSequence: e.recordSequence, sha256: e.sha256}}));
+
+test('a whole exact batch retires a closed checkpoint group with one health persistence', async t => {
+    const journal = new DecisionRecordJournal({directory: await directory(t)});
+    await journal.initialize();
+    const entries = [];
+    for (const value of checkpointChain()) entries.push(await journal.append(value));
+    let healthWrites = 0;
+    const persist = journal._persistHealth.bind(journal);
+    journal._persistHealth = (...args) => {healthWrites++; return persist(...args);};
+    const result = await journal.confirmStoredBatch(batchProofs(entries.slice(0, 3)));
+    assert.deepEqual(result.confirmedIds, entries.slice(0, 3).map(e => e.id));
+    assert.equal(result.cleanupError, ''); assert.equal(healthWrites, 1);
+    assert.equal(journal.health().records, 1);
+    assert.equal(journal.health().sqlConfirmedRecords, 3);
+    assert.equal(journal.health().expiredRecords, 0);
+    await journal.close();
+});
+
+test('bad final proof or duplicate batch identity cannot confirm a valid prefix', async t => {
+    const journal = new DecisionRecordJournal({directory: await directory(t)});
+    await journal.initialize();
+    const entries = [await journal.append(payload(1)), await journal.append(payload(2))];
+    const proofs = batchProofs(entries); proofs[1].proof.sha256 = 'wrong';
+    await assert.rejects(journal.confirmStoredBatch(proofs), /identity\/hash/);
+    await assert.rejects(journal.confirmStoredBatch([batchProofs(entries)[0], batchProofs(entries)[0]]), /bounded/);
+    assert.equal(journal.health().sqlConfirmedRecords, 0);
+    assert.equal(journal.health().records, 2);
+    assert.equal((await journal.readBatch()).length, 2);
+    await journal.close();
+});
+
+test('batch cleanup failure keeps a durable retirement fence and recovers only the proved closed group', async t => {
+    const dir = await directory(t);
+    let fail = false;
+    const fileSystem = {...fs, unlink: async file => {
+        if (fail && String(file).endsWith('.json') && !String(file).endsWith('health.json')) {
+            fail = false; throw new Error('controlled cleanup interruption');
+        }
+        return fs.unlink(file);
+    }};
+    const journal = new DecisionRecordJournal({directory: dir, fileSystem}); await journal.initialize();
+    const entries = [];
+    for (const value of checkpointChain()) entries.push(await journal.append(value));
+    fail = true;
+    const result = await journal.confirmStoredBatch(batchProofs(entries.slice(0, 3)));
+    assert.match(result.cleanupError, /controlled cleanup/);
+    assert.equal(journal.health().capacityVerified, false);
+    assert.equal(journal.health().sqlConfirmedRecords, 3);
+    await journal.close();
+    const restarted = new DecisionRecordJournal({directory: dir}); await restarted.initialize();
+    const remaining = await restarted.readBatch();
+    assert.equal(remaining.length, 1);
+    assert.equal(remaining[0].id, entries[3].id, 'unconfirmed next snapshot survives intact');
+    assert.equal(restarted.health().expiredRecords, 0);
+    await restarted.close();
+});

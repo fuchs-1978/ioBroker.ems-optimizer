@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.81**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.82**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -803,6 +803,10 @@ Bereits vorhandene SQL-Skalarhistorien, Retention und Anlagenkonfiguration werde
 Ab alpha.67 akzeptiert die zentrale Wallbox-Phasenbudgetprüfung dieselbe bestehende Leerlauftoleranz wie der Wallbox-Ausgang: bestätigte, frische, qualitativ gültige Leistungswerte zwischen −0,02 und 0 kW werden intern als 0 W behandelt. Die originale negative Rohmessung bleibt in der Diagnose erhalten. Größere negative Werte, fehlende/ungültige Werte, schlechtes q, fehlendes ACK und veraltete Quellen bleiben gesperrt. Diese Toleranz gilt für Wallboxleistung; die Verträge anderer Quellen werden dadurch nicht geändert.
 
 ## Changelog und historische Detaildokumentation
+
+### 0.17.0-alpha.82 (2026-10-15)
+
+Die exakte SQL-Bestaetigung fasst faellige benachbarte Prueffenster begrenzt auf zehn Sekunden, acht Aufgaben und 1.024 erwartete Identitaeten zusammen. Zeilen-/Antwortbytegrenzen und eine sequenzielle Abfrage je Durchlauf bleiben erhalten; bei Abschneidung oder Fehler werden die Fenster verkleinert und nicht erneut vergroessert. Das Journal validiert bis zu 512 exakte Einzelnachweise einer Antwort vollstaendig und fuehrt Gruppenbereinigung/Gesundheitsschreiben gemeinsam aus. Keine pauschale Speicherquittung, kein Weglassen von Originalereignissen. Neue Laufzeitfelder trennen Antwortbeobachtung inklusive lokaler Sperrverwaltung von anschliessender Nachweis-/Bereinigungsarbeit; sie messen keine reine Datenbanklaufzeit. [Releasehinweise](docs/release-0.17.0-alpha.82.md).
 
 ### 0.17.0-alpha.81 (2026-10-15)
 
