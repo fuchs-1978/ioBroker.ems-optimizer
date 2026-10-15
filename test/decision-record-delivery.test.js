@@ -1052,6 +1052,14 @@ test('coalescing respects due times, failure windows, ID limits and the ten-seco
     assert.equal(d.coalesceVerification(m, [...d.windows.values()]), m);
     m.depth = 0; d.backoff = {degraded: true};
     assert.equal(d.coalesceVerification(m, [...d.windows.values()]), m);
+    d.backoff = null; m.noCoalesce = true;
+    assert.equal(d.coalesceVerification(m, [...d.windows.values()]), m, 'failed work is never expanded');
+    d.windows.clear();
+    d.addWindow(100000, 100999, 'a'); d.addWindow(101000, 101999, 'b');
+    const limited = d.windows.get('100000:100999');
+    limited.ids = new Set(Array.from({length: 600}, (_, i) => `a${i}`));
+    d.windows.get('101000:101999').ids = new Set(Array.from({length: 500}, (_, i) => `b${i}`));
+    assert.equal(d.coalesceVerification(limited, [...d.windows.values()]), limited, 'identity work remains bounded');
     assert.throws(() => fixture(1, {maxVerificationSpanMs: 10001}), /bounded transport/);
 });
 
