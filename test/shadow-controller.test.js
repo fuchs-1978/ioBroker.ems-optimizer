@@ -1471,3 +1471,27 @@ test('SQL degradation slows shadow scalars and health while leaving computation 
     assert.equal(writes.filter(w => w.id.endsWith('.ScalarCycleId')).at(-1).value, 5);
 });
 
+
+test('large recorder status JSON is coalesced at one second while changed loss counters remain visible', async () => {
+    let now = 100000, bytes = 100;
+    const cache = new Map(), writes = [];
+    const adapter = {namespace: 'ems.0', getCachedState: id => cache.get(id),
+        decisionRecordJournal: {health: () => ({bytes, records: 1, unconfirmedRecords: 1,
+            oldestAgeMs: now - 90000, rejectedRecords: 0})},
+        decisionRecordDelivery: {health: () => ({lastQuery: {at: now}})},
+        setCompatState: async (id, value) => {cache.set(id, {val: value}); writes.push({id, value});}};
+    const shadow = new ShadowController(adapter, {now: () => now});
+    shadow.publishRecordHealth(); await new Promise(resolve => setImmediate(resolve));
+    const count = suffix => writes.filter(w => w.id.endsWith(suffix)).length;
+    assert.equal(count('.RecordJournalStatus'), 1);
+    for (let n = 0; n < 20; n++) {now++; bytes++; shadow.publishRecordHealth();}
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(count('.RecordJournalStatus'), 1);
+    assert.equal(count('.RecordDeliveryStatus'), 1);
+    assert.equal(count('.RecordSQLConfirmed'), 1, 'unchanged health scalars do not write repeatedly');
+    shadow.recordDropped = 7; shadow.publishRecordHealth(); await new Promise(resolve => setImmediate(resolve));
+    assert.equal(cache.get('ems.0.Debug.Shadow.RecordDropped').val, 7);
+    now += 1000; shadow.publishRecordHealth(); await new Promise(resolve => setImmediate(resolve));
+    assert.equal(count('.RecordJournalStatus'), 2);
+    assert.equal(JSON.parse(cache.get('ems.0.Debug.Shadow.RecordJournalStatus').val).bytes, bytes);
+});

@@ -49,7 +49,9 @@ test('quiet polls reduce persisted full decisions while a dip restores exact pre
     h.shadow.captureProduction('power', h.states.get('power'), before); await h.flush();
     const decoded = h.records();
     assert.ok(decoded.every(r => r.schema === 2 && !r.reconstruction));
-    const samples = decoded.flatMap(r => r.event?.samples || []);
+    const samples = decoded.flatMap(r => r.event?.type === 'source.update'
+        ? [{sampleSequence: r.event.sampleSequence, receivedAt: r.event.receivedAt, id: r.event.id, state: r.event.state}]
+        : r.event?.samples || []);
     assert.equal(samples.length, 101);
     assert.equal(new Set(samples.map(s => s.sampleSequence)).size, 101);
     assert.equal(samples[0].state.ts, 2000100);
@@ -658,3 +660,27 @@ test('the first matching post-command ACK observation is immediate and later unc
 
 
 
+
+test('an immediate gap observation is stored once while earlier raw observations remain intact', async t => {
+    const h = fixture(2000000); t.mock.method(Date, 'now', h.now);
+    h.shadow.productionRecord(); await h.flush();
+    let previous = h.states.get('power'); h.advance(100); h.put('power', 0);
+    h.shadow.captureProduction('power', h.states.get('power'), previous);
+    const priorSequence = h.shadow.diagnosticSampler.sequence;
+    previous = h.states.get('cmd'); h.advance(60000); h.put('cmd', 6);
+    h.shadow.captureProduction('cmd', h.states.get('cmd'), previous);
+    const sequence = h.shadow.diagnosticSampler.sequence;
+    await h.flush();
+    const records = h.records();
+    const samples = records.flatMap(r => r.event?.type === 'source.update'
+        ? [{sampleSequence: r.event.sampleSequence, state: r.event.state}]
+        : r.event?.samples || []);
+    assert.equal(samples.filter(s => s.sampleSequence === sequence).length, 1);
+    assert.equal(samples.filter(s => s.sampleSequence === priorSequence).length, 1);
+    const edge = records.find(r => r.event?.sampleSequence === sequence);
+    assert.equal(edge.event.type, 'source.update');
+    assert.equal(edge.event.triggerReason, 'source-gap');
+    assert.deepEqual(edge.event.state, h.states.get('cmd'));
+    assert.equal(h.shadow.recordDropped, 0);
+    assert.ok(records.every(r => !r.reconstruction));
+});
