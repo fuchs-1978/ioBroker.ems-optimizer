@@ -28,6 +28,24 @@ function adapter(adapterCore = {}) {
     return instance;
 }
 
+test('alpha84 connects actual command events, Modbus resets and the VM receipt without confusing database completion',async()=>{
+    const a=adapter();let now=1000;
+    const id='modbus.4.holdingRegisters.1000_Power';
+    a.heaterWriteProof=new (require('../lib/heater-write-proof').HeaterWriteProof)(a.namespace,()=>now);
+    a.heaterWriteProof.configure(id,{type:'state',common:{type:'number',read:false,write:true},
+        native:{poll:false,regType:'holdingRegs'}});
+    a.setForeignStateAsync=async()=>{
+        a.onStateChange(id,{val:0,ack:false,ts:now,from:'system.adapter.ems.0'});
+    };
+    await a.writeRecordedForeignState(id,0);
+    assert.equal(a.heaterWriteProof.zeroProof(id,a.getCachedState(id)),null,'database completion is insufficient');
+    now++;
+    a.onStateChange(id,{val:null,ack:true,ts:now,from:'system.adapter.modbus.4',q:0});
+    assert.equal(a.heaterWriteProof.zeroProof(id,a.getCachedState(id)).kind,'write-only-modbus-reset');
+    a.onStateChange(id,{val:3000,ack:false,ts:now,from:'system.adapter.javascript.0'});
+    assert.equal(a.heaterWriteProof.zeroProof(id,a.getCachedState(id)),null,'external writer invalidates receipt');
+});
+
 test('recording integration uses private instance data and a matching published state timestamp only', async () => {
     const directory = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'ems-recording-integration-'));
     const a = adapter({getAbsoluteInstanceDataDir: instance => {
@@ -906,3 +924,4 @@ test('slow display persistence coalesces large series while safety edges and rec
     assert.equal(a.getCachedState('ems.0.Forecast.PV_48h_JSON').val, '1999');
     assert.equal(a.displayWriter.entries.size, 0);
 });
+

@@ -1,8 +1,9 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.83",
+    "version": "0.17.0-alpha.84",
     "news": {
+      "0.17.0-alpha.84": {"en":"Associate write-only Modbus command resets with heater zero commands and verify sustained three-phase electrical standstill before releasing unseen reservations.","de":"Write-only-Modbus-Befehlsresets dem EHZ-Nullauftrag zuordnen und vor Freigabe unbeobachteter Reserven anhaltenden elektrischen Stillstand aller drei Phasen nachweisen."},
       "0.17.0-alpha.83": {"en":"Lossless compact age deltas and bounded recorder-health publication reduce diagnostic overhead without dropping original events.","de":"Verlustfreie kompakte Altersdeltas und begrenzte Recorder-Statusausgabe reduzieren Diagnose-Overhead ohne Weglassen von Originalereignissen."},
       "0.17.0-alpha.82": {"en":"Coalesce bounded exact SQL proof windows and local journal confirmation maintenance without reducing observation fidelity.","de":"Begrenzte SQL-Prueffenster und lokale Journal-Bestaetigung buendeln; exakte Nachweise und Originalereignisse bleiben erhalten."},
       "0.17.0-alpha.81": {"en":"Use up to four bounded original bundles per delivery cycle; separate local work and encoded SQL budgets while preserving exact storage proof.","de":"Bis zu vier begrenzte Originalpakete pro Versandzyklus; lokales Arbeitsbudget und kodierte SQL-Datenmenge getrennt, exakter Speichernachweis bleibt Pflicht."},
@@ -628,4 +629,5 @@
     }
   ]
 }
+
 
