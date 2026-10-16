@@ -84,11 +84,15 @@ test('EHZ increases are ramped but import reductions are immediate', () => {
     assert.equal(command('limitedDhwCommand(6000, 3000, 6000, 500, 1000)'), 1000);
 });
 
-function outputHarness({combined = false, simulate = false, directional = false} = {}) {
+function outputHarness({combined = false, simulate = false, directional = false, writeOnly = false} = {}) {
     let now = 2000000;
     const states = new Map();
     const writes = [];
     const pending = [];
+    const proofId = 'modbus.4.holdingRegisters.1000_Power';
+    const proof = new (require('../lib/heater-write-proof').HeaterWriteProof)('ems.0', () => now);
+    if (writeOnly) proof.configure(proofId, {type:'state',common:{type:'number',write:true,read:false},
+        native:{poll:false,regType:'holdingRegs'}});
     const put = (id, val, extra = {}) => states.set(id, {val, ts: now, ack: true, ...extra});
     const own = (id, val, extra) => put(`ems.0.${id}`, val, extra);
     for (const id of ['System.RealOutputsEnabled', 'System.DataValid', 'Control.Valid',
@@ -126,8 +130,14 @@ function outputHarness({combined = false, simulate = false, directional = false}
         readNumber: (id, fallback) => states.has(id) ? Number(states.get(id).val) : fallback,
         readBooleanInput: id => states.has(id) ? states.get(id).val : null,
         write: (id, val) => put(id, val),
+        getHeaterWriteOnlyZeroProof: id => id === 'setpoint' ? proof.zeroProof(proofId, states.get(id)) : null,
         writeForeignState: (id, val, callback) => {
             writes.push({id, val, at: now});
+            const token = id === 'setpoint' ? proof.begin(proofId, val) : null;
+            if (token) {
+                put(id, val, {ack:false,from:'system.adapter.ems.0'});
+                proof.observe(proofId, states.get(id));
+            }
             if (callback) pending.push(callback);
             return true;
         }});
@@ -135,6 +145,8 @@ function outputHarness({combined = false, simulate = false, directional = false}
         path.join(__dirname, '../lib/engine/dhw-controller.js'), 'utf8'), ctx);
     vm.runInContext(fs.readFileSync(path.join(__dirname, '../lib/engine/dhw-output.js'), 'utf8'), ctx);
     return {states, writes, pending, put, own, nativeConfig, consumptionLimit,
+        deviceAck: () => {now++;put('setpoint', null, {ack:true,from:'system.adapter.modbus.4'});
+            proof.observe(proofId, states.get('setpoint'));},
         run: code => vm.runInContext(code, ctx),
         tick: () => vm.runInContext('updateDhwProductionOutput()', ctx),
         advance: ms => {now += ms;},
@@ -378,7 +390,7 @@ test('issue123 reservation status identifies missing full effect and unknown set
     const status = h.states.get('ems.0.Devices.MyPV_DHW.OutputReservationStatus').val;
     assert.match(status, /transportseitig abgeschlossen/);
     assert.match(status, /volle fruehere Stellwirkung auf Phase 1 fehlt/);
-    assert.match(status, /Sollrueckmeldung fehlt\/NULL/);
+    assert.match(status, /Sollwert NULL ist kein numerischer Istwert/);
     assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservationPending').val, true);
 });
 
@@ -918,6 +930,58 @@ function unseenStopped(h) {
     h.run("reserveHeaterCommand('MyPV_DHW', 0, ['o1','o2','o3'], 3000); heaterZeroWriteCompleted('MyPV_DHW', ['o1','o2','o3'], 3000)");
 }
 
+function writeOnlyStopped(h) {
+    h.run('writeDhwSetpoint(3000)');h.complete();h.deviceAck();h.advance(1000);
+    h.run('writeDhwSetpoint(0)');h.complete();h.deviceAck();
+}
+function writeOnlyZeroStep(h, advance=8000, overrides={}) {
+    h.advance(advance);
+    for(const id of ['o1','o2','o3'])h.put(id,0,overrides[id]||{});
+    h.run("refreshHeaterReservation('MyPV_DHW',['o1','o2','o3'],3000)");
+}
+
+test('alpha84 write-only NULL receipt plus sustained real zeros releases an unseen reservation without extra writes',()=>{
+    const h=outputHarness({writeOnly:true});writeOnlyStopped(h);
+    const before=h.writes.length;
+    writeOnlyZeroStep(h,1000);writeOnlyZeroStep(h);
+    assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservedPower_W').val,3000);
+    writeOnlyZeroStep(h);
+    assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservedPower_W').val,0);
+    const record=JSON.parse(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservationState_JSON').val);
+    assert.equal(record.lastReleaseProof.kind,'write-only-zero-receipt-and-electrical-plateau');
+    assert.equal(record.lastReleaseProof.commandReceipt.kind,'write-only-modbus-reset');
+    assert.equal(h.writes.length,before);
+});
+
+for(const scenario of ['missing reset','delayed positive','unchanged times','bad quality','no ACK','NULL actual','long gap','new rise','restart','mapping changed']) {
+    test(`alpha84 write-only electrical proof retains uncertainty: ${scenario}`,()=>{
+        const h=outputHarness({writeOnly:true});writeOnlyStopped(h);
+        if(scenario==='missing reset')h.put('setpoint',null,{ts:2000000});
+        for(let i=0;i<3;i++){
+            const overrides={};
+            if(scenario==='delayed positive'&&i===1)overrides.o2={val:1500};
+            if(scenario==='unchanged times')overrides.o3={ts:2002000};
+            if(scenario==='bad quality')overrides.o1={q:64};
+            if(scenario==='no ACK')overrides.o2={ack:false};
+            if(scenario==='NULL actual')overrides.o1={val:null};
+            if(scenario==='new rise'&&i===1)h.run('writeDhwSetpoint(1000)');
+            if(scenario==='restart'&&i===1)h.run('heaterReservationRecords.clear();heaterReservationEvidence.clear()');
+            if(scenario==='mapping changed')h.run("CFG.dp.myPvDhwSetpoint='other'");
+            writeOnlyZeroStep(h,i?(scenario==='long gap'?31000:8000):1000,overrides);
+        }
+        assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservedPower_W').val,3000);
+    });
+}
+
+test('write-only proof honors a longer configured reaction deadline without requiring repeated reset ACKs',()=>{
+    const h=outputHarness({writeOnly:true});h.own('Config.DHWSettleTimeout_s',60);writeOnlyStopped(h);
+    writeOnlyZeroStep(h,1000);
+    for(let i=0;i<7;i++)writeOnlyZeroStep(h);
+    assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservedPower_W').val,3000);
+    writeOnlyZeroStep(h);
+    assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservedPower_W').val,0);
+});
+
 test('unseen old reserve releases only after fresh zero setpoint ACK and sustained new zero measurements on all phases',()=>{
     const h=outputHarness();unseenStopped(h);
     confirmedZeroStep(h,1000);assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservedPower_W').val,3000);
@@ -976,3 +1040,4 @@ test('shared heating reservation accepts a bounded stable stage deviation then r
     h.advance(1000);for(const id of ['o1','o2','o3'])h.put(id,0);h.run("refreshHeaterReservation('MyPV_Heating',['o1','o2','o3'],2000)");
     assert.equal(h.states.get('ems.0.Devices.MyPV_Heating.OutputReservedPower_W').val,0);
 });
+

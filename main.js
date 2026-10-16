@@ -27,6 +27,7 @@ const DecisionRecordDelivery = require("./lib/decision-record-delivery");
 const {SqlVerificationRecovery} = require("./lib/sql-verification-recovery");
 const SqlDiagnosticBackoff = require("./lib/sql-diagnostic-backoff");
 const {buildDiagnosticSourceContract} = require("./lib/diagnostic-source-contract");
+const {HeaterWriteProof} = require("./lib/heater-write-proof");
 
 class EmsOptimizer extends utils.Adapter {
     constructor(options = {}) {
@@ -44,6 +45,7 @@ class EmsOptimizer extends utils.Adapter {
         this.pendingForeignWrites = new Set();
         this.foreignWriteQueues = new Map();
         this.foreignWriteGeneration = new Map();
+        this.heaterWriteProof = new HeaterWriteProof(this.namespace);
         this.pendingOwnWrites = new Map();
         this.displayWriter = new LatestStateWriter(async (id, state) => {
             await (this.objectPromises.get(id) || Promise.resolve());
@@ -183,11 +185,13 @@ class EmsOptimizer extends utils.Adapter {
         // Diagnostic persistence is not awaited and never authorizes or rejects an output.
         // Transport completion is deliberately not called an actuator ACK.
         const commandId = this.runShadow('commandEvent', 'attempt', id, value);
+        const heaterToken = this.heaterWriteProof.begin(id, value);
         try {
             const result = await this.setForeignStateAsync(id, value, false);
             this.runShadow('commandEvent', 'transport_complete', id, value, commandId);
             return result;
         } catch (error) {
+            this.heaterWriteProof.transportFailed(id, heaterToken);
             this.runShadow('commandEvent', 'transport_error', id, value, commandId, error.message || error);
             throw error;
         }
@@ -932,6 +936,10 @@ class EmsOptimizer extends utils.Adapter {
             getState(id) { return adapter.getCachedState(id); },
             existsState(id) { return adapter.knownObjects.has(id) || adapter.stateCache.has(id); },
             getSourceUnit(id) { return adapter.bhkwSourceUnits?.get(id) ?? null; },
+            getHeaterWriteOnlyZeroProof(id) {
+                return adapter.foreignWriteQueues.has(id) ? null
+                    : adapter.heaterWriteProof.zeroProof(id, adapter.getCachedState(id));
+            },
             async historySourceEnabled(id, instance) {
                 const object = await adapter.getForeignObjectAsync(id);
                 return object?.type === 'state' && object.common?.custom?.[instance]?.enabled === true;
@@ -976,6 +984,7 @@ class EmsOptimizer extends utils.Adapter {
     }
 
     onStateChange(id, state) {
+        this.heaterWriteProof.observe(id, state);
         const previous = this.stateCache.get(id);
         if (this.ownRelative(id) !== null && state && previous && state.ack === true
             && (Number(state.ts) < Number(previous.ts)
@@ -1091,5 +1100,6 @@ class EmsOptimizer extends utils.Adapter {
 
 if (require.main !== module) module.exports = options => new EmsOptimizer(options);
 else new EmsOptimizer();
+
 
 
