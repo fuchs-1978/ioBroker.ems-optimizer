@@ -131,6 +131,7 @@ function outputHarness({combined = false, simulate = false, directional = false,
         readBooleanInput: id => states.has(id) ? states.get(id).val : null,
         write: (id, val) => put(id, val),
         getHeaterWriteOnlyZeroProof: id => id === 'setpoint' ? proof.zeroProof(proofId, states.get(id)) : null,
+        getHeaterWriteOnlyZeroStatus: id => id === 'setpoint' ? proof.zeroStatus(proofId, states.get(id)) : {status:'unavailable'},
         writeForeignState: (id, val, callback) => {
             writes.push({id, val, at: now});
             const token = id === 'setpoint' ? proof.begin(proofId, val) : null;
@@ -138,7 +139,13 @@ function outputHarness({combined = false, simulate = false, directional = false,
                 put(id, val, {ack:false,from:'system.adapter.ems.0'});
                 proof.observe(proofId, states.get(id));
             }
-            if (callback) pending.push(callback);
+            if (callback) pending.push(error => {
+                if (token) {
+                    if (error) proof.transportFailed(proofId, token);
+                    else proof.transportCompleted(proofId, token);
+                }
+                callback(error);
+            });
             return true;
         }});
     if (simulate) vm.runInContext(fs.readFileSync(
@@ -940,6 +947,26 @@ function writeOnlyZeroStep(h, advance=8000, overrides={}) {
     h.run("refreshHeaterReservation('MyPV_DHW',['o1','o2','o3'],3000)");
 }
 
+test('productive five-second zero ticks retain a sustained electrical plateau across correlated resets',()=>{
+    const h=outputHarness({writeOnly:true});writeOnlyStopped(h);
+    h.own('Control.Targets.MyPV_DHW_W',0);
+    h.put('gridOut',0);
+    for(let i=0;i<5;i++) {
+        h.advance(5000);
+        // Refresh the actual sources, never the command register/receipt ts.
+        for(const id of ['o1','o2','o3','connection','gridIn','gridOut','h1','h2','h3'])
+            h.put(id,id==='connection'?true:0);
+        h.own('System.LastUpdate',2000000+(i+1)*5000);
+        h.own('Control.LastUpdate',2000000+(i+1)*5000);
+        h.tick();h.complete();h.deviceAck();
+    }
+    assert.ok(h.commands().filter(w=>w===0).length>=5,'normal tick must keep writing zeros');
+    assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservedPower_W').val,0);
+    const record=JSON.parse(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservationState_JSON').val);
+    assert.ok(record.lastReleaseProof.count>=3);
+    assert.ok(record.lastReleaseProof.lastSampleAt-record.lastReleaseProof.firstSampleAt>=15000);
+});
+
 test('alpha84 write-only NULL receipt plus sustained real zeros releases an unseen reservation without extra writes',()=>{
     const h=outputHarness({writeOnly:true});writeOnlyStopped(h);
     const before=h.writes.length;
@@ -1031,6 +1058,31 @@ test('zero-ACK proof cannot borrow its plateau across an interrupted process or 
         assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservedPower_W').val,3000);
     }
 });
+
+for (const writeOnly of [false, true]) {
+    test(`zero proof restarts after a partially advanced phase timestamp regresses: ${writeOnly ? 'write-only reset' : 'numeric ACK'}`, () => {
+        const h = outputHarness({writeOnly});
+        if (writeOnly) writeOnlyStopped(h); else unseenStopped(h);
+        if (writeOnly) writeOnlyZeroStep(h, 1000); else confirmedZeroStep(h, 1000);
+        const firstAt = h.states.get('o1').ts;
+
+        // A partial source update is still an observed timestamp, even
+        // though it cannot count as a new independent three-phase sample.
+        h.advance(8000);h.put('o1', 0);
+        h.run("refreshHeaterReservation('MyPV_DHW',['o1','o2','o3'],3000)");
+        h.advance(1000);
+        for (const id of ['o1', 'o2', 'o3']) h.put(id, 0, {ts: firstAt + 6000});
+        h.run("refreshHeaterReservation('MyPV_DHW',['o1','o2','o3'],3000)");
+
+        // This would finish the old plateau if the partial L1 observation
+        // above were forgotten. It is only the new plateau's second sample.
+        if (writeOnly) writeOnlyZeroStep(h, 8000); else confirmedZeroStep(h, 8000);
+        assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservedPower_W').val, 3000);
+        const record = JSON.parse(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservationState_JSON').val);
+        assert.equal(record.lastReleaseProof, undefined);
+        assert.ok(record.zeroProofStatus.count <= 2);
+    });
+}
 
 test('shared heating reservation accepts a bounded stable stage deviation then requires a later physical zero',()=>{
     const h=outputHarness();h.nativeConfig.heatingSetpointId='heatingSetpoint';h.nativeConfig.heatingConnectionId='connection';

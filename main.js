@@ -188,6 +188,7 @@ class EmsOptimizer extends utils.Adapter {
         const heaterToken = this.heaterWriteProof.begin(id, value);
         try {
             const result = await this.setForeignStateAsync(id, value, false);
+            this.heaterWriteProof.transportCompleted(id, heaterToken);
             this.runShadow('commandEvent', 'transport_complete', id, value, commandId);
             return result;
         } catch (error) {
@@ -939,6 +940,11 @@ class EmsOptimizer extends utils.Adapter {
             getHeaterWriteOnlyZeroProof(id) {
                 return adapter.foreignWriteQueues.has(id) ? null
                     : adapter.heaterWriteProof.zeroProof(id, adapter.getCachedState(id));
+            },
+            getHeaterWriteOnlyZeroStatus(id) {
+                const status = adapter.heaterWriteProof.zeroStatus(id, adapter.getCachedState(id));
+                return adapter.foreignWriteQueues.has(id) && status.status !== 'blocked'
+                    ? {...status, status: 'pending', reason: 'output-queue-pending'} : status;
             },
             async historySourceEnabled(id, instance) {
                 const object = await adapter.getForeignObjectAsync(id);
