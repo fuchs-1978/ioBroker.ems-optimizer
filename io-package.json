@@ -1,8 +1,9 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.84",
+    "version": "0.17.0-alpha.85",
     "news": {
+      "0.17.0-alpha.85": {"en":"Preserve an uninterrupted heater zero-proof episode across correlated completed repeat commands; require the latest reset and transport plus fresh three-phase standstill before release, and expose proof blockers.","de":"Ununterbrochenen EHZ-Nullnachweis ueber zugeordnete abgeschlossene Wiederholungsauftraege erhalten; vor Freigabe neuesten Reset und Transport sowie frischen Dreiphasenstillstand verlangen und Sperrgruende anzeigen."},
       "0.17.0-alpha.84": {"en":"Associate write-only Modbus command resets with heater zero commands and verify sustained three-phase electrical standstill before releasing unseen reservations.","de":"Write-only-Modbus-Befehlsresets dem EHZ-Nullauftrag zuordnen und vor Freigabe unbeobachteter Reserven anhaltenden elektrischen Stillstand aller drei Phasen nachweisen."},
       "0.17.0-alpha.83": {"en":"Lossless compact age deltas and bounded recorder-health publication reduce diagnostic overhead without dropping original events.","de":"Verlustfreie kompakte Altersdeltas und begrenzte Recorder-Statusausgabe reduzieren Diagnose-Overhead ohne Weglassen von Originalereignissen."},
       "0.17.0-alpha.82": {"en":"Coalesce bounded exact SQL proof windows and local journal confirmation maintenance without reducing observation fidelity.","de":"Begrenzte SQL-Prueffenster und lokale Journal-Bestaetigung buendeln; exakte Nachweise und Originalereignisse bleiben erhalten."},
