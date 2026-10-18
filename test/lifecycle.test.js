@@ -925,3 +925,51 @@ test('slow display persistence coalesces large series while safety edges and rec
     assert.equal(a.displayWriter.entries.size, 0);
 });
 
+
+test('queued EHZ budget reduction revalidates and publishes only the smaller command', async () => {
+    const {a, id, writes} = extensionOutput('MyPV_DHW');
+    let persist, completion;
+    a.pendingOwnWrites.set('ems.0.Devices.MyPV_DHW.OutputOwned',
+        new Promise(resolve => { persist = resolve; }));
+    const checks = [];
+    a.runEngine = source => {
+        checks.push(source);
+        return source.endsWith(', 2200)')
+            ? {allowed: false, code: 'DHW_BUDGET_SUPERSEDED', replacementW: 1800}
+            : {allowed: true};
+    };
+    a.writeForeignStateGuarded(id, 2200, (error, result) => { completion = {error, result}; });
+    await Promise.resolve();
+    assert.equal(writes.length, 0);
+    persist();
+    await Promise.allSettled([...a.pendingForeignWrites]);
+    assert.deepEqual(writes.map(write => write.value), [1800]);
+    assert.equal(completion.error, null);
+    assert.equal(completion.result.value, 1800);
+    assert.equal(checks.length, 2, 'replacement must pass complete guard independently');
+});
+
+for (const reason of ['phase topology', 'LPC', 'temperature', 'invalid source']) {
+    test(`smaller queued EHZ command is not dispatched when recheck rejects ${reason}`, async () => {
+        const {a, id, writes} = extensionOutput('MyPV_DHW');
+        let failure;
+        a.runEngine = source => source.endsWith(', 2200)')
+            ? {allowed:false,code:'DHW_BUDGET_SUPERSEDED',replacementW:1800}
+            : {allowed:false,reason};
+        a.writeForeignStateGuarded(id, 2200, error => { failure = error; });
+        await Promise.allSettled([...a.pendingForeignWrites]);
+        assert.equal(writes.length, 0);
+        assert.match(failure.message, new RegExp(reason));
+    });
+}
+
+test('untyped budget failures and invalid replacement values keep the failure path', async () => {
+    for (const replacementW of [0, -1, NaN, 2200, 3000, null]) {
+        const {a,id,writes,electrical}=extensionOutput('MyPV_DHW');
+        Object.assign(electrical,{allowed:false,code:'DHW_BUDGET_SUPERSEDED',replacementW});
+        let failure;
+        a.writeForeignStateGuarded(id,2200,error=>{failure=error;});
+        await Promise.allSettled([...a.pendingForeignWrites]);
+        assert.equal(writes.length,0);assert.ok(failure);
+    }
+});

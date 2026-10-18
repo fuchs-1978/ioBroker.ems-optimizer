@@ -850,7 +850,15 @@ class EmsOptimizer extends utils.Adapter {
                         throw new Error('Heizpuffer-Leistungsgrenze vor Ausgabe reduziert/ungueltig');
                 }
                 if (this.engineContext && !head) {
-                    const electrical = this.runEngine(`checkQueuedElectricalOutput(${JSON.stringify(device)}, ${value})`);
+                    let electrical = this.runEngine(`checkQueuedElectricalOutput(${JSON.stringify(device)}, ${value})`);
+                    if (!electrical?.allowed && device === 'MyPV_DHW'
+                        && electrical?.code === 'DHW_BUDGET_SUPERSEDED'
+                        && Number.isFinite(electrical.replacementW)
+                        && electrical.replacementW > 0 && electrical.replacementW < value) {
+                        const replacementW = electrical.replacementW;
+                        electrical = this.runEngine(`checkQueuedElectricalOutput(${JSON.stringify(device)}, ${replacementW})`);
+                        if (electrical?.allowed) value = replacementW;
+                    }
                     if (!electrical?.allowed)
                         throw new Error(electrical?.reason || 'Elektrische Grenze vor Ausgabe nicht bestaetigt');
                 }
@@ -859,7 +867,7 @@ class EmsOptimizer extends utils.Adapter {
         });
         this.foreignWriteQueues.set(id, promise);
         this.pendingForeignWrites.add(promise);
-        void promise.then(() => onComplete?.(null), error => {
+        void promise.then(() => onComplete?.(null, {value}), error => {
             this.log.error(`Cannot write production output ${id}: ${error.message}`);
             onComplete?.(error);
         }).catch(error => this.log.warn(`Output callback failed: ${error.message}`))
