@@ -516,6 +516,132 @@ test('batched backpressure losses survive restart without inventing stored recor
     await next.close();
 });
 
+test('historical queue-loss episodes coalesce only adjacent identities, bound overflow and persist without an original', async t => {
+    const dir = await directory(t);
+    let now = 100000;
+    const journal = new DecisionRecordJournal({directory: dir, now: () => now});
+    await journal.initialize();
+    const episodeBytes = [];
+    function loss(episode, offset) {
+        const rawBytes = (offset + 1) * 1000 + episode;
+        const diagnostic = {kind: 'recorder-queue-full', recordSession: `session-${episode % 2}`,
+            recordSequence: episode * 10 + offset + 1, eventAt: now - 20, observedAt: now,
+            rawBytes, limitsHit: {records: offset === 0, bytes: offset === 1},
+            queue: {records: 128, bytes: 7000000, maxRecords: 128, maxBytes: 8 * 1024 * 1024,
+                oldestQueuedAt: now - 1000, oldestWaitMs: 1000,
+                active: {queuedAt: now - 1000, startedAt: now - 900, waitMs: 100,
+                    records: 16, rawBytes: 240000, firstSequence: 1, lastSequence: 16}},
+            // A caller cannot smuggle another private full frame into health.
+            rawFrame: {privateValue: 'must not appear in diagnostics'}};
+        journal.reportLoss('recorder queue full', 1, diagnostic);
+        now += 10;
+        return rawBytes;
+    }
+    for (let episode = 0; episode < 6; episode++) episodeBytes.push(loss(episode, 0) + loss(episode, 1));
+    const history = journal.health().lossEpisodes;
+    assert.equal(history.schema, 1);
+    assert.equal(history.maxEpisodes, 4);
+    assert.equal(history.episodes.length, 4);
+    assert.equal(history.evictedEpisodes, 2);
+    assert.equal(history.evictedRecords, 4);
+    assert.equal(history.evictedRawBytes, episodeBytes[0] + episodeBytes[1]);
+    assert.equal(journal.health().rejectedRecords, 12);
+    assert.equal(journal.health().records, 0, 'diagnostic loss persistence never invents a stored original');
+    for (let index = 0; index < 4; index++) {
+        const episodeIndex = index + 2;
+        const episode = history.episodes[index];
+        assert.equal(episode.recordSession, `session-${episodeIndex % 2}`);
+        assert.equal(episode.firstSequence, episodeIndex * 10 + 1);
+        assert.equal(episode.lastSequence, episodeIndex * 10 + 2);
+        assert.equal(episode.rejectedRecords, 2);
+        assert.equal(episode.rejectedRawBytes, episodeBytes[episodeIndex]);
+        assert.deepEqual(episode.limitsHit, {records: true, bytes: true});
+        assert.equal(episode.firstEventAt, 100000 + episodeIndex * 20 - 20);
+        assert.equal(episode.lastEventAt, 100000 + episodeIndex * 20 - 10);
+        assert.equal(episode.firstObservedAt, 100000 + episodeIndex * 20);
+        assert.equal(episode.lastObservedAt, 100000 + episodeIndex * 20 + 10);
+    }
+    assert.equal(JSON.stringify(history).includes('privateValue'), false);
+    const expected = structuredClone(history);
+    history.episodes[0].firstContext.queue.records = 9999;
+    history.episodes.pop();
+    assert.deepEqual(journal.health().lossEpisodes, expected, 'health callers cannot mutate retained episode evidence');
+    await journal.close();
+    const restarted = new DecisionRecordJournal({directory: dir, now: () => now});
+    await restarted.initialize();
+    assert.deepEqual(restarted.health().lossEpisodes, expected);
+    assert.equal(restarted.health().rejectedRecords, 12);
+    assert.deepEqual(await restarted.readBatch(), []);
+    await restarted.close();
+});
+
+test('escaped error text and maximum-width episode metadata stay within the health reader byte bound', async t => {
+    const dir = await directory(t), widest = Number.MAX_SAFE_INTEGER;
+    const journal = new DecisionRecordJournal({directory: dir, now: () => widest});
+    await journal.initialize();
+    const maximum = keys => Object.fromEntries(keys.map(key => [key, widest]));
+    journal.lastAppendBatch = maximum(['records', 'bytes', 'elapsedMs', 'parallelFiles',
+        'queuedAt', 'startedAt', 'completedAt', 'waitMs', 'appendMs']);
+    for (let index = 0; index < 4; index++) journal.reportLoss('\u0000'.repeat(1000), 1, {
+        kind: 'recorder-queue-full', recordSession: 'A'.repeat(79) + index,
+        recordSequence: index + 1, eventAt: widest, observedAt: widest, rawBytes: 100000 + index,
+        limitsHit: {records: true, bytes: true},
+        queue: {...maximum(['records', 'bytes', 'maxRecords', 'maxBytes', 'oldestQueuedAt', 'oldestWaitMs']),
+            active: maximum(['queuedAt', 'startedAt', 'waitMs', 'elapsedMs', 'records', 'rawBytes',
+                'firstSequence', 'lastSequence'])}
+    });
+    await journal.tail;
+    const counterKeys = ['rejectedRecords', 'writeErrors', 'readErrors', 'sqlConfirmedRecords',
+        'expiredRecords', 'expiredUnconfirmedRecords'];
+    for (const key of counterKeys) journal[key] = widest;
+    const lastExpiry = {at: widest, reason: 'local-retention-expired-sql-coverage-unknown',
+        recordSession: 'A'.repeat(80), ...maximum(['firstSequence', 'lastSequence', 'firstEventAt', 'lastEventAt',
+            'oldestRetainedAt', 'newestRetainedAt', 'records', 'unconfirmedRecords'])};
+    journal.lastExpiry = lastExpiry;
+    await journal.close();
+    const expected = journal.health().lossEpisodes;
+    const healthBytes = await fs.readFile(path.join(dir, 'health.json'));
+    assert.ok(healthBytes.length <= 8192, 'the writer accounts for JSON escaping before the bounded reader does');
+    const persisted = JSON.parse(healthBytes.toString('utf8'));
+    for (const key of counterKeys) assert.equal(persisted[key], widest);
+    assert.deepEqual(persisted.lastExpiry, lastExpiry);
+    assert.equal(expected.episodes.length + expected.evictedEpisodes, 4);
+    assert.equal(expected.episodes.reduce((sum, episode) => sum + episode.rejectedRecords, expected.evictedRecords), 4);
+    assert.equal(expected.episodes.reduce((sum, episode) => sum + episode.rejectedRawBytes, expected.evictedRawBytes), 400006);
+    assert.deepEqual(persisted.lossEpisodes, expected);
+    const restarted = new DecisionRecordJournal({directory: dir, now: () => widest});
+    await restarted.initialize();
+    for (const key of counterKeys) assert.equal(restarted.health()[key], widest);
+    assert.deepEqual(restarted.health().lastExpiry, lastExpiry);
+    assert.deepEqual(restarted.health().lossEpisodes, expected,
+        'bounded health can be read after restart with counters and any evictions intact');
+    await restarted.close();
+});
+
+test('an older valid health temporary never rolls back newer loss episodes across sessions', async t => {
+    const dir = await directory(t), journal = new DecisionRecordJournal({directory: dir});
+    await journal.initialize();
+    const diagnostic = recordSession => ({kind: 'recorder-queue-full', recordSession, recordSequence: 1,
+        eventAt: 1000, observedAt: 1000, rawBytes: 10000, limitsHit: {records: true, bytes: false},
+        queue: {records: 128, bytes: 1000000, maxRecords: 128, maxBytes: 8 * 1024 * 1024,
+            oldestQueuedAt: 900, oldestWaitMs: 100, active: null}});
+    journal.reportLoss('queue full', 1, diagnostic('old-session'));
+    await journal.tail;
+    const older = await fs.readFile(path.join(dir, 'health.json'));
+    journal.reportLoss('queue full', 1, diagnostic('new-session'));
+    await journal.close();
+    const latest = journal.health().lossEpisodes;
+    assert.equal(latest.episodes.length, 2);
+    await fs.writeFile(path.join(dir, '.health.tmp'), older);
+    const restarted = new DecisionRecordJournal({directory: dir});
+    await restarted.initialize();
+    assert.equal(restarted.health().rejectedRecords, 2);
+    assert.equal(restarted.health().readErrors, 0, 'a valid stale temporary is not corruption');
+    assert.deepEqual(restarted.health().lossEpisodes, latest,
+        'recovery preserves the newer completed health evidence despite a valid older temporary');
+    await restarted.close();
+});
+
 const batchProofs = entries => entries.map(e => ({id: e.id, proof: {kind: 'independent-history-match',
     recordSession: e.recordSession, recordSequence: e.recordSequence, sha256: e.sha256}}));
 
@@ -600,6 +726,47 @@ test('group commit shares directory barriers, bounds file concurrency and surviv
     assert.deepEqual((await restarted.readBatch()).map(entry => entry.id), saved.map(entry => entry.id));
     assert.deepEqual((await restarted.readBatch()).map(entry => entry.payload), originals);
     await restarted.close();
+});
+
+test('append batch timing separates a queued local read wait from the active durable append', async t => {
+    let now = 1000, enteredRead, releaseRead, enteredAppend, releaseAppend;
+    const reading = new Promise(resolve => {enteredRead = resolve;});
+    const readGate = new Promise(resolve => {releaseRead = resolve;});
+    const appending = new Promise(resolve => {enteredAppend = resolve;});
+    const appendGate = new Promise(resolve => {releaseAppend = resolve;});
+    const journal = new DecisionRecordJournal({directory: await directory(t), now: () => now});
+    t.after(async () => {releaseRead(); releaseAppend(); await journal.close();});
+    await journal.initialize();
+    await journal.append(payload(1));
+    const read = journal._readBoundedFile.bind(journal), write = journal._writeFile.bind(journal);
+    journal._readBoundedFile = async (...args) => {enteredRead(); await readGate; return read(...args);};
+    journal._writeFile = async (...args) => {
+        if (/\d{16}\.tmp$/.test(args[0])) {enteredAppend(); await appendGate;}
+        return write(...args);
+    };
+    const localRead = journal.readBatch({limit: 1});
+    await reading;
+    now += 200;
+    const originals = [payload(2), payload(3)];
+    const writing = journal.appendBatch(originals);
+    assert.equal(journal.health().activeOperation.kind, 'read-batch');
+    assert.equal(journal.health().queuedOperations, 1);
+    now += 300;
+    releaseRead();
+    await appending;
+    assert.equal(journal.health().activeOperation.kind, 'append-batch');
+    assert.equal(journal.health().activeOperation.waitMs, 300);
+    assert.equal(journal.health().records, 1, 'the running append is not yet a durable original');
+    now += 700;
+    releaseAppend();
+    await writing;
+    await localRead;
+    assert.deepEqual(journal.health().lastAppendBatch, {records: 2,
+        bytes: originals.reduce((sum, original) => sum + Buffer.byteLength(original), 0),
+        elapsedMs: 1000, parallelFiles: 4, queuedAt: 1200, startedAt: 1500,
+        completedAt: 2200, waitMs: 300, appendMs: 700});
+    assert.deepEqual((await journal.readBatch()).map(entry => entry.payload), [payload(1), ...originals]);
+    await journal.close();
 });
 
 test('failed group commit waits for all writers and publishes no apparently good prefix', async t => {

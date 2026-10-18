@@ -1,8 +1,9 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.95",
+    "version": "0.17.0-alpha.96",
     "news": {
+      "0.17.0-alpha.96": {"en":"Retain bounded historical recorder queue-loss episodes with session, limits, rejected scope and separate local wait/append context; preserve recording contents, durability and capacity limits.","de":"Begrenzte historische Recorder-Verlustepisoden mit Sitzung, getroffener Grenze, abgelehntem Umfang und getrenntem lokalem Warte-/Appendkontext erhalten; Originalinhalte, Haltbarkeit und Kapazitaetsgrenzen bleiben erhalten."},
       "0.17.0-alpha.95": {"en":"Use the configured PV import tolerance as the shared hold ceiling with a fixed 20 W admission margin, including running minimum-SoC charging; keep mandatory floors from funding discretionary extra steps.","de":"Eingestellte PV-Bezugstoleranz als gemeinsame Haltegrenze mit 20 W Zuschaltabstand verwenden, auch bei laufender Mindest-SoC-Ladung; Pflichtladebudgets erzeugen keine zusaetzlichen PV-Schrittfreigaben."},
       "0.17.0-alpha.94": {"en":"Reject unusable stratified-DHW shares before parallel wallbox allocation so surplus reaches charging vehicles instead of being reserved for a heater target that becomes zero; expose requested/usable heater budgets.","de":"Wegen Pufferschichtung unbrauchbare EHZ-Anteile vor der Wallboxverteilung freigeben statt fuer einen spaeter auf null gesetzten Heizstab zu reservieren; angefordertes und nutzbares Heizbudget anzeigen."},
       "0.17.0-alpha.93": {"en":"Preserve fractional energy-based SoC progress when a whole-percent vehicle report agrees with its rounded estimate at report time; retain authoritative corrections including lower arrival SoC and existing reset/freshness guards.","de":"Nachkommafortschritt der SoC-Schaetzung bei passender gerundeter Fahrzeugmeldung erhalten; abweichende Meldungen einschliesslich niedrigerem Ankunfts-SoC sowie Reset- und Frischeschutz bleiben wirksam."},
