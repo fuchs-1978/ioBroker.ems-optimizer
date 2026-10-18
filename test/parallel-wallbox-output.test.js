@@ -1049,3 +1049,63 @@ test('measured output hold yields to deficits, lower allocations, hard caps and 
         assert.ok(!h.writes.some(write => write.id === 'cmd' && write.val > 8));
     }
 });
+
+function grantPVStep(h, amps = 9, tolerance = 50, owner = 0) {
+    h.grant([amps]);
+    const key = 'ems.0.Control.ParallelWallboxAllocation_JSON';
+    const allocation = JSON.parse(h.states.get(key).val);
+    h.put(key, JSON.stringify({...allocation, pvStepOwner: owner, pvStepToleranceW: tolerance}));
+    h.put('ems.0.Control.TargetGridPower_W', 0);
+}
+
+test('shared measured PV step sends 9 A for 220 W export and waits for a real reply before another step', async () => {
+    const h = await measuredHoldOutput();
+    grantPVStep(h); h.put('export', 220);
+    await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'cmd', val: 9}]);
+    assert.equal(h.output.devices[0].measuredBudgetStep.amps, 9);
+    const d = JSON.parse(h.states.get('ems.0.Devices.Wallbox0.IncreaseBudget_JSON').val);
+    assert.equal(d.requiredW, 1960);
+    assert.equal(d.pvStepToleranceW, 50);
+    assert.equal(d.pvStepAdmissionW, 25);
+    h.advance(6000); grantPVStep(h, 10); h.ack('feedback', 9);
+    h.writes.length = 0;
+    await h.output.tick();
+    assert.deepEqual(h.writes, [], JSON.stringify({message:'ACK/unchanged uptake cannot earn a second step', budget:h.states.get('ems.0.Devices.Wallbox0.IncreaseBudget_JSON'),status:h.states.get('ems.0.Devices.Wallbox0.OutputStatus')}));
+});
+
+test('PV step respects admission hysteresis, ownership, disabled config and hard current caps', async () => {
+    for (const change of [
+        h => h.put('export', 200), // 30 W expected import > 25 W admission.
+        h => { h.config.wallboxPVImportToleranceW = 0; },
+        h => grantPVStep(h, 9, 50, 1),
+        h => { h.config.wb0CommissioningMaxA = 8; },
+        h => h.put('power', 1.73, {ts: 1000000})
+    ]) {
+        const h = await measuredHoldOutput(); grantPVStep(h); h.put('export', 220); change(h);
+        await h.output.tick();
+        assert.ok(!h.writes.some(write => write.id === 'cmd' && write.val > 8));
+    }
+});
+
+test('falling live meter budget at send boundary rejects the additional measured PV step', async () => {
+    const h = await measuredHoldOutput(); grantPVStep(h); h.put('export', 220);
+    const send = h.output.send.bind(h.output);
+    h.output.send = async (device, key, value) => {
+        if (key === 'command' && value === 9) h.put('export', 0);
+        return send(device, key, value);
+    };
+    await h.output.tick();
+    assert.ok(!h.writes.some(write => write.id === 'cmd' && write.val === 9));
+});
+
+test('an unanswered measured PV step yields immediately to a genuine deficit or hard cap', async () => {
+    for (const hard of [false, true]) {
+        const h = await measuredHoldOutput(); grantPVStep(h); h.put('export', 220);
+        await h.output.tick(); h.writes.length = 0; h.advance(6000); grantPVStep(h);
+        if (hard) h.config.wb0CommissioningMaxA = 8;
+        else h.put('export', 0);
+        await h.output.tick();
+        assert.ok(h.writes.some(write => write.id === 'cmd' && write.val <= 8));
+    }
+});

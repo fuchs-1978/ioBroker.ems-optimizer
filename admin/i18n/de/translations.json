@@ -491,5 +491,7 @@
   "Manually entered total capacity": "Gesamtkapazität manuell eintragen",
   "Online packs from the SunEnergy adapter": "Online-Packs aus dem SunEnergy-Adapter",
   "Confirmed capacity per equal-sized battery pack": "Bestätigte Kapazität je gleich großem Batteriepack",
-  "Enter a positive kWh value from the pack documentation. Zero means not specified, not zero-capacity hardware.": "Einen positiven kWh-Wert aus der Packdokumentation eintragen. Null bedeutet nicht angegeben und nicht ein Gerät ohne Kapazität."
+  "Enter a positive kWh value from the pack documentation. Zero means not specified, not zero-capacity hardware.": "Einen positiven kWh-Wert aus der Packdokumentation eintragen. Null bedeutet nicht angegeben und nicht ein Gerät ohne Kapazität.",
+  "Shared PV wallbox grid-import tolerance": "Gemeinsame Netzbezugstoleranz fuer PV-Wallboxen",
+  "Shared tolerance above the grid target for a running PV charger; 0 disables it. New one-amp steps use half this tolerance, confirmed current may use the full tolerance. No extra allowance per vehicle or for starts, price charging or hard limits.": "Gemeinsame Toleranz oberhalb des Netzsollwerts fuer eine laufende PV-Ladung; 0 deaktiviert sie. Neue 1-A-Schritte nutzen die halbe, bestaetigter Strom die volle Toleranz. Kein Zuschlag je Fahrzeug, fuer Starts, Preisladung oder Schutzgrenzen."
 }

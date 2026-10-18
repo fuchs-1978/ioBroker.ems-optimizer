@@ -75,7 +75,7 @@ test('update defaults never arm a productive output', () => {
 });
 
 test('package manifests publish the same alpha version', () => {
-    assert.equal(packageJson.version, '0.17.0-alpha.88');
+    assert.equal(packageJson.version, '0.17.0-alpha.89');
     assert.equal(ioPackage.common.version, packageJson.version);
     const core = fs.readFileSync('lib/engine/core.js', 'utf8');
     const bootstrap = fs.readFileSync('lib/engine/bootstrap.js', 'utf8');
@@ -111,3 +111,14 @@ test('parallel wallbox mode exposes translated native default and mode-dependent
 
 
 
+
+test('shared PV step tolerance has bounded matching defaults and translated hysteresis guidance', () => {
+    const field = allFields.wallboxPVImportToleranceW;
+    assert.equal(field.default, 50);
+    assert.equal(ioPackage.native.wallboxPVImportToleranceW, 50);
+    assert.equal(field.min, 0); assert.equal(field.max, 200); assert.equal(field.unit, 'W');
+    for (const locale of ['de', 'en']) {
+        const texts = JSON.parse(fs.readFileSync(`admin/i18n/${locale}/translations.json`, 'utf8'));
+        assert.ok(texts[field.label]); assert.ok(texts[field.help]);
+    }
+});

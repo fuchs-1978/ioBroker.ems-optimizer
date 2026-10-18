@@ -1363,3 +1363,17 @@ test('measured hold preserves one nominal step in 3P but never an increase or a 
     assert.equal(h.run(`quantizeWallbox(5283,vehicleState(2),9,3,5200,${options}).amps`), 7);
     assert.equal(h.run('quantizeWallbox(5283,vehicleState(2),8,3,5200,{maximumPowerW:5283,holdMaximumPowerW:5283,holdMeasuredCurrent:true}).amps'), 7);
 });
+
+test('three-phase PV tolerance admits only a full measured 690 W step near the target', () => {
+    const h = engine();
+    h.put('ems.0.Vehicles.Wallbox2.PhaseSwitchEnabled', true);
+    h.put('ems.0.Vehicles.Wallbox2.MaximumPhases', 3); h.run('updateVehicles()');
+    const options = '{maximumPowerW:5880,holdMaximumPowerW:11000,holdMeasuredCurrent:true,pvStepToleranceW:50}';
+    const step = h.run(`quantizeWallbox(5880,vehicleState(2),8,3,5200,${options})`);
+    assert.equal(step.amps, 9);
+    assert.equal(step.expectedPowerW, 5890);
+    assert.equal(step.diagnostics.measuredPVStep, true);
+    assert.equal(h.run(`quantizeWallbox(5850,vehicleState(2),8,3,5200,${options}).amps`), 8);
+    assert.equal(h.run(`quantizeWallbox(5420,vehicleState(2),8,3,5200,${options}).amps`), 8,
+        '220 W export cannot pay a 690 W step with 50 W tolerance');
+});
