@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.87**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.88**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -707,6 +707,8 @@ Netzanschlusspunkt-Regelziel und allgemeiner Berechnungszyklus. Negative Netzlei
 | Totband<br>`deadbandW` | 100 W | Totband in W um den Netzsollwert. Innerhalb keine unnötige feine Korrektur; außerhalb können Ampere-Raster, Mindestlast und Antwortfristen dennoch Restabweichung verursachen. |
 | Langsamer Regelzyklus<br>`slowCycleS` | 5 s | Langsamer Ziel-/Verteilungszyklus in s. Unterscheidet sich von schnelleren Ausgangs-/Speicherzyklen, Modbus-Pollzeit und Historienauflösung. |
 
+Bei produktiver Mehrfahrzeugregelung kann ein bereits elektrisch bestaetigter Ladestrom gehalten werden, wenn seine frische reale Aufnahme im PV-Budget liegt und die nominelle Softgrenze um hoechstens ein Ampere unterschritten wird. Beispiel: 8 A Vorgabe, 1730 W Aufnahme und 1800 W Budget bleiben 8 A statt unnoetig 7 A. Erhoehungen benoetigen weiterhin das volle nominale Budget. Alle drei Wallboxen nutzen dieses Verhalten bei 1P/3P; eigene Geraetegrenzen, Schutzbudgets und volle Reserven fuer andere Verbraucher bleiben bindend. `AllocationDiagnostics_JSON` zeigt `measured-current-held`, die Ausgangsdiagnose `IncreaseBudget_JSON` zeigt `measured-current-hold`.
+
 ## Admin: Erweiterte Datenpunkte
 
 Nur Migration/Altintegration. Für normale Zuordnung die fachlichen Reiter verwenden. Ein geleertes sichtbares Feld kann auf eine noch vorhandene alte JSON-Zuordnung zurückfallen; wirksame Quelle kontrollieren.
@@ -804,6 +806,10 @@ Bereits vorhandene SQL-Skalarhistorien, Retention und Anlagenkonfiguration werde
 Ab alpha.67 akzeptiert die zentrale Wallbox-Phasenbudgetprüfung dieselbe bestehende Leerlauftoleranz wie der Wallbox-Ausgang: bestätigte, frische, qualitativ gültige Leistungswerte zwischen −0,02 und 0 kW werden intern als 0 W behandelt. Die originale negative Rohmessung bleibt in der Diagnose erhalten. Größere negative Werte, fehlende/ungültige Werte, schlechtes q, fehlendes ACK und veraltete Quellen bleiben gesperrt. Diese Toleranz gilt für Wallboxleistung; die Verträge anderer Quellen werden dadurch nicht geändert.
 
 ## Changelog und historische Detaildokumentation
+
+### 0.17.0-alpha.88 (2026-10-18)
+
+Bestaetigten Ladestrom in der produktiven Mehrfahrzeugregelung bei frischer, vollstaendig durch das PV-Budget gedeckter realer Aufnahme halten, statt allein wegen der nominellen Softgrenze unnoetig zu reduzieren. Die Ausnahme ist auf Halten und hoechstens ein Ampere nominale Differenz begrenzt; Erhoehungen, neue Starts, gemeinsame Schutzgrenzen und volle Reserven fuer andere Verbraucher bleiben unveraendert. Fuer alle drei Wallboxen bei 1P/3P; keine neue Einstellung. [Releasehinweise](docs/release-0.17.0-alpha.88.md).
 
 ### 0.17.0-alpha.87 (2026-10-18)
 

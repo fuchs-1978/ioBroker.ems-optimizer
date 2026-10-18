@@ -1,8 +1,9 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.87",
+    "version": "0.17.0-alpha.88",
     "news": {
+      "0.17.0-alpha.88": {"en":"Hold confirmed measured wallbox current across a one-amp nominal PV soft-cap mismatch; preserve full peer reservations, hard limits and nominal admission budgets for increases.","de":"Bestaetigten real gedeckten Wallboxstrom bei hoechstens einem Ampere Abweichung zur nominellen PV-Softgrenze halten; volle Fremdreserven, Schutzgrenzen und nominale Budgets fuer Erhoehungen erhalten."},
       "0.17.0-alpha.87": {"en":"Bounded durable recorder group commits and parallel immutable reads reduce journal queue contention; expose queue peaks and batch timings while preserving exact SQL proofs and capacity limits.","de":"Begrenzte dauerhafte Recorder-Schreibpakete und paralleles Lesen unveraenderlicher Originale entlasten die Journal-Warteschlange; Warteschlangenspitzen und Paketzeiten anzeigen, exakte SQL-Nachweise und Kapazitaetsgrenzen erhalten."},
       "0.17.0-alpha.86": {"en":"Revalidate smaller queued DHW setpoints after allocation changes instead of treating a stale increase as a transport failure; preserve safety guards and actual command tracking.","de":"Kleinere wartende EHZ-Sollwerte nach Budgetwechsel erneut vollstaendig pruefen statt ueberholte Erhoehungen als Transportfehler zu behandeln; Schutzpruefungen und reale Befehlsnachfuehrung erhalten."},
       "0.17.0-alpha.85": {"en":"Preserve an uninterrupted heater zero-proof episode across correlated completed repeat commands; require the latest reset and transport plus fresh three-phase standstill before release, and expose proof blockers.","de":"Ununterbrochenen EHZ-Nullnachweis ueber zugeordnete abgeschlossene Wiederholungsauftraege erhalten; vor Freigabe neuesten Reset und Transport sowie frischen Dreiphasenstillstand verlangen und Sperrgruende anzeigen."},

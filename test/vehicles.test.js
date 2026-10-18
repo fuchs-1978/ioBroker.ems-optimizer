@@ -1347,3 +1347,19 @@ test('parallel minimum-SoC diagnostics preserve explicit manual/device minimum a
     assert.equal(h.run('vehicleState(1).requestedMinimumCurrentA'),8);
     assert.equal(h.run('vehicleState(1).minimumPowerW'),1920);
 });
+
+test('measured hold preserves one nominal step in 3P but never an increase or a larger offset', () => {
+    const h = engine();
+    h.put('ems.0.Vehicles.Wallbox2.PhaseSwitchEnabled', true);
+    h.put('ems.0.Vehicles.Wallbox2.MaximumPhases', 3);
+    h.run('updateVehicles()');
+    const options = '{maximumPowerW:5283,holdMaximumPowerW:6000,holdMeasuredCurrent:true}';
+    const held = h.run(`quantizeWallbox(5283,vehicleState(2),8,3,5200,${options})`);
+    assert.equal(held.amps, 8);
+    assert.equal(held.powerW, 5520);
+    assert.equal(held.expectedPowerW, 5200);
+    assert.equal(held.diagnostics.reason, 'measured-current-held');
+    assert.equal(h.run(`quantizeWallbox(5283,vehicleState(2),7,3,5200,${options}).amps`), 7);
+    assert.equal(h.run(`quantizeWallbox(5283,vehicleState(2),9,3,5200,${options}).amps`), 7);
+    assert.equal(h.run('quantizeWallbox(5283,vehicleState(2),8,3,5200,{maximumPowerW:5283,holdMaximumPowerW:5283,holdMeasuredCurrent:true}).amps'), 7);
+});

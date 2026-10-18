@@ -1007,3 +1007,45 @@ test('issue123 original live budgets cap mandatory increases below an older stil
         assert.equal(diagnostic.authorizedMinimumW, 1380);
     });
 });
+
+async function measuredHoldOutput() {
+    const h = parallelSetup(1); await h.startParallel(); h.advance(10000);
+    const d = h.output.devices[0];
+    d.lastA = 8; d.lastAt = 990000; d.pending = null; d.response = null;
+    d.electricalCommandAt = 1000000;
+    h.grant([8]); h.measure(0, 8);
+    h.put('power', 1.73, {ts: 1010002}); h.put('i1', 7.5, {ts: 1010002});
+    h.put('import', 0); h.put('export', 170);
+    h.writes.length = 0;
+    return h;
+}
+
+test('parallel output holds a fresh confirmed 8 A response within 1800 W instead of dropping to 7 A', async () => {
+    const h = await measuredHoldOutput();
+    await h.output.tick();
+    assert.deepEqual(h.writes, []);
+    const d = JSON.parse(h.states.get('ems.0.Devices.Wallbox0.IncreaseBudget_JSON').val);
+    assert.equal(d.basis, 'measured-current-hold');
+    assert.equal(d.requiredW, 1730);
+    assert.equal(d.nominalRequiredW, 1840);
+    assert.equal(d.nextA, 8);
+    assert.ok(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val >= 1840);
+    h.grant([9]); h.writes.length = 0;
+    await h.output.tick();
+    assert.deepEqual(h.writes, [], 'measured hold must not create a new increase');
+});
+
+test('measured output hold yields to deficits, lower allocations, hard caps and pre-command samples', async () => {
+    for (const change of [
+        h => h.put('export', 50),
+        h => h.grant([7]),
+        h => { h.config.wb0CommissioningMaxA = 7; },
+        h => h.grant([8], {hardBudgetW: 1800}),
+        h => h.put('power', 1.73, {ts: 1000000})
+    ]) {
+        const h = await measuredHoldOutput(); change(h);
+        await h.output.tick();
+        assert.ok(h.writes.some(write => write.id === 'cmd' && write.val <= 7));
+        assert.ok(!h.writes.some(write => write.id === 'cmd' && write.val > 8));
+    }
+});
