@@ -892,3 +892,72 @@ test('central budget zero-noise tolerance never accepts invalid wallbox, SMA or 
         assert.deepEqual(h.states.get(sample.id), before, 'invalid raw evidence remains available for diagnosis');
     }
 });
+
+function measuredHoldEngine(wb = 0) {
+    const h = engine({production: true});
+    for (const peer of [0, 1, 2]) if (peer !== wb) h.exclude(peer);
+    h.owned(wb, 8, 1730);
+    h.put(`ems.0.Devices.Wallbox${wb}.ResponsePending`, false);
+    h.put(`ems.0.Devices.Wallbox${wb}.ResponseState`, 'confirmed');
+    h.put(`ems.0.Devices.Wallbox${wb}.OutputLastWrite`, Date.now() - 1000);
+    return h;
+}
+
+test('confirmed running EQV-like response survives a nominal soft cap without a down-up cycle', () => {
+    const h = measuredHoldEngine();
+    for (const budget of [1800, 1750, 1810, 1740]) {
+        const targets = h.update(budget);
+        assert.equal(targets.amps[0], 8);
+        assert.ok(targets.reserve[0] >= 1840, 'keep full nominal reservation against peers/heater');
+        const d = JSON.parse(h.states.get('ems.0.Control.Wallbox0.AllocationDiagnostics_JSON').val);
+        assert.equal(d.reason, 'measured-current-held');
+        assert.equal(d.measuredCurrentHeld, true);
+    }
+    assert.equal(h.update(1600).amps[0], 6, 'a real measured deficit still reduces current');
+});
+
+test('measured current hold cannot spend an operator cap or authorize an increase', () => {
+    const h = measuredHoldEngine();
+    assert.equal(h.update(1800, 1800).amps[0], 7, 'hard cap retains nominal watts');
+    assert.equal(h.update(1800).amps[0], 8, 'soft ceiling alone may hold only the existing command');
+    h.put('ems.0.Vehicles.Wallbox0.MaxCurrent1P_A', 7);
+    assert.equal(h.update(1800).amps[0], 7, 'device cap remains binding');
+});
+
+test('missing, unconfirmed or pre-command electrical evidence earns no measured hold', () => {
+    for (const change of [
+        h => h.put('ems.0.Devices.Wallbox0.ResponsePending', true),
+        h => h.put('ems.0.Devices.Wallbox0.ResponseState', 'vehicle_response'),
+        h => h.put('raw.amps0', 7),
+        h => h.put('DP_WB0_POWER', 1.73, {ack: false}),
+        h => h.put('DP_WB0_POWER', 1.73, {ts: Date.now() - 2000}),
+        h => h.put('ems.0.Devices.Wallbox0.PhaseTransitionActive', true)
+    ]) {
+        const h = measuredHoldEngine(); change(h);
+        assert.ok(h.update(1800).amps[0] <= 7);
+    }
+});
+
+test('measured hold retains peer reservations and cannot consume another minimum charge', () => {
+    const h = measuredHoldEngine();
+    h.put('ems.0.Devices.Wallbox1.Present', true);
+    h.put('DP_WB1_SOC', 10);
+    h.owned(1, 6, 1380);
+    const targets = h.update(3180, 4200);
+    assert.equal(targets.amps[0], 8);
+    assert.equal(targets.amps[1], 6);
+    assert.ok(targets.reserve[0] >= 1840 && targets.reserve[1] >= 1380);
+    assert.ok(targets.watts.reduce((sum, value) => sum + value, 0) <= 4200);
+    const limited = h.update(3180, 3000);
+    assert.ok(limited.watts.reduce((sum, value) => sum + value, 0) <= 3000);
+});
+
+test('measured current hold applies to each of the three wallbox allocations', () => {
+    for (const wb of [0, 1, 2]) {
+        const h = measuredHoldEngine(wb);
+        const targets = h.update(1800);
+        assert.equal(targets.amps[wb], 8);
+        assert.equal(targets.watts[wb], 1840);
+        assert.ok(targets.amps.every((amps, index) => index === wb || amps === 0));
+    }
+});
