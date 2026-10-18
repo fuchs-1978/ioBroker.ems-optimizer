@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.91**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.92**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -274,6 +274,25 @@ Die drei Fahrzeugreiter besitzen dieselben Feldtypen. In den Tabellen steht `wb0
 | Regelfreigabe Wallbox 0<br>`wb0ControlEnabled` | AUS | Gerätespezifische Teilnahme an der Regelung. Für reale Befehle sind zusätzlich Master, Alpha- und Ausgangsfreigabe nötig. |
 | Fahrzeugname<br>`wb0Name` | Vehicle 0 | Frei wählbarer Anzeigename des Fahrzeugs. Ändert nicht die Zuordnung WB0/WB1/WB2 zu den jeweiligen Objekt-IDs. |
 | SoC-Datenpunkt<br>`wb0SocId` | leer | Aktueller Fahrzeug-Ladezustand in %. Kein Reichweitenwert. Frischer echter SoC ist Grundlage für Mindest-/Zielentscheidungen; ohne SoC gilt der gesonderte Ohne-SoC-/Energievertrag, nicht automatisch 0 %. |
+
+### Optionale SoC-Schätzung aus Ladeenergie (alle drei Fahrzeuge)
+
+Im jeweiligen Fahrzeugreiter kann **„SoC aus gemessener Ladeenergie schätzen“** aktiviert werden. Standard ist **aus**, bestehende Zuordnungen bleiben erhalten. Die Quelle `wbNSocId` muss dann ein **echter Fahrzeug-SoC** sein, kein vorgeschätzter Skriptwert. Insbesondere beim Mii nicht gleichzeitig die bisherige Skriptschätzung als Eingang verwenden.
+
+| Einstellung | Bedeutung |
+|---|---|
+| `wbNSocEnergyId` | AC-Ladeenergiezähler in **kWh**, beispielsweise `go-e.N.loaded_energy_kwh`. Ein Sitzungszähler oder kumulativer Zähler ist möglich; ein Rücksprung verwirft die Schätzbasis. |
+| `wbNCapacityKWh` (vorhandenes Kapazitätsfeld) | **Nutzbare** Akkukapazität des zugeordneten Fahrzeugs. Keine automatische Übernahme aus Fahrzeugnamen oder alten Skripten. |
+| `wbNSocEfficiencyPct` | Ladewirkungsgrad, Standard **90 %**, zulässig **50–99 %**. Individuell prüfen; kein automatisches Lernen. |
+| `wbNSocMeasurementTimeId` | Optionaler tatsächlicher Messzeitpunkt der Fahrzeugmeldung als **Unix-Millisekunden**, der genau zu dieser SoC-Meldung gehört. Leer: ioBroker-Zeitstempel der SoC-Meldung wird angenommen. Kein beliebiger Adapter-Heartbeat. |
+
+Berechnung: `Basis-SoC + AC-kWh seit Basis × Wirkungsgrad / nutzbare kWh × 100`. Gezählt wird nur Energie ab einem zeitlich zugeordneten Zählerstand, nicht erneut die Energie vor dem Fahrzeugbericht. Mindest-/Ziel-SoC und Abregelung verwenden den wirksamen Wert; der Ausgangstreiber berechnet ihn vor seinen Entscheidungen unabhängig aus den Quellen und der Basis erneut. Die Preisladung behält ihren eigenen echten SoC-/Energienachweis, damit Ladeenergie nicht doppelt abgezogen wird.
+
+Unter `Vehicles.WallboxN` stehen `ReportedSoC_pct`, `EstimatedSoC_pct`, `SocEstimateStatus` und die zusammengehörige persistente `SocEstimateLedger_JSON`. `SoC_pct` bleibt der wirksame Regelwert. Eine ungültige Schätzung liefert `EstimatedSoC_pct = null` und fällt auf einen gültigen gemeldeten SoC zurück; fehlt auch dieser, gelten die bisherigen Ohne-SoC-Schutzregeln. Die Originalquelle wird niemals überschrieben.
+
+Zählerwerte müssen bestätigt, plausibel und höchstens 60 Sekunden alt sein. Eine neue Basis benötigt einen Zählerwert höchstens 60 Sekunden nach dem Messzeitpunkt; bis dahin gilt der gemeldete SoC. Rücksprünge, unplausible Energiesprünge, beobachtetes Abstecken, geänderte Quellen/Parameter oder eine unklare Verbindung über einen Neustart verwerfen die Basis. Nach Reset ist eine neue zugeordnete Fahrzeugmeldung erforderlich. Ein zusammengehöriger persistierter Datensatz ermöglicht Neustarts ohne erneutes Aufaddieren; maximal 256 Zählerbeobachtungen helfen bei verspäteten Meldungen. Fahrzeugmeldung und Schätzbasis bleiben auf zwei Stunden begrenzt. Die Schätzung ersetzt keine Verbrauchsmessung beim Fahren.
+
+**Genauigkeitsgrenze:** Ladeverluste ändern sich mit Leistung und Temperatur. Eine verspätete Cloud-Meldung ohne tatsächlichen Messzeitpunkt lässt sich nicht exakt zurückdatieren; auch ein neu empfangener unveränderter Prozentwert kann die Schätzung korrigieren. Diese Funktion ist eine Energiebilanz, keine zusätzliche Fahrzeugmessung.
 
 ### Eingangsdatenpunkte für Fahrzeug und Wallbox
 
@@ -829,6 +848,10 @@ Bereits vorhandene SQL-Skalarhistorien, Retention und Anlagenkonfiguration werde
 Ab alpha.67 akzeptiert die zentrale Wallbox-Phasenbudgetprüfung dieselbe bestehende Leerlauftoleranz wie der Wallbox-Ausgang: bestätigte, frische, qualitativ gültige Leistungswerte zwischen −0,02 und 0 kW werden intern als 0 W behandelt. Die originale negative Rohmessung bleibt in der Diagnose erhalten. Größere negative Werte, fehlende/ungültige Werte, schlechtes q, fehlendes ACK und veraltete Quellen bleiben gesperrt. Diese Toleranz gilt für Wallboxleistung; die Verträge anderer Quellen werden dadurch nicht geändert.
 
 ## Changelog und historische Detaildokumentation
+
+### 0.17.0-alpha.92 (2026-10-18)
+
+Optionale SoC-Fortschreibung aus gemessenen Lade-kWh für jedes Fahrzeug, mit getrennten Diagnosewerten, persistenter zeitlich zugeordneter Basis und konservativer Behandlung von Neustarts, Abstecken und Zählerresets. Preisbilanz bleibt getrennt; Ausgang prüft die Schätzung unabhängig. [Releasehinweise](docs/release-0.17.0-alpha.92.md).
 
 ### 0.17.0-alpha.91 (2026-10-18)
 

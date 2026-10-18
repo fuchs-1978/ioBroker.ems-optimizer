@@ -1399,6 +1399,44 @@
           "default": "",
           "sm": 9
         },
+        "wb0SocEstimationEnabled": {
+          "type": "checkbox",
+          "label": "SoC estimation from measured charging energy",
+          "default": false,
+          "newLine": true,
+          "sm": 12
+        },
+        "wb0SocEnergyId": {
+          "type": "text",
+          "label": "AC charging energy counter (kWh)",
+          "default": "",
+          "sm": 8,
+          "newLine": true,
+          "hidden": "!data.wb0SocEstimationEnabled"
+        },
+        "wb0SocEfficiencyPct": {
+          "type": "number",
+          "label": "Charging efficiency for SoC estimation (%)",
+          "default": 90,
+          "min": 50,
+          "max": 99,
+          "sm": 4,
+          "hidden": "!data.wb0SocEstimationEnabled"
+        },
+        "wb0SocMeasurementTimeId": {
+          "type": "text",
+          "label": "Optional vehicle SoC measurement timestamp (Unix ms)",
+          "default": "",
+          "sm": 12,
+          "newLine": true,
+          "hidden": "!data.wb0SocEstimationEnabled"
+        },
+        "wb0SocEstimateHelp": {
+          "type": "staticText",
+          "text": "SoC estimation help",
+          "newLine": true,
+          "hidden": "!data.wb0SocEstimationEnabled"
+        },
         "_wb0InputHeader": {
           "type": "header",
           "text": "Vehicle and wallbox input data points",
@@ -1924,6 +1962,44 @@
           "default": "",
           "sm": 9
         },
+        "wb1SocEstimationEnabled": {
+          "type": "checkbox",
+          "label": "SoC estimation from measured charging energy",
+          "default": false,
+          "newLine": true,
+          "sm": 12
+        },
+        "wb1SocEnergyId": {
+          "type": "text",
+          "label": "AC charging energy counter (kWh)",
+          "default": "",
+          "sm": 8,
+          "newLine": true,
+          "hidden": "!data.wb1SocEstimationEnabled"
+        },
+        "wb1SocEfficiencyPct": {
+          "type": "number",
+          "label": "Charging efficiency for SoC estimation (%)",
+          "default": 90,
+          "min": 50,
+          "max": 99,
+          "sm": 4,
+          "hidden": "!data.wb1SocEstimationEnabled"
+        },
+        "wb1SocMeasurementTimeId": {
+          "type": "text",
+          "label": "Optional vehicle SoC measurement timestamp (Unix ms)",
+          "default": "",
+          "sm": 12,
+          "newLine": true,
+          "hidden": "!data.wb1SocEstimationEnabled"
+        },
+        "wb1SocEstimateHelp": {
+          "type": "staticText",
+          "text": "SoC estimation help",
+          "newLine": true,
+          "hidden": "!data.wb1SocEstimationEnabled"
+        },
         "_wb1InputHeader": {
           "type": "header",
           "text": "Vehicle and wallbox input data points",
@@ -2448,6 +2524,44 @@
           "label": "SoC data point",
           "default": "",
           "sm": 9
+        },
+        "wb2SocEstimationEnabled": {
+          "type": "checkbox",
+          "label": "SoC estimation from measured charging energy",
+          "default": false,
+          "newLine": true,
+          "sm": 12
+        },
+        "wb2SocEnergyId": {
+          "type": "text",
+          "label": "AC charging energy counter (kWh)",
+          "default": "",
+          "sm": 8,
+          "newLine": true,
+          "hidden": "!data.wb2SocEstimationEnabled"
+        },
+        "wb2SocEfficiencyPct": {
+          "type": "number",
+          "label": "Charging efficiency for SoC estimation (%)",
+          "default": 90,
+          "min": 50,
+          "max": 99,
+          "sm": 4,
+          "hidden": "!data.wb2SocEstimationEnabled"
+        },
+        "wb2SocMeasurementTimeId": {
+          "type": "text",
+          "label": "Optional vehicle SoC measurement timestamp (Unix ms)",
+          "default": "",
+          "sm": 12,
+          "newLine": true,
+          "hidden": "!data.wb2SocEstimationEnabled"
+        },
+        "wb2SocEstimateHelp": {
+          "type": "staticText",
+          "text": "SoC estimation help",
+          "newLine": true,
+          "hidden": "!data.wb2SocEstimationEnabled"
         },
         "_wb2InputHeader": {
           "type": "header",

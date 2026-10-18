@@ -6,11 +6,12 @@ const {SMA_GRID_MAX_AGE_MS} = require('../lib/source-diagnostics');
 const fs=require('node:fs');
 const path=require('node:path');
 
-function engine(config={}) {
+function engine(config={}, clock=Date) {
     const states=new Map();
-    const put=(id,val)=>states.set(id,{val,ts:Date.now(),ack:true});
-    const ctx=vm.createContext({SMA_GRID_MAX_AGE_MS, nativeConfig:config,Date,console,
+    const put=(id,val)=>states.set(id,{val,ts:clock.now(),ack:true});
+    const ctx=vm.createContext({SMA_GRID_MAX_AGE_MS, nativeConfig:config,Date:clock,console,
         gridConstraints:require('../lib/grid-constraints'),
+        vehicleSocEstimator:require('../lib/vehicle-soc-estimator'),
         getState:id=>states.get(id),existsState:id=>states.has(id),
         createState:(id,val)=>{if(!states.has(id))put(id,val);},setState:put,
         log:()=>{},sendTo:()=>{}});
@@ -1376,4 +1377,48 @@ test('three-phase PV tolerance admits only a full measured 690 W step near the t
     assert.equal(h.run(`quantizeWallbox(5850,vehicleState(2),8,3,5200,${options}).amps`), 8);
     assert.equal(h.run(`quantizeWallbox(5420,vehicleState(2),8,3,5200,${options}).amps`), 8,
         '220 W export cannot pay a 690 W step with 50 W tolerance');
+});
+
+
+test('optional energy SoC crosses minimum/target for each vehicle without modifying raw sources', () => {
+    for (const wb of [0,1,2]) {
+        let now=1800000000000;
+        class Clock extends Date { static now() { return now; } }
+        const h=engine({[`wb${wb}SocEstimationEnabled`]:true,[`wb${wb}CapacityKWh`]:50,
+            [`wb${wb}SocEfficiencyPct`]:90},Clock);
+        h.put(`DP_WB${wb}_SOC`,19);
+        h.put(`DP_WB${wb}_SOC_MEASURED_AT`,now);
+        h.put(`DP_WB${wb}_SOC_ENERGY`,10);
+        h.put(`DP_WB${wb}_TARGET`,21);
+        h.run('updateVehicles()');
+        assert.equal(h.states.get(`ems.0.Vehicles.Wallbox${wb}.MustCharge`).val,true);
+        now+=30000;
+        h.put(`DP_WB${wb}_SOC_ENERGY`,10.75);
+        h.run('updateVehicles()');
+        assert.equal(h.states.get(`ems.0.Vehicles.Wallbox${wb}.MustCharge`).val,false);
+        assert.equal(h.states.get(`ems.0.Vehicles.Wallbox${wb}.Release`).val,true);
+        now+=30000;
+        h.put(`DP_WB${wb}_SOC_ENERGY`,11.2);
+        h.run('updateVehicles()');
+        assert.equal(h.states.get(`ems.0.Vehicles.Wallbox${wb}.Release`).val,false);
+        assert.equal(h.states.get(`DP_WB${wb}_SOC`).val,19);
+        assert.equal(h.states.get(`ems.0.Vehicles.Wallbox${wb}.SoCSource`).val,'energy-estimate');
+    }
+});
+
+
+test('price ledger receives reported SoC energy, not an already interpolated deficit', () => {
+    const h=engine({wb0SocEstimationEnabled:true,wb0CapacityKWh:50,wb0SocEfficiencyPct:90});
+    const now=Date.now();
+    h.put('DP_WB0_SOC',40);h.put('DP_WB0_SOC_ENERGY',10);h.put('DP_WB0_SOC_MEASURED_AT',now);
+    h.run('updateVehicles()');
+    const id='ems.0.Vehicles.Wallbox0.SocEstimateLedger_JSON';
+    const l=JSON.parse(h.states.get(id).val);
+    l.basis.kwh=9; // one measured kWh after the raw report
+    l.samples=[[now-60000,9]];
+    h.put(id,JSON.stringify(l));
+    h.run('globalThis.priceInputs=[]; updateVehiclePriceSession=(wb,args)=>{priceInputs.push({wb,...args}); return {};}; updateVehicles();');
+    const input=h.run('priceInputs.find(x=>x.wb===0)');
+    assert.ok(Math.abs(input.gridEnergyKWh-(80-40)/100*50/.9)<1e-9);
+    assert.ok(h.states.get('ems.0.Vehicles.Wallbox0.SoC_pct').val>40);
 });

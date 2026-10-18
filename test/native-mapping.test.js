@@ -76,3 +76,14 @@ test('external binary budget is preloaded separately from contact and LPC withou
     assert.equal(mapping.DP_PAR14A_LIMIT,'external.budget');
     assert.equal(mapping.DP_LPC_LIMIT,'eebus.limit');
 });
+
+
+test('all wallbox energy and measurement-time sources have explicit independent mappings', () => {
+    const {buildNativeMapping}=require('../lib/native-mapping');
+    for(const wb of [0,1,2]) {
+        const mapping=buildNativeMapping({[`wb${wb}SocEnergyId`]:'energy',
+            [`wb${wb}SocMeasurementTimeId`]:'measurementTime'});
+        assert.equal(mapping[`DP_WB${wb}_SOC_ENERGY`],'energy');
+        assert.equal(mapping[`DP_WB${wb}_SOC_MEASURED_AT`],'measurementTime');
+    }
+});
