@@ -1109,3 +1109,20 @@ test('an unanswered measured PV step yields immediately to a genuine deficit or 
         assert.ok(h.writes.some(write => write.id === 'cmd' && write.val <= 8));
     }
 });
+
+test('mandatory output retains confirmed PV-funded current but yields to real deficits and hard limits', async () => {
+    for (const scenario of ['hold', 'deficit', 'hard', 'unconfirmed']) {
+        const h = await measuredHoldOutput();
+        h.put('soc', 10);
+        if (scenario === 'deficit') h.put('export', 50);
+        if (scenario === 'hard') h.grant([8], {hardBudgetW: 1800});
+        if (scenario === 'unconfirmed') h.put('power', 1.73, {ts: 1000000});
+        await h.output.tick();
+        if (scenario === 'hold') {
+            assert.deepEqual(h.writes, []);
+            const d = JSON.parse(h.states.get('ems.0.Devices.Wallbox0.IncreaseBudget_JSON').val);
+            assert.equal(d.basis, 'measured-current-hold');
+            assert.equal(d.pvStepToleranceW, 0, 'mandatory charging gains no PV import extension');
+        } else assert.ok(h.writes.some(w => w.id === 'cmd' && w.val <= 7), scenario);
+    }
+});
