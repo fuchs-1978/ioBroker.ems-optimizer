@@ -4963,7 +4963,7 @@
         "wallboxPVImportToleranceW": {
           "type": "number",
           "label": "Shared PV wallbox grid-import tolerance",
-          "help": "Shared tolerance above the grid target for a running PV charger; 0 disables it. New one-amp steps use half this tolerance, confirmed current may use the full tolerance. No extra allowance per vehicle or for starts, price charging or hard limits.",
+          "help": "Shared maximum allowance above the grid target for a running charger, including minimum-SoC charging; 0 disables it. New one-amp steps keep a 20 W admission margin below this setting, confirmed current may use the full setting. No extra allowance per vehicle or for cold starts, price charging or hard limits. Mandatory charging and unrelated house loads can still cause higher total grid import.",
           "unit": "W",
           "default": 50,
           "min": 0,

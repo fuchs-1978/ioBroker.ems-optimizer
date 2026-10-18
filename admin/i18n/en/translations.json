@@ -493,7 +493,6 @@
   "Confirmed capacity per equal-sized battery pack": "Confirmed capacity per equal-sized battery pack",
   "Enter a positive kWh value from the pack documentation. Zero means not specified, not zero-capacity hardware.": "Enter a positive kWh value from the pack documentation. Zero means not specified, not zero-capacity hardware.",
   "Shared PV wallbox grid-import tolerance": "Shared PV wallbox grid-import tolerance",
-  "Shared tolerance above the grid target for a running PV charger; 0 disables it. New one-amp steps use half this tolerance, confirmed current may use the full tolerance. No extra allowance per vehicle or for starts, price charging or hard limits.": "Shared tolerance above the grid target for a running PV charger; 0 disables it. New one-amp steps use half this tolerance, confirmed current may use the full tolerance. No extra allowance per vehicle or for starts, price charging or hard limits.",
   "Grid connection / section 14a / EEBUS": "Grid connection / section 14a / EEBUS",
   "Binary-contact budget source": "Binary-contact budget source",
   "Existing fixed shared budget": "Existing fixed shared budget",
@@ -520,5 +519,6 @@
   "AC charging energy counter (kWh)": "AC charging energy counter (kWh)",
   "Charging efficiency for SoC estimation (%)": "Charging efficiency for SoC estimation (%)",
   "Optional vehicle SoC measurement timestamp (Unix ms)": "Optional vehicle SoC measurement timestamp (Unix ms)",
-  "SoC estimation help": "Use raw vehicle SoC, never an existing estimate. Existing capacity must be usable battery kWh. Counter must supply AC kWh. Reset or unknown alignment falls back to valid reported SoC. Optional timestamp must belong to the report and use Unix ms; otherwise ioBroker state.ts is assumed. Delayed cloud reports without measurement time remain approximate. No driving consumption estimate."
+  "SoC estimation help": "Use raw vehicle SoC, never an existing estimate. Existing capacity must be usable battery kWh. Counter must supply AC kWh. Reset or unknown alignment falls back to valid reported SoC. Optional timestamp must belong to the report and use Unix ms; otherwise ioBroker state.ts is assumed. Delayed cloud reports without measurement time remain approximate. No driving consumption estimate.",
+  "Shared maximum allowance above the grid target for a running charger, including minimum-SoC charging; 0 disables it. New one-amp steps keep a 20 W admission margin below this setting, confirmed current may use the full setting. No extra allowance per vehicle or for cold starts, price charging or hard limits. Mandatory charging and unrelated house loads can still cause higher total grid import.": "Shared maximum allowance above the grid target for a running charger, including minimum-SoC charging; 0 disables it. New one-amp steps keep a 20 W admission margin below this setting, confirmed current may use the full setting. No extra allowance per vehicle or for cold starts, price charging or hard limits. Mandatory charging and unrelated house loads can still cause higher total grid import."
 }

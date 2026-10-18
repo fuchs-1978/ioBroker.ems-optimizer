@@ -132,3 +132,10 @@ test('enabled but missing factor override fails closed instead of silently using
     assert.equal(binaryContactBudget({par14aBudgetMode:'ems',par14aParticipants:participants(2),
         par14aGzfOverrideEnabled:true}).valid,false);
 });
+
+test('PV allowance setting is the hold ceiling with a 20 W admission margin', () => {
+    const {pvImportAdmissionW}=require('../lib/grid-constraints');
+    for(const [setting,expected] of [[0,0],[10,0],[20,0],[50,30],[100,80],[200,180]])
+        assert.equal(pvImportAdmissionW(setting),expected);
+    for(const value of [-1,201,NaN,Infinity,'100',null])assert.equal(pvImportAdmissionW(value),0);
+});
