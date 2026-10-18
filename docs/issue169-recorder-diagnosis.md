@@ -1,5 +1,9 @@
 # Recorder-Verluste am 17.10.2026: eingegrenzter Pfad, Ursache weiterhin offen
 
+Fortschreibung vom 18.10.: [#181 und begrenzte historische Verlustdiagnose](issue181-recorder-loss-episodes.md).
+Die folgende Bestandsaufnahme beschreibt den damaligen Stand; Batch-Append aus
+PR #172 und der spätere Episodennachweis sind dort getrennt eingeordnet.
+
 Grundlage ist [Tagesbericht #169](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/169),
 mit dem am Bericht geprüften Quellstand
 [`795a722`](https://github.com/fuchs-1978/ioBroker.ems-optimizer/commit/795a72265c69616e0c515d34e57d9677da6a84ef)
