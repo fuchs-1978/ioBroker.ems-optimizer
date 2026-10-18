@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.94**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.95**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -745,7 +745,7 @@ Netzanschlusspunkt-Regelziel und allgemeiner Berechnungszyklus. Negative Netzlei
 | --- | --- | --- |
 | Simulation aktivieren<br>`controlEnabled` | EIN | Aktiviert die Berechnung der Echtzeitregelung/Simulation. Trotz Admin-Bezeichnung „Simulation“ sind bei zusätzlich freigegebenen realen Ausgängen produktive Befehle möglich; dieses Feld allein ist weder Master noch Schatten-Live-Schalter. |
 | Netzsollwert (+ Bezug / − Einspeisung)<br>`targetGridPowerW` | -100 W | Netzsollwert in W: positiv Bezug, negativ Einspeisung. −100 W zielt auf kleine Einspeisereserve; 0 W auf rechnerische Null. Nur steuerbare Lasten/aktiver Speicher können Abweichung beeinflussen; normale Hauslast ohne Stellspielraum bleibt. |
-| Gemeinsame Netzbezugstoleranz fuer PV-Wallboxen<br>`wallboxPVImportToleranceW` | 50 W | Zusaetzliche Toleranz oberhalb des Netzsollwerts fuer genau eine bereits laufende PV-Wallbox. Einstellbar 0–200 W; 0 deaktiviert die Erweiterung. Ein neuer gemessener 1-A-Schritt nutzt die halbe Toleranz (voreingestellt 25 W), der bestaetigte Strom die volle (50 W). Gemeinsamer Zuschlag, nicht je Auto; keine Start-, Preis- oder Schutzbudgetfreigabe. Bei Netzsollwert 0 W kann 220 W Einspeisung durch einen 230-W-Schritt zu rechnerisch 10 W Bezug werden. Dreiphasig benoetigt ein Schritt etwa 690 W. Momentanwerte koennen bei PV-/Lastwechseln und Messverzoegerung abweichen. |
+| Gemeinsame Netzbezugstoleranz fuer PV-Wallboxen<br>`wallboxPVImportToleranceW` | 50 W | Maximale zusaetzliche Toleranz oberhalb des Netzsollwerts fuer genau eine bereits laufende Wallbox, auch unter Mindest-SoC. Einstellbar 0–200 W; 0 deaktiviert die Erweiterung. Ein neuer gemessener 1-A-Schritt haelt 20 W Abstand zur Grenze: bei Einstellung 100 W Zuschalten bis rechnerisch 80 W und Halten bis 100 W (Standard 50 W: 30/50 W). Gemeinsamer Zuschlag, nicht je Auto; keine neue Start-, Preis- oder Schutzbudgetfreigabe. Erzwungene Mindestladungen und andere Hausverbraucher bleiben eigenstaendige Lasten; die Einstellung ist keine harte Obergrenze fuer den gesamten Haus-Netzbezug. Bei Netzsollwert 0 W kann 220 W Einspeisung durch einen 230-W-Schritt zu rechnerisch 10 W Bezug werden. Dreiphasig benoetigt ein Schritt etwa 690 W. Momentanwerte koennen bei PV-/Lastwechseln und Messverzoegerung abweichen. |
 | Totband<br>`deadbandW` | 100 W | Totband in W um den Netzsollwert. Innerhalb keine unnötige feine Korrektur; außerhalb können Ampere-Raster, Mindestlast und Antwortfristen dennoch Restabweichung verursachen. |
 | Langsamer Regelzyklus<br>`slowCycleS` | 5 s | Langsamer Ziel-/Verteilungszyklus in s. Unterscheidet sich von schnelleren Ausgangs-/Speicherzyklen, Modbus-Pollzeit und Historienauflösung. |
 
@@ -848,6 +848,10 @@ Bereits vorhandene SQL-Skalarhistorien, Retention und Anlagenkonfiguration werde
 Ab alpha.67 akzeptiert die zentrale Wallbox-Phasenbudgetprüfung dieselbe bestehende Leerlauftoleranz wie der Wallbox-Ausgang: bestätigte, frische, qualitativ gültige Leistungswerte zwischen −0,02 und 0 kW werden intern als 0 W behandelt. Die originale negative Rohmessung bleibt in der Diagnose erhalten. Größere negative Werte, fehlende/ungültige Werte, schlechtes q, fehlendes ACK und veraltete Quellen bleiben gesperrt. Diese Toleranz gilt für Wallboxleistung; die Verträge anderer Quellen werden dadurch nicht geändert.
 
 ## Changelog und historische Detaildokumentation
+
+### 0.17.0-alpha.95 (2026-10-18)
+
+PV-Bezugstoleranz gilt auch bei laufender Mindest-SoC-Ladung. Die Einstellung ist die gemeinsame Haltegrenze; Zuschalten mit 20 W Abstand statt halber Toleranz. Bei 100 W Einstellung kann 160 W Einspeisung durch einen 230-W-Schritt zu rechnerisch 70 W Bezug werden. Reale PV-Budgets, gemeinsamer Besitzer und Schutzgrenzen bleiben erforderlich. [Releasehinweise](docs/release-0.17.0-alpha.95.md).
 
 ### 0.17.0-alpha.94 (2026-10-18)
 

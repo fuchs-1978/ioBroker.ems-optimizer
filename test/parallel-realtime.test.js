@@ -977,7 +977,7 @@ test('one-amp PV step replaces 220 W export by predicted 10 W import with a shar
     assert.equal(h.update(1920).amps[0], 9, '40 W import may be held');
     assert.ok(h.update(1900).amps[0] <= 8, '60 W import exceeds the hold limit');
     const lower = measuredHoldEngine();
-    assert.equal(lower.update(1930).amps[0], 8, '30 W expected import cannot arm a new step (25 W admission)');
+    assert.equal(lower.update(1929).amps[0], 8, '31 W expected import cannot arm a new step (30 W admission)');
     lower.nativeConfig.wallboxPVImportToleranceW = 0;
     assert.equal(lower.update(1950).amps[0], 8, 'zero disables the new allowance');
     lower.nativeConfig.wallboxPVImportToleranceW = -1;
@@ -1093,4 +1093,32 @@ test('active heater sharing also releases an unusable sub-900 W share to wallbox
     assert.equal(target.dhw,0);
     assert.equal(target.amps[1],11);assert.equal(target.amps[2],6);
     assert.ok(target.watts.reduce((a,b)=>a+b,0)<=4000);
+});
+
+test('configured 100 W admits the 160 W export step during minimum-SoC charging and holds only to 100 W', () => {
+    const h=measuredHoldEngine();h.nativeConfig.wallboxPVImportToleranceW=100;
+    h.put('DP_WB0_SOC',10);
+    assert.equal(h.update(1890).amps[0],9, '1730 W uptake plus 160 W export can fund the next 230 W step with 70 W import');
+    h.owned(0,9,1960);
+    assert.equal(h.update(1870).amps[0],9, '90 W import retains the confirmed current');
+    assert.ok(h.update(1850).amps[0]<=8, '110 W import cannot retain the discretionary step');
+    const edge=measuredHoldEngine();edge.nativeConfig.wallboxPVImportToleranceW=100;edge.put('DP_WB0_SOC',10);
+    assert.equal(edge.update(1880).amps[0],9, '80 W predicted import is the admission boundary');
+    assert.equal(edge.update(1879).amps[0],8, '81 W may not arm the step');
+});
+
+test('mandatory grid floors cannot manufacture another PV import step and tolerance has one owner', () => {
+    const scarce=measuredHoldEngine();scarce.nativeConfig.wallboxPVImportToleranceW=100;
+    scarce.put('DP_WB0_SOC',10);scarce.owned(0,6,1200);
+    assert.equal(scarce.update(900).amps[0],6, 'authorized 1380 W floor is not real 1430 W next-step funding');
+    const h=measuredHoldEngine();h.nativeConfig.wallboxPVImportToleranceW=100;
+    h.put('DP_WB0_SOC',10);h.put('ems.0.Devices.Wallbox1.Present',true);h.put('DP_WB1_SOC',10);
+    h.owned(1,8,1730);h.put('ems.0.Devices.Wallbox1.ResponsePending',false);
+    h.put('ems.0.Devices.Wallbox1.ResponseState','confirmed');
+    h.put('ems.0.Devices.Wallbox1.OutputLastWrite',Date.now()-1000);
+    h.update(3900,4200);
+    const a=JSON.parse(h.states.get('ems.0.Control.ParallelWallboxAllocation_JSON').val);
+    assert.equal(a.pvStepOwner,0);
+    assert.equal(JSON.parse(h.states.get('ems.0.Control.Wallbox1.AllocationDiagnostics_JSON').val).pvStepToleranceW,0);
+    assert.ok(a.allocations.reduce((sum,x)=>sum+x.targetA*x.phases*230,0)<=4200);
 });

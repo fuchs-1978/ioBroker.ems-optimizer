@@ -1067,7 +1067,7 @@ test('shared measured PV step sends 9 A for 220 W export and waits for a real re
     const d = JSON.parse(h.states.get('ems.0.Devices.Wallbox0.IncreaseBudget_JSON').val);
     assert.equal(d.requiredW, 1960);
     assert.equal(d.pvStepToleranceW, 50);
-    assert.equal(d.pvStepAdmissionW, 25);
+    assert.equal(d.pvStepAdmissionW, 30);
     h.advance(6000); grantPVStep(h, 10); h.ack('feedback', 9);
     h.writes.length = 0;
     await h.output.tick();
@@ -1076,7 +1076,7 @@ test('shared measured PV step sends 9 A for 220 W export and waits for a real re
 
 test('PV step respects admission hysteresis, ownership, disabled config and hard current caps', async () => {
     for (const change of [
-        h => h.put('export', 200), // 30 W expected import > 25 W admission.
+        h => h.put('export', 199), // 31 W expected import > 30 W admission.
         h => { h.config.wallboxPVImportToleranceW = 0; },
         h => grantPVStep(h, 9, 50, 1),
         h => { h.config.wb0CommissioningMaxA = 8; },
@@ -1148,5 +1148,39 @@ test('output independently stops at energy-estimated target with unchanged raw S
             assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,/Ziel-SoC/);
         }
         assert.equal(h.states.get('soc').val,79.8);
+    }
+});
+
+test('minimum-SoC output admits one 70 W import step with 100 W setting but not a 90 W new step', async () => {
+    for(const exportW of [160,140]) {
+        const h=await measuredHoldOutput();h.put('soc',10);
+        h.config.wallboxPVImportToleranceW=100;grantPVStep(h,9,100);h.put('export',exportW);
+        await h.output.tick();
+        if(exportW===160) {
+            assert.ok(h.writes.some(w=>w.id==='cmd'&&w.val===9));
+            const d=JSON.parse(h.states.get('ems.0.Devices.Wallbox0.IncreaseBudget_JSON').val);
+            assert.equal(d.pvStepToleranceW,100);assert.equal(d.pvStepAdmissionW,80);
+        } else assert.ok(!h.writes.some(w=>w.id==='cmd'&&w.val>8));
+    }
+});
+
+test('minimum-SoC PV step rechecks the meter at send boundary with the same 100 W policy', async () => {
+    const h=await measuredHoldOutput();h.put('soc',10);
+    h.config.wallboxPVImportToleranceW=100;grantPVStep(h,9,100);h.put('export',160);
+    const send=h.output.send.bind(h.output);
+    h.output.send=async(d,key,value)=>{if(key==='command'&&value===9)h.put('export',140);return send(d,key,value);};
+    await h.output.tick();
+    assert.ok(!h.writes.some(w=>w.id==='cmd'&&w.val===9));
+});
+test('minimum-SoC output holds at 100 W allowance and reduces above it', async () => {
+    for(const imported of [100,101]) {
+        const h=await measuredHoldOutput();h.put('soc',10);h.config.wallboxPVImportToleranceW=100;
+        const d=h.output.devices[0];d.lastA=9;
+        grantPVStep(h,9,100);h.ack('feedback',9);
+        h.put('power',1.96,{ts:1010002});h.put('i1',8.5,{ts:1010002});
+        h.put('export',0);h.put('import',imported);
+        h.writes.length=0;await h.output.tick();
+        if(imported===100)assert.deepEqual(h.writes,[]);
+        else assert.ok(h.writes.some(w=>w.id==='cmd'&&w.val<=8));
     }
 });
