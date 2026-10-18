@@ -75,7 +75,7 @@ test('update defaults never arm a productive output', () => {
 });
 
 test('package manifests publish the same alpha version', () => {
-    assert.equal(packageJson.version, '0.17.0-alpha.91');
+    assert.equal(packageJson.version, '0.17.0-alpha.92');
     assert.equal(ioPackage.common.version, packageJson.version);
     const core = fs.readFileSync('lib/engine/core.js', 'utf8');
     const bootstrap = fs.readFileSync('lib/engine/bootstrap.js', 'utf8');
@@ -137,5 +137,25 @@ test('grid tab exposes opt-in EMS GZF sources and preserves existing keys and fi
         assert.ok(texts[tabs.gridConnectionTab.label]);
         for(const key of ['par14aBudgetMode','par14aParticipants','par14aLimitId','par14aGzfFactors'])
             assert.ok(texts[fields[key].label]);
+    }
+});
+
+
+test('each vehicle exposes opt-in energy estimation with safe defaults and translated fields', () => {
+    const fs=require('node:fs'),path=require('node:path');
+    const config=JSON.parse(fs.readFileSync(path.join(__dirname,'../admin/jsonConfig.json')));
+    const native=JSON.parse(fs.readFileSync(path.join(__dirname,'../io-package.json'))).native;
+    for(const wb of [0,1,2]) {
+        const items=config.items[`wallbox${wb}Tab`].items;
+        assert.equal(native[`wb${wb}SocEstimationEnabled`],false);
+        assert.equal(native[`wb${wb}SocEnergyId`],'');
+        assert.equal(native[`wb${wb}SocEfficiencyPct`],90);
+        for(const suffix of ['SocEstimationEnabled','SocEnergyId','SocEfficiencyPct','SocMeasurementTimeId']) {
+            assert.ok(items[`wb${wb}${suffix}`]);
+            for(const lang of ['de','en']) {
+                const translations=JSON.parse(fs.readFileSync(path.join(__dirname,`../admin/i18n/${lang}/translations.json`)));
+                assert.ok(translations[items[`wb${wb}${suffix}`].label]);
+            }
+        }
     }
 });

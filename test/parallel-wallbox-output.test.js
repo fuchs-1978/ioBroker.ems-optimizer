@@ -1126,3 +1126,27 @@ test('mandatory output retains confirmed PV-funded current but yields to real de
         } else assert.ok(h.writes.some(w => w.id === 'cmd' && w.val <= 7), scenario);
     }
 });
+
+test('output independently stops at energy-estimated target with unchanged raw SoC', async () => {
+    for (const staleCounter of [false, true]) {
+        const h=await measuredHoldOutput();
+        h.config.wb0SocEstimationEnabled=true;
+        h.config.wb0CapacityKWh=50;h.config.wb0SocEfficiencyPct=90;
+        h.mapping.DP_WB0_SOC_ENERGY='chargedKWh';
+        h.put('soc',79.8,{ts:1000000});
+        const {estimateSoc}=require('../lib/vehicle-soc-estimator');
+        const signature=JSON.stringify(['soc','chargedKWh','',50,90]);
+        const seed=estimateSoc({now:1000000,reported:{val:79.8,ts:1000000,ack:true},
+            counter:{val:10,ts:1000000,ack:true},car:{val:2,ts:1000000,ack:true},
+            signature,capacityKWh:50,efficiencyPct:90});
+        h.put('ems.0.Vehicles.Wallbox0.SocEstimateLedger_JSON',JSON.stringify(seed.ledger));
+        h.put('chargedKWh',10.2,{ts:staleCounter ? 900000 : 1010001});
+        h.writes.length=0;await h.output.tick();
+        if(staleCounter) assert.ok(!h.writes.some(w=>w.id==='allow'&&w.val===0), 'invalid counter falls back to raw SoC');
+        else {
+            assert.ok(h.writes.some(w=>w.id==='allow'&&w.val===0));
+            assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,/Ziel-SoC/);
+        }
+        assert.equal(h.states.get('soc').val,79.8);
+    }
+});
