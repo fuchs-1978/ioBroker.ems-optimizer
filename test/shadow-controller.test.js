@@ -1495,3 +1495,68 @@ test('large recorder status JSON is coalesced at one second while changed loss c
     assert.equal(count('.RecordJournalStatus'), 2);
     assert.equal(JSON.parse(cache.get('ems.0.Debug.Shadow.RecordJournalStatus').val).bytes, bytes);
 });
+
+test('durable recorder drains bounded batches in order, keeps queue caps and resets encoding after failure', async () => {
+    const saved = [], batches = [];
+    let fail = false, ticks = 0;
+    const journal = {health: () => ({records: 0, bytes: 0}), reportLoss: async () => {},
+        append: async value => { saved.push(value); },
+        appendBatch: async values => {
+            batches.push(values.length);
+            if (fail) { fail = false; throw new Error('injected append failure'); }
+            saved.push(...values);
+        }};
+    const shadow = new ShadowController({namespace: 'ems.0', decisionRecordJournal: journal,
+        decisionRecordDelivery: {health: () => ({}), tick: async () => { ticks++; }},
+        setCompatState: async () => {}});
+    const frame = index => ({schema: 2, timestamp: 1000 + index,
+        production: {stable: 'unchanged original context '.repeat(100), measured: index}});
+    for (let index = 0; index < 129; index++) shadow.enqueueRecord(frame(index));
+    assert.equal(shadow.durablePending.size, 128);
+    assert.equal(shadow.recordDropped, 1);
+    await shadow.recordAppendTail;
+    assert.equal(saved.length, 128);
+    assert.equal(shadow.durablePending.size, 0);
+    assert.equal(shadow.durablePendingBytes, 0);
+    assert.ok(batches.every(size => size <= 16));
+    assert.ok(batches.length < 128);
+    const decoder = new DecisionRecordDecoder();
+    const decoded = saved.map(value => decoder.decode(JSON.parse(value)));
+    assert.ok(decoded.every(record => !record.reconstruction));
+    assert.deepEqual(decoded.map(record => record.production.measured), Array.from({length: 128}, (_, i) => i));
+    assert.equal(ticks, batches.length);
+    fail = true;
+    for (let index = 200; index < 216; index++) shadow.enqueueRecord(frame(index));
+    await shadow.recordAppendTail;
+    assert.equal(shadow.recordDropped, 17);
+    shadow.enqueueRecord(frame(300));
+    await shadow.recordAppendTail;
+    assert.equal(JSON.parse(saved.at(-1)).frameType, 'snapshot');
+    assert.equal(shadow.durableBatchRunning, false);
+    assert.equal(shadow.durablePending.size, 0);
+});
+
+test('recorder shutdown waits for the active durable batch without publishing it early', async () => {
+    let entered, release, ticks = 0, durable = false;
+    const started = new Promise(resolve => { entered = resolve; });
+    const gate = new Promise(resolve => { release = resolve; });
+    const journal = {health: () => ({records: durable ? 2 : 0, bytes: 0}),
+        append: async () => { throw new Error('unexpected single append'); },
+        appendBatch: async () => { entered(); await gate; durable = true; }};
+    const shadow = new ShadowController({namespace: 'ems.0', decisionRecordJournal: journal,
+        decisionRecordDelivery: {health: () => ({}), tick: async () => { ticks++; }},
+        setCompatState: async () => {}});
+    shadow.enqueueRecord({schema: 2, timestamp: 1000});
+    shadow.enqueueRecord({schema: 2, timestamp: 2000});
+    await started;
+    let finished = false;
+    const closing = shadow.finishRecording().then(result => { finished = true; return result; });
+    await Promise.resolve();
+    assert.equal(finished, false);
+    assert.equal(ticks, 0);
+    release();
+    assert.equal((await closing).drained, true);
+    assert.equal(durable, true);
+    assert.equal(shadow.durablePending.size, 0);
+    assert.equal(ticks, 0);
+});

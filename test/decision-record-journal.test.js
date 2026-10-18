@@ -574,3 +574,118 @@ test('batch cleanup failure keeps a durable retirement fence and recovers only t
     assert.equal(restarted.health().expiredRecords, 0);
     await restarted.close();
 });
+
+test('group commit shares directory barriers, bounds file concurrency and survives restart exactly', async t => {
+    const dir = await directory(t), journal = new DecisionRecordJournal({directory: dir});
+    await journal.initialize();
+    let barriers = 0, active = 0, highWater = 0;
+    const sync = journal._syncDirectory.bind(journal), write = journal._writeFile.bind(journal);
+    journal._syncDirectory = async () => { barriers++; await sync(); };
+    journal._writeFile = async (...args) => {
+        highWater = Math.max(highWater, ++active);
+        try { await new Promise(resolve => setImmediate(resolve)); return await write(...args); }
+        finally { active--; }
+    };
+    const originals = Array.from({length: 16}, (_, index) => payload(index + 1));
+    const saved = await journal.appendBatch(originals);
+    assert.equal(barriers, 2);
+    assert.equal(highWater, 4);
+    assert.equal(journal.health().pendingRecords, 0);
+    assert.equal(journal.health().lastAppendBatch.records, 16);
+    assert.deepEqual((await journal.readBatch()).map(entry => entry.payload), originals);
+    assert.equal(journal.health().sqlConfirmedRecords, 0);
+    await journal.close();
+    const restarted = new DecisionRecordJournal({directory: dir});
+    await restarted.initialize();
+    assert.deepEqual((await restarted.readBatch()).map(entry => entry.id), saved.map(entry => entry.id));
+    assert.deepEqual((await restarted.readBatch()).map(entry => entry.payload), originals);
+    await restarted.close();
+});
+
+test('failed group commit waits for all writers and publishes no apparently good prefix', async t => {
+    const dir = await directory(t), journal = new DecisionRecordJournal({directory: dir});
+    await journal.initialize();
+    const write = journal._writeFile.bind(journal);
+    let completed = 0;
+    journal._writeFile = async (file, content) => {
+        if (file.endsWith('0000000000000002.tmp')) throw new Error('injected disk error');
+        await new Promise(resolve => setImmediate(resolve));
+        await write(file, content); completed++;
+    };
+    await assert.rejects(journal.appendBatch(checkpointChain()), /injected disk error/);
+    assert.equal(completed, 3);
+    assert.equal(journal.health().records, 0);
+    assert.equal(journal.health().pendingRecords, 0);
+    assert.equal(journal.health().capacityVerified, false);
+    assert.deepEqual(await journal.readBatch(), []);
+    await assert.rejects(journal.append(payload(100)), /capacity is unknown/);
+    await journal.close();
+    const restarted = new DecisionRecordJournal({directory: dir});
+    await restarted.initialize();
+    // Recovery must detect the missing predecessor; no silent repair or SQL proof.
+    assert.equal(restarted.health().sqlConfirmedRecords, 0);
+    const recovered = decodeDecisionRecords((await restarted.readBatch()).map(entry => entry.payload));
+    assert.ok(recovered.some(record => record.reconstruction?.valid === false));
+    await restarted.close();
+});
+
+test('parallel reads retain order and bounds and reject the whole result on corruption', async t => {
+    const dir = await directory(t), journal = new DecisionRecordJournal({directory: dir});
+    await journal.initialize();
+    const originals = Array.from({length: 8}, (_, index) => payload(index + 1));
+    const saved = await journal.appendBatch(originals);
+    const read = journal._readBoundedFile.bind(journal);
+    let active = 0, highWater = 0;
+    journal._readBoundedFile = async (...args) => {
+        highWater = Math.max(highWater, ++active);
+        try { await new Promise(resolve => setImmediate(resolve)); return await read(...args); }
+        finally { active--; }
+    };
+    assert.deepEqual((await journal.readBatch({limit: 8})).map(entry => entry.payload), originals);
+    assert.equal(highWater, 4);
+    assert.equal((await journal.readBatch({limit: 8, maxBytes: Buffer.byteLength(originals[0])})).length, 1);
+    const file = path.join(dir, `${saved[5].id}.json`);
+    const content = await fs.readFile(file, 'utf8');
+    await fs.writeFile(file, content.replace('Äußere', 'Andere'));
+    await assert.rejects(journal.readBatch({limit: 8}), /hash|changed|checksum|mismatch/i);
+    assert.equal(active, 0);
+    assert.equal(journal.health().sqlConfirmedRecords, 0);
+    assert.ok(journal.health().readErrors > 0);
+    await journal.close();
+});
+
+test('group rejection keeps existing capacity limits and counts every refused original', async t => {
+    const journal = new DecisionRecordJournal({directory: await directory(t), maxRecords: 2});
+    await journal.initialize();
+    await assert.rejects(journal.appendBatch([payload(1), payload(2), payload(3)]), /disk\/record capacity/);
+    assert.equal(journal.health().records, 0);
+    assert.equal(journal.health().rejectedRecords, 3);
+    assert.equal(journal.health().pendingRecords, 0);
+    await journal.appendBatch([payload(4), payload(5)]);
+    assert.equal(journal.health().records, 2);
+    await journal.close();
+});
+
+test('no batch original becomes visible before the final durability barrier', async t => {
+    const journal = new DecisionRecordJournal({directory: await directory(t)});
+    await journal.initialize();
+    const sync = journal._syncDirectory.bind(journal);
+    let entered, release, count = 0;
+    const atBarrier = new Promise(resolve => { entered = resolve; });
+    const gate = new Promise(resolve => { release = resolve; });
+    journal._syncDirectory = async () => {
+        if (++count === 2) { entered(); await gate; }
+        await sync();
+    };
+    const writing = journal.appendBatch(checkpointChain());
+    await atBarrier;
+    assert.equal(journal.health().records, 0);
+    assert.equal(journal.health().pendingRecords, 4);
+    release();
+    await writing;
+    const records = decodeDecisionRecords((await journal.readBatch()).map(entry => entry.payload));
+    assert.equal(records.length, 4);
+    assert.ok(records.every(record => !record.reconstruction));
+    assert.equal(journal.health().sqlConfirmedRecords, 0);
+    await journal.close();
+});
