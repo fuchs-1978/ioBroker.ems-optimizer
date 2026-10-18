@@ -1,8 +1,9 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.92",
+    "version": "0.17.0-alpha.93",
     "news": {
+      "0.17.0-alpha.93": {"en":"Preserve fractional energy-based SoC progress when a whole-percent vehicle report agrees with its rounded estimate at report time; retain authoritative corrections including lower arrival SoC and existing reset/freshness guards.","de":"Nachkommafortschritt der SoC-Schaetzung bei passender gerundeter Fahrzeugmeldung erhalten; abweichende Meldungen einschliesslich niedrigerem Ankunfts-SoC sowie Reset- und Frischeschutz bleiben wirksam."},
       "0.17.0-alpha.92": {"en":"Optional per-vehicle charging-energy SoC estimates with retained aligned anchors, separate reported/estimated diagnostics, reset/session guards and independent output checks; preserve raw price-energy accounting.","de":"Optionale SoC-Schaetzung je Fahrzeug aus Ladeenergie mit persistenter zeitlich zugeordneter Basis, getrennten Diagnosewerten, Reset-/Sitzungsschutz und unabhaengiger Ausgangspruefung; Preis-Energiebilanz bleibt auf echten Meldungen."},
       "0.17.0-alpha.91": {"en":"Prevent nominal PV ceiling down-up cycles during minimum-SoC charging by retaining proven measured current in planner and output; preserve nominal hard caps and immediate reduction on actual deficits.","de":"Pendeln an der nominellen PV-Grenze auch waehrend Mindest-SoC-Ladung verhindern: nachgewiesenen real gedeckten Strom in Zuteilung und Ausgang halten; harte Grenzen und Absenkung bei realem Defizit erhalten."},
       "0.17.0-alpha.90": {"en":"Add a dedicated grid/section-14a/EEBUS tab, opt-in configured EMS simultaneity calculation and external binary budget source; preserve fixed migration and conservative gross protection, without double-scaling LPC.","de":"Eigener Reiter Netzanschluss/Paragraph14a/EEBUS, optionale EMS-Gleichzeitigkeitsberechnung und externes Binaerbudget; bisherige Festlimits und konservativer Bruttoschutz bleiben erhalten, LPC wird nicht doppelt skaliert."},
