@@ -68,3 +68,11 @@ test('BHKW power and counter explicit mappings override legacy sources independe
         dataPointMapJson: '{"DP_BHKW_POWER":"old.power","DP_BHKW_ENERGY":"old.energy"}'});
     assert.equal(mapping.DP_BHKW_POWER, 'meter.power'); assert.equal(mapping.DP_BHKW_ENERGY, 'meter.energy');
 });
+
+test('external binary budget is preloaded separately from contact and LPC without renaming legacy fields', () => {
+    const mapping=buildNativeMapping({par14aId:'shelly.contact',par14aLimitId:' external.budget ',
+        lpcStateId:'eebus.state',lpcLimitId:'eebus.limit'});
+    assert.equal(mapping.DP_PAR14A,'shelly.contact');
+    assert.equal(mapping.DP_PAR14A_LIMIT,'external.budget');
+    assert.equal(mapping.DP_LPC_LIMIT,'eebus.limit');
+});

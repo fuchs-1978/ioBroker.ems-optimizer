@@ -974,3 +974,15 @@ test('temperature minimum, held reserve and raw forecast evidence survive produc
     assert.equal(invalid.fixedMinimumSoC_pct, 10);
     assert.equal(invalid.temperatureReserve.valid, false);
 });
+
+test('decision snapshot retains the structured GZF provenance and rejects malformed oversized context', () => {
+    const f=fixture();
+    const trace={mode:'ems',valid:true,count:3,factor:.75,budgetW:10500,
+        accounting:'conservative-gross-ceiling; no own-generation uplift'};
+    f.put('ems.0.Control.GridOperatorCalculation_JSON',JSON.stringify(trace));
+    assert.deepEqual(JSON.parse(JSON.stringify(f.recorder.snapshot().control.gridOperatorCalculation)),trace);
+    f.put('ems.0.Control.GridOperatorCalculation_JSON','{"bad":');
+    assert.equal(f.recorder.snapshot().control.gridOperatorCalculation,null);
+    f.put('ems.0.Control.GridOperatorCalculation_JSON',JSON.stringify({large:'x'.repeat(20001)}));
+    assert.equal(f.recorder.snapshot().control.gridOperatorCalculation,null);
+});

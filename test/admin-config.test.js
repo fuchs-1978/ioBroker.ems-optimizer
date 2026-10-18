@@ -75,7 +75,7 @@ test('update defaults never arm a productive output', () => {
 });
 
 test('package manifests publish the same alpha version', () => {
-    assert.equal(packageJson.version, '0.17.0-alpha.89');
+    assert.equal(packageJson.version, '0.17.0-alpha.90');
     assert.equal(ioPackage.common.version, packageJson.version);
     const core = fs.readFileSync('lib/engine/core.js', 'utf8');
     const bootstrap = fs.readFileSync('lib/engine/bootstrap.js', 'utf8');
@@ -120,5 +120,22 @@ test('shared PV step tolerance has bounded matching defaults and translated hyst
     for (const locale of ['de', 'en']) {
         const texts = JSON.parse(fs.readFileSync(`admin/i18n/${locale}/translations.json`, 'utf8'));
         assert.ok(texts[field.label]); assert.ok(texts[field.help]);
+    }
+});
+
+test('grid tab exposes opt-in EMS GZF sources and preserves existing keys and fixed migration', () => {
+    const fields=tabs.gridConnectionTab.items;
+    assert.ok(fields.par14aId && fields.lpcStateId && fields.lpcLimitId && fields.houseConnectionFuseA);
+    assert.equal(ioPackage.native.par14aBudgetMode,'fixed');
+    assert.deepEqual(ioPackage.native.par14aParticipants,[]);
+    assert.equal(ioPackage.native.par14aGzfOverrideEnabled,false);
+    assert.equal(ioPackage.native.par14aLimitW,4200);
+    assert.deepEqual(fields.par14aBudgetMode.options.map(row=>row.value),['fixed','ems','external']);
+    assert.deepEqual(ioPackage.native.par14aGzfFactors.map(row=>row.count),[2,3,4,5,6,7,8,9]);
+    for(const locale of ['de','en']) {
+        const texts=JSON.parse(fs.readFileSync(`admin/i18n/${locale}/translations.json`,'utf8'));
+        assert.ok(texts[tabs.gridConnectionTab.label]);
+        for(const key of ['par14aBudgetMode','par14aParticipants','par14aLimitId','par14aGzfFactors'])
+            assert.ok(texts[fields[key].label]);
     }
 });
