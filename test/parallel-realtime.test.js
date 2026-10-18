@@ -1026,3 +1026,18 @@ test('planner external binary budget uses the same 15-second quality gate as the
     assert.equal(h.run('currentConsumptionLimit().valid'),false);
     assert.equal(h.run('currentConsumptionLimit().budgetW'),0);
 });
+
+// Live EQV signature: 1 A down/up at a nominal PV ceiling while below minimum SoC.
+test('mandatory charging holds a confirmed PV-funded current across the nominal ceiling', () => {
+    for (const wb of [0, 1, 2]) {
+        const h = measuredHoldEngine(wb);
+        h.nativeConfig.wallboxPVImportToleranceW = 0;
+        h.put(`DP_WB${wb}_SOC`, 10);
+        for (const budget of [1800, 1750, 1810, 1740]) {
+            assert.equal(h.update(budget).amps[wb], 8);
+        }
+        assert.ok(h.update(1600).amps[wb] <= 7, 'actual deficit reduces above-floor current');
+        assert.ok(h.update(1800, 1800).amps[wb] <= 7, 'operator cap uses nominal watts');
+        assert.equal(h.update(0).amps[wb], 6, 'only the authorized minimum survives lost PV');
+    }
+});
