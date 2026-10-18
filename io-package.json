@@ -1,8 +1,9 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.88",
+    "version": "0.17.0-alpha.89",
     "news": {
+      "0.17.0-alpha.89": {"en":"Allow one measured PV wallbox step with a shared configurable import tolerance and admission/hold hysteresis; retain nominal safety reservations and wait for physical uptake before another step.","de":"Einen gemessenen PV-Wallboxschritt mit gemeinsamer einstellbarer Bezugstoleranz und Zuschalt-/Haltehysterese erlauben; nominale Schutzreserven erhalten und vor weiterem Schritt elektrische Aufnahme abwarten."},
       "0.17.0-alpha.88": {"en":"Hold confirmed measured wallbox current across a one-amp nominal PV soft-cap mismatch; preserve full peer reservations, hard limits and nominal admission budgets for increases.","de":"Bestaetigten real gedeckten Wallboxstrom bei hoechstens einem Ampere Abweichung zur nominellen PV-Softgrenze halten; volle Fremdreserven, Schutzgrenzen und nominale Budgets fuer Erhoehungen erhalten."},
       "0.17.0-alpha.87": {"en":"Bounded durable recorder group commits and parallel immutable reads reduce journal queue contention; expose queue peaks and batch timings while preserving exact SQL proofs and capacity limits.","de":"Begrenzte dauerhafte Recorder-Schreibpakete und paralleles Lesen unveraenderlicher Originale entlasten die Journal-Warteschlange; Warteschlangenspitzen und Paketzeiten anzeigen, exakte SQL-Nachweise und Kapazitaetsgrenzen erhalten."},
       "0.17.0-alpha.86": {"en":"Revalidate smaller queued DHW setpoints after allocation changes instead of treating a stale increase as a transport failure; preserve safety guards and actual command tracking.","de":"Kleinere wartende EHZ-Sollwerte nach Budgetwechsel erneut vollstaendig pruefen statt ueberholte Erhoehungen als Transportfehler zu behandeln; Schutzpruefungen und reale Befehlsnachfuehrung erhalten."},
@@ -321,6 +322,7 @@
     "controlEnabled": true,
     "targetGridPowerW": -100,
     "deadbandW": 100,
+    "wallboxPVImportToleranceW": 50,
     "slowCycleS": 5,
     "wallboxMaxStepA": 6,
     "wallboxCombinedMaxStepA": 1,

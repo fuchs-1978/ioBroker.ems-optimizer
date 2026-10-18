@@ -961,3 +961,43 @@ test('measured current hold applies to each of the three wallbox allocations', (
         assert.ok(targets.amps.every((amps, index) => index === wb || amps === 0));
     }
 });
+
+test('one-amp PV step replaces 220 W export by predicted 10 W import with a shared hysteresis', () => {
+    const h = measuredHoldEngine();
+    h.nativeConfig.wallboxPVImportToleranceW = 50;
+    let targets = h.update(1950); // 1730 actual + 220 export, target zero.
+    assert.equal(targets.amps[0], 9);
+    assert.ok(targets.reserve[0] >= 2070);
+    let d = JSON.parse(h.states.get('ems.0.Control.Wallbox0.AllocationDiagnostics_JSON').val);
+    assert.equal(d.reason, 'measured-pv-step');
+    // Physical answer: 1960 W at 9 A, 10 W net import. Hold, no second step.
+    h.owned(0, 9, 1960);
+    targets = h.update(1950);
+    assert.equal(targets.amps[0], 9);
+    assert.equal(h.update(1920).amps[0], 9, '40 W import may be held');
+    assert.ok(h.update(1900).amps[0] <= 8, '60 W import exceeds the hold limit');
+    const lower = measuredHoldEngine();
+    assert.equal(lower.update(1930).amps[0], 8, '30 W expected import cannot arm a new step (25 W admission)');
+    lower.nativeConfig.wallboxPVImportToleranceW = 0;
+    assert.equal(lower.update(1950).amps[0], 8, 'zero disables the new allowance');
+    lower.nativeConfig.wallboxPVImportToleranceW = -1;
+    assert.equal(lower.update(1950).amps[0], 8, 'invalid config earns no allowance');
+});
+
+test('shared PV tolerance has one owner and preserves hard budgets, peer reservations and cold-start gates', () => {
+    const h = measuredHoldEngine();
+    h.put('ems.0.Devices.Wallbox1.Present', true);
+    h.owned(1, 8, 1730);
+    h.put('ems.0.Devices.Wallbox1.ResponsePending', false);
+    h.put('ems.0.Devices.Wallbox1.ResponseState', 'confirmed');
+    h.put('ems.0.Devices.Wallbox1.OutputLastWrite', Date.now() - 1000);
+    h.update(3900);
+    const a = JSON.parse(h.states.get('ems.0.Control.ParallelWallboxAllocation_JSON').val);
+    assert.equal(a.pvStepOwner, 0);
+    assert.equal(a.pvStepToleranceW, 50);
+    const peer = JSON.parse(h.states.get('ems.0.Control.Wallbox1.AllocationDiagnostics_JSON').val);
+    assert.equal(peer.pvStepToleranceW ?? 0, 0);
+    assert.ok(h.update(1950, 1950).amps[0] <= 8, 'nominal hard cap is not raised');
+    const cold = engine({production: true}); cold.exclude(1); cold.exclude(2);
+    assert.equal(cold.update(1360).amps[0], 0, 'no subsidized cold start');
+});

@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.88**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.89**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -704,10 +704,11 @@ Netzanschlusspunkt-Regelziel und allgemeiner Berechnungszyklus. Negative Netzlei
 | --- | --- | --- |
 | Simulation aktivieren<br>`controlEnabled` | EIN | Aktiviert die Berechnung der Echtzeitregelung/Simulation. Trotz Admin-Bezeichnung „Simulation“ sind bei zusätzlich freigegebenen realen Ausgängen produktive Befehle möglich; dieses Feld allein ist weder Master noch Schatten-Live-Schalter. |
 | Netzsollwert (+ Bezug / − Einspeisung)<br>`targetGridPowerW` | -100 W | Netzsollwert in W: positiv Bezug, negativ Einspeisung. −100 W zielt auf kleine Einspeisereserve; 0 W auf rechnerische Null. Nur steuerbare Lasten/aktiver Speicher können Abweichung beeinflussen; normale Hauslast ohne Stellspielraum bleibt. |
+| Gemeinsame Netzbezugstoleranz fuer PV-Wallboxen<br>`wallboxPVImportToleranceW` | 50 W | Zusaetzliche Toleranz oberhalb des Netzsollwerts fuer genau eine bereits laufende PV-Wallbox. Einstellbar 0–200 W; 0 deaktiviert die Erweiterung. Ein neuer gemessener 1-A-Schritt nutzt die halbe Toleranz (voreingestellt 25 W), der bestaetigte Strom die volle (50 W). Gemeinsamer Zuschlag, nicht je Auto; keine Start-, Preis- oder Schutzbudgetfreigabe. Bei Netzsollwert 0 W kann 220 W Einspeisung durch einen 230-W-Schritt zu rechnerisch 10 W Bezug werden. Dreiphasig benoetigt ein Schritt etwa 690 W. Momentanwerte koennen bei PV-/Lastwechseln und Messverzoegerung abweichen. |
 | Totband<br>`deadbandW` | 100 W | Totband in W um den Netzsollwert. Innerhalb keine unnötige feine Korrektur; außerhalb können Ampere-Raster, Mindestlast und Antwortfristen dennoch Restabweichung verursachen. |
 | Langsamer Regelzyklus<br>`slowCycleS` | 5 s | Langsamer Ziel-/Verteilungszyklus in s. Unterscheidet sich von schnelleren Ausgangs-/Speicherzyklen, Modbus-Pollzeit und Historienauflösung. |
 
-Bei produktiver Mehrfahrzeugregelung kann ein bereits elektrisch bestaetigter Ladestrom gehalten werden, wenn seine frische reale Aufnahme im PV-Budget liegt und die nominelle Softgrenze um hoechstens ein Ampere unterschritten wird. Beispiel: 8 A Vorgabe, 1730 W Aufnahme und 1800 W Budget bleiben 8 A statt unnoetig 7 A. Erhoehungen benoetigen weiterhin das volle nominale Budget. Alle drei Wallboxen nutzen dieses Verhalten bei 1P/3P; eigene Geraetegrenzen, Schutzbudgets und volle Reserven fuer andere Verbraucher bleiben bindend. `AllocationDiagnostics_JSON` zeigt `measured-current-held`, die Ausgangsdiagnose `IncreaseBudget_JSON` zeigt `measured-current-hold`.
+Bei produktiver Mehrfahrzeugregelung kann ein bereits elektrisch bestaetigter Ladestrom gehalten werden, wenn seine frische reale Aufnahme im PV-Budget liegt und die nominelle Softgrenze um hoechstens ein Ampere unterschritten wird. Beispiel: 8 A Vorgabe, 1730 W Aufnahme und 1800 W Budget bleiben 8 A statt unnoetig 7 A. Mit der gemeinsamen Netzbezugstoleranz kann ein bestaetigter laufender Ladepunkt ausserdem genau einen gemessenen 1-A-Schritt erhalten; die halbe Toleranz muss die erwartete Abweichung decken. Nominelle Schutzreserven bleiben voll erhalten. Alle drei Wallboxen nutzen dieses Verhalten bei 1P/3P; eigene Geraetegrenzen, Schutzbudgets und volle Reserven fuer andere Verbraucher bleiben bindend. `AllocationDiagnostics_JSON` zeigt `measured-current-held`, die Ausgangsdiagnose `IncreaseBudget_JSON` zeigt `measured-current-hold`.
 
 ## Admin: Erweiterte Datenpunkte
 
@@ -806,6 +807,10 @@ Bereits vorhandene SQL-Skalarhistorien, Retention und Anlagenkonfiguration werde
 Ab alpha.67 akzeptiert die zentrale Wallbox-Phasenbudgetprüfung dieselbe bestehende Leerlauftoleranz wie der Wallbox-Ausgang: bestätigte, frische, qualitativ gültige Leistungswerte zwischen −0,02 und 0 kW werden intern als 0 W behandelt. Die originale negative Rohmessung bleibt in der Diagnose erhalten. Größere negative Werte, fehlende/ungültige Werte, schlechtes q, fehlendes ACK und veraltete Quellen bleiben gesperrt. Diese Toleranz gilt für Wallboxleistung; die Verträge anderer Quellen werden dadurch nicht geändert.
 
 ## Changelog und historische Detaildokumentation
+
+### 0.17.0-alpha.89 (2026-10-18)
+
+Gemeinsame einstellbare PV-Bezugstoleranz im Reiter Echtzeitregelung: 50 W voreingestellt, 0–200 W. Ein einzelner laufender PV-Ladepunkt darf anhand frischer Messwerte um ein Ampere erhoehen, wenn die erwartete Abweichung oberhalb des Netzsollwerts innerhalb der halben Toleranz liegt. Zum Halten gilt die volle Toleranz. Alle Fahrzeuge und Heizstaebe behalten ihre nominalen Schutzreserven; keine neue Erhoehung ohne elektrische Antwort. [Releasehinweise](docs/release-0.17.0-alpha.89.md).
 
 ### 0.17.0-alpha.88 (2026-10-18)
 

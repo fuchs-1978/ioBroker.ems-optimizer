@@ -491,5 +491,7 @@
   "Manually entered total capacity": "Manually entered total capacity",
   "Online packs from the SunEnergy adapter": "Online packs from the SunEnergy adapter",
   "Confirmed capacity per equal-sized battery pack": "Confirmed capacity per equal-sized battery pack",
-  "Enter a positive kWh value from the pack documentation. Zero means not specified, not zero-capacity hardware.": "Enter a positive kWh value from the pack documentation. Zero means not specified, not zero-capacity hardware."
+  "Enter a positive kWh value from the pack documentation. Zero means not specified, not zero-capacity hardware.": "Enter a positive kWh value from the pack documentation. Zero means not specified, not zero-capacity hardware.",
+  "Shared PV wallbox grid-import tolerance": "Shared PV wallbox grid-import tolerance",
+  "Shared tolerance above the grid target for a running PV charger; 0 disables it. New one-amp steps use half this tolerance, confirmed current may use the full tolerance. No extra allowance per vehicle or for starts, price charging or hard limits.": "Shared tolerance above the grid target for a running PV charger; 0 disables it. New one-amp steps use half this tolerance, confirmed current may use the full tolerance. No extra allowance per vehicle or for starts, price charging or hard limits."
 }
