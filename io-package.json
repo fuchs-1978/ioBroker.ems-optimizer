@@ -1,8 +1,9 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.93",
+    "version": "0.17.0-alpha.94",
     "news": {
+      "0.17.0-alpha.94": {"en":"Reject unusable stratified-DHW shares before parallel wallbox allocation so surplus reaches charging vehicles instead of being reserved for a heater target that becomes zero; expose requested/usable heater budgets.","de":"Wegen Pufferschichtung unbrauchbare EHZ-Anteile vor der Wallboxverteilung freigeben statt fuer einen spaeter auf null gesetzten Heizstab zu reservieren; angefordertes und nutzbares Heizbudget anzeigen."},
       "0.17.0-alpha.93": {"en":"Preserve fractional energy-based SoC progress when a whole-percent vehicle report agrees with its rounded estimate at report time; retain authoritative corrections including lower arrival SoC and existing reset/freshness guards.","de":"Nachkommafortschritt der SoC-Schaetzung bei passender gerundeter Fahrzeugmeldung erhalten; abweichende Meldungen einschliesslich niedrigerem Ankunfts-SoC sowie Reset- und Frischeschutz bleiben wirksam."},
       "0.17.0-alpha.92": {"en":"Optional per-vehicle charging-energy SoC estimates with retained aligned anchors, separate reported/estimated diagnostics, reset/session guards and independent output checks; preserve raw price-energy accounting.","de":"Optionale SoC-Schaetzung je Fahrzeug aus Ladeenergie mit persistenter zeitlich zugeordneter Basis, getrennten Diagnosewerten, Reset-/Sitzungsschutz und unabhaengiger Ausgangspruefung; Preis-Energiebilanz bleibt auf echten Meldungen."},
       "0.17.0-alpha.91": {"en":"Prevent nominal PV ceiling down-up cycles during minimum-SoC charging by retaining proven measured current in planner and output; preserve nominal hard caps and immediate reduction on actual deficits.","de":"Pendeln an der nominellen PV-Grenze auch waehrend Mindest-SoC-Ladung verhindern: nachgewiesenen real gedeckten Strom in Zuteilung und Ausgang halten; harte Grenzen und Absenkung bei realem Defizit erhalten."},

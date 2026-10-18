@@ -63,7 +63,7 @@ function engine({production = false, clock = Date, ...config} = {}) {
         put(`DP_DHW_OUTPUT${leg}`, 0);
         put(`DP_HA_L${leg}_IMPORT_W`, 0); put(`DP_HA_L${leg}_EXPORT_W`, 0);
     }
-    run('simulateDhwTarget = watts => watts');
+    run('globalThis.originalDhwTarget = simulateDhwTarget; simulateDhwTarget = watts => watts');
     for (let wb = 0; wb < 3; wb++) {
         const base = `ems.0.Devices.Wallbox${wb}`;
         put(`${base}.Present`, true); put(`${base}.ControlEnabled`, production);
@@ -1040,4 +1040,57 @@ test('mandatory charging holds a confirmed PV-funded current across the nominal 
         assert.ok(h.update(1800, 1800).amps[wb] <= 7, 'operator cap uses nominal watts');
         assert.equal(h.update(0).amps[wb], 6, 'only the authorized minimum survives lost PV');
     }
+});
+
+
+function coldLayeredHeaterEngine({top=65,bottom=28,peer=false}={}) {
+    const h=engine({production:true,dhwControlEnabled:true,wallboxPriority:1});
+    h.exclude(0);if(!peer)h.exclude(2);
+    h.put('DP_WB1_SOC',10);h.owned(1,6,1270);
+    if(peer){h.put('DP_WB2_SOC',10);h.owned(2,6,1380);}
+    h.put('ems.0.Devices.MyPV_DHW.MustHeat',true);
+    h.put('ems.0.Devices.MyPV_DHW.TemperatureValid',true);
+    h.put('ems.0.Devices.MyPV_DHW.TopTemperature_C',top);
+    h.put('ems.0.Devices.MyPV_DHW.BottomTemperature_C',bottom);
+    // Use the real heater target function, with the already-qualified source
+    // status at the allocation boundary rather than an unrelated sensor setup.
+    h.run(`evaluateDhwSimulation=()=>({release:true,valid:true,top:${top},bottom:${bottom},temperaturePowerLimitW:9000}); simulateDhwTarget=originalDhwTarget;`);
+    return h;
+}
+
+test('EQV receives surplus rejected by a stratified mandatory heater instead of remaining at six amps', () => {
+    const h=coldLayeredHeaterEngine();
+    const target=h.update(1892.5);
+    assert.equal(target.amps[1],8);
+    assert.equal(target.dhw,0);
+    assert.ok(target.watts.reduce((a,b)=>a+b,0)<=1892.5);
+});
+test('warm-layer heater minimum rejects sub-500 W shares but retains usable mandatory heat', () => {
+    const h=coldLayeredHeaterEngine({top:50,bottom:40});
+    assert.equal(h.update(1800).amps[1],7);
+    const enough=h.update(1980);
+    assert.equal(enough.amps[1],6);
+    assert.equal(enough.dhw,600);
+});
+test('released heater share preserves hard caps and another mandatory vehicle floor', () => {
+    const h=coldLayeredHeaterEngine({peer:true});
+    const target=h.update(3272.5,3272.5);
+    assert.equal(target.amps[1],8);assert.equal(target.amps[2],6);assert.equal(target.dhw,0);
+    assert.ok(target.watts.reduce((a,b)=>a+b,0)<=3272.5);
+    const limited=h.update(3272.5,2760);
+    assert.equal(limited.amps[1],6);assert.equal(limited.amps[2],6);
+    assert.ok(limited.watts.reduce((a,b)=>a+b,0)+limited.dhw<=2760);
+});
+test('a usable stratified mandatory heater budget is retained rather than donated to the car', () => {
+    const h=coldLayeredHeaterEngine();const target=h.update(2400);
+    assert.equal(target.amps[1],6);assert.equal(target.dhw,1000);
+});
+
+test('active heater sharing also releases an unusable sub-900 W share to wallboxes', () => {
+    const h=coldLayeredHeaterEngine({peer:true});
+    h.put('ems.0.Devices.MyPV_DHW.MustHeat',false);
+    const target=h.update(4000,4200);
+    assert.equal(target.dhw,0);
+    assert.equal(target.amps[1],11);assert.equal(target.amps[2],6);
+    assert.ok(target.watts.reduce((a,b)=>a+b,0)<=4000);
 });
