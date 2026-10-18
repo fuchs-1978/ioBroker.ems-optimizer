@@ -139,12 +139,12 @@ function outputHarness({combined = false, simulate = false, directional = false,
                 put(id, val, {ack:false,from:'system.adapter.ems.0'});
                 proof.observe(proofId, states.get(id));
             }
-            if (callback) pending.push(error => {
+            if (callback) pending.push((error, completion) => {
                 if (token) {
                     if (error) proof.transportFailed(proofId, token);
                     else proof.transportCompleted(proofId, token);
                 }
-                callback(error);
+                callback(error, completion);
             });
             return true;
         }});
@@ -162,7 +162,7 @@ function outputHarness({combined = false, simulate = false, directional = false,
             own('System.LastUpdate', now);
             own('Control.LastUpdate', now);
         },
-        complete: error => { for (const callback of pending.splice(0)) callback(error || null); },
+        complete: (error, completion) => { for (const callback of pending.splice(0)) callback(error || null, completion); },
         commands: () => writes.filter(item => item.id === 'setpoint').map(item => item.val)
     };
 }
@@ -1093,3 +1093,20 @@ test('shared heating reservation accepts a bounded stable stage deviation then r
     assert.equal(h.states.get('ems.0.Devices.MyPV_Heating.OutputReservedPower_W').val,0);
 });
 
+
+
+test('EHZ tracks the actual smaller queued transport without inventing a zero or releasing reserve', () => {
+    const h = outputHarness();
+    h.run('dhwLastCommandW=1800; dhwLastCommandAt=1999000; dhwOutputWasActive=true');
+    h.put('o1',1800);h.put('o2',0);h.put('o3',0);
+    h.tick();
+    const requested=h.commands().at(-1);
+    assert.ok(requested>1800);
+    h.complete(null,{value:1800});
+    assert.equal(h.run('dhwLastCommandW'),1800);
+    assert.equal(h.run('dhwLastWriteFailure'),'');
+    assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.OutputCommand_W').val,1800);
+    assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.OutputActive').val,true);
+    assert.match(h.states.get('ems.0.Devices.MyPV_DHW.OutputStatus').val,/Budget.*reduziert/);
+    assert.ok(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservedPower_W').val>=requested);
+});

@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.85**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.86**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -804,6 +804,10 @@ Bereits vorhandene SQL-Skalarhistorien, Retention und Anlagenkonfiguration werde
 Ab alpha.67 akzeptiert die zentrale Wallbox-Phasenbudgetprüfung dieselbe bestehende Leerlauftoleranz wie der Wallbox-Ausgang: bestätigte, frische, qualitativ gültige Leistungswerte zwischen −0,02 und 0 kW werden intern als 0 W behandelt. Die originale negative Rohmessung bleibt in der Diagnose erhalten. Größere negative Werte, fehlende/ungültige Werte, schlechtes q, fehlendes ACK und veraltete Quellen bleiben gesperrt. Diese Toleranz gilt für Wallboxleistung; die Verträge anderer Quellen werden dadurch nicht geändert.
 
 ## Changelog und historische Detaildokumentation
+
+### 0.17.0-alpha.86 (2026-10-18)
+
+Sinkt das EHZ-Budget waehrend ein positiver Stellauftrag auf die Ausgabe wartet, kann der Adapter einen kleineren positiven Sollwert auf 100 W abgerundet erneut gegen alle aktuellen Grenzen pruefen und ausgeben. Der verworfene groessere Auftrag wird nicht gesendet; Sollanzeige und Reaktionsfrist folgen der tatsaechlich ausgegebenen Leistung. Ohne gueltigen positiven Ersatz oder bei Schutz-/Transportfehlern bleibt der bisherige sichere Fehlerpfad erhalten. Leistungsreserven werden nicht pauschal geloescht. Keine Aenderung von SQL, Regeltakten, §14a-Konfiguration oder Installation. [Releasehinweise](docs/release-0.17.0-alpha.86.md).
 
 ### 0.17.0-alpha.85 (2026-10-17)
 

@@ -75,3 +75,28 @@ test('parallel pending phase increments use configured 240 V while legacy reserv
         assert.equal(reserve.wallboxesW[0][0], parallel ? 960 : 920);
     }
 });
+
+test('queued DHW guard proposes only a finite smaller positive target and rechecks every constraint', () => {
+    const h=engine();
+    h.run(`currentConsumptionLimit=()=>({valid:true,budgetW:null});
+        dhwHouseConnectionProtectionReason=()=>'';
+        evaluateDhwSimulation=()=>({release:true,temperaturePowerLimitW:9000});
+        phaseLimitedDhwPower=w=>w;`);
+    h.put('ems.0.Config.DHWCommissioningMaxPower_W',9000);
+    for(const value of [1800,1855]) {
+        h.put('ems.0.Control.Targets.MyPV_DHW_W',value);
+        const check=h.run('checkQueuedElectricalOutput("MyPV_DHW",2200)');
+        assert.equal(check.allowed,false);
+        assert.equal(check.code,'DHW_BUDGET_SUPERSEDED');
+        assert.equal(check.replacementW,1800);
+        assert.equal(h.run('checkQueuedElectricalOutput("MyPV_DHW",1800)').allowed,true);
+    }
+    h.run('phaseLimitedDhwPower=w=>1000');
+    assert.equal(h.run('checkQueuedElectricalOutput("MyPV_DHW",1800)').allowed,false);
+    for(const value of [null,NaN,-100,0,99]) {
+        h.put('ems.0.Control.Targets.MyPV_DHW_W',value);
+        assert.equal(h.run('checkQueuedElectricalOutput("MyPV_DHW",2200)').code,undefined);
+    }
+    h.put('ems.0.Control.Targets.Battery_W',100);
+    assert.equal(h.run('checkQueuedElectricalOutput("Battery",-2200)').code,undefined);
+});
