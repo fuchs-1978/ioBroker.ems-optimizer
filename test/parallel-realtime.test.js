@@ -1001,3 +1001,28 @@ test('shared PV tolerance has one owner and preserves hard budgets, peer reserva
     const cold = engine({production: true}); cold.exclude(1); cold.exclude(2);
     assert.equal(cold.update(1360).amps[0], 0, 'no subsidized cold start');
 });
+
+test('productive planner uses configured EMS binary budget and publishes its calculation without scaling LPC', () => {
+    const h=engine({production:true,par14aBudgetMode:'ems',par14aParticipants:[
+        {name:'WB0',kind:'wallbox',connectionPowerW:11000},
+        {name:'WB1',kind:'wallbox',connectionPowerW:11000}]});
+    h.put('DP_PAR14A',true); h.put('DP_LPC_STATE','unlimitedAutonomous');
+    assert.equal(h.run('currentConsumptionLimit().budgetW'),7560);
+    const trace=JSON.parse(h.states.get('ems.0.Control.GridOperatorCalculation_JSON').val);
+    assert.equal(trace.count,2); assert.equal(trace.factor,.8); assert.equal(trace.lpcRecalculated,false);
+    assert.match(trace.accounting,/conservative-gross/);
+    h.put('DP_LPC_STATE','limited'); h.put('DP_LPC_LIMIT',5000);
+    assert.equal(h.run('currentConsumptionLimit().budgetW'),5000);
+    h.put('DP_PAR14A',false);
+    assert.equal(h.run('currentConsumptionLimit().budgetW'),5000);
+});
+
+test('planner external binary budget uses the same 15-second quality gate as the output', () => {
+    const h=engine({production:true,par14aBudgetMode:'external',par14aLimitUnit:'kW'});
+    h.put('DP_PAR14A',true); h.put('DP_LPC_STATE','unlimitedAutonomous');
+    h.put('DP_PAR14A_LIMIT',7.56);
+    assert.equal(h.run('currentConsumptionLimit().budgetW'),7560);
+    h.put('DP_PAR14A_LIMIT',7.56,{ts:Date.now()-20000});
+    assert.equal(h.run('currentConsumptionLimit().valid'),false);
+    assert.equal(h.run('currentConsumptionLimit().budgetW'),0);
+});

@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.89**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.90**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -48,7 +48,7 @@ Ein leeres optionales Feld bedeutet nur dann „nicht verwendet“, wenn keine a
 
 ## Admin: Allgemein
 
-Hier stehen die übergeordneten Freigaben und gemeinsamen elektrischen Grenzen. Geräte besitzen zusätzliche eigene Freigaben. Die physische Sicherung und Netzbetreiberbegrenzung können durch keine Priorität oder Mindestladung aufgehoben werden.
+Hier stehen die übergeordneten Freigaben. Die gemeinsamen elektrischen Grenzen befinden sich im folgenden Reiter „Netzanschluss / §14a / EEBUS“. Geräte besitzen zusätzliche eigene Freigaben. Die physische Sicherung und Netzbetreiberbegrenzung können durch keine Priorität oder Mindestladung aufgehoben werden.
 
 ### Allgemeine Freigaben
 
@@ -56,6 +56,10 @@ Hier stehen die übergeordneten Freigaben und gemeinsamen elektrischen Grenzen. 
 | --- | --- | --- |
 | Master-Freigabe für konfigurierte reale Ausgänge<br>`globalWriteEnabled` | AUS | Übergeordnete Freigabe für reale Stellbefehle. AUS bedeutet keine normale produktive Freigabe; EIN allein startet kein Gerät. Zusätzlich müssen Geräte-Regelfreigabe, jeweilige Ausgangsfreigabe, gültige Messwerte und Schutzbedingungen passen. Schattenmodell und Live-Regler getrennt betrachten. |
 | ALPHA-Regelung für freigegebene Wallboxen und Warmwasser aktivieren (konkurrierende Stellskripte gestoppt)<br>`multiWallboxAlphaArmed` | AUS | Bewusste Freigabe der Alpha-Regelung für die freigegebenen Wallboxen und Warmwasser. Vorher konkurrierende Leistungs-/Freigabeschreiber stoppen. Ersetzt weder Master noch die Freigabe des einzelnen Ausgangs. |
+
+## Admin: Netzanschluss / §14a / EEBUS
+
+Die bisherigen Hausanschluss-, Kontakt- und EEBUS-Felder wurden mit unveraenderten technischen Schluesseln aus „Allgemein“ in diesen Reiter verschoben. Das Update aktiviert keine Quelle und erhoeht kein bisheriges Limit.
 
 ### Zentraler Hausanschlussschutz
 
@@ -71,10 +75,28 @@ Hier stehen die übergeordneten Freigaben und gemeinsamen elektrischen Grenzen. 
 | Optionaler Datenpunkt für den §14a-Binärkontakt<br>`par14aId` | leer | Objekt-ID eines vorhandenen booleschen/numerischen Begrenzungskontakts. Liefert die Aktivität der Netzbetreiberbegrenzung, nicht die Leistung. Leer nur, wenn diese Quelle nicht verwendet wird. Kein frei erfundener Ersatz für ein reales Begrenzungssignal. |
 | Binärkontakt: true/1 bedeutet aktive Begrenzung<br>`par14aActiveHigh` | EIN | Legt die Polarität des Kontakts fest: aktiviert = true/1 begrenzt; deaktiviert = umgekehrte Logik. An der tatsächlichen Kontaktverdrahtung und deren ioBroker-Abbildung prüfen. |
 | Feste Leistungsgrenze des Binärkontakts<br>`par14aLimitW` | 4200 W | Gesamtes vom Binärkontakt vorgegebenes Leistungsbudget in W für die berücksichtigten steuerbaren Verbraucher, nicht automatisch je Wallbox. Default 4200 W ist ein Software-Ausgangswert; die korrekte Anlagenvorgabe prüfen. |
+| Budgetquelle des §14a-Binaerkontakts<br>`par14aBudgetMode` | fixed | `fixed`: bisheriges Festbudget; `ems`: Mindestleistung anhand der unten konfigurierten, dauerhaft zugeordneten Gruppe; `external`: frisches externes Gesamtbudget. Die Auswahl betrifft den Binärkontakt. LPC wird unabhängig mit seiner bisherigen Status-/Limitzuordnung ausgewertet. |
+| EMS-Teilnehmergruppe<br>`par14aParticipants` | leer | Je Einrichtung einen eindeutigen Namen, Typ und elektrische Netzanschlussleistung in W erfassen. Ladepunkte und Speicher einzeln; WP bzw. Klima werden je Fallgruppe zusammengefasst. WP-Leistung einschließlich relevanter Zusatzheizung genau einmal angeben. Nicht thermische WP-Leistung, Akkukapazität oder momentane Autoladeleistung eintragen. Es zählt die vereinbarte feste Gruppe, niemals die Anzahl gerade ladender Autos. Eigenständige Heizstäbe sind keine zusätzliche SteuVE. |
+| Externes Binärkontakt-Gesamtbudget<br>`par14aLimitId`, `par14aLimitUnit` | leer / W | Getrennt vom Aktivkontakt konfigurieren; Quelle in W oder ausdrücklich kW. Nur bestätigte, qualitätsgültige Werte mit Zeitstempel innerhalb 15 s werden akzeptiert. Bei unverändertem Wert muss die Quelle ihre Gültigkeit entsprechend aktualisieren. Bei aktivem Kontakt und fehlendem/ungültigem Budget keine positive Freigabe. Kein GZF-Zuschlag auf das externe Gesamtbudget. |
+| Erweiterte abweichende GZF-Tabelle<br>`par14aGzfOverrideEnabled`, `par14aGzfFactors` | AUS / Standardwerte | Ohne ausdrückliche Aktivierung gelten die offiziellen Standardwerte. Abweichungen benötigen vollständig n=2 bis n>=9, Faktoren >0 bis 1 und eine nicht ansteigende Folge. Aktive Abweichungen werden als `custom-deviation` und im Status gekennzeichnet; das ist keine Bestätigung ihrer Zulässigkeit für den jeweiligen Netzanschluss. |
 | Datenpunkt EEBUS LPC.state<br>`lpcStateId` | leer | Objekt-ID des Zustands der EEBUS-Begrenzung aus dem EEBUS-Adapter. Zustand und zugehöriges Leistungsbudget zusammen zuordnen; kein manuelles Dauer-OK erzeugen. LPC betrifft Leistungsbezug, LPP die Erzeugungsseite. LPP ist optional und keine zusätzliche Ladestromfreigabe. |
 | Datenpunkt EEBUS LPC.limit<br>`lpcLimitId` | leer | Objekt-ID des zugehörigen EEBUS-Leistungslimits in W. Nicht mit Status, Dauer oder Zähler verwechseln. Bei gleichzeitig aktivem §14a-Kontakt und LPC gilt das engere wirksame Budget; unbekannte relevante LPC-Rückmeldungen sind kein unbegrenztes Budget. |
 | Optionaler Datenpunkt EEBUS LPP.state<br>`lppStateId` | leer | Objekt-ID des Zustands der EEBUS-Begrenzung aus dem EEBUS-Adapter. Zustand und zugehöriges Leistungsbudget zusammen zuordnen; kein manuelles Dauer-OK erzeugen. LPC betrifft Leistungsbezug, LPP die Erzeugungsseite. LPP ist optional und keine zusätzliche Ladestromfreigabe. |
 | Optionaler Datenpunkt EEBUS LPP.limit<br>`lppLimitId` | leer | Objekt-ID des zugehörigen EEBUS-Leistungslimits in W. Nicht mit Status, Dauer oder Zähler verwechseln. Bei gleichzeitig aktivem §14a-Kontakt und LPC gilt das engere wirksame Budget; unbekannte relevante LPC-Rückmeldungen sind kein unbegrenztes Budget. |
+
+### EMS-Berechnung und Diagnose
+
+| Zahl der SteuVE n | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | ab 9 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| GZF | entfällt | 0,80 | 0,75 | 0,70 | 0,65 | 0,60 | 0,55 | 0,50 | 0,45 |
+
+Standardformel: `4200 W + (n−1) × GZF × 4200 W`. Drei zugeordnete Ladepunkte ergeben rechnerisch 10.500 W; zwei 7.560 W. WP und Klima werden zuerst je Fallgruppe elektrisch zusammengefasst. Nur Einrichtungen/Gruppen mit mehr als 4.200 W Netzanschlussleistung zählen. Bei einer WP-/Klimagruppe über 11.000 W ersetzt `max(0,4 × P_WP; 0,4 × P_Klima)` den 4.200-W-Sockel. Die Zusatzheizung gehört zur elektrischen WP-Anschlussleistung, nicht nochmals zur Teilnehmerzahl.
+
+Quelle: [BNetzA Anlage 1 zu BK6-22-300, Ziffer 4.5.2](https://www.bundesnetzagentur.de/DE/Beschlusskammern/1_GZ/BK6-GZ/2022/BK6-22-300/Beschluss/BK6-22-300_Beschluss_Anlage1.pdf?__blob=publicationFile&v=1). [VDE-FNN-Empfehlung April 2025](https://www.vde.com/resource/blob/2384602/0cb47de901b1129acad8510257ecc582/vde-fnn-hinweis-mindestleistung-data.pdf) bestätigt die bestehenden Faktoren und Formeln. Die Gruppe muss der mit dem Netzbetreiber vereinbarten Zuordnung entsprechen; die Tabelle ersetzt keine Anmeldung.
+
+Nach Speichern zeigt `Control.GridOperatorCalculation_JSON` Quelle, Zahl, Faktor, Sockel, Formel, gezählte/ausgeschlossene Einrichtungen und Ergebnis. Die GZF-Herkunft gelangt auch in den produktiven DecisionRecord. `Control.GridOperatorStatus` zeigt die wirksame Begrenzung; ein zusätzlich begrenzendes LPC-Gesamtbudget wird direkt übernommen und nicht nochmals hochgerechnet.
+
+**Abgrenzung:** Diese Version ergänzt die Budgetberechnung. Die bisherige konservative gemeinsame Brutto-Leistungsbegrenzung bleibt erhalten. Die getrennte Eigenstrom-/Netzbezugsbilanz und teilnehmerspezifische Budgetpools aus [Issue #166](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/166) sind damit noch nicht umgesetzt. Es gibt keinen zusätzlichen PV-/Speicherbonus auf das berechnete Budget und keine automatische Änderung der produktiven Teilnehmer oder Limits.
 
 ## Admin: Messwerte
 
@@ -807,6 +829,10 @@ Bereits vorhandene SQL-Skalarhistorien, Retention und Anlagenkonfiguration werde
 Ab alpha.67 akzeptiert die zentrale Wallbox-Phasenbudgetprüfung dieselbe bestehende Leerlauftoleranz wie der Wallbox-Ausgang: bestätigte, frische, qualitativ gültige Leistungswerte zwischen −0,02 und 0 kW werden intern als 0 W behandelt. Die originale negative Rohmessung bleibt in der Diagnose erhalten. Größere negative Werte, fehlende/ungültige Werte, schlechtes q, fehlendes ACK und veraltete Quellen bleiben gesperrt. Diese Toleranz gilt für Wallboxleistung; die Verträge anderer Quellen werden dadurch nicht geändert.
 
 ## Changelog und historische Detaildokumentation
+
+### 0.17.0-alpha.90 (2026-10-18)
+
+Neuer Admin-Reiter „Netzanschluss / §14a / EEBUS“ mit opt-in GZF-Berechnung aus fester Teilnehmertabelle, WP-/Klima-Zusammenfassung und >11-kW-Sonderformel. Erweiterte Faktorabweichungen und externe Binärkontakt-Budgets mit expliziter Einheit; LPC-Gesamtwerte bleiben unskaliert. Bestehende Festlimits und konservativer Bruttoschutz bleiben unverändert. Eigenstrom-/Netzbezugsbilanz aus #166 bleibt offen. [Releasehinweise](docs/release-0.17.0-alpha.90.md).
 
 ### 0.17.0-alpha.89 (2026-10-18)
 

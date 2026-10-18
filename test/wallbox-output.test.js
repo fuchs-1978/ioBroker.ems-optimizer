@@ -2883,3 +2883,21 @@ test('completed diagnostic survives recovery but cannot overwrite a newer source
     diag = JSON.parse(h.states.get('ems.0.Devices.Wallbox0.LastStopSourceDiagnostics_JSON').val);
     assert.equal(diag.key, 'newer-event', 'late read must not overwrite a subsequent diagnostic');
 });
+
+test('output independently enforces EMS binary budget, external units and invalid source quality', () => {
+    const h=setup(); h.put('par14a',true);
+    Object.assign(h.config,{par14aBudgetMode:'ems',par14aParticipants:[
+        {name:'WB0',kind:'wallbox',connectionPowerW:11000},
+        {name:'WB1',kind:'wallbox',connectionPowerW:11000}]});
+    assert.equal(h.output.gridOperatorLimit(h.mapping).budgetW,7560);
+    h.put('lpc','limited'); h.put('lpcLimit',5000);
+    assert.equal(h.output.gridOperatorLimit(h.mapping).budgetW,5000);
+    h.put('lpc','unlimitedAutonomous');
+    Object.assign(h.config,{par14aBudgetMode:'external',par14aLimitUnit:'kW'});
+    h.mapping.DP_PAR14A_LIMIT='binaryBudget'; h.put('binaryBudget',6);
+    assert.equal(h.output.gridOperatorLimit(h.mapping).budgetW,6000);
+    for(const extra of [{ack:false},{q:64},{ts:Date.now()-20000},{ts:Date.now()+10000}]) {
+        h.put('binaryBudget',6,extra); const limit=h.output.gridOperatorLimit(h.mapping);
+        assert.equal(limit.valid,false); assert.equal(limit.budgetW,0);
+    }
+});

@@ -1,8 +1,9 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.89",
+    "version": "0.17.0-alpha.90",
     "news": {
+      "0.17.0-alpha.90": {"en":"Add a dedicated grid/section-14a/EEBUS tab, opt-in configured EMS simultaneity calculation and external binary budget source; preserve fixed migration and conservative gross protection, without double-scaling LPC.","de":"Eigener Reiter Netzanschluss/Paragraph14a/EEBUS, optionale EMS-Gleichzeitigkeitsberechnung und externes Binaerbudget; bisherige Festlimits und konservativer Bruttoschutz bleiben erhalten, LPC wird nicht doppelt skaliert."},
       "0.17.0-alpha.89": {"en":"Allow one measured PV wallbox step with a shared configurable import tolerance and admission/hold hysteresis; retain nominal safety reservations and wait for physical uptake before another step.","de":"Einen gemessenen PV-Wallboxschritt mit gemeinsamer einstellbarer Bezugstoleranz und Zuschalt-/Haltehysterese erlauben; nominale Schutzreserven erhalten und vor weiterem Schritt elektrische Aufnahme abwarten."},
       "0.17.0-alpha.88": {"en":"Hold confirmed measured wallbox current across a one-amp nominal PV soft-cap mismatch; preserve full peer reservations, hard limits and nominal admission budgets for increases.","de":"Bestaetigten real gedeckten Wallboxstrom bei hoechstens einem Ampere Abweichung zur nominellen PV-Softgrenze halten; volle Fremdreserven, Schutzgrenzen und nominale Budgets fuer Erhoehungen erhalten."},
       "0.17.0-alpha.87": {"en":"Bounded durable recorder group commits and parallel immutable reads reduce journal queue contention; expose queue peaks and batch timings while preserving exact SQL proofs and capacity limits.","de":"Begrenzte dauerhafte Recorder-Schreibpakete und paralleles Lesen unveraenderlicher Originale entlasten die Journal-Warteschlange; Warteschlangenspitzen und Paketzeiten anzeigen, exakte SQL-Nachweise und Kapazitaetsgrenzen erhalten."},
@@ -230,6 +231,12 @@
     "par14aId": "",
     "par14aActiveHigh": true,
     "par14aLimitW": 4200,
+    "par14aBudgetMode": "fixed",
+    "par14aLimitId": "",
+    "par14aLimitUnit": "W",
+    "par14aParticipants": [],
+    "par14aGzfOverrideEnabled": false,
+    "par14aGzfFactors": [{"count":2,"factor":0.8},{"count":3,"factor":0.75},{"count":4,"factor":0.7},{"count":5,"factor":0.65},{"count":6,"factor":0.6},{"count":7,"factor":0.55},{"count":8,"factor":0.5},{"count":9,"factor":0.45}],
     "lpcStateId": "",
     "lpcLimitId": "",
     "dhwHaLimitA": 50,

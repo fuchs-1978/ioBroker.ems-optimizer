@@ -28,7 +28,13 @@
           "label": "Arm ALPHA control for all released wallboxes + DHW (competing output scripts stopped)",
           "default": false,
           "newLine": true
-        },
+        }
+      }
+    },
+    "gridConnectionTab": {
+      "type": "panel",
+      "label": "Grid connection / section 14a / EEBUS",
+      "items": {
         "_houseConnectionHeader": {
           "type": "header",
           "text": "Central house-connection protection",
@@ -78,6 +84,27 @@
           "default": true,
           "sm": 4
         },
+        "par14aBudgetMode": {
+          "type": "select",
+          "label": "Binary-contact budget source",
+          "default": "fixed",
+          "sm": 12,
+          "newLine": true,
+          "options": [
+            {
+              "value": "fixed",
+              "label": "Existing fixed shared budget"
+            },
+            {
+              "value": "ems",
+              "label": "Calculate EMS minimum from configured participants"
+            },
+            {
+              "value": "external",
+              "label": "External shared binary-contact budget"
+            }
+          ]
+        },
         "par14aLimitW": {
           "type": "number",
           "label": "Fixed binary-contact limit",
@@ -85,7 +112,167 @@
           "min": 0,
           "max": 50000,
           "unit": "W",
-          "sm": 4
+          "sm": 4,
+          "hidden": "data.par14aBudgetMode && data.par14aBudgetMode !== 'fixed'"
+        },
+        "par14aLimitId": {
+          "type": "text",
+          "label": "External binary-contact total-budget data point",
+          "default": "",
+          "sm": 8,
+          "newLine": true,
+          "hidden": "data.par14aBudgetMode !== 'external'"
+        },
+        "par14aLimitUnit": {
+          "type": "select",
+          "label": "External binary-contact budget unit",
+          "default": "W",
+          "sm": 4,
+          "hidden": "data.par14aBudgetMode !== 'external'",
+          "options": [
+            {
+              "value": "W",
+              "label": "W"
+            },
+            {
+              "value": "kW",
+              "label": "kW"
+            }
+          ]
+        },
+        "par14aParticipants": {
+          "type": "table",
+          "label": "Configured EMS participant group",
+          "default": [],
+          "newLine": true,
+          "sm": 12,
+          "clone": true,
+          "noDelete": false,
+          "hidden": "data.par14aBudgetMode !== 'ems'",
+          "items": [
+            {
+              "type": "text",
+              "attr": "name",
+              "title": "Unique participant name",
+              "default": "",
+              "width": "35%"
+            },
+            {
+              "type": "select",
+              "attr": "kind",
+              "title": "Type of controllable device",
+              "default": "wallbox",
+              "width": "30%",
+              "options": [
+                {
+                  "value": "wallbox",
+                  "label": "EV charging point"
+                },
+                {
+                  "value": "heatPump",
+                  "label": "Heat pump including auxiliary heater"
+                },
+                {
+                  "value": "cooling",
+                  "label": "Space cooling"
+                },
+                {
+                  "value": "storage",
+                  "label": "Electricity storage charging"
+                }
+              ]
+            },
+            {
+              "type": "number",
+              "attr": "connectionPowerW",
+              "title": "Electrical connection power incl. auxiliaries (W)",
+              "default": 11000,
+              "min": 1,
+              "max": 1000000,
+              "width": "35%"
+            }
+          ]
+        },
+        "par14aCalculationHelp": {
+          "type": "staticText",
+          "text": "Count the agreed permanently assigned EMS devices, not connected cars. Heat pumps and cooling systems are each grouped; each electrical load including auxiliaries must be entered once. Standalone heaters are not additional participants. Only devices/groups above 4200 W count. Standard: 4200 + (n-1)*GZF*4200 W. With WP/cooling above 11000 W: max(0.4*P_WP,0.4*P_cooling) + (n-1)*GZF*4200 W. Result: Control.GridOperatorCalculation_JSON after saving. This calculation does not prove registration or implement the pending own-generation/net-import balance. Existing common gross-power protection remains conservative.",
+          "newLine": true,
+          "hidden": "data.par14aBudgetMode !== 'ems'"
+        },
+        "par14aGzfStandard": {
+          "type": "staticText",
+          "text": "Standard GZF: n=2: 0.80; 3: 0.75; 4: 0.70; 5: 0.65; 6: 0.60; 7: 0.55; 8: 0.50; n>=9: 0.45. BK6-22-300 Anlage 1, 4.5.2; VDE FNN April 2025 retains these values.",
+          "newLine": true,
+          "hidden": "data.par14aBudgetMode !== 'ems'"
+        },
+        "par14aGzfOverrideEnabled": {
+          "type": "checkbox",
+          "label": "Advanced: use a non-standard GZF table (shown as deviation)",
+          "default": false,
+          "newLine": true,
+          "hidden": "data.par14aBudgetMode !== 'ems'"
+        },
+        "par14aGzfFactors": {
+          "type": "table",
+          "label": "Non-standard GZF table (count 9 means 9 or more)",
+          "default": [
+            {
+              "count": 2,
+              "factor": 0.8
+            },
+            {
+              "count": 3,
+              "factor": 0.75
+            },
+            {
+              "count": 4,
+              "factor": 0.7
+            },
+            {
+              "count": 5,
+              "factor": 0.65
+            },
+            {
+              "count": 6,
+              "factor": 0.6
+            },
+            {
+              "count": 7,
+              "factor": 0.55
+            },
+            {
+              "count": 8,
+              "factor": 0.5
+            },
+            {
+              "count": 9,
+              "factor": 0.45
+            }
+          ],
+          "newLine": true,
+          "sm": 12,
+          "hidden": "data.par14aBudgetMode !== 'ems' || !data.par14aGzfOverrideEnabled",
+          "items": [
+            {
+              "type": "number",
+              "attr": "count",
+              "title": "Participant count (9 = 9 or more)",
+              "default": 2,
+              "min": 2,
+              "max": 9,
+              "width": "45%"
+            },
+            {
+              "type": "number",
+              "attr": "factor",
+              "title": "Simultaneity factor",
+              "default": 0.8,
+              "min": 0.0001,
+              "max": 1,
+              "step": 0.01,
+              "width": "55%"
+            }
+          ]
         },
         "lpcStateId": {
           "type": "text",
@@ -112,6 +299,11 @@
           "label": "Optional EEBUS LPP.limit data point",
           "default": "",
           "sm": 4
+        },
+        "par14aScopeHelp": {
+          "type": "staticText",
+          "text": "Binary contact and LPC must refer to the same configured EMS group. An external LPC total budget is used directly, never multiplied by GZF. Changing the budget source is opt-in; existing fixed limits and signal mappings remain unchanged. The current runtime still applies the resulting value conservatively as a shared gross-power ceiling.",
+          "newLine": true
         }
       }
     },
