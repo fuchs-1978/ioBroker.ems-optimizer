@@ -1379,16 +1379,18 @@ test('old-level response wait does not hide deficits, hard caps, expiry or anoth
         if (fault !== 'expiry') { h.states.set('power', oldPower); h.states.set('i1', oldCurrent); }
         else { h.put('power', 2.71); h.put('i1', 11.6); h.put('export', 3000); }
         await h.output.tick();
-        assert.ok(!h.writes.some(w => w.id === 'cmd' && w.val > 13));
+        if (fault !== 'expiry') assert.ok(!h.writes.some(w => w.id === 'cmd' && w.val > 13));
         if (fault === 'more surplus') {
             assert.deepEqual(h.writes, []);
             assert.equal(h.output.devices[0].response.ackAt + h.output.responseSettleTimeoutMs(), deadline);
         } else if (fault === 'expiry') {
-            assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'limited');
+            assert.deepEqual(h.writes, [{id:'cmd',val:14}], 'only one fully funded probe after the original deadline');
+            assert.equal(h.output.devices[0].limitedProbeAttempts, 1);
             assert.ok(h.output.now() > deadline);
-            h.advance(6000); h.grant([16]); h.measure(0, 13); h.put('export', 3000);
+            h.advance(6000); h.grant([16]); h.measure(0, 14); h.put('export', 3000);
             h.writes.length = 0; await h.output.tick();
-            assert.ok(h.writes.some(w => w.id === 'cmd' && w.val > 13),
+            h.advance(6000); h.grant([16]); h.measure(0, 14); await h.output.tick();
+            assert.ok(h.writes.some(w => w.id === 'cmd' && w.val > 14),
                 'genuine later uptake must unlock ordinary increases without restart');
         } else assert.ok(h.writes.some(w => w.id === 'cmd' && w.val < 13));
     });
@@ -1480,4 +1482,59 @@ test('fresh response hold cannot retain capacity promised to a new peer increase
     h.put('ems.0.Control.ParallelWallboxAllocation_JSON', JSON.stringify(a));
     await h.output.tick();
     assert.ok(h.writes.some(w => w.id === 'cmd' && w.val < 14));
+});
+
+async function eqeLimitedReply(measuredStep = false) {
+    const h=parallelSetup(1); await h.startParallel(); h.advance(10000);
+    h.config.wallboxPVImportToleranceW=100;
+    const grant=h.grant;
+    h.grant=(...args)=>{grant(...args);const a=JSON.parse(h.states.get('ems.0.Control.ParallelWallboxAllocation_JSON').val);a.pvStepOwner=0;a.pvStepToleranceW=100;h.put('ems.0.Control.ParallelWallboxAllocation_JSON',JSON.stringify(a));};
+    const d=h.output.devices[0];d.lastA=9;d.lastAt=0;d.pending=null;d.response=null;
+    h.grant([10]);h.measure(0,7.8);h.ack('feedback',9);h.put('power',1.75);h.put('export',measuredStep?300:2200);
+    h.writes.length=0;await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'cmd',val:10}]);
+    h.advance(2000);h.ack('feedback',10);h.measure(0,7.8);h.ack('feedback',10);h.put('power',1.75);
+    await h.output.tick(); h.writes.length=0;
+    return h;
+}
+
+test('EQE 7.8 A at acknowledged 10 A receives a bounded fully funded 11 A probe after timeout', async () => {
+    const h=await eqeLimitedReply(); h.advance(46000);h.grant([16]);await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'cmd',val:11}]);
+    assert.equal(JSON.parse(h.states.get('ems.0.Devices.Wallbox0.IncreaseBudget_JSON').val).decision,'limited-response-probe');
+    h.ack('feedback',11);h.measure(0,8.8);h.ack('feedback',11);h.put('power',1.98);h.advance(2000);h.grant([16]);
+    await h.output.tick();
+    assert.equal(h.output.devices[0].limitedProbeAttempts,0,'measured progress restores the ordinary controller');
+});
+
+test('a truly capped car cannot wind up past two unanswered probes', async () => {
+    const h=await eqeLimitedReply();
+    for(const command of [11,12]) {
+        h.advance(46000);h.grant([16]);h.writes.length=0;await h.output.tick();
+        assert.deepEqual(h.writes,[{id:'cmd',val:command}]);
+        h.advance(1000);h.measure(0,7.8);h.ack('feedback',command);h.put('power',1.75);await h.output.tick();
+    }
+    h.advance(46000);h.grant([16]);h.writes.length=0;await h.output.tick();
+    assert.deepEqual(h.writes,[]);assert.equal(h.output.devices[0].limitedProbeAttempts,2);
+});
+
+for(const [fault,change] of [
+    ['before deadline',()=>{}],
+    ['no nominal funding',h=>h.put('export',400)],
+    ['no electrical uptake',h=>{h.put('power',0);h.put('i1',0);}],
+    ['old power',h=>h.put('power',1.75,{ts:1})],
+    ['missing ACK',h=>h.put('feedback',10,{ack:false})],
+    ['hard current limit',h=>{h.config.wb0CommissioningMaxA=10;}],
+    ['withdrawn grant',h=>h.grant([0])]
+]) test('limited response probe retains safety: '+fault, async()=>{
+    const h=await eqeLimitedReply();h.advance(fault==='before deadline'?10000:46000);h.grant([16]);change(h);
+    h.writes.length=0;await h.output.tick();assert.ok(!h.writes.some(w=>w.id==='cmd'&&w.val>10));
+});
+
+
+test('fully nominal funded retry can replace the expired measured-step reservation',async()=>{
+    const h=await eqeLimitedReply(true);
+    assert.ok(h.output.devices[0].measuredBudgetStep);
+    h.advance(46000);h.grant([16]);h.put('export',2200);h.writes.length=0;await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'cmd',val:11}]);assert.equal(h.output.devices[0].measuredBudgetStep,null);
 });
