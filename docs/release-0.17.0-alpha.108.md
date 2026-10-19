@@ -18,4 +18,6 @@ Keine Änderungen an Admin-Feldern, Polling, Reaktionsfristen oder 600-s-Abschal
 
 Regressionen prüfen beide ACK-Reihenfolgen, reale Antwortverarbeitung 10→11 A bei 2430 W/10,8 A und 97 W Export sowie die nächste normale Verteilerentscheidung mit unverändertem Messwert. Gegenproben prüfen bereits bekannte/vorherige Bestätigung, neuere Zuteilungsquelle, echtes Defizit, harte Stromgrenze, entzogene Reservierung, neue Heizlast und unzureichenden Stromnachweis. Die neuen Ausgangsregressionen scheitern am unveränderten alpha.107.
 
+Ein bestehender Recorder-Neustarttest verwendet jetzt ein ausdrückliches SQL-Startsignal und kontrollierte Testtimer: Seine vorherige feste 50-ms-Frist konnte auf einem ausgelasteten CI-Runner bereits vor Transportbeginn ablaufen. Die vorhandenen Prüfungen auf dauerhaft gesperrte unaufgelöste SQL-Anfragen bleiben erhalten; die produktive Recorder-Logik und ihre Fristen werden nicht geändert.
+
 Erwartet werden weniger unnötige Rücknahmen und Wiedererhöhungen. Eine belastbare Energiemenge ist aus dem kurzen asynchronen Abschnitt nicht ableitbar. Reale Regelruhe und Energiegewinn bleiben nach Nutzerinstallation an natürlichen Ereignissen zu belegen. Softwaretests sind keine Anlagenabnahme.
