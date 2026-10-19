@@ -13,6 +13,7 @@ produktiven Recoveryauslösungen oder Änderungen an der Anlage.
 
 Die laufende Versionsanzeige alpha.109 beweist keinen exakten installierten
 Commit. Die folgenden Codebefunde gelten für den genannten Repositorystand.
+Zeitangaben aus dem Tagesbericht beziehen sich auf Europe/Berlin.
 
 ## Getrennte Verlust- und Wiederaufnahmebefunde
 
@@ -23,6 +24,14 @@ Commit. Die folgenden Codebefunde gelten für den genannten Repositorystand.
 | Verifierauftrag 15:13:09.407, EMS-Neustart 15:13:12.650; später Journal fast 128 MiB | Separater Rückstau bei ungeklärtem SQL-Abschluss. Die persistente Verifikationssperre überlebt den EMS-Neustart. | Kein Beweis, dass die vorherigen 173 RAM-Ablehnungen dieselbe Ursache hatten. |
 | Kumulierte Journalablehnungen +19.616 | Umfasst auch weitere Kapazitäts- und Backpressurefälle. | Weder ausschließlich RAM-Drops noch eine Dauer in Sekunden. |
 | SQL-Prozesswechsel 16:47/48, anschließend frische exakte Bestätigungen und Rückstauabbau | Erhaltene Originale wurden wieder zugestellt und geprüft. | Verworfene Originale wurden nicht wiederhergestellt. |
+
+Die überlieferten Originale enthalten 226 interne fehlende Recordsequenzen;
+zusätzlich fehlen im alpha.109-Präfix 1.337 Sequenzen. Die internen Randintervalle
+umfassen 21,755 s, das größte 6,702 s. Davon getrennt liegt der lange fehlende
+Originalabschnitt 15:47:34.083–16:51:20.018 über 3.825,935 s. Diese Grenzen
+beschreiben die Aufzeichnung, nicht eine bewiesene vollständige Anlagenblindheit
+oder den genauen Verlustzeitpunkt jedes Originals. Spätere Bestätigungen
+erhaltener Records schließen diese historischen Lücken nicht.
 
 Die Grenzen entsprechen unterschiedlichen Codepfaden:
 `ShadowController.enqueueRecord()` begrenzt die vor dem Append gehaltenen
