@@ -267,6 +267,11 @@ class EmsOptimizer extends utils.Adapter {
                         this.getForeignStateAsync(`system.adapter.${instance}.uptime`)]);
                     return {alive, kill, connection, uptime};
                 }});
+            const recordingHealth = journal.health();
+            if (recordingHealth.sqlVerificationPending) {
+                const since = recordingHealth.sqlVerificationQuery?.beganAt;
+                this.log.warn(`Recorder SQL verification blocked since ${Number.isFinite(since) ? new Date(since).toISOString() : 'unknown'}; retained journal ${recordingHealth.bytes}/${recordingHealth.maxBytes} bytes. EMS restart is not SQL completion proof; recovery requires observed SQL adapter restart and read-only checks. Storage coverage remains unknown.`);
+            }
         } catch (error) {
             this.warnDebug(error);
         }
@@ -1095,6 +1100,13 @@ class EmsOptimizer extends utils.Adapter {
             this.log.error(`Cannot stop output on unload: ${result.reason}`);
         // Real independent stops always precede diagnostic disk completion.
         await this.runShadow('finishRecording');
+        if (this.decisionRecordDelivery?.stopAndDrain) {
+            try {
+                const drained = await this.decisionRecordDelivery.stopAndDrain(2000);
+                if (!drained.settled || drained.fencePending)
+                    this.log.warn('Recorder shutdown: SQL completion remains unknown; persistent verification fence retained, no storage confirmation');
+            } catch (error) {this.warnDebug(error);}
+        }
         if (this.decisionRecordJournal) {
             let timer;
             try {

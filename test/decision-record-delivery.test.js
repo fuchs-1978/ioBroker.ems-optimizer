@@ -1100,3 +1100,49 @@ test('one independent SQL response submits a deduplicated exact proof batch once
     await h.delivery.tick();
     assert.equal(calls, 1); assert.equal(h.confirmations.length, 16); assert.equal(h.stored.size, 0);
 });
+
+test('shutdown drains an actual late SQL callback and its durable fence before journal close', {timeout:10000},async t=>{
+    const fs=require('node:fs/promises'),path=require('node:path'),os=require('node:os');
+    const Journal=require('../lib/decision-record-journal');
+    const directory=await fs.mkdtemp(path.join(os.tmpdir(),'ems-sql-drain-'));
+    let journal=new Journal({directory});
+    try{
+        await journal.initialize();await journal.append(fixture().entries[0].payload);
+        let started,finish;const issued=new Promise(r=>{started=r;});
+        t.mock.timers.enable({apis:['setTimeout']});
+        const d=new DecisionRecordDelivery({journal,now:()=>100000,queryTimeoutMs:50,
+            publish:async()=>({publishedAt:100000}),readHistory:()=>{started();return new Promise(r=>{finish=r;});}});
+        const running=d.tick({force:true});await issued;t.mock.timers.tick(51);await running;
+        assert.equal(journal.health().sqlVerificationPending,true);
+        const draining=d.stopAndDrain(2000);
+        finish({result:[],backendCompletionObserved:true});
+        const result=await draining;
+        assert.equal(result.settled,true);assert.equal(result.fencePending,false);
+        assert.equal(journal.health().unconfirmedRecords,1,'callback is not a matching storage proof');
+        t.mock.timers.reset();await journal.close();
+        journal=new Journal({directory});await journal.initialize();
+        assert.equal(journal.health().sqlVerificationPending,false,'completion survives process restart');
+        assert.equal(journal.health().unconfirmedRecords,1);
+    }finally{t.mock.timers.reset();await journal.close();await fs.rm(directory,{recursive:true,force:true});}
+});
+
+test('bounded shutdown never clears an unresolved backend request or issues another query',async t=>{
+    let pending=false,started,calls=0;const issued=new Promise(r=>{started=r;});
+    const h=fixture(1,{readHistory:()=>{calls++;started();return new Promise(()=>{});}});
+    h.journal.health=()=>({sqlVerificationPending:pending});
+    h.journal.beginVerification=async()=>{pending=true;};
+    h.journal.completeVerification=async()=>{pending=false;};
+    t.mock.timers.enable({apis:['setTimeout']});
+    const running=h.delivery.tick({force:true});await issued;t.mock.timers.tick(21);await running;
+    const draining=h.delivery.stopAndDrain(10);t.mock.timers.tick(11);
+    const result=await draining;
+    assert.equal(result.settled,false);assert.equal(result.fencePending,true);
+    assert.equal(pending,true);await h.delivery.tick({force:true});assert.equal(calls,1);
+});
+
+test('an inherited orphan fence remains unknown even when this process has no backend operations',async()=>{
+    const h=fixture();h.journal.health=()=>({sqlVerificationPending:true});
+    const result=await h.delivery.stopAndDrain(0);
+    assert.equal(result.settled,true);assert.equal(result.fencePending,true);
+    assert.equal(h.queries.length,0);assert.equal(h.confirmations.length,0);
+});
