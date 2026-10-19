@@ -1,8 +1,9 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.102",
+    "version": "0.17.0-alpha.103",
     "news": {
+      "0.17.0-alpha.103": {"en":"Provide at least 15 minutes for restart/history initialization, including legacy settings, and let timely stabilization finish with separate bounded scheduling margin; retain safety gates.","de":"Mindestens 15 Minuten fuer Neustart und Historienaufbau auch bei alten Einstellungen; rechtzeitig begonnene Stabilisierung mit eigener begrenzter Zeitreserve abschliessen und Schutzpruefungen erhalten."},
       "0.17.0-alpha.102": {"en":"Log bounded SQL history startup progress per source, elapsed completion/readiness and paced retry attempts without changing query or control behavior.","de":"SQL-Historienfortschritt je Quelle, Abschluss mit Dauer und Bereitschaft sowie automatische Start-Wiederholungen protokollieren; Abfragen und Regelung unveraendert."},
       "0.17.0-alpha.101": {"en":"Hold an already reserved, physically confirmed current when a newer wallbox response supersedes an older allocation measurement; preserve live deficits, peer/heater commitments and hard limits.","de":"Bereits reservierten und elektrisch bestaetigten Strom bei neuerer Wallboxantwort gegenueber alter Zuteilungsmessung halten; reale Defizite, Fremdlastzusagen und Schutzgrenzen erhalten."},
       "0.17.0-alpha.100": {"en":"Isolate delayed telemetry of confirmed idle OFF wallboxes from running peers without reclaiming stale load or allowing a new start; retain pending reservations and shared protection checks.","de":"Verzoegerte Messwerte bestaetigt ungenutzter AUS-Wallboxen von laufenden Ladungen isolieren; alte Last nicht anrechnen, keinen Start erlauben und Reservierungen sowie Schutzpruefungen erhalten."},
@@ -354,7 +355,7 @@
     "wallboxMinimumRunTimeS": 120,
     "wallboxStopDelayS": 120,
     "wallboxRestartHandoffEnabled": true,
-    "wallboxRestartHandoffTimeoutS": 180,
+    "wallboxRestartHandoffTimeoutS": 900,
     "wallboxRestartHandoffGraceS": 30,
     "wallboxRestartHandoffSettleS": 10,
     "wallboxMeasurementMaxAgeS": 30,

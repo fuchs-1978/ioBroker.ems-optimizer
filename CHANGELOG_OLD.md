@@ -4,6 +4,10 @@
 
 Diese Datei archiviert die bisherigen Versionshinweise und historischen Detailbeschreibungen unverändert. Sie beschreiben den jeweiligen damaligen Stand; für aktuelle Einstellungen und Betriebsgrenzen gilt die [README](README.md).
 
+### 0.17.0-alpha.102 (2026-10-19)
+
+Der SQL-Historienaufbau zeigt im Info-Log Start, Quelle X/N mit Datenpunkt-ID und verstrichener Zeit sowie den Abschluss mit Dauer und Ergebnis. Unvollständige Historie und Abbruch bleiben Warnungen; automatische Start-Wiederholungen werden ausdrücklich genannt. Abfrageintervalle, SQL-Parallelität und Regelung bleiben unverändert. [Releasehinweise](docs/release-0.17.0-alpha.102.md).
+
 ### 0.17.0-alpha.101 (2026-10-19)
 
 Ein bereits reservierter und elektrisch bestätigter Ladestrom wird nicht wegen einer Zuteilung reduziert, deren Wallboxmessung noch vor der neuesten Fahrzeugantwort liegt. Halten ist nur bei aktuellem Leistungsnachweis, weiterhin gedecktem Strom und ohne neue Fremdlastzusagen möglich. Die aktualisierte Zuteilung, echte Defizite, entfallene Freigaben und Schutzgrenzen bleiben maßgeblich. Keine Änderung der Geräte-Abfrageintervalle. [Releasehinweise](docs/release-0.17.0-alpha.101.md).

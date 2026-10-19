@@ -518,7 +518,7 @@ test('an expired grant cannot extend restart handoff or bypass an actual shared 
     for (const fault of ['handoff_expired', 'shared_cap']) await t.test(fault, async () => {
         const h = parallelSetup();
         h.put('ems.0.Control.RestartHandoffActive', true);
-        h.put('ems.0.Control.RestartHandoffSince', fault === 'handoff_expired' ? 700000 : 1000000);
+        h.put('ems.0.Control.RestartHandoffSince', fault === 'handoff_expired' ? 99000 : 1000000);
         h.states.delete('ems.0.Control.ParallelWallboxAllocation_JSON');
         for (const wb of [0, 1]) {
             h.put(`ems.0.Devices.Wallbox${wb}.OutputOwned`, true);
