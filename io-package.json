@@ -1,8 +1,9 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.105",
+    "version": "0.17.0-alpha.106",
     "news": {
+      "0.17.0-alpha.106": {"en":"Retain an admitted measured one-amp PV step within its original acknowledged response deadline while net import remains within tolerance; preserve its proof, reservations and all safety limits without admitting another step.","de":"Bereits zugelassenen gemessenen 1-A-PV-Schritt innerhalb seiner urspruenglichen bestaetigten Antwortfrist bei eingehaltenem Netzbudget halten; Nachweis, Reserven und Schutzgrenzen erhalten, keinen weiteren Schritt zulassen."},
       "0.17.0-alpha.105": {"en":"Retain confirmed measured charging across stale soft allocations without assuming nominal voltage uptake; match small measured deficits with relative current reductions while preserving nominal hard reservations.","de":"Bestaetigte reale Ladeleistung gegenueber aelteren Softzuteilungen ohne pauschale Nennspannungsannahme halten; kleine gemessene Defizite durch relative Stromruecknahme ausgleichen und nominale Schutzreserven erhalten."},
       "0.17.0-alpha.104": {"en":"Permit up to two fully funded one-amp retries after an acknowledged current increase times out without electrical progress; require fresh response and restore ordinary control after real uptake.","de":"Nach bestaetigter Stromerhoehung ohne ausreichende elektrische Antwort bis zu zwei vollstaendig gedeckte 1-A-Nachregelversuche erlauben; frische Messwerte verlangen und nach echter Aufnahme normal weiterregeln."},
       "0.17.0-alpha.103": {"en":"Provide at least 15 minutes for restart/history initialization, including legacy settings, and let timely stabilization finish with separate bounded scheduling margin; retain safety gates.","de":"Mindestens 15 Minuten fuer Neustart und Historienaufbau auch bei alten Einstellungen; rechtzeitig begonnene Stabilisierung mit eigener begrenzter Zeitreserve abschliessen und Schutzpruefungen erhalten."},
