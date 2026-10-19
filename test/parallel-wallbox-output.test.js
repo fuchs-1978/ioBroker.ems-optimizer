@@ -1416,3 +1416,19 @@ test('confirmed pending-current retention still yields to deficit, hard cap and 
         assert.ok(!h.writes.some(w => w.id === 'cmd' && w.val > 13));
     });
 });
+
+test('inactive delayed peer does not stop an established car and cannot start itself', async () => {
+    const h = parallelSetup(); await h.startParallel();
+    h.grant([6, 0]); await h.output.tick();
+    h.ack('allow1', 0); h.electricalOff(1); await h.output.tick();
+    const old = 960000;
+    h.put('allow1', 0, {ts: old, lc: old - 1000});
+    for (const id of ['power1', 'i11', 'i12', 'i13']) h.put(id, 0, {ts: old});
+    h.grant([6, 0]); h.writes.length = 0;
+    await h.output.tick();
+    assert.equal(h.output.parallelLoadReservations(h.mapping, 0).valid, true);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, true);
+    assert.ok(!h.writes.some(w => w.id === 'allow' && w.val === 0 || w.id === 'allow1' && w.val === 1));
+    h.put('power1', 1);
+    assert.equal(h.output.parallelLoadReservations(h.mapping, 0).valid, false);
+});

@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.99**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.100**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -849,9 +849,9 @@ Ab alpha.67 akzeptiert die zentrale Wallbox-Phasenbudgetprüfung dieselbe besteh
 
 ## Changelog und historische Detaildokumentation
 
-### 0.17.0-alpha.99 (2026-10-19)
+### 0.17.0-alpha.100 (2026-10-19)
 
-Sperren wegen verspäteter AUS- oder elektrischer Abschaltbestätigung lösen sich nach frischer, bestätigter Abschaltung automatisch. AUS-ACK, Leistung und alle Phasenströme sowie Verbindungs-, Fehler- und gegebenenfalls Phasenstatus müssen gültig sein. Andere Fehler bleiben verriegelt; jeder Neustart der Ladung durchläuft die regulären Freigaben und Schutzgrenzen. [Releasehinweise](docs/release-0.17.0-alpha.99.md).
+Reine Abrufverzögerungen einer ungenutzten Wallbox mit zuletzt bestätigtem AUS und elektrischer Ruhe blockieren andere laufende Ladungen nicht mehr pauschal. Die betroffene Wallbox bleibt bis zu gültigen aktuellen Quellen vom Start ausgeschlossen; alte Werte erzeugen kein Ladebudget. Offene Aufträge, Lastreservierungen, positive Last oder widersprüchliche Quellen behalten ihre Schutzwirkung. [Releasehinweise](docs/release-0.17.0-alpha.100.md).
 
 [Alle älteren Änderungen und historischen Detailbeschreibungen](CHANGELOG_OLD.md).
 
