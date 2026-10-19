@@ -1538,3 +1538,55 @@ test('fully nominal funded retry can replace the expired measured-step reservati
     h.advance(46000);h.grant([16]);h.put('export',2200);h.writes.length=0;await h.output.tick();
     assert.deepEqual(h.writes,[{id:'cmd',val:11}]);assert.equal(h.output.devices[0].measuredBudgetStep,null);
 });
+
+async function eqeStaleAllocation({amps=17, actualW=3720, actualA=16.7, targetA=14, exportW=56.1}={}) {
+    const h=await freshResponseWithOldAllocation();
+    h.config.wallboxPVImportToleranceW=100;
+    const d=h.output.devices[0];d.lastA=amps;
+    h.grant([targetA]);
+    const key='ems.0.Control.ParallelWallboxAllocation_JSON';
+    const a=JSON.parse(h.states.get(key).val);
+    a.allocations[0].reservedW=amps*230;a.heaterTargetW=0;a.pvStepOwner=0;a.pvStepToleranceW=100;
+    h.put(key,JSON.stringify(a));
+    h.put('ems.0.Control.Wallbox0.AllocationDiagnostics_JSON',JSON.stringify({valid:true,timestamp:a.timestamp,measuredPowerAt:1009000}));
+    h.put('ems.0.Devices.Wallbox0.ResponseCommand_A',amps);
+    h.ack('feedback',amps);h.put('power',actualW/1000,{ts:1010002});h.put('i1',actualA,{ts:1010002});
+    h.put('export',exportW);h.writes.length=0;
+    return h;
+}
+
+for(const f of [
+    {amps:17,actualW:3720,actualA:16.7,targetA:14,exportW:56.1},
+    {amps:15,actualW:3300,actualA:14.7,targetA:14,exportW:773.8}
+]) test('live EQE confirmed uptake holds '+f.amps+' A across stale allocation without assuming 230 V uptake',async()=>{
+    const h=await eqeStaleAllocation(f);await h.output.tick();
+    assert.deepEqual(h.writes,[]);
+    assert.equal(JSON.parse(h.states.get('ems.0.Devices.Wallbox0.IncreaseBudget_JSON').val).basis,'fresh-response-allocation-hold');
+    h.put('import',500);h.put('export',0);await h.output.tick();
+    assert.ok(h.writes.some(w=>w.id==='cmd'&&w.val<f.amps),'real deficit still reduces');
+});
+
+test('live EQE 139 W deficit makes one relative reduction rather than five nominal amps',async()=>{
+    const h=await eqeStaleAllocation({amps:17,actualW:3100,actualA:13.9,targetA:16,exportW:0});
+    const d=h.output.devices[0];
+    d.response={amps:17,previousAmps:14,at:1005000,ackAt:1006000,start:false};
+    d.electricalCommandAt=1005000;
+    h.put('import',138.6);
+    await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'cmd',val:16}]);
+    assert.equal(JSON.parse(h.states.get('ems.0.Devices.Wallbox0.IncreaseBudget_JSON').val).basis,'measured-relative-reduction');
+});
+
+for(const [name,change] of [
+    ['lower allocation',h=>h.grant([12])],
+    ['hard current cap',h=>{h.config.wb0CommissioningMaxA=12;}],
+    ['hard shared budget',h=>h.grant([16],{hardBudgetW:3000})],
+    ['pre-command power',h=>h.put('power',3.1,{ts:1005000})],
+    ['unacknowledged current',h=>h.ack('feedback',14)],
+    ['missing electrical ACK',h=>{h.output.devices[0].response.ackAt=0;h.put('feedback',17,{ts:1004000});}]
+]) test('relative deficit reduction retains protection: '+name,async()=>{
+    const h=await eqeStaleAllocation({amps:17,actualW:3100,actualA:13.9,targetA:16,exportW:0});
+    const d=h.output.devices[0];d.response={amps:17,previousAmps:14,at:1005000,ackAt:1006000,start:false};d.electricalCommandAt=1005000;
+    h.put('import',138.6);change(h);await h.output.tick();
+    assert.ok(!h.writes.some(w=>w.id==='cmd'&&w.val>=16));
+});
