@@ -1,8 +1,9 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.98",
+    "version": "0.17.0-alpha.99",
     "news": {
+      "0.17.0-alpha.99": {"en":"Automatically clear stop-confirmation timeouts after fresh acknowledged OFF and physical standstill; preserve unrelated faults and all ordinary restart gates.","de":"Abschalt-Timeouts nach frischem bestaetigtem AUS und elektrischem Stillstand automatisch aufheben; andere Fehler und regulaere Wiederanlaufpruefungen erhalten."},
       "0.17.0-alpha.98": {"en":"Require measured current and power progress before confirming an admitted wallbox increase; retain the measured pending command across ACK processing without extending response deadlines.","de":"Strom- und Leistungsantwort vor Bestaetigung einer zugelassenen Wallboxerhoehung nachweisen; gemessenen offenen Befehl beim ACK-Uebergang halten, ohne Antwortfristen zu verlaengern."},
       "0.17.0-alpha.97": {"en":"Retain an admitted acknowledged current increase during bounded SMA/go-e measurement skew; keep response deadlines, peer reservations and protection limits.","de":"Bereits zugelassene und bestaetigte Stromerhoehung bei begrenztem SMA/go-e-Messversatz halten; Antwortfristen, Fremdlastreserven und Schutzgrenzen bleiben wirksam."},
       "0.17.0-alpha.96": {"en":"Retain bounded historical recorder queue-loss episodes with session, limits, rejected scope and separate local wait/append context; preserve recording contents, durability and capacity limits.","de":"Begrenzte historische Recorder-Verlustepisoden mit Sitzung, getroffener Grenze, abgelehntem Umfang und getrenntem lokalem Warte-/Appendkontext erhalten; Originalinhalte, Haltbarkeit und Kapazitaetsgrenzen bleiben erhalten."},
