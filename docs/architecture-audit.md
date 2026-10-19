@@ -8,7 +8,7 @@ Im Checkout und in den übergeordneten Verzeichnissen wurde keine AGENTS.md gefu
 Vor Änderungen bestanden 2.049 bestehende Tests unter Node 24.19.0,
 die Paketmetadatenprüfung und der Paket-Dry-Run; kein Basistestfehler beobachtet.
 
-Abschlussprüfung: 2.057 Tests unter Node 22.23.3 und 24.19.0, jeweils ohne
+Erste Abschlussprüfung vor PR-Erstellung: 2.057 Tests unter Node 22.23.3 und 24.19.0, jeweils ohne
 Fehler oder übersprungene Tests; Paketmetadaten und tatsächlich installiertes
 Tarball auf beiden Laufzeiten geprüft. Ein zwischenzeitlicher zeitabhängiger
 Testfehler wird [separat dokumentiert](architecture-audit-open-findings.md).
@@ -129,11 +129,30 @@ Release **oder bereits vorhandener Tag ohne Release** wird unverändert belassen
 API-/Git-Fehler brechen ab. Der Merge dieses Refactorings veröffentlicht nichts.
 Vorhandene Tags, Releases und historische Versionsnotizen bleiben erhalten.
 
-Sechs Offline-Shelltests führen das tatsächliche Publishskript mit Git-/gh-Stubs
+Elf Offline-Shelltests führen das tatsächliche Publishskript mit Git-/gh-Stubs
 aus: neuer Tag, vorhandenes Release, vorhandener Tag, verschobenes main,
-API-Fehler und Git-Fehler. Zwei zusätzliche Tests sichern Loaderisolation,
+API-Fehler und Git-Fehler sowie ungültige API-Nutzdaten und fehlgeschlagene Veröffentlichung. Zwei zusätzliche Tests sichern Loaderisolation,
 Modulreihenfolge, Mappingescaping und verzögerte Einstellungslesungen.
 YAML wurde geparst und mit checksum-verifiziertem actionlint 1.7.12 geprüft.
+
+## Zweite Prüfung vor dem Merge
+
+Die erneute Prüfung gegen unverändertes main `9585b27` ergänzt fünf gezielte
+Release-Regressionen. Ein neuer Negativtest scheiterte zunächst am bisherigen
+Workflow: Syntaktisch ungültiges Release-JSON konnte den Existenztest überspringen.
+Der Workflow validiert nun JSON, Arrayform und `tagName`-Felder vor jeder weiteren
+Veröffentlichungsentscheidung. Hauptbranch-Abfragefehler und Publishfehler werden
+zusätzlich ausgeführt; es wird keine reale Veröffentlichung ausgelöst.
+
+Auch der manuelle Releaseworkflow führt jetzt den gepinnten Verhaltensvergleich
+auf Node 22 und 24 mit verfügbarer Git-Historie aus. Der Artefakttest vergleicht
+zusätzlich die tatsächlich installierten Paket-/io-package-Versionen mit dem Tarball.
+Die zweite vollständige Prüfung umfasst 2.062 Tests je Node-Version sowie die
+unveränderten 17 Vergleichsszenarien und echte Paketinstallationen. Adapter-
+Laufzeitcode, Zustandsautomaten, Zeitgrenzen und Datenverträge erhalten in dieser
+Nachprüfung keine weitere Änderung. Ein unabhängiger wörtlicher Vergleich der
+ausgelagerten Funktionskörper nach Anpassung der Abhängigkeiten bestätigte dies
+zusätzlich; auch die kanonische VM-Modulliste stimmt exakt mit der Baseline überein.
 
 ## Getrennte offene Punkte und Grenzen
 

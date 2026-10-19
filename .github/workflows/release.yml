@@ -26,6 +26,8 @@ jobs:
         node: [22, 24]
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v5
         with:
           node-version: ${{ matrix.node }}
@@ -46,6 +48,7 @@ jobs:
       - run: npm test
       - run: npm run test:package
       - run: npm run test:artifact
+      - run: npm run test:equivalence
 
   publish:
     needs: validate
@@ -66,6 +69,10 @@ jobs:
           # A successful list distinguishes absence from an API/authentication
           # failure. Existing tags (even without releases) are never republished.
           gh release list --repo "$GITHUB_REPOSITORY" --limit 1000 --json tagName > "$RUNNER_TEMP/ems-releases.json"
+          jq -e 'type == "array" and all(.[]; (.tagName | type) == "string")' "$RUNNER_TEMP/ems-releases.json" >/dev/null || {
+            echo "Invalid release list; refusing publication." >&2
+            exit 1
+          }
           if jq -e --arg tag "$tag" 'any(.[]; .tagName == $tag)' "$RUNNER_TEMP/ems-releases.json" >/dev/null; then
             echo "Existing release $tag remains unchanged."
             exit 0

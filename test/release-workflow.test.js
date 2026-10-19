@@ -12,7 +12,7 @@ const marker = '        run: |\n';
 const script = workflow.slice(workflow.lastIndexOf(marker) + marker.length)
     .split('\n').map(line => line.replace(/^          /, '')).join('\n');
 
-for (const scenario of ['new', 'existing-release', 'existing-tag', 'moved-main', 'api-failure', 'git-failure']) {
+for (const scenario of ['new', 'existing-release', 'existing-tag', 'moved-main', 'main-api-failure', 'api-failure', 'malformed-release-list', 'invalid-list-shape', 'invalid-release-entry', 'git-failure', 'publish-failure']) {
     test(`release shell preserves existing publications and fails closed: ${scenario}`, () => {
         const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ems-release-check-'));
         try {
@@ -23,11 +23,18 @@ fs.appendFileSync(process.env.CALLS, JSON.stringify({tool:process.env.TOOL,args}
 if (process.env.TOOL === 'git') {
     if (scenario === 'git-failure') process.exit(1);
     if (scenario === 'existing-tag') console.log('abc refs/tags/v0.17.0-alpha.999');
-} else if (args[0] === 'api') console.log(scenario === 'moved-main' ? 'different' : 'current');
+} else if (args[0] === 'api') {
+    if (scenario === 'main-api-failure') process.exit(1);
+    console.log(scenario === 'moved-main' ? 'different' : 'current');
+}
 else if (args[1] === 'list') {
     if (scenario === 'api-failure') process.exit(1);
-    console.log(JSON.stringify(scenario === 'existing-release' ? [{tagName:'v0.17.0-alpha.999'}] : []));
+    console.log(scenario === 'malformed-release-list' ? 'not-json'
+        : scenario === 'invalid-list-shape' ? '{}'
+        : scenario === 'invalid-release-entry' ? '[{}]'
+        : JSON.stringify(scenario === 'existing-release' ? [{tagName:'v0.17.0-alpha.999'}] : []));
 } else if (args[1] !== 'create') process.exit(2);
+else if (scenario === 'publish-failure') process.exit(1);
 `;
             for (const tool of ['gh', 'git']) {
                 const file = path.join(directory, tool);
@@ -39,10 +46,10 @@ else if (args[1] === 'list') {
                 RELEASE_VERSION: '0.17.0-alpha.999', GITHUB_SHA: 'current',
                 GITHUB_REPOSITORY: 'test/ems', RUNNER_TEMP: directory}});
             const operations = fs.readFileSync(calls, 'utf8').trim().split('\n').map(line => JSON.parse(line));
-            assert.equal(result.status, ['moved-main', 'api-failure', 'git-failure'].includes(scenario) ? 1 : 0,
+            assert.equal(result.status, ['moved-main', 'main-api-failure', 'api-failure', 'malformed-release-list', 'invalid-list-shape', 'invalid-release-entry', 'git-failure', 'publish-failure'].includes(scenario) ? 1 : 0,
                 result.stderr);
             const creates = operations.filter(call => call.tool === 'gh' && call.args[1] === 'create');
-            assert.equal(creates.length, scenario === 'new' ? 1 : 0);
+            assert.equal(creates.length, ['new', 'publish-failure'].includes(scenario) ? 1 : 0);
             if (creates.length) {
                 assert.ok(creates[0].args.includes('v0.17.0-alpha.999'));
                 assert.ok(creates[0].args.includes('--prerelease'));

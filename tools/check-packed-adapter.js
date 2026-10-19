@@ -23,6 +23,8 @@ try {
         path.join(directory, packed.filename)], directory);
     const installed = path.join(directory, 'node_modules', 'iobroker.ems-optimizer');
     const localRequire = createRequire(path.join(installed, 'package.json'));
+    assert.equal(localRequire('./package.json').version, packed.version);
+    assert.equal(localRequire('./io-package.json').common.version, packed.version);
     assert.equal(typeof localRequire('node-schedule').scheduleJob, 'function');
     assert.ok(localRequire.resolve('@iobroker/adapter-core'));
     const states = new Map();
