@@ -1201,3 +1201,13 @@ for(const consumed of [true,false]) test('156 W deficit keeps relative 9→8 A r
     assert.equal(target.amps[2],8);
     assert.ok(target.reserve[2]>=2070);
 });
+
+test('same 2430 W sample moves central allocation 10→11 A only after electrical confirmation',()=>{
+    const h=measuredHoldEngine(2);h.owned(2,11,2430);
+    h.put('ems.0.Devices.Wallbox2.ResponseState','vehicle_response');h.put('ems.0.Devices.Wallbox2.ResponsePending',true);
+    const power={...h.states.get('DP_WB2_POWER')};
+    assert.equal(h.update(2527).amps[2],10);
+    h.put('ems.0.Devices.Wallbox2.ResponseState','confirmed');h.put('ems.0.Devices.Wallbox2.ResponsePending',false);
+    assert.equal(h.update(2527).amps[2],11);
+    assert.deepEqual(h.states.get('DP_WB2_POWER'),power,'no new sample is required by the next allocator cycle');
+});
