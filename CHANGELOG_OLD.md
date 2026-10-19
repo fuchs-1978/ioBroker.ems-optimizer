@@ -4,6 +4,10 @@
 
 Diese Datei archiviert die bisherigen Versionshinweise und historischen Detailbeschreibungen unverändert. Sie beschreiben den jeweiligen damaligen Stand; für aktuelle Einstellungen und Betriebsgrenzen gilt die [README](README.md).
 
+### 0.17.0-alpha.101 (2026-10-19)
+
+Ein bereits reservierter und elektrisch bestätigter Ladestrom wird nicht wegen einer Zuteilung reduziert, deren Wallboxmessung noch vor der neuesten Fahrzeugantwort liegt. Halten ist nur bei aktuellem Leistungsnachweis, weiterhin gedecktem Strom und ohne neue Fremdlastzusagen möglich. Die aktualisierte Zuteilung, echte Defizite, entfallene Freigaben und Schutzgrenzen bleiben maßgeblich. Keine Änderung der Geräte-Abfrageintervalle. [Releasehinweise](docs/release-0.17.0-alpha.101.md).
+
 ### 0.17.0-alpha.100 (2026-10-19)
 
 Reine Abrufverzögerungen einer ungenutzten Wallbox mit zuletzt bestätigtem AUS und elektrischer Ruhe blockieren andere laufende Ladungen nicht mehr pauschal. Die betroffene Wallbox bleibt bis zu gültigen aktuellen Quellen vom Start ausgeschlossen; alte Werte erzeugen kein Ladebudget. Offene Aufträge, Lastreservierungen, positive Last oder widersprüchliche Quellen behalten ihre Schutzwirkung. [Releasehinweise](docs/release-0.17.0-alpha.100.md).

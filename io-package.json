@@ -1,8 +1,9 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.101",
+    "version": "0.17.0-alpha.102",
     "news": {
+      "0.17.0-alpha.102": {"en":"Log bounded SQL history startup progress per source, elapsed completion/readiness and paced retry attempts without changing query or control behavior.","de":"SQL-Historienfortschritt je Quelle, Abschluss mit Dauer und Bereitschaft sowie automatische Start-Wiederholungen protokollieren; Abfragen und Regelung unveraendert."},
       "0.17.0-alpha.101": {"en":"Hold an already reserved, physically confirmed current when a newer wallbox response supersedes an older allocation measurement; preserve live deficits, peer/heater commitments and hard limits.","de":"Bereits reservierten und elektrisch bestaetigten Strom bei neuerer Wallboxantwort gegenueber alter Zuteilungsmessung halten; reale Defizite, Fremdlastzusagen und Schutzgrenzen erhalten."},
       "0.17.0-alpha.100": {"en":"Isolate delayed telemetry of confirmed idle OFF wallboxes from running peers without reclaiming stale load or allowing a new start; retain pending reservations and shared protection checks.","de":"Verzoegerte Messwerte bestaetigt ungenutzter AUS-Wallboxen von laufenden Ladungen isolieren; alte Last nicht anrechnen, keinen Start erlauben und Reservierungen sowie Schutzpruefungen erhalten."},
       "0.17.0-alpha.99": {"en":"Automatically clear stop-confirmation timeouts after fresh acknowledged OFF and physical standstill; preserve unrelated faults and all ordinary restart gates.","de":"Abschalt-Timeouts nach frischem bestaetigtem AUS und elektrischem Stillstand automatisch aufheben; andere Fehler und regulaere Wiederanlaufpruefungen erhalten."},
