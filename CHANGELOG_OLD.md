@@ -1,3 +1,9 @@
+## Frühere README-Versionseinträge
+
+### 0.17.0-alpha.109 (2026-10-19)
+
+Vor dem Journalabschluss bei geordnetem EMS-Neustart bis zu zwei Sekunden auf tatsächliche SQL-Historienantwort samt dauerhaftem Sperrenabschluss warten. Aktor-Abschaltungen erfolgen vorher. Bei unbekanntem Abschluss bleibt die Sperre erhalten und wird deutlich gemeldet; keine größere Queue, kein Löschen unbestätigter Daten und keine erhöhte SQL-Parallelität. Bereits verwaiste Anfragen benötigen weiterhin den nachgewiesenen SQL-Adapter-Neustart und die vorhandenen lesenden Wiederanlaufprüfungen. [Releasehinweise](docs/release-0.17.0-alpha.109.md).
+
 ## Archived package news (repository checker cleanup)
 
 ### 0.17.0-alpha.90

@@ -1,9 +1,13 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.109",
+    "version": "0.17.0-alpha.110",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.110": {
+        "en": "Retain confirmed single-phase uptake across house-phase mapping, same-millisecond ordering and unchanged ACK repolls using the original command proof without renewing response deadlines; prevent journal health writes after close. Live acceptance remains open.",
+        "de": "Bestaetigte einphasige Aufnahme bei Hausphasenzuordnung, gleicher Millisekunde und unveraenderten ACK-Polls mit urspruenglichem Befehlsnachweis halten, ohne Antwortfristen zu erneuern; Journal-Healthschreiben nach Abschluss verhindern. Reale Abnahme bleibt offen."
+      },
       "0.17.0-alpha.109": {
         "en": "Drain actual SQL history completion and durable verification-fence updates before closing the journal on orderly shutdown, bounded to two seconds after actuator cleanup; retain and report unresolved fences.",
         "de": "Bei geordnetem Neustart nach Aktorbereinigung bis zu zwei Sekunden auf echte SQL-Historienantwort und dauerhaften Sperrenabschluss vor Journalabschluss warten; unbekannte Sperren erhalten und melden."

@@ -1706,7 +1706,7 @@ for(const consumed of [true,false])test('same 2430 W poll confirms 11 A after al
     await h.output.tick();assert.deepEqual(h.writes,[],'next normal allocation retains the confirmed current');
 });
 
-for(const consumed of [true,false])test('real electrical confirmation and older allocation sharing one sample cannot reverse 10→11 A, ACK consumed='+consumed,async()=>{
+for(const consumed of [true,false])for(const sameMillisecond of [false,true])test('real electrical confirmation and older allocation sharing one sample cannot reverse 10→11 A, ACK consumed='+consumed+', same millisecond='+sameMillisecond,async()=>{
     const h=await measuredHoldOutput(),d=h.output.devices[0];
     d.lastA=10;h.ack('feedback',10);h.put('power',2.17,{ts:1010002});h.put('i1',9.7,{ts:1010002});
     h.put('ems.0.Control.TargetGridPower_W',0);h.put('export',400);h.grant([11]);
@@ -1715,7 +1715,7 @@ for(const consumed of [true,false])test('real electrical confirmation and older 
     if(consumed){d.lastA=11;d.pending=null;}
     h.advance(2000);h.grant([10]);
     const key='ems.0.Control.ParallelWallboxAllocation_JSON',a=JSON.parse(h.states.get(key).val);
-    a.timestamp=at+1800;a.allocations[0].reservedW=2530;a.heaterTargetW=0;
+    a.timestamp=at+(sameMillisecond?2000:1800);a.allocations[0].reservedW=2530;a.heaterTargetW=0;
     h.put(key,JSON.stringify(a));
     h.put('ems.0.Control.Wallbox0.AllocationDiagnostics_JSON',JSON.stringify({valid:true,timestamp:a.timestamp,measuredPowerAt:at+1000,responseState:'vehicle_response'}));
     h.put('feedback',11,{ts:at+200});h.put('power',2.43,{ts:at+1000});h.put('i1',10.8,{ts:at+1000});
@@ -1739,4 +1739,150 @@ for(const consumed of [true,false])for(const [name,change] of [
     const h=await sameSampleConfirmation(consumed);change(h);await h.output.tick();
     assert.ok(h.writes.some(w=>w.id==='cmd'&&w.val<=10||w.id==='allow'&&w.val===0));
     assert.ok(!h.writes.some(w=>w.id==='cmd'&&w.val>11));
+});
+
+for (const gridPhase of [2, 3]) for (const consumed of [true, false]) {
+    test(`confirmed 1P uptake on house phase ${gridPhase} retains its local L1 current, ACK consumed=${consumed}`, async () => {
+        const h = await sameSampleConfirmation(consumed);
+        h.config.wb0SinglePhaseGridPhase = gridPhase;
+        const d = h.output.devices[0];
+        d.measuredBudgetStep = {at: 1005000, amps: 11, phases: 1,
+            powerW: 2170, currents: [9.7]};
+        h.put('i2', 0, {ts: 1009000}); h.put('i3', 0, {ts: 1009000});
+        await h.output.tick();
+        assert.deepEqual(h.writes, []);
+        assert.equal(d.lastA, 11);
+        assert.equal(d.measuredBudgetStep, null, 'the local power/current progress completes the admitted step');
+        const diagnostic = JSON.parse(h.states.get('ems.0.Devices.Wallbox0.IncreaseBudget_JSON').val);
+        assert.equal(diagnostic.basis, 'fresh-response-allocation-hold');
+        assert.equal(diagnostic.awaitingElectricalStep, false);
+        assert.ok(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val >= 2530);
+    });
+}
+
+for (const gridPhase of [2, 3]) for (const invalid of ['pre-ACK local current', 'insufficient local current']) {
+    test(`house phase ${gridPhase} cannot use idle local L2/L3 to repair ${invalid}`, async () => {
+        const h = await sameSampleConfirmation();
+        h.config.wb0SinglePhaseGridPhase = gridPhase;
+        h.put('i2', 0, {ts: 1009000}); h.put('i3', 0, {ts: 1009000});
+        h.put('i1', invalid === 'insufficient local current' ? 10.2 : 10.8,
+            {ts: invalid === 'pre-ACK local current' ? 1007999 : 1009000});
+        await h.output.tick();
+        assert.ok(h.writes.some(write => write.id === 'cmd' && write.val <= 10));
+        assert.ok(!h.writes.some(write => write.id === 'cmd' && write.val > 11));
+    });
+}
+
+for (const gridPhase of [2, 3]) {
+    test(`relative deficit reduction on house phase ${gridPhase} uses fresh local L1 despite older idle channels`, async () => {
+        const h = await eqeStaleAllocation({amps: 17, actualW: 3100, actualA: 13.9, targetA: 16, exportW: 0});
+        h.config.wb0SinglePhaseGridPhase = gridPhase;
+        const d = h.output.devices[0];
+        d.response = {amps: 17, previousAmps: 14, at: 1005000, ackAt: 1006000, start: false};
+        d.electricalCommandAt = 1005000;
+        h.put('i2', 0, {ts: 1004000}); h.put('i3', 0, {ts: 1004000});
+        h.put('import', 138.6);
+        await h.output.tick();
+        assert.deepEqual(h.writes, [{id: 'cmd', val: 16}]);
+        assert.equal(JSON.parse(h.states.get('ems.0.Devices.Wallbox0.IncreaseBudget_JSON').val).basis,
+            'measured-relative-reduction');
+    });
+
+    test(`bounded funded response probe on house phase ${gridPhase} uses the charger's active local L1`, async () => {
+        const h = await eqeLimitedReply();
+        h.config.wb0SinglePhaseGridPhase = gridPhase;
+        h.advance(46000); h.grant([16]);
+        await h.output.tick();
+        assert.deepEqual(h.writes, [{id: 'cmd', val: 11}]);
+        assert.equal(h.output.devices[0].limitedProbeAttempts, 1);
+        assert.equal(JSON.parse(h.states.get('ems.0.Devices.Wallbox0.IncreaseBudget_JSON').val).decision,
+            'limited-response-probe');
+    });
+}
+
+async function repeatedConfirmedAckOutput() {
+    const h = await sameSampleConfirmation();
+    h.grant([11]);
+    h.put('ems.0.Devices.Wallbox0.OutputCommand_A', 11);
+    h.put('ems.0.Devices.Wallbox0.ResponseSentAt', 1005000);
+    h.put('ems.0.Devices.Wallbox0.ResponseAcknowledgedAt', 1008000);
+    h.ack('feedback', 11);
+    h.writes.length = 0;
+    return h;
+}
+
+for (const gridPhase of [1, 2, 3]) {
+    test(`same-command ACK repoll on house phase ${gridPhase} retains its already confirmed electrical pair`, async () => {
+        const h = await repeatedConfirmedAckOutput();
+        h.config.wb0SinglePhaseGridPhase = gridPhase;
+        await h.output.tick();
+        assert.deepEqual(h.writes, []);
+        assert.equal(h.output.devices[0].lastA, 11);
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseAcknowledgedAt').val, 1008000);
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseConfirmedAt').val, 1009999);
+        assert.ok(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val >= 2530);
+    });
+}
+
+for (const [name, change] of [
+    ['missing original ACK', h => h.put('ems.0.Devices.Wallbox0.ResponseAcknowledgedAt', 0)],
+    ['original ACK at command time', h => h.put('ems.0.Devices.Wallbox0.ResponseAcknowledgedAt', 1005000)],
+    ['late original ACK', h => h.put('ems.0.Devices.Wallbox0.ResponseAcknowledgedAt', 1025001)],
+    ['future original ACK', h => h.put('ems.0.Devices.Wallbox0.ResponseAcknowledgedAt', 1010001)],
+    ['confirmation before original ACK', h => h.put('ems.0.Devices.Wallbox0.ResponseConfirmedAt', 1007999)],
+    ['future confirmation', h => h.put('ems.0.Devices.Wallbox0.ResponseConfirmedAt', 1010001)],
+    ['different response command', h => h.put('ems.0.Devices.Wallbox0.ResponseCommand_A', 12)],
+    ['different response write', h => h.put('ems.0.Devices.Wallbox0.ResponseSentAt', 1006000)],
+    ['new command awaiting ACK', h => h.put('ems.0.Devices.Wallbox0.ResponseState', 'command_ack')],
+    ['response still pending', h => h.put('ems.0.Devices.Wallbox0.ResponsePending', true)],
+    ['new process without private command', h => { h.output.devices[0].electricalCommandAt = 0; }],
+    ['latest ACK predates original', h => {
+        h.put('feedback', 11, {ts: 1007999});
+        h.put('power', 2.43, {ts: 1007998}); h.put('i1', 10.8, {ts: 1007998});
+    }],
+    ['stale latest ACK', h => h.put('feedback', 11, {ts: 970000})],
+    ['future latest ACK', h => h.put('feedback', 11, {ts: 1011001})],
+    ['unacknowledged latest feedback', h => h.put('feedback', 11, {ack: false})],
+    ['bad latest feedback quality', h => h.put('feedback', 11, {q: 64})],
+    ['stale electrical pair', h => { h.put('power', 2.43, {ts: 970000}); h.put('i1', 10.8, {ts: 970000}); }],
+    ['electrical pair before original ACK', h => { h.put('power', 2.43, {ts: 1007999}); h.put('i1', 10.8, {ts: 1007999}); }]
+]) {
+    test(`retained confirmed ACK does not bypass ${name}`, async () => {
+        const h = await repeatedConfirmedAckOutput();
+        change(h);
+        await h.output.tick();
+        assert.ok(h.writes.some(write => write.id === 'cmd' && write.val <= 10
+            || write.id === 'allow' && write.val === 0));
+        assert.ok(!h.writes.some(write => write.id === 'cmd' && write.val > 11));
+    });
+}
+
+test('a repeated ACK alone cannot increase current from an older confirmed electrical pair', async () => {
+    const h = await repeatedConfirmedAckOutput();
+    h.grant([12]); h.put('export', 400);
+    await h.output.tick();
+    assert.deepEqual(h.writes, []);
+    assert.equal(h.output.devices[0].lastA, 11);
+    assert.equal(JSON.parse(h.states.get('ems.0.Devices.Wallbox0.IncreaseBudget_JSON').val).decision,
+        'await-new-electrical-sample');
+    h.put('power', 2.43, {ts: 1010002}); h.put('i1', 10.8, {ts: 1010002});
+    await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'cmd', val: 12}]);
+});
+
+test('sequential current increases retain their existing same-value ACK polling behavior', async () => {
+    let now = 1000000;
+    const h = setup({now: () => now});
+    await h.start();
+    now += 2;
+    h.put('power', 1.38); h.put('i1', 6);
+    await h.output.tick();
+    assert.equal(h.output.devices[0].response, null);
+    const power = {...h.states.get('power')}, current = {...h.states.get('i1')};
+    now += 6000; h.refresh();
+    h.put('power', power.val, power); h.put('i1', current.val, current);
+    h.ack('feedback', 6);
+    h.writes.length = 0;
+    await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'cmd', val: 12}]);
 });

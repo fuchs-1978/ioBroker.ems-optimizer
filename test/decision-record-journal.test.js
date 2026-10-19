@@ -856,3 +856,46 @@ test('no batch original becomes visible before the final durability barrier', as
     assert.equal(journal.health().sqlConfirmedRecords, 0);
     await journal.close();
 });
+
+test('completed journal shutdown keeps late rejection diagnostics in memory without filesystem work', async t => {
+    const dir = await directory(t), calls = [];
+    let closed = false;
+    const fileSystem = {...fs};
+    for (const method of ['open', 'rename', 'unlink']) fileSystem[method] = async (...args) => {
+        if (closed) calls.push({method, file: path.basename(args[0])});
+        return fs[method](...args);
+    };
+    const journal = new DecisionRecordJournal({directory: dir, fileSystem});
+    const settleHealth = async () => {
+        let previous;
+        do {previous = journal.tail; await previous;} while (previous !== journal.tail);
+    };
+    await journal.initialize();
+    journal.reportLoss('loss before shutdown', 2);
+    await journal.close();
+    assert.equal(JSON.parse(await fs.readFile(path.join(dir, 'health.json'), 'utf8')).rejectedRecords, 2);
+    closed = true;
+    await assert.rejects(journal.append(payload(1)), /closed/i);
+    await assert.rejects(journal.appendBatch([payload(2)]), /closed/i);
+    journal.reportLoss('late callback after shutdown');
+    await settleHealth();
+    await fs.rm(dir, {recursive: true, force: true});
+    journal.reportLoss('late callback after directory removal');
+    await settleHealth();
+    assert.equal(journal.health().rejectedRecords, 6, 'late losses remain explicit in memory');
+    assert.deepEqual(calls, [], 'completed shutdown cannot enqueue another health checkpoint');
+});
+
+test('journal shutdown persists losses from work accepted before its close barrier', async t => {
+    const dir = await directory(t), journal = new DecisionRecordJournal({directory: dir, maxRecords: 1});
+    await journal.initialize();
+    const accepted = journal.append(payload(1));
+    const refused = assert.rejects(journal.appendBatch([payload(2), payload(3)]), /disk\/record capacity/);
+    await journal.close();
+    await accepted; await refused;
+    const restarted = new DecisionRecordJournal({directory: dir, maxRecords: 1});
+    await restarted.initialize();
+    assert.equal(restarted.health().rejectedRecords, 2, 'the final close checkpoint includes queued rejection losses');
+    assert.deepEqual((await restarted.readBatch()).map(entry => entry.payload), [payload(1)]);
+    await restarted.close();
+});
