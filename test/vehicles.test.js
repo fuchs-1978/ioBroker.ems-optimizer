@@ -9,7 +9,7 @@ const path=require('node:path');
 function engine(config={}, clock=Date) {
     const states=new Map();
     const put=(id,val)=>states.set(id,{val,ts:clock.now(),ack:true});
-    const ctx=vm.createContext({SMA_GRID_MAX_AGE_MS, nativeConfig:config,Date:clock,console,
+    const ctx=vm.createContext({wallboxAllocationPolicy: require('../lib/wallbox-allocation'), SMA_GRID_MAX_AGE_MS, nativeConfig:config,Date:clock,console,
         gridConstraints:require('../lib/grid-constraints'),
         vehicleSocEstimator:require('../lib/vehicle-soc-estimator'),
         getState:id=>states.get(id),existsState:id=>states.has(id),
