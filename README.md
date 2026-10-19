@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.104**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.105**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -849,9 +849,9 @@ Ab alpha.67 akzeptiert die zentrale Wallbox-Phasenbudgetprüfung dieselbe besteh
 
 ## Changelog und historische Detaildokumentation
 
-### 0.17.0-alpha.104 (2026-10-19)
+### 0.17.0-alpha.105 (2026-10-19)
 
-Eine bestätigte Stromvorgabe ohne ausreichenden gemessenen Anstieg blockiert die PV-Nachregelung nicht mehr dauerhaft. Nach Ablauf der Antwortzeit sind bis zu zwei vollständig aus dem aktuellen Budget gedeckte 1-A-Nachregelversuche möglich. Jeder Versuch benötigt ACK und eigene Antwortzeit; echter Strom-/Leistungsfortschritt setzt die normale Regelung fort. Fehlende Messwerte, offene Phasenwechsel und Schutzgrenzen bleiben gesperrt. [Releasehinweise](docs/release-0.17.0-alpha.104.md).
+Bestätigte reale Ladeleistung bei älterer Zuteilung auch unterhalb pauschaler 230-V-Nennleistung halten. Kleine reale Netzdefizite führen zu einer passenden relativen Stromrücknahme statt zu mehreren unnötigen Ampere. Volle Schutzreserven, harte Grenzen, ACK-/Messwertprüfungen und die eingestellte Abschaltverzögerung bleiben erhalten. [Releasehinweise](docs/release-0.17.0-alpha.105.md).
 
 [Alle älteren Änderungen und historischen Detailbeschreibungen](CHANGELOG_OLD.md).
 

@@ -4,6 +4,10 @@
 
 Diese Datei archiviert die bisherigen Versionshinweise und historischen Detailbeschreibungen unverändert. Sie beschreiben den jeweiligen damaligen Stand; für aktuelle Einstellungen und Betriebsgrenzen gilt die [README](README.md).
 
+### 0.17.0-alpha.104 (2026-10-19)
+
+Eine bestätigte Stromvorgabe ohne ausreichenden gemessenen Anstieg blockiert die PV-Nachregelung nicht mehr dauerhaft. Nach Ablauf der Antwortzeit sind bis zu zwei vollständig aus dem aktuellen Budget gedeckte 1-A-Nachregelversuche möglich. Jeder Versuch benötigt ACK und eigene Antwortzeit; echter Strom-/Leistungsfortschritt setzt die normale Regelung fort. Fehlende Messwerte, offene Phasenwechsel und Schutzgrenzen bleiben gesperrt. [Releasehinweise](docs/release-0.17.0-alpha.104.md).
+
 ### 0.17.0-alpha.103 (2026-10-19)
 
 Neustart-Übernahme mit mindestens 15 Minuten Anlaufreserve, auch bei gespeicherten alten 180-s-Einstellungen. Eine innerhalb der Frist begonnene Stabilisierung darf mit eigener begrenzter Prüftaktreserve fertig werden. Kein Rücksetzen oder unbegrenztes Verlängern des ursprünglichen Zeitfensters; elektrische, Geräte- und Schutzprüfungen bleiben wirksam. [Releasehinweise](docs/release-0.17.0-alpha.103.md).

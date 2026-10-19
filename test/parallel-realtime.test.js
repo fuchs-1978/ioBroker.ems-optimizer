@@ -913,7 +913,7 @@ test('confirmed running EQV-like response survives a nominal soft cap without a 
         assert.equal(d.reason, 'measured-current-held');
         assert.equal(d.measuredCurrentHeld, true);
     }
-    assert.equal(h.update(1600).amps[0], 6, 'a real measured deficit still reduces current');
+    assert.equal(h.update(1600).amps[0], 7, 'a real 130 W deficit reduces one ampere rather than two nominal amps');
 });
 
 test('measured current hold cannot spend an operator cap or authorize an increase', () => {
@@ -1159,4 +1159,27 @@ for (const [name, change] of [
     for (let p = 1; p <= 3; p++) h.put(`DP_WB0_L${p}_A`, 0, {ts: old});
     change(h); h.update(4000);
     assert.equal(JSON.parse(h.states.get('ems.0.Control.ParallelWallboxAllocation_JSON').val).valid, false);
+});
+
+test('EQE confirmed 17 A retains measured 3300 W across a multi-amp nominal PV gap', () => {
+    const h = measuredHoldEngine(2);
+    h.owned(2, 17, 3300);
+    for (const budget of [3404, 3341, 3380, 3300]) {
+        const target = h.update(budget);
+        assert.equal(target.amps[2], 17);
+        assert.ok(target.reserve[2] >= 3910, 'full nominal peer reservation remains');
+    }
+    assert.ok(h.update(3404, 3500).amps[2] <= 15, 'hard gross cap cannot use measured hold');
+});
+
+test('EQE pending response with 112 W deficit reduces 17 to 16 A instead of nominal 12 A', () => {
+    const h = measuredHoldEngine(2);
+    h.owned(2, 17, 3100);
+    h.put('ems.0.Devices.Wallbox2.ResponseState', 'vehicle_response');
+    h.put('ems.0.Devices.Wallbox2.ResponsePending', true);
+    const target = h.update(2988);
+    assert.equal(target.amps[2], 16);
+    assert.ok(target.reserve[2] >= 3910);
+    h.put('DP_WB2_POWER', 3.1, {ts:Date.now()-2000});
+    assert.ok(h.update(2988).amps[2] <= 12, 'old evidence cannot earn a relative reduction');
 });
