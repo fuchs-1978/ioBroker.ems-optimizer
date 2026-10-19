@@ -1613,8 +1613,8 @@ test('parallel idle-peer missing OFF ACK retries only at its deadline and never 
     }
     h.ack(id('allow'), 0); h.electricalOff(2); await h.output.tick();
     assert.equal(h.output.devices[2].owned, false);
-    assert.match(h.output.devices[2].fault, /AUS-Rueckmeldung fehlt/,
-        'a delayed stop ACK must not reset the existing fault lock');
+    assert.equal(h.output.devices[2].fault, '',
+        'late OFF with fresh physical zero clears only the stop timeout');
     h.put(id('car'), 2); advance(); await h.output.tick();
     assert.ok(!h.writes.some(write => write.id === id('allow') && write.val === 1));
     assert.ok(!h.writes.some(write => write.id === 'allow1' && write.val === 0));
@@ -2897,9 +2897,9 @@ test('issue116 stalled go-e diagnostic times out without blocking OFF and surviv
     now += 8000; h.refresh(); h.ack('allow', 0); h.electricalOff();
     h.put('car', 1); await h.output.tick();
     assert.equal(h.output.devices[0].owned, false);
-    assert.equal(h.output.devices[0].fault, fault, 'late OFF must not unlock');
+    assert.equal(h.output.devices[0].fault, '', 'late OFF and physical zero clear the stop timeout');
     await h.output.tick();
-    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val, /AUS inzwischen bestaetigt, elektrisch ruhig, Wiederfreigabe gesperrt/);
+    assert.equal(h.output.devices[0].fault, '');
     assert.equal(readStopDiag(h).key, key);
     assert.equal(readStopDiag(h).sources[0].direct.status, 'timeout');
     assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val, 0);
@@ -2978,8 +2978,8 @@ for (const [name, change] of [
     h.put('ems.0.Vehicles.Wallbox0.Release', true);
     await h.output.tick(); await h.output.tick();
     assert.equal(h.output.devices[0].owned, false);
-    assert.equal(h.output.devices[0].fault, fault);
-    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val, /Wiederfreigabe gesperrt/);
+    assert.equal(h.output.devices[0].fault, name === 'unplugging' ? '' : fault);
+    if (name !== 'unplugging') assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val, /Wiederfreigabe gesperrt/);
     assert.ok(!h.writes.some(w => w.id === 'allow' && w.val === 1));
 });
 
@@ -3141,4 +3141,43 @@ test('delayed processing still rejects invalid or untimely ordinary-current ACKs
         assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
         assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'timeout');
     });
+});
+
+for (const [name, change] of [
+    ['normal late OFF', () => {}],
+    ['electrical stop timeout', h => {h.ack('allow', 0); h.put('power', 2); h.put('i1', 9);}],
+    ['other fault', h => {h.output.devices[0].fault = 'Schreib-/Regelfehler: unrelated';}],
+    ['bad OFF quality', h => h.put('allow', 0, {q: 64})],
+    ['unacknowledged OFF', h => h.put('allow', 0, {ack: false})],
+    ['stale zero', h => h.put('i3', 0, {ts: 1})],
+    ['offline', h => h.put('connection', false)]
+]) test('stop timeout recovery: ' + name, async () => {
+    let now = 1000000;
+    const h = setup({now: () => now}); await h.start(); h.writes.length = 0;
+    h.put('ems.0.System.RealOutputsEnabled', false); await h.output.tick();
+    now += 21000; h.refresh(); await h.output.tick();
+    assert.match(h.output.devices[0].fault, /AUS-Rueckmeldung/);
+    if (name === 'electrical stop timeout') {
+        change(h); await h.output.tick();
+        now += 46000; h.refresh(); await h.output.tick();
+        assert.match(h.output.devices[0].fault, /elektrische Abschaltung fehlt/);
+    }
+    h.refresh(); h.ack('allow', 0); h.electricalOff();
+    if (name !== 'electrical stop timeout') change(h);
+    await h.output.tick();
+    const recovered = ['normal late OFF', 'electrical stop timeout'].includes(name);
+    assert.equal(h.output.devices[0].fault === '', recovered);
+    assert.ok(!h.writes.some(w => w.id === 'allow' && w.val === 1), 'Master OFF never resumes charging');
+    if (!recovered) {
+        h.refresh(); h.ack('allow', 0); h.electricalOff(); h.put('connection', true);
+        await h.output.tick();
+        assert.equal(h.output.devices[0].fault === '', name !== 'other fault');
+    }
+    if (name === 'normal late OFF') {
+        h.put('ems.0.System.RealOutputsEnabled', true); await h.output.tick();
+        h.ack('allow', 0); await h.output.tick();
+        assert.ok(h.writes.some(w => w.id === 'cmd'), 'normal current handshake resumes without restart: ' + JSON.stringify(h.states.get('ems.0.Devices.Wallbox0.OutputStatus')));
+        h.ack('feedback', 6); await h.output.tick();
+        assert.ok(h.writes.some(w => w.id === 'allow' && w.val === 1));
+    }
 });

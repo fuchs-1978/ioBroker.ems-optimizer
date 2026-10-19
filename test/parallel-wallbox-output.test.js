@@ -241,7 +241,7 @@ test('simultaneous pending starts cannot exceed the shared house phase fuse', as
     assert.match(h.states.get('ems.0.Devices.Wallbox1.OutputStatus').val, /Sicherheitsgrenze/);
 });
 
-test('issue116 late OFF releases only the stopped parallel car and preserves its lock and peer load', async () => {
+test('issue116 late OFF recovers only the stopped parallel car and preserves peer load', async () => {
     const h = parallelSetup(); await h.startParallel();
     h.grant([6, 0]); h.writes.length = 0; await h.output.tick();
     h.advance(21000); h.grant([6, 0]); await h.output.tick();
@@ -251,8 +251,8 @@ test('issue116 late OFF releases only the stopped parallel car and preserves its
     h.advance(1000); h.grant([6, 0]); h.ack('allow1', 0); h.electricalOff(1);
     await h.output.tick();
     assert.equal(stopped.owned, false);
-    assert.match(stopped.fault, /AUS-Rueckmeldung/);
-    assert.match(h.states.get('ems.0.Devices.Wallbox1.OutputStatus').val, /elektrisch ruhig, Wiederfreigabe gesperrt/);
+    assert.equal(stopped.fault, '');
+    assert.match(h.states.get('ems.0.Devices.Wallbox1.OutputStatus').val, /Fehlersperre automatisch aufgehoben/);
     assert.equal(peer.owned, true);
     assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, true);
     assert.ok(h.output.parallelLoadReservations(h.mapping, 1).wallboxesW[0] >= 1380);

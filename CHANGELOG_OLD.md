@@ -4,6 +4,10 @@
 
 Diese Datei archiviert die bisherigen Versionshinweise und historischen Detailbeschreibungen unverändert. Sie beschreiben den jeweiligen damaligen Stand; für aktuelle Einstellungen und Betriebsgrenzen gilt die [README](README.md).
 
+### 0.17.0-alpha.98 (2026-10-19)
+
+Eine frische Wallboxmessung auf dem alten Stromniveau bestätigt keine Stromerhöhung mehr allein aufgrund der 3-A-Toleranz. Nach einer zugelassenen Erhöhung müssen Leistung und die verwendeten Phasenströme einen Anstieg oder das erreichte neue Stromniveau belegen. Die bestehende Antwortfrist und Schutzgrenzen bleiben erhalten; nach Ablauf verhindert fehlende Antwort weiteres Hochregeln, bis echte Messwerte vorliegen. [Releasehinweise](docs/release-0.17.0-alpha.98.md).
+
 ### 0.17.0-alpha.97 (2026-10-19)
 
 Bereits zugelassene Stromerhöhungen bei nachlaufender Wallboxmessung begrenzt halten: Die SMA-Messung kann die zusätzliche Ladung bereits enthalten, während go-e noch den vorherigen Strom meldet. Passendes ACK, unveränderte Fremdlastreserven, gültige Quellen und bestehende Antwortfrist bleiben erforderlich; echte Netzbezugsüberschreitungen und Schutzgrenzen reduzieren weiterhin. [Releasehinweise](docs/release-0.17.0-alpha.97.md).
