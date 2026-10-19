@@ -6,12 +6,17 @@ on:
 
 jobs:
   validate:
+    name: Node.js ${{ matrix.node }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22, 24]
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: ${{ matrix.node }}
       - run: npm install
       - run: npm test
       - run: npm run test:package
