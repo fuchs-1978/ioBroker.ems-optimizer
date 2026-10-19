@@ -14,9 +14,13 @@ jobs:
         node: [22, 24]
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v5
         with:
           node-version: ${{ matrix.node }}
-      - run: npm install
+      - run: npm install --package-lock=false --no-audit --no-fund
       - run: npm test
       - run: npm run test:package
+      - run: npm run test:artifact
+      - run: npm run test:equivalence

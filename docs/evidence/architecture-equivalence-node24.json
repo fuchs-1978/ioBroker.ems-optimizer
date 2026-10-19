@@ -1,0 +1,91 @@
+{
+  "baseline": "9585b276c75c3ed79634204ba8318166e577dc44",
+  "node": "v24.19.0",
+  "results": [
+    {
+      "scenario": "sequential-pv-and-minimum-end",
+      "events": 30652,
+      "sha256": "50fad76255c82f754362a26a8b641ceb9f6dfe64c8ceeaa18ca165a5fd9c211c"
+    },
+    {
+      "scenario": "parallel-minimum-and-priority",
+      "events": 31839,
+      "sha256": "ed9a363f0c7f0da6e1d2bc426bae3c139553704d8e8908056c90fa4cb0932129"
+    },
+    {
+      "scenario": "pv-tolerance-and-load-step",
+      "events": 30698,
+      "sha256": "83977e46c7d610cc81922da8901f3ba4ba280ef38e8c738fd73c0bda6a0ce8f5"
+    },
+    {
+      "scenario": "ehz-release-and-delayed-response",
+      "events": 30548,
+      "sha256": "3c447dcb62b80912a4f5ae2791d25b97dec782b668ee6706558401987f765dcb"
+    },
+    {
+      "scenario": "lpc-and-house-phase-ceiling",
+      "events": 31826,
+      "sha256": "ffcf501539208e4a077f51f0634435793a9ec58905581fad86d3dd58f3fb56f7"
+    },
+    {
+      "scenario": "restart-adopted-owner-and-handoff",
+      "events": 33453,
+      "sha256": "b31ba181f93ddcd0dd300a1f2a680e3ff572cdb8e78cee95c90bf4420bc5a1ab"
+    },
+    {
+      "scenario": "soc-maximum-and-output-stop",
+      "events": 30581,
+      "sha256": "500e628cbca1327446f14bc3741b6488b87a4b4c104cdb794525e67447f75b26"
+    },
+    {
+      "scenario": "phase-request-and-confirmation",
+      "events": 31082,
+      "sha256": "6561e45e62e5dd1363497da35a5e1c4872a7254927990b5033d09e5f97de17da"
+    },
+    {
+      "scenario": "battery-heating-and-diagnostics",
+      "events": 34441,
+      "sha256": "2e92a4363809b3f1e04e32f098d93fb0fc4a0bf2626a602d98e77702e53287bd"
+    },
+    {
+      "scenario": "missing-stale-future-and-bad-quality-sources",
+      "events": 21949,
+      "sha256": "7006cf195d51e2ddf802fc0006c08e1b38f18c5d75ba62f34ff2d32b34bb97bc"
+    },
+    {
+      "scenario": "productive-ehz-zero-receipts-and-release",
+      "events": 11,
+      "sha256": "0927220b389690129c99e01474805f1b1e9be5dd086ea97dc537a62eabd404fa"
+    },
+    {
+      "scenario": "phase-hysteresis-timers-and-transition-diagnostics",
+      "events": 282,
+      "sha256": "66b61a6d1413bc8ceed6a310933caeb0e94641ffaddd5e2b10be82836356536c"
+    },
+    {
+      "scenario": "startup-invalidation-and-ordered-shutdown",
+      "events": 33,
+      "sha256": "abcf98255d934d335c9f40f0ae4aa2dc4a71b9f8b14d4cac0fdd2a5be704dae4"
+    },
+    {
+      "scenario": "allocation-boundaries-and-setting-read-order",
+      "events": 1600,
+      "sha256": "151a7ae57d17c3ec93a6c74288faaef544f0256e34ee1445c8081df523380893"
+    },
+    {
+      "scenario": "recorder-queue-loss-journal-durability-and-restart",
+      "events": 5,
+      "sha256": "00b31b319431d14cdae4de6473520e5d3198390a3ef2576327651cf6cad6d387"
+    },
+    {
+      "scenario": "recorder-byte-bound-and-concurrent-local-read",
+      "events": 4,
+      "sha256": "2755da9f77869e8e389826e416345544fd480af9bd53cc8f0c5e77afe60f0877"
+    },
+    {
+      "scenario": "sql-exact-confirmation-and-query-order",
+      "events": 4,
+      "sha256": "4cf62d82e7da71711265668f48a21165d53816f8cfebdb959790d55c224bd95d"
+    }
+  ]
+}
