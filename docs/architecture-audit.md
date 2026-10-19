@@ -1,5 +1,12 @@
 # Architektur- und Duplikataudit, 19.10.2026
 
+Nachtrag: Die intensive Nachprüfung hat Grenzen der unten beschriebenen
+Differentialabdeckung aufgedeckt. Insbesondere waren die benannte parallele
+Mindestladung und erfolgreiche 3P-Quantisierung dort nicht tatsächlich erreicht.
+Die historischen Hashgleichheiten bleiben korrekt; sie belegen keine vollständige
+fachliche Abdeckung. Separate Laufzeitkorrekturen und gezielt ergänzte Nachweise
+sind in [wallbox-audit-fixes.md](wallbox-audit-fixes.md) dokumentiert.
+
 ## Ausgangspunkt und Umfang
 
 Ausgangscommit: `9585b276c75c3ed79634204ba8318166e577dc44` (main).

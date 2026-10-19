@@ -1,0 +1,99 @@
+{
+  "node": "v24.19.0",
+  "results": [
+    {
+      "name": "legacy-current-ACK-gate",
+      "rejected": true,
+      "exitCode": 1,
+      "error": [
+        "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:",
+        "+ actual - expected",
+        "",
+        "+ 'Keine passende go-e-Rueckmeldung; Ausgang gesperrt bis Adapter-Neustart'",
+        "- ''",
+        "",
+        "    at worker (/workspace/ioBroker.ems-optimizer/tools/compare-wallbox-fixes.js:98:20)",
+        "    at async main (/workspace/ioBroker.ems-optimizer/tools/compare-wallbox-fixes.js:245:24) {",
+        "  generatedMessage: true,",
+        "  code: 'ERR_ASSERTION',",
+        "  actual: 'Keine passende go-e-Rueckmeldung; Ausgang gesperrt bis Adapter-Neustart',",
+        "  expected: '',"
+      ]
+    },
+    {
+      "name": "script-phase-proof-disabled",
+      "rejected": true,
+      "exitCode": 1,
+      "error": [
+        "AssertionError [ERR_ASSERTION]: mode ACK alone must retain old3P reserve",
+        "    at worker (/workspace/ioBroker.ems-optimizer/tools/compare-wallbox-fixes.js:136:20)",
+        "    at async main (/workspace/ioBroker.ems-optimizer/tools/compare-wallbox-fixes.js:245:24) {",
+        "  generatedMessage: false,",
+        "  code: 'ERR_ASSERTION',",
+        "  actual: false,",
+        "  expected: true,",
+        "  operator: '==',",
+        "  diff: 'simple'",
+        "}",
+        ""
+      ]
+    },
+    {
+      "name": "legacy-literal-mapping",
+      "rejected": true,
+      "exitCode": 1,
+      "error": [
+        "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:",
+        "+ actual - expected",
+        "",
+        "+ 'mqtt.0.grid.__DP_GRID_IMPORT__'",
+        "- 'mqtt.0.grid.$&'",
+        "               ^",
+        "",
+        "    at worker (/workspace/ioBroker.ems-optimizer/tools/compare-wallbox-fixes.js:227:20)",
+        "    at async main (/workspace/ioBroker.ems-optimizer/tools/compare-wallbox-fixes.js:245:24) {",
+        "  generatedMessage: true,",
+        "  code: 'ERR_ASSERTION',",
+        "  actual: 'mqtt.0.grid.__DP_GRID_IMPORT__',"
+      ]
+    },
+    {
+      "name": "parallel-fixture-effective-false",
+      "rejected": true,
+      "exitCode": 1,
+      "error": [
+        "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:",
+        "",
+        "false !== true",
+        "",
+        "    at worker (/tmp/ems-fix-mutants-KmbnmA/tools/compare-refactor.js:129:16)",
+        "    at async main (/tmp/ems-fix-mutants-KmbnmA/tools/compare-refactor.js:363:24) {",
+        "  generatedMessage: true,",
+        "  code: 'ERR_ASSERTION',",
+        "  actual: false,",
+        "  expected: true,",
+        "  operator: 'strictEqual',",
+        "  diff: 'simple'"
+      ]
+    },
+    {
+      "name": "positive-3P-fixture-insufficient-cap",
+      "rejected": true,
+      "exitCode": 1,
+      "error": [
+        "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:",
+        "",
+        "0 !== 6",
+        "",
+        "    at worker (/tmp/ems-fix-mutants-KmbnmA/tools/compare-refactor.js:256:16)",
+        "    at async main (/tmp/ems-fix-mutants-KmbnmA/tools/compare-refactor.js:363:24) {",
+        "  generatedMessage: true,",
+        "  code: 'ERR_ASSERTION',",
+        "  actual: 0,",
+        "  expected: 6,",
+        "  operator: 'strictEqual',",
+        "  diff: 'simple'"
+      ]
+    }
+  ]
+}
