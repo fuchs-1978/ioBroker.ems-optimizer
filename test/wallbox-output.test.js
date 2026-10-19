@@ -3051,3 +3051,94 @@ test('output independently enforces EMS binary budget, external units and invali
         assert.equal(limit.valid,false); assert.equal(limit.budgetW,0);
     }
 });
+
+async function delayedRampHarness() {
+    let now = 1000000000000;
+    const h = setup({now: () => now});
+    h.setNow = value => { now = value; };
+    await h.start();
+    now += 6000; h.refresh(); h.put('i1', 6); h.put('power', 1.38);
+    await h.output.tick();
+    assert.equal(h.output.devices[0].pending.stage, 'current');
+    assert.equal(h.output.devices[0].pending.start, false);
+    assert.equal(h.writes.at(-1).val, 12);
+    h.issuedAt = now;
+    h.writes.length = 0;
+    return h;
+}
+
+test('a timely ordinary-current ACK survives delayed processing and retains its source time', async t => {
+    for (const ackOffset of [1, 1001, 20000]) await t.test(`ACK at +${ackOffset} ms`, async () => {
+        const h = await delayedRampHarness();
+        h.setNow(h.issuedAt + 21000); h.refresh();
+        h.put('feedback', 12, {ts: h.issuedAt + ackOffset});
+        h.put('i1', 12); h.put('power', 2.76);
+        await h.output.tick();
+        const d = h.output.devices[0];
+        assert.equal(d.fault, '');
+        assert.equal(d.pending, null);
+        assert.equal(d.lastA, 12);
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseAcknowledgedAt').val,
+            h.issuedAt + ackOffset);
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'confirmed');
+        assert.deepEqual(h.writes, []);
+    });
+});
+
+test('delayed ordinary-current ACK processing does not restart the electrical response timer', async () => {
+    const h = await delayedRampHarness();
+    const ackAt = h.issuedAt + 1001;
+    h.setNow(h.issuedAt + 21000); h.refresh();
+    h.put('feedback', 12, {ts: ackAt});
+    await h.output.tick();
+    assert.equal(h.output.devices[0].fault, '');
+    assert.equal(h.output.devices[0].pending, null);
+    assert.equal(h.output.devices[0].response.ackAt, ackAt);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'vehicle_response');
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseRemaining_s').val, 26);
+    assert.deepEqual(h.writes, []);
+    h.setNow(ackAt + 45001); h.refresh();
+    await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'limited');
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponsePending').val, false);
+    assert.equal(h.output.devices[0].response.ackAt, ackAt);
+    assert.deepEqual(h.writes, []);
+});
+
+test('a delayed ordinary-current ACK cannot promote pre-ACK electrical samples', async () => {
+    const h = await delayedRampHarness();
+    h.setNow(h.issuedAt + 21000); h.refresh();
+    h.put('feedback', 12, {ts: h.issuedAt + 1001});
+    h.put('i1', 12, {ts: h.issuedAt + 500});
+    h.put('power', 2.76, {ts: h.issuedAt + 500});
+    await h.output.tick();
+    assert.equal(h.output.devices[0].fault, '');
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'vehicle_response');
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.ResponseStatus').val, /keine neue Leistung/);
+    assert.deepEqual(h.writes, []);
+});
+
+test('delayed processing still rejects invalid or untimely ordinary-current ACKs', async t => {
+    const cases = [
+        {name: 'missing', missing: true},
+        {name: 'wrong value', value: 6},
+        {name: 'unacknowledged', extra: {ack: false}},
+        {name: 'bad quality', extra: {q: 64}},
+        {name: 'at command time', offset: 0},
+        {name: 'after deadline', offset: 20001},
+        {name: 'future', offset: 22001},
+        {name: 'stale', delay: 32000}
+    ];
+    for (const item of cases) await t.test(item.name, async () => {
+        const h = await delayedRampHarness();
+        h.setNow(h.issuedAt + (item.delay || 21000)); h.refresh();
+        h.put('feedback', item.value ?? 12,
+            {ts: h.issuedAt + (item.offset ?? 1001), ...item.extra});
+        if (item.missing) h.states.delete('feedback');
+        h.put('i1', 12); h.put('power', 2.76);
+        await h.output.tick();
+        assert.match(h.output.devices[0].fault, /Keine passende go-e-Rueckmeldung/);
+        assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'timeout');
+    });
+});
