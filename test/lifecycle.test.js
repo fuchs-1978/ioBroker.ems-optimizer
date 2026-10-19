@@ -973,3 +973,32 @@ test('untyped budget failures and invalid replacement values keep the failure pa
         assert.equal(writes.length,0);assert.ok(failure);
     }
 });
+
+test('unload performs independent stops before draining SQL and closes the journal only afterwards',async()=>{
+    const a=adapter(),order=[];let release;
+    a.engineContext={};a.runEngine=source=>order.push(source);
+    a.wallboxOutput.waitForIdle=async()=>{};a.wallboxOutput.stopAll=async()=>order.push('wallboxes');
+    a.getForeignObjectAsync=async()=>null;
+    a.decisionRecordDelivery={stop:()=>order.push('delivery-stop'),stopAndDrain:async ms=>{
+        assert.equal(ms,2000);order.push('sql-drain');await new Promise(r=>{release=r;});
+        order.push('sql-done');return{settled:true,fencePending:false};}};
+    a.decisionRecordJournal={close:async()=>order.push('journal-close')};
+    const unloading=a.prepareUnload({allowHandoff:false});
+    await new Promise(r=>setImmediate(r));
+    assert.ok(order.includes('sql-drain'));assert.ok(order.includes('wallboxes'));
+    assert.ok(order.findIndex(s=>s.includes('stopDhwOutput'))<order.indexOf('sql-drain'));
+    assert.equal(order.includes('journal-close'),false);
+    release();await unloading;
+    assert.ok(order.indexOf('sql-done')<order.indexOf('journal-close'));
+});
+
+for(const failed of [true,false])test('SQL shutdown drain failure or unknown completion cannot skip journal close: '+failed,async()=>{
+    const a=adapter(),warnings=[];let closed=false;
+    a.warnDebug=error=>warnings.push(error.message);
+    a.wallboxOutput.waitForIdle=async()=>{};a.wallboxOutput.stopAll=async()=>{};a.getForeignObjectAsync=async()=>null;
+    a.log.warn=message=>warnings.push(message);
+    a.decisionRecordDelivery={stop(){},async stopAndDrain(){if(failed)throw new Error('drain failure');return{settled:false,fencePending:true};}};
+    a.decisionRecordJournal={close:async()=>{closed=true;}};
+    await a.prepareUnload({allowHandoff:false});assert.equal(closed,true);
+    assert.ok(warnings.some(message=>/drain failure|verification fence retained/.test(message)));
+});

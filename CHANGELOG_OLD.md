@@ -4,6 +4,10 @@
 
 Diese Datei archiviert die bisherigen Versionshinweise und historischen Detailbeschreibungen unverändert. Sie beschreiben den jeweiligen damaligen Stand; für aktuelle Einstellungen und Betriebsgrenzen gilt die [README](README.md).
 
+### 0.17.0-alpha.108 (2026-10-19)
+
+Bestätigte Ladeleistung über den Übergang zwischen Zuteilung und elektrischer Fahrzeugbestätigung erhalten, wenn beide denselben Messwert zeitversetzt verarbeiten. Auch die noch nicht übernommene Bestätigung eines einzelnen Ampere-Schritts wird berücksichtigt. Der Halteschutz verlangt ausdrücklich die ältere ausstehende Antwort, frische Strombestätigung, volle Reservierung und ein gedecktes aktuelles Netzbudget; er erlaubt keine zusätzliche Erhöhung. [Releasehinweise](docs/release-0.17.0-alpha.108.md).
+
 ### 0.17.0-alpha.107 (2026-10-19)
 
 Kleine reale Netzdefizite auch zwischen Strom-ACK und erster nachfolgender Leistungsmessung relativ zurückregeln. Ein bereits bestätigter und reservierter Ein-Ampere-Befehl darf dabei passend reduziert werden, ohne auf eine zu niedrige nominelle Softgrenze durchzufallen. Keine zusätzliche Erhöhung, keine Aufweichung harter Grenzen, keine Änderung der Abschaltverzögerung. [Releasehinweise](docs/release-0.17.0-alpha.107.md).
