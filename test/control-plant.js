@@ -14,9 +14,11 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
     mii = false, adoptRunningMii = false, wallboxStopResponseDelayMs = 0,
     initialSurplusW = 6000, batteryPlanW = 0, lpcLimitW = null, phaseBiasW = [0, 0, 0],
     batteryDelayMs = 2000, heatingDelayMs = 4000, dhwDelayMs = 4000,
-    batteryDcFactor = 1, batteryDcPvW = 0, wb2InitialPhaseMode = null} = {}) {
-    let now = Date.UTC(2026, 8, 21, 12), surplusW = 6000, idleWallboxNoiseKW = 0;
+    batteryDcFactor = 1, batteryDcPvW = 0, wb2InitialPhaseMode = null,
+    initialTime = Date.UTC(2026, 8, 21, 12)} = {}) {
+    let now = initialTime, surplusW = 6000, idleWallboxNoiseKW = 0;
     let heaterW = 0, heaterCommandW = 0, physicalAllow = 0, physicalA = 6;
+    let wallboxWriteDelayMs = 0;
     let physicalPowerAllow = 0, miiAllow = 0, miiPowerAllow = 0, miiA = 6;
     const wallboxStopAck = [true, true, true];
     const wallboxCurrentQuality = [0, 0, 0];
@@ -229,7 +231,11 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
     const adapter = {namespace: 'ems.0', config, stateCache: states, readMapping: () => mapping,
         getCachedState: id => states.get(id), setCompatState: put,
         setStateAsync: async (id, val) => own(id, val),
-        setForeignStateAsync: async (id, val) => { writeForeign(id, val); },
+        setForeignStateAsync: async (id, val) => {
+            writeForeign(id, val);
+            if ([0, 1, 2].some(wb => id === config[`wb${wb}AmpereOutputId`]
+                || id === config[`wb${wb}AllowOutputId`])) now += wallboxWriteDelayMs;
+        },
         getForeignStateAsync: async id => states.get(id), subscribeForeignStatesAsync: async () => {},
         getForeignObjectAsync: async () => ({type: 'state', common: {write: true, type: 'number'}}),
         queueCompatState: async (id, val) => { if (!states.has(id)) put(id, val); },
@@ -238,7 +244,7 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
     const module = {exports: {}};
     vm.runInNewContext(`(function(require,module,exports){${fs.readFileSync(wallboxFile, 'utf8')}\n})`,
         {Date: Clock})(createRequire(wallboxFile), module, module.exports);
-    const output = new module.exports(adapter);
+    let output = new module.exports(adapter);
     adapter.wallboxOutput = output;
     adapter.engineContext = ctx;
     if (diagnostics !== undefined) {
@@ -331,9 +337,36 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
             batteryStatus: value('Devices.Battery.OutputStatus'), heatingStatus: value('Devices.MyPV_Heating.OutputStatus'),
             status: value('Devices.Wallbox2.OutputStatus'), heaterStatus: value('Devices.MyPV_DHW.OutputStatus')});
     };
-    return {states, writes, trace, put, own, value, output, diagnosticWrites, config,
+    return {states, writes, trace, put, own, value, get output() {return output;}, diagnosticWrites, config,
         now: () => now,
         run: code => vm.runInContext(code, ctx),
+        // A manual input frame uses the real allocator/output path while
+        // keeping source and ACK timestamps independent of the clock. It
+        // deliberately does not dispatch the plant's automatic responses:
+        // the caller supplies those observations in the recorded order.
+        replayAt: async (timestamp, samples = [], {allocate = true, output: runOutput = true} = {}) => {
+            assert.ok(Number.isFinite(timestamp) && timestamp >= now, 'replay time must be monotonic');
+            now = timestamp;
+            refresh();
+            for (const [id, val, extra = {}] of samples) put(id, val, extra);
+            if (allocate) {
+                vm.runInContext('updateVehicles();updateDhwSimulation()', ctx);
+                vm.runInContext('realtimeControl();updateBatteryProductionOutput()', ctx);
+            }
+            if (runOutput) {
+                await output.tick();
+                vm.runInContext('updateDhwProductionOutput();updateHeatingProductionOutput()', ctx);
+            }
+        },
+        restartOutput: async () => {
+            output = new module.exports(adapter);
+            adapter.wallboxOutput = output;
+            await output.initialize();
+        },
+        setWallboxWriteDelay: milliseconds => {
+            assert.ok(Number.isFinite(milliseconds) && milliseconds >= 0);
+            wallboxWriteDelayMs = milliseconds;
+        },
         setSurplus: watts => { surplusW = watts; },
         setBatteryResponse: value => { batteryResponds = value; },
         setBatteryHeartbeat: value => { batteryHeartbeat = value; },
