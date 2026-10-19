@@ -1287,3 +1287,132 @@ test('SMA/go-e skew holds 3P without releasing the outstanding phase reservation
     assert.equal(JSON.parse(h.states.get('ems.0.Devices.Wallbox0.IncreaseBudget_JSON').val).decision,
         'await-asynchronous-meter-response');
 });
+
+
+// Live alpha.97 session 1792400166497, records 11768/11802 and 11859/11910.
+// A fresh poll after ACK still describes the OLD electrical level; the old
+// +/-3 A uptake rule must not certify this as the new command's response.
+async function prematureElectricalReply({targetA = 13, phases = 1, initialA = null, initialW = null} = {}) {
+    const h = await unansweredParallelIncrease({phases});
+    h.put('ems.0.Control.TargetGridPower_W', 0);
+    h.config.wallboxPVImportToleranceW = 100;
+    const grant = h.grant;
+    h.grant = (...args) => {
+        grant(...args);
+        const allocation = JSON.parse(h.states.get('ems.0.Control.ParallelWallboxAllocation_JSON').val);
+        allocation.pvStepOwner = 0; allocation.pvStepToleranceW = 100;
+        h.put('ems.0.Control.ParallelWallboxAllocation_JSON', JSON.stringify(allocation));
+    };
+    // Begin at the independently established 12-A running state in the log.
+    const d = h.output.devices[0];
+    d.lastA = 12; d.lastAt = 0; d.pending = null; d.response = null;
+    h.ack('feedback', 12);
+    const beforeW = initialW ?? (targetA === 13 ? 2740 : 2940);
+    const beforeA = initialA ?? (targetA === 13 ? 11.7 : 12.6);
+    h.advance(1000); h.grant([targetA], {phases: [phases]});
+    h.measure(0, beforeA, phases); h.ack('feedback', 12); h.put('power', beforeW * phases / 1000);
+    h.put('export', targetA === 13 ? 462.9 * phases : 397.3 * phases);
+    h.writes.length = 0; await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'cmd', val: targetA}], JSON.stringify({status:h.states.get('ems.0.Devices.Wallbox0.OutputStatus'),diag:h.states.get('ems.0.Devices.Wallbox0.IncreaseBudget_JSON')}));
+    const at = h.output.devices[0].response.at;
+    h.advance(2000); h.grant([targetA + 1], {phases: [phases]});
+    h.put('feedback', targetA, {ts: at + 200});
+    h.put('power', (targetA === 13 ? 2710 : 2730) * phases / 1000, {ts: at + 400});
+    for (const id of ['i1', ...(phases === 3 ? ['i2', 'i3'] : [])])
+        h.put(id, targetA === 13 ? 11.6 : 11.7, {ts: at + 380});
+    h.put('import', targetA === 13 ? 0 : 63.7, {ts: at + 1700});
+    h.put('export', targetA === 13 ? 259.5 * phases : 0, {ts: at + 1702});
+    h.writes.length = 0;
+    return h;
+}
+
+test('live 12→13 and 12→14 A polls at the old current do not prematurely confirm uptake', async t => {
+    for (const targetA of [13, 14]) await t.test(`${targetA} A`, async () => {
+        const h = await prematureElectricalReply({targetA});
+        await h.output.tick();
+        assert.deepEqual(h.writes, []);
+        assert.equal(h.output.devices[0].lastA, targetA);
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'vehicle_response');
+        const response = h.output.devices[0].response;
+        assert.ok(response);
+        const deadline = response.ackAt + h.output.responseSettleTimeoutMs();
+        assert.equal(JSON.parse(h.states.get('ems.0.Devices.Wallbox0.IncreaseBudget_JSON').val).decision,
+            'await-asynchronous-meter-response');
+        h.advance(1000); h.grant([targetA]); h.measure(0, targetA); h.put('export', 0); h.put('import', 0);
+        await h.output.tick();
+        assert.deepEqual(h.writes, []);
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'confirmed');
+        assert.ok(h.output.now() < deadline);
+    });
+});
+
+
+test('3P increase needs power and every used phase to show progress; partial polls cannot unlock another step', async t => {
+    for (const partial of ['unchanged', 'power-only', 'current-only', 'one-phase']) await t.test(partial, async () => {
+        const h = await prematureElectricalReply({targetA: 14, phases: 3});
+        if (partial === 'power-only') h.put('power', 14 * 690 / 1000);
+        if (partial === 'current-only') for (const id of ['i1', 'i2', 'i3']) h.put(id, 14);
+        if (partial === 'one-phase') { h.put('power', 14 * 690 / 1000); h.put('i1', 14); }
+        await h.output.tick();
+        assert.deepEqual(h.writes, []);
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'vehicle_response');
+        const deadline = h.output.devices[0].response.ackAt + h.output.responseSettleTimeoutMs();
+        h.advance(6000); h.grant([14], {phases: [3]}); h.measure(0, 14, 3); h.put('import', 0); h.put('export', 0);
+        await h.output.tick();
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'confirmed');
+        assert.deepEqual(h.writes, []);
+        assert.ok(h.output.now() < deadline);
+    });
+});
+
+test('old-level response wait does not hide deficits, hard caps, expiry or another increase', async t => {
+    for (const fault of ['deficit', 'hard cap', 'expiry', 'more surplus']) await t.test(fault, async () => {
+        const h = await prematureElectricalReply();
+        await h.output.tick(); assert.deepEqual(h.writes, []);
+        const response = h.output.devices[0].response;
+        const deadline = response.ackAt + h.output.responseSettleTimeoutMs();
+        const oldPower = {...h.states.get('power')}, oldCurrent = {...h.states.get('i1')};
+        h.advance(fault === 'expiry' ? 46000 : 6000);
+        h.grant([fault === 'hard cap' ? 12 : 16], {hardBudgetW: fault === 'hard cap' ? 2760 : null});
+        if (fault === 'deficit') { h.put('import', 500); h.put('export', 0); }
+        if (fault === 'more surplus') h.put('export', 3000);
+        if (fault !== 'expiry') { h.states.set('power', oldPower); h.states.set('i1', oldCurrent); }
+        else { h.put('power', 2.71); h.put('i1', 11.6); h.put('export', 3000); }
+        await h.output.tick();
+        assert.ok(!h.writes.some(w => w.id === 'cmd' && w.val > 13));
+        if (fault === 'more surplus') {
+            assert.deepEqual(h.writes, []);
+            assert.equal(h.output.devices[0].response.ackAt + h.output.responseSettleTimeoutMs(), deadline);
+        } else if (fault === 'expiry') {
+            assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'limited');
+            assert.ok(h.output.now() > deadline);
+            h.advance(6000); h.grant([16]); h.measure(0, 13); h.put('export', 3000);
+            h.writes.length = 0; await h.output.tick();
+            assert.ok(h.writes.some(w => w.id === 'cmd' && w.val > 13),
+                'genuine later uptake must unlock ordinary increases without restart');
+        } else assert.ok(h.writes.some(w => w.id === 'cmd' && w.val < 13));
+    });
+});
+
+
+test('a fresh measured commanded level may confirm without requiring an impossible extra half ampere', async () => {
+    const h = await prematureElectricalReply({initialA: 12.6, initialW: 2940});
+    h.put('power', 2.94); h.put('i1', 12.6); h.put('import', 0); h.put('export', 0);
+    h.grant([13]); await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'confirmed');
+    assert.deepEqual(h.writes, []);
+});
+
+
+test('confirmed pending-current retention still yields to deficit, hard cap and withdrawn soft grant', async t => {
+    for (const limit of ['deficit', 'hard cap', 'withdrawn grant']) await t.test(limit, async () => {
+        const h = await prematureElectricalReply({initialA: 12.6, initialW: 2940});
+        h.put('power', 2.94); h.put('i1', 12.6); h.put('export', 0); h.put('import', 0);
+        if (limit === 'deficit') h.put('import', 400);
+        if (limit === 'hard cap') h.grant([12], {hardBudgetW: 2760});
+        if (limit === 'withdrawn grant') h.grant([12]);
+        await h.output.tick();
+        assert.ok(h.writes.some(w => w.id === 'cmd' && w.val < 13));
+        assert.ok(!h.writes.some(w => w.id === 'cmd' && w.val > 13));
+    });
+});
