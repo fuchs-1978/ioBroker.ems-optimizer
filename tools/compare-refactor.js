@@ -31,7 +31,9 @@ async function worker(tree) {
     // Pin only the published version metadata before recorder compression.
     // Normalizing hashes afterwards cannot compare compressed JSON/byte counts.
     // Admin-config and packed-artifact tests check the real release version.
-    const adapterVersion = require(path.join(tree, 'package.json')).version;
+    const packageMetadata = require(path.join(tree, 'package.json'));
+    const adapterVersion = packageMetadata.version;
+    packageMetadata.version = '0.17.0-alpha.96';
     const readSource = fs.readFileSync.bind(fs);
     const versionSources = new Set(['core.js', 'bootstrap.js'].map(name => path.join(tree, 'lib/engine', name)));
     fs.readFileSync = (filename, options) => {

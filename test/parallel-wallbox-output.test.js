@@ -1241,7 +1241,7 @@ test('asynchronous meter hold yields to real deficits, hard caps and new peer re
             if (fault === 'stale') h.put('power', 1.35, {ts: 1});
             if (fault === 'peer') h.put('power1', 2.07);
             if (fault === 'heater') h.put('ems.0.Devices.MyPV_DHW.OutputReservedPower_W', 1000);
-            if (fault === 'no admission') h.output.devices[0].response.meterReservation = null;
+            if (fault === 'no admission') h.output.meterReservations.delete(h.output.devices[0].response);
             if (fault === 'no ACK') h.put('feedback', 6);
             if (fault === 'old grid') {
                 const at = h.output.devices[0].response.at;
