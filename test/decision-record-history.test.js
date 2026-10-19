@@ -299,15 +299,30 @@ test('slow completed pages shrink following windows without re-querying the alre
     assert.ok(result.report.windowAdjustments.some(change => change.reason === 'slow_completed_response'));
 });
 
-test('run budget preserves a cursor and remaining windows after the outstanding request has returned', async () => {
+test('run budget preserves a cursor and remaining windows after the outstanding request has returned', async t => {
+    let elapsed = 0;
+    t.mock.method(performance, 'now', () => elapsed);
     let calls = 0;
     const result = await collect([], {start: 0, end: 40, windowMs: 10, maxRunMs: 10,
-        readHistory: async () => {calls++; await new Promise(resolve => setTimeout(resolve, 25)); return [];}});
+        readHistory: async () => {calls++; elapsed += 25; return [];}});
     assert.equal(calls, 1);
     assert.equal(result.report.queryCoverageComplete, false);
     assert.ok(result.report.failedWindows.some(window => window.end === 40));
     assert.equal(result.report.resumeCursor.nextStart, 10);
     assert.equal(result.report.resumeCursor.blockedByUnknownBackend, false);
+});
+
+test('run budget exhausted before transport retains the whole unissued window', async t => {
+    let elapsed = 0;
+    t.mock.method(performance, 'now', () => elapsed);
+    const result = await collect([], {start: 0, end: 40, windowMs: 10, maxRunMs: 10,
+        onQueryStart: async () => {elapsed = 11;},
+        readHistory: async () => assert.fail('an exhausted run must not issue a query')});
+    assert.equal(result.report.issuedQueries, 0);
+    assert.equal(result.report.queryCoverageComplete, false);
+    assert.equal(result.report.resumeCursor.nextStart, 0);
+    assert.equal(result.report.resumeCursor.blockedByUnknownBackend, false);
+    assert.ok(result.queries.some(query => query.outcome === 'not-issued'));
 });
 
 test('a query-start journal is persisted before transport issuance and requests are paced sequentially', async () => {

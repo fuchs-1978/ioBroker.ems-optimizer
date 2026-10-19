@@ -17,10 +17,19 @@ Node 22; die vollständige Suite wurde anschließend ohne konkurrierenden zweite
 Suiten-/Replaylauf erneut geprüft.
 
 Dies belegt keinen durch das Refactoring verursachten Regelungs- oder SQL-Fehler.
-Möglicher separater Auftrag: diese Unit-Prüfung mit kontrollierter monotoner
-Zeit absichern, einschließlich des bereits vor der ersten Abfrage erschöpften
-Budgets. In diesem PR werden weder Assertions noch Zeitlimits noch die
-Produktivimplementierung geändert.
+In der ausdrücklich beauftragten Nachprüfung vor dem Merge wurde dieser
+Test mit kontrollierter monotoner Zeit abgesichert. Alle bestehenden Assertions
+und das 10-ms-Budget bleiben erhalten; ein zusätzlicher Test sichert die
+Nichtausgabe einer Abfrage nach Budgetverbrauch vor Transportbeginn ab.
+Die produktive Readerimplementierung wird nicht geändert.
+
+Im Push-CI-Lauf 39209612828 des Zwischencommits ac22f3f scheiterte Node 22 bei
+`npm test`, während der PR-Lauf desselben Commits auf beiden Node-Versionen und
+Push-Node-24 erfolgreich waren. Die CI meldete nur den Prozessfehler; der
+Detail-Logdownload war aus dieser Umgebung durch die Netzwerkregel blockiert.
+Dieser konkrete CI-Fehler wird deshalb nicht rückwirkend eindeutig diesem
+Historientest zugeschrieben. Der endgültige Commit wird auf beiden Laufzeiten
+vollständig erneut geprüft, bevor er gemergt wird.
 
 ## Bereits bekannte fachliche Restarbeiten
 

@@ -147,7 +147,10 @@ zusätzlich ausgeführt; es wird keine reale Veröffentlichung ausgelöst.
 Auch der manuelle Releaseworkflow führt jetzt den gepinnten Verhaltensvergleich
 auf Node 22 und 24 mit verfügbarer Git-Historie aus. Der Artefakttest vergleicht
 zusätzlich die tatsächlich installierten Paket-/io-package-Versionen mit dem Tarball.
-Die zweite vollständige Prüfung umfasst 2.062 Tests je Node-Version sowie die
+Die bekannte 10-ms-Historienprüfung nutzt nun kontrollierte monotone Zeit; alle
+bisherigen Assertions bleiben erhalten. Eine zusätzliche Regression sichert den
+bereits vor Transportbeginn erschöpften Zeitrahmen ab. Der produktive Reader bleibt
+unverändert. Die zweite vollständige Prüfung umfasst 2.063 Tests je Node-Version sowie die
 unveränderten 17 Vergleichsszenarien und echte Paketinstallationen. Adapter-
 Laufzeitcode, Zustandsautomaten, Zeitgrenzen und Datenverträge erhalten in dieser
 Nachprüfung keine weitere Änderung. Ein unabhängiger wörtlicher Vergleich der
