@@ -28,10 +28,25 @@ async function worker(tree) {
     let uuid = 0, monotonic = 0;
     require('node:crypto').randomUUID = () => `00000000-0000-4000-8000-${String(++uuid).padStart(12, '0')}`;
     Object.defineProperty(performance, 'now', {configurable: true, value: () => ++monotonic});
+    // Pin only the published version metadata before recorder compression.
+    // Normalizing hashes afterwards cannot compare compressed JSON/byte counts.
+    // Admin-config and packed-artifact tests check the real release version.
+    const packageMetadata = require(path.join(tree, 'package.json'));
+    const adapterVersion = packageMetadata.version;
+    packageMetadata.version = '0.17.0-alpha.96';
+    const readSource = fs.readFileSync.bind(fs);
+    const versionSources = new Set(['core.js', 'bootstrap.js'].map(name => path.join(tree, 'lib/engine', name)));
+    fs.readFileSync = (filename, options) => {
+        const data = readSource(filename, options);
+        if (!versionSources.has(String(filename))) return data;
+        const pinned = String(data).replaceAll(adapterVersion, '0.17.0-alpha.96');
+        return typeof data === 'string' ? pinned : Buffer.from(pinned);
+    };
     let hash, eventCount, scenario;
     const results = [];
     // Preserve values JSON would otherwise collapse (e.g. NaN/null, -0/0,
-    // absent/explicit undefined). Strings, including published JSON, stay byte exact.
+    // absent/explicit undefined). Apart from pinned version metadata above,
+    // strings, including published JSON and transport bytes, stay exact.
     const record = value => {
         const serialized = JSON.stringify(value, (_key, item) => {
             if (item === undefined) return {$auditType: 'undefined'};
