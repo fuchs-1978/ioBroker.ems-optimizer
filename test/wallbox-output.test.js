@@ -2380,6 +2380,156 @@ test('current reductions retain the outstanding electrical phase proof across co
     assert.ok(!h.writes.some(w=>w.id==='cmd'&&w.val>6));
 });
 
+async function confirmedPhaseChange({from = 3, to = 1, mode = 'script', proposal = to, config = {}} = {}) {
+    let now = 1000000000000;
+    const h = setup({now: () => now});
+    Object.assign(h.config, {wb0PhaseSwitchEnabled: true, wb0PhaseModeId: 'phaseMode',
+        wb0PhaseControlMode: mode, wb0MaxCurrent3pA: 16, wb0MaxPowerW: 11040}, config);
+    const advance = milliseconds => { now += milliseconds; h.refresh(); };
+    const electrical = (phases, amps = 6, extra = {}) => {
+        h.put('i1', amps, extra); h.put('i2', phases === 3 ? amps : 0, extra);
+        h.put('i3', phases === 3 ? amps : 0, extra); h.put('power', phases * 230 * amps / 1000, extra);
+    };
+    h.put('phaseMode', from === 3 ? 2 : 1);
+    h.put('ems.0.Control.Targets.Wallbox0_Phases', from);
+    await h.start();
+    advance(1000); electrical(from); await h.output.tick();
+    assert.equal(h.output.devices[0].response, null, 'initial electrical response must be complete');
+    const sessionSince = h.output.devices[0].activeSince;
+    advance(6000);
+    h.put('ems.0.Control.Targets.Wallbox0_Phases', proposal);
+    h.put('phaseMode', to === 3 ? 2 : 1);
+    const modeAt = h.states.get('phaseMode').ts;
+    h.writes.length = 0;
+    await h.output.tick();
+    return {h, d: h.output.devices[0], advance, electrical, modeAt, sessionSince};
+}
+
+test('script 3P-to-1P mode ACK retains the old electrical reserve and cannot increase current', async () => {
+    const {h, d, advance, electrical, sessionSince} = await confirmedPhaseChange();
+    assert.deepEqual(h.writes, [], 'a mode ACK cannot authorize another current increase');
+    assert.equal(d.response.phaseChange, true);
+    assert.equal(d.response.phases, 1);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputPhases').val, 3);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val, 4140);
+    advance(1000); electrical(3); await h.output.tick();
+    advance(6000); await h.output.tick();
+    assert.deepEqual(h.writes, []);
+    assert.equal(d.lastA, 6);
+    assert.equal(d.activeSince, sessionSince);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val, 4140);
+});
+
+for (const proposal of [3, null, 99]) {
+    test(`script phase proof ignores unrelated EMS proposal ${proposal} and releases only after real 1P response`, async () => {
+        const {h, d, advance, electrical, sessionSince} = await confirmedPhaseChange({proposal});
+        assert.deepEqual(h.writes, []);
+        assert.equal(d.response.phaseChange, true);
+        h.put('ems.0.Control.Targets.Wallbox0_W', 4140);
+        advance(1000); electrical(1); await h.output.tick();
+        assert.equal(d.response, null);
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'confirmed');
+        // The proving tick used the conservative limits calculated before the
+        // response; the following tick may release the old topology.
+        h.put('ems.0.Control.Targets.Wallbox0_W', 1380);
+        await h.output.tick();
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputPhases').val, 1);
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val, 1380);
+        assert.equal(d.activeSince, sessionSince);
+        assert.equal(d.fault, '');
+        assert.ok(!h.writes.some(write => write.id === 'allow'));
+    });
+}
+
+for (const [mode, from, to, maximum1p, maximum3p] of [
+    ['script', 3, 1, 32, 8], ['script', 1, 3, 8, 16], ['ems', 3, 1, 32, 8], ['ems', 1, 3, 8, 16]
+]) {
+    test(`${mode} ${from}P-to-${to}P transition retains the stricter old/new amp limit during a hard reduction`, async () => {
+        // The initial session starts at 6 A. Place a physically confirmed
+        // 14 A session under the old topology before the next mode ACK.
+        const {h, d, advance, electrical} = await confirmedPhaseChange({from, to, mode,
+            config: {wb0MaxCurrent1pA: maximum1p, wb0MaxCurrent3pA: maximum3p}});
+        d.lastA = 14; d.pending = null; d.lastAt -= 10000;
+        d.response.amps = 14;
+        h.ack('feedback', 14); electrical(from, 14);
+        advance(1000);
+        await h.output.tick();
+        assert.ok(h.writes.some(write => write.id === 'cmd' && write.val === 8));
+        assert.ok(!h.writes.some(write => write.id === 'cmd' && write.val > 8));
+        assert.equal(d.response.phaseChange, true, 'hard reductions must preserve the pending phase proof');
+        assert.equal(d.response.phases, to);
+        assert.ok(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val >= 14 * 690);
+        assert.ok(!h.writes.some(write => write.id === 'allow'));
+        advance(1000); h.ack('feedback', 8); electrical(to, 8); await h.output.tick();
+        assert.equal(d.response, null);
+        h.writes.length = 0;
+        advance(6000); await h.output.tick();
+        assert.ok(h.writes.some(write => write.id === 'cmd' && write.val > 8
+            && write.val <= (to === 1 ? maximum1p : maximum3p)),
+        'the old amp cap may release after electrical confirmation');
+    });
+}
+
+test('script phase completion requires current ACK and every electrical sample after the mode ACK', async () => {
+    const {h, d, advance, electrical, modeAt} = await confirmedPhaseChange();
+    assert.equal(d.response.phaseChange, true);
+    advance(1000); electrical(1);
+    h.put('feedback', 6, {ts: modeAt - 1});
+    await h.output.tick();
+    assert.equal(d.response.ackAt, 0);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'command_ack');
+    h.ack('feedback', 6); electrical(1, 6, {ts: modeAt - 1});
+    await h.output.tick();
+    assert.equal(d.response.phaseChange, true);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'vehicle_response');
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val, 4140);
+    h.put('ems.0.Control.Targets.Wallbox0_W', 4140);
+    electrical(1); await h.output.tick();
+    assert.equal(d.response, null);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'confirmed');
+});
+
+for (const [from, to] of [[3, 1], [1, 3]]) {
+    test(`script ${from}P-to-${to}P contradictory fresh topology stays conservative past the response timeout`, async () => {
+        const {h, d, advance, electrical, sessionSince} = await confirmedPhaseChange({from, to});
+        assert.equal(d.response.phaseChange, true);
+        advance(1000); electrical(from); await h.output.tick();
+        const acknowledgedAt = d.response.ackAt;
+        advance(46000); electrical(from); await h.output.tick();
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'limited');
+        assert.equal(d.response.phaseChange, true);
+        assert.equal(d.response.ackAt, acknowledgedAt, 'mode/current polls cannot renew the response deadline');
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val, 4140);
+        assert.deepEqual(h.writes, []);
+        h.put('ems.0.Control.Targets.Wallbox0_W', 4140);
+        electrical(to); await h.output.tick();
+        assert.equal(d.response, null);
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'confirmed');
+        assert.equal(d.activeSince, sessionSince);
+    });
+}
+
+test('script phase proof cannot release the old topology with stale electrical sources', async () => {
+    const {h, d, advance, electrical} = await confirmedPhaseChange();
+    assert.equal(d.response.phaseChange, true);
+    advance(1000); electrical(1, 6, {ts: 1000000000000 - 30001});
+    await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val, /veraltet/);
+    assert.notEqual(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'confirmed');
+});
+
+test('script phase observation keeps its deadline and stops if all electrical samples predate the mode ACK', async () => {
+    const {h, d, advance, electrical, modeAt} = await confirmedPhaseChange({config: {wallboxMeasurementMaxAgeS: 120}});
+    assert.equal(d.response.phaseChange, true);
+    advance(1000); electrical(1, 6, {ts: modeAt - 1}); await h.output.tick();
+    const acknowledgedAt = d.response.ackAt;
+    advance(46000); electrical(1, 6, {ts: modeAt - 1}); await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+    assert.match(d.fault, /Neue elektrische Fahrzeugmessung.*Antwortzeit abgelaufen/);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseAcknowledgedAt').val, acknowledgedAt);
+});
+
 async function measuredRunningMii() {
     let now = 1000000;
     const h = setup({now: () => now});
