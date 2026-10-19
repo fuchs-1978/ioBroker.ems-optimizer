@@ -20,7 +20,7 @@ function engine({count = 2, mode = 'sunenergy-heads', capacitySource = 'sunenerg
         batteryHead2MaxDischargeW: 800};
     const put = (id, val, extra = {}) => states.set(id, {val, ts: now, ack: true, q: 0, ...extra});
     const own = (suffix, val, extra) => put(`ems.0.${suffix}`, val, extra);
-    const ctx = vm.createContext({Date: Clock, nativeConfig, sunEnergyHeads,
+    const ctx = vm.createContext({wallboxAllocationPolicy: require('../lib/wallbox-allocation'), Date: Clock, nativeConfig, sunEnergyHeads,
         batteryTemperatureReserve: require('../lib/battery-temperature-reserve'),
         SMA_GRID_MAX_AGE_MS: 30000,
         getState: id => states.get(id), existsState: id => states.has(id),

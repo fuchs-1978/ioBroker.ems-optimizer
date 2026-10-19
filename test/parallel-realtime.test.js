@@ -28,7 +28,7 @@ function engine({production = false, clock = Date, ...config} = {}) {
     }
     const states = new Map();
     const put = (id, val, overrides = {}) => states.set(id, {val, ts: clock.now(), ack: true, q: 0, ...overrides});
-    const ctx = vm.createContext({nativeConfig, SMA_GRID_MAX_AGE_MS, Date: clock, console,
+    const ctx = vm.createContext({wallboxAllocationPolicy: require('../lib/wallbox-allocation'), nativeConfig, SMA_GRID_MAX_AGE_MS, Date: clock, console,
         gridConstraints: require('../lib/grid-constraints'),
         normalizeWallboxPowerKW: require('../lib/wallbox-measurement').normalizeWallboxPowerKW,
         getState: id => states.get(id), existsState: id => states.has(id),
