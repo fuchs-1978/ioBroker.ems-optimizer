@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.101**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.102**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -849,9 +849,9 @@ Ab alpha.67 akzeptiert die zentrale Wallbox-Phasenbudgetprüfung dieselbe besteh
 
 ## Changelog und historische Detaildokumentation
 
-### 0.17.0-alpha.101 (2026-10-19)
+### 0.17.0-alpha.102 (2026-10-19)
 
-Ein bereits reservierter und elektrisch bestätigter Ladestrom wird nicht wegen einer Zuteilung reduziert, deren Wallboxmessung noch vor der neuesten Fahrzeugantwort liegt. Halten ist nur bei aktuellem Leistungsnachweis, weiterhin gedecktem Strom und ohne neue Fremdlastzusagen möglich. Die aktualisierte Zuteilung, echte Defizite, entfallene Freigaben und Schutzgrenzen bleiben maßgeblich. Keine Änderung der Geräte-Abfrageintervalle. [Releasehinweise](docs/release-0.17.0-alpha.101.md).
+Der SQL-Historienaufbau zeigt im Info-Log Start, Quelle X/N mit Datenpunkt-ID und verstrichener Zeit sowie den Abschluss mit Dauer und Ergebnis. Unvollständige Historie und Abbruch bleiben Warnungen; automatische Start-Wiederholungen werden ausdrücklich genannt. Abfrageintervalle, SQL-Parallelität und Regelung bleiben unverändert. [Releasehinweise](docs/release-0.17.0-alpha.102.md).
 
 [Alle älteren Änderungen und historischen Detailbeschreibungen](CHANGELOG_OLD.md).
 
