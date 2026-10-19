@@ -856,3 +856,23 @@ test('no batch original becomes visible before the final durability barrier', as
     assert.equal(journal.health().sqlConfirmedRecords, 0);
     await journal.close();
 });
+
+test('completed shutdown never restarts filesystem writes for rejected appends or late loss reports', async t => {
+    const dir = await directory(t);
+    let opens = 0;
+    const fileSystem = {...fs, open: async (...args) => { opens++; return fs.open(...args); }};
+    const journal = new DecisionRecordJournal({directory: dir, fileSystem});
+    await journal.initialize();
+    await journal.append(payload(1));
+    await journal.close();
+    const writesAtClose = opens, tailAtClose = journal.tail;
+    await fs.rm(dir, {recursive: true, force: true});
+    await assert.rejects(journal.append(payload(2)), /closed/i);
+    await assert.rejects(journal.appendBatch([payload(3)]), /closed/i);
+    journal.reportLoss('late producer after shutdown');
+    await journal.tail;
+    assert.equal(journal.tail, tailAtClose, 'no new filesystem work is queued');
+    assert.equal(opens, writesAtClose, 'close remains the final filesystem barrier');
+    assert.equal(journal.health().rejectedRecords, 3, 'late losses remain visible in memory');
+    await assert.rejects(fs.stat(dir), {code: 'ENOENT'});
+});
