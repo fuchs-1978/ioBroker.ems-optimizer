@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.107**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.108**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -849,9 +849,9 @@ Ab alpha.67 akzeptiert die zentrale Wallbox-Phasenbudgetprüfung dieselbe besteh
 
 ## Changelog und historische Detaildokumentation
 
-### 0.17.0-alpha.107 (2026-10-19)
+### 0.17.0-alpha.108 (2026-10-19)
 
-Kleine reale Netzdefizite auch zwischen Strom-ACK und erster nachfolgender Leistungsmessung relativ zurückregeln. Ein bereits bestätigter und reservierter Ein-Ampere-Befehl darf dabei passend reduziert werden, ohne auf eine zu niedrige nominelle Softgrenze durchzufallen. Keine zusätzliche Erhöhung, keine Aufweichung harter Grenzen, keine Änderung der Abschaltverzögerung. [Releasehinweise](docs/release-0.17.0-alpha.107.md).
+Bestätigte Ladeleistung über den Übergang zwischen Zuteilung und elektrischer Fahrzeugbestätigung erhalten, wenn beide denselben Messwert zeitversetzt verarbeiten. Auch die noch nicht übernommene Bestätigung eines einzelnen Ampere-Schritts wird berücksichtigt. Der Halteschutz verlangt ausdrücklich die ältere ausstehende Antwort, frische Strombestätigung, volle Reservierung und ein gedecktes aktuelles Netzbudget; er erlaubt keine zusätzliche Erhöhung. [Releasehinweise](docs/release-0.17.0-alpha.108.md).
 
 [Alle älteren Änderungen und historischen Detailbeschreibungen](CHANGELOG_OLD.md).
 

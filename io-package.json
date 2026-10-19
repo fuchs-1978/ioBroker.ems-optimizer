@@ -1,8 +1,9 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.107",
+    "version": "0.17.0-alpha.108",
     "news": {
+      "0.17.0-alpha.108": {"en":"Bridge confirmed charging across an older allocation using the same electrical sample only when explicit pending-to-confirmed timing proves the edge; preserve reservations and admit no extra current.","de":"Bestaetigte Ladung bei aelterer Zuteilung mit identischem Messwert nur bei nachgewiesenem Uebergang von ausstehender zu bestaetigter Antwort halten; Reserven erhalten und keinen Zusatzstrom zulassen."},
       "0.17.0-alpha.107": {"en":"Permit bounded relative reductions of an acknowledged reserved one-amp command before the first post-ACK power poll; preserve nominal hard limits and never authorize an extra increase from this evidence.","de":"Bestaetigten reservierten Ein-Ampere-Befehl vor erster Leistungsmessung nach ACK begrenzt relativ zuruecknehmen; nominale Schutzgrenzen erhalten und daraus keine weitere Erhoehung ableiten."},
       "0.17.0-alpha.106": {"en":"Retain an admitted measured one-amp PV step within its original acknowledged response deadline while net import remains within tolerance; preserve its proof, reservations and all safety limits without admitting another step.","de":"Bereits zugelassenen gemessenen 1-A-PV-Schritt innerhalb seiner urspruenglichen bestaetigten Antwortfrist bei eingehaltenem Netzbudget halten; Nachweis, Reserven und Schutzgrenzen erhalten, keinen weiteren Schritt zulassen."},
       "0.17.0-alpha.105": {"en":"Retain confirmed measured charging across stale soft allocations without assuming nominal voltage uptake; match small measured deficits with relative current reductions while preserving nominal hard reservations.","de":"Bestaetigte reale Ladeleistung gegenueber aelteren Softzuteilungen ohne pauschale Nennspannungsannahme halten; kleine gemessene Defizite durch relative Stromruecknahme ausgleichen und nominale Schutzreserven erhalten."},

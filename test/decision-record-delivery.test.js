@@ -532,7 +532,7 @@ test('same-process SQL recovery republishes the retained original snapshot and e
     } finally {await journal.close(); await fs.rm(directory, {recursive: true, force: true});}
 });
 
-test('an unresolved SQL request remains fenced across journal and delivery restart', async () => {
+test('an unresolved SQL request remains fenced across journal and delivery restart', {timeout: 10000}, async t => {
     const fs = require('node:fs/promises');
     const path = require('node:path');
     const os = require('node:os');
@@ -541,10 +541,20 @@ test('an unresolved SQL request remains fenced across journal and delivery resta
     let journal = new DecisionRecordJournal({directory}), calls = 0;
     try {
         await journal.initialize(); await journal.append(fixture().entries[0].payload);
+        let started;
+        const issued = new Promise(resolve => {started = resolve;});
+        // This case requires an issued backend request. Do not race the
+        // durable filesystem write against an arbitrary 50-ms CI deadline;
+        // expiry before issuance is covered independently below.
+        t.mock.timers.enable({apis: ['setTimeout']});
         const first = new DecisionRecordDelivery({journal, now: () => 100000, queryTimeoutMs: 50,
             publish: async () => ({publishedAt: 100000}),
-            readHistory: async () => {calls++; return new Promise(() => {});}});
-        await first.tick({force: true}); first.stop();
+            readHistory: async () => {calls++; started(); return new Promise(() => {});}});
+        const running = first.tick({force: true});
+        await issued;
+        t.mock.timers.tick(51);
+        await running; first.stop();
+        t.mock.timers.reset();
         assert.equal(calls, 1);
         await journal.close();
         journal = new DecisionRecordJournal({directory}); await journal.initialize();
@@ -555,7 +565,7 @@ test('an unresolved SQL request remains fenced across journal and delivery resta
         assert.equal(calls, 1, 'restart is not proof that the original backend SQL finished');
         assert.equal(second.health().backendBlocked, true);
         assert.equal(journal.health().sqlVerificationPending, true);
-    } finally {await journal.close(); await fs.rm(directory, {recursive: true, force: true});}
+    } finally {t.mock.timers.reset(); await journal.close(); await fs.rm(directory, {recursive: true, force: true});}
 });
 
 test('durable SQL issuance is recorded before transport and only observed completion clears its exact fence', async () => {

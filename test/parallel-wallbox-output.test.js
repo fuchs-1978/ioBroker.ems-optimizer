@@ -1675,3 +1675,68 @@ for(const [name,change] of [
     const h=await preAckDeficit();change(h);await h.output.tick();
     assert.ok(!h.writes.some(w=>w.id==='cmd'&&w.val>=8));
 });
+
+async function sameSampleConfirmation(consumed=true,count=1){
+    const h=await freshResponseWithOldAllocation(count);
+    const d=h.output.devices[0];d.lastA=consumed?11:10;d.lastAt=1000000;
+    d.pending=consumed?null:{stage:'current',amps:11,at:1005000,start:false};
+    d.electricalCommandAt=1005000;d.response=null;
+    h.grant([10,...Array(count-1).fill(6)]);
+    const key='ems.0.Control.ParallelWallboxAllocation_JSON',a=JSON.parse(h.states.get(key).val);
+    a.allocations[0].reservedW=2530;a.heaterTargetW=0;a.pvStepOwner=0;a.pvStepToleranceW=100;
+    h.put(key,JSON.stringify(a));h.config.wallboxPVImportToleranceW=100;
+    h.put('ems.0.Control.TargetGridPower_W',0);
+    h.put('power',2.43,{ts:1009000});h.put('i1',10.8,{ts:1009000});h.put('feedback',11,{ts:1008000});
+    h.put('export',97);h.put('import',0);
+    h.put('ems.0.Devices.Wallbox0.ResponseState','confirmed');
+    h.put('ems.0.Devices.Wallbox0.ResponseCommand_A',11);
+    h.put('ems.0.Devices.Wallbox0.ResponseConfirmedAt',1009999);
+    a.timestamp=1009990;
+    h.put(key,JSON.stringify(a));
+    h.put('ems.0.Control.Wallbox0.AllocationDiagnostics_JSON',JSON.stringify({valid:true,timestamp:a.timestamp,measuredPowerAt:1009000,responseState:'vehicle_response',previousA:d.lastA}));
+    h.writes.length=0;return h;
+}
+for(const consumed of [true,false])test('same 2430 W poll confirms 11 A after allocation saw pending response; ACK consumed='+consumed,async()=>{
+    const h=await sameSampleConfirmation(consumed);await h.output.tick();
+    assert.deepEqual(h.writes,[],'97 W export must not cause a 11→10 A reversal at confirmation boundary');
+    assert.equal(h.output.devices[0].lastA,11);
+    assert.ok(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val>=2530);
+    assert.equal(JSON.parse(h.states.get('ems.0.Devices.Wallbox0.IncreaseBudget_JSON').val).basis,'fresh-response-allocation-hold');
+    h.advance(6000);h.grant([11]);h.put('power',2.43);h.put('i1',10.8);h.ack('feedback',11);h.put('export',97);
+    await h.output.tick();assert.deepEqual(h.writes,[],'next normal allocation retains the confirmed current');
+});
+
+for(const consumed of [true,false])test('real electrical confirmation and older allocation sharing one sample cannot reverse 10→11 A, ACK consumed='+consumed,async()=>{
+    const h=await measuredHoldOutput(),d=h.output.devices[0];
+    d.lastA=10;h.ack('feedback',10);h.put('power',2.17,{ts:1010002});h.put('i1',9.7,{ts:1010002});
+    h.put('ems.0.Control.TargetGridPower_W',0);h.put('export',400);h.grant([11]);
+    h.writes.length=0;await h.output.tick();assert.deepEqual(h.writes,[{id:'cmd',val:11}]);
+    const at=d.response.at;
+    if(consumed){d.lastA=11;d.pending=null;}
+    h.advance(2000);h.grant([10]);
+    const key='ems.0.Control.ParallelWallboxAllocation_JSON',a=JSON.parse(h.states.get(key).val);
+    a.timestamp=at+1800;a.allocations[0].reservedW=2530;a.heaterTargetW=0;
+    h.put(key,JSON.stringify(a));
+    h.put('ems.0.Control.Wallbox0.AllocationDiagnostics_JSON',JSON.stringify({valid:true,timestamp:a.timestamp,measuredPowerAt:at+1000,responseState:'vehicle_response'}));
+    h.put('feedback',11,{ts:at+200});h.put('power',2.43,{ts:at+1000});h.put('i1',10.8,{ts:at+1000});
+    h.put('import',0,{ts:at+1500});h.put('export',97,{ts:at+1502});h.writes.length=0;
+    await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val,'confirmed');
+    assert.equal(d.response,null);assert.equal(d.pending,null);assert.equal(d.lastA,11);
+    assert.deepEqual(h.writes,[]);
+});
+
+for(const consumed of [true,false])for(const [name,change] of [
+    ['allocator already knew confirmation',h=>{const id='ems.0.Control.Wallbox0.AllocationDiagnostics_JSON',a=JSON.parse(h.states.get(id).val);a.responseState='confirmed';h.put(id,JSON.stringify(a));}],
+    ['confirmation predates allocation',h=>h.put('ems.0.Devices.Wallbox0.ResponseConfirmedAt',1009989)],
+    ['newer allocation source',h=>{const id='ems.0.Control.Wallbox0.AllocationDiagnostics_JSON',a=JSON.parse(h.states.get(id).val);a.measuredPowerAt=1009001;h.put(id,JSON.stringify(a));}],
+    ['actual deficit',h=>{h.put('export',0);h.put('import',500);}],
+    ['hard current limit',h=>{h.config.wb0CommissioningMaxA=10;}],
+    ['withdrawn reserve',h=>{const id='ems.0.Control.ParallelWallboxAllocation_JSON',a=JSON.parse(h.states.get(id).val);a.allocations[0].reservedW=2300;h.put(id,JSON.stringify(a));}],
+    ['new heater target',h=>{const id='ems.0.Control.ParallelWallboxAllocation_JSON',a=JSON.parse(h.states.get(id).val);a.heaterTargetW=1000;h.put(id,JSON.stringify(a));}],
+    ['insufficient current confirmation',h=>h.put('i1',10.2,{ts:1009000})]
+])test('same-sample confirmation hold yields: '+name+', ACK consumed='+consumed,async()=>{
+    const h=await sameSampleConfirmation(consumed);change(h);await h.output.tick();
+    assert.ok(h.writes.some(w=>w.id==='cmd'&&w.val<=10||w.id==='allow'&&w.val===0));
+    assert.ok(!h.writes.some(w=>w.id==='cmd'&&w.val>11));
+});

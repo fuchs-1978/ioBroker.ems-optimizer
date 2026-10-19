@@ -4,6 +4,10 @@
 
 Diese Datei archiviert die bisherigen Versionshinweise und historischen Detailbeschreibungen unverändert. Sie beschreiben den jeweiligen damaligen Stand; für aktuelle Einstellungen und Betriebsgrenzen gilt die [README](README.md).
 
+### 0.17.0-alpha.107 (2026-10-19)
+
+Kleine reale Netzdefizite auch zwischen Strom-ACK und erster nachfolgender Leistungsmessung relativ zurückregeln. Ein bereits bestätigter und reservierter Ein-Ampere-Befehl darf dabei passend reduziert werden, ohne auf eine zu niedrige nominelle Softgrenze durchzufallen. Keine zusätzliche Erhöhung, keine Aufweichung harter Grenzen, keine Änderung der Abschaltverzögerung. [Releasehinweise](docs/release-0.17.0-alpha.107.md).
+
 ### 0.17.0-alpha.106 (2026-10-19)
 
 Einen bereits zugelassenen gemessenen 1-A-PV-Schritt während seiner ursprünglichen Fahrzeugantwortfrist halten, solange aktuelle Netzdaten innerhalb der Bezugstoleranz liegen und keine Fremdreserve wächst. Nachlaufende oder zunächst unveränderte Wallboxmessungen lösen dadurch keine vorzeitige Rücknahme aus. Keine weitere Erhöhung ohne elektrische Antwort; Schutzgrenzen, ACK-Prüfung und Abschaltverzögerung bleiben erhalten. [Releasehinweise](docs/release-0.17.0-alpha.106.md).
