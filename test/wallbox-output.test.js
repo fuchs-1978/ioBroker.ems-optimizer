@@ -188,7 +188,7 @@ test('restart adoption proof is invalidated immediately on stop and never restor
 for (const [name, change] of [
     ['fresh control wait', h => h.put('ems.0.Plan.LastUpdate', 0)],
     ['stabilization wait', h => { h.config.wallboxRestartHandoffSettleS = 10; }],
-    ['expired handoff', h => h.put('ems.0.Control.RestartHandoffSince', 800000)],
+    ['expired handoff', h => h.put('ems.0.Control.RestartHandoffSince', 99000)],
     ['unowned wallbox', h => h.put('ems.0.Devices.Wallbox0.OutputOwned', false)],
     ['master disabled', h => { h.config.globalWriteEnabled = false; }],
     ['runtime outputs disabled', h => h.put('ems.0.System.RealOutputsEnabled', false)],
@@ -1048,7 +1048,7 @@ for (const [name, change] of [
 test('restart plan wait has a hard timeout even when control booleans remain valid', async () => {
     const h=setup();
     h.put('ems.0.Control.RestartHandoffActive',true);
-    h.put('ems.0.Control.RestartHandoffSince',Date.now()-181000);
+    h.put('ems.0.Control.RestartHandoffSince',Date.now()-901000);
     h.put('ems.0.Plan.LastUpdate',0);
     h.put('ems.0.Devices.Wallbox0.OutputOwned',true);
     h.put('ems.0.Devices.Wallbox0.OutputActive',true);
@@ -3180,4 +3180,38 @@ for (const [name, change] of [
         h.ack('feedback', 6); await h.output.tick();
         assert.ok(h.writes.some(w => w.id === 'allow' && w.val === 1));
     }
+});
+
+for (const delay of [175000, 895000]) test('restart retains live charging through history and full stabilization at '+delay+' ms', async () => {
+    const h = restartAdoptionHarness();
+    h.config.wallboxRestartHandoffTimeoutS = 180;
+    h.config.wallboxRestartHandoffSettleS = 10;
+    h.put('ems.0.Plan.LastUpdate', 0);
+    await h.output.initialize(); await h.output.tick(); h.writes.length = 0;
+    h.advance(delay); h.refresh();
+    h.put('ems.0.Plan.LastUpdate', h.states.get('ems.0.System.LastUpdate').val);
+    await h.output.tick();
+    assert.equal(h.output.devices[0].recovering, true);
+    assert.ok(!h.writes.some(w => w.id === 'allow' && w.val === 0));
+    h.advance(12000); h.refresh(); await h.output.tick();
+    assert.equal(h.output.devices[0].recovering, false);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, true);
+    assert.ok(!h.writes.some(w => w.id === 'allow' && w.val === 0));
+});
+
+for (const fault of ['device', 'data lost', 'too late']) test('longer restart budget retains stop safeguards: '+fault, async () => {
+    const h = restartAdoptionHarness(); h.config.wallboxRestartHandoffSettleS = 10;
+    h.put('ems.0.Plan.LastUpdate', 0);
+    await h.output.initialize(); await h.output.tick(); h.writes.length = 0;
+    h.advance(fault === 'too late' ? 901000 : 895000); h.refresh();
+    h.put('ems.0.Plan.LastUpdate', h.states.get('ems.0.System.LastUpdate').val);
+    if (fault !== 'too late') {
+        await h.output.tick(); h.advance(12000); h.refresh();
+        if (fault === 'device') h.put('error', 5);
+        else h.put('ems.0.Plan.LastUpdate', 0);
+    }
+    await h.output.tick();
+    if (fault === 'data lost') {h.advance(2000);h.refresh();await h.output.tick();}
+    assert.ok(h.writes.some(w => w.id === 'allow' && w.val === 0));
+    assert.equal(h.adoptionProof().valid, false);
 });

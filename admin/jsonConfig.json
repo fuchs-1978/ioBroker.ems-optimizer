@@ -1252,9 +1252,10 @@
           "type": "number",
           "label": "Maximum wait for fresh control data after restart",
           "unit": "s",
-          "default": 180,
-          "min": 30,
-          "max": 600,
+          "help": "At least 900 seconds for startup/history loading; older smaller values use 900 seconds automatically. Final stabilization has its own completion margin.",
+          "default": 900,
+          "min": 900,
+          "max": 3600,
           "sm": 4
         },
         "wallboxRestartHandoffGraceS": {

@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.102**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.103**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -249,7 +249,7 @@ Gemeinsame Prioritäts-, Start-/Stopptimer-, Antwort- und Phasenregeln. 600 s si
 | Mindestlaufzeit<br>`wallboxMinimumRunTimeS` | 120 s | Mindestlaufzeit eines bestätigten Ladeausgangs bei weichem PV-Budgetmangel. Verlängert keine harte Schutzverletzung, Benutzersperre, Ziel-SoC, erledigte Netz-Mindestladung ohne Folgebedarf oder ausdrücklich angeforderte Prioritätsübergabe einer optionalen Ladung. Nicht gleich Fahrzeug-Reaktionsfrist. |
 | Ausschaltverzögerung bei zu wenig Überschuss<br>`wallboxStopDelayS` | 120 s | Verzögert einen normalen Stopp bei zu wenig nutzbarem PV-Budget. Nicht wirksam als Aufschub für ungültige sicherheitsrelevante Quellen, harte Grenzen oder eine gültige direkte Prioritätsübergabe einer optionalen Ladung. Timerstatus im jeweiligen Devices.WallboxX-Bereich prüfen. |
 | Eine vom EMS gesteuerte aktive Wallbox bei Neustart oder Update weiterbetreiben<br>`wallboxRestartHandoffEnabled` | EIN | Übernimmt nach Neustart/Update einen nachweislich zuvor EMS-eigenen aktiven Ausgang, wenn sichere Rückmeldungen vorliegen. Keine Übernahme beliebiger unbekannter Bestandsbefehle; kein Versprechen unter Host-/Treiberabsturz. |
-| Maximale Wartezeit auf frische Reglerdaten nach Neustart<br>`wallboxRestartHandoffTimeoutS` | 180 s | Maximale Initialisierungswartezeit auf frische sichere Reglerdaten nach Neustart. Nach Ablauf ist kein unbegrenztes Weiterhalten erlaubt. |
+| Maximale Wartezeit auf frische Reglerdaten nach Neustart<br>`wallboxRestartHandoffTimeoutS` | 900 s | Anlaufbudget 900–3600 s für Neustart und Historienaufbau. Ältere kleinere Werte werden intern mindestens als 900 s behandelt. Rechtzeitig begonnene Stabilisierung bekommt ihre volle Zeit plus Prüftaktreserve; kein unbegrenztes Weiterhalten bei dauerhaft fehlenden Daten. |
 | Übernommene Wallbox vor kurzzeitigem Null-Soll schützen<br>`wallboxRestartHandoffGraceS` | 30 s | Kurzer Schutz einer erfolgreich übernommenen Ladung gegen vorübergehendes weiches Null-Soll während der Initialisierung. Harte Schutz- und Rückmeldeprüfungen bleiben wirksam. |
 | Erforderliche Dauer stabiler EMS-Daten vor Ende der Neustartübergabe<br>`wallboxRestartHandoffSettleS` | 10 s | Dauer stabiler EMS-Daten, bevor die Neustartübergabe regulär endet. Stabilisierung, nicht zusätzliche Einschaltverzögerung eines neuen Fahrzeugs. |
 | Maximales Alter der go-e-Messwerte<br>`wallboxMeasurementMaxAgeS` | 30 s | Maximales Quellenalter der relevanten go-e-Messwerte in s. Nutzt echte Quellenaktualisierung, nicht allein Wertänderung. Eine unveränderte, frisch bestätigte Messung ist frisch; ein alter Cachewert wird durch Lesen nicht automatisch erneuert. |
@@ -849,9 +849,9 @@ Ab alpha.67 akzeptiert die zentrale Wallbox-Phasenbudgetprüfung dieselbe besteh
 
 ## Changelog und historische Detaildokumentation
 
-### 0.17.0-alpha.102 (2026-10-19)
+### 0.17.0-alpha.103 (2026-10-19)
 
-Der SQL-Historienaufbau zeigt im Info-Log Start, Quelle X/N mit Datenpunkt-ID und verstrichener Zeit sowie den Abschluss mit Dauer und Ergebnis. Unvollständige Historie und Abbruch bleiben Warnungen; automatische Start-Wiederholungen werden ausdrücklich genannt. Abfrageintervalle, SQL-Parallelität und Regelung bleiben unverändert. [Releasehinweise](docs/release-0.17.0-alpha.102.md).
+Neustart-Übernahme mit mindestens 15 Minuten Anlaufreserve, auch bei gespeicherten alten 180-s-Einstellungen. Eine innerhalb der Frist begonnene Stabilisierung darf mit eigener begrenzter Prüftaktreserve fertig werden. Kein Rücksetzen oder unbegrenztes Verlängern des ursprünglichen Zeitfensters; elektrische, Geräte- und Schutzprüfungen bleiben wirksam. [Releasehinweise](docs/release-0.17.0-alpha.103.md).
 
 [Alle älteren Änderungen und historischen Detailbeschreibungen](CHANGELOG_OLD.md).
 
