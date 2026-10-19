@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.96**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.97**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -849,9 +849,9 @@ Ab alpha.67 akzeptiert die zentrale Wallbox-Phasenbudgetprüfung dieselbe besteh
 
 ## Changelog und historische Detaildokumentation
 
-### 0.17.0-alpha.96 (2026-10-18)
+### 0.17.0-alpha.97 (2026-10-19)
 
-Begrenzte historische Recorder-Verlustepisoden im nächsten erhaltenen Original: Sitzung, Ereigniszeit, getroffene Anzahl-/Bytegrenze, abgelehnter Umfang sowie Queue-, Warte- und Appendkontext getrennt sichern. Vorhandenes Batch-Append und Kapazitätsgrenzen bleiben erhalten. Keine behauptete Performancekorrektur oder reale Verlustfreiheit. [Diagnose und Folgeprüfpunkte](docs/issue181-recorder-loss-episodes.md), [Releasehinweise](docs/release-0.17.0-alpha.96.md).
+Bereits zugelassene Stromerhöhungen bei nachlaufender Wallboxmessung begrenzt halten: Die SMA-Messung kann die zusätzliche Ladung bereits enthalten, während go-e noch den vorherigen Strom meldet. Passendes ACK, unveränderte Fremdlastreserven, gültige Quellen und bestehende Antwortfrist bleiben erforderlich; echte Netzbezugsüberschreitungen und Schutzgrenzen reduzieren weiterhin. [Releasehinweise](docs/release-0.17.0-alpha.97.md).
 
 [Alle älteren Änderungen und historischen Detailbeschreibungen](CHANGELOG_OLD.md).
 

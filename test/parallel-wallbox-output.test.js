@@ -1184,3 +1184,106 @@ test('minimum-SoC output holds at 100 W allowance and reduces above it', async (
         else assert.ok(h.writes.some(w=>w.id==='cmd'&&w.val<=8));
     }
 });
+
+
+// 19 Oct 2026 10:31:30-36 MESZ: SMA already sees the 9-A uptake,
+// while the go-e power/current cache still describes the preceding 6 A.
+async function asynchronousMeterIncrease({count = 1} = {}) {
+    const h = parallelSetup(count);
+    await h.startParallel(Array(count).fill(6));
+    h.put('ems.0.Control.TargetGridPower_W', 0);
+    h.advance(6000);
+    h.measure(0, 5.9); h.ack('feedback', 6); h.put('power', 1.37);
+    h.put('export', 785.4); h.grant([9, ...Array(count - 1).fill(6)]);
+    h.writes.length = 0;
+    await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'cmd', val: 9}]);
+    const commandAt = h.output.devices[0].response.at;
+    h.advance(6000);
+    h.put('feedback', 9, {ts: commandAt + 268});
+    h.put('power', 1.35, {ts: commandAt + 578});
+    h.put('i1', 5.8, {ts: commandAt + 438});
+    h.put('import', 0, {ts: commandAt + 5370});
+    h.put('export', 31.1, {ts: commandAt + 5372});
+    h.grant([0, ...Array(count - 1).fill(6)], {budgetW: 0});
+    const grant = JSON.parse(h.states.get('ems.0.Control.ParallelWallboxAllocation_JSON').val);
+    grant.allocations[0].authorized = true;
+    h.put('ems.0.Control.ParallelWallboxAllocation_JSON', JSON.stringify(grant));
+    h.writes.length = 0;
+    return h;
+}
+
+test('recorded SMA/go-e timestamp skew retains the admitted 9 A until electrical response', async () => {
+    const h = await asynchronousMeterIncrease();
+    await h.output.tick();
+    assert.deepEqual(h.writes, []);
+    assert.equal(h.output.devices[0].lastA, 9);
+    const response = h.output.devices[0].response;
+    const deadline = response.ackAt + h.output.responseSettleTimeoutMs();
+    const diagnostic = JSON.parse(h.states.get('ems.0.Devices.Wallbox0.IncreaseBudget_JSON').val);
+    assert.equal(diagnostic.decision, 'await-asynchronous-meter-response');
+    assert.equal(diagnostic.nextA, 9);
+    assert.equal(diagnostic.responseDeadlineAt, deadline);
+    assert.ok(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val >= 2070);
+    h.advance(1000); h.grant([9]); h.measure(0, 9); h.put('export', 31.1);
+    await h.output.tick();
+    assert.deepEqual(h.writes, []);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'confirmed');
+});
+
+test('asynchronous meter hold yields to real deficits, hard caps and new peer reservations', async t => {
+    for (const fault of ['deficit', 'hard cap', 'house', 'stale', 'peer', 'heater', 'expired', 'aligned', 'no admission', 'no ACK', 'old grid']) {
+        await t.test(fault, async () => {
+            const h = await asynchronousMeterIncrease({count: fault === 'peer' ? 2 : 1});
+            if (fault === 'deficit') { h.put('import', 400); h.put('export', 0); }
+            if (fault === 'hard cap') h.grant([6], {hardBudgetW: 1380});
+            if (fault === 'house') h.put('h1', 48);
+            if (fault === 'stale') h.put('power', 1.35, {ts: 1});
+            if (fault === 'peer') h.put('power1', 2.07);
+            if (fault === 'heater') h.put('ems.0.Devices.MyPV_DHW.OutputReservedPower_W', 1000);
+            if (fault === 'no admission') h.output.devices[0].response.meterReservation = null;
+            if (fault === 'no ACK') h.put('feedback', 6);
+            if (fault === 'old grid') {
+                const at = h.output.devices[0].response.at;
+                h.put('import', 0, {ts: at - 1}); h.put('export', 31.1, {ts: at - 1});
+            }
+            if (fault === 'expired') {
+                await h.output.tick(); assert.deepEqual(h.writes, []);
+                const deadline = h.output.devices[0].response.ackAt + h.output.responseSettleTimeoutMs();
+                h.advance(46000); h.grant([0], {budgetW: 0});
+                const grant = JSON.parse(h.states.get('ems.0.Control.ParallelWallboxAllocation_JSON').val);
+                grant.allocations[0].authorized = true;
+                h.put('ems.0.Control.ParallelWallboxAllocation_JSON', JSON.stringify(grant));
+                assert.ok(h.output.now() > deadline);
+                const now = h.output.now();
+                h.put('power', 1.35, {ts: now - 5000});
+                h.put('i1', 5.8, {ts: now - 5000});
+                h.put('export', 31.1);
+            }
+            if (fault === 'aligned') { h.put('power', 1.35); h.put('i1', 5.8); }
+            await h.output.tick();
+            assert.ok(h.writes.some(w => w.id === 'allow' && w.val === 0
+                || w.id === 'cmd' && w.val < 9), 'must stop/reduce instead of retaining 9 A');
+        });
+    }
+});
+
+
+test('SMA/go-e skew holds 3P without releasing the outstanding phase reservation', async () => {
+    const h = await unansweredParallelIncrease({phases: 3});
+    h.put('ems.0.Control.TargetGridPower_W', 0);
+    const at = h.output.devices[0].response.at;
+    h.put('power', 1.35 * 3, {ts: at + 578});
+    for (const id of ['i1', 'i2', 'i3']) h.put(id, 5.8, {ts: at + 438});
+    h.put('export', 31.1, {ts: at + 5372}); h.put('import', 0, {ts: at + 5370});
+    h.grant([0], {budgetW: 0, phases: [3]});
+    const grant = JSON.parse(h.states.get('ems.0.Control.ParallelWallboxAllocation_JSON').val);
+    grant.allocations[0].authorized = true;
+    h.put('ems.0.Control.ParallelWallboxAllocation_JSON', JSON.stringify(grant));
+    await h.output.tick();
+    assert.deepEqual(h.writes, []);
+    assert.equal(h.output.devices[0].lastA, 9);
+    assert.ok(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val >= 6210);
+    assert.equal(JSON.parse(h.states.get('ems.0.Devices.Wallbox0.IncreaseBudget_JSON').val).decision,
+        'await-asynchronous-meter-response');
+});

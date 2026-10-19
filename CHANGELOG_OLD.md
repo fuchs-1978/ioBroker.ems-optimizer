@@ -4,6 +4,10 @@
 
 Diese Datei archiviert die bisherigen Versionshinweise und historischen Detailbeschreibungen unverändert. Sie beschreiben den jeweiligen damaligen Stand; für aktuelle Einstellungen und Betriebsgrenzen gilt die [README](README.md).
 
+### 0.17.0-alpha.96 (2026-10-18)
+
+Begrenzte historische Recorder-Verlustepisoden im nächsten erhaltenen Original: Sitzung, Ereigniszeit, getroffene Anzahl-/Bytegrenze, abgelehnter Umfang sowie Queue-, Warte- und Appendkontext getrennt sichern. Vorhandenes Batch-Append und Kapazitätsgrenzen bleiben erhalten. Keine behauptete Performancekorrektur oder reale Verlustfreiheit. [Diagnose und Folgeprüfpunkte](docs/issue181-recorder-loss-episodes.md), [Releasehinweise](docs/release-0.17.0-alpha.96.md).
+
 ### 0.17.0-alpha.95 (2026-10-18)
 
 PV-Bezugstoleranz gilt auch bei laufender Mindest-SoC-Ladung. Die Einstellung ist die gemeinsame Haltegrenze; Zuschalten mit 20 W Abstand statt halber Toleranz. Bei 100 W Einstellung kann 160 W Einspeisung durch einen 230-W-Schritt zu rechnerisch 70 W Bezug werden. Reale PV-Budgets, gemeinsamer Besitzer und Schutzgrenzen bleiben erforderlich. [Releasehinweise](docs/release-0.17.0-alpha.95.md).
