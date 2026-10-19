@@ -16,14 +16,19 @@ concurrency:
 
 jobs:
   validate:
+    name: Validate Node.js ${{ matrix.node }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: ${{ matrix.node }}
       - id: version
         run: echo "version=$(node -p 'require("./package.json").version')" >> "$GITHUB_OUTPUT"
       - run: npm install
@@ -45,6 +50,10 @@ jobs:
         run: |
           set -euo pipefail
           tag=v0.17.0-alpha.96
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Existing release $tag remains unchanged."
+            exit 0
+          fi
           main_sha=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')
           test "$main_sha" = "$GITHUB_SHA"
           gh release create "$tag" --repo "$GITHUB_REPOSITORY" \
