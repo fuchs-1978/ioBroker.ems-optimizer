@@ -116,6 +116,30 @@ async function worker(tree) {
     }
     finish();
 
+    // Keep the historical spines above intact. This additional scenario sets
+    // both configuration surfaces and proves that parallel minimum charging
+    // really ran, rather than merely trusting its scenario name.
+    start('verified-parallel-minimum-charging');
+    {
+        const h = await plant({mii: true, split: false});
+        h.config.wallboxParallelChargingEnabled = true;
+        h.own('Config.WallboxParallelChargingEnabled', true);
+        h.put('DP_WB0_MIN_SOC', 60); h.put('DP_WB2_MIN_SOC', 60);
+        h.setSurplus(0);
+        assert.equal(h.run('parallelWallboxChargingEnabled()'), true);
+        await h.advance(200); checkpoint(h);
+        const allocation = JSON.parse(h.value('Control.ParallelWallboxAllocation_JSON'));
+        assert.equal(allocation.valid, true);
+        assert.ok(allocation.allocations.filter(entry => entry.minimumW > 0 && entry.targetA >= 6).length >= 2,
+            'both below-minimum vehicles must receive an actual parallel grant');
+        assert.ok(h.writes.some(write => write.id === 'goe0.allow' && write.val === 1));
+        assert.ok(h.writes.some(write => write.id === 'goe.allow' && write.val === 1));
+        h.put('DP_WB0_SOC', 60); h.put('DP_WB2_SOC', 60);
+        await h.advance(35); checkpoint(h);
+        await h.output.stopAll(); checkpoint(h);
+    }
+    finish();
+
     start('productive-ehz-zero-receipts-and-release');
     {
         let source = fs.readFileSync(path.join(tree, 'test/ehz-production-tick.test.js'), 'utf8');
@@ -213,6 +237,27 @@ async function worker(tree) {
                 }
     for (const available of [0, 1380, 6000, 9000]) for (const share of [0, 25, 50, 100])
         record(context.splitRealtimePair(available, 3000, 7360, share));
+    finish();
+
+    // A 3,680-W cap cannot admit even the 3P hardware minimum. Exercise
+    // successful 3P branches separately and assert the path before hashing.
+    start('verified-positive-three-phase-quantization');
+    for (const [watts, previous, actual, expectedA, expectedReason] of [
+        [4140, 0, null, 6, 'budget'],
+        [11040, 0, null, 6, 'ramp-limit'],
+        [11040, 6, 4140, 12, 'ramp-limit'],
+        [11040, 12, 8280, 16, 'budget'],
+        [4140, 12, 8280, 6, 'budget']
+    ]) {
+        reads.length = 0;
+        const result = context.quantizeWallbox(watts, vehicle, previous, 3, actual,
+            {maximumPowerW: 11040, holdMaximumPowerW: 11040});
+        assert.equal(result.phases, 3);
+        assert.equal(result.amps, expectedA);
+        assert.equal(result.powerW, expectedA * 690);
+        assert.equal(result.diagnostics.reason, expectedReason);
+        record({watts, previous, actual, result, reads});
+    }
     finish();
 
     // Reuse the existing gated real-file fixture with a controlled clock.

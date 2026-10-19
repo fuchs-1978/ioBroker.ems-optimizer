@@ -1,0 +1,483 @@
+{
+  "baseline": "25fd38b4e5a3568a6d1aeefda5277c94397c7e91",
+  "node": "v24.19.0",
+  "before": [
+    {
+      "scenario": "current-ack-on-time",
+      "events": 815,
+      "sha256": "a81424f15b4c57436f22372d24ecd22959a149fded914986393d683062dcf3c0",
+      "contract": {
+        "changed": false,
+        "writes": [],
+        "fault": "",
+        "pending": null,
+        "lastA": 12
+      }
+    },
+    {
+      "scenario": "current-ack-timely-delayed",
+      "events": 969,
+      "sha256": "f98fd1500961794760840de877e94205257d3854206c44816ca2b8bbe10f66c3",
+      "contract": {
+        "changed": true,
+        "writes": [
+          {
+            "id": "allow",
+            "val": 0
+          }
+        ],
+        "fault": "Keine passende go-e-Rueckmeldung; Ausgang gesperrt bis Adapter-Neustart",
+        "pending": null,
+        "lastA": 0
+      }
+    },
+    {
+      "scenario": "current-ack-late",
+      "events": 969,
+      "sha256": "3546ffe11f398e1d7041fa2b3dbc80e51c46db891723dd6ff53646e94f52efb4",
+      "contract": {
+        "changed": false,
+        "writes": [
+          {
+            "id": "allow",
+            "val": 0
+          }
+        ],
+        "fault": "Keine passende go-e-Rueckmeldung; Ausgang gesperrt bis Adapter-Neustart",
+        "pending": null,
+        "lastA": 0
+      }
+    },
+    {
+      "scenario": "current-ack-missing",
+      "events": 968,
+      "sha256": "a5f0027e2ddc870ef6adc42de277b7f1148dd3e84a99b482dcb579651e660eea",
+      "contract": {
+        "changed": false,
+        "writes": [
+          {
+            "id": "allow",
+            "val": 0
+          }
+        ],
+        "fault": "Keine passende go-e-Rueckmeldung; Ausgang gesperrt bis Adapter-Neustart",
+        "pending": null,
+        "lastA": 0
+      }
+    },
+    {
+      "scenario": "current-ack-wrong-value",
+      "events": 969,
+      "sha256": "0371fa700ff014098bb230b048b44c2a74798ab961a36ffa38ef95c1e11ced56",
+      "contract": {
+        "changed": false,
+        "writes": [
+          {
+            "id": "allow",
+            "val": 0
+          }
+        ],
+        "fault": "Keine passende go-e-Rueckmeldung; Ausgang gesperrt bis Adapter-Neustart",
+        "pending": null,
+        "lastA": 0
+      }
+    },
+    {
+      "scenario": "current-ack-bad-quality",
+      "events": 969,
+      "sha256": "204b9764a7fcd49ced843daf418799e0c8028845a29f5d18f0dbb343daef7883",
+      "contract": {
+        "changed": false,
+        "writes": [
+          {
+            "id": "allow",
+            "val": 0
+          }
+        ],
+        "fault": "Keine passende go-e-Rueckmeldung; Ausgang gesperrt bis Adapter-Neustart",
+        "pending": null,
+        "lastA": 0
+      }
+    },
+    {
+      "scenario": "current-ack-unacknowledged",
+      "events": 969,
+      "sha256": "45201549d2837771057d984ad540b74cbb5e719e9d37ce95f8db38746f9457a1",
+      "contract": {
+        "changed": false,
+        "writes": [
+          {
+            "id": "allow",
+            "val": 0
+          }
+        ],
+        "fault": "Keine passende go-e-Rueckmeldung; Ausgang gesperrt bis Adapter-Neustart",
+        "pending": null,
+        "lastA": 0
+      }
+    },
+    {
+      "scenario": "current-ack-stale",
+      "events": 969,
+      "sha256": "b90d26870718ae686099c9eb2338cfb8458394e0ecd6c3f6b8be4f15f2596b6c",
+      "contract": {
+        "changed": false,
+        "writes": [
+          {
+            "id": "allow",
+            "val": 0
+          }
+        ],
+        "fault": "Keine passende go-e-Rueckmeldung; Ausgang gesperrt bis Adapter-Neustart",
+        "pending": null,
+        "lastA": 0
+      }
+    },
+    {
+      "scenario": "script-mode-ACK-does-not-confirm-electrical-1P",
+      "events": 1257,
+      "sha256": "61b76af130186392cf6a705edbe58bdac726755f5535e6c9c9e433d909fcb23d",
+      "contract": {
+        "changed": true,
+        "modeAckWrites": [
+          {
+            "id": "cmd",
+            "val": 12
+          }
+        ],
+        "modeReserve": 2760,
+        "externalChangeWrites": [
+          {
+            "id": "cmd",
+            "val": 12
+          }
+        ],
+        "finalWrites": [
+          {
+            "id": "cmd",
+            "val": 18
+          }
+        ],
+        "finalReserve": 4140,
+        "response": {
+          "amps": 18,
+          "at": 1000000014000,
+          "ackAt": 0,
+          "start": false,
+          "ackId": "feedback",
+          "ackValue": 18,
+          "previousAmps": 12
+        },
+        "fault": ""
+      }
+    },
+    {
+      "scenario": "script-phase-completes-after-fresh-electrical-1P",
+      "events": 1071,
+      "sha256": "3f30bf28c9e730c7bc3eee398c4228a99e33abafc6baa0296cb66b65715f8017",
+      "contract": {
+        "changed": true,
+        "responseAfterProof": "command_ack",
+        "writes": [
+          {
+            "id": "cmd",
+            "val": 12
+          }
+        ],
+        "activeSince": 1000000000000,
+        "pending": {
+          "stage": "current",
+          "amps": 12,
+          "at": 1000000007000,
+          "start": false
+        },
+        "response": {
+          "amps": 12,
+          "at": 1000000007000,
+          "ackAt": 0,
+          "start": false,
+          "ackId": "feedback",
+          "ackValue": 12,
+          "previousAmps": 6
+        }
+      }
+    },
+    {
+      "scenario": "literal-ID:mqtt.0.grid.normal",
+      "events": 1,
+      "sha256": "a201b8b65bff69039bd8204526544c226237647241a81a07fcf4d40b9a8aa1c3",
+      "contract": {
+        "changed": false,
+        "id": "mqtt.0.grid.normal",
+        "measurement": {
+          "valid": true,
+          "gridW": 1200,
+          "invalid": []
+        }
+      }
+    },
+    {
+      "scenario": "literal-ID:mqtt.0.grid.$&",
+      "events": 1,
+      "sha256": "6ebdc6a81324bbbc4e8e58dc5a2d7d970fb05c7ac34b5e1d73910eada1482ac8",
+      "contract": {
+        "changed": true,
+        "id": "mqtt.0.grid.__DP_GRID_IMPORT__",
+        "measurement": {
+          "valid": false,
+          "gridW": 0,
+          "invalid": [
+            "mqtt.0.grid.__DP_GRID_IMPORT__: fehlt"
+          ]
+        }
+      }
+    },
+    {
+      "scenario": "literal-ID:mqtt.0.grid.$$",
+      "events": 1,
+      "sha256": "2b8ea4479ccac9fb4f2e612903ccc25b9455968fab469031404329f5ebafd45e",
+      "contract": {
+        "changed": true,
+        "id": "mqtt.0.grid.$",
+        "measurement": {
+          "valid": false,
+          "gridW": 0,
+          "invalid": [
+            "mqtt.0.grid.$: fehlt"
+          ]
+        }
+      }
+    }
+  ],
+  "after": [
+    {
+      "scenario": "current-ack-on-time",
+      "events": 815,
+      "sha256": "a81424f15b4c57436f22372d24ecd22959a149fded914986393d683062dcf3c0",
+      "contract": {
+        "changed": false,
+        "writes": [],
+        "fault": "",
+        "pending": null,
+        "lastA": 12
+      }
+    },
+    {
+      "scenario": "current-ack-timely-delayed",
+      "events": 977,
+      "sha256": "bf3b37bc94d4839f72de86ce4deb6b6c2eba78a4092078a9cd5438a367ce0783",
+      "contract": {
+        "changed": true,
+        "writes": [],
+        "fault": "",
+        "pending": null,
+        "lastA": 12
+      }
+    },
+    {
+      "scenario": "current-ack-late",
+      "events": 969,
+      "sha256": "3546ffe11f398e1d7041fa2b3dbc80e51c46db891723dd6ff53646e94f52efb4",
+      "contract": {
+        "changed": false,
+        "writes": [
+          {
+            "id": "allow",
+            "val": 0
+          }
+        ],
+        "fault": "Keine passende go-e-Rueckmeldung; Ausgang gesperrt bis Adapter-Neustart",
+        "pending": null,
+        "lastA": 0
+      }
+    },
+    {
+      "scenario": "current-ack-missing",
+      "events": 968,
+      "sha256": "a5f0027e2ddc870ef6adc42de277b7f1148dd3e84a99b482dcb579651e660eea",
+      "contract": {
+        "changed": false,
+        "writes": [
+          {
+            "id": "allow",
+            "val": 0
+          }
+        ],
+        "fault": "Keine passende go-e-Rueckmeldung; Ausgang gesperrt bis Adapter-Neustart",
+        "pending": null,
+        "lastA": 0
+      }
+    },
+    {
+      "scenario": "current-ack-wrong-value",
+      "events": 969,
+      "sha256": "0371fa700ff014098bb230b048b44c2a74798ab961a36ffa38ef95c1e11ced56",
+      "contract": {
+        "changed": false,
+        "writes": [
+          {
+            "id": "allow",
+            "val": 0
+          }
+        ],
+        "fault": "Keine passende go-e-Rueckmeldung; Ausgang gesperrt bis Adapter-Neustart",
+        "pending": null,
+        "lastA": 0
+      }
+    },
+    {
+      "scenario": "current-ack-bad-quality",
+      "events": 969,
+      "sha256": "204b9764a7fcd49ced843daf418799e0c8028845a29f5d18f0dbb343daef7883",
+      "contract": {
+        "changed": false,
+        "writes": [
+          {
+            "id": "allow",
+            "val": 0
+          }
+        ],
+        "fault": "Keine passende go-e-Rueckmeldung; Ausgang gesperrt bis Adapter-Neustart",
+        "pending": null,
+        "lastA": 0
+      }
+    },
+    {
+      "scenario": "current-ack-unacknowledged",
+      "events": 969,
+      "sha256": "45201549d2837771057d984ad540b74cbb5e719e9d37ce95f8db38746f9457a1",
+      "contract": {
+        "changed": false,
+        "writes": [
+          {
+            "id": "allow",
+            "val": 0
+          }
+        ],
+        "fault": "Keine passende go-e-Rueckmeldung; Ausgang gesperrt bis Adapter-Neustart",
+        "pending": null,
+        "lastA": 0
+      }
+    },
+    {
+      "scenario": "current-ack-stale",
+      "events": 969,
+      "sha256": "b90d26870718ae686099c9eb2338cfb8458394e0ecd6c3f6b8be4f15f2596b6c",
+      "contract": {
+        "changed": false,
+        "writes": [
+          {
+            "id": "allow",
+            "val": 0
+          }
+        ],
+        "fault": "Keine passende go-e-Rueckmeldung; Ausgang gesperrt bis Adapter-Neustart",
+        "pending": null,
+        "lastA": 0
+      }
+    },
+    {
+      "scenario": "script-mode-ACK-does-not-confirm-electrical-1P",
+      "events": 1239,
+      "sha256": "4ba5d5540656ea2c75f45f12bc28d33cba4db54da406080de4a8a98e56836cf0",
+      "contract": {
+        "changed": true,
+        "modeAckWrites": [],
+        "modeReserve": 4140,
+        "externalChangeWrites": [
+          {
+            "id": "allow",
+            "val": 0
+          }
+        ],
+        "finalWrites": [],
+        "finalReserve": 8280,
+        "response": null,
+        "fault": ""
+      }
+    },
+    {
+      "scenario": "script-phase-completes-after-fresh-electrical-1P",
+      "events": 1085,
+      "sha256": "8f90ab48bea9688577e852081675081faba30c6c70aa0c325e5658e40998b047",
+      "contract": {
+        "changed": true,
+        "responseAfterProof": "confirmed",
+        "writes": [
+          {
+            "id": "cmd",
+            "val": 12
+          }
+        ],
+        "activeSince": 1000000000000,
+        "pending": {
+          "stage": "current",
+          "amps": 12,
+          "at": 1000000008000,
+          "start": false
+        },
+        "response": {
+          "amps": 12,
+          "at": 1000000008000,
+          "ackAt": 0,
+          "start": false,
+          "ackId": "feedback",
+          "ackValue": 12,
+          "previousAmps": 6
+        }
+      }
+    },
+    {
+      "scenario": "literal-ID:mqtt.0.grid.normal",
+      "events": 1,
+      "sha256": "a201b8b65bff69039bd8204526544c226237647241a81a07fcf4d40b9a8aa1c3",
+      "contract": {
+        "changed": false,
+        "id": "mqtt.0.grid.normal",
+        "measurement": {
+          "valid": true,
+          "gridW": 1200,
+          "invalid": []
+        }
+      }
+    },
+    {
+      "scenario": "literal-ID:mqtt.0.grid.$&",
+      "events": 1,
+      "sha256": "97c18294146cd7d93ec10069fd27fd89ba8d2656ffb7cd670d822dbcff874cba",
+      "contract": {
+        "changed": true,
+        "id": "mqtt.0.grid.$&",
+        "measurement": {
+          "valid": true,
+          "gridW": 1200,
+          "invalid": []
+        }
+      }
+    },
+    {
+      "scenario": "literal-ID:mqtt.0.grid.$$",
+      "events": 1,
+      "sha256": "8c26e0784425489086f55610389be5e744fb709ba905980cb03a009c42ad29a8",
+      "contract": {
+        "changed": true,
+        "id": "mqtt.0.grid.$$",
+        "measurement": {
+          "valid": true,
+          "gridW": 1200,
+          "invalid": []
+        }
+      }
+    }
+  ],
+  "unchangedContracts": [
+    "current-ack-on-time",
+    "current-ack-late",
+    "current-ack-missing",
+    "current-ack-wrong-value",
+    "current-ack-bad-quality",
+    "current-ack-unacknowledged",
+    "current-ack-stale",
+    "ordinary-data-point-ID"
+  ]
+}

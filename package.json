@@ -25,7 +25,7 @@
     "analyze:shadow": "node tools/analyze-shadow.js",
     "decode:records": "node tools/decode-decision-records.js",
     "test:artifact": "node tools/check-packed-adapter.js",
-    "test:equivalence": "node tools/compare-refactor.js"
+    "test:equivalence": "node tools/compare-refactor.js && node tools/compare-wallbox-fixes.js"
   },
   "dependencies": {
     "@iobroker/adapter-core": "^3.2.3",
