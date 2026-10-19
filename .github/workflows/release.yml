@@ -1,0 +1,80 @@
+name: Publish validated prerelease
+
+# Explicit release action only. A refactoring PR never publishes on merge.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Exact package version to publish from current main
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ems-prerelease
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Validate requested version and release notes
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: |
+          node - <<'JS'
+          const assert = require('node:assert/strict');
+          const fs = require('node:fs');
+          const version = process.env.REQUESTED_VERSION;
+          assert.match(version, /^\d+\.\d+\.\d+-alpha\.\d+$/);
+          assert.equal(require('./package.json').version, version);
+          assert.equal(require('./io-package.json').common.version, version);
+          assert.ok(fs.statSync(`docs/release-${version}.md`).isFile());
+          JS
+      - run: npm install --package-lock=false --no-audit --no-fund
+      - run: npm test
+      - run: npm run test:package
+      - run: npm run test:artifact
+
+  publish:
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+      - name: Publish a new tag and prerelease only
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          tag="v${RELEASE_VERSION}"
+          main_sha=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')
+          test "$main_sha" = "$GITHUB_SHA"
+          # A successful list distinguishes absence from an API/authentication
+          # failure. Existing tags (even without releases) are never republished.
+          gh release list --repo "$GITHUB_REPOSITORY" --limit 1000 --json tagName > "$RUNNER_TEMP/ems-releases.json"
+          if jq -e --arg tag "$tag" 'any(.[]; .tagName == $tag)' "$RUNNER_TEMP/ems-releases.json" >/dev/null; then
+            echo "Existing release $tag remains unchanged."
+            exit 0
+          fi
+          git ls-remote --tags origin > "$RUNNER_TEMP/ems-tags.txt"
+          if awk '{print $2}' "$RUNNER_TEMP/ems-tags.txt" | grep -Fx "refs/tags/$tag"; then
+            echo "Existing tag $tag remains unchanged."
+            exit 0
+          fi
+          gh release create "$tag" --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" --prerelease --title "$RELEASE_VERSION" \
+            --notes-file "docs/release-${RELEASE_VERSION}.md"
