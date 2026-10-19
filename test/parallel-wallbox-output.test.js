@@ -1646,3 +1646,32 @@ for(const [name,change] of [
     else assert.ok(h.writes.some(w=>w.id==='cmd'&&w.val<13||w.id==='allow'&&w.val===0));
     assert.ok(!h.writes.some(w=>w.id==='cmd'&&w.val>13));
 });
+
+async function preAckDeficit(consumed=true){
+    const h=await eqeStaleAllocation({amps:9,actualW:1730,actualA:7.9,targetA:8,exportW:0});
+    const d=h.output.devices[0];
+    d.lastA=consumed?9:8;d.pending=consumed?null:{stage:'current',amps:9,at:1005000,start:false};
+    d.response={amps:9,previousAmps:8,at:1005000,ackAt:1007000,start:false};d.electricalCommandAt=1005000;
+    h.output.meterReservations.set(d.response,{phases:1,powerW:1730,currentsA:[7.9,0,0],peerW:0,otherW:0,pendingPhasesW:[0,0,0]});
+    h.put('feedback',9,{ts:1009000});h.put('power',1.73,{ts:1006000});h.put('i1',7.9,{ts:1006000});
+    h.put('import',156.5);h.writes.length=0;
+    return h;
+}
+for(const consumed of [true,false])test('9→8 A instead of 6 A at 156 W deficit before first post-ACK sample, consumed='+consumed,async()=>{
+    const h=await preAckDeficit(consumed);await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'cmd',val:8}]);
+});
+
+for(const [name,change] of [
+    ['withdrawn soft grant',h=>h.grant([6])],
+    ['hard current cap',h=>{h.config.wb0CommissioningMaxA=6;}],
+    ['hard shared cap',h=>h.grant([8],{hardBudgetW:1380})],
+    ['pre-command sample',h=>h.put('power',1.73,{ts:1004000})],
+    ['missing ACK',h=>{h.output.devices[0].response.ackAt=0;h.put('feedback',8,{ts:1004000});}],
+    ['missing reservation',h=>h.output.meterReservations.delete(h.output.devices[0].response)],
+    ['new heater reservation',h=>h.put('ems.0.Devices.MyPV_DHW.OutputReservedPower_W',1000)],
+    ['expired reply',h=>{h.advance(46000);h.grant([8]);}]
+])test('pre-ACK relative reduction does not bypass '+name,async()=>{
+    const h=await preAckDeficit();change(h);await h.output.tick();
+    assert.ok(!h.writes.some(w=>w.id==='cmd'&&w.val>=8));
+});

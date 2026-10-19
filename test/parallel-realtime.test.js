@@ -1183,3 +1183,21 @@ test('EQE pending response with 112 W deficit reduces 17 to 16 A instead of nomi
     h.put('DP_WB2_POWER', 3.1, {ts:Date.now()-2000});
     assert.ok(h.update(2988).amps[2] <= 12, 'old evidence cannot earn a relative reduction');
 });
+
+for(const consumed of [true,false]) test('156 W deficit keeps relative 9→8 A reduction with pre-ACK power, ACK consumed='+consumed,()=>{
+    const h=measuredHoldEngine(2),now=Date.now();
+    h.owned(2,consumed?9:8,1730);
+    h.put('raw.amps2',9,{ts:now});
+    h.put('ems.0.Devices.Wallbox2.OutputLastWrite',now-1000);
+    h.put('ems.0.Devices.Wallbox2.ResponseSentAt',now-1000);
+    h.put('ems.0.Devices.Wallbox2.ResponseCommand_A',9);
+    h.put('ems.0.Devices.Wallbox2.ResponsePreviousCommand_A',8);
+    h.put('ems.0.Devices.Wallbox2.ResponseAcknowledgedAt',now-200);
+    h.put('ems.0.Devices.Wallbox2.ResponseState','vehicle_response');
+    h.put('ems.0.Devices.Wallbox2.ResponsePending',true);
+    h.put('ems.0.Devices.Wallbox2.OutputReservedPower_W',2070);
+    for(const id of ['DP_WB2_POWER','DP_WB2_L1_A']){const s=h.states.get(id);h.put(id,s.val,{ts:now-500});}
+    const target=h.update(1573.5);
+    assert.equal(target.amps[2],8);
+    assert.ok(target.reserve[2]>=2070);
+});

@@ -4,6 +4,10 @@
 
 Diese Datei archiviert die bisherigen Versionshinweise und historischen Detailbeschreibungen unverändert. Sie beschreiben den jeweiligen damaligen Stand; für aktuelle Einstellungen und Betriebsgrenzen gilt die [README](README.md).
 
+### 0.17.0-alpha.106 (2026-10-19)
+
+Einen bereits zugelassenen gemessenen 1-A-PV-Schritt während seiner ursprünglichen Fahrzeugantwortfrist halten, solange aktuelle Netzdaten innerhalb der Bezugstoleranz liegen und keine Fremdreserve wächst. Nachlaufende oder zunächst unveränderte Wallboxmessungen lösen dadurch keine vorzeitige Rücknahme aus. Keine weitere Erhöhung ohne elektrische Antwort; Schutzgrenzen, ACK-Prüfung und Abschaltverzögerung bleiben erhalten. [Releasehinweise](docs/release-0.17.0-alpha.106.md).
+
 ### 0.17.0-alpha.105 (2026-10-19)
 
 Bestätigte reale Ladeleistung bei älterer Zuteilung auch unterhalb pauschaler 230-V-Nennleistung halten. Kleine reale Netzdefizite führen zu einer passenden relativen Stromrücknahme statt zu mehreren unnötigen Ampere. Volle Schutzreserven, harte Grenzen, ACK-/Messwertprüfungen und die eingestellte Abschaltverzögerung bleiben erhalten. [Releasehinweise](docs/release-0.17.0-alpha.105.md).

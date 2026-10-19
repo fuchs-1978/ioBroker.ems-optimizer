@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.106**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.107**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -849,9 +849,9 @@ Ab alpha.67 akzeptiert die zentrale Wallbox-Phasenbudgetprüfung dieselbe besteh
 
 ## Changelog und historische Detaildokumentation
 
-### 0.17.0-alpha.106 (2026-10-19)
+### 0.17.0-alpha.107 (2026-10-19)
 
-Einen bereits zugelassenen gemessenen 1-A-PV-Schritt während seiner ursprünglichen Fahrzeugantwortfrist halten, solange aktuelle Netzdaten innerhalb der Bezugstoleranz liegen und keine Fremdreserve wächst. Nachlaufende oder zunächst unveränderte Wallboxmessungen lösen dadurch keine vorzeitige Rücknahme aus. Keine weitere Erhöhung ohne elektrische Antwort; Schutzgrenzen, ACK-Prüfung und Abschaltverzögerung bleiben erhalten. [Releasehinweise](docs/release-0.17.0-alpha.106.md).
+Kleine reale Netzdefizite auch zwischen Strom-ACK und erster nachfolgender Leistungsmessung relativ zurückregeln. Ein bereits bestätigter und reservierter Ein-Ampere-Befehl darf dabei passend reduziert werden, ohne auf eine zu niedrige nominelle Softgrenze durchzufallen. Keine zusätzliche Erhöhung, keine Aufweichung harter Grenzen, keine Änderung der Abschaltverzögerung. [Releasehinweise](docs/release-0.17.0-alpha.107.md).
 
 [Alle älteren Änderungen und historischen Detailbeschreibungen](CHANGELOG_OLD.md).
 
