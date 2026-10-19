@@ -21,3 +21,6 @@ secrets/
 # Keep main.js, io-package.json, lib/, admin/, tools/, docs/ and the public
 # config.example.json: the engine reads its modules at runtime, Admin needs
 # its configuration/translations/icons, and the documented tools stay usable.
+
+# Historical release documentation.
+CHANGELOG_OLD.md

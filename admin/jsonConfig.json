@@ -9,7 +9,12 @@
         "safety": {
           "type": "staticText",
           "text": "Version 0.17.0-alpha.17: new battery and heating-buffer outputs are disabled and unmapped by default. Heat-pump modes are advice only, without an external mode write. Before enabling any real output, stop competing output scripts and commission it under supervision. Before returning to scripts, disable the master release and wait until all OutputOwned states are false. Host or driver failure requires independent device-side protection; an EMS process cannot guarantee a final stop after a host crash.",
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "generalHeader": {
           "type": "header",
@@ -21,13 +26,23 @@
           "type": "checkbox",
           "label": "Master release for configured real outputs",
           "default": false,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "multiWallboxAlphaArmed": {
           "type": "checkbox",
           "label": "Arm ALPHA control for all released wallboxes + DHW (competing output scripts stopped)",
           "default": false,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         }
       }
     },
@@ -49,7 +64,11 @@
           "min": 1,
           "max": 63,
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "houseConnectionReserveA": {
           "type": "number",
@@ -58,12 +77,21 @@
           "min": 0,
           "max": 20,
           "unit": "A",
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "houseConnectionHelp": {
           "type": "staticText",
           "text": "The adapter derives one common working limit (fuse minus reserve) for wallboxes and DHW. Legacy separate limits remain readable only for migration.",
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "_gridOperatorHeader": {
           "type": "header",
@@ -76,13 +104,21 @@
           "label": "Optional §14a binary contact data point",
           "default": "",
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "par14aActiveHigh": {
           "type": "checkbox",
           "label": "Binary contact: true/1 means limitation active",
           "default": true,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "par14aBudgetMode": {
           "type": "select",
@@ -103,7 +139,11 @@
               "value": "external",
               "label": "External shared binary-contact budget"
             }
-          ]
+          ],
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "par14aLimitW": {
           "type": "number",
@@ -113,7 +153,11 @@
           "max": 50000,
           "unit": "W",
           "sm": 4,
-          "hidden": "data.par14aBudgetMode && data.par14aBudgetMode !== 'fixed'"
+          "hidden": "data.par14aBudgetMode && data.par14aBudgetMode !== 'fixed'",
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "par14aLimitId": {
           "type": "text",
@@ -121,7 +165,11 @@
           "default": "",
           "sm": 8,
           "newLine": true,
-          "hidden": "data.par14aBudgetMode !== 'external'"
+          "hidden": "data.par14aBudgetMode !== 'external'",
+          "xs": 12,
+          "md": 8,
+          "lg": 8,
+          "xl": 8
         },
         "par14aLimitUnit": {
           "type": "select",
@@ -138,7 +186,11 @@
               "value": "kW",
               "label": "kW"
             }
-          ]
+          ],
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "par14aParticipants": {
           "type": "table",
@@ -191,26 +243,45 @@
               "max": 1000000,
               "width": "35%"
             }
-          ]
+          ],
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "par14aCalculationHelp": {
           "type": "staticText",
           "text": "Count the agreed permanently assigned EMS devices, not connected cars. Heat pumps and cooling systems are each grouped; each electrical load including auxiliaries must be entered once. Standalone heaters are not additional participants. Only devices/groups above 4200 W count. Standard: 4200 + (n-1)*GZF*4200 W. With WP/cooling above 11000 W: max(0.4*P_WP,0.4*P_cooling) + (n-1)*GZF*4200 W. Result: Control.GridOperatorCalculation_JSON after saving. This calculation does not prove registration or implement the pending own-generation/net-import balance. Existing common gross-power protection remains conservative.",
           "newLine": true,
-          "hidden": "data.par14aBudgetMode !== 'ems'"
+          "hidden": "data.par14aBudgetMode !== 'ems'",
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "par14aGzfStandard": {
           "type": "staticText",
           "text": "Standard GZF: n=2: 0.80; 3: 0.75; 4: 0.70; 5: 0.65; 6: 0.60; 7: 0.55; 8: 0.50; n>=9: 0.45. BK6-22-300 Anlage 1, 4.5.2; VDE FNN April 2025 retains these values.",
           "newLine": true,
-          "hidden": "data.par14aBudgetMode !== 'ems'"
+          "hidden": "data.par14aBudgetMode !== 'ems'",
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "par14aGzfOverrideEnabled": {
           "type": "checkbox",
           "label": "Advanced: use a non-standard GZF table (shown as deviation)",
           "default": false,
           "newLine": true,
-          "hidden": "data.par14aBudgetMode !== 'ems'"
+          "hidden": "data.par14aBudgetMode !== 'ems'",
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "par14aGzfFactors": {
           "type": "table",
@@ -272,38 +343,63 @@
               "step": 0.01,
               "width": "55%"
             }
-          ]
+          ],
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "lpcStateId": {
           "type": "text",
           "label": "EEBUS LPC.state data point",
           "default": "",
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "lpcLimitId": {
           "type": "text",
           "label": "EEBUS LPC.limit data point",
           "default": "",
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "lppStateId": {
           "type": "text",
           "label": "Optional EEBUS LPP.state data point",
           "default": "",
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "lppLimitId": {
           "type": "text",
           "label": "Optional EEBUS LPP.limit data point",
           "default": "",
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "par14aScopeHelp": {
           "type": "staticText",
           "text": "Binary contact and LPC must refer to the same configured EMS group. An external LPC total budget is used directly, never multiplied by GZF. Changing the budget source is opt-in; existing fixed limits and signal mappings remain unchanged. The current runtime still applies the resulting value conservatively as a shared gross-power ceiling.",
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         }
       }
     },
@@ -320,14 +416,23 @@
         "measurementHelp": {
           "type": "staticText",
           "text": "Required for normal operation: PV power and either grid import/export or an equivalent mapped source. Values are expected in watts. Explicit fields override legacy JSON entries.",
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "pvPowerId": {
           "type": "text",
           "label": "PV production power (required)",
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "bhkwHeader": {
           "type": "header",
@@ -339,21 +444,34 @@
           "type": "checkbox",
           "label": "BHKW present – disable after decommissioning",
           "default": false,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "bhkwPowerId": {
           "type": "text",
           "label": "BHKW electrical production power (W)",
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "bhkwEnergyId": {
           "type": "text",
           "label": "BHKW cumulative electrical production energy",
           "default": "",
           "sm": 8,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 8,
+          "lg": 8,
+          "xl": 8
         },
         "bhkwEnergyUnit": {
           "type": "select",
@@ -373,7 +491,11 @@
               "value": "J"
             }
           ],
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "bhkwPowerMaxAgeS": {
           "type": "number",
@@ -381,44 +503,74 @@
           "default": 120,
           "min": 1,
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "bhkwEnergyMaxAgeS": {
           "type": "number",
           "label": "Maximum BHKW counter sample age (s)",
           "default": 86400,
           "min": 1,
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "bhkwHelp": {
           "type": "staticText",
           "text": "BHKW is recorded separately from PV. The net meter already includes its power: no extra live budget or forecast generation is added. Missing, stale or unacknowledged values remain unknown. Daily energy requires valid counter differences. After decommissioning disable BHKW present.",
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "gridImportId": {
           "type": "text",
           "label": "Grid import power (required)",
           "default": "",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "gridExportId": {
           "type": "text",
           "label": "Grid export power (required)",
           "default": "",
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "outsideTemperatureId": {
           "type": "text",
           "label": "Outside temperature (optional, °C)",
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "outsideTemperatureHelp": {
           "type": "staticText",
           "text": "Expected unit: °C. Invalid or unavailable values are ignored; forecast calculations continue with their conservative fallback.",
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "_partialMetersHeader": {
           "type": "header",
@@ -431,33 +583,53 @@
           "label": "House meter 1",
           "default": "",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "house2PowerId": {
           "type": "text",
           "label": "House meter 2",
           "default": "",
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "hallPowerId": {
           "type": "text",
           "label": "Hall meter",
           "default": "",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "apartmentPowerId": {
           "type": "text",
           "label": "Apartment meter",
           "default": "",
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "dhwTemperatureId": {
           "type": "text",
           "label": "Optional aggregate DHW temperature",
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "_phaseMeasurementHeader": {
           "type": "header",
@@ -470,70 +642,114 @@
           "label": "House current L1 (A)",
           "default": "",
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "dhwHaL2CurrentId": {
           "type": "text",
           "label": "House current L2 (A)",
           "default": "",
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "dhwHaL3CurrentId": {
           "type": "text",
           "label": "House current L3 (A)",
           "default": "",
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "haL1ImportPowerId": {
           "type": "text",
           "label": "L1 import power (W)",
           "default": "",
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "haL2ImportPowerId": {
           "type": "text",
           "label": "L2 import power (W)",
           "default": "",
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "haL3ImportPowerId": {
           "type": "text",
           "label": "L3 import power (W)",
           "default": "",
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "haL1ExportPowerId": {
           "type": "text",
           "label": "L1 export power (W)",
           "default": "",
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "haL2ExportPowerId": {
           "type": "text",
           "label": "L2 export power (W)",
           "default": "",
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "haL3ExportPowerId": {
           "type": "text",
           "label": "L3 export power (W)",
           "default": "",
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "haFreePowerId": {
           "type": "text",
           "label": "Legacy available house power (optional)",
           "default": "",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "haCriticalId": {
           "type": "text",
           "label": "House-connection critical flag (optional)",
           "default": "",
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         }
       }
     },
@@ -552,7 +768,11 @@
           "label": "History/SQL adapter instance",
           "default": "",
           "sm": 8,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 8,
+          "lg": 8,
+          "xl": 8
         },
         "historyDays": {
           "type": "number",
@@ -561,14 +781,22 @@
           "default": 84,
           "min": 7,
           "max": 365,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "dhwHistoryId": {
           "type": "text",
           "label": "Historized DHW power",
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "diagnosticPumpSourcesJson": {
           "type": "text",
@@ -576,7 +804,11 @@
           "help": "Enter a JSON array of up to 32 explicit state IDs for pump request, command and independent feedback, without wildcards. These sources are read for diagnostic recording only; they do not control the pump. The default empty list adds no source mapping. Missing or invalid sources remain unknown and cannot confirm a pump response or run-on.",
           "default": "[]",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "forecastSourceHeader": {
           "type": "header",
@@ -589,32 +821,52 @@
           "label": "Hourly weather base data point",
           "default": "",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "pvForecastBaseId": {
           "type": "text",
           "label": "PV forecast base data point",
           "default": "",
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "holidayTodayId": {
           "type": "text",
           "label": "Holiday today flag",
           "default": "",
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "holidayTomorrowId": {
           "type": "text",
           "label": "Holiday tomorrow flag",
           "default": "",
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "holidayAfterTomorrowId": {
           "type": "text",
           "label": "Holiday day-after-tomorrow flag",
           "default": "",
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         }
       }
     },
@@ -631,7 +883,12 @@
         "_priceQuarterHelp": {
           "type": "staticText",
           "text": "Forecast prices and tariff windows use 15-minute intervals. Real-time power control continues at its configured seconds interval. All resulting prices are gross ct/kWh.",
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "priceVatPct": {
           "type": "number",
@@ -641,7 +898,11 @@
           "max": 100,
           "unit": "%",
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "priceInputBasis": {
           "type": "select",
@@ -657,12 +918,21 @@
               "label": "Net (excluding VAT)"
             }
           ],
-          "sm": 8
+          "sm": 8,
+          "xs": 12,
+          "md": 8,
+          "lg": 8,
+          "xl": 8
         },
         "_priceMigrationHelp": {
           "type": "staticText",
           "text": "Existing amounts are preserved without automatic reinterpretation. Review whether the fixed energy component, fixed grid fee, energy adders and external grid-fee series are net or gross. This selector applies to these four inputs; exchange prices and the annual tariff have their own basis.",
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "_priceChargingHeader": {
           "type": "header",
@@ -678,7 +948,11 @@
           "max": 48,
           "unit": "h",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "priceChargingMinBlockMin": {
           "type": "number",
@@ -688,12 +962,21 @@
           "max": 240,
           "unit": "min",
           "sm": 6,
-          "step": 15
+          "step": 15,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "_priceChargingHelp": {
           "type": "staticText",
           "text": "Enable price-based grid charging separately on the Battery tab or each Wallbox tab. The comparison uses the full gross price including energy, adders and grid fees. A fixed energy tariff with time-dependent grid fees also works. Expected usable PV reduces the required grid energy. Without departure time, vehicles account for usable PV over the next 48 h. The price window above (default 24 h) limits grid purchases, not when the car must be full. An enabled departure remains a fixed deadline. Blocks avoid chasing each quarter-hour. Existing master, device and production releases still apply.",
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "_fixedTariffHeader": {
           "type": "header",
@@ -716,7 +999,11 @@
             }
           ],
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "fixedEnergyCt": {
           "type": "number",
@@ -727,7 +1014,11 @@
           "max": 1000,
           "sm": 6,
           "newLine": true,
-          "hidden": "data.fixedTariffMode === 'total'"
+          "hidden": "data.fixedTariffMode === 'total'",
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "fixedTotalPriceCt": {
           "type": "number",
@@ -739,7 +1030,11 @@
           "sm": 6,
           "newLine": true,
           "hidden": "data.fixedTariffMode !== 'total'",
-          "validator": "data.fixedTariffMode !== 'total' || Number(data.fixedTotalPriceCt) > 0"
+          "validator": "data.fixedTariffMode !== 'total' || Number(data.fixedTotalPriceCt) > 0",
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "referenceGridFeeCt": {
           "type": "number",
@@ -749,13 +1044,22 @@
           "min": 0,
           "max": 1000,
           "sm": 6,
-          "hidden": "data.fixedTariffMode !== 'total'"
+          "hidden": "data.fixedTariffMode !== 'total'",
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "_fixedTotalHelp": {
           "type": "staticText",
           "text": "Enter your actual contract price. The energy component is total price minus the included reference grid fee; the applicable grid fee is then added per interval. Both inputs in this mode are always gross. A total price of 0 is not configured.",
           "newLine": true,
-          "hidden": "data.fixedTariffMode !== 'total'"
+          "hidden": "data.fixedTariffMode !== 'total'",
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "fixedGridFeeCt": {
           "type": "number",
@@ -765,7 +1069,11 @@
           "min": 0,
           "max": 1000,
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "_energySourceHeader": {
           "type": "header",
@@ -778,13 +1086,21 @@
           "label": "Use dynamic energy price",
           "default": false,
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "dynamicEnergyPriceEnabledId": {
           "type": "text",
           "label": "External enable switch (optional)",
           "default": "",
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "energyPriceSource": {
           "type": "select",
@@ -801,14 +1117,22 @@
             }
           ],
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "energyPriceSeriesId": {
           "type": "text",
           "label": "External energy-price series data point",
           "default": "",
           "sm": 6,
-          "hidden": "data.energyPriceSource === 'energy-charts'"
+          "hidden": "data.energyPriceSource === 'energy-charts'",
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "energyPriceSeriesBasis": {
           "type": "select",
@@ -826,13 +1150,22 @@
           ],
           "sm": 6,
           "newLine": true,
-          "hidden": "data.energyPriceSource === 'energy-charts'"
+          "hidden": "data.energyPriceSource === 'energy-charts'",
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "_directExchangeHelp": {
           "type": "staticText",
           "text": "Energy-Charts supplies actual published DE-LU quarter-hour prices in EUR/MWh, always net. The adapter converts the unit and adds VAT once. Unpublished intervals remain missing and cannot authorize price-dependent operation.",
           "newLine": true,
-          "hidden": "data.energyPriceSource !== 'energy-charts'"
+          "hidden": "data.energyPriceSource !== 'energy-charts'",
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "dynamicEnergyAddersCt": {
           "type": "number",
@@ -842,7 +1175,11 @@
           "min": -1000,
           "max": 1000,
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "_gridSourceHeader": {
           "type": "header",
@@ -855,13 +1192,21 @@
           "label": "Use time-dependent grid fee",
           "default": false,
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "dynamicGridFeeEnabledId": {
           "type": "text",
           "label": "External grid-fee enable switch (optional)",
           "default": "",
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "gridFeeSource": {
           "type": "select",
@@ -878,19 +1223,32 @@
             }
           ],
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "gridFeeSeriesId": {
           "type": "text",
           "label": "External grid-fee series data point",
           "default": "",
           "sm": 6,
-          "hidden": "data.gridFeeSource === 'schedule'"
+          "hidden": "data.gridFeeSource === 'schedule'",
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "priceSwitchHelp": {
           "type": "staticText",
           "text": "An external enable data point overrides its internal switch. Missing or invalid external switch values disable that dynamic source and are reported in diagnostics. Selecting a source alone does not enable it.",
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "_annualTariffHeader": {
           "type": "header",
@@ -908,7 +1266,11 @@
           "step": 1,
           "sm": 6,
           "newLine": true,
-          "hidden": "data.gridFeeSource !== 'schedule'"
+          "hidden": "data.gridFeeSource !== 'schedule'",
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "gridTariffBasis": {
           "type": "select",
@@ -925,7 +1287,11 @@
             }
           ],
           "sm": 6,
-          "hidden": "data.gridFeeSource !== 'schedule'"
+          "hidden": "data.gridFeeSource !== 'schedule'",
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "gridTariffStandardCt": {
           "type": "number",
@@ -936,7 +1302,11 @@
           "max": 1000,
           "sm": 4,
           "newLine": true,
-          "hidden": "data.gridFeeSource !== 'schedule'"
+          "hidden": "data.gridFeeSource !== 'schedule'",
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "gridTariffHighCt": {
           "type": "number",
@@ -946,7 +1316,11 @@
           "min": 0,
           "max": 1000,
           "sm": 4,
-          "hidden": "data.gridFeeSource !== 'schedule'"
+          "hidden": "data.gridFeeSource !== 'schedule'",
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "gridTariffLowCt": {
           "type": "number",
@@ -956,13 +1330,22 @@
           "min": 0,
           "max": 1000,
           "sm": 4,
-          "hidden": "data.gridFeeSource !== 'schedule'"
+          "hidden": "data.gridFeeSource !== 'schedule'",
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "_annualTariffHelp": {
           "type": "staticText",
           "text": "Editable example: Avacon 2026, module 3. Confirm prices, eligibility and tariff year against your own agreement. Time windows apply daily in Europe/Berlin, including daylight-saving changes. Each quarter must cover 00:00–24:00 without gaps or overlaps. Use quarter-hour boundaries; split a window at midnight. An expired or incomplete tariff is reported as invalid and cannot authorize price-dependent operation.",
           "newLine": true,
-          "hidden": "data.gridFeeSource !== 'schedule'"
+          "hidden": "data.gridFeeSource !== 'schedule'",
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "gridTariffRules": {
           "type": "table",
@@ -1111,7 +1494,11 @@
                 }
               ]
             }
-          ]
+          ],
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         }
       }
     },
@@ -1131,7 +1518,11 @@
           "help": "Reserve at least 6 A single-phase for each eligible released vehicle below its minimum SoC, subject to house-connection, grid-operator and device limits. Remaining power goes to the preferred vehicle, then to the next automatically ranked vehicles. Target SoC remains binding. When disabled, only one EMS-controlled wallbox charges at a time. This option does not enable Master Control or arm outputs.",
           "default": true,
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "wallboxPrioritySource": {
           "type": "select",
@@ -1152,7 +1543,11 @@
               "value": "external",
               "label": "External data point"
             }
-          ]
+          ],
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "wallboxPriority": {
           "type": "select",
@@ -1177,13 +1572,21 @@
               "value": 2,
               "label": "Wallbox 2"
             }
-          ]
+          ],
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "wallboxPriorityId": {
           "type": "text",
           "label": "External priority data point",
           "default": "",
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "wallboxMaxStepA": {
           "type": "number",
@@ -1193,7 +1596,11 @@
           "min": 1,
           "max": 32,
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "wallboxCombinedMaxStepA": {
           "type": "number",
@@ -1202,7 +1609,11 @@
           "default": 1,
           "min": 1,
           "max": 6,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "wallboxStartReserveW": {
           "type": "number",
@@ -1211,7 +1622,11 @@
           "default": 300,
           "min": 0,
           "max": 5000,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "wallboxStartDelayS": {
           "type": "number",
@@ -1221,7 +1636,11 @@
           "min": 0,
           "max": 600,
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "wallboxMinimumRunTimeS": {
           "type": "number",
@@ -1230,7 +1649,11 @@
           "default": 120,
           "min": 0,
           "max": 3600,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "wallboxStopDelayS": {
           "type": "number",
@@ -1239,14 +1662,22 @@
           "default": 120,
           "min": 0,
           "max": 3600,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "wallboxRestartHandoffEnabled": {
           "type": "checkbox",
           "label": "Keep an EMS-owned active wallbox running during adapter restart/update",
           "default": true,
           "sm": 8,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 8,
+          "lg": 8,
+          "xl": 8
         },
         "wallboxRestartHandoffTimeoutS": {
           "type": "number",
@@ -1256,7 +1687,11 @@
           "default": 900,
           "min": 900,
           "max": 3600,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "wallboxRestartHandoffGraceS": {
           "type": "number",
@@ -1265,7 +1700,11 @@
           "default": 30,
           "min": 10,
           "max": 120,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "wallboxRestartHandoffSettleS": {
           "type": "number",
@@ -1274,7 +1713,11 @@
           "default": 10,
           "min": 0,
           "max": 60,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "wallboxMeasurementMaxAgeS": {
           "type": "number",
@@ -1283,7 +1726,11 @@
           "default": 30,
           "min": 5,
           "max": 120,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "wallboxResponseSettleTimeoutS": {
           "type": "number",
@@ -1293,7 +1740,11 @@
           "default": 45,
           "min": 5,
           "max": 120,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "wallboxResponseCurrentToleranceA": {
           "type": "number",
@@ -1303,7 +1754,11 @@
           "default": 1.5,
           "min": 0.5,
           "max": 3,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "phaseSwitchLookAheadMin": {
           "type": "number",
@@ -1312,7 +1767,11 @@
           "default": 30,
           "min": 15,
           "max": 240,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "phaseSwitchRealDownDelayS": {
           "type": "number",
@@ -1322,7 +1781,11 @@
           "default": 120,
           "min": 15,
           "max": 900,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "phaseSwitchRealUpDelayS": {
           "type": "number",
@@ -1332,7 +1795,11 @@
           "default": 300,
           "min": 30,
           "max": 1800,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "phaseSwitchMinHoldMin": {
           "type": "number",
@@ -1341,7 +1808,11 @@
           "default": 30,
           "min": 0,
           "max": 240,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "wallboxPhaseSwitchTimeoutS": {
           "type": "number",
@@ -1350,7 +1821,11 @@
           "default": 180,
           "min": 30,
           "max": 900,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "phaseSwitchTransitionS": {
           "type": "number",
@@ -1360,7 +1835,11 @@
           "min": 30,
           "max": 300,
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         }
       }
     },
@@ -1379,33 +1858,53 @@
           "label": "Wallbox 0 present / include in planning",
           "default": true,
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "wb0ControlEnabled": {
           "type": "checkbox",
           "label": "Wallbox 0 control release",
           "default": false,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "wb0Name": {
           "type": "text",
           "label": "Vehicle name",
           "default": "Vehicle 0",
           "sm": 3,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "wb0SocId": {
           "type": "text",
           "label": "SoC data point",
           "default": "",
-          "sm": 9
+          "sm": 9,
+          "xs": 12,
+          "md": 9,
+          "lg": 9,
+          "xl": 9
         },
         "wb0SocEstimationEnabled": {
           "type": "checkbox",
           "label": "SoC estimation from measured charging energy",
           "default": false,
           "newLine": true,
-          "sm": 12
+          "sm": 12,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "wb0SocEnergyId": {
           "type": "text",
@@ -1413,7 +1912,11 @@
           "default": "",
           "sm": 8,
           "newLine": true,
-          "hidden": "!data.wb0SocEstimationEnabled"
+          "hidden": "!data.wb0SocEstimationEnabled",
+          "xs": 12,
+          "md": 8,
+          "lg": 8,
+          "xl": 8
         },
         "wb0SocEfficiencyPct": {
           "type": "number",
@@ -1422,7 +1925,11 @@
           "min": 50,
           "max": 99,
           "sm": 4,
-          "hidden": "!data.wb0SocEstimationEnabled"
+          "hidden": "!data.wb0SocEstimationEnabled",
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "wb0SocMeasurementTimeId": {
           "type": "text",
@@ -1430,13 +1937,22 @@
           "default": "",
           "sm": 12,
           "newLine": true,
-          "hidden": "!data.wb0SocEstimationEnabled"
+          "hidden": "!data.wb0SocEstimationEnabled",
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "wb0SocEstimateHelp": {
           "type": "staticText",
           "text": "SoC estimation help",
           "newLine": true,
-          "hidden": "!data.wb0SocEstimationEnabled"
+          "hidden": "!data.wb0SocEstimationEnabled",
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "_wb0InputHeader": {
           "type": "header",
@@ -1449,65 +1965,105 @@
           "label": "External minimum SoC",
           "default": "",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb0TargetSocId": {
           "type": "text",
           "label": "External target SoC",
           "default": "",
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb0ReleaseId": {
           "type": "text",
           "label": "EMS release / socfrei",
           "default": "",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb0UserAllowId": {
           "type": "text",
           "label": "User charging permission",
           "default": "",
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb0CarStateId": {
           "type": "text",
           "label": "Vehicle connection state",
           "default": "",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb0PhaseStateId": {
           "type": "text",
           "label": "Current phase count",
           "default": "",
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb0PowerId": {
           "type": "text",
           "label": "Measured charging power",
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "wb0L1CurrentId": {
           "type": "text",
           "label": "Measured current L1",
           "default": "",
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "wb0L2CurrentId": {
           "type": "text",
           "label": "Measured current L2",
           "default": "",
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "wb0L3CurrentId": {
           "type": "text",
           "label": "Measured current L3",
           "default": "",
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "wb0CapacityKWh": {
           "type": "number",
@@ -1517,7 +2073,11 @@
           "min": 1,
           "max": 200,
           "sm": 3,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "wb0MaxPowerW": {
           "type": "number",
@@ -1526,13 +2086,21 @@
           "default": 11000,
           "min": 1380,
           "max": 23000,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "wb0PhaseSwitchEnabled": {
           "type": "checkbox",
           "label": "Enable dynamic 1-/3-phase operation (external script switches)",
           "default": false,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "wb0PhaseControlMode": {
           "type": "select",
@@ -1548,7 +2116,11 @@
               "value": "ems"
             }
           ],
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "_wb0CurrentHeader": {
           "type": "header",
@@ -1564,7 +2136,11 @@
           "min": 6,
           "max": 32,
           "sm": 3,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "wb0MaxCurrent1pA": {
           "type": "number",
@@ -1573,7 +2149,11 @@
           "default": 16,
           "min": 6,
           "max": 32,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "wb0MinCurrent3pA": {
           "type": "number",
@@ -1582,7 +2162,11 @@
           "default": 6,
           "min": 0,
           "max": 32,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "wb0MaxCurrent3pA": {
           "type": "number",
@@ -1591,7 +2175,11 @@
           "default": 16,
           "min": 0,
           "max": 32,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "_wb0SocHeader": {
           "type": "header",
@@ -1614,7 +2202,11 @@
             }
           ],
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb0MinSocPct": {
           "type": "number",
@@ -1624,7 +2216,11 @@
           "max": 100,
           "unit": "%",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb0TargetSocPct": {
           "type": "number",
@@ -1634,21 +2230,33 @@
           "max": 100,
           "unit": "%",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb0DeadlineEnabled": {
           "type": "checkbox",
           "label": "Allow grid charging to target before departure",
           "default": false,
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb0TaperEnabled": {
           "type": "checkbox",
           "label": "Reduce current near target SoC",
           "default": false,
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb0Taper1DeltaPct": {
           "type": "number",
@@ -1658,7 +2266,11 @@
           "max": 100,
           "unit": "percentage points",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb0Taper1MaxA": {
           "type": "number",
@@ -1668,7 +2280,11 @@
           "max": 32,
           "unit": "A",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb0Taper2DeltaPct": {
           "type": "number",
@@ -1678,7 +2294,11 @@
           "max": 100,
           "unit": "percentage points",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb0Taper2MaxA": {
           "type": "number",
@@ -1688,7 +2308,11 @@
           "max": 32,
           "unit": "A",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "_wb0PriceHeader": {
           "type": "header",
@@ -1701,7 +2325,11 @@
           "label": "Allow vehicle grid charging in selected low-price periods",
           "default": false,
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "wb0PriceMaxCt": {
           "type": "number",
@@ -1711,7 +2339,11 @@
           "max": 1000,
           "unit": "ct/kWh",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb0PriceEnergyKWh": {
           "type": "number",
@@ -1721,12 +2353,21 @@
           "max": 1000,
           "unit": "kWh",
           "sm": 6,
-          "step": 0.1
+          "step": 0.1,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "_wb0PriceHelp": {
           "type": "staticText",
           "text": "With valid vehicle SoC, the existing target determines the energy needed. Without SoC, enter the AC energy to add per plug-in session (0 = no price-based grid charging without SoC). Measured charging reduces the remaining session energy; a restart does not reset it. Usable PV is planned first. Without departure time, usable PV over the next 48 h reduces grid demand; sufficient PV tomorrow avoids unnecessary charging tonight. An enabled departure is a fixed deadline. The price window (default 24 h) only limits the search for grid-charging blocks. The price cap is the full gross price including time-dependent grid fees; 0 means no additional cap. User permission, master, device and production releases remain required.",
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "_wb0MinimumHeader": {
           "type": "header",
@@ -1739,14 +2380,22 @@
           "label": "Existing manual minimum-current data point",
           "default": "javascript.0.ev.amin0",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "wb0LowSocStepsEnabled": {
           "type": "checkbox",
           "label": "Use minimum-current stages when socfrei = 2",
           "default": true,
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "wb0LowSoc1ThresholdPct": {
           "type": "number",
@@ -1756,7 +2405,11 @@
           "max": 100,
           "unit": "%",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb0LowSoc1MinA": {
           "type": "number",
@@ -1765,7 +2418,11 @@
           "min": 0,
           "max": 32,
           "unit": "A",
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb0LowSoc2ThresholdPct": {
           "type": "number",
@@ -1775,7 +2432,11 @@
           "max": 100,
           "unit": "%",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb0LowSoc2MinA": {
           "type": "number",
@@ -1784,7 +2445,11 @@
           "min": 0,
           "max": 32,
           "unit": "A",
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb0LowSoc3ThresholdPct": {
           "type": "number",
@@ -1794,7 +2459,11 @@
           "max": 100,
           "unit": "%",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb0LowSoc3MinA": {
           "type": "number",
@@ -1803,7 +2472,11 @@
           "min": 0,
           "max": 32,
           "unit": "A",
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "_wb0ProductionHeader": {
           "type": "header",
@@ -1816,7 +2489,11 @@
           "label": "Arm wallbox output: competing ampere/allow writer stopped",
           "default": false,
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb0ProductionPhases": {
           "type": "select",
@@ -1833,7 +2510,11 @@
             }
           ],
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb0SinglePhaseGridPhase": {
           "type": "select",
@@ -1854,7 +2535,11 @@
             }
           ],
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb0CommissioningMaxA": {
           "type": "number",
@@ -1864,7 +2549,11 @@
           "max": 32,
           "unit": "A",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb0FeedbackTimeoutS": {
           "type": "number",
@@ -1874,56 +2563,88 @@
           "max": 120,
           "unit": "s",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb0AmpereOutputId": {
           "type": "text",
           "label": "Writable go-e current (amperePV)",
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "wb0AllowOutputId": {
           "type": "text",
           "label": "Writable go-e release (allow_charging, numeric 0/1)",
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "wb0AmpereFeedbackId": {
           "type": "text",
           "label": "Confirmed go-e current (ampere)",
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "wb0ConnectionId": {
           "type": "text",
           "label": "go-e connection state",
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "wb0ErrorId": {
           "type": "text",
           "label": "go-e error code (0 = OK)",
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "wb0AvailableCurrentId": {
           "type": "text",
           "label": "Optional available current (leave empty if go-e provides no value)",
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "wb0PhaseModeId": {
           "type": "text",
           "label": "go-e confirmed phase mode (1 = 1P, 2 = 3P)",
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         }
       }
     },
@@ -1942,33 +2663,53 @@
           "label": "Wallbox 1 present / include in planning",
           "default": true,
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "wb1ControlEnabled": {
           "type": "checkbox",
           "label": "Wallbox 1 control release",
           "default": false,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "wb1Name": {
           "type": "text",
           "label": "Vehicle name",
           "default": "Vehicle 1",
           "sm": 3,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "wb1SocId": {
           "type": "text",
           "label": "SoC data point",
           "default": "",
-          "sm": 9
+          "sm": 9,
+          "xs": 12,
+          "md": 9,
+          "lg": 9,
+          "xl": 9
         },
         "wb1SocEstimationEnabled": {
           "type": "checkbox",
           "label": "SoC estimation from measured charging energy",
           "default": false,
           "newLine": true,
-          "sm": 12
+          "sm": 12,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "wb1SocEnergyId": {
           "type": "text",
@@ -1976,7 +2717,11 @@
           "default": "",
           "sm": 8,
           "newLine": true,
-          "hidden": "!data.wb1SocEstimationEnabled"
+          "hidden": "!data.wb1SocEstimationEnabled",
+          "xs": 12,
+          "md": 8,
+          "lg": 8,
+          "xl": 8
         },
         "wb1SocEfficiencyPct": {
           "type": "number",
@@ -1985,7 +2730,11 @@
           "min": 50,
           "max": 99,
           "sm": 4,
-          "hidden": "!data.wb1SocEstimationEnabled"
+          "hidden": "!data.wb1SocEstimationEnabled",
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "wb1SocMeasurementTimeId": {
           "type": "text",
@@ -1993,13 +2742,22 @@
           "default": "",
           "sm": 12,
           "newLine": true,
-          "hidden": "!data.wb1SocEstimationEnabled"
+          "hidden": "!data.wb1SocEstimationEnabled",
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "wb1SocEstimateHelp": {
           "type": "staticText",
           "text": "SoC estimation help",
           "newLine": true,
-          "hidden": "!data.wb1SocEstimationEnabled"
+          "hidden": "!data.wb1SocEstimationEnabled",
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "_wb1InputHeader": {
           "type": "header",
@@ -2012,65 +2770,105 @@
           "label": "External minimum SoC",
           "default": "",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb1TargetSocId": {
           "type": "text",
           "label": "External target SoC",
           "default": "",
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb1ReleaseId": {
           "type": "text",
           "label": "EMS release / socfrei",
           "default": "",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb1UserAllowId": {
           "type": "text",
           "label": "User charging permission",
           "default": "",
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb1CarStateId": {
           "type": "text",
           "label": "Vehicle connection state",
           "default": "",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb1PhaseStateId": {
           "type": "text",
           "label": "Current phase count",
           "default": "",
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb1PowerId": {
           "type": "text",
           "label": "Measured charging power",
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "wb1L1CurrentId": {
           "type": "text",
           "label": "Measured current L1",
           "default": "",
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "wb1L2CurrentId": {
           "type": "text",
           "label": "Measured current L2",
           "default": "",
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "wb1L3CurrentId": {
           "type": "text",
           "label": "Measured current L3",
           "default": "",
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "wb1CapacityKWh": {
           "type": "number",
@@ -2080,7 +2878,11 @@
           "min": 1,
           "max": 200,
           "sm": 3,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "wb1MaxPowerW": {
           "type": "number",
@@ -2089,13 +2891,21 @@
           "default": 11000,
           "min": 1380,
           "max": 23000,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "wb1PhaseSwitchEnabled": {
           "type": "checkbox",
           "label": "Enable dynamic 1-/3-phase operation (external script switches)",
           "default": false,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "wb1PhaseControlMode": {
           "type": "select",
@@ -2111,7 +2921,11 @@
               "value": "ems"
             }
           ],
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "_wb1CurrentHeader": {
           "type": "header",
@@ -2127,7 +2941,11 @@
           "min": 6,
           "max": 32,
           "sm": 3,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "wb1MaxCurrent1pA": {
           "type": "number",
@@ -2136,7 +2954,11 @@
           "default": 16,
           "min": 6,
           "max": 32,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "wb1MinCurrent3pA": {
           "type": "number",
@@ -2145,7 +2967,11 @@
           "default": 6,
           "min": 6,
           "max": 32,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "wb1MaxCurrent3pA": {
           "type": "number",
@@ -2154,7 +2980,11 @@
           "default": 16,
           "min": 6,
           "max": 32,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "_wb1SocHeader": {
           "type": "header",
@@ -2177,7 +3007,11 @@
             }
           ],
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb1MinSocPct": {
           "type": "number",
@@ -2187,7 +3021,11 @@
           "max": 100,
           "unit": "%",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb1TargetSocPct": {
           "type": "number",
@@ -2197,21 +3035,33 @@
           "max": 100,
           "unit": "%",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb1DeadlineEnabled": {
           "type": "checkbox",
           "label": "Allow grid charging to target before departure",
           "default": false,
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb1TaperEnabled": {
           "type": "checkbox",
           "label": "Reduce current near target SoC",
           "default": false,
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb1Taper1DeltaPct": {
           "type": "number",
@@ -2221,7 +3071,11 @@
           "max": 100,
           "unit": "percentage points",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb1Taper1MaxA": {
           "type": "number",
@@ -2231,7 +3085,11 @@
           "max": 32,
           "unit": "A",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb1Taper2DeltaPct": {
           "type": "number",
@@ -2241,7 +3099,11 @@
           "max": 100,
           "unit": "percentage points",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb1Taper2MaxA": {
           "type": "number",
@@ -2251,7 +3113,11 @@
           "max": 32,
           "unit": "A",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "_wb1PriceHeader": {
           "type": "header",
@@ -2264,7 +3130,11 @@
           "label": "Allow vehicle grid charging in selected low-price periods",
           "default": false,
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "wb1PriceMaxCt": {
           "type": "number",
@@ -2274,7 +3144,11 @@
           "max": 1000,
           "unit": "ct/kWh",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb1PriceEnergyKWh": {
           "type": "number",
@@ -2284,12 +3158,21 @@
           "max": 1000,
           "unit": "kWh",
           "sm": 6,
-          "step": 0.1
+          "step": 0.1,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "_wb1PriceHelp": {
           "type": "staticText",
           "text": "With valid vehicle SoC, the existing target determines the energy needed. Without SoC, enter the AC energy to add per plug-in session (0 = no price-based grid charging without SoC). Measured charging reduces the remaining session energy; a restart does not reset it. Usable PV is planned first. Without departure time, usable PV over the next 48 h reduces grid demand; sufficient PV tomorrow avoids unnecessary charging tonight. An enabled departure is a fixed deadline. The price window (default 24 h) only limits the search for grid-charging blocks. The price cap is the full gross price including time-dependent grid fees; 0 means no additional cap. User permission, master, device and production releases remain required.",
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "_wb1MinimumHeader": {
           "type": "header",
@@ -2302,14 +3185,22 @@
           "label": "Existing manual minimum-current data point",
           "default": "javascript.0.ev.amin1",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "wb1LowSocStepsEnabled": {
           "type": "checkbox",
           "label": "Use minimum-current stages when socfrei = 2",
           "default": true,
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "wb1LowSoc1ThresholdPct": {
           "type": "number",
@@ -2319,7 +3210,11 @@
           "max": 100,
           "unit": "%",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb1LowSoc1MinA": {
           "type": "number",
@@ -2328,7 +3223,11 @@
           "min": 0,
           "max": 32,
           "unit": "A",
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb1LowSoc2ThresholdPct": {
           "type": "number",
@@ -2338,7 +3237,11 @@
           "max": 100,
           "unit": "%",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb1LowSoc2MinA": {
           "type": "number",
@@ -2347,7 +3250,11 @@
           "min": 0,
           "max": 32,
           "unit": "A",
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb1LowSoc3ThresholdPct": {
           "type": "number",
@@ -2357,7 +3264,11 @@
           "max": 100,
           "unit": "%",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb1LowSoc3MinA": {
           "type": "number",
@@ -2366,7 +3277,11 @@
           "min": 0,
           "max": 32,
           "unit": "A",
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "_wb1ProductionHeader": {
           "type": "header",
@@ -2379,7 +3294,11 @@
           "label": "Arm wallbox output: competing ampere/allow writer stopped",
           "default": false,
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb1ProductionPhases": {
           "type": "select",
@@ -2396,7 +3315,11 @@
             }
           ],
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb1SinglePhaseGridPhase": {
           "type": "select",
@@ -2417,7 +3340,11 @@
             }
           ],
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb1CommissioningMaxA": {
           "type": "number",
@@ -2427,7 +3354,11 @@
           "max": 32,
           "unit": "A",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb1FeedbackTimeoutS": {
           "type": "number",
@@ -2437,56 +3368,88 @@
           "max": 120,
           "unit": "s",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb1AmpereOutputId": {
           "type": "text",
           "label": "Writable go-e current (amperePV)",
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "wb1AllowOutputId": {
           "type": "text",
           "label": "Writable go-e release (allow_charging, numeric 0/1)",
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "wb1AmpereFeedbackId": {
           "type": "text",
           "label": "Confirmed go-e current (ampere)",
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "wb1ConnectionId": {
           "type": "text",
           "label": "go-e connection state",
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "wb1ErrorId": {
           "type": "text",
           "label": "go-e error code (0 = OK)",
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "wb1AvailableCurrentId": {
           "type": "text",
           "label": "Optional available current (leave empty if go-e provides no value)",
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "wb1PhaseModeId": {
           "type": "text",
           "label": "go-e confirmed phase mode (1 = 1P, 2 = 3P)",
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         }
       }
     },
@@ -2505,33 +3468,53 @@
           "label": "Wallbox 2 present / include in planning",
           "default": true,
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "wb2ControlEnabled": {
           "type": "checkbox",
           "label": "Wallbox 2 control release",
           "default": false,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "wb2Name": {
           "type": "text",
           "label": "Vehicle name",
           "default": "Vehicle 2",
           "sm": 3,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "wb2SocId": {
           "type": "text",
           "label": "SoC data point",
           "default": "",
-          "sm": 9
+          "sm": 9,
+          "xs": 12,
+          "md": 9,
+          "lg": 9,
+          "xl": 9
         },
         "wb2SocEstimationEnabled": {
           "type": "checkbox",
           "label": "SoC estimation from measured charging energy",
           "default": false,
           "newLine": true,
-          "sm": 12
+          "sm": 12,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "wb2SocEnergyId": {
           "type": "text",
@@ -2539,7 +3522,11 @@
           "default": "",
           "sm": 8,
           "newLine": true,
-          "hidden": "!data.wb2SocEstimationEnabled"
+          "hidden": "!data.wb2SocEstimationEnabled",
+          "xs": 12,
+          "md": 8,
+          "lg": 8,
+          "xl": 8
         },
         "wb2SocEfficiencyPct": {
           "type": "number",
@@ -2548,7 +3535,11 @@
           "min": 50,
           "max": 99,
           "sm": 4,
-          "hidden": "!data.wb2SocEstimationEnabled"
+          "hidden": "!data.wb2SocEstimationEnabled",
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "wb2SocMeasurementTimeId": {
           "type": "text",
@@ -2556,13 +3547,22 @@
           "default": "",
           "sm": 12,
           "newLine": true,
-          "hidden": "!data.wb2SocEstimationEnabled"
+          "hidden": "!data.wb2SocEstimationEnabled",
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "wb2SocEstimateHelp": {
           "type": "staticText",
           "text": "SoC estimation help",
           "newLine": true,
-          "hidden": "!data.wb2SocEstimationEnabled"
+          "hidden": "!data.wb2SocEstimationEnabled",
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "_wb2InputHeader": {
           "type": "header",
@@ -2575,65 +3575,105 @@
           "label": "External minimum SoC",
           "default": "",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb2TargetSocId": {
           "type": "text",
           "label": "External target SoC",
           "default": "",
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb2ReleaseId": {
           "type": "text",
           "label": "EMS release / socfrei",
           "default": "",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb2UserAllowId": {
           "type": "text",
           "label": "User charging permission",
           "default": "",
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb2CarStateId": {
           "type": "text",
           "label": "Vehicle connection state",
           "default": "",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb2PhaseStateId": {
           "type": "text",
           "label": "Current phase count",
           "default": "",
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb2PowerId": {
           "type": "text",
           "label": "Measured charging power",
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "wb2L1CurrentId": {
           "type": "text",
           "label": "Measured current L1",
           "default": "",
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "wb2L2CurrentId": {
           "type": "text",
           "label": "Measured current L2",
           "default": "",
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "wb2L3CurrentId": {
           "type": "text",
           "label": "Measured current L3",
           "default": "",
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "wb2CapacityKWh": {
           "type": "number",
@@ -2643,7 +3683,11 @@
           "min": 1,
           "max": 200,
           "sm": 3,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "wb2MaxPowerW": {
           "type": "number",
@@ -2652,13 +3696,21 @@
           "default": 11000,
           "min": 1380,
           "max": 23000,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "wb2PhaseSwitchEnabled": {
           "type": "checkbox",
           "label": "Enable dynamic 1-/3-phase operation (external script switches)",
           "default": false,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "wb2PhaseControlMode": {
           "type": "select",
@@ -2674,7 +3726,11 @@
               "value": "ems"
             }
           ],
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "_wb2CurrentHeader": {
           "type": "header",
@@ -2690,7 +3746,11 @@
           "min": 6,
           "max": 32,
           "sm": 3,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "wb2MaxCurrent1pA": {
           "type": "number",
@@ -2699,7 +3759,11 @@
           "default": 16,
           "min": 6,
           "max": 32,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "wb2MinCurrent3pA": {
           "type": "number",
@@ -2708,7 +3772,11 @@
           "default": 6,
           "min": 6,
           "max": 32,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "wb2MaxCurrent3pA": {
           "type": "number",
@@ -2717,7 +3785,11 @@
           "default": 16,
           "min": 6,
           "max": 32,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "_wb2SocHeader": {
           "type": "header",
@@ -2740,7 +3812,11 @@
             }
           ],
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb2MinSocPct": {
           "type": "number",
@@ -2750,7 +3826,11 @@
           "max": 100,
           "unit": "%",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb2TargetSocPct": {
           "type": "number",
@@ -2760,21 +3840,33 @@
           "max": 100,
           "unit": "%",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb2DeadlineEnabled": {
           "type": "checkbox",
           "label": "Allow grid charging to target before departure",
           "default": false,
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb2TaperEnabled": {
           "type": "checkbox",
           "label": "Reduce current near target SoC",
           "default": false,
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb2Taper1DeltaPct": {
           "type": "number",
@@ -2784,7 +3876,11 @@
           "max": 100,
           "unit": "percentage points",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb2Taper1MaxA": {
           "type": "number",
@@ -2794,7 +3890,11 @@
           "max": 32,
           "unit": "A",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb2Taper2DeltaPct": {
           "type": "number",
@@ -2804,7 +3904,11 @@
           "max": 100,
           "unit": "percentage points",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb2Taper2MaxA": {
           "type": "number",
@@ -2814,7 +3918,11 @@
           "max": 32,
           "unit": "A",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "_wb2PriceHeader": {
           "type": "header",
@@ -2827,7 +3935,11 @@
           "label": "Allow vehicle grid charging in selected low-price periods",
           "default": false,
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "wb2PriceMaxCt": {
           "type": "number",
@@ -2837,7 +3949,11 @@
           "max": 1000,
           "unit": "ct/kWh",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb2PriceEnergyKWh": {
           "type": "number",
@@ -2847,12 +3963,21 @@
           "max": 1000,
           "unit": "kWh",
           "sm": 6,
-          "step": 0.1
+          "step": 0.1,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "_wb2PriceHelp": {
           "type": "staticText",
           "text": "With valid vehicle SoC, the existing target determines the energy needed. Without SoC, enter the AC energy to add per plug-in session (0 = no price-based grid charging without SoC). Measured charging reduces the remaining session energy; a restart does not reset it. Usable PV is planned first. Without departure time, usable PV over the next 48 h reduces grid demand; sufficient PV tomorrow avoids unnecessary charging tonight. An enabled departure is a fixed deadline. The price window (default 24 h) only limits the search for grid-charging blocks. The price cap is the full gross price including time-dependent grid fees; 0 means no additional cap. User permission, master, device and production releases remain required.",
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "_wb2MinimumHeader": {
           "type": "header",
@@ -2865,14 +3990,22 @@
           "label": "Existing manual minimum-current data point",
           "default": "javascript.0.ev.amin2",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "wb2LowSocStepsEnabled": {
           "type": "checkbox",
           "label": "Use minimum-current stages when socfrei = 2",
           "default": true,
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "wb2LowSoc1ThresholdPct": {
           "type": "number",
@@ -2882,7 +4015,11 @@
           "max": 100,
           "unit": "%",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb2LowSoc1MinA": {
           "type": "number",
@@ -2891,7 +4028,11 @@
           "min": 0,
           "max": 32,
           "unit": "A",
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb2LowSoc2ThresholdPct": {
           "type": "number",
@@ -2901,7 +4042,11 @@
           "max": 100,
           "unit": "%",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb2LowSoc2MinA": {
           "type": "number",
@@ -2910,7 +4055,11 @@
           "min": 0,
           "max": 32,
           "unit": "A",
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb2LowSoc3ThresholdPct": {
           "type": "number",
@@ -2920,7 +4069,11 @@
           "max": 100,
           "unit": "%",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb2LowSoc3MinA": {
           "type": "number",
@@ -2929,7 +4082,11 @@
           "min": 0,
           "max": 32,
           "unit": "A",
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "_wb2ProductionHeader": {
           "type": "header",
@@ -2942,7 +4099,11 @@
           "label": "Arm wallbox output: competing ampere/allow writer stopped",
           "default": false,
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb2ProductionPhases": {
           "type": "select",
@@ -2959,7 +4120,11 @@
             }
           ],
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb2SinglePhaseGridPhase": {
           "type": "select",
@@ -2980,7 +4145,11 @@
             }
           ],
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb2CommissioningMaxA": {
           "type": "number",
@@ -2990,7 +4159,11 @@
           "max": 32,
           "unit": "A",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb2FeedbackTimeoutS": {
           "type": "number",
@@ -3000,56 +4173,88 @@
           "max": 120,
           "unit": "s",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "wb2AmpereOutputId": {
           "type": "text",
           "label": "Writable go-e current (amperePV)",
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "wb2AllowOutputId": {
           "type": "text",
           "label": "Writable go-e release (allow_charging, numeric 0/1)",
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "wb2AmpereFeedbackId": {
           "type": "text",
           "label": "Confirmed go-e current (ampere)",
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "wb2ConnectionId": {
           "type": "text",
           "label": "go-e connection state",
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "wb2ErrorId": {
           "type": "text",
           "label": "go-e error code (0 = OK)",
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "wb2AvailableCurrentId": {
           "type": "text",
           "label": "Optional available current (leave empty if go-e provides no value)",
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "wb2PhaseModeId": {
           "type": "text",
           "label": "go-e confirmed phase mode (1 = 1P, 2 = 3P)",
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         }
       }
     },
@@ -3068,13 +4273,21 @@
           "label": "DHW heater present / include in planning",
           "default": true,
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "dhwControlEnabled": {
           "type": "checkbox",
           "label": "DHW heater control release",
           "default": false,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "_dhwDataPointsHeader": {
           "type": "header",
@@ -3087,85 +4300,137 @@
           "label": "Writable DHW power setpoint",
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "dhwActualMirrorId": {
           "type": "text",
           "label": "Optional legacy actual-power mirror (for pump script)",
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "dhwOutput1Id": {
           "type": "text",
           "label": "AC THOR output 1 actual power",
           "default": "",
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "dhwOutput2Id": {
           "type": "text",
           "label": "AC THOR output 2 actual power",
           "default": "",
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "dhwOutput3Id": {
           "type": "text",
           "label": "AC THOR output 3 actual power",
           "default": "",
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "dhwPowerId": {
           "type": "text",
           "label": "Total power data point",
           "default": "",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "dhwConnectionId": {
           "type": "text",
           "label": "Connection data point",
           "default": "",
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "dhwTemp1Id": {
           "type": "text",
           "label": "Temperature 1 / bottom",
           "default": "",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "dhwTemp2Id": {
           "type": "text",
           "label": "Temperature 2",
           "default": "",
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "dhwTemp3Id": {
           "type": "text",
           "label": "Temperature 3",
           "default": "",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "dhwTemp4Id": {
           "type": "text",
           "label": "Temperature 4 / top",
           "default": "",
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "dhwReleaseId": {
           "type": "text",
           "label": "Release data point",
           "default": "",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "dhwHysteresisId": {
           "type": "text",
           "label": "Hysteresis data point",
           "default": "",
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "parallelHeader": {
           "type": "header",
@@ -3178,20 +4443,32 @@
           "label": "Existing distribution switch data point",
           "default": "javascript.0.ehz.aufteilen",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "dhwParallelDistributionEnabled": {
           "type": "checkbox",
           "label": "Use common wallbox / DHW allocator",
           "default": true,
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "combinedProductionArmed": {
           "type": "checkbox",
           "label": "Arm combined wallbox + DHW production",
           "default": false,
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "dhwParallelSharePct": {
           "type": "number",
@@ -3201,7 +4478,11 @@
           "max": 100,
           "unit": "%",
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "dhwParallelStartPower1PW": {
           "type": "number",
@@ -3209,7 +4490,11 @@
           "default": 4000,
           "min": 0,
           "unit": "W",
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "dhwParallelStopPower1PW": {
           "type": "number",
@@ -3217,7 +4502,11 @@
           "default": 3000,
           "min": 0,
           "unit": "W",
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "dhwParallelStartPower3PW": {
           "type": "number",
@@ -3226,7 +4515,11 @@
           "min": 0,
           "unit": "W",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "dhwParallelStopPower3PW": {
           "type": "number",
@@ -3234,7 +4527,11 @@
           "default": 8000,
           "min": 0,
           "unit": "W",
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "_dhwStorageHeader": {
           "type": "header",
@@ -3247,7 +4544,11 @@
           "label": "AC THOR outlet temperature",
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "dhwDailyDemandKWh": {
           "type": "number",
@@ -3257,7 +4558,11 @@
           "max": 100,
           "unit": "kWh",
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "dhwStandingLossKWhDay": {
           "type": "number",
@@ -3267,7 +4572,11 @@
           "max": 20,
           "unit": "kWh/d",
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "dhwForecastReserveKWh": {
           "type": "number",
@@ -3277,7 +4586,11 @@
           "max": 20,
           "unit": "kWh",
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "dhwVolumeL": {
           "type": "number",
@@ -3285,28 +4598,44 @@
           "unit": "l",
           "default": 500,
           "sm": 3,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "dhwMinTempC": {
           "type": "number",
           "label": "Minimum temperature",
           "unit": "°C",
           "default": 48,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "dhwTargetTempC": {
           "type": "number",
           "label": "Target temperature",
           "unit": "°C",
           "default": 60,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "dhwMaxPowerW": {
           "type": "number",
           "label": "Maximum power",
           "unit": "W",
           "default": 9000,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "dhwCommissioningMaxW": {
           "type": "number",
@@ -3315,7 +4644,11 @@
           "default": 1000,
           "min": 0,
           "max": 9000,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "dhwResumeTempC": {
           "type": "number",
@@ -3325,7 +4658,11 @@
           "min": 0,
           "max": 100,
           "sm": 3,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "dhwStopTempC": {
           "type": "number",
@@ -3334,7 +4671,11 @@
           "default": 76,
           "min": 0,
           "max": 100,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "dhwTopEmergencyC": {
           "type": "number",
@@ -3343,7 +4684,11 @@
           "default": 82,
           "min": 0,
           "max": 100,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "dhwTemperatureMaxAgeMin": {
           "type": "number",
@@ -3353,14 +4698,22 @@
           "min": 5,
           "max": 240,
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "dhwOutletDeratingC": {
           "type": "number",
           "label": "Curve active above outlet",
           "unit": "°C",
           "default": 60,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "dhwCurve1TempC": {
           "type": "number",
@@ -3368,28 +4721,44 @@
           "unit": "°C",
           "default": 70,
           "sm": 3,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "dhwCurve70PowerW": {
           "type": "number",
           "label": "Curve point 1 maximum",
           "unit": "W",
           "default": 7500,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "dhwCurve2TempC": {
           "type": "number",
           "label": "Curve point 2 temperature",
           "unit": "°C",
           "default": 71,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "dhwCurve71PowerW": {
           "type": "number",
           "label": "Curve point 2 maximum",
           "unit": "W",
           "default": 6000,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "dhwCurve3TempC": {
           "type": "number",
@@ -3397,28 +4766,44 @@
           "unit": "°C",
           "default": 73,
           "sm": 3,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "dhwCurve73PowerW": {
           "type": "number",
           "label": "Curve point 3 maximum",
           "unit": "W",
           "default": 4000,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "dhwCurve4TempC": {
           "type": "number",
           "label": "Curve point 4 temperature",
           "unit": "°C",
           "default": 74,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "dhwCurve74PowerW": {
           "type": "number",
           "label": "Curve point 4 maximum",
           "unit": "W",
           "default": 3000,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "dhwOutletProtectionC": {
           "type": "number",
@@ -3426,7 +4811,11 @@
           "unit": "°C",
           "default": 76,
           "sm": 3,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "_dhwResponseHeader": {
           "type": "header",
@@ -3439,7 +4828,11 @@
           "label": "Maximum change per cycle",
           "unit": "W",
           "default": 1000,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "dhwFastIncreaseMaxStepW": {
           "type": "number",
@@ -3448,7 +4841,11 @@
           "default": 3000,
           "min": 1000,
           "max": 9000,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "dhwSettleToleranceW": {
           "type": "number",
@@ -3458,7 +4855,11 @@
           "min": 50,
           "max": 2000,
           "sm": 3,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "dhwSettleTimeoutS": {
           "type": "number",
@@ -3467,7 +4868,11 @@
           "default": 15,
           "min": 5,
           "max": 60,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         }
       }
     },
@@ -3486,31 +4891,52 @@
           "label": "Heating-buffer heater present / include in planning",
           "default": false,
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "heatingControlEnabled": {
           "type": "checkbox",
           "label": "Heating-buffer control release",
           "default": false,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "_heatingOutputHelp": {
           "type": "staticText",
           "text": "Independent my-PV controller for the heating buffer; never reuse the DHW actuator. Requires its own setpoint, three measured output powers, connection and buffer temperature. Cooling active, unknown cooling status or manual inhibit blocks heating. Temperature limits do not replace the heater's physical thermostat and safety cut-out.",
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "heatingProductionArmed": {
           "type": "checkbox",
           "label": "Arm heating-buffer output: separate actuator verified and competing writer stopped",
           "default": false,
           "sm": 8,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 8,
+          "lg": 8,
+          "xl": 8
         },
         "heatingInhibit": {
           "type": "checkbox",
           "label": "Manual heating-buffer inhibit (always OFF)",
           "default": false,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "heatingSetpointId": {
           "type": "objectId",
@@ -3518,7 +4944,11 @@
           "filterFunc": "obj.type === 'state' && !!obj.common && obj.common.type === 'number' && obj.common.write === true",
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "heatingConnectionId": {
           "type": "objectId",
@@ -3528,7 +4958,11 @@
           ],
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "heatingOutput1Id": {
           "type": "objectId",
@@ -3538,7 +4972,11 @@
           ],
           "default": "",
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "heatingOutput2Id": {
           "type": "objectId",
@@ -3547,7 +4985,11 @@
             "state"
           ],
           "default": "",
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "heatingOutput3Id": {
           "type": "objectId",
@@ -3556,7 +4998,11 @@
             "state"
           ],
           "default": "",
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "heatingOutletTempId": {
           "type": "objectId",
@@ -3566,27 +5012,43 @@
           ],
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "heatingPowerId": {
           "type": "text",
           "label": "Current power data point",
           "default": "",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "heatingHistoryId": {
           "type": "text",
           "label": "Historized total power data point",
           "default": "",
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "heatingTempId": {
           "type": "text",
           "label": "Buffer temperature data point",
           "default": "",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "heatingVolumeL": {
           "type": "number",
@@ -3594,28 +5056,44 @@
           "unit": "l",
           "default": 400,
           "sm": 3,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "heatingTempC": {
           "type": "number",
           "label": "Manual fallback temperature for planning only; not a productive sensor",
           "unit": "°C",
           "default": 40,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "heatingMinTempC": {
           "type": "number",
           "label": "Minimum temperature",
           "unit": "°C",
           "default": 35,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "heatingTargetTempC": {
           "type": "number",
           "label": "Target temperature",
           "unit": "°C",
           "default": 50,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "heatingMaxPowerW": {
           "type": "number",
@@ -3623,7 +5101,11 @@
           "unit": "W",
           "default": 6000,
           "sm": 3,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "heatingStopTempC": {
           "type": "number",
@@ -3633,7 +5115,11 @@
           "min": 10,
           "max": 90,
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "heatingResumeDeltaC": {
           "type": "number",
@@ -3642,7 +5128,11 @@
           "default": 2,
           "min": 0.1,
           "max": 20,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "heatingOutletEmergencyC": {
           "type": "number",
@@ -3651,7 +5141,11 @@
           "default": 80,
           "min": 10,
           "max": 95,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "heatingMaxStepW": {
           "type": "number",
@@ -3661,7 +5155,11 @@
           "min": 100,
           "max": 3000,
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "heatingSettleToleranceW": {
           "type": "number",
@@ -3670,7 +5168,11 @@
           "default": 300,
           "min": 50,
           "max": 1000,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "heatingTemperatureMaxAgeS": {
           "type": "number",
@@ -3679,7 +5181,11 @@
           "default": 3600,
           "min": 10,
           "max": 7200,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "heatingOutputMaxAgeS": {
           "type": "number",
@@ -3689,7 +5195,11 @@
           "min": 5,
           "max": 300,
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         }
       }
     },
@@ -3708,13 +5218,21 @@
           "label": "Battery present / include in planning",
           "default": false,
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "batteryControlEnabled": {
           "type": "checkbox",
           "label": "Battery control release",
           "default": false,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "batteryDispatchMode": {
           "type": "select",
@@ -3731,7 +5249,11 @@
             }
           ],
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "batterySunEnergyInstance": {
           "type": "text",
@@ -3739,7 +5261,11 @@
           "default": "sunenergyxt500.0",
           "sm": 8,
           "newLine": true,
-          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads'"
+          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads'",
+          "xs": 12,
+          "md": 8,
+          "lg": 8,
+          "xl": 8
         },
         "batteryHeadCount": {
           "type": "number",
@@ -3750,25 +5276,44 @@
           "step": 1,
           "sm": 4,
           "hidden": "data.batteryDispatchMode !== 'sunenergy-heads'",
-          "help": "Select exactly the heads configured in the standard driver: head 1, heads 1–2 or heads 1–3. Unselected configured heads are not permitted. This setting does not enable battery control."
+          "help": "Select exactly the heads configured in the standard driver: head 1, heads 1–2 or heads 1–3. Unselected configured heads are not permitted. This setting does not enable battery control.",
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "_batterySunEnergyHeadsHelp": {
           "type": "staticText",
           "newLine": true,
           "hidden": "data.batteryDispatchMode !== 'sunenergy-heads'",
-          "text": "The unchanged SunEnergy standard adapter remains the device driver. Set its control mode to Off, with each selected head in local mode LM=1 and manual grid mode MM=0. The EMS writes each heads.N.control.GS directly, never a virtual house-grid signal. GS and GP are positive for discharge and negative for charge; EMS internal power is positive for charge. Fresh per-head rawResponse and online feedback are required. Missing or invalid head data blocks the output and retains the unconfirmed power reserve. Acknowledged GS alone is not physical power feedback."
+          "text": "The unchanged SunEnergy standard adapter remains the device driver. Set its control mode to Off, with each selected head in local mode LM=1 and manual grid mode MM=0. The EMS writes each heads.N.control.GS directly, never a virtual house-grid signal. GS and GP are positive for discharge and negative for charge; EMS internal power is positive for charge. Fresh per-head rawResponse and online feedback are required. Missing or invalid head data blocks the output and retains the unconfirmed power reserve. Acknowledged GS alone is not physical power feedback.",
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "_batterySunEnergyBalanceHelp": {
           "type": "staticText",
           "newLine": true,
           "hidden": "data.batteryDispatchMode !== 'sunenergy-heads'",
-          "text": "SoC balancing prefers lower-SoC heads when charging and higher-SoC heads when discharging. The reported ON pack count weights each head's relative capacity; it is not an online flag. Per-head limits, measured device limits and the shared total budget remain binding. All requested head powers have the same direction: the EMS does not charge one head while discharging another. Exact equality is not guaranteed while power, SoC or availability limits differ."
+          "text": "SoC balancing prefers lower-SoC heads when charging and higher-SoC heads when discharging. The reported ON pack count weights each head's relative capacity; it is not an online flag. Per-head limits, measured device limits and the shared total budget remain binding. All requested head powers have the same direction: the EMS does not charge one head while discharging another. Exact equality is not guaranteed while power, SoC or availability limits differ.",
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "_batterySunEnergyProfileHelp": {
           "type": "staticText",
           "newLine": true,
           "hidden": "data.batteryDispatchMode !== 'sunenergy-heads'",
-          "text": "In this mode the EMS reads SoC (SC), online pack count (ON), actual AC power (GP), device SoC limits and device/model power limits from coherent per-head responses. Separate SoC and DC-power mappings are not used. User targets, permissions and additional power limits remain unchanged. No dynamic BMS charge limit, efficiency or battery temperature is inferred."
+          "text": "In this mode the EMS reads SoC (SC), online pack count (ON), actual AC power (GP), device SoC limits and device/model power limits from coherent per-head responses. Separate SoC and DC-power mappings are not used. User targets, permissions and additional power limits remain unchanged. No dynamic BMS charge limit, efficiency or battery temperature is inferred.",
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "_batteryHead1Header": {
           "type": "header",
@@ -3785,7 +5330,11 @@
           "min": 0,
           "step": 1,
           "sm": 6,
-          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads' || Number(data.batteryHeadCount) < 1"
+          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads' || Number(data.batteryHeadCount) < 1",
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "batteryHead1MaxDischargeW": {
           "type": "number",
@@ -3795,7 +5344,11 @@
           "min": 0,
           "step": 1,
           "sm": 6,
-          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads' || Number(data.batteryHeadCount) < 1"
+          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads' || Number(data.batteryHeadCount) < 1",
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "_batteryHead2Header": {
           "type": "header",
@@ -3812,7 +5365,11 @@
           "min": 0,
           "step": 1,
           "sm": 6,
-          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads' || Number(data.batteryHeadCount) < 2"
+          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads' || Number(data.batteryHeadCount) < 2",
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "batteryHead2MaxDischargeW": {
           "type": "number",
@@ -3822,7 +5379,11 @@
           "min": 0,
           "step": 1,
           "sm": 6,
-          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads' || Number(data.batteryHeadCount) < 2"
+          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads' || Number(data.batteryHeadCount) < 2",
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "_batteryHead3Header": {
           "type": "header",
@@ -3839,7 +5400,11 @@
           "min": 0,
           "step": 1,
           "sm": 6,
-          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads' || Number(data.batteryHeadCount) < 3"
+          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads' || Number(data.batteryHeadCount) < 3",
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "batteryHead3MaxDischargeW": {
           "type": "number",
@@ -3849,20 +5414,33 @@
           "min": 0,
           "step": 1,
           "sm": 6,
-          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads' || Number(data.batteryHeadCount) < 3"
+          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads' || Number(data.batteryHeadCount) < 3",
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "_batteryOutputHelp": {
           "type": "staticText",
           "text": "Supervised SunEnergy battery output: choose the exact sunenergyxt500.N.heads.H.control.GS endpoint and its mandatory AC power feedback heads.H.grid.GP (or total.gridPower only with exactly one configured head). Both GS and GP are positive for discharge/export; the EMS inverts GP to internal positive=charge. BP / total.batteryPower is DC telemetry for history/planning and must not replace AC command feedback. The SunEnergy adapter must use controlMode=off, a fresh info.lastUpdate heartbeat and the selected head must confirm online=true, MM=false and LM=true. A direct GS command has no EMS-side protection against a host crash: a device-side watchdog remains necessary for unattended operation.",
           "newLine": true,
-          "hidden": "data.batteryDispatchMode === 'sunenergy-heads'"
+          "hidden": "data.batteryDispatchMode === 'sunenergy-heads'",
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "batteryProductionArmed": {
           "type": "checkbox",
           "label": "Arm supervised battery output: GS mapping, signs, driver modes and competing writer checked",
           "default": false,
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "batterySetpointId": {
           "type": "objectId",
@@ -3871,7 +5449,11 @@
           "default": "",
           "sm": 12,
           "newLine": true,
-          "hidden": "data.batteryDispatchMode === 'sunenergy-heads'"
+          "hidden": "data.batteryDispatchMode === 'sunenergy-heads'",
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "batteryAcPowerId": {
           "type": "objectId",
@@ -3882,7 +5464,11 @@
           "default": "",
           "sm": 12,
           "newLine": true,
-          "hidden": "data.batteryDispatchMode === 'sunenergy-heads'"
+          "hidden": "data.batteryDispatchMode === 'sunenergy-heads'",
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "batteryHeartbeatId": {
           "type": "objectId",
@@ -3893,7 +5479,11 @@
           "default": "",
           "sm": 12,
           "newLine": true,
-          "hidden": "data.batteryDispatchMode === 'sunenergy-heads'"
+          "hidden": "data.batteryDispatchMode === 'sunenergy-heads'",
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "batteryOnlineId": {
           "type": "objectId",
@@ -3904,7 +5494,11 @@
           "default": "",
           "sm": 12,
           "newLine": true,
-          "hidden": "data.batteryDispatchMode === 'sunenergy-heads'"
+          "hidden": "data.batteryDispatchMode === 'sunenergy-heads'",
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "batteryManualModeId": {
           "type": "objectId",
@@ -3915,7 +5509,11 @@
           "default": "",
           "sm": 12,
           "newLine": true,
-          "hidden": "data.batteryDispatchMode === 'sunenergy-heads'"
+          "hidden": "data.batteryDispatchMode === 'sunenergy-heads'",
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "batteryLocalModeId": {
           "type": "objectId",
@@ -3926,7 +5524,11 @@
           "default": "",
           "sm": 12,
           "newLine": true,
-          "hidden": "data.batteryDispatchMode === 'sunenergy-heads'"
+          "hidden": "data.batteryDispatchMode === 'sunenergy-heads'",
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "batteryFaultId": {
           "type": "objectId",
@@ -3936,7 +5538,11 @@
           ],
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "batteryTemperatureId": {
           "type": "objectId",
@@ -3946,7 +5552,11 @@
           ],
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "batterySocId": {
           "type": "text",
@@ -3954,14 +5564,22 @@
           "default": "",
           "sm": 6,
           "newLine": true,
-          "hidden": "data.batteryDispatchMode === 'sunenergy-heads'"
+          "hidden": "data.batteryDispatchMode === 'sunenergy-heads'",
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "batteryPowerId": {
           "type": "text",
           "label": "Battery DC power for history/planning (BP / total.batteryPower, W; not GS feedback)",
           "default": "",
           "sm": 6,
-          "hidden": "data.batteryDispatchMode === 'sunenergy-heads'"
+          "hidden": "data.batteryDispatchMode === 'sunenergy-heads'",
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "batteryPowerSign": {
           "type": "select",
@@ -3979,7 +5597,11 @@
           ],
           "sm": 12,
           "newLine": true,
-          "hidden": "data.batteryDispatchMode === 'sunenergy-heads'"
+          "hidden": "data.batteryDispatchMode === 'sunenergy-heads'",
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "batteryCapacitySource": {
           "type": "select",
@@ -3997,7 +5619,11 @@
           ],
           "sm": 6,
           "newLine": true,
-          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads'"
+          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads'",
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "batteryPackCapacityKWh": {
           "type": "number",
@@ -4008,13 +5634,22 @@
           "step": 0.01,
           "sm": 6,
           "hidden": "data.batteryDispatchMode !== 'sunenergy-heads' || data.batteryCapacitySource !== 'sunenergy-packs'",
-          "help": "Enter a positive kWh value from the pack documentation. Zero means not specified, not zero-capacity hardware."
+          "help": "Enter a positive kWh value from the pack documentation. Zero means not specified, not zero-capacity hardware.",
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "_batterySunEnergyCapacityHelp": {
           "type": "staticText",
           "newLine": true,
           "hidden": "data.batteryDispatchMode !== 'sunenergy-heads' || data.batteryCapacitySource !== 'sunenergy-packs'",
-          "text": "Automatic capacity is the sum of online packs (ON) multiplied by the explicitly entered capacity of one equal-sized pack. ON is an online pack count, not the nominal installed capacity. Confirm the pack size from your device documentation; no default pack size is assumed. Missing or invalid data for any selected head, or a missing pack size, makes automatic capacity unknown and prevents a valid battery forecast. The manual capacity is not used as a silent fallback."
+          "text": "Automatic capacity is the sum of online packs (ON) multiplied by the explicitly entered capacity of one equal-sized pack. ON is an online pack count, not the nominal installed capacity. Confirm the pack size from your device documentation; no default pack size is assumed. Missing or invalid data for any selected head, or a missing pack size, makes automatic capacity unknown and prevents a valid battery forecast. The manual capacity is not used as a silent fallback.",
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "batteryCapacityKWh": {
           "type": "number",
@@ -4023,28 +5658,44 @@
           "default": 10,
           "sm": 3,
           "newLine": true,
-          "hidden": "data.batteryDispatchMode === 'sunenergy-heads' && data.batteryCapacitySource === 'sunenergy-packs'"
+          "hidden": "data.batteryDispatchMode === 'sunenergy-heads' && data.batteryCapacitySource === 'sunenergy-packs'",
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "batteryMaxChargeW": {
           "type": "number",
           "label": "Maximum charge",
           "unit": "W",
           "default": 2400,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "batteryMaxDischargeW": {
           "type": "number",
           "label": "Maximum discharge",
           "unit": "W",
           "default": 2400,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "batteryEfficiencyPct": {
           "type": "number",
           "label": "Legacy efficiency per direction",
           "unit": "%",
           "default": 92,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "batteryMinSocPct": {
           "type": "number",
@@ -4054,7 +5705,11 @@
           "min": 0,
           "max": 100,
           "sm": 3,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "batteryMaxSocPct": {
           "type": "number",
@@ -4063,21 +5718,33 @@
           "default": 100,
           "min": 0,
           "max": 100,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "batteryMorningTargetPct": {
           "type": "number",
           "label": "Morning target",
           "unit": "%",
           "default": 70,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "batteryAfternoonTargetPct": {
           "type": "number",
           "label": "Afternoon target",
           "unit": "%",
           "default": 90,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "batteryLateTargetPct": {
           "type": "number",
@@ -4085,27 +5752,43 @@
           "unit": "%",
           "default": 100,
           "sm": 3,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "batteryReserveMin": {
           "type": "number",
           "label": "Final charge reserve",
           "unit": "min",
           "default": 45,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "batterySafetyPct": {
           "type": "number",
           "label": "Forecast safety factor",
           "unit": "%",
           "default": 80,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "batterySelfConsumption": {
           "type": "checkbox",
           "label": "Discharge for self-consumption",
           "default": true,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "_batteryTemperatureMinSocHeader": {
           "type": "header",
@@ -4118,7 +5801,11 @@
           "label": "Use forecast temperature for the minimum SoC",
           "default": false,
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "batteryTemperatureForecastId": {
           "type": "objectId",
@@ -4126,7 +5813,11 @@
           "filterFunc": "obj.type === 'state' && !!obj.common && obj.common.type === 'number'",
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "batteryTemperatureForecastMaxAgeH": {
           "type": "number",
@@ -4136,7 +5827,11 @@
           "max": 48,
           "unit": "h",
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "batteryTemperatureLowerThresholdC": {
           "type": "number",
@@ -4146,7 +5841,11 @@
           "max": 50,
           "unit": "°C",
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "batteryTemperatureColdMinSocPct": {
           "type": "number",
@@ -4155,7 +5854,11 @@
           "min": 0,
           "max": 100,
           "unit": "%",
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "batteryTemperatureUpperThresholdC": {
           "type": "number",
@@ -4165,7 +5868,11 @@
           "max": 50,
           "unit": "°C",
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "batteryTemperatureCoolMinSocPct": {
           "type": "number",
@@ -4174,7 +5881,11 @@
           "min": 0,
           "max": 100,
           "unit": "%",
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "batteryTemperatureWarmMinSocPct": {
           "type": "number",
@@ -4184,12 +5895,21 @@
           "max": 100,
           "unit": "%",
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "_batteryTemperatureMinSocHelp": {
           "type": "staticText",
           "text": "The daily selection period starts at 20:00 Europe/Berlin. At most one successful selection is made per unchanged source/settings contract and period. Initial activation uses a valid available forecast; a restart preserves a qualified selection for the same period. Defaults: below 0 °C = 30%, from 0 °C through 5 °C = 20%, above 5 °C = 10%. This replaces only the effective EMS minimum SoC; maximum SoC and morning/afternoon/late targets remain unchanged. Use a forecast for the upcoming night: day1 is tomorrow, while day0 is today. The source must be a confirmed, valid numeric value in °C within the configured maximum age. An invalid or missing forecast retains the last valid selection; before the first valid selection, the fixed minimum applies and the fallback is shown. A later valid forecast can complete the current period with its actual selection time. Thresholds must be ordered and all selected reserves must be below the configured maximum SoC. No external SI endpoint is written and no grid-charging or output release is enabled.",
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "_batteryEffectiveMinimumSoC": {
           "type": "state",
@@ -4199,7 +5919,11 @@
           "controlled": false,
           "doNotSave": true,
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "_batteryTemperatureReserveStatus": {
           "type": "state",
@@ -4208,7 +5932,11 @@
           "control": "text",
           "controlled": false,
           "doNotSave": true,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "_batteryTemperatureReserveValid": {
           "type": "state",
@@ -4217,7 +5945,11 @@
           "control": "text",
           "controlled": false,
           "doNotSave": true,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "_batteryTemperatureReserveHeld": {
           "type": "state",
@@ -4226,7 +5958,11 @@
           "control": "text",
           "controlled": false,
           "doNotSave": true,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "_batteryTemperatureForecast": {
           "type": "state",
@@ -4235,7 +5971,11 @@
           "control": "text",
           "controlled": false,
           "doNotSave": true,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "_batteryTemperatureForecastAge": {
           "type": "state",
@@ -4244,7 +5984,11 @@
           "control": "text",
           "controlled": false,
           "doNotSave": true,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "_batteryTemperatureReservePeriod": {
           "type": "state",
@@ -4253,7 +5997,11 @@
           "control": "text",
           "controlled": false,
           "doNotSave": true,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "_batteryPriceHeader": {
           "type": "header",
@@ -4266,7 +6014,11 @@
           "label": "Allow battery grid charging in selected low-price periods",
           "default": false,
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "batteryPriceMaxSocPct": {
           "type": "number",
@@ -4276,7 +6028,11 @@
           "max": 100,
           "unit": "%",
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "batteryRoundTripEfficiencyPct": {
           "type": "number",
@@ -4285,7 +6041,11 @@
           "min": 0,
           "max": 100,
           "unit": "%",
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "batteryPriceMaxCt": {
           "type": "number",
@@ -4295,7 +6055,11 @@
           "max": 1000,
           "unit": "ct/kWh",
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "batteryPriceMinSavingsCt": {
           "type": "number",
@@ -4304,7 +6068,11 @@
           "min": 0,
           "max": 1000,
           "unit": "ct/kWh",
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "batteryPriceReservePct": {
           "type": "number",
@@ -4313,12 +6081,21 @@
           "min": 0,
           "max": 100,
           "unit": "%",
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "_batteryPriceHelp": {
           "type": "staticText",
           "text": "Opt-in grid charging is scheduled against expected demand, PV, storage losses and later total electricity prices. The extra reserve is in percentage points above the configured minimum SoC, capped by the maximum SoC. The price cap uses the full gross price, including time-dependent grid fees; negative caps are allowed. 0 means no additional price cap, not free electricity. Round-trip efficiency 0 preserves the legacy efficiency per direction. The separate grid-charge maximum SoC does not limit PV charging. Missing prices do not authorize grid charging. Existing master, device and battery production releases remain required.",
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "_batteryFineControlHeader": {
           "type": "header",
@@ -4334,7 +6111,11 @@
           "min": 1,
           "max": 1000,
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "batteryFineReserveW": {
           "type": "number",
@@ -4344,12 +6125,21 @@
           "min": 0,
           "max": 10000,
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "_batteryFineReserveHelp": {
           "type": "staticText",
           "text": "Reserves up to this share of actual PV surplus for battery fine control. The effective reserve is capped by available PV, battery charge power and the shared grid-operator budget; without available PV there is no reserve. Existing planned battery charging can require a larger share. This is a power reserve in watts, not an additional SoC reserve or permission to charge from the grid.",
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "batteryDeadbandW": {
           "type": "number",
@@ -4358,7 +6148,11 @@
           "default": 50,
           "min": 0,
           "max": 500,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "batteryCycleS": {
           "type": "number",
@@ -4367,7 +6161,11 @@
           "default": 1,
           "min": 1,
           "max": 30,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "batteryFeedbackTimeoutS": {
           "type": "number",
@@ -4377,7 +6175,11 @@
           "min": 2,
           "max": 120,
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "batteryMeasurementMaxAgeS": {
           "type": "number",
@@ -4386,7 +6188,11 @@
           "default": 30,
           "min": 5,
           "max": 120,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "batterySoCMaxAgeS": {
           "type": "number",
@@ -4395,7 +6201,11 @@
           "default": 300,
           "min": 5,
           "max": 3600,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "batteryTemperatureMaxC": {
           "type": "number",
@@ -4405,12 +6215,21 @@
           "min": 10,
           "max": 60,
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "_batteryMinimumHelp": {
           "type": "staticText",
           "text": "The 15% minimum applies to new installations only. Existing explicit settings are retained. A minimum of 0% blocks productive discharge; configure an appropriate positive reserve before a supervised test.",
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         }
       }
     },
@@ -4429,7 +6248,11 @@
           "label": "Heat pump present",
           "default": false,
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "heatPumpPowerId": {
           "type": "objectId",
@@ -4438,7 +6261,11 @@
             "state"
           ],
           "default": "",
-          "sm": 8
+          "sm": 8,
+          "xs": 12,
+          "md": 8,
+          "lg": 8,
+          "xl": 8
         },
         "heatPumpPowerUnit": {
           "type": "select",
@@ -4455,7 +6282,11 @@
               "value": "kW",
               "label": "kW"
             }
-          ]
+          ],
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "heatPumpPowerScope": {
           "type": "select",
@@ -4471,7 +6302,11 @@
               "value": "inverter",
               "label": "Inverter only (not complete §14a telemetry)"
             }
-          ]
+          ],
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "heatPumpPowerMaxAgeS": {
           "type": "number",
@@ -4480,13 +6315,21 @@
           "default": 30,
           "min": 5,
           "max": 300,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "_heatPumpPowerHelp": {
           "type": "staticText",
           "text": "Select the source unit explicitly: W or kW. ISG register 3680 reports IWS inverter power, not proven total heat-pump consumption including auxiliary heaters and pumps. Select inverter scope for that source unless a separate total measurement is verified. Inverter scope is not complete §14a telemetry. Missing, stale, unacknowledged or bad-quality power remains unknown, never 0 W. Valid measured power is required for SG Ready 3/4 recommendations.",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "heatPumpConnectionId": {
           "type": "objectId",
@@ -4496,7 +6339,11 @@
           ],
           "default": "",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "heatPumpSgReadyStateId": {
           "type": "objectId",
@@ -4505,13 +6352,21 @@
             "state"
           ],
           "default": "",
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "_heatPumpFeedbackHelp": {
           "type": "staticText",
           "text": "An empty connection mapping is optional; a configured source must confirm a valid online state. SG Ready feedback must already be decoded to logical state 1, 2, 3 or 4; do not map raw input bits, an unrelated operating status or legacy EMS mode values. Device feedback describes the actual state, not acknowledgement of an EMS command. No command is sent.",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "heatPumpBufferTemperatureId": {
           "type": "objectId",
@@ -4521,7 +6376,11 @@
           ],
           "default": "",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "heatPumpDhwTemperatureId": {
           "type": "objectId",
@@ -4530,7 +6389,11 @@
             "state"
           ],
           "default": "",
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "heatPumpFeedbackMaxAgeS": {
           "type": "number",
@@ -4540,7 +6403,11 @@
           "min": 5,
           "max": 3600,
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "heatPumpTemperatureMaxAgeS": {
           "type": "number",
@@ -4549,7 +6416,11 @@
           "default": 3600,
           "min": 10,
           "max": 7200,
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "_heatPumpPowerStatus": {
           "type": "state",
@@ -4559,7 +6430,11 @@
           "controlled": false,
           "doNotSave": true,
           "sm": 8,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 8,
+          "lg": 8,
+          "xl": 8
         },
         "_heatPumpPowerValue": {
           "type": "state",
@@ -4568,7 +6443,11 @@
           "control": "text",
           "controlled": false,
           "doNotSave": true,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "_heatPumpActualSgFeedback": {
           "type": "state",
@@ -4578,7 +6457,11 @@
           "controlled": false,
           "doNotSave": true,
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "_heatPumpActualSgStatus": {
           "type": "state",
@@ -4587,7 +6470,11 @@
           "control": "text",
           "controlled": false,
           "doNotSave": true,
-          "sm": 8
+          "sm": 8,
+          "xs": 12,
+          "md": 8,
+          "lg": 8,
+          "xl": 8
         },
         "_heatPumpSgReadyHeader": {
           "type": "header",
@@ -4600,25 +6487,41 @@
           "label": "Participate in EMS recommendations (no external actuator write)",
           "default": false,
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "heatPumpAdviceEnabled": {
           "type": "checkbox",
           "label": "Enable passive SG Ready recommendations",
           "default": false,
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "_heatPumpAdviceHelp": {
           "type": "staticText",
           "text": "Recommendations are EMS-owned information, not commands to the heat pump. No ISG mode endpoint is written. Advice uses measured electrical power, buffer/DHW temperatures, PV surplus, the optional shared cheap-price policy and the cooling status configured in Thermal strategy. Independent heat-pump safety and its own temperature control remain authoritative.",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "_heatPumpSgReadyHelp": {
           "type": "staticText",
           "text": "SG Ready 1 = block; 2 = normal; 3 = raised heating/DHW request; 4 = maximum heating/DHW request. These states are demand levels, not exact watt targets. SG Ready 4 is not a cooling request. Automatic price-based SG Ready 1 blocking is not implemented. Legacy REDUCED = 0 is an internal EMS inhibition recommendation, never SG Ready 1.",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "heatPumpHeatingTargetC": {
           "type": "number",
@@ -4628,7 +6531,11 @@
           "min": 10,
           "max": 70,
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "heatPumpDhwTargetC": {
           "type": "number",
@@ -4637,7 +6544,11 @@
           "default": 60,
           "min": 10,
           "max": 80,
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "heatPumpMinHoldS": {
           "type": "number",
@@ -4647,7 +6558,11 @@
           "min": 60,
           "max": 3600,
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "heatPumpPvBoostOnW": {
           "type": "number",
@@ -4656,7 +6571,11 @@
           "default": 2500,
           "min": 1,
           "max": 30000,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "heatPumpPvBoostOffW": {
           "type": "number",
@@ -4665,14 +6584,22 @@
           "default": 1200,
           "min": 0,
           "max": 30000,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "heatPumpMaxBoostEnabled": {
           "type": "checkbox",
           "label": "Allow SG Ready 4 maximum-demand recommendation (heating/DHW only)",
           "default": false,
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "heatPumpMaxBoostOnW": {
           "type": "number",
@@ -4682,7 +6609,11 @@
           "min": 1,
           "max": 30000,
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "heatPumpMaxBoostOffW": {
           "type": "number",
@@ -4691,13 +6622,21 @@
           "default": 4000,
           "min": 0,
           "max": 30000,
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "_heatPumpHysteresisHelp": {
           "type": "staticText",
           "text": "For SG Ready 3 and 4, each entry threshold must be positive and greater than its exit threshold. The maximum-demand recommendation has a separate opt-in and remains a heating/DHW request. Safety blocks, unavailable sources and loss of price permission can end advice before the normal holding time expires.",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "_heatPumpRecommendedSgState": {
           "type": "state",
@@ -4707,7 +6646,11 @@
           "controlled": false,
           "doNotSave": true,
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "_heatPumpSgAdviceValidity": {
           "type": "state",
@@ -4716,7 +6659,11 @@
           "control": "text",
           "controlled": false,
           "doNotSave": true,
-          "sm": 8
+          "sm": 8,
+          "xs": 12,
+          "md": 8,
+          "lg": 8,
+          "xl": 8
         },
         "_heatPumpSgAdviceReason": {
           "type": "state",
@@ -4726,7 +6673,11 @@
           "controlled": false,
           "doNotSave": true,
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "_heatPumpKnxHeader": {
           "type": "header",
@@ -4738,14 +6689,22 @@
           "type": "staticText",
           "text": "These are internal request/status states only. There is no KNX output mapping or external write release in this version. Heating boost requests available heating-buffer capacity; a DHW-only SG Ready recommendation does not set the KNX heating flag. Cooling boost is a separate optional request and is never SG Ready 4. Cooling requires valid room, flow and dew-point measurements, confirmed cooling status and measured electrical power. The flow target must respect dew point plus safety margin. Existing heat-pump, FET and dew-point protection remains authoritative.",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "heatPumpCoolingBoostEnabled": {
           "type": "checkbox",
           "label": "Enable separate cooling boost recommendation (internal only)",
           "default": false,
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "heatPumpCoolingRoomTemperatureId": {
           "type": "objectId",
@@ -4755,7 +6714,11 @@
           ],
           "default": "",
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "heatPumpCoolingDewPointId": {
           "type": "objectId",
@@ -4764,7 +6727,11 @@
             "state"
           ],
           "default": "",
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "heatPumpCoolingFlowTemperatureId": {
           "type": "objectId",
@@ -4774,7 +6741,11 @@
           ],
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "heatPumpCoolingRoomTargetC": {
           "type": "number",
@@ -4784,7 +6755,11 @@
           "min": 16,
           "max": 30,
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "heatPumpCoolingFlowTargetC": {
           "type": "number",
@@ -4793,7 +6768,11 @@
           "default": 20,
           "min": 15,
           "max": 30,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "heatPumpCoolingDewPointMarginK": {
           "type": "number",
@@ -4802,7 +6781,11 @@
           "default": 2,
           "min": 0.5,
           "max": 10,
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "_heatPumpKnxHeatingStatus": {
           "type": "state",
@@ -4812,7 +6795,11 @@
           "controlled": false,
           "doNotSave": true,
           "sm": 6,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "_heatPumpKnxCoolingStatus": {
           "type": "state",
@@ -4821,7 +6808,11 @@
           "control": "text",
           "controlled": false,
           "doNotSave": true,
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "_heatPumpCoolingStatus": {
           "type": "state",
@@ -4831,7 +6822,11 @@
           "controlled": false,
           "doNotSave": true,
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "_heatPumpCoolingValidity": {
           "type": "state",
@@ -4841,7 +6836,11 @@
           "controlled": false,
           "doNotSave": true,
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "_heatPumpInterfaceHeader": {
           "type": "header",
@@ -4853,13 +6852,21 @@
           "type": "staticText",
           "text": "ISG register 4258 selects the input mode: SG Ready and PL/LU interpret the input bits differently. In PL/LU mode, input bits 11 mean a power limit, not SG Ready 4. Decode feedback according to the actual configured interface mode. Register 4259 is not implemented here; its unit/scaling is not confirmed, so no writable power-limit field is offered. SG Ready recommendations do not establish a §14a power limit or prove compliance.",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "_heatPumpReadOnlyHelp": {
           "type": "staticText",
           "text": "The status rows above are read-only Devices.HeatPump states. They show recommendation and feedback separately and do not enable any heat-pump, KNX or ISG output. Source mappings remain visible while recommendations are disabled, so they can be configured and checked before use.",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         }
       }
     },
@@ -4870,7 +6877,12 @@
         "_thermalSharedHelp": {
           "type": "staticText",
           "text": "Shared cooling information protects the heating-buffer heater and informs heat-pump advice. DHW is a separate thermal circuit. Optional cheap-price heating remains disabled unless explicitly released with a positive combined heater grid-power budget; missing prices are never treated as free energy.",
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "heatingCoolingActiveId": {
           "type": "objectId",
@@ -4880,7 +6892,11 @@
           ],
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "heatingCoolingHeartbeatId": {
           "type": "objectId",
@@ -4890,7 +6906,11 @@
           ],
           "default": "",
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "heatingCoolingMaxAgeS": {
           "type": "number",
@@ -4900,14 +6920,22 @@
           "min": 5,
           "max": 600,
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "thermalCheapPriceEnabled": {
           "type": "checkbox",
           "label": "Allow explicitly budgeted heating at cheap total electricity prices",
           "default": false,
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "thermalCheapPriceMaxCt": {
           "type": "number",
@@ -4917,7 +6945,11 @@
           "min": -100,
           "max": 200,
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "thermalCheapGridMaxW": {
           "type": "number",
@@ -4926,14 +6958,22 @@
           "default": 0,
           "min": 0,
           "max": 15000,
-          "sm": 8
+          "sm": 8,
+          "xs": 12,
+          "md": 8,
+          "lg": 8,
+          "xl": 8
         },
         "thermalCheapFixedTariffAllowed": {
           "type": "checkbox",
           "label": "Also allow cheap-price heating with an explicitly configured fixed tariff",
           "default": false,
           "sm": 12,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         }
       }
     },
@@ -4952,14 +6992,22 @@
           "label": "Enable simulation",
           "default": true,
           "sm": 3,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "targetGridPowerW": {
           "type": "number",
           "label": "Grid target (+ import / - export)",
           "unit": "W",
           "default": -100,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "wallboxPVImportToleranceW": {
           "type": "number",
@@ -4969,7 +7017,11 @@
           "default": 50,
           "min": 0,
           "max": 200,
-          "sm": 6
+          "sm": 6,
+          "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "deadbandW": {
           "type": "number",
@@ -4977,7 +7029,11 @@
           "unit": "W",
           "default": 100,
           "min": 0,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         },
         "slowCycleS": {
           "type": "number",
@@ -4985,7 +7041,11 @@
           "unit": "s",
           "default": 5,
           "min": 2,
-          "sm": 3
+          "sm": 3,
+          "xs": 12,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
         }
       }
     },
@@ -5002,36 +7062,63 @@
         "advancedHelp": {
           "type": "staticText",
           "text": "Migration only: explicit fields on the normal tabs override matching legacy JSON entries. Unchanged JSON entries remain active so updates do not lose existing mappings.",
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "dataPointMapJson": {
           "type": "text",
           "label": "Legacy data-point mapping JSON (migration fallback)",
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "legacyCurrentHelp": {
           "type": "staticText",
           "text": "The legacy free-current values below are used only when direct phase-current or phase-power measurements are unavailable.",
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "dhwHaL1FreeCurrentId": {
           "type": "text",
           "label": "Legacy free current L1 (A)",
           "default": "",
           "sm": 4,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "dhwHaL2FreeCurrentId": {
           "type": "text",
           "label": "Legacy free current L2 (A)",
           "default": "",
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         },
         "dhwHaL3FreeCurrentId": {
           "type": "text",
           "label": "Legacy free current L3 (A)",
           "default": "",
-          "sm": 4
+          "sm": 4,
+          "xs": 12,
+          "md": 4,
+          "lg": 4,
+          "xl": 4
         }
       }
     }

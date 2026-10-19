@@ -33,5 +33,9 @@
   },
   "devDependencies": {
     "@iobroker/testing": "^5.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fuchs-1978/ioBroker.ems-optimizer.git"
   }
 }
