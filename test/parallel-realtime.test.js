@@ -1122,3 +1122,41 @@ test('mandatory grid floors cannot manufacture another PV import step and tolera
     assert.equal(JSON.parse(h.states.get('ems.0.Control.Wallbox1.AllocationDiagnostics_JSON').val).pvStepToleranceW,0);
     assert.ok(a.allocations.reduce((sum,x)=>sum+x.targetA*x.phases*230,0)<=4200);
 });
+
+test('delayed unused Mii telemetry leaves EQV budget valid and blocks only the Mii', () => {
+    const h = engine({production: true, wallboxPriority: 1}); h.exclude(2);
+    h.owned(1, 16, 3680);
+    const old = Date.now() - 50000;
+    h.put('raw.allow0', 0, {ts: old, lc: old - 1000});
+    h.put('DP_WB0_POWER', 0, {ts: old});
+    for (let p = 1; p <= 3; p++) h.put(`DP_WB0_L${p}_A`, 0, {ts: old});
+    const result = h.update(4000);
+    const allocation = JSON.parse(h.states.get('ems.0.Control.ParallelWallboxAllocation_JSON').val);
+    assert.equal(allocation.valid, true);
+    assert.deepEqual(allocation.isolatedIdleWallboxes, [0]);
+    assert.ok(result.amps[1] >= 16);
+    assert.equal(result.amps[0], 0);
+    assert.equal(h.run('parallelWallboxCommitment(0,230,true).reservedW'), 0);
+    h.put('DP_WB0_POWER', 0); h.put('raw.allow0', 0);
+    for (let p = 1; p <= 3; p++) h.put(`DP_WB0_L${p}_A`, 0);
+    h.update(6000);
+    assert.ok(!JSON.parse(h.states.get('ems.0.Control.ParallelWallboxAllocation_JSON').val).isolatedIdleWallboxes);
+});
+
+for (const [name, change] of [
+    ['ownership', h => h.put('ems.0.Devices.Wallbox0.OutputOwned', true)],
+    ['pending stop', h => h.put('ems.0.Devices.Wallbox0.StopPowerPending', true)],
+    ['pending response', h => h.put('ems.0.Devices.Wallbox0.ResponsePending', true)],
+    ['phase transition', h => h.put('ems.0.Devices.Wallbox0.PhaseTransitionActive', true)],
+    ['reservation', h => h.put('ems.0.Devices.Wallbox0.OutputReservedPower_W', 1380)],
+    ['known draw', h => h.put('DP_WB0_POWER', 1, {ts: Date.now() - 50000})],
+    ['unconfirmed OFF', h => h.put('raw.allow0', 0, {ack: false})],
+    ['stale grid', h => h.put('DP_GRID_IMPORT', 0, {ts: 1})]
+]) test('idle isolation keeps shared safeguards: ' + name, () => {
+    const h = engine({production: true, wallboxPriority: 1}); h.exclude(2); h.owned(1, 16, 3680);
+    const old = Date.now() - 50000;
+    h.put('raw.allow0', 0, {ts: old, lc: old - 1000}); h.put('DP_WB0_POWER', 0, {ts: old});
+    for (let p = 1; p <= 3; p++) h.put(`DP_WB0_L${p}_A`, 0, {ts: old});
+    change(h); h.update(4000);
+    assert.equal(JSON.parse(h.states.get('ems.0.Control.ParallelWallboxAllocation_JSON').val).valid, false);
+});

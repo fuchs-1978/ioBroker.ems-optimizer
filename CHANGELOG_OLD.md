@@ -4,6 +4,10 @@
 
 Diese Datei archiviert die bisherigen Versionshinweise und historischen Detailbeschreibungen unverändert. Sie beschreiben den jeweiligen damaligen Stand; für aktuelle Einstellungen und Betriebsgrenzen gilt die [README](README.md).
 
+### 0.17.0-alpha.99 (2026-10-19)
+
+Sperren wegen verspäteter AUS- oder elektrischer Abschaltbestätigung lösen sich nach frischer, bestätigter Abschaltung automatisch. AUS-ACK, Leistung und alle Phasenströme sowie Verbindungs-, Fehler- und gegebenenfalls Phasenstatus müssen gültig sein. Andere Fehler bleiben verriegelt; jeder Neustart der Ladung durchläuft die regulären Freigaben und Schutzgrenzen. [Releasehinweise](docs/release-0.17.0-alpha.99.md).
+
 ### 0.17.0-alpha.98 (2026-10-19)
 
 Eine frische Wallboxmessung auf dem alten Stromniveau bestätigt keine Stromerhöhung mehr allein aufgrund der 3-A-Toleranz. Nach einer zugelassenen Erhöhung müssen Leistung und die verwendeten Phasenströme einen Anstieg oder das erreichte neue Stromniveau belegen. Die bestehende Antwortfrist und Schutzgrenzen bleiben erhalten; nach Ablauf verhindert fehlende Antwort weiteres Hochregeln, bis echte Messwerte vorliegen. [Releasehinweise](docs/release-0.17.0-alpha.98.md).

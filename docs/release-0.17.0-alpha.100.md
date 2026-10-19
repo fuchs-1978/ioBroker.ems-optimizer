@@ -1,0 +1,9 @@
+# Alpha.100 — Abrufverzögerung einer ungenutzten Wallbox isolieren
+
+Auslöser: Am 19.10.2026 führte eine veraltete Null-Leistungsmessung der nicht ladenden Mii-Wallbox zu einer global ungültigen Lastreserve und zum Stopp des EQV. Alpha.99 korrigiert bereits die spätere Verriegelung nach verspäteter AUS-Bestätigung; Alpha.100 ergänzt die Trennung ungenutzter Teilnehmer.
+
+Eine gemeinsame, reine Prüfregel wird sowohl in der zentralen Budgetberechnung als auch im Ausgangstreiber verwendet. Isoliert wird ausschließlich eine reine zeitliche Verzögerung vorhandener, bestätigter und qualitativ gültiger AUS-/Ruhemessungen. Leistung und alle drei Ströme müssen nach dem letzten bekannten AUS-Wechsel liegen und innerhalb der bestehenden Ruhetoleranzen sein. Fehlende, unbestätigte, qualitativ ungültige, zukünftige oder widersprüchliche Werte qualifizieren nicht. Ein EMS-Besitz, aktiver Ausgang, offener Auftrag, Abschalt-/Antwort-/Phasenübergang oder eine bestehende Lastreserve verhindert diese Ausnahme.
+
+Die isolierte Wallbox wird nicht neu gestartet. Ihre alten Messwerte erzeugen weder rückgewinnbares NVP-Budget noch freigewordene Reserven; nicht vom EMS geführter Verbrauch bleibt in der frischen Netzanschlussmessung enthalten. Netz- und Phasenschutz sowie alle Schutzgrenzen bleiben wirksam. Laufende Wallboxen benötigen weiterhin eigene aktuelle Messwerte. Nach Rückkehr gültiger aktueller Quellen gilt wieder die normale Zuteilung. Die Diagnose nennt isolierte Wallboxen als `isolatedIdleWallboxes` im bestehenden JSON.
+
+Tests prüfen die zentrale Zuteilung und den Ausgang bei laufendem Peer, keine Startfreigabe für die isolierte Wallbox, Rückkehr aktueller Quellen, unveränderte Rohdaten sowie die Ausschlüsse für laufende/offene/reservierte Lasten, ungültige Quellen und veraltete Netzmessungen. Keine produktiven Schaltversuche und keine Änderungen an Abfrageintervallen. Softwaretests sind keine reale Anlagenabnahme. Die Netzwerkursache bleibt offen.
