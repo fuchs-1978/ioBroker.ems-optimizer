@@ -1590,3 +1590,59 @@ for(const [name,change] of [
     h.put('import',138.6);change(h);await h.output.tick();
     assert.ok(!h.writes.some(w=>w.id==='cmd'&&w.val>=16));
 });
+
+async function asynchronousMeasuredPVStep() {
+    const h=await measuredHoldOutput();
+    h.config.wallboxPVImportToleranceW=100;
+    const d=h.output.devices[0];d.lastA=12;
+    h.ack('feedback',12);h.put('power',2.66,{ts:1010002});h.put('i1',11.9,{ts:1010002});
+    grantPVStep(h,13,100);h.put('export',197);
+    h.writes.length=0;await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'cmd',val:13}],JSON.stringify({status:h.states.get('ems.0.Devices.Wallbox0.OutputStatus'),diag:h.states.get('ems.0.Devices.Wallbox0.IncreaseBudget_JSON')}));
+    assert.ok(d.measuredBudgetStep);
+    const at=d.response.at;
+    h.advance(2000);grantPVStep(h,13,100);
+    h.put('feedback',13,{ts:at+200});
+    h.put('power',2.65,{ts:at+500});h.put('i1',11.9,{ts:at+480});
+    h.put('import',0,{ts:at+1800});h.put('export',68,{ts:at+1802});
+    h.writes.length=0;
+    return h;
+}
+
+test('live EQE measured 12→13 A step survives 68 W export with SMA ahead of old wallbox uptake',async()=>{
+    const h=await asynchronousMeasuredPVStep();await h.output.tick();
+    assert.deepEqual(h.writes,[],'must not reverse the admitted step to 11 A');
+    const d=h.output.devices[0],response=d.response,proof=d.measuredBudgetStep;
+    assert.equal(d.lastA,13);assert.ok(proof);
+    assert.equal(JSON.parse(h.states.get('ems.0.Devices.Wallbox0.IncreaseBudget_JSON').val).decision,'await-measured-step-response');
+    const deadline=response.ackAt+h.output.responseSettleTimeoutMs();
+    h.advance(1000);grantPVStep(h,13,100);h.put('power',2.65);h.put('i1',11.9);h.put('export',68);
+    await h.output.tick();
+    assert.deepEqual(h.writes,[],'a new old-level poll must not reverse a still bounded admitted step');
+    h.advance(2000);grantPVStep(h,14,100);h.put('export',1000);
+    await h.output.tick();
+    assert.deepEqual(h.writes,[],'a held unproved step cannot earn a second increase');
+    assert.equal(d.response,response);assert.equal(d.measuredBudgetStep,proof);
+    assert.equal(response.ackAt+h.output.responseSettleTimeoutMs(),deadline);
+    h.advance(2000);grantPVStep(h,13,100);h.put('power',2.89);h.put('i1',12.9);h.ack('feedback',13);h.put('export',68);
+    await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val,'confirmed');
+    assert.equal(d.measuredBudgetStep,null);assert.deepEqual(h.writes,[]);
+});
+
+for(const [name,change] of [
+    ['real deficit',h=>{h.put('import',400);h.put('export',0);}],
+    ['hard current cap',h=>{h.config.wb0CommissioningMaxA=11;}],
+    ['shared hard cap',h=>h.grant([13],{hardBudgetW:2530})],
+    ['expired response',h=>{h.advance(46000);grantPVStep(h,13,100);h.put('export',68);}],
+    ['missing admission',h=>h.output.meterReservations.delete(h.output.devices[0].response)],
+    ['missing ACK',h=>h.put('feedback',12)],
+    ['growing heater reservation',h=>h.put('ems.0.Devices.MyPV_DHW.OutputReservedPower_W',1000)],
+    ['mismatched step',h=>{h.output.devices[0].measuredBudgetStep.amps=14;}]
+]) test('asynchronous measured-step hold yields: '+name,async()=>{
+    const h=await asynchronousMeasuredPVStep();change(h);await h.output.tick();
+    if(name==='missing admission')
+        assert.notEqual(JSON.parse(h.states.get('ems.0.Devices.Wallbox0.IncreaseBudget_JSON').val).decision,'await-measured-step-response');
+    else assert.ok(h.writes.some(w=>w.id==='cmd'&&w.val<13||w.id==='allow'&&w.val===0));
+    assert.ok(!h.writes.some(w=>w.id==='cmd'&&w.val>13));
+});

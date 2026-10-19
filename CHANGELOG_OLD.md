@@ -4,6 +4,10 @@
 
 Diese Datei archiviert die bisherigen Versionshinweise und historischen Detailbeschreibungen unverändert. Sie beschreiben den jeweiligen damaligen Stand; für aktuelle Einstellungen und Betriebsgrenzen gilt die [README](README.md).
 
+### 0.17.0-alpha.105 (2026-10-19)
+
+Bestätigte reale Ladeleistung bei älterer Zuteilung auch unterhalb pauschaler 230-V-Nennleistung halten. Kleine reale Netzdefizite führen zu einer passenden relativen Stromrücknahme statt zu mehreren unnötigen Ampere. Volle Schutzreserven, harte Grenzen, ACK-/Messwertprüfungen und die eingestellte Abschaltverzögerung bleiben erhalten. [Releasehinweise](docs/release-0.17.0-alpha.105.md).
+
 ### 0.17.0-alpha.104 (2026-10-19)
 
 Eine bestätigte Stromvorgabe ohne ausreichenden gemessenen Anstieg blockiert die PV-Nachregelung nicht mehr dauerhaft. Nach Ablauf der Antwortzeit sind bis zu zwei vollständig aus dem aktuellen Budget gedeckte 1-A-Nachregelversuche möglich. Jeder Versuch benötigt ACK und eigene Antwortzeit; echter Strom-/Leistungsfortschritt setzt die normale Regelung fort. Fehlende Messwerte, offene Phasenwechsel und Schutzgrenzen bleiben gesperrt. [Releasehinweise](docs/release-0.17.0-alpha.104.md).
