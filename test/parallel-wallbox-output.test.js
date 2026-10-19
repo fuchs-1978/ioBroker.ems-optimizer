@@ -1432,3 +1432,52 @@ test('inactive delayed peer does not stop an established car and cannot start it
     h.put('power1', 1);
     assert.equal(h.output.parallelLoadReservations(h.mapping, 0).valid, false);
 });
+
+async function freshResponseWithOldAllocation(count = 1) {
+    const h = parallelSetup(count); await h.startParallel(); h.advance(10000);
+    const d = h.output.devices[0];
+    d.lastA = 14; d.lastAt = 1000000; d.pending = null; d.response = null;
+    d.electricalCommandAt = 1000000;
+    h.measure(0, 14); h.put('power', 3.2, {ts: 1010002}); h.put('i1', 13.7, {ts: 1010002});
+    h.put('import', 0); h.put('export', 271.5);
+    h.put('ems.0.Devices.Wallbox0.ResponseState', 'confirmed');
+    h.put('ems.0.Devices.Wallbox0.ResponseCommand_A', 14);
+    h.grant([11, ...Array(count-1).fill(6)]);
+    const a = JSON.parse(h.states.get('ems.0.Control.ParallelWallboxAllocation_JSON').val);
+    a.allocations[0].reservedW = 3220; a.heaterTargetW = 0;
+    h.put('ems.0.Control.ParallelWallboxAllocation_JSON', JSON.stringify(a));
+    h.put('ems.0.Control.Wallbox0.AllocationDiagnostics_JSON', JSON.stringify({valid:true,timestamp:a.timestamp,measuredPowerAt:1009000}));
+    h.writes.length = 0;
+    return h;
+}
+
+test('13:01:14 confirmed 14 A does not drop to stale 11 A allocation while still exporting', async () => {
+    const h = await freshResponseWithOldAllocation(); await h.output.tick();
+    assert.deepEqual(h.writes, []);
+    assert.equal(JSON.parse(h.states.get('ems.0.Devices.Wallbox0.IncreaseBudget_JSON').val).basis, 'fresh-response-allocation-hold');
+    assert.equal(h.output.devices[0].lastA, 14);
+});
+
+for (const [name, change] of [
+    ['fresh allocation basis', h => h.put('ems.0.Control.Wallbox0.AllocationDiagnostics_JSON', JSON.stringify({valid:true,timestamp:1010000,measuredPowerAt:1010002}))],
+    ['real deficit', h => {h.put('import',500);h.put('export',0);}],
+    ['hard cap', h => {h.config.wb0CommissioningMaxA=11;}],
+    ['withdrawn grant', h => h.grant([0])],
+    ['missing provenance', h => h.put('ems.0.Control.Wallbox0.AllocationDiagnostics_JSON','{}')],
+    ['new heater target', h => {const a=JSON.parse(h.states.get('ems.0.Control.ParallelWallboxAllocation_JSON').val);a.heaterTargetW=1000;h.put('ems.0.Control.ParallelWallboxAllocation_JSON',JSON.stringify(a));}],
+    ['reservation withdrawn', h => {const a=JSON.parse(h.states.get('ems.0.Control.ParallelWallboxAllocation_JSON').val);a.allocations[0].reservedW=2530;h.put('ems.0.Control.ParallelWallboxAllocation_JSON',JSON.stringify(a));}]
+]) test('fresh response allocation hold yields: '+name, async () => {
+    const h=await freshResponseWithOldAllocation(); change(h); await h.output.tick();
+    assert.ok(h.writes.some(w=>w.id==='cmd'&&w.val<14||w.id==='allow'&&w.val===0));
+});
+
+
+test('fresh response hold cannot retain capacity promised to a new peer increase', async () => {
+    const h = await freshResponseWithOldAllocation(2);
+    const a = JSON.parse(h.states.get('ems.0.Control.ParallelWallboxAllocation_JSON').val);
+    a.allocations[1].targetA = 12; a.allocations[1].reservedW = 2760; a.budgetW = 5290;
+    h.put('ems.0.Control.Targets.Wallbox1_W', 2760); h.put('ems.0.Control.Targets.Wallbox1_A', 12);
+    h.put('ems.0.Control.ParallelWallboxAllocation_JSON', JSON.stringify(a));
+    await h.output.tick();
+    assert.ok(h.writes.some(w => w.id === 'cmd' && w.val < 14));
+});

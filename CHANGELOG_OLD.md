@@ -4,6 +4,10 @@
 
 Diese Datei archiviert die bisherigen Versionshinweise und historischen Detailbeschreibungen unverändert. Sie beschreiben den jeweiligen damaligen Stand; für aktuelle Einstellungen und Betriebsgrenzen gilt die [README](README.md).
 
+### 0.17.0-alpha.100 (2026-10-19)
+
+Reine Abrufverzögerungen einer ungenutzten Wallbox mit zuletzt bestätigtem AUS und elektrischer Ruhe blockieren andere laufende Ladungen nicht mehr pauschal. Die betroffene Wallbox bleibt bis zu gültigen aktuellen Quellen vom Start ausgeschlossen; alte Werte erzeugen kein Ladebudget. Offene Aufträge, Lastreservierungen, positive Last oder widersprüchliche Quellen behalten ihre Schutzwirkung. [Releasehinweise](docs/release-0.17.0-alpha.100.md).
+
 ### 0.17.0-alpha.99 (2026-10-19)
 
 Sperren wegen verspäteter AUS- oder elektrischer Abschaltbestätigung lösen sich nach frischer, bestätigter Abschaltung automatisch. AUS-ACK, Leistung und alle Phasenströme sowie Verbindungs-, Fehler- und gegebenenfalls Phasenstatus müssen gültig sein. Andere Fehler bleiben verriegelt; jeder Neustart der Ladung durchläuft die regulären Freigaben und Schutzgrenzen. [Releasehinweise](docs/release-0.17.0-alpha.99.md).
