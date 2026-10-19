@@ -23,7 +23,7 @@ EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wet
 - [Admin: Erweiterte Datenpunkte](#admin-erweiterte-datenpunkte)
 - [Typische Einrichtung und Fehlersuche](#typische-einrichtung-und-fehlersuche)
 - [Diagnose, SQL und Datenqualität](#diagnose-sql-und-datenqualität)
-- [Changelog und historische Detaildokumentation](#changelog-und-historische-detaildokumentation)
+- [Changelog und historische Detaildokumentation](#changelog)
 
 ## Betriebsarten und sichere Zuständigkeit
 
@@ -847,7 +847,7 @@ Bereits vorhandene SQL-Skalarhistorien, Retention und Anlagenkonfiguration werde
 
 Ab alpha.67 akzeptiert die zentrale Wallbox-Phasenbudgetprüfung dieselbe bestehende Leerlauftoleranz wie der Wallbox-Ausgang: bestätigte, frische, qualitativ gültige Leistungswerte zwischen −0,02 und 0 kW werden intern als 0 W behandelt. Die originale negative Rohmessung bleibt in der Diagnose erhalten. Größere negative Werte, fehlende/ungültige Werte, schlechtes q, fehlendes ACK und veraltete Quellen bleiben gesperrt. Diese Toleranz gilt für Wallboxleistung; die Verträge anderer Quellen werden dadurch nicht geändert.
 
-## Changelog und historische Detaildokumentation
+## Changelog
 
 ### 0.17.0-alpha.109 (2026-10-19)
 
@@ -857,7 +857,7 @@ Vor dem Journalabschluss bei geordnetem EMS-Neustart bis zu zwei Sekunden auf ta
 
 Bei einer neuen Version bleibt hier nur der neueste Versionseintrag; der bisherige Eintrag wird nach [CHANGELOG_OLD.md](CHANGELOG_OLD.md) verschoben.
 
-## Lizenz
+## License
 
 MIT
 

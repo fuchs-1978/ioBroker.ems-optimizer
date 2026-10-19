@@ -1,3 +1,130 @@
+## Archived package news (repository checker cleanup)
+
+### 0.17.0-alpha.90
+
+- **en:** Add a dedicated grid/section-14a/EEBUS tab, opt-in configured EMS simultaneity calculation and external binary budget source; preserve fixed migration and conservative gross protection, without double-scaling LPC.
+- **de:** Eigener Reiter Netzanschluss/Paragraph14a/EEBUS, optionale EMS-Gleichzeitigkeitsberechnung und externes Binaerbudget; bisherige Festlimits und konservativer Bruttoschutz bleiben erhalten, LPC wird nicht doppelt skaliert.
+
+### 0.17.0-alpha.89
+
+- **en:** Allow one measured PV wallbox step with a shared configurable import tolerance and admission/hold hysteresis; retain nominal safety reservations and wait for physical uptake before another step.
+- **de:** Einen gemessenen PV-Wallboxschritt mit gemeinsamer einstellbarer Bezugstoleranz und Zuschalt-/Haltehysterese erlauben; nominale Schutzreserven erhalten und vor weiterem Schritt elektrische Aufnahme abwarten.
+
+### 0.17.0-alpha.88
+
+- **en:** Hold confirmed measured wallbox current across a one-amp nominal PV soft-cap mismatch; preserve full peer reservations, hard limits and nominal admission budgets for increases.
+- **de:** Bestaetigten real gedeckten Wallboxstrom bei hoechstens einem Ampere Abweichung zur nominellen PV-Softgrenze halten; volle Fremdreserven, Schutzgrenzen und nominale Budgets fuer Erhoehungen erhalten.
+
+### 0.17.0-alpha.87
+
+- **en:** Bounded durable recorder group commits and parallel immutable reads reduce journal queue contention; expose queue peaks and batch timings while preserving exact SQL proofs and capacity limits.
+- **de:** Begrenzte dauerhafte Recorder-Schreibpakete und paralleles Lesen unveraenderlicher Originale entlasten die Journal-Warteschlange; Warteschlangenspitzen und Paketzeiten anzeigen, exakte SQL-Nachweise und Kapazitaetsgrenzen erhalten.
+
+### 0.17.0-alpha.86
+
+- **en:** Revalidate smaller queued DHW setpoints after allocation changes instead of treating a stale increase as a transport failure; preserve safety guards and actual command tracking.
+- **de:** Kleinere wartende EHZ-Sollwerte nach Budgetwechsel erneut vollstaendig pruefen statt ueberholte Erhoehungen als Transportfehler zu behandeln; Schutzpruefungen und reale Befehlsnachfuehrung erhalten.
+
+### 0.17.0-alpha.85
+
+- **en:** Preserve an uninterrupted heater zero-proof episode across correlated completed repeat commands; require the latest reset and transport plus fresh three-phase standstill before release, and expose proof blockers.
+- **de:** Ununterbrochenen EHZ-Nullnachweis ueber zugeordnete abgeschlossene Wiederholungsauftraege erhalten; vor Freigabe neuesten Reset und Transport sowie frischen Dreiphasenstillstand verlangen und Sperrgruende anzeigen.
+
+### 0.17.0-alpha.84
+
+- **en:** Associate write-only Modbus command resets with heater zero commands and verify sustained three-phase electrical standstill before releasing unseen reservations.
+- **de:** Write-only-Modbus-Befehlsresets dem EHZ-Nullauftrag zuordnen und vor Freigabe unbeobachteter Reserven anhaltenden elektrischen Stillstand aller drei Phasen nachweisen.
+
+### 0.17.0-alpha.83
+
+- **en:** Lossless compact age deltas and bounded recorder-health publication reduce diagnostic overhead without dropping original events.
+- **de:** Verlustfreie kompakte Altersdeltas und begrenzte Recorder-Statusausgabe reduzieren Diagnose-Overhead ohne Weglassen von Originalereignissen.
+
+### 0.17.0-alpha.82
+
+- **en:** Coalesce bounded exact SQL proof windows and local journal confirmation maintenance without reducing observation fidelity.
+- **de:** Begrenzte SQL-Prueffenster und lokale Journal-Bestaetigung buendeln; exakte Nachweise und Originalereignisse bleiben erhalten.
+
+### 0.17.0-alpha.81
+
+- **en:** Use up to four bounded original bundles per delivery cycle; separate local work and encoded SQL budgets while preserving exact storage proof.
+- **de:** Bis zu vier begrenzte Originalpakete pro Versandzyklus; lokales Arbeitsbudget und kodierte SQL-Datenmenge getrennt, exakter Speichernachweis bleibt Pflicht.
+
+### 0.17.0-alpha.80
+
+- **en:** Recover SQL diagnostic backoff with timely fresh exact storage proof without increasing query budgets.
+- **de:** SQL-Drosselung durch rechtzeitig geprüften frischen exakten Speichernachweis beenden; Abfragegrenzen bleiben erhalten.
+
+### 0.17.0-alpha.79
+
+- **en:** SQL-safe lossless encoded record transport below TEXT limits; exact storage proof remains mandatory.
+- **de:** Verlustfreier SQL-sicherer Recordtransport unter TEXT-Grenzen; exakter Speichernachweis bleibt erforderlich.
+
+### 0.17.0-alpha.78
+
+- **de:** SQL-Wiederaufnahme ohne NAS-Zugriff nach belegtem Adapterprozesswechsel und lesender globaler Ruheprüfung; begrenzter Historien-Startup-Wiederanlauf nach bestätigtem Fehlerabschluss.
+- **en:** Recover orphan SQL verification without NAS access after observed adapter generation change and read-only global quiescence proof; bound startup history retries after confirmed error completion.
+
+### 0.17.0-alpha.77
+
+- **de:** Unveränderte Diagnoseoriginale in begrenzten SQL-Transportpaketen bündeln, ohne mehr Schreibaufrufe oder parallele Abfragen; EHZ-Besitzanzeige vereinheitlichen und Transportfortschritt sichtbar machen.
+- **en:** Bundle unchanged diagnostic originals into bounded SQL transport packets without more write calls or parallel queries; align heater ownership mode and expose delivery progress.
+
+### 0.17.0-alpha.76
+
+- **de:** NVP-Reglermodus separat anzeigen, künstliche Recorder-Moduswechsel vermeiden und SQL-Nachweisfenster für begrenzte Erholung fair abarbeiten.
+- **en:** Separate NVP diagnostic mode from output ownership, avoid synthetic recorder mode edges and fairly schedule bounded SQL recovery verification.
+
+### 0.17.0-alpha.75
+
+- **en:** Back off diagnostic SQL traffic after observed database errors; bound recovery probes and slow shadow scalar publication without changing live control.
+- **de:** SQL-Diagnoseverkehr bei beobachteten Datenbankfehlern pausieren; Wiederanlauf begrenzen und Schatten-Skalarpublikation verlangsamen, ohne Live-Regelung zu ändern.
+
+### 0.17.0-alpha.74
+
+- **de:** EHZ-Leistungsreservierungen werden nach stabil belegter begrenzter Heizstababweichung und späterer Reduktion freigegeben; alternative Nullfreigabe benötigt frischen Soll-ACK und wiederholten elektrischen Stillstand.
+- **en:** Release heater reservations after stable bounded resistive underresponse and later physical reduction; alternative zero release requires fresh setpoint ACK and repeated electrical standstill.
+
+### 0.17.0-alpha.73
+
+- **de:** Lokale Diagnosepuffer-Frist von 24 Stunden mit dauerhaften Verlustmarkierungen, vollständiger Kettenbereinigung und Alters-/Abbaudiagnose.
+- **en:** Bound local diagnostic retention to 24 hours with durable explicit loss markers, whole-chain cleanup and age/progress diagnostics.
+
+### 0.17.0-alpha.72
+
+- **en:** Avoid false recorder quality edges from absent versus zero q, pause futile writes at journal capacity with explicit batched loss counters and a fresh recovery snapshot, and narrow failed SQL verification windows only after observed backend completion. Unknown SQL completion remains fenced; no actuator changes.
+- **de:** Falsche Diagnose-Qualitätswechsel zwischen fehlendem q und q=0 vermeiden; aussichtslose Schreibversuche bei vollem Journal mit expliziten Verlustzählern pausieren und mit neuem Snapshot fortsetzen. Fehlgeschlagene SQL-Nachweisfenster nur nach beobachtetem Backendabschluss verkleinern. Unbekannter SQL-Abschluss bleibt gesperrt; keine Regleränderung.
+
+### 0.17.0-alpha.71
+
+- **en:** Record selected original source observations continuously, retain complete checkpoint chains in a bounded durable journal until closed and independently confirmed in SQL, and use sequential bounded history reads. Unknown backend completion stays blocked across restart. Optional pump source IDs remain unconfigured and read-only; operational acceptance remains open.
+- **de:** Ausgewählte Originalquellen kontinuierlich aufzeichnen, vollständige Checkpointketten bis zum Abschluss und unabhängigen SQL-Nachweis in einem begrenzten dauerhaften Journal erhalten und Historie sequenziell begrenzt lesen. Unbekannter Backendabschluss bleibt über Neustarts gesperrt. Optionale Pumpenquellen bleiben unkonfiguriert und rein lesend; die reale Abnahme bleibt offen.
+
+### 0.17.0-alpha.70
+
+- **en:** Use coherent SunEnergy head data automatically for planning, expose effective device limits, and optionally derive capacity from online packs with an explicit pack size. Unknown data no longer falls back to a fictitious battery SOC in head mode.
+- **de:** Zusammenhaengende SunEnergy-Kopfdaten automatisch in der Prognose nutzen, wirksame Geraetegrenzen anzeigen und Kapazitaet optional aus Online-Packs mit ausdruecklicher Packgroesse ableiten. Unbekannte Kopfdaten ergeben keinen erfundenen Ersatz-SoC.
+
+### 0.17.0-alpha.69
+
+- **en:** Add explicit standard SunEnergy adapter dispatch for one to three heads with capacity/SoC weighted balancing, individual coherent AC/GS response checks and retained stop ownership; preserve global budgets and disabled output defaults.
+- **de:** Explizite Anbindung des SunEnergy-Standardadapters für ein bis drei Köpfe mit kapazitäts-/SoC-gewichteter Verteilung, zusammengehöriger AC-/GS-Rückmeldung je Kopf und erhaltener Stoppverantwortung; Gesamtbudgets und ausgeschaltete Ausgangsfreigaben bleiben erhalten.
+
+### 0.17.0-alpha.68
+
+- **en:** Add an optional configurable forecast-temperature minimum battery SoC reserve shared by planning and control, with Berlin 20:00 selection periods, qualified restart/hold diagnostics and no invented reserve energy; preserve maximum SoC, late targets and output gates.
+- **de:** Optionale einstellbare Mindest-SoC-Reserve nach Temperaturprognose für Planung und Regelung; Berliner 20-Uhr-Auswahlperioden, geprüfte Neustart-/Haltenachweise und keine erfundene Reserveenergie. Maximal-SoC, späte Tagesziele und Ausgangsfreigaben bleiben erhalten.
+
+### 0.17.0-alpha.67
+
+- **en:** Extend confirmed parallel handoffs to target-SoC completion and independently verified current-process adoption; accept existing wallbox idle-power noise tolerance in central budget validation while preserving source quality and safety limits.
+- **de:** Bestätigte Parallelübergabe auch nach Ziel-SoC-Ende und unabhängig geprüfter Übernahme im aktuellen Prozess; bestehende Leerlauf-Messtoleranz der Wallbox auch im zentralen Budget prüfen, Quellenqualität und Schutzgrenzen erhalten.
+
+### 0.17.0-alpha.66
+
+- **en:** Confirm OFF for unused wallboxes in parallel operation to prevent charging on replug without an EMS budget; preserve active peers, OFF confirmation and electrical-rest checks.
+- **de:** Ungenutzte Wallboxen im Parallelbetrieb bestätigt ausschalten, damit Anstecken ohne EMS-Budget keine Ladung auslöst; laufende Fahrzeuge sowie AUS-Bestätigung und elektrische Ruhe weiterhin prüfen.
+
 # Ältere Änderungen und historische Detaildokumentation
 
 [Zur aktuellen Bedienungsanleitung und neuesten Änderung](README.md#changelog-und-historische-detaildokumentation)
