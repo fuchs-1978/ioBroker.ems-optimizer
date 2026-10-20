@@ -1520,7 +1520,7 @@ test('a truly capped car cannot wind up past two unanswered probes', async () =>
 
 for(const [fault,change] of [
     ['before deadline',()=>{}],
-    ['no nominal funding',h=>h.put('export',400)],
+    ['no measured funding',h=>h.put('export',100)],
     ['no electrical uptake',h=>{h.put('power',0);h.put('i1',0);}],
     ['old power',h=>h.put('power',1.75,{ts:1})],
     ['missing ACK',h=>h.put('feedback',10,{ack:false})],
@@ -1885,4 +1885,53 @@ test('sequential current increases retain their existing same-value ACK polling 
     h.writes.length = 0;
     await h.output.tick();
     assert.deepEqual(h.writes, [{id: 'cmd', val: 12}]);
+});
+
+async function measuredLimitedProbe() {
+    const h=await eqeLimitedReply();h.advance(46000);h.grant([11]);
+    h.put('export',400);h.writes.length=0;return h;
+}
+test('limited response can probe one measured amp without full nominal PV funding',async()=>{
+    const h=await measuredLimitedProbe();await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'cmd',val:11}]);
+    assert.equal(h.output.devices[0].limitedProbeAttempts,1);
+    assert.ok(h.output.devices[0].measuredBudgetStep,'retain the measured admission until electrical progress');
+    const diag=JSON.parse(h.states.get('ems.0.Devices.Wallbox0.IncreaseBudget_JSON').val);
+    assert.equal(diag.decision,'limited-response-probe');assert.equal(diag.requiredW,1980);
+});
+for(const [name,change] of [
+    ['hard watts',h=>h.grant([11],{hardBudgetW:2200})],
+    ['insufficient surplus',h=>h.put('export',100)],
+    ['two failed attempts',h=>{h.output.devices[0].limitedProbeAttempts=2;}],
+    ['missing ACK',h=>h.put('feedback',10,{ack:false})],
+    ['old power',h=>h.put('power',1.75,{ts:1})],
+    ['withdrawn allocation',h=>h.grant([0])],
+    ['heater reservation',h=>{const k='ems.0.Control.ParallelWallboxAllocation_JSON';const a=JSON.parse(h.states.get(k).val);a.heaterTargetW=1000;h.put(k,JSON.stringify(a));}]
+]) test('measured limited probe rejects '+name,async()=>{
+    const h=await measuredLimitedProbe();change(h);await h.output.tick();
+    assert.ok(!h.writes.some(w=>w.id==='cmd'&&w.val>10));
+});
+
+test('live EQE 19→20 A at 4100 W plus 410 W export is admitted and cannot immediately wind up',async()=>{
+    const h=await eqeLimitedReply();const d=h.output.devices[0];
+    d.lastA=19;d.response.amps=19;d.response.previousAmps=18;
+    h.output.meterReservations.set(d.response,{phases:1,powerW:4100,currentsA:[18.3,0,0],peerW:0,otherW:0,pendingPhasesW:[0,0,0]});
+    h.advance(46000);h.grant([20]);h.ack('feedback',19);h.put('power',4.1);h.put('i1',18.3);h.put('export',410);
+    h.writes.length=0;await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'cmd',val:20}]);
+    assert.equal(d.limitedProbeAttempts,1);
+    h.advance(2000);h.grant([20]);h.ack('feedback',20);h.put('power',4.1);h.put('i1',18.3);h.put('export',410);
+    h.writes.length=0;await h.output.tick();
+    assert.deepEqual(h.writes,[], 'do not undo the admitted step while its response is pending');
+    assert.ok(d.measuredBudgetStep,'retain the unproved admission during the response window');
+});
+
+
+test('an unanswered measured probe cannot fund a second measured probe from unchanged uptake',async()=>{
+    const h=await measuredLimitedProbe();const d=h.output.devices[0];
+    await h.output.tick();assert.deepEqual(h.writes,[{id:'cmd',val:11}]);
+    h.advance(1000);h.grant([13]);h.ack('feedback',11);h.put('power',1.75);h.put('i1',7.8);
+    await h.output.tick();
+    h.advance(46000);h.grant([13]);h.put('export',400);h.writes.length=0;await h.output.tick();
+    assert.ok(!h.writes.some(w=>w.id==='cmd'&&w.val>11));assert.equal(d.limitedProbeAttempts,1);
 });

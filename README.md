@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.110**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.111**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -849,9 +849,9 @@ Ab alpha.67 akzeptiert die zentrale Wallbox-Phasenbudgetprüfung dieselbe besteh
 
 ## Changelog
 
-### 0.17.0-alpha.110 (2026-10-19)
+### 0.17.0-alpha.111 (2026-10-20)
 
-Beim einphasigen Antwortnachweis lokale go-e-Kanäle unabhängig von der Hausphasenzuordnung prüfen. Bestätigten Strom mit passender Befehls-/Messwertkette auch bei Zuteilung und Bestätigung in derselben Millisekunde halten. Ein unveränderter frischer ACK-Poll darf bereits belegte Aufnahme nicht entwerten, weil sein Pollzeitpunkt neuer als die weiterhin frischen Strom-/Leistungsproben ist; der zugehörige ursprüngliche ACK bleibt maßgeblich. Keine erneuerten Antwortfristen oder höhere Toleranz. Kontrollierte integrierte Replays prüfen die zu Issue #211 passende 6-/7-A-Folge; sie ersetzen keine vollständige SQL-Rohdatenrekonstruktion oder reale Folgeabnahme. Separat nach Journalabschluss keine neue Health-Dateiarbeit starten. Score bleibt 71/100, Änderung 0; keine garantierte Energieeinsparung. [Releasehinweise](docs/release-0.17.0-alpha.110.md).
+Begrenzte 1-A-Nachregelversuche nach rechtzeitig bestätigter, aber nur teilweiser Fahrzeugaufnahme dürfen die gemessene Aufnahme plus eine volle Ampere-Stufe verwenden. Beispiel: 19 A Vorgabe, 4.100 W Aufnahme und rund 410 W Export können einen Versuch mit 20 A erlauben. Harte Grenzen reservieren weiterhin nominal 4.600 W; die elektrische Antwortfrist und maximal zwei erfolglose Versuche bleiben erhalten. Kein pauschales Anheben der Toleranz, keine Änderung der 600-s-Stoppverzögerung. Reale Folgeabnahme offen. [Releasehinweise](docs/release-0.17.0-alpha.111.md).
 
 [Alle älteren Änderungen und historischen Detailbeschreibungen](CHANGELOG_OLD.md).
 

@@ -1,9 +1,13 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.110",
+    "version": "0.17.0-alpha.111",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.111": {
+        "en": "Allow a bounded measured one-amp PV probe after a timely acknowledged partial vehicle response; preserve nominal hard reservations, response deadlines and the two-attempt limit.",
+        "de": "Nach rechtzeitig bestaetigter teilweiser Fahrzeugantwort einen begrenzten gemessenen 1-A-PV-Versuch zulassen; nominale Schutzreserven, Antwortfristen und Grenze von zwei Versuchen erhalten."
+      },
       "0.17.0-alpha.110": {
         "en": "Retain confirmed single-phase uptake across house-phase mapping, same-millisecond ordering and unchanged ACK repolls using the original command proof without renewing response deadlines; prevent journal health writes after close. Live acceptance remains open.",
         "de": "Bestaetigte einphasige Aufnahme bei Hausphasenzuordnung, gleicher Millisekunde und unveraenderten ACK-Polls mit urspruenglichem Befehlsnachweis halten, ohne Antwortfristen zu erneuern; Journal-Healthschreiben nach Abschluss verhindern. Reale Abnahme bleibt offen."
