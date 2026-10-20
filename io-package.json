@@ -1,9 +1,13 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.111",
+    "version": "0.17.0-alpha.112",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.112": {
+        "en": "Preserve inherited EMS phase targets during checked restart warmup while invalidating power/current budgets; keep actual phase feedback, transition deadlines and stop safeguards binding.",
+        "de": "Bei gepruefter Neustart-Uebernahme geerbte EMS-Phasenziele waehrend des Anlaufs erhalten, Leistungs- und Strombudgets weiter sperren; echte Phasenrueckmeldung, Fristen und Schutzstopps bleiben wirksam."
+      },
       "0.17.0-alpha.111": {
         "en": "Allow a bounded measured one-amp PV probe after a timely acknowledged partial vehicle response; preserve nominal hard reservations, response deadlines and the two-attempt limit.",
         "de": "Nach rechtzeitig bestaetigter teilweiser Fahrzeugantwort einen begrenzten gemessenen 1-A-PV-Versuch zulassen; nominale Schutzreserven, Antwortfristen und Grenze von zwei Versuchen erhalten."

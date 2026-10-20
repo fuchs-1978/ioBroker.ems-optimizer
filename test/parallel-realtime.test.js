@@ -1242,3 +1242,40 @@ for(const [name,change,hard,budget] of [
 ]) test('limited measured allocation respects '+name,()=>{
     const h=limitedPVEngine(change);assert.ok(h.update(budget,hard).amps[0]<=19);
 });
+
+for(const wb of [0,1,2]) test(`restart invalidation preserves inherited 3P target for wallbox ${wb}`,()=>{
+    const h=engine({production:true,[`wb${wb}PhaseControlMode`]:'ems'});
+    h.owned(wb,6,4100,3);
+    h.put('ems.0.Control.RestartHandoffActive',true);
+    h.put(`ems.0.Control.Targets.Wallbox${wb}_Phases`,3);
+    h.run("zeroRealtimeTargets('Kein gueltiger 48-h-Fahrplan')");
+    assert.equal(h.states.get(`ems.0.Control.Targets.Wallbox${wb}_Phases`).val,3);
+    assert.equal(h.run(`slowTargets.wallboxPhases[${wb}]`),3);
+    assert.equal(h.states.get(`ems.0.Control.Targets.Wallbox${wb}_A`).val,0);
+    assert.equal(h.states.get(`ems.0.Control.Targets.Wallbox${wb}_W`).val,0);
+    assert.equal(h.states.get('ems.0.Control.Valid').val,false);
+    h.run("zeroRealtimeTargets('Eingangsdaten ungueltig oder veraltet')");
+    assert.equal(h.states.get(`ems.0.Control.Targets.Wallbox${wb}_Phases`).val,3);
+});
+for(const [name,change] of [
+    ['no handoff',h=>h.put('ems.0.Control.RestartHandoffActive',false)],
+    ['not owned',h=>h.put('ems.0.Devices.Wallbox0.OutputOwned',false)],
+    ['not active',h=>h.put('ems.0.Devices.Wallbox0.OutputActive',false)],
+    ['external phase authority',h=>{h.nativeConfig.wb0PhaseControlMode='script';}]
+]) test('ordinary invalidation is unchanged: '+name,()=>{
+    const h=engine({production:true,wb0PhaseControlMode:'ems'});h.owned(0,6,4100,3);
+    h.put('ems.0.Control.RestartHandoffActive',true);h.put('ems.0.Control.Targets.Wallbox0_Phases',3);
+    change(h);h.run("zeroRealtimeTargets('invalid')");
+    assert.equal(h.states.get('ems.0.Control.Targets.Wallbox0_Phases').val,1);
+});
+
+test('restart invalidation preserves a genuine 1P destination and never validates a corrupt phase target',()=>{
+    const h=engine({production:true,wb0PhaseControlMode:'ems'});h.owned(0,6,4100,3);
+    h.put('ems.0.Control.RestartHandoffActive',true);
+    for(const value of [1,0]) {
+        h.put('ems.0.Control.Targets.Wallbox0_Phases',value);
+        h.run("zeroRealtimeTargets('invalid')");
+        assert.equal(h.states.get('ems.0.Control.Targets.Wallbox0_Phases').val,value);
+        assert.equal(h.states.get('ems.0.Control.Valid').val,false);
+    }
+});
