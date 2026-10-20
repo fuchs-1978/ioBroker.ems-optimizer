@@ -1,5 +1,9 @@
 ## Frühere README-Versionseinträge
 
+### 0.17.0-alpha.113 (2026-10-20)
+
+Während der Stromabsenkung vor einer bereits qualifizierten 3P-Umschaltung den aktuellen Beobachtungszeitpunkt erhalten. Zwei reguläre Reglerzyklen dürfen nicht als künstliche Beobachtungslücke den 300-s-Countdown neu starten. Ursprünglicher Qualifikationsbeginn, echte Lückenprüfung, physischer Stromnachweis und Schutzgrenzen bleiben erhalten. [Releasehinweise](docs/release-0.17.0-alpha.113.md).
+
 ### 0.17.0-alpha.112 (2026-10-20)
 
 Bei einer geprüften Neustart-Übernahme laufender EMS-Wallboxen die vorhandene Phasenvorgabe erhalten. Das vorläufige Nullsetzen von Leistungs- und Strombudgets darf keine künstliche 1P-Umschaltung auslösen. Echte Phasenrückmeldung, Umschaltfristen, Datenqualität und Schutzabschaltungen bleiben verbindlich. Bereits vorhandene Sperren nicht pauschal aufheben. [Releasehinweise](docs/release-0.17.0-alpha.112.md).

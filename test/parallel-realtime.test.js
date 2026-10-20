@@ -107,6 +107,33 @@ function engine({production = false, clock = Date, ...config} = {}) {
     return {nativeConfig, states, put, run, plans, update, exclude, owned};
 }
 
+test('optional EHZ yields a mandatory 3P start plus reserve before the car can start; its physical reservation remains binding', () => {
+    const h = engine({production: true, dhwControlEnabled: true,
+        wb2PhaseControlMode: 'ems', wb2PhaseModeId: 'raw.phase2'});
+    h.exclude(0); h.exclude(1);
+    h.put('DP_DHW_PARALLEL_RELEASE', false);
+    h.put('DP_WB2_SOC', 10);
+    h.put('ems.0.Vehicles.Wallbox2.PhaseSwitchEnabled', true);
+    h.put('ems.0.Vehicles.Wallbox2.MaximumPhases', 3);
+    h.put('ems.0.Vehicles.Wallbox2.MaxCurrent1P_A', 20);
+    h.put('ems.0.Vehicles.Wallbox2.MaxCurrent3P_A', 32);
+    h.put('ems.0.Config.Wallbox2MaxPower_W', 22080);
+    h.put('ems.0.Config.WallboxStartReserve_W', 300);
+    h.put('ems.0.Control.Targets.Wallbox2_Phases', 3);
+    h.put('raw.phase2', 2);
+    h.put('ems.0.Devices.MyPV_DHW.OutputReservedPower_W', 5140);
+    h.plans[2] = {valueW: 22080, phases: 3};
+    let target = h.update(9361, 9361);
+    assert.equal(target.phases[2], 3);
+    assert.equal(target.amps[2], 0, '81 W headroom is insufficient for a fresh 3P admission');
+    assert.ok(target.dhw <= 9361 - 4440, 'heater target yields the full startup requirement');
+    assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservedPower_W').val, 5140,
+        'planning a reduction never releases its real reservation');
+    h.put('ems.0.Devices.MyPV_DHW.OutputReservedPower_W', 2140);
+    target = h.update(9361, 9361);
+    assert.ok(target.amps[2] >= 6, 'only released physical capacity permits the start');
+});
+
 test('manual Mii priority cannot starve EQV below its minimum SoC', () => {
     const h = engine(); h.exclude(2);
     h.put('DP_WB0_SOC', 58.2); h.put('DP_WB0_MIN_SOC', 70);
@@ -844,7 +871,7 @@ test('expired or reset automatic completion evidence cannot be renewed by a stil
 });
 
 test('central parallel budget accepts only bounded go-e zero noise while preserving the exact raw sample', () => {
-    for (const rawKW of [-0.01, -0.02, 0]) {
+    for (const rawKW of [-0.01, -0.02, -0.03, 0]) {
         const h = engine({production: true}); h.exclude(1); h.exclude(2);
         h.put('DP_WB0_POWER', rawKW);
         const before = {...h.states.get('DP_WB0_POWER')};
@@ -860,8 +887,8 @@ test('central parallel budget accepts only bounded go-e zero noise while preserv
 
 test('central budget zero-noise tolerance never accepts invalid wallbox, SMA or heater sources', () => {
     const cases = [
-        {id: 'DP_WB0_POWER', value: -0.020001, reason: 'source-value-invalid'},
-        {id: 'DP_WB0_POWER', value: -0.03, reason: 'source-value-invalid'},
+        {id: 'DP_WB0_POWER', value: -0.030001, reason: 'source-value-invalid'},
+        {id: 'DP_WB0_POWER', value: -0.04, reason: 'source-value-invalid'},
         {id: 'DP_WB0_POWER', value: null, reason: 'source-value-invalid'},
         {id: 'DP_WB0_POWER', value: -0.01, extra: {ack: false}, reason: 'source-unacknowledged'},
         {id: 'DP_WB0_POWER', value: -0.01, extra: {q: 64}, reason: 'source-quality-invalid'},

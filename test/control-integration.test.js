@@ -619,18 +619,18 @@ test('larger negative idle go-e power still withdraws live release and identifie
     await h.advance(40);
     assert.equal(h.physical().miiAllow, 1);
     const changedAt = h.now();
-    h.setIdleWallboxNoise(-0.03);
+    h.setIdleWallboxNoise(-0.04);
     await h.advance(2);
     const grant = JSON.parse(h.value('Control.ParallelWallboxAllocation_JSON'));
     assert.equal(grant.valid, false);
     assert.equal(grant.sourceDiagnostics[0].id, 'DP_WB2_POWER');
-    assert.equal(grant.sourceDiagnostics[0].rawValue, -0.03);
+    assert.equal(grant.sourceDiagnostics[0].rawValue, -0.04);
     assert.equal(grant.sourceDiagnostics[0].reason, 'source-value-invalid');
     await h.advance(6);
     assert.ok(h.writes.some(row => row.id === 'goe0.allow' && row.val === 0 && row.at > changedAt),
         'a value outside the existing tolerance remains an actual safety stop');
     assert.equal(h.physical().miiAllow, 0);
-    assert.equal(h.states.get('DP_WB2_POWER').val, -0.03);
+    assert.equal(h.states.get('DP_WB2_POWER').val, -0.04);
 });
 
 test('parallel priority defers a new handoff while donor phase preparation is pending', async () => {

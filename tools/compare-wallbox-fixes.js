@@ -155,7 +155,7 @@ async function worker(tree, fixed) {
             assert.deepEqual(externalChange.writes, [{id: 'allow', val: 0}],
                 '12A was never requested by this controller; its external-change stop must remain effective');
             assert.match(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val,
-                /Ladestrom extern veraendert/);
+                /Sollstrom-Rueckmeldung widerspruechlich/);
         } else {
             assert.deepEqual(h.writes, [{id: 'cmd', val: 18}]);
             assert.equal(finalReserve, 4140);

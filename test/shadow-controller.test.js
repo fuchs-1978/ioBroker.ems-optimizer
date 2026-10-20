@@ -993,7 +993,7 @@ test('paired constant and variable PV replays do not depend on legacy-script WB 
 
 test('assumed response retains real source faults, error changes and phase protections in coherent records', async () => {
     for (const change of [
-        h => h.put('DP_WB0_POWER', -0.021),
+        h => h.put('DP_WB0_POWER', -0.031),
         h => h.put('DP_WB0_POWER', 16 * 230 / 1000, {q: 64}),
         h => h.put('DP_WB0_POWER', 16 * 230 / 1000, {ts: 1}),
         h => h.put('goe.error', 8),
@@ -1035,7 +1035,7 @@ test('coherent feedback distinguishes stale/numeric/negative sources and keeps s
     assert.equal(feedback.connection.fresh, true);
     assert.equal(feedback.connection.issue, '');
     assert.equal(feedback.powerKW.issue, '');
-    for (const [value, extra, issue] of [[-0.021, {}, 'negative'], ['bad', {}, 'numeric'], [1, {ts: 1}, 'stale']]) {
+    for (const [value, extra, issue] of [[-0.031, {}, 'negative'], ['bad', {}, 'numeric'], [1, {ts: 1}, 'stale']]) {
         h.put('DP_WB0_POWER', value, extra); await h.tick();
         feedback = latestRecord(h).realFeedback.Wallbox0;
         assert.equal(feedback.powerKW.issue, issue);

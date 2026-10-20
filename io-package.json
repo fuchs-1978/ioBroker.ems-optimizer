@@ -1,9 +1,13 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.113",
+    "version": "0.17.0-alpha.114",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.114": {
+        "en": "Treat qualified -30 W wallbox zero noise as a throttled warning; let optional EHZ yield before a mandatory 3P start with admission reserve; permit one bounded current-feedback correction per owned run without ON or increases. Live acceptance remains open.",
+        "de": "Gueltige -30 W Wallbox-Nullabweichung nur gedrosselt warnen; optionalen EHZ vor Pflichtladestart in 3P samt Startreserve absenken; einmalige begrenzte Sollstrom-Korrektur je eigenem Ladezyklus ohne EIN oder Erhoehung. Reale Abnahme offen."
+      },
       "0.17.0-alpha.113": {
         "en": "Keep the current observation timestamp while preserving the original qualified 3P preparation; ordinary control cycles no longer manufacture a gap and restart the phase countdown. Real gaps and safety limits remain binding.",
         "de": "Bei qualifizierter 3P-Vorbereitung den aktuellen Beobachtungszeitpunkt fortschreiben; regulaere Reglerzyklen erzeugen keine kuenstliche Luecke mit neuem Countdown. Echte Luecken und Schutzgrenzen bleiben wirksam."

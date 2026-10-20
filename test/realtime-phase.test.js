@@ -19,7 +19,7 @@ function phaseEngine(config = {}, initialPhase = 3) {
         confirmedPhases: initialPhase, minCurrent1pA: 6, maxCurrent1pA: 20,
         minCurrent3pA: 6, maxCurrent3pA: 16, maximumPowerW: 11040,
         mustCharge: false, departureTimestamp: 0, gridEnergyRequiredKWh: 0};
-    const ctx = vm.createContext({wallboxAllocationPolicy: require('../lib/wallbox-allocation'), SMA_GRID_MAX_AGE_MS, CFG: {root}, nativeConfig: {phaseSwitchMinHoldMin: 0, ...config},
+    const ctx = vm.createContext({normalizeWallboxPowerKW: require('../lib/wallbox-measurement').normalizeWallboxPowerKW, wallboxAllocationPolicy: require('../lib/wallbox-allocation'), SMA_GRID_MAX_AGE_MS, CFG: {root}, nativeConfig: {phaseSwitchMinHoldMin: 0, ...config},
         Date, console, vehicle,
         getState: id => states.get(id), write: (id, val) => states.set(id, {val, ack: true}),
         readNumber: (id, fallback) => Number.isFinite(Number(states.get(id)?.val))
