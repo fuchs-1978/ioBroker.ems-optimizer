@@ -1211,3 +1211,34 @@ test('same 2430 W sample moves central allocation 10→11 A only after electrica
     assert.equal(h.update(2527).amps[2],11);
     assert.deepEqual(h.states.get('DP_WB2_POWER'),power,'no new sample is required by the next allocator cycle');
 });
+
+function limitedPVEngine(change = () => {}) {
+    const h = engine({production:true, wallboxPVImportToleranceW:100});
+    h.exclude(1); h.exclude(2); h.owned(0,19,4100);
+    const base='ems.0.Devices.Wallbox0', now=Date.now();
+    h.put(`${base}.OutputLastWrite`,now-80000);
+    h.put(`${base}.ResponseSentAt`,now-80000);
+    h.put(`${base}.ResponseAcknowledgedAt`,now-79000);
+    h.put(`${base}.ResponseCommand_A`,19);
+    h.put(`${base}.ResponseState`,'limited');
+    h.put(`${base}.ResponsePending`,false);
+    change(h,base,now);return h;
+}
+
+test('limited EQE 19 A/4100 W may request one measured 20 A step at 4510 W while reserving 4600 W',()=>{
+    const h=limitedPVEngine();const t=h.update(4510);
+    assert.equal(t.amps[0],20);assert.ok(t.reserve[0]>=4600);
+    assert.equal(JSON.parse(h.states.get('ems.0.Control.Wallbox0.AllocationDiagnostics_JSON').val).measuredPVStep,true);
+});
+for(const [name,change,hard,budget] of [
+    ['hard watts',()=>{},4510,4510],
+    ['too little measured budget',()=>{},Infinity,4200],
+    ['missing ACK',(h,b)=>h.put(`${b}.ResponseAcknowledgedAt`,0),Infinity,4510],
+    ['late ACK',(h,b,n)=>h.put(`${b}.ResponseAcknowledgedAt`,n-50000),Infinity,4510],
+    ['before settle',(h,b,n)=>{h.put(`${b}.ResponseSentAt`,n-20000);h.put(`${b}.ResponseAcknowledgedAt`,n-19000);},Infinity,4510],
+    ['pre-deadline power',(h,b,n)=>h.put('DP_WB0_POWER',4.1,{ts:n-40000}),Infinity,4510],
+    ['device cap',h=>h.put('ems.0.Vehicles.Wallbox0.MaxCurrent1P_A',19),Infinity,4510],
+    ['phase transition',(h,b)=>h.put(`${b}.PhaseTransitionActive`,true),Infinity,4510]
+]) test('limited measured allocation respects '+name,()=>{
+    const h=limitedPVEngine(change);assert.ok(h.update(budget,hard).amps[0]<=19);
+});
