@@ -1,5 +1,9 @@
 ## Frühere README-Versionseinträge
 
+### 0.17.0-alpha.114 (2026-10-20)
+
+Frische, bestätigte Wallbox-Messwerte bis −30 W werden intern als 0 W mit gedrosselter Warnung behandelt. Vor einem Pflichtladestart in 3P gibt der optionale EHZ die benötigte Leistung samt Startreserve frei; reale Reservierungen bleiben bis zum Nachweis erhalten. Bei einer einzelnen qualifizierten ±1-A-Sollstromabweichung ist pro eigenem Ladezyklus genau ein begrenzter Korrekturversuch ohne EIN oder Stromerhöhung möglich. Wiederholter Widerspruch, fehlender ACK und Schutzgrenzen führen weiterhin zum Stopp. Die 600-s-Stoppverzögerung bleibt unverändert. [Releasehinweise](docs/release-0.17.0-alpha.114.md).
+
 ### 0.17.0-alpha.113 (2026-10-20)
 
 Während der Stromabsenkung vor einer bereits qualifizierten 3P-Umschaltung den aktuellen Beobachtungszeitpunkt erhalten. Zwei reguläre Reglerzyklen dürfen nicht als künstliche Beobachtungslücke den 300-s-Countdown neu starten. Ursprünglicher Qualifikationsbeginn, echte Lückenprüfung, physischer Stromnachweis und Schutzgrenzen bleiben erhalten. [Releasehinweise](docs/release-0.17.0-alpha.113.md).

@@ -480,6 +480,45 @@ test('automatic parallel target completion can reuse only an independently adopt
     }
 });
 
+for (const timing of ['before target', 'during target stop', 'same tick as target'])
+    test(`idle 1P preparation overlaps live donor charging and completes handoff with phase ACK ${timing}`, async () => {
+        const h = await plant({mii: true, adoptRunningMii: true,
+            startDelayS: 300, minimumRuntimeS: 600, split: false,
+            initialSurplusW: 2608, wallboxStopResponseDelayMs: 10000,
+            wb2InitialPhaseMode: 2});
+        h.setWallboxPhysical(2, {allow: 0, amps: 8});
+        await h.advance(24);
+        assert.equal(h.value('Control.Targets.Wallbox2_Phases'), 1,
+            'stopped recipient already requests 1P before donor target completion');
+        const requestedAt = h.states.get('ems.0.Control.Targets.Wallbox2_Phases').ts;
+        assert.equal(h.physical().miiAllow, 1, 'preparation never stops the running owner');
+        assert.equal(h.physical().allow, 0, 'preparation supplies no recipient ON');
+        assert.equal(h.run('wallboxVehicleHandoff'), null, 'no early start-delay qualification');
+        if (timing === 'before target') {
+            h.put('goe.phase', 1);
+            await h.advance(4);
+            assert.equal(h.value('Devices.Wallbox2.PhaseTransitionActive'), false,
+                'independent post-ACK OFF/zero completes cold preparation without loaded grace');
+        } else if (timing === 'during target stop') {
+            h.put('goe.phase', 1, {ack: false});
+            await h.advance(2);
+        }
+        const endedAt = h.now();
+        h.put('DP_WB0_SOC', 80);
+        if (timing === 'same tick as target') h.put('goe.phase', 1);
+        await h.advance(6);
+        assert.equal(h.physical().allow, 0, 'donor ACK alone cannot release recipient');
+        if (timing === 'during target stop') h.put('goe.phase', 1);
+        await h.advance(50);
+        const on = h.writes.find(row => row.id === 'goe.allow' && row.val === 1 && row.at > endedAt);
+        const quiet = h.trace.find(row => row.at > endedAt && row.miiAllow === 0 && row.miiW === 0);
+        assert.ok(requestedAt < endedAt);
+        assert.ok(on && quiet && on.at >= quiet.at && on.at < endedAt + 300000,
+            'independent OFF/quiet/phase/current ACKs permit bounded handoff: ' + h.diagnostic());
+        assert.ok(h.trace.filter(row => row.at > endedAt).every(row => !(row.wbW > 20 && row.miiW > 20)));
+        assert.equal(h.value('Config.WallboxStartDelay_s'), 300);
+    });
+
 test('automatic prestart phase preparation cannot reuse invalid echoes or an unknown former mode', async () => {
     for (const cause of ['wrong-mode', 'quality', 'future', 'before-request', 'expired', 'unknown-former-mode']) {
         const h = await plant({mii: true, adoptRunningMii: true,
@@ -496,7 +535,11 @@ test('automatic prestart phase preparation cannot reuse invalid echoes or an unk
         assert.equal(h.physical().allow, 0, cause);
         const requestedAt = h.run('wallboxVehicleHandoff?.phaseRequestedAt');
         if (cause !== 'unknown-former-mode') {
-            assert.ok(requestedAt > endedAt, 'the exact phase request follows target completion');
+            assert.ok(requestedAt > 0 && requestedAt <= h.now(),
+                'the exact cold phase request may already precede target completion');
+            const targetState = h.states.get('ems.0.Control.Targets.Wallbox2_Phases');
+            assert.equal(requestedAt, targetState.lc || targetState.ts,
+                'preparation keeps the original phase request time, never a new timeout');
             const extra = {ack: false};
             if (cause === 'quality') extra.q = 64;
             if (cause === 'future') extra.ts = h.now() + 10000;
