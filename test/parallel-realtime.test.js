@@ -710,6 +710,64 @@ function completedParallelChargeFixture({observeIdle = true} = {}) {
         advance: ms => { at += ms; }, now: () => at};
 }
 
+function waitingEqvFixture() {
+    const h = engine({production: true, wallboxPriority: 2,
+        wb1PhaseControlMode: 'ems', wb1PhaseModeId: 'raw.phase1'});
+    h.exclude(0);
+    h.put('DP_WB2_SOC', 58); h.put('DP_WB2_TARGET', 60);
+    h.put('ems.0.Vehicles.Wallbox1.PhaseSwitchEnabled', true);
+    h.put('ems.0.Vehicles.Wallbox1.MaximumPhases', 3);
+    h.put('ems.0.Vehicles.Wallbox1.MaxCurrent3P_A', 11);
+    h.put('raw.phase1', 2);
+    h.put('ems.0.Control.Targets.Wallbox1_Phases', 3);
+    h.put('ems.0.Devices.Wallbox1.ConfirmedPhases', 3);
+    h.put('ems.0.Config.WallboxStartReserve_W', 300);
+    h.update(2608, 8000);
+    h.owned(2, 12, 2450);
+    return h;
+}
+
+test('stopped EQV prepares 1P before the EQE reaches target without borrowing its live watts or qualifying an early start', () => {
+    const h = waitingEqvFixture();
+    const target = h.update(2608, 8000);
+    assert.equal(target.phases[1], 1, 'the prospective replacement budget fits 1P but not 3P');
+    assert.equal(target.amps[1], 0, 'no premature current allocation');
+    assert.ok(target.amps[2] >= 6, 'the running donor continues normally');
+    assert.ok(target.reserve[2] >= 2760, 'its unanswered nominal draw stays reserved');
+    assert.equal(h.states.get('raw.phase1').val, 2, 'request is not a fabricated device ACK');
+    const phase = JSON.parse(h.states.get('ems.0.Control.Wallbox1.PhaseDecision_JSON').val);
+    assert.equal(phase.reason, 'idle-replacement-one-phase');
+    assert.equal(phase.replacementBudgetW, 2608);
+    assert.equal(phase.allocatedBudgetW, 0);
+    const allocation = JSON.parse(h.states.get('ems.0.Control.ParallelWallboxAllocation_JSON').val);
+    assert.equal(allocation.priorityHandoff, null, 'phase preparation is no start-delay waiver');
+    assert.equal(h.run('wallboxVehicleHandoff'), null);
+});
+
+for (const [name, change, watts = 2608, hard = 8000] of [
+    ['insufficient 1P reserve', () => {}, 1600],
+    ['3P budget available', () => {}, 8000],
+    ['peer/house hard limit', () => {}, 2608, 1000],
+    ['heater reservation', h => h.put('ems.0.Devices.MyPV_DHW.OutputReservedPower_W', 7000)],
+    ['recipient still owned', h => h.put('ems.0.Devices.Wallbox1.OutputOwned', true)],
+    ['recipient release withdrawn', h => h.put('DP_WB1_ALLOW', false)],
+    ['recipient physical current', h => h.put('DP_WB1_L1_A', 1)],
+    ['recipient ON echo', h => h.put('raw.allow1', 0, {ack: false})],
+    ['recipient phase quality', h => h.put('raw.phase1', 2, {q: 64})],
+    ['unconfirmed old phase', h => h.put('raw.phase1', 2, {ack: false})],
+    ['external phase authority', h => {h.nativeConfig.wb1PhaseControlMode = 'script';}],
+    ['grid quality', h => h.put('DP_GRID_IMPORT', 0, {q: 64})],
+    ['master control off', h => h.put('ems.0.Control.Enabled', false)],
+    ['donor phase work', h => h.put('ems.0.Devices.Wallbox2.PhaseSwitchPending', true)],
+    ['donor no longer active', h => h.put('ems.0.Devices.Wallbox2.OutputActive', false)],
+    ['higher-priority Mii waiting', h => h.put('ems.0.Devices.Wallbox0.Present', true)]
+]) test(`idle replacement phase advice cannot bypass ${name}`, () => {
+    const h = waitingEqvFixture(); change(h);
+    h.update(watts, hard);
+    const phase = JSON.parse(h.states.get('ems.0.Control.Wallbox1.PhaseDecision_JSON').val);
+    assert.notEqual(phase.reason, 'idle-replacement-one-phase');
+});
+
 test('parallel target-SoC completion transfers an observed charge without another 300 second start delay', () => {
     const h = completedParallelChargeFixture();
     let targets = h.complete();

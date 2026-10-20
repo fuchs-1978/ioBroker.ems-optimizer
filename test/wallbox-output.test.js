@@ -326,6 +326,31 @@ test('dynamic phase mode waits for external script confirmation before starting'
     assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputPhases').val,3);
     assert.equal(h.states.get('ems.0.Devices.Wallbox0.ConfirmedPhases').val,3);
 });
+
+test('cold 3P to 1P preparation clears loaded transition grace only after independent post-ACK OFF and zero', async () => {
+    let now = 1000000000000;
+    const h = setup({now: () => now});
+    Object.assign(h.config, {wb0PhaseSwitchEnabled: true, wb0PhaseModeId: 'phaseMode',
+        wb0PhaseControlMode: 'ems', wb0MaxCurrent3pA: 16, wb0MaxPowerW: 11040});
+    h.put('phaseMode', 2); h.put('ems.0.Control.Targets.Wallbox0_Phases', 3);
+    h.put('ems.0.Control.Targets.Wallbox0_W', 0);
+    await h.output.initialize(); await h.output.tick();
+    now += 2000; h.refresh();
+    h.put('ems.0.Control.Targets.Wallbox0_Phases', 1); h.put('phaseMode', 1);
+    const ackAt = h.states.get('phaseMode').ts;
+    h.put('power', 0, {ts: ackAt - 1});
+    await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.PhaseTransitionActive').val, true);
+    assert.deepEqual(h.writes, [], 'cold phase confirmation never grants ON or current');
+    now += 2000; h.refresh(); h.put('i2', 0.8);
+    await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.PhaseTransitionActive').val, true,
+        'a residual phase current cannot complete cold preparation');
+    now += 2000; h.refresh(); h.put('i2', 0);
+    await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.PhaseTransitionActive').val, false);
+    assert.deepEqual(h.writes, []);
+});
 test('confirmed 1-to-3 phase change keeps an owned wallbox active during go-e restart', async () => {
     const h=setup();
     Object.assign(h.config,{wb0PhaseSwitchEnabled:true,wb0PhaseModeId:'phaseMode',

@@ -1,9 +1,13 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.114",
+    "version": "0.17.0-alpha.115",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.115": {
+        "en": "Prepare the next stopped EMS-controlled receiver for 1P using bounded replacement capacity while the current vehicle keeps charging. Preserve actual grants, phase ACK deadlines and donor OFF/quiet; complete cold phase preparation only with post-ACK OFF/zero evidence.",
+        "de": "Naechsten ausgeschalteten EMS-Empfaenger anhand begrenzten Ersatzbudgets auf 1P vorbereiten, waehrend das erste Auto weiterlaedt. Reale Zuteilung, Phasen-ACK-Frist und Geber-AUS/Ruhe erhalten; kalte Vorbereitung erst nach neuem AUS-/Nullnachweis abschliessen."
+      },
       "0.17.0-alpha.114": {
         "en": "Treat qualified -30 W wallbox zero noise as a throttled warning; let optional EHZ yield before a mandatory 3P start with admission reserve; permit one bounded current-feedback correction per owned run without ON or increases. Live acceptance remains open.",
         "de": "Gueltige -30 W Wallbox-Nullabweichung nur gedrosselt warnen; optionalen EHZ vor Pflichtladestart in 3P samt Startreserve absenken; einmalige begrenzte Sollstrom-Korrektur je eigenem Ladezyklus ohne EIN oder Erhoehung. Reale Abnahme offen."
