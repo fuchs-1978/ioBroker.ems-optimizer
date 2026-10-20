@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.113**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.114**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -845,13 +845,13 @@ Der unabhängige Speichernachweis verwendet begrenzte sequenzielle SQL-Fenster. 
 
 Bereits vorhandene SQL-Skalarhistorien, Retention und Anlagenkonfiguration werden durch diese Diagnoseänderung nicht angepasst. Ein lokaler Record oder erfolgreicher kleiner SQL-Abruf beweist keine vollständige Tageshistorie und behebt nicht nachweislich jede sporadische SQL-/Connector-Zeitüberschreitung. Energie bevorzugt aus gültigen Zählerdifferenzen bestimmen; grobe Intervallmittel nicht als genaue Tagesenergie ausgeben. Fehlend, NULL, veraltet oder unbestätigt bedeutet unbekannt, nicht AUS/0 W. Optionale Pumpenquellen bleiben mit `[]` unkonfiguriert; Pumpenzuständigkeit, unabhängige Rückmeldung und tatsächlicher Nachlauf benötigen weiterhin reale Nachweise.
 
-Ab alpha.67 akzeptiert die zentrale Wallbox-Phasenbudgetprüfung dieselbe bestehende Leerlauftoleranz wie der Wallbox-Ausgang: bestätigte, frische, qualitativ gültige Leistungswerte zwischen −0,02 und 0 kW werden intern als 0 W behandelt. Die originale negative Rohmessung bleibt in der Diagnose erhalten. Größere negative Werte, fehlende/ungültige Werte, schlechtes q, fehlendes ACK und veraltete Quellen bleiben gesperrt. Diese Toleranz gilt für Wallboxleistung; die Verträge anderer Quellen werden dadurch nicht geändert.
+Ab alpha.114 akzeptieren Wallbox-Ausgang und zentrale Phasenbudgetprüfung bestätigte, frische, qualitativ gültige Leistungswerte zwischen −0,03 und 0 kW intern als 0 W, mit höchstens einer Warnung je Minute und Wallbox. Die positive Leerlaufgrenze bleibt bei 20 W. Die originale negative Rohmessung bleibt in der Diagnose erhalten. Größere negative Werte, fehlende/ungültige Werte, schlechtes q, fehlendes ACK und veraltete Quellen bleiben gesperrt. Diese Toleranz gilt für Wallboxleistung; die Verträge anderer Quellen werden dadurch nicht geändert.
 
 ## Changelog
 
-### 0.17.0-alpha.113 (2026-10-20)
+### 0.17.0-alpha.114 (2026-10-20)
 
-Während der Stromabsenkung vor einer bereits qualifizierten 3P-Umschaltung den aktuellen Beobachtungszeitpunkt erhalten. Zwei reguläre Reglerzyklen dürfen nicht als künstliche Beobachtungslücke den 300-s-Countdown neu starten. Ursprünglicher Qualifikationsbeginn, echte Lückenprüfung, physischer Stromnachweis und Schutzgrenzen bleiben erhalten. [Releasehinweise](docs/release-0.17.0-alpha.113.md).
+Frische, bestätigte Wallbox-Messwerte bis −30 W werden intern als 0 W mit gedrosselter Warnung behandelt. Vor einem Pflichtladestart in 3P gibt der optionale EHZ die benötigte Leistung samt Startreserve frei; reale Reservierungen bleiben bis zum Nachweis erhalten. Bei einer einzelnen qualifizierten ±1-A-Sollstromabweichung ist pro eigenem Ladezyklus genau ein begrenzter Korrekturversuch ohne EIN oder Stromerhöhung möglich. Wiederholter Widerspruch, fehlender ACK und Schutzgrenzen führen weiterhin zum Stopp. Die 600-s-Stoppverzögerung bleibt unverändert. [Releasehinweise](docs/release-0.17.0-alpha.114.md).
 
 [Alle älteren Änderungen und historischen Detailbeschreibungen](CHANGELOG_OLD.md).
 

@@ -183,7 +183,7 @@ test('quality gaps are not interpolated and buffer memory is bounded', () => {
 });
 
 test('an invalid real power source disables the response instead of repairing safety data', () => {
-    for (const [value, extra, reason] of [[-0.021, {}, 'negative'], [null, {}, 'numeric'],
+    for (const [value, extra, reason] of [[-0.031, {}, 'negative'], [null, {}, 'numeric'],
         [16 * 230 / 1000, {ts: 1}, 'stale'], [16 * 230 / 1000, {ts: 1001001}, 'future'],
         [16 * 230 / 1000, {ack: false}, 'unacknowledged'], [16 * 230 / 1000, {q: 64}, 'quality']]) {
         const h = fixture(); h.put('power1', value, extra);

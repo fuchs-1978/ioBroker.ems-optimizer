@@ -1,0 +1,24 @@
+# 0.17.0-alpha.114 — gezielte Wallbox-Start- und Rückmeldekorrekturen
+
+## Belegte Anlässe (20.10.2026, Europe/Berlin)
+
+Unter alpha.113 begann der EQE um 12:51:52 dreiphasig mit 6 A. Vorher waren nur 4.221 W frei gegenüber 4.140 W Nennleistung; die noch gebundene EHZ-Reserve betrug 5.140 W. Bei 4.111 W folgte der erste Abbruch. Um 12:52:10.702 meldete go-e −0,03 kW, worauf die bisherige Bereichsprüfung den zweiten Start stoppte. Transportzeiten der SQL-Bündel sind nicht mit den ursprünglichen Ereigniszeiten gleichzusetzen.
+
+Issue [#216](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/216) dokumentiert zusätzlich den EQV-Fall 11:54:30–40: eigener Befehl 10 A, bestätigte 10 A, einzelne Rückmeldung 11 A, Stopp, anschließend wieder 10 A. Ein fremder Schreiber ist damit nicht bewiesen.
+
+## Änderungen und Grenzen
+
+- Separate negative Nulltoleranz von 30 W, unverändert positive Leerlaufgrenze 20 W. Gültige negative Werte werden nur intern auf null gesetzt und höchstens einmal je Minute und Wallbox gewarnt. Rohwerte bleiben unverändert. Werte unter −30 W, fehlende/alte/qualitativ ungültige/unbestätigte Quellen bleiben gesperrt. Dieselbe Normalisierung gilt für Phasen-, Übergabe-, Leerlauf- und Schattenprüfungen.
+- Vor einem noch inaktiven Pflichtladestart in 3P wird beim optionalen EHZ ohne aktive Priorität oder gewählte Aufteilung das Startminimum samt konfigurierter Startreserve von dessen Ziel abgezogen. Laufende Peers werden zusätzlich berücksichtigt. Es wird ausschließlich ein niedrigeres EHZ-Ziel geplant: reale oder ausstehende EHZ-Reservierungen werden niemals vorzeitig freigegeben. Die tatsächliche freie harte Reserve muss auch vor jedem 3P-Startschritt, insbesondere EIN, ausreichen. Pflichtwärme und ausdrücklich gewählte Aufteilung werden nicht stillschweigend überschrieben.
+- Einmalige Sollstromkorrektur pro eigenem aktiven Ladezyklus bei exakt ±1 A Abweichung: gültige frische Quellen, stabile bestätigte Topologie, eigenständig bestätigter separater Befehlsdatenpunkt und aktueller Strom innerhalb aller geprüften Grenzen erforderlich. Gleicher Befehls-/Rückmeldedatenpunkt, unklare Beweislage, größere Abweichung und ausstehender gemessener Budgetschritt erhalten den Schutzstopp.
+- Der Korrekturwert ist höchstens der letzte eigene Sollwert und höchstens der aktuell zulässige niedrigere Sollwert. Kein EIN und keine Erhöhung aus der Korrektur. Ein unveränderter Poll, ein ACK oder ein Prozessneustart laden das Korrekturbudget nicht neu auf. Rücksetzung erst nach beendetem Besitz und einem neuen vollständigen Start.
+- Die vorhandene ACK-Frist bleibt fest. Laufende Reduktionen dürfen sie nicht verlängern. Rechtzeitige ACK-Quellzeiten dürfen später verarbeitet werden; alte Werte vor dem Korrekturbefehl oder verspätete ACKs bestätigen ihn nicht. Bei ausbleibender Bestätigung oder erneutem Widerspruch wird gestoppt. Keine zusätzliche Anfrageparallelität oder Pollingänderung.
+- `Devices.WallboxN.CurrentCorrection_JSON` entsteht beim ersten Korrekturfall und enthält erwarteten/gelesenen Wert, Quellen-/Befehlszeit, Ziel, Versuch, feste Frist und Ergebnis. Der offene Marker wird vor Dispatch gespeichert und bestätigt; schlägt dessen Speicherung fehl, wird kein Korrekturbefehl gesendet. Ungeklärte Korrekturen werden nach Neustart gestoppt; bestätigte behalten das verbrauchte Budget. `LastStopReason` und die vorhandenen ACK-/Antwortdiagnosen zeigen Schutzabbrüche.
+
+Die 600-s-Stoppverzögerung, Einschaltverzögerung, Geräte-/Haus-/Phasen-/Netzbetreibergrenzen und Quellenanforderungen bleiben erhalten. Keine pauschale Freigabe bei negativem Messwert, keine Übersteuerung fremder AUS-Freigaben. Die später beobachtete native go-e-AUS-Pause beim 3P→1P-Wechsel ist damit nicht allgemein freigegeben; deren reale Abnahme bleibt getrennt offen.
+
+## Validierung und reale Abnahme
+
+Neue Regressionen schlagen auf unverändertem alpha.113 gezielt fehl: −30 W, knappe 3P-Startreserve, fehlende EHZ-Freigabe sowie 10/11/10 A in 1P und 3P. Mit der Korrektur werden fester ACK-Deadline, Pollreihenfolge beider IDs, verspätete Verarbeitung, Reduktion, erneuter Widerspruch, Neustart und Schutzfälle geprüft. Lokal unter Node 24.19.0 bestehen alle 2.369 Tests ohne Fehler oder übersprungene Fälle, Paketprüfung, Pack-/Installationsprüfung (191 Dateien, 719 Ausgangszustände) und beide historischen Vergleichsläufe. Der strikte historische Vergleich bleibt unverändert; im gesonderten Fehlervertrag wurde ausschließlich die sachlich präzisere Diagnosebezeichnung angepasst. GitHub-CI prüft den endgültigen Commit zusätzlich unter Node 22 und 24.
+
+Softwaretests beweisen keine reale Anlagenabnahme. Nach manueller Installation natürliche Start-/EHZ-/ACK-/elektrische Ketten prüfen, einschließlich unverändertem Stopptimer. Vermiedenes Energievolumen ist aus den bisherigen Ausschnitten nicht belastbar quantifiziert. Kein zugesagter Scoregewinn; Issue #216 bleibt für den Betriebsnachweis offen.

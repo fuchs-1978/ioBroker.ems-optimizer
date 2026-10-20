@@ -1724,7 +1724,7 @@ for (const [name, change] of [
     ['future connection sample', ({h, id, edge}) => h.put(id('connection'), true, {ts: edge + 2000, q: 0})],
     ['electrical sample before allow edge', ({h, id, edge}) => h.put(id('L2'), 0, {ts: edge - 1, q: 0})],
     ['power despite no-car status', ({h, id}) => h.put(id('power'), 0.2, {q: 0})],
-    ['invalid negative power', ({h, id}) => h.put(id('power'), -0.03, {q: 0})],
+    ['invalid negative power', ({h, id}) => h.put(id('power'), -0.04, {q: 0})],
     ['phase current despite no-car status', ({h, id}) => h.put(id('L3'), 0.6, {q: 0})],
     ['invalid negative phase current', ({h, id}) => h.put(id('L1'), -0.1, {q: 0})],
     ['invalid release edge', ({h, id, edge}) => h.put(id('allow'), 1, {lc: edge + 60000, q: 0})],
@@ -1834,7 +1834,7 @@ test('an assumed active owner cannot authorize the physical idle-peer exception'
 
 for (const [name, change, reason] of [
     ['external EQV release withdrawn', h => h.ack('allow1', 0), /Ladefreigabe extern entzogen/],
-    ['external EQV current changed', h => h.ack('feedback1', 9), /Ladestrom extern veraendert/]
+    ['external EQV current changed', h => h.ack('feedback1', 9), /Sollstrom-Rueckmeldung widerspruechlich/]
 ]) test(`idle peer exception cannot mask ${name}`, async () => {
     const {h} = await establishedEqvWithIdleRelease();
     change(h);
@@ -1904,7 +1904,7 @@ test('fresh -10 W and zero readings do not hard-stop an active wallbox or modify
     h.put('export', 0); h.put('import', 500);
     // Independent two-second test steps cover the normalization bounds and
     // nominal minimum power. A budget shortfall still uses the normal timers.
-    for (const power of [-0.01, -0.02, 0, 6 * 230 / 1000]) {
+    for (const power of [-0.01, -0.02, -0.03, 0, 6 * 230 / 1000]) {
         now += 2000; h.refresh(); h.put('power', power);
         const raw = h.states.get('power');
         await h.output.tick();
@@ -1919,7 +1919,7 @@ test('fresh -10 W and zero readings do not hard-stop an active wallbox or modify
 test('zero-noise tolerance never bypasses missing, stale, unacknowledged or bad-quality measurements', async t => {
     const now = 1000000000000;
     const cases = [
-        {name: 'outside negative band', value: -0.020001, reason: /negativer Messwert.*ausserhalb der Nulltoleranz/},
+        {name: 'outside negative band', value: -0.030001, reason: /negativer Messwert.*ausserhalb der Nulltoleranz/},
         {name: 'large negative', value: -1, reason: /negativer Messwert -1000 W/},
         {name: 'null', value: null, reason: /Messwert fehlt/},
         {name: 'undefined', value: undefined, reason: /Messwert fehlt/},
@@ -1945,9 +1945,24 @@ test('zero-noise tolerance never bypasses missing, stale, unacknowledged or bad-
     });
 });
 
+test('minus 30 W is a throttled warning; the raw state and positive idle threshold stay intact', async () => {
+    let now = 1000000000000;
+    const h = setup({now: () => now}), warnings = [];
+    h.adapter.log.warn = message => warnings.push(message);
+    await h.start(); h.writes.length = 0;
+    h.put('ems.0.Control.Targets.Wallbox0_W', 1380); h.put('export', 1380);
+    for (const step of [2000, 2000, 60000]) {
+        now += step; h.refresh(); h.put('power', -0.03);
+        await h.output.tick();
+    }
+    assert.equal(warnings.filter(message => /negative Wirkleistung -30 W/.test(message)).length, 2);
+    assert.equal(h.states.get('power').val, -0.03);
+    assert.ok(!h.writes.some(write => write.id === 'allow' && write.val === 0));
+});
+
 test('measurement fault recovery still requires a confirmed stop and full start sequence', async () => {
     const h = setup(); await h.start(); h.writes.length = 0;
-    h.put('power', -0.03); await h.output.tick();
+    h.put('power', -0.04); await h.output.tick();
     h.put('power', -0.01); await h.output.tick();
     assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
     assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, false);

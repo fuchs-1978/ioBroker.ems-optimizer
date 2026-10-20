@@ -143,6 +143,183 @@ function parallelSetup(count = 2) {
     return h;
 }
 
+async function correctionCandidate(phases = 1) {
+    const h = parallelSetup(1);
+    if (phases === 3) Object.assign(h.config, {wb0ProductionPhases: 3, wb0PhaseSwitchEnabled: true,
+        wb0MaxCurrent3pA: 32, wb0MaxPowerW: 22080});
+    h.grant([10], {phases: [phases]});
+    await h.output.initialize();
+    await h.output.tick(); h.ack('allow', 0);
+    await h.output.tick(); h.ack('feedback', 6);
+    await h.output.tick(); h.ack('allow', 1); h.measure(0, 6, phases);
+    await h.output.tick();
+    h.advance(6000); h.grant([10], {phases: [phases]}); h.measure(0, 6, phases);
+    await h.output.tick();
+    h.advance(2000); h.grant([10], {phases: [phases]}); h.measure(0, 10, phases); h.ack('cmd', 10);
+    await h.output.tick();
+    assert.equal(h.output.devices[0].lastA, 10, h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val);
+    h.advance(2000); h.grant([10], {phases: [phases]}); h.measure(0, 10, phases);
+    h.ack('cmd', 10); h.ack('feedback', 11); h.writes.length = 0;
+    return h;
+}
+
+for (const phases of [1, 3]) test(`issue216: isolated 10/11/10 A conflict is corrected once in ${phases}P without ON or OFF`, async () => {
+    const h = await correctionCandidate(phases);
+    await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'cmd', val: 10}]);
+    const d = h.output.devices[0], deadline = d.currentCorrection.deadline;
+    h.advance(2000); h.grant([12], {phases: [phases]});
+    await h.output.tick();
+    assert.equal(d.currentCorrection.deadline, deadline);
+    assert.equal(h.writes.length, 1, 'no retry/increase while the old poll remains');
+    h.ack('feedback', 10); await h.output.tick();
+    assert.equal(d.currentCorrection.result, 'confirmed');
+    assert.equal(h.writes.length, 1, 'ACK does not allow an increase in the same tick');
+    h.advance(2000); h.grant([10], {phases: [phases]}); h.measure(0, 10, phases); h.ack('cmd', 10);
+    h.ack('feedback', 11); await h.output.tick();
+    assert.deepEqual(h.writes.at(-1), {id: 'allow', val: 0});
+    assert.equal(h.writes.filter(w => w.id === 'cmd').length, 1, 'confirmation does not replenish correction allowance');
+});
+
+test('issue216: missing ACK stops at the original deadline; polls cannot prolong it', async () => {
+    const h = await correctionCandidate(); await h.output.tick();
+    const deadline = h.output.devices[0].currentCorrection.deadline;
+    h.advance(21000); h.grant([10]); h.ack('feedback', 11);
+    await h.output.tick();
+    assert.equal(h.output.devices[0].currentCorrection.deadline, deadline);
+    assert.deepEqual(h.writes, [{id: 'cmd', val: 10}, {id: 'allow', val: 0}]);
+});
+
+test('issue216: refreshing the separate command ACK after the conflicting poll cannot replenish or block the one attempt', async () => {
+    const h = await correctionCandidate();
+    const sourceAt = h.states.get('feedback').ts;
+    h.advance(1000); h.grant([10]); h.ack('cmd', 10);
+    h.put('feedback', 11, {ts: sourceAt});
+    await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'cmd', val: 10}]);
+    h.advance(2000); h.grant([10]); h.ack('cmd', 10);
+    await h.output.tick();
+    assert.equal(h.writes.length, 1, 'command ACK alone is not the configured current feedback');
+});
+
+test('issue216: delayed processing accepts a genuinely timely ACK, while a pre-dispatch value cannot confirm correction', async () => {
+    const h = await correctionCandidate(); await h.output.tick();
+    const {at, deadline} = h.output.devices[0].currentCorrection;
+    h.put('feedback', 10, {ts: at - 1});
+    await h.output.tick();
+    assert.equal(h.output.devices[0].currentCorrection.result, 'pending');
+    h.advance(21000); h.grant([10]); h.put('feedback', 10, {ts: deadline - 1});
+    await h.output.tick();
+    assert.equal(h.output.devices[0].currentCorrection.result, 'confirmed');
+    assert.deepEqual(h.writes, [{id: 'cmd', val: 10}]);
+});
+
+test('issue216: a late ACK stops, even when its value matches the correction', async () => {
+    const h = await correctionCandidate(); await h.output.tick();
+    h.advance(21000); h.grant([10]); h.ack('feedback', 10);
+    await h.output.tick();
+    assert.deepEqual(h.writes.at(-1), {id: 'allow', val: 0});
+});
+
+test('issue216: a restart retains the spent correction allowance after confirmation', async () => {
+    const h = await correctionCandidate(); await h.output.tick();
+    h.advance(2000); h.grant([10]); h.ack('feedback', 10); await h.output.tick();
+    const restarted = new WallboxOutput(h.adapter, {now: h.output.now});
+    await restarted.initialize();
+    assert.equal(restarted.devices[0].currentCorrection.result, 'confirmed');
+    assert.equal(restarted.devices[0].currentCorrection.at, h.output.devices[0].currentCorrection.at);
+});
+
+for (const [name, change, expected] of [
+    ['master loss', h => h.put('ems.0.System.RealOutputsEnabled', false), [{id: 'allow', val: 0}]],
+    ['hard cap loss', h => h.grant([10], {hardBudgetW: 1000}), [{id: 'allow', val: 0}]],
+    ['current reduction', h => {h.grant([8]); h.put('export', 1840);}, [{id: 'cmd', val: 8}]],
+    ['storage delay beyond deadline', h => {h.advance(21000); h.grant([10]);}, [{id: 'allow', val: 0}]]
+]) test(`issue216: recheck ${name} after saving the restart fence and before sending correction`, async () => {
+    const h = await correctionCandidate(), original = h.adapter.setCompatState;
+    let changed = false;
+    h.adapter.setCompatState = async (id, value, ack) => {
+        await original(id, value, ack);
+        if (!changed && id.endsWith('.CurrentCorrection_JSON')) {
+            changed = true; change(h);
+        }
+    };
+    await h.output.tick();
+    assert.deepEqual(h.writes, expected);
+});
+
+test('issue216: failed restart-fence storage never dispatches a corrective current', async () => {
+    const h = await correctionCandidate(), original = h.adapter.setCompatState;
+    h.adapter.setCompatState = async (id, value, ack) => {
+        if (id.endsWith('.CurrentCorrection_JSON')) throw new Error('fixture storage failure');
+        return original(id, value, ack);
+    };
+    await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+});
+
+test('issue216: a reduction supersedes the correction without restoring old current or extending its deadline', async () => {
+    const h = await correctionCandidate(); await h.output.tick();
+    const deadline = h.output.devices[0].currentCorrection.deadline;
+    h.advance(2000); h.grant([8]); h.put('export', 1840);
+    await h.output.tick();
+    assert.deepEqual(h.writes.at(-1), {id: 'cmd', val: 8});
+    assert.equal(h.output.devices[0].currentCorrection.deadline, deadline);
+    h.advance(2000); h.grant([8]); h.ack('feedback', 8); h.measure(0, 8);
+    await h.output.tick();
+    assert.equal(h.output.devices[0].lastA, 8);
+    assert.ok(!h.writes.some(w => w.id === 'allow'));
+});
+
+for (const [name, change] of [
+    ['unconfirmed command ID', h => h.put('cmd', 10, {ack: false})],
+    ['larger current conflict', h => h.ack('feedback', 13)],
+    ['stale power', h => h.put('power', 2.3, {ts: 1})],
+    ['bad quality', h => h.put('power', 2.3, {q: 128})],
+    ['device error', h => h.put('error', 5)],
+    ['master off', h => h.put('ems.0.System.RealOutputsEnabled', false)],
+    ['user release withdrawn', h => h.put('userAllow', false)],
+    ['unexpected OFF', h => h.ack('allow', 0)],
+    ['hard budget below minimum', h => h.grant([10], {hardBudgetW: 1000})],
+    ['peer/heater hard reservation', h => {
+        h.grant([10], {hardBudgetW: 5000});
+        h.put('ems.0.Devices.MyPV_DHW.OutputReservedPower_W', 4000);
+    }]
+]) test(`issue216: no correction bypasses ${name}`, async () => {
+    const h = await correctionCandidate(); change(h); await h.output.tick();
+    assert.ok(!h.writes.some(w => w.id === 'cmd'));
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, false);
+});
+
+test('issue216: restart does not adopt an unresolved correction as healthy charging', async () => {
+    const h = await correctionCandidate(); await h.output.tick(); h.writes.length = 0;
+    const restarted = new WallboxOutput(h.adapter, {now: h.output.now});
+    await restarted.initialize();
+    assert.equal(restarted.devices[0].recovering, false);
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val, /ungeklärte Sollstrom/);
+});
+
+test('3P admission waits for the actual heater reservation plus 300 W headroom at every start stage', async () => {
+    const h = parallelSetup(1);
+    Object.assign(h.config, {wb0ProductionPhases: 3, wb0PhaseSwitchEnabled: true, wb0MaxCurrent3pA: 32, wb0MaxPowerW: 22080});
+    h.put('ems.0.Config.WallboxStartReserve_W', 300);
+    h.put('ems.0.Devices.MyPV_DHW.OutputReservedPower_W', 5140);
+    h.grant([6], {phases: [3], hardBudgetW: 9361}); // 81 W remaining above 6 A
+    await h.output.initialize(); await h.output.tick();
+    assert.deepEqual(h.writes, []);
+    assert.equal(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservedPower_W').val, 5140);
+    h.advance(2000); h.grant([6], {phases: [3], hardBudgetW: 9361});
+    h.put('ems.0.Devices.MyPV_DHW.OutputReservedPower_W', 2140);
+    await h.output.tick(); h.ack('allow', 0); await h.output.tick(); h.ack('feedback', 6);
+    h.put('ems.0.Devices.MyPV_DHW.OutputReservedPower_W', 5140);
+    await h.output.tick();
+    assert.ok(!h.writes.some(w => w.id === 'allow' && w.val === 1), 'renewed reservation blocks ON');
+    h.put('ems.0.Devices.MyPV_DHW.OutputReservedPower_W', 2140);
+    await h.output.tick();
+    assert.deepEqual(h.writes.at(-1), {id: 'allow', val: 1}, h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val);
+});
+
 test('two authorized cars start through independent OFF, current ACK and ON ACK sequences', async () => {
     const h = parallelSetup();
     await h.startParallel();
