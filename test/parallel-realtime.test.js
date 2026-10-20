@@ -1279,3 +1279,48 @@ test('restart invalidation preserves a genuine 1P destination and never validate
         assert.equal(h.states.get('ems.0.Control.Valid').val,false);
     }
 });
+
+function timedPhasePreparation() {
+    let now=Date.now();class Clock extends Date {static now(){return now;}}
+    const h=engine({production:true,clock:Clock,wallboxPriority:1,wb1PhaseControlMode:'ems',
+        wb1PhaseModeId:'raw.phase1',phaseSwitchRealUpDelayS:300,phaseSwitchMinHoldMin:15});
+    h.exclude(0);h.exclude(2);
+    h.put('ems.0.Vehicles.Wallbox1.PhaseSwitchEnabled',true);
+    h.put('ems.0.Vehicles.Wallbox1.MaximumPhases',3);
+    h.put('ems.0.Vehicles.Wallbox1.MaxCurrent3P_A',11);
+    h.put('ems.0.Vehicles.Wallbox1.MaxCurrent1P_A',20);
+    h.put('ems.0.Config.Wallbox1MaxPower_W',7590);
+    h.put('ems.0.Config.SlowControlCycle_s',5);
+    h.put('raw.phase1',1);h.owned(1,20,4430,1);
+    h.plans[1]={valueW:7000,phases:3};
+    h.run(`wallboxRealPhaseEpisode[1]=true;stableWallboxPhases[1]=1;
+        wallboxRealPhaseCandidate[1]={phase:3,since:Date.now()-301000,lastObservationAt:Date.now()-6000};
+        lastRealPhaseChangeAt[1]=0;lastPhaseChangeAt[1]=0;`);
+    return {h,advance:ms=>{now+=ms;},now:()=>now};
+}
+
+test('qualified 3P preparation retains fresh observations across real six-second cycles',()=>{
+    const {h,advance,now}=timedPhasePreparation();const since=h.run('wallboxRealPhaseCandidate[1].since');
+    let t=h.update(7000,7000);assert.equal(t.phases[1],1);assert.equal(t.amps[1],10);
+    assert.equal(h.run('wallboxRealPhaseCandidate[1].since'),since);
+    assert.equal(h.run('wallboxRealPhaseCandidate[1].lastObservationAt'),now());
+    advance(6000);h.owned(1,10,4430,1);t=h.update(7000,7000);
+    assert.equal(t.phases[1],1,'current ACK alone cannot authorize topology change');
+    assert.ok(t.amps[1]<=10);assert.equal(h.run('wallboxRealPhaseCandidate[1].since'),since);
+    assert.equal(h.run('lastRealPhaseChangeAt[1]'),0);
+    advance(6000);h.owned(1,10,2300,1);t=h.update(7000,7000);
+    assert.equal(t.phases[1],3,'fresh safe current permits 3P without another 300 seconds');
+    assert.ok(h.run('lastRealPhaseChangeAt[1]')===now());
+    assert.equal(h.states.get('raw.phase1').val,1,'request is not a hardware confirmation');
+});
+for(const [name,change] of [
+    ['genuine observation gap',(s)=>s.advance(8000)],
+    ['budget below threshold',(s)=>{s.budget=4500;}],
+    ['invalid phase feedback',(s)=>s.h.put('raw.phase1',1,{ack:false})],
+    ['hard watts below 3P minimum',(s)=>{s.hard=4000;}]
+]) test('timed phase preparation still rejects '+name,()=>{
+    const s=timedPhasePreparation();s.h.update(7000,7000);
+    s.advance(6000);s.h.owned(1,10,2300,1);change(s);
+    const t=s.h.update(s.budget??7000,s.hard??7000);
+    assert.notEqual(t.phases[1],3);
+});

@@ -1,5 +1,10 @@
 ## Frühere README-Versionseinträge
 
+### 0.17.0-alpha.112 (2026-10-20)
+
+Bei einer geprüften Neustart-Übernahme laufender EMS-Wallboxen die vorhandene Phasenvorgabe erhalten. Das vorläufige Nullsetzen von Leistungs- und Strombudgets darf keine künstliche 1P-Umschaltung auslösen. Echte Phasenrückmeldung, Umschaltfristen, Datenqualität und Schutzabschaltungen bleiben verbindlich. Bereits vorhandene Sperren nicht pauschal aufheben. [Releasehinweise](docs/release-0.17.0-alpha.112.md).
+
+
 ### 0.17.0-alpha.111 (2026-10-20)
 
 Begrenzte 1-A-Nachregelversuche nach rechtzeitig bestätigter, aber nur teilweiser Fahrzeugaufnahme dürfen die gemessene Aufnahme plus eine volle Ampere-Stufe verwenden. Beispiel: 19 A Vorgabe, 4.100 W Aufnahme und rund 410 W Export können einen Versuch mit 20 A erlauben. Harte Grenzen reservieren weiterhin nominal 4.600 W; die elektrische Antwortfrist und maximal zwei erfolglose Versuche bleiben erhalten. Kein pauschales Anheben der Toleranz, keine Änderung der 600-s-Stoppverzögerung. Reale Folgeabnahme offen. [Releasehinweise](docs/release-0.17.0-alpha.111.md).

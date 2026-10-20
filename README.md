@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.112**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.113**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -849,9 +849,9 @@ Ab alpha.67 akzeptiert die zentrale Wallbox-Phasenbudgetprüfung dieselbe besteh
 
 ## Changelog
 
-### 0.17.0-alpha.112 (2026-10-20)
+### 0.17.0-alpha.113 (2026-10-20)
 
-Bei einer geprüften Neustart-Übernahme laufender EMS-Wallboxen die vorhandene Phasenvorgabe erhalten. Das vorläufige Nullsetzen von Leistungs- und Strombudgets darf keine künstliche 1P-Umschaltung auslösen. Echte Phasenrückmeldung, Umschaltfristen, Datenqualität und Schutzabschaltungen bleiben verbindlich. Bereits vorhandene Sperren nicht pauschal aufheben. [Releasehinweise](docs/release-0.17.0-alpha.112.md).
+Während der Stromabsenkung vor einer bereits qualifizierten 3P-Umschaltung den aktuellen Beobachtungszeitpunkt erhalten. Zwei reguläre Reglerzyklen dürfen nicht als künstliche Beobachtungslücke den 300-s-Countdown neu starten. Ursprünglicher Qualifikationsbeginn, echte Lückenprüfung, physischer Stromnachweis und Schutzgrenzen bleiben erhalten. [Releasehinweise](docs/release-0.17.0-alpha.113.md).
 
 [Alle älteren Änderungen und historischen Detailbeschreibungen](CHANGELOG_OLD.md).
 
