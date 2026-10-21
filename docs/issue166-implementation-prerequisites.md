@@ -15,34 +15,47 @@ Es gibt keine neue Laufzeitfunktion, Versionsanhebung, Installation oder
 Veröffentlichung. Die Diagnosefortschreibung steht getrennt in
 [issue220-diagnosis-followup.md](issue220-diagnosis-followup.md).
 
-## Konkreter externer Blocker
+## Quellenprüfung nach Veröffentlichung der Umgebung, 21.10.2026
 
-Der Auftrag setzt vor Umsetzung eine erneute Prüfung aktueller offizieller
-Vorgaben voraus. Der Abruf der
-[BNetzA-Seite](https://www.bundesnetzagentur.de/DE/Vportal/Energie/SteuerbareVBE/artikel.html)
-über die vorgesehene Cloud-Proxyroute am 21.10.2026 scheitert mit
-`CONNECT tunnel failed, response 403` (curl Exit 56). Die wirksame
-Netzkonfiguration erlaubt den offiziellen Zielhost nicht. Das ist kein
-Repository-, ioBroker- oder SQL-Fehler.
+Die veröffentlichte Netzkonfiguration ist jetzt wirksam: aktueller Runtime-
+Status mit `observations_current=true`, Revision 3 und Netzwerkstatus `enforced`.
+Die offiziellen Domains sind erlaubt. Die frühere CONNECT-403-Sperre für
+BNetzA/VDE ist aufgehoben. Folgende Originale wurden neu mit HTTP 200 geladen
+und als HTML beziehungsweise mit `pdftotext -layout` gelesen:
 
-Im Cloud-Umgebungsentwurf wurden `www.bundesnetzagentur.de`, `www.vde.com` und
-`www.eebus.org` ergänzt; der vorhandene explizite GitHub-API-Zugang und die
-Paketmanager-Presets bleiben erhalten. Der Speichervorgang meldet
-`requires_publish=true`. Ein gespeicherter Entwurf ist keine wirksame
-Netzfreigabe. Erforderlich ist seine Veröffentlichung/Anwendung über die
-Umgebungseinstellungen; eine Proxyumgehung wurde nicht versucht.
+| Quelle | Geprüfte Aussage für den Restumfang |
+| --- | --- |
+| [BNetzA-Verbraucherinformation](https://www.bundesnetzagentur.de/DE/Vportal/Energie/SteuerbareVBE/artikel.html) | Normaler Haushaltsverbrauch bleibt unberührt. Selbst erzeugter Strom wird nicht gegen die Netzbezugsgrenze verrechnet. Die zulässige Netzleistung gilt für die zugeordneten SteuVE. |
+| [BK6-22-300 Anlage 1](https://www.bundesnetzagentur.de/DE/Beschlusskammern/1_GZ/BK6-GZ/2022/BK6-22-300/Beschluss/BK6-22-300_Beschluss_Anlage1.pdf?__blob=publicationFile&v=1), Ziff. 2.3, 2.4, 4.4–4.6 | Zeitgleicher netzwirksamer Bezug der zugeordneten Gruppe; WP inklusive Zusatz-/Notheizung, Speicher hinsichtlich Einspeicherung; gemeinsamer EMS-Sollwert. Netzsteuerung hat Vorrang vor marktlicher Steuerung. |
+| [BNetzA Mitteilung 6](https://www.bundesnetzagentur.de/DE/Beschlusskammern/1_GZ/BK6-GZ/2022/BK6-22-300/Mitteilung/Mitteilung_06/Mitteilung_Nr_06.html?nn=877500) | Empfehlung der finalen FNN-Regeln innerhalb ihres jeweiligen Umfangs; keine darüber hinausgehende Erzeugungsfreigabe ableiten. |
+| [VDE-FNN Mindestleistung, April 2025](https://www.vde.com/resource/blob/2384602/0cb47de901b1129acad8510257ecc582/vde-fnn-hinweis-mindestleistung-data.pdf), Kap. 2–4 | Keine Änderung der bestehenden Faktoren/Formeln empfohlen. Vorhandene GZF-/Budgetquellenberechnung wiederverwenden. |
 
-Danach sind die offiziellen Originale erneut zu prüfen:
+SHA256 der tatsächlich geladenen PDF-Antworten:
 
-- [BK6-22-300 Anlage 1](https://www.bundesnetzagentur.de/DE/Beschlusskammern/1_GZ/BK6-GZ/2022/BK6-22-300/Beschluss/BK6-22-300_Beschluss_Anlage1.pdf?__blob=publicationFile&v=1),
-  insbesondere EMS/netzwirksamer Bezug und Abschnitt 4.5.2;
-- [BNetzA Mitteilung 6](https://www.bundesnetzagentur.de/DE/Beschlusskammern/1_GZ/BK6-GZ/2022/BK6-22-300/Mitteilung/Mitteilung_06/Mitteilung_Nr_06.html?nn=877500);
-- [VDE-FNN Mindestleistung, April 2025](https://www.vde.com/resource/blob/2384602/0cb47de901b1129acad8510257ecc582/vde-fnn-hinweis-mindestleistung-data.pdf)
-  und die zum unterstützten LPC-Eingang passenden aktuellen Schnittstellenverträge.
+- BNetzA Anlage 1: `c8cf59ea475bb4cb866e8b4eeb4b3e2b3306cb3f3ff1c432799b090bfb5b2d35`
+- VDE-FNN: `d20fdf17b34370fe8e7878cf6c1e22ad5f3f8fa05d9bf31a2477e898da6cb067`
 
-Die dokumentierte Prüfung vom 18.10. in den alpha.90-Releasehinweisen ersetzt
-diesen aktuellen Pflichtschritt nicht. Keine regulatorische Inhaltsaussage wird
-aus der fehlgeschlagenen Anfrage abgeleitet.
+Die Quellen bestätigen einen Gruppen-Netzbezugsdeckel mit belegter
+Eigenversorgung, liefern aber keine private ioBroker-Topologie. Gruppen-IDs,
+AC-Messabdeckung, Quellenkohärenz und Reservierungsverfahren unten sind
+technische Adapterverträge; sie werden nicht als einzelne vorgeschriebene
+Normformel oder als Zertifizierung ausgegeben.
+
+**Verbleibender Zugriffspunkt ist EEBUS.** `https://www.eebus.org/` liefert nach
+45 s keinen Inhalt (curl Exit 28, 0 Bytes). Der einmal alternativ geprüfte
+kanonische Host `https://eebus.org/` endet nach 25,002 s ebenfalls ohne Inhalt.
+Die HTTP-200-Zeile der Proxy-CONNECT-Antwort ist keine erfolgreiche Antwort des
+Ursprungsservers. Es wurde keine aktuell zugängliche, nachweislich offizielle
+normative LPC-Spezifikation festgestellt. Öffentlicher Fremdadaptercode ist
+dafür kein Ersatz und belegt auch nicht den tatsächlich installierten Endpunkt.
+Die Ursache des Timeouts ist nicht nachgewiesen.
+
+Die jüngste Anweisung verlangt zuerst erfolgreichen Zugriff auf die offiziellen
+BNetzA-, VDE- und EEBUS-Quellen. Die EEBUS-Voraussetzung bleibt daher offen;
+abhängige Runtimeänderungen werden noch nicht vorgenommen. Ein direkter
+offizieller LPC-Spezifikationslink kann die nächste gezielte Prüfung ermöglichen.
+Die frühere Aufforderung zur Veröffentlichung des Umgebungsentwurfs ist erledigt
+und wird nicht wiederholt. Keine Installation oder Adapterveröffentlichung.
 
 ## Vorhandene Funktionen wiederverwenden
 
