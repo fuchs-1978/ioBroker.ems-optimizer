@@ -47,6 +47,15 @@ sind weiterhin nicht verifiziert. Es gab drei gezielte EEBUS-Folgeabrufe nach
 der Homepage, keine Anmeldung, Registrierung oder Umgehung der Downloadgrenze.
 Keine Drittanbieter-Semantik oder fremden Issues wurden übernommen.
 
+Nachtrag **22.10.2026**: Die Anleitung und der commitgebundene Quellcode von
+`FernetMenta/ioBroker.eebus-go` wurden inzwischen geprüft. Sie klären Zustände,
+Einheiten, Zeitverhalten und Gesamt-/Guard-Budgets. Die tatsächliche installierte
+Zuordnung und kohärente aktuelle Veröffentlichung bleiben Freigabevoraussetzungen.
+Ein gesonderter Offline-Replay belegt ein mögliches Überschreiben durch ältere
+RPC-Antworten. Quellen, Grenzen und reproduzierbare Nachweise stehen im
+[LPC-Adaptervertragsaudit](issue166-lpc-adapter-contract-audit.md).
+Die oben beschriebene LPC-Sperre bleibt unverändert.
+
 SHA256 der frischen PDF-Antworten, jeweils identisch mit der früheren Prüfung:
 
 - BNetzA Anlage 1: `c8cf59ea475bb4cb866e8b4eeb4b3e2b3306cb3f3ff1c432799b090bfb5b2d35`

@@ -1,0 +1,1246 @@
+{
+  "kind": "Offline synthetic upstream LPC ordering replay; no installation data",
+  "dateEuropeBerlin": "2026-10-22",
+  "emsBaseline": "ef7306d2744668c0acc14175eb915efbbda6d53a",
+  "upstream": {
+    "repository": "FernetMenta/ioBroker.eebus-go",
+    "commit": "d6f9329fc424445f81cfd56b0b20f3929c9d16c2",
+    "file": "lib/lpc-use-case.js",
+    "sha256": "b9da9b439d422ef36f25cfa3a2f50a39a980f5facaa2e9eb3ba1958a7020f2dc"
+  },
+  "fsm": {
+    "repository": "jakesgordon/javascript-state-machine",
+    "version": "3.1.0",
+    "commit": "0d603577423244228cebcd62e60dbbfff27c6ea3",
+    "file": "dist/state-machine.js",
+    "sha256": "f10baaebe04f6132ad391fb7274c7e59ceeb87fdf45449c6bd1a745ca9d49289"
+  },
+  "replay": {
+    "file": "test/replays/eebus-lpc-ordering.cjs",
+    "sha256": "555ac47d5e522bfef52a7f39bd266e78a74ff97e63da0141fbaaa8ede98cf663"
+  },
+  "bounds": {
+    "actualUnmodifiedUpstreamSource": true,
+    "actualUnmodifiedFsmDependency": true,
+    "productionObserved": false,
+    "installedAdapterVerified": false,
+    "fullShipAdmissionVerified": false,
+    "actualEgLpcDistributionExecuted": false,
+    "testDoubles": [
+      "ioBroker I/O",
+      "gRPC transport",
+      "use-case registration",
+      "clock/timers",
+      "guard failsafe supplier",
+      "distribution callback"
+    ]
+  },
+  "runs": [
+    {
+      "node": "v22.23.3",
+      "control": {
+        "scenario": "ordered-control",
+        "guardFailsafeW": 4200,
+        "pureApprovalRuleBothPass": true,
+        "actualApprovalHandlerApprovals": [
+          {
+            "instance_id": "fixed-lpc-instance",
+            "msg_counter": 1,
+            "approve": true,
+            "reason": ""
+          },
+          {
+            "instance_id": "fixed-lpc-instance",
+            "msg_counter": 2,
+            "approve": true,
+            "reason": ""
+          }
+        ],
+        "latestIntendedLimitW": 4200,
+        "finalState": "limited",
+        "finalPublishedLimitW": 4200,
+        "finalPublishedDurationMinutes": 5,
+        "lastDistributionCallbackW": 4200,
+        "observedRpcResponseReordering": false,
+        "observations": [
+          {
+            "label": "older-9000-completed-before-newer-request",
+            "state": "limited",
+            "publishedState": {
+              "val": "limited",
+              "ack": true,
+              "q": 0,
+              "ts": 1792627200010
+            },
+            "publishedLimit": {
+              "val": 9000,
+              "ack": true,
+              "q": 0,
+              "ts": 1792627200017
+            },
+            "publishedDuration": {
+              "val": 10,
+              "ack": true,
+              "q": 0,
+              "ts": 1792627200018
+            },
+            "lastDistributionCallback": {
+              "kind": "distribution-callback",
+              "active": true,
+              "watts": 9000,
+              "duration": 600000000000,
+              "ts": 1792627200019
+            }
+          },
+          {
+            "label": "newer-4200-published",
+            "state": "limited",
+            "publishedState": {
+              "val": "limited",
+              "ack": true,
+              "q": 0,
+              "ts": 1792627200010
+            },
+            "publishedLimit": {
+              "val": 4200,
+              "ack": true,
+              "q": 0,
+              "ts": 1792627200023
+            },
+            "publishedDuration": {
+              "val": 5,
+              "ack": true,
+              "q": 0,
+              "ts": 1792627200024
+            },
+            "lastDistributionCallback": {
+              "kind": "distribution-callback",
+              "active": true,
+              "watts": 4200,
+              "duration": 300000000000,
+              "ts": 1792627200025
+            }
+          }
+        ],
+        "trace": [
+          {
+            "kind": "state",
+            "id": "LPC.state",
+            "val": "init",
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200001
+          },
+          {
+            "kind": "state",
+            "id": "LPC.limit",
+            "val": 0,
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200002
+          },
+          {
+            "kind": "state",
+            "id": "LPC.limitDuration",
+            "val": 0,
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200003
+          },
+          {
+            "kind": "rpc-request",
+            "method": "SetConsumptionNominalMax",
+            "args": {
+              "instance_id": "fixed-lpc-instance",
+              "value": 12000
+            },
+            "ts": 1792627200004
+          },
+          {
+            "kind": "rpc-request",
+            "method": "SetConsumptionLimit",
+            "args": {
+              "instance_id": "fixed-lpc-instance",
+              "load_limit": {
+                "is_changeable": true,
+                "is_active": false,
+                "value": 4200
+              }
+            },
+            "ts": 1792627200005
+          },
+          {
+            "kind": "rpc-request",
+            "method": "SetFailsafeConsumptionActivePowerLimit",
+            "args": {
+              "instance_id": "fixed-lpc-instance",
+              "value": 12000,
+              "is_changeable": false
+            },
+            "ts": 1792627200006
+          },
+          {
+            "kind": "rpc-request",
+            "method": "SetFailsafeDurationMinimum",
+            "args": {
+              "instance_id": "fixed-lpc-instance",
+              "is_changeable": false,
+              "duration_nanoseconds": 7200000000000
+            },
+            "ts": 1792627200007
+          },
+          {
+            "kind": "rpc-request",
+            "method": "StartHeartbeat",
+            "args": {
+              "instance_id": "fixed-lpc-instance"
+            },
+            "ts": 1792627200008
+          },
+          {
+            "kind": "rpc-request",
+            "method": "ConsumptionLimit",
+            "args": {
+              "instance_id": "fixed-lpc-instance"
+            },
+            "ts": 1792627200009
+          },
+          {
+            "kind": "state",
+            "id": "LPC.state",
+            "val": "limited",
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200010
+          },
+          {
+            "kind": "state",
+            "id": "LPC.limit",
+            "val": 12000,
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200011
+          },
+          {
+            "kind": "state",
+            "id": "LPC.limitDuration",
+            "val": 0,
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200012
+          },
+          {
+            "kind": "distribution-callback",
+            "active": true,
+            "watts": 12000,
+            "duration": 0,
+            "ts": 1792627200013
+          },
+          {
+            "kind": "rpc-request",
+            "method": "PendingConsumptionLimit",
+            "args": {
+              "instance_id": "fixed-lpc-instance"
+            },
+            "ts": 1792627200014
+          },
+          {
+            "kind": "rpc-request",
+            "method": "ApproveOrDenyConsumptionLimit",
+            "args": {
+              "instance_id": "fixed-lpc-instance",
+              "msg_counter": 1,
+              "approve": true,
+              "reason": ""
+            },
+            "ts": 1792627200015
+          },
+          {
+            "kind": "rpc-request",
+            "method": "ConsumptionLimit",
+            "args": {
+              "instance_id": "fixed-lpc-instance"
+            },
+            "ts": 1792627200016
+          },
+          {
+            "kind": "state",
+            "id": "LPC.limit",
+            "val": 9000,
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200017
+          },
+          {
+            "kind": "state",
+            "id": "LPC.limitDuration",
+            "val": 10,
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200018
+          },
+          {
+            "kind": "distribution-callback",
+            "active": true,
+            "watts": 9000,
+            "duration": 600000000000,
+            "ts": 1792627200019
+          },
+          {
+            "kind": "rpc-request",
+            "method": "PendingConsumptionLimit",
+            "args": {
+              "instance_id": "fixed-lpc-instance"
+            },
+            "ts": 1792627200020
+          },
+          {
+            "kind": "rpc-request",
+            "method": "ApproveOrDenyConsumptionLimit",
+            "args": {
+              "instance_id": "fixed-lpc-instance",
+              "msg_counter": 2,
+              "approve": true,
+              "reason": ""
+            },
+            "ts": 1792627200021
+          },
+          {
+            "kind": "rpc-request",
+            "method": "ConsumptionLimit",
+            "args": {
+              "instance_id": "fixed-lpc-instance"
+            },
+            "ts": 1792627200022
+          },
+          {
+            "kind": "state",
+            "id": "LPC.limit",
+            "val": 4200,
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200023
+          },
+          {
+            "kind": "state",
+            "id": "LPC.limitDuration",
+            "val": 5,
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200024
+          },
+          {
+            "kind": "distribution-callback",
+            "active": true,
+            "watts": 4200,
+            "duration": 300000000000,
+            "ts": 1792627200025
+          }
+        ]
+      },
+      "adversarial": {
+        "scenario": "older-unary-response-after-newer-limit",
+        "guardFailsafeW": 4200,
+        "pureApprovalRuleBothPass": true,
+        "actualApprovalHandlerApprovals": [
+          {
+            "instance_id": "fixed-lpc-instance",
+            "msg_counter": 1,
+            "approve": true,
+            "reason": ""
+          },
+          {
+            "instance_id": "fixed-lpc-instance",
+            "msg_counter": 2,
+            "approve": true,
+            "reason": ""
+          }
+        ],
+        "latestIntendedLimitW": 4200,
+        "finalState": "limited",
+        "finalPublishedLimitW": 9000,
+        "finalPublishedDurationMinutes": 10,
+        "lastDistributionCallbackW": 9000,
+        "observedRpcResponseReordering": true,
+        "observations": [
+          {
+            "label": "newer-4200-published",
+            "state": "limited",
+            "publishedState": {
+              "val": "limited",
+              "ack": true,
+              "q": 0,
+              "ts": 1792627200010
+            },
+            "publishedLimit": {
+              "val": 4200,
+              "ack": true,
+              "q": 0,
+              "ts": 1792627200020
+            },
+            "publishedDuration": {
+              "val": 5,
+              "ack": true,
+              "q": 0,
+              "ts": 1792627200021
+            },
+            "lastDistributionCallback": {
+              "kind": "distribution-callback",
+              "active": true,
+              "watts": 4200,
+              "duration": 300000000000,
+              "ts": 1792627200022
+            }
+          },
+          {
+            "label": "older-9000-response-completed-after-newer-4200",
+            "state": "limited",
+            "publishedState": {
+              "val": "limited",
+              "ack": true,
+              "q": 0,
+              "ts": 1792627200010
+            },
+            "publishedLimit": {
+              "val": 9000,
+              "ack": true,
+              "q": 0,
+              "ts": 1792627200023
+            },
+            "publishedDuration": {
+              "val": 10,
+              "ack": true,
+              "q": 0,
+              "ts": 1792627200024
+            },
+            "lastDistributionCallback": {
+              "kind": "distribution-callback",
+              "active": true,
+              "watts": 9000,
+              "duration": 600000000000,
+              "ts": 1792627200025
+            }
+          }
+        ],
+        "trace": [
+          {
+            "kind": "state",
+            "id": "LPC.state",
+            "val": "init",
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200001
+          },
+          {
+            "kind": "state",
+            "id": "LPC.limit",
+            "val": 0,
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200002
+          },
+          {
+            "kind": "state",
+            "id": "LPC.limitDuration",
+            "val": 0,
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200003
+          },
+          {
+            "kind": "rpc-request",
+            "method": "SetConsumptionNominalMax",
+            "args": {
+              "instance_id": "fixed-lpc-instance",
+              "value": 12000
+            },
+            "ts": 1792627200004
+          },
+          {
+            "kind": "rpc-request",
+            "method": "SetConsumptionLimit",
+            "args": {
+              "instance_id": "fixed-lpc-instance",
+              "load_limit": {
+                "is_changeable": true,
+                "is_active": false,
+                "value": 4200
+              }
+            },
+            "ts": 1792627200005
+          },
+          {
+            "kind": "rpc-request",
+            "method": "SetFailsafeConsumptionActivePowerLimit",
+            "args": {
+              "instance_id": "fixed-lpc-instance",
+              "value": 12000,
+              "is_changeable": false
+            },
+            "ts": 1792627200006
+          },
+          {
+            "kind": "rpc-request",
+            "method": "SetFailsafeDurationMinimum",
+            "args": {
+              "instance_id": "fixed-lpc-instance",
+              "is_changeable": false,
+              "duration_nanoseconds": 7200000000000
+            },
+            "ts": 1792627200007
+          },
+          {
+            "kind": "rpc-request",
+            "method": "StartHeartbeat",
+            "args": {
+              "instance_id": "fixed-lpc-instance"
+            },
+            "ts": 1792627200008
+          },
+          {
+            "kind": "rpc-request",
+            "method": "ConsumptionLimit",
+            "args": {
+              "instance_id": "fixed-lpc-instance"
+            },
+            "ts": 1792627200009
+          },
+          {
+            "kind": "state",
+            "id": "LPC.state",
+            "val": "limited",
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200010
+          },
+          {
+            "kind": "state",
+            "id": "LPC.limit",
+            "val": 12000,
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200011
+          },
+          {
+            "kind": "state",
+            "id": "LPC.limitDuration",
+            "val": 0,
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200012
+          },
+          {
+            "kind": "distribution-callback",
+            "active": true,
+            "watts": 12000,
+            "duration": 0,
+            "ts": 1792627200013
+          },
+          {
+            "kind": "rpc-request",
+            "method": "PendingConsumptionLimit",
+            "args": {
+              "instance_id": "fixed-lpc-instance"
+            },
+            "ts": 1792627200014
+          },
+          {
+            "kind": "rpc-request",
+            "method": "ApproveOrDenyConsumptionLimit",
+            "args": {
+              "instance_id": "fixed-lpc-instance",
+              "msg_counter": 1,
+              "approve": true,
+              "reason": ""
+            },
+            "ts": 1792627200015
+          },
+          {
+            "kind": "rpc-request",
+            "method": "ConsumptionLimit",
+            "args": {
+              "instance_id": "fixed-lpc-instance"
+            },
+            "ts": 1792627200016
+          },
+          {
+            "kind": "rpc-request",
+            "method": "PendingConsumptionLimit",
+            "args": {
+              "instance_id": "fixed-lpc-instance"
+            },
+            "ts": 1792627200017
+          },
+          {
+            "kind": "rpc-request",
+            "method": "ApproveOrDenyConsumptionLimit",
+            "args": {
+              "instance_id": "fixed-lpc-instance",
+              "msg_counter": 2,
+              "approve": true,
+              "reason": ""
+            },
+            "ts": 1792627200018
+          },
+          {
+            "kind": "rpc-request",
+            "method": "ConsumptionLimit",
+            "args": {
+              "instance_id": "fixed-lpc-instance"
+            },
+            "ts": 1792627200019
+          },
+          {
+            "kind": "state",
+            "id": "LPC.limit",
+            "val": 4200,
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200020
+          },
+          {
+            "kind": "state",
+            "id": "LPC.limitDuration",
+            "val": 5,
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200021
+          },
+          {
+            "kind": "distribution-callback",
+            "active": true,
+            "watts": 4200,
+            "duration": 300000000000,
+            "ts": 1792627200022
+          },
+          {
+            "kind": "state",
+            "id": "LPC.limit",
+            "val": 9000,
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200023
+          },
+          {
+            "kind": "state",
+            "id": "LPC.limitDuration",
+            "val": 10,
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200024
+          },
+          {
+            "kind": "distribution-callback",
+            "active": true,
+            "watts": 9000,
+            "duration": 600000000000,
+            "ts": 1792627200025
+          }
+        ]
+      }
+    },
+    {
+      "node": "v24.19.0",
+      "control": {
+        "scenario": "ordered-control",
+        "guardFailsafeW": 4200,
+        "pureApprovalRuleBothPass": true,
+        "actualApprovalHandlerApprovals": [
+          {
+            "instance_id": "fixed-lpc-instance",
+            "msg_counter": 1,
+            "approve": true,
+            "reason": ""
+          },
+          {
+            "instance_id": "fixed-lpc-instance",
+            "msg_counter": 2,
+            "approve": true,
+            "reason": ""
+          }
+        ],
+        "latestIntendedLimitW": 4200,
+        "finalState": "limited",
+        "finalPublishedLimitW": 4200,
+        "finalPublishedDurationMinutes": 5,
+        "lastDistributionCallbackW": 4200,
+        "observedRpcResponseReordering": false,
+        "observations": [
+          {
+            "label": "older-9000-completed-before-newer-request",
+            "state": "limited",
+            "publishedState": {
+              "val": "limited",
+              "ack": true,
+              "q": 0,
+              "ts": 1792627200010
+            },
+            "publishedLimit": {
+              "val": 9000,
+              "ack": true,
+              "q": 0,
+              "ts": 1792627200017
+            },
+            "publishedDuration": {
+              "val": 10,
+              "ack": true,
+              "q": 0,
+              "ts": 1792627200018
+            },
+            "lastDistributionCallback": {
+              "kind": "distribution-callback",
+              "active": true,
+              "watts": 9000,
+              "duration": 600000000000,
+              "ts": 1792627200019
+            }
+          },
+          {
+            "label": "newer-4200-published",
+            "state": "limited",
+            "publishedState": {
+              "val": "limited",
+              "ack": true,
+              "q": 0,
+              "ts": 1792627200010
+            },
+            "publishedLimit": {
+              "val": 4200,
+              "ack": true,
+              "q": 0,
+              "ts": 1792627200023
+            },
+            "publishedDuration": {
+              "val": 5,
+              "ack": true,
+              "q": 0,
+              "ts": 1792627200024
+            },
+            "lastDistributionCallback": {
+              "kind": "distribution-callback",
+              "active": true,
+              "watts": 4200,
+              "duration": 300000000000,
+              "ts": 1792627200025
+            }
+          }
+        ],
+        "trace": [
+          {
+            "kind": "state",
+            "id": "LPC.state",
+            "val": "init",
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200001
+          },
+          {
+            "kind": "state",
+            "id": "LPC.limit",
+            "val": 0,
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200002
+          },
+          {
+            "kind": "state",
+            "id": "LPC.limitDuration",
+            "val": 0,
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200003
+          },
+          {
+            "kind": "rpc-request",
+            "method": "SetConsumptionNominalMax",
+            "args": {
+              "instance_id": "fixed-lpc-instance",
+              "value": 12000
+            },
+            "ts": 1792627200004
+          },
+          {
+            "kind": "rpc-request",
+            "method": "SetConsumptionLimit",
+            "args": {
+              "instance_id": "fixed-lpc-instance",
+              "load_limit": {
+                "is_changeable": true,
+                "is_active": false,
+                "value": 4200
+              }
+            },
+            "ts": 1792627200005
+          },
+          {
+            "kind": "rpc-request",
+            "method": "SetFailsafeConsumptionActivePowerLimit",
+            "args": {
+              "instance_id": "fixed-lpc-instance",
+              "value": 12000,
+              "is_changeable": false
+            },
+            "ts": 1792627200006
+          },
+          {
+            "kind": "rpc-request",
+            "method": "SetFailsafeDurationMinimum",
+            "args": {
+              "instance_id": "fixed-lpc-instance",
+              "is_changeable": false,
+              "duration_nanoseconds": 7200000000000
+            },
+            "ts": 1792627200007
+          },
+          {
+            "kind": "rpc-request",
+            "method": "StartHeartbeat",
+            "args": {
+              "instance_id": "fixed-lpc-instance"
+            },
+            "ts": 1792627200008
+          },
+          {
+            "kind": "rpc-request",
+            "method": "ConsumptionLimit",
+            "args": {
+              "instance_id": "fixed-lpc-instance"
+            },
+            "ts": 1792627200009
+          },
+          {
+            "kind": "state",
+            "id": "LPC.state",
+            "val": "limited",
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200010
+          },
+          {
+            "kind": "state",
+            "id": "LPC.limit",
+            "val": 12000,
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200011
+          },
+          {
+            "kind": "state",
+            "id": "LPC.limitDuration",
+            "val": 0,
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200012
+          },
+          {
+            "kind": "distribution-callback",
+            "active": true,
+            "watts": 12000,
+            "duration": 0,
+            "ts": 1792627200013
+          },
+          {
+            "kind": "rpc-request",
+            "method": "PendingConsumptionLimit",
+            "args": {
+              "instance_id": "fixed-lpc-instance"
+            },
+            "ts": 1792627200014
+          },
+          {
+            "kind": "rpc-request",
+            "method": "ApproveOrDenyConsumptionLimit",
+            "args": {
+              "instance_id": "fixed-lpc-instance",
+              "msg_counter": 1,
+              "approve": true,
+              "reason": ""
+            },
+            "ts": 1792627200015
+          },
+          {
+            "kind": "rpc-request",
+            "method": "ConsumptionLimit",
+            "args": {
+              "instance_id": "fixed-lpc-instance"
+            },
+            "ts": 1792627200016
+          },
+          {
+            "kind": "state",
+            "id": "LPC.limit",
+            "val": 9000,
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200017
+          },
+          {
+            "kind": "state",
+            "id": "LPC.limitDuration",
+            "val": 10,
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200018
+          },
+          {
+            "kind": "distribution-callback",
+            "active": true,
+            "watts": 9000,
+            "duration": 600000000000,
+            "ts": 1792627200019
+          },
+          {
+            "kind": "rpc-request",
+            "method": "PendingConsumptionLimit",
+            "args": {
+              "instance_id": "fixed-lpc-instance"
+            },
+            "ts": 1792627200020
+          },
+          {
+            "kind": "rpc-request",
+            "method": "ApproveOrDenyConsumptionLimit",
+            "args": {
+              "instance_id": "fixed-lpc-instance",
+              "msg_counter": 2,
+              "approve": true,
+              "reason": ""
+            },
+            "ts": 1792627200021
+          },
+          {
+            "kind": "rpc-request",
+            "method": "ConsumptionLimit",
+            "args": {
+              "instance_id": "fixed-lpc-instance"
+            },
+            "ts": 1792627200022
+          },
+          {
+            "kind": "state",
+            "id": "LPC.limit",
+            "val": 4200,
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200023
+          },
+          {
+            "kind": "state",
+            "id": "LPC.limitDuration",
+            "val": 5,
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200024
+          },
+          {
+            "kind": "distribution-callback",
+            "active": true,
+            "watts": 4200,
+            "duration": 300000000000,
+            "ts": 1792627200025
+          }
+        ]
+      },
+      "adversarial": {
+        "scenario": "older-unary-response-after-newer-limit",
+        "guardFailsafeW": 4200,
+        "pureApprovalRuleBothPass": true,
+        "actualApprovalHandlerApprovals": [
+          {
+            "instance_id": "fixed-lpc-instance",
+            "msg_counter": 1,
+            "approve": true,
+            "reason": ""
+          },
+          {
+            "instance_id": "fixed-lpc-instance",
+            "msg_counter": 2,
+            "approve": true,
+            "reason": ""
+          }
+        ],
+        "latestIntendedLimitW": 4200,
+        "finalState": "limited",
+        "finalPublishedLimitW": 9000,
+        "finalPublishedDurationMinutes": 10,
+        "lastDistributionCallbackW": 9000,
+        "observedRpcResponseReordering": true,
+        "observations": [
+          {
+            "label": "newer-4200-published",
+            "state": "limited",
+            "publishedState": {
+              "val": "limited",
+              "ack": true,
+              "q": 0,
+              "ts": 1792627200010
+            },
+            "publishedLimit": {
+              "val": 4200,
+              "ack": true,
+              "q": 0,
+              "ts": 1792627200020
+            },
+            "publishedDuration": {
+              "val": 5,
+              "ack": true,
+              "q": 0,
+              "ts": 1792627200021
+            },
+            "lastDistributionCallback": {
+              "kind": "distribution-callback",
+              "active": true,
+              "watts": 4200,
+              "duration": 300000000000,
+              "ts": 1792627200022
+            }
+          },
+          {
+            "label": "older-9000-response-completed-after-newer-4200",
+            "state": "limited",
+            "publishedState": {
+              "val": "limited",
+              "ack": true,
+              "q": 0,
+              "ts": 1792627200010
+            },
+            "publishedLimit": {
+              "val": 9000,
+              "ack": true,
+              "q": 0,
+              "ts": 1792627200023
+            },
+            "publishedDuration": {
+              "val": 10,
+              "ack": true,
+              "q": 0,
+              "ts": 1792627200024
+            },
+            "lastDistributionCallback": {
+              "kind": "distribution-callback",
+              "active": true,
+              "watts": 9000,
+              "duration": 600000000000,
+              "ts": 1792627200025
+            }
+          }
+        ],
+        "trace": [
+          {
+            "kind": "state",
+            "id": "LPC.state",
+            "val": "init",
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200001
+          },
+          {
+            "kind": "state",
+            "id": "LPC.limit",
+            "val": 0,
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200002
+          },
+          {
+            "kind": "state",
+            "id": "LPC.limitDuration",
+            "val": 0,
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200003
+          },
+          {
+            "kind": "rpc-request",
+            "method": "SetConsumptionNominalMax",
+            "args": {
+              "instance_id": "fixed-lpc-instance",
+              "value": 12000
+            },
+            "ts": 1792627200004
+          },
+          {
+            "kind": "rpc-request",
+            "method": "SetConsumptionLimit",
+            "args": {
+              "instance_id": "fixed-lpc-instance",
+              "load_limit": {
+                "is_changeable": true,
+                "is_active": false,
+                "value": 4200
+              }
+            },
+            "ts": 1792627200005
+          },
+          {
+            "kind": "rpc-request",
+            "method": "SetFailsafeConsumptionActivePowerLimit",
+            "args": {
+              "instance_id": "fixed-lpc-instance",
+              "value": 12000,
+              "is_changeable": false
+            },
+            "ts": 1792627200006
+          },
+          {
+            "kind": "rpc-request",
+            "method": "SetFailsafeDurationMinimum",
+            "args": {
+              "instance_id": "fixed-lpc-instance",
+              "is_changeable": false,
+              "duration_nanoseconds": 7200000000000
+            },
+            "ts": 1792627200007
+          },
+          {
+            "kind": "rpc-request",
+            "method": "StartHeartbeat",
+            "args": {
+              "instance_id": "fixed-lpc-instance"
+            },
+            "ts": 1792627200008
+          },
+          {
+            "kind": "rpc-request",
+            "method": "ConsumptionLimit",
+            "args": {
+              "instance_id": "fixed-lpc-instance"
+            },
+            "ts": 1792627200009
+          },
+          {
+            "kind": "state",
+            "id": "LPC.state",
+            "val": "limited",
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200010
+          },
+          {
+            "kind": "state",
+            "id": "LPC.limit",
+            "val": 12000,
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200011
+          },
+          {
+            "kind": "state",
+            "id": "LPC.limitDuration",
+            "val": 0,
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200012
+          },
+          {
+            "kind": "distribution-callback",
+            "active": true,
+            "watts": 12000,
+            "duration": 0,
+            "ts": 1792627200013
+          },
+          {
+            "kind": "rpc-request",
+            "method": "PendingConsumptionLimit",
+            "args": {
+              "instance_id": "fixed-lpc-instance"
+            },
+            "ts": 1792627200014
+          },
+          {
+            "kind": "rpc-request",
+            "method": "ApproveOrDenyConsumptionLimit",
+            "args": {
+              "instance_id": "fixed-lpc-instance",
+              "msg_counter": 1,
+              "approve": true,
+              "reason": ""
+            },
+            "ts": 1792627200015
+          },
+          {
+            "kind": "rpc-request",
+            "method": "ConsumptionLimit",
+            "args": {
+              "instance_id": "fixed-lpc-instance"
+            },
+            "ts": 1792627200016
+          },
+          {
+            "kind": "rpc-request",
+            "method": "PendingConsumptionLimit",
+            "args": {
+              "instance_id": "fixed-lpc-instance"
+            },
+            "ts": 1792627200017
+          },
+          {
+            "kind": "rpc-request",
+            "method": "ApproveOrDenyConsumptionLimit",
+            "args": {
+              "instance_id": "fixed-lpc-instance",
+              "msg_counter": 2,
+              "approve": true,
+              "reason": ""
+            },
+            "ts": 1792627200018
+          },
+          {
+            "kind": "rpc-request",
+            "method": "ConsumptionLimit",
+            "args": {
+              "instance_id": "fixed-lpc-instance"
+            },
+            "ts": 1792627200019
+          },
+          {
+            "kind": "state",
+            "id": "LPC.limit",
+            "val": 4200,
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200020
+          },
+          {
+            "kind": "state",
+            "id": "LPC.limitDuration",
+            "val": 5,
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200021
+          },
+          {
+            "kind": "distribution-callback",
+            "active": true,
+            "watts": 4200,
+            "duration": 300000000000,
+            "ts": 1792627200022
+          },
+          {
+            "kind": "state",
+            "id": "LPC.limit",
+            "val": 9000,
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200023
+          },
+          {
+            "kind": "state",
+            "id": "LPC.limitDuration",
+            "val": 10,
+            "ack": true,
+            "q": 0,
+            "ts": 1792627200024
+          },
+          {
+            "kind": "distribution-callback",
+            "active": true,
+            "watts": 9000,
+            "duration": 600000000000,
+            "ts": 1792627200025
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -100,6 +100,8 @@ Nach Speichern zeigt `Control.GridOperatorCalculation_JSON` Quelle, Zahl, Faktor
 
 `par14aAccountingMode` bleibt nach einem Update auf `legacyGross`: vorhandene Limits, Quellen und Freigaben behalten ihre bisherige konservative Wirkung. Der ausdrücklich gewählte Modus `groupNet` verbindet die Bilanz mit Regler, gemeinsamer Zuteilung und unabhängigen Ausgangsprüfungen. Er gilt für eine deklarierte Binärkontakt-Gruppe. **Sobald LPC-Eingänge konfiguriert sind, ist dieser neue Modus gesperrt**, bis der konkrete Schnittstellenvertrag verifiziert ist; die bisherige LPC-Auswertung im Bruttomodus bleibt erhalten.
 
+Die Anleitung und der Quellcode von `eebus-go` wurden am 22.10.2026 gesondert geprüft. Der [LPC-Adaptervertragsaudit](docs/issue166-lpc-adapter-contract-audit.md) dokumentiert belegte Zustände/Einheiten, Gesamt-/Guard-Zuordnung und einen Offline-Replay konkurrierender Antworten. Daraus folgt noch keine Freigabe der Eigenstrombilanz mit LPC; die tatsächliche installierte Zuordnung und ein belastbarer aktueller Grenzwertvertrag bleiben offen.
+
 | Neue Einstellung | Auslieferung | Erforderlicher Vertrag für `groupNet` |
 | --- | --- | --- |
 | `par14aGroupId`, `par14aBoundaryId` | leer | Stabile Kennungen der tatsächlich vereinbarten Teilnehmergruppe und vollständigen gemeinsamen AC-Messgrenze. |
