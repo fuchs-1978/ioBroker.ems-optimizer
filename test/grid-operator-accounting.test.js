@@ -5,6 +5,74 @@ const assert = require('node:assert/strict');
 const {evaluateGroupAccounting, commandBudget, reserveGroupCommands} = require('../lib/grid-operator-accounting');
 
 const NOW = 2000000;
+
+test('explicit asynchronous fallback keeps original evidence and a shared gross ceiling only', () => {
+    const input = fixture({importW: 0, exportW: 9000, participantW: 1380});
+    input.allowAsyncGrossFallback = true;
+    input.participantMeters[0].state.ts -= 5000;
+    const before = structuredClone(input);
+    const s = evaluateGroupAccounting(input);
+    assert.equal(s.valid, true, s.reason);
+    assert.equal(s.accountingBasis, 'gross-only-asynchronous');
+    assert.equal(s.observation.spanMs, 5000);
+    assert.equal(s.observation.coherent, false);
+    assert.equal(s.ownAvailableW, 0);
+    assert.equal(s.grossBudgetW, 4200);
+    for (const key of ['siteNetW', 'actualGroupNetW', 'rawOwnAvailableW', 'ownUsedW'])
+        assert.equal(s[key], null, `${key} must not pretend to be a synchronous measurement`);
+    assert.equal(commandBudget(s, 'Wallbox0', 4140).allowed, true);
+    assert.equal(commandBudget(s, 'Wallbox0', 4201).allowed, false);
+    assert.deepEqual(input, before, 'evaluation preserves values and original timestamps');
+});
+
+test('asynchronous fallback does not double-spend a group budget or release pending power', () => {
+    const input = fixture({participantW: 0, importW: 0, exportW: 12000});
+    addDevice(input, 'Wallbox1', 'ev1', 0, 0, 0);
+    input.allowAsyncGrossFallback = true;
+    input.participantMeters[0].state.ts -= 4000;
+    const s = evaluateGroupAccounting(input);
+    const first = reserveGroupCommands(s, {Wallbox0: 2760});
+    assert.equal(first.allowed, true);
+    assert.equal(reserveGroupCommands(first.next, {Wallbox1: 2760}).allowed, false);
+    const lowered = reserveGroupCommands(first.next, {Wallbox0: 0});
+    assert.equal(lowered.allowed, true);
+    assert.equal(lowered.next.devices.Wallbox0.reservedW, 2760);
+    assert.equal(reserveGroupCommands(lowered.next, {Wallbox1: 2760}).allowed, false);
+    assert.equal(first.next.ownAvailableW, 0);
+});
+
+for (const [name, change] of [
+    ['stale', state => {state.ts = NOW - 30001;}],
+    ['future', state => {state.ts = NOW + 1;}],
+    ['missing quality', state => {delete state.q;}],
+    ['bad quality', state => {state.q = 64;}],
+    ['missing ACK', state => {delete state.ack;}],
+    ['NULL', state => {state.val = null;}]
+]) {
+    test(`asynchronous fallback cannot bypass ${name} source rejection`, () => {
+        const input = fixture();
+        input.allowAsyncGrossFallback = true;
+        input.site.export.state.ts -= 5000;
+        change(input.participantMeters[0].state);
+        closed(input);
+    });
+}
+
+test('coherent return cannot reuse the solar credit from before a PV collapse', () => {
+    const input = fixture({importW: 0, exportW: 6000});
+    input.allowAsyncGrossFallback = true;
+    const first = evaluateGroupAccounting(input);
+    assert.equal(first.ownAvailableW, 9000);
+    input.site.export.state.ts--;
+    assert.equal(evaluateGroupAccounting(input).ownAvailableW, 0);
+    input.site.export.state.ts = NOW;
+    input.site.export.state.val = 0;
+    input.site.import.state.val = 8000;
+    const last = evaluateGroupAccounting(input);
+    assert.equal(last.accountingBasis, 'coherent-net');
+    assert.equal(last.ownAvailableW, 0);
+    assert.equal(last.grossBudgetW, 4200);
+});
 function source(id, val, extra = {}) {
     return {id, boundaryId: 'site', unit: 'W', scope: 'total-ac',
         state: {val, ts: NOW, ack: true, q: 0}, ...extra};

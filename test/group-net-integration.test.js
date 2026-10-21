@@ -63,6 +63,30 @@ const grossPhysical = h => {
 const increases = (writes, previousA) => writes.filter(row =>
     row.id === 'goe.cmd' && row.val > previousA || row.id === 'goe.allow' && row.val === 1);
 
+test('real allocator and output withdraw uplift on asynchronous 5-second wallbox readings', async () => {
+    const h = await groupedPlant();
+    await h.advance(100);
+    const previousA = h.physical().amps;
+    assert.ok(previousA * 230 > 4200, h.diagnostic());
+    h.writes.length = 0;
+    for (let tick = 0; tick < 12; tick++) {
+        const at = h.now() + 1000;
+        await h.replayAt(at, [[WB2_METER, h.physical().wbPowerW / 1000, {ts: at - 5000}]]);
+        const s = snapshot(h);
+        assert.equal(s.accountingBasis, 'gross-only-asynchronous');
+        assert.equal(s.ownAvailableW, 0);
+        assert.equal(s.actualGroupNetW, null);
+        assert.ok(h.value('Control.Targets.Wallbox2_W') <= 4200, h.diagnostic());
+    }
+    assert.ok(h.writes.some(row => row.id === 'goe.cmd' && row.val < previousA
+        || row.id === 'goe.allow' && row.val === 0), h.diagnostic());
+    assert.equal(increases(h.writes, previousA).length, 0);
+    const diag = JSON.parse(h.value('Control.GridOperatorCalculation_JSON'));
+    assert.equal(diag.accountingBasis, 'gross-only-asynchronous');
+    assert.equal(diag.observation.coherent, false);
+    assert.equal(diag.observation.spanMs, 5000);
+});
+
 test('group-net opt-in changes actual allocator grants and commands; omitted legacy accounting stays gross-limited', async () => {
     const legacy = await groupedPlant({mode: 'legacyGross'});
     delete legacy.config.par14aAccountingMode;
@@ -282,7 +306,13 @@ for (const [name, id, offsetMs] of [
         const oldValue = h.states.get(id).val;
         h.writes.length = 0;
         await h.replayAt(at, [[id, oldValue, {ts: at + offsetMs}]], {allocate: false});
-        assert.equal(limit(h).valid, false, JSON.stringify(limit(h)));
+        const result = limit(h);
+        if (offsetMs === -1) {
+            assert.equal(result.valid, true, JSON.stringify(result));
+            assert.equal(result.snapshot.accountingBasis, 'gross-only-asynchronous');
+            assert.equal(result.snapshot.ownAvailableW, 0);
+            assert.equal(h.run('gridGroupCommandCheck("Wallbox2", 4201).allowed'), false);
+        } else assert.equal(result.valid, false, JSON.stringify(result));
         assert.equal(increases(h.writes, previousA).length, 0);
     });
 }

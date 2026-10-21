@@ -88,6 +88,14 @@ try {
     assert.equal(groupLimit.snapshot.grossBudgetW, 6200);
     assert.equal(vm.runInContext("gridGroupCommandCheck('Wallbox0',6200).allowed", groupContext), true);
     assert.equal(vm.runInContext("gridGroupCommandCheck('Wallbox0',6201).allowed", groupContext), false);
+    groupStates.get('meter.ev').ts -= 5000;
+    const asynchronous = vm.runInContext('currentConsumptionLimit()', groupContext);
+    assert.equal(asynchronous.valid, true);
+    assert.equal(asynchronous.snapshot.accountingBasis, 'gross-only-asynchronous');
+    assert.equal(asynchronous.snapshot.actualGroupNetW, null);
+    assert.equal(asynchronous.snapshot.ownAvailableW, 0);
+    assert.equal(vm.runInContext("gridGroupCommandCheck('Wallbox0',4140).allowed", groupContext), true);
+    assert.equal(vm.runInContext("gridGroupCommandCheck('Wallbox0',4201).allowed", groupContext), false);
     const module = {exports: {}};
     // The controller is intentionally absent. Verify the installed entry point
     // using only an Adapter constructor; no ready event, schedules or I/O run.

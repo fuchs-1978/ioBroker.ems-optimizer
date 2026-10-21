@@ -2,6 +2,16 @@
 
 ## Umfang und unveränderte Migration
 
+### Nachtrag alpha.118: zeitversetzte Originalquellen
+
+Seit alpha.118 führt allein ein zu großer Originalzeitversatz bei ansonsten
+vollständig gültigen Quellen zum konservativen gemeinsamen Bruttobudget ohne
+Eigenstrombonus statt zur pauschalen Nullfreigabe. Die unten dokumentierte
+Eigenstromzuordnung benötigt weiterhin die erklärte zeitliche Kohärenz.
+Unbekannte Netz-/Eigenstromanteile werden als `null` ausgewiesen. Alle Original-
+Komponenten von Summenwerten bleiben in der Zeitprüfung. Einzelheiten und
+verbleibende Grenzen: [alpha.118](release-0.17.0-alpha.118.md).
+
 Ausgangspunkt ist main
 [`9df2e232d05075703de4d437d68e056396262f7b`](https://github.com/fuchs-1978/ioBroker.ems-optimizer/commit/9df2e232d05075703de4d437d68e056396262f7b),
 veröffentlicht als alpha.116. Dort war der reine Bilanzkern aus

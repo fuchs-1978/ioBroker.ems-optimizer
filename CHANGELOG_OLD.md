@@ -1,3 +1,8 @@
+### 0.17.0-alpha.117 (2026-10-21)
+
+Bindet die ausdrücklich konfigurierte Gruppen-Netz-/Eigenstrombilanz an den produktiven Regler, die gemeinsame Leistungsverteilung sowie Wallbox-, EHZ-, Heizpuffer- und Speicherausgänge an. Vollständige AC-Messgrenzen, Originalqualität und gemeinsame ausstehende Stellwirkungen begrenzen jede Freigabe; wartende Befehle werden vor dem Schreiben erneut geprüft. Standard und bestehende Konfiguration bleiben im bisherigen Bruttomodus. Der neue Modus unterstützt vorhandene Binärkontakt-Budgets aus Festwert, EMS-Berechnung oder externer Gesamtbudgetquelle; konfigurierte LPC-Eingänge sperren ihn bis zum verifizierten Schnittstellenvertrag. Keine automatische Aktivierung oder Installation; reale Abnahme bleibt offen. [Releasehinweise](docs/release-0.17.0-alpha.117.md).
+
+
 ## Frühere README-Versionseinträge
 
 ### 0.17.0-alpha.116 (2026-10-21)

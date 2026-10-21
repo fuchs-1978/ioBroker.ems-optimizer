@@ -588,7 +588,7 @@
         },
         "par14aAccountingTimeHelp": {
           "type": "staticText",
-          "text": "Only finite original values with ACK=true, q=0 and valid nonfuture source timestamps can increase the gross budget. All accounting sources must satisfy the age and timestamp-span bounds together. A permitted timestamp span is not proof of synchronous device sampling. Missing or unknown measurements never create free budget.",
+          "text": "Fresh valid but asynchronous measurements use the shared gross ceiling without own-supply credit. Original timestamps remain unchanged; net attribution is unknown. Stale, bad-quality, incomplete or unacknowledged sources remain blocked. The timestamp-span bound applies to own-supply credit, not to synchronisation of devices.",
           "newLine": true,
           "xs": 12,
           "sm": 12,

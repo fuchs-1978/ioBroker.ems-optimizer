@@ -146,12 +146,32 @@ for (const sourceId of ['meter.import', 'meter.export', 'wb0.power']) {
     }
 }
 
-test('runtime original measurement times are checked in both skew directions', () => {
+test('runtime original measurement times withdraw solar credit in both skew directions', () => {
     for (const sourceId of ['meter.import', 'wb0.power']) {
         const f = fixture();
         f.states.get(sourceId).ts--;
-        denied(f);
+        const result = f.evaluate();
+        assert.equal(result.valid, true, result.reason);
+        assert.equal(result.snapshot.accountingBasis, 'gross-only-asynchronous');
+        assert.equal(result.snapshot.ownAvailableW, 0);
+        assert.equal(checkGroupCommand(result, 'Wallbox0', 4200).allowed, true);
+        assert.equal(checkGroupCommand(result, 'Wallbox0', 4201).allowed, false);
     }
+});
+
+test('runtime 5-second polling mismatch keeps valid mandatory-sized charging possible without solar credit', () => {
+    const f = fixture({actualW: 1380, importW: 0, exportW: 9000});
+    f.states.get('wb0.power').ts -= 5000;
+    const result = f.evaluate();
+    assert.equal(result.valid, true, result.reason);
+    assert.equal(result.snapshot.accountingBasis, 'gross-only-asynchronous');
+    assert.equal(result.snapshot.rawSources.find(s => s.id === 'wb0.power').ts, NOW - 5000);
+    assert.equal(result.snapshot.observation.spanMs, 5000);
+    assert.match(result.reason, /ohne Eigenstromzuschlag/);
+    assert.equal(checkGroupCommand(result, 'Wallbox0', 4140).allowed, true);
+    assert.equal(checkGroupCommand(result, 'Wallbox0', 5000).allowed, false);
+    f.states.get('wb0.power').ts = NOW - 30001;
+    denied(f);
 });
 
 test('runtime only accepts a bounded explicitly declared source-time span', () => {
@@ -160,7 +180,7 @@ test('runtime only accepts a bounded explicitly declared source-time span', () =
     f.states.get('wb0.power').ts -= 500;
     assert.equal(f.evaluate().valid, true);
     f.states.get('meter.import').ts -= 1001;
-    denied(f);
+    assert.equal(f.evaluate().snapshot.accountingBasis, 'gross-only-asynchronous');
     f.config.par14aAccountingMaxSkewMs = 1001;
     denied(f);
 });
@@ -315,7 +335,23 @@ test('nonmember actual heater load is already in the NVP; only its pending incre
 test('summing heater phases cannot conceal a mismatched original source timestamp', () => {
     const f = fixture(); addNonmemberHeater(f);
     f.states.get('heater.ac3').ts--;
-    denied(f);
+    const result = f.evaluate();
+    assert.equal(result.valid, true, result.reason);
+    assert.equal(result.snapshot.accountingBasis, 'gross-only-asynchronous');
+    assert.equal(result.snapshot.observation.spanMs, 1);
+    assert.equal(result.snapshot.ownAvailableW, 0);
+});
+
+test('newer heater component cannot hide behind the oldest timestamp of its sum', () => {
+    const f = fixture(); addNonmemberHeater(f);
+    for (const [id, state] of f.states)
+        if (!id.startsWith(`${NS}.`)) state.ts = NOW - 5000;
+    f.states.get('heater.ac3').ts = NOW;
+    const result = f.evaluate();
+    assert.equal(result.valid, true, result.reason);
+    assert.equal(result.snapshot.accountingBasis, 'gross-only-asynchronous');
+    assert.equal(result.snapshot.observation.spanMs, 5000);
+    assert.equal(result.snapshot.ownAvailableW, 0);
 });
 
 test('a synthesized heater total cannot conceal reuse of a site-meter source', () => {
