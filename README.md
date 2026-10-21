@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.116**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.117**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -94,9 +94,25 @@ Standardformel: `4200 W + (n−1) × GZF × 4200 W`. Drei zugeordnete Ladepunkte
 
 Quelle: [BNetzA Anlage 1 zu BK6-22-300, Ziffer 4.5.2](https://www.bundesnetzagentur.de/DE/Beschlusskammern/1_GZ/BK6-GZ/2022/BK6-22-300/Beschluss/BK6-22-300_Beschluss_Anlage1.pdf?__blob=publicationFile&v=1). [VDE-FNN-Empfehlung April 2025](https://www.vde.com/resource/blob/2384602/0cb47de901b1129acad8510257ecc582/vde-fnn-hinweis-mindestleistung-data.pdf) bestätigt die bestehenden Faktoren und Formeln. Die Gruppe muss der mit dem Netzbetreiber vereinbarten Zuordnung entsprechen; die Tabelle ersetzt keine Anmeldung.
 
-Nach Speichern zeigt `Control.GridOperatorCalculation_JSON` Quelle, Zahl, Faktor, Sockel, Formel, gezählte/ausgeschlossene Einrichtungen und Ergebnis. Die GZF-Herkunft gelangt auch in den produktiven DecisionRecord. `Control.GridOperatorStatus` zeigt die wirksame Begrenzung; ein zusätzlich begrenzendes LPC-Gesamtbudget wird direkt übernommen und nicht nochmals hochgerechnet.
+Nach Speichern zeigt `Control.GridOperatorCalculation_JSON` Quelle, Zahl, Faktor, Sockel, Formel, gezählte/ausgeschlossene Einrichtungen und Ergebnis. Die GZF-Herkunft gelangt auch in den produktiven DecisionRecord. `Control.GridOperatorStatus` zeigt die wirksame Begrenzung; im bisherigen Bruttomodus wird ein zusätzlich begrenzendes LPC-Gesamtbudget direkt übernommen und nicht nochmals hochgerechnet.
 
-**Abgrenzung:** Diese Version ergänzt die Budgetberechnung. Die bisherige konservative gemeinsame Brutto-Leistungsbegrenzung bleibt erhalten. Die getrennte Eigenstrom-/Netzbezugsbilanz und teilnehmerspezifische Budgetpools aus [Issue #166](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/166) sind damit noch nicht umgesetzt. Es gibt keinen zusätzlichen PV-/Speicherbonus auf das berechnete Budget und keine automatische Änderung der produktiven Teilnehmer oder Limits.
+### Optionale Gruppen-Netzbilanz und Eigenstrom
+
+`par14aAccountingMode` bleibt nach einem Update auf `legacyGross`: vorhandene Limits, Quellen und Freigaben behalten ihre bisherige konservative Wirkung. Der ausdrücklich gewählte Modus `groupNet` verbindet die Bilanz mit Regler, gemeinsamer Zuteilung und unabhängigen Ausgangsprüfungen. Er gilt für eine deklarierte Binärkontakt-Gruppe. **Sobald LPC-Eingänge konfiguriert sind, ist dieser neue Modus gesperrt**, bis der konkrete Schnittstellenvertrag verifiziert ist; die bisherige LPC-Auswertung im Bruttomodus bleibt erhalten.
+
+| Neue Einstellung | Auslieferung | Erforderlicher Vertrag für `groupNet` |
+| --- | --- | --- |
+| `par14aGroupId`, `par14aBoundaryId` | leer | Stabile Kennungen der tatsächlich vereinbarten Teilnehmergruppe und vollständigen gemeinsamen AC-Messgrenze. |
+| `par14aSiteScope` | `unconfigured` | `whole-site-ac` bestätigt, dass die vorhandenen getrennten Netzbezugs-/Rückspeisequellen den gesamten deklarierten Anschluss in W messen. |
+| `par14aParticipants` | leer | Zusätzliche Spalten: `deviceId`, `powerId`, `powerUnit`, `powerScope`. `deviceId` ist leer für rein gemessene Teilnehmer oder exakt `Wallbox0`, `Wallbox1`, `Wallbox2`, `Battery`. AC-Gesamtmessung einschließlich WP-Zusatzverbrauchern ausdrücklich als `total-ac` deklarieren; keine überlappenden Teilzähler. |
+| `par14aStorageCoverage`, `par14aStorageMeters` | `unconfigured` / leer | Explizit kein Speicher (`none`) oder vollständige vorzeichenbehaftete AC-Abdeckung (`complete-ac`) mit Datenpunkt, Einheit, `total-ac` und Vorzeichen je Zähler. |
+| `par14aAccountingMaxAgeS`, `par14aAccountingMaxSkewMs` | 30 s / 0 ms | Gemeinsame Quellenalter- und Versatzgrenze; höchstens 30 s bzw. 1000 ms. Standard 0 ms verlangt identische Originalzeitstempel. |
+
+Eine gesteuerte Wallbox muss ihre bereits konfigurierte kW-Istquelle verwenden. Ein SunEnergy-Mehrkopfspeicher wird über `Battery` und den besonderen Teilnehmer-Leistungswert `@controlled-battery-ac` in W gebunden. Das ist eine interne Ladesumme, kein zusätzlicher ioBroker-Datenpunkt. Die Speicherliste muss dafür jeden ausgewählten Kopf mit vollständiger AC-Quelle `heads.N.grid.GP`, Einheit W und positivem Entladevorzeichen abdecken. DC-Leistung oder ein unvollständiger Adaptergesamtwert sind kein Ersatz.
+
+Nur endliche originale Zahlen mit `ack=true`, `q=0`, gültigem Quellenzeitpunkt und gemeinsam eingehaltenen Alters-/Versatzgrenzen können Eigenstrom belegen. Das Gruppenbudget berücksichtigt offene Wirkungen und Reserven gemeinsam; PV/BHKW/Speicher werden nicht erneut zum NVP addiert. Speicherentladung finanziert keine zusätzliche optionale Lade-/Heizaufnahme. Ungültige oder unbekannte Abdeckung erlaubt keine positive Gruppenfreigabe. Master, Produktionsgates, Hausanschluss-, Phasen-, Geräte- und ACK-Grenzen bleiben zusätzlich erforderlich.
+
+Die konkrete Konfiguration, Bilanzfelder und Grenzen beschreibt [die Integrationsdokumentation zu #166](docs/issue166-runtime-integration.md). Die Auswahl erteilt keine Anlagenfreigabe und installiert oder aktiviert nichts automatisch. Reale Abnahme bei natürlichen Ereignissen bleibt erforderlich.
 
 ## Admin: Messwerte
 
@@ -849,9 +865,9 @@ Ab alpha.114 akzeptieren Wallbox-Ausgang und zentrale Phasenbudgetprüfung best�
 
 ## Changelog
 
-### 0.17.0-alpha.116 (2026-10-21)
+### 0.17.0-alpha.117 (2026-10-21)
 
-Veröffentlicht die bereits in main enthaltenen Laufzeitkorrekturen aus alpha.111–115 und ergänzt für #166 einen unabhängig getesteten Gruppen-Netz-/Eigenstrom-Bilanzkern. Dieser neue Kern ist an keinen produktiven Regler, Ausgang oder Admin-Vertrag angebunden; Eigenstromgutschrift und neue LPC-Auslegung werden damit nicht aktiviert. Bestehende Bruttogrenzen, Regelabläufe und Konfigurationen bleiben erhalten. #166 ist erst teilweise umgesetzt; EEBUS-/LPC-Vertrag und zusammenhängende Runtime-Integration bleiben offen. [Releasehinweise](docs/release-0.17.0-alpha.116.md).
+Bindet die ausdrücklich konfigurierte Gruppen-Netz-/Eigenstrombilanz an den produktiven Regler, die gemeinsame Leistungsverteilung sowie Wallbox-, EHZ-, Heizpuffer- und Speicherausgänge an. Vollständige AC-Messgrenzen, Originalqualität und gemeinsame ausstehende Stellwirkungen begrenzen jede Freigabe; wartende Befehle werden vor dem Schreiben erneut geprüft. Standard und bestehende Konfiguration bleiben im bisherigen Bruttomodus. Der neue Modus unterstützt vorhandene Binärkontakt-Budgets aus Festwert, EMS-Berechnung oder externer Gesamtbudgetquelle; konfigurierte LPC-Eingänge sperren ihn bis zum verifizierten Schnittstellenvertrag. Keine automatische Aktivierung oder Installation; reale Abnahme bleibt offen. [Releasehinweise](docs/release-0.17.0-alpha.117.md).
 
 [Alle älteren Änderungen und historischen Detailbeschreibungen](CHANGELOG_OLD.md).
 

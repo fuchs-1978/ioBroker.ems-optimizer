@@ -1,5 +1,9 @@
 ## Frühere README-Versionseinträge
 
+### 0.17.0-alpha.116 (2026-10-21)
+
+Veröffentlicht die bereits in main enthaltenen Laufzeitkorrekturen aus alpha.111–115 und ergänzt für #166 einen unabhängig getesteten Gruppen-Netz-/Eigenstrom-Bilanzkern. Dieser neue Kern ist an keinen produktiven Regler, Ausgang oder Admin-Vertrag angebunden; Eigenstromgutschrift und neue LPC-Auslegung werden damit nicht aktiviert. Bestehende Bruttogrenzen, Regelabläufe und Konfigurationen bleiben erhalten. #166 ist erst teilweise umgesetzt; EEBUS-/LPC-Vertrag und zusammenhängende Runtime-Integration bleiben offen. [Releasehinweise](docs/release-0.17.0-alpha.116.md).
+
 ### 0.17.0-alpha.115 (2026-10-20)
 
 Der nächste ausgeschaltete EMS-geführte Empfänger kann bereits vor dem Ladeende des laufenden Fahrzeugs 1P vorbereiten, wenn das hypothetische Ersatzbudget dafür samt Startreserve reicht, für 3P aber nicht. Das ist ausschließlich Phasenvorbereitung: keine neue Ladefreigabe, kein vorweggenommenes Startbudget und keine Änderung der Fahrzeugreihenfolge. Eigene Fristen und unabhängiger Phasen-ACK bleiben erhalten; vor Übernahme muss der Geber AUS und elektrisch ruhig sein. Eine kalte Phasenbestätigung beendet die 90-s-Markierung für Lastwechsel erst nach neuen AUS-/Nullproben. [Releasehinweise](docs/release-0.17.0-alpha.115.md).
@@ -32,6 +36,11 @@ Beim einphasigen Antwortnachweis lokale go-e-Kanäle unabhängig von der Hauspha
 Vor dem Journalabschluss bei geordnetem EMS-Neustart bis zu zwei Sekunden auf tatsächliche SQL-Historienantwort samt dauerhaftem Sperrenabschluss warten. Aktor-Abschaltungen erfolgen vorher. Bei unbekanntem Abschluss bleibt die Sperre erhalten und wird deutlich gemeldet; keine größere Queue, kein Löschen unbestätigter Daten und keine erhöhte SQL-Parallelität. Bereits verwaiste Anfragen benötigen weiterhin den nachgewiesenen SQL-Adapter-Neustart und die vorhandenen lesenden Wiederanlaufprüfungen. [Releasehinweise](docs/release-0.17.0-alpha.109.md).
 
 ## Archived package news (repository checker cleanup)
+
+### 0.17.0-alpha.97
+
+- **en:** Retain an admitted acknowledged current increase during bounded SMA/go-e measurement skew; keep response deadlines, peer reservations and protection limits.
+- **de:** Bereits zugelassene und bestaetigte Stromerhoehung bei begrenztem SMA/go-e-Messversatz halten; Antwortfristen, Fremdlastreserven und Schutzgrenzen bleiben wirksam.
 
 ### 0.17.0-alpha.96
 

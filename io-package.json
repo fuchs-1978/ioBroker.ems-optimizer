@@ -1,9 +1,13 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.116",
+    "version": "0.17.0-alpha.117",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.117": {
+        "en": "Connect explicit opt-in group net/own-supply accounting to allocation and all output guards, with complete AC coverage, shared pending reservations and fresh checks after queued writes. Existing installations keep legacy gross limits; configured unverified LPC blocks the new mode. No automatic activation or installation.",
+        "de": "Explizite optionale Gruppen-Netz-/Eigenstrombilanz mit Zuteilung und allen Ausgangspruefungen verbinden: vollstaendige AC-Abdeckung, gemeinsame offene Reserven und frische Pruefung nach Schreibwartezeiten. Bestehende Installationen behalten Bruttogrenzen; ungeprueft konfiguriertes LPC sperrt den neuen Modus. Keine automatische Aktivierung oder Installation."
+      },
       "0.17.0-alpha.116": {
         "en": "Publish existing alpha.111–115 runtime fixes and add a tested, independent group net/own-supply accounting core. The new core is not connected to production control; existing limits and LPC interpretation remain unchanged. No automatic activation or installation.",
         "de": "Vorhandene Laufzeitkorrekturen aus alpha.111–115 veroeffentlichen und getesteten, unabhaengigen Gruppen-Netz-/Eigenstrom-Bilanzkern ergaenzen. Neuer Kern ohne Produktivanbindung; bestehende Grenzen und LPC-Auslegung bleiben unveraendert. Keine automatische Aktivierung oder Installation."
@@ -79,10 +83,6 @@
       "0.17.0-alpha.98": {
         "en": "Require measured current and power progress before confirming an admitted wallbox increase; retain the measured pending command across ACK processing without extending response deadlines.",
         "de": "Strom- und Leistungsantwort vor Bestaetigung einer zugelassenen Wallboxerhoehung nachweisen; gemessenen offenen Befehl beim ACK-Uebergang halten, ohne Antwortfristen zu verlaengern."
-      },
-      "0.17.0-alpha.97": {
-        "en": "Retain an admitted acknowledged current increase during bounded SMA/go-e measurement skew; keep response deadlines, peer reservations and protection limits.",
-        "de": "Bereits zugelassene und bestaetigte Stromerhoehung bei begrenztem SMA/go-e-Messversatz halten; Antwortfristen, Fremdlastreserven und Schutzgrenzen bleiben wirksam."
       }
     },
     "titleLang": {
