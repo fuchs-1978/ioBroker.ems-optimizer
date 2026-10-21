@@ -15,9 +15,12 @@ implementiert und getestet; der Gesamtumfang von #166 ist damit noch nicht abges
 Dieser Teilschritt ist eine reine protokollunabhängige Berechnung mit Unit-
 Gegenproben. Er wird nicht an Engine, Ausgangscontroller oder Admin angeschlossen
 und trifft keine Annahme über die unbekannte LPC-Schnittstelle. Die bisherige
-produktive generische LPC-/Bruttobegrenzung bleibt unverändert. Es gibt keine
-Versionsanhebung, Main-Übernahme, Installation oder Veröffentlichung durch
-diesen Auftrag. Die Diagnosefortschreibung steht getrennt in
+produktive generische LPC-/Bruttobegrenzung bleibt unverändert. Nach Abschluss
+dieses zunächst unveröffentlichten Teilschritts hat der Nutzer die Veröffentlichung
+ausdrücklich beauftragt. Dafür wird alpha.116 mit konsistenten Manifesten und
+Laufzeitanzeigen vorbereitet; Main-Übernahme und neues GitHub-Release erfolgen
+erst nach den abschließenden Prüfungen. Installation und Eingriffe in das laufende
+EMS gehören weiterhin nicht zum Auftrag. Die Diagnosefortschreibung steht getrennt in
 [issue220-diagnosis-followup.md](issue220-diagnosis-followup.md).
 
 ## Quellenprüfung nach Veröffentlichung der Umgebung, 21.10.2026
@@ -67,12 +70,13 @@ allgemeine Abwesenheit veröffentlichter EEBUS-Spezifikationen, sondern benennt 
 Grenze dieser Suche. Keine fremden Issues oder Drittanbieter-LPC-Semantik wurden
 als neue Grundlage übernommen.
 
-Die neueste Anweisung erlaubt ausdrücklich nur die davon unabhängigen Arbeiten.
-Deshalb wird der reine Bilanzkern weiterentwickelt; die EEBUS-/LPC-Voraussetzung
+Die Anweisung zur Quellenprüfung erlaubte ausdrücklich die davon unabhängigen
+Arbeiten. Deshalb wurde der reine Bilanzkern weiterentwickelt; die EEBUS-/LPC-Voraussetzung
 bleibt für die davon abhängige Integration offen. Tatsächliche Endpoint-, Gruppen-
 und Messverträge müssen vor positiver Freigabe geklärt werden. Die frühere
 Aufforderung zur Veröffentlichung des Umgebungsentwurfs ist erledigt und wird
-nicht wiederholt. Keine Installation oder Adapterveröffentlichung.
+nicht wiederholt. Die anschließend beauftragte Adapterveröffentlichung umfasst
+den unabhängigen Kern, keine ungeklärte LPC-Integration. Keine Installation.
 
 ## Vorhandene Funktionen wiederverwenden
 
@@ -267,10 +271,13 @@ Konfigurationsvorgaben sind unverändert; der neue Kern wird bislang nur von
 Tests und der isolierten Paketprüfung geladen. Diese Ergebnisse belegen keine
 aktive #166-Regelung oder reale Betriebsabnahme.
 
-Der aktuelle Auftrag umfasst den unabhängigen Teilschritt im PR mit seinen
-Prüfungen. Main-Übernahme, neue Adapterversion, Tag/Release und Installation
-werden entsprechend der neuesten Anweisung nicht durchgeführt. Die spätere
-Integration benötigt zuerst die offenen Schnittstellen-/Messverträge und
+Der aktuelle Veröffentlichungsauftrag umfasst den unabhängigen Teilschritt im
+PR, die abschließenden Node-22-/Node-24-Prüfungen, danach Main-Übernahme und
+ein neues Tag/GitHub-Release alpha.116. Die Release-Notiz trennt den neuen,
+noch ungenutzten Bilanzkern von den bereits in main enthaltenen Änderungen
+alpha.111–115 seit dem zuvor letzten Release alpha.110. Installation oder
+Aktivierung werden nicht durchgeführt. Die spätere Integration benötigt zuerst
+die offenen Schnittstellen-/Messverträge und
 Nachweise über den produktiven Loader und sämtliche unabhängigen Ausgänge.
 Natürliche aktive §14a-/LPC-Abnahme, tatsächliche Messgrenzen und Energiepotenzial
 bleiben getrennt; Score 71/100, Änderung 0. Die konkreten nächsten SQL-Prüfpunkte

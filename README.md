@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.115**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.116**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -849,9 +849,9 @@ Ab alpha.114 akzeptieren Wallbox-Ausgang und zentrale Phasenbudgetprüfung best�
 
 ## Changelog
 
-### 0.17.0-alpha.115 (2026-10-20)
+### 0.17.0-alpha.116 (2026-10-21)
 
-Der nächste ausgeschaltete EMS-geführte Empfänger kann bereits vor dem Ladeende des laufenden Fahrzeugs 1P vorbereiten, wenn das hypothetische Ersatzbudget dafür samt Startreserve reicht, für 3P aber nicht. Das ist ausschließlich Phasenvorbereitung: keine neue Ladefreigabe, kein vorweggenommenes Startbudget und keine Änderung der Fahrzeugreihenfolge. Eigene Fristen und unabhängiger Phasen-ACK bleiben erhalten; vor Übernahme muss der Geber AUS und elektrisch ruhig sein. Eine kalte Phasenbestätigung beendet die 90-s-Markierung für Lastwechsel erst nach neuen AUS-/Nullproben. [Releasehinweise](docs/release-0.17.0-alpha.115.md).
+Veröffentlicht die bereits in main enthaltenen Laufzeitkorrekturen aus alpha.111–115 und ergänzt für #166 einen unabhängig getesteten Gruppen-Netz-/Eigenstrom-Bilanzkern. Dieser neue Kern ist an keinen produktiven Regler, Ausgang oder Admin-Vertrag angebunden; Eigenstromgutschrift und neue LPC-Auslegung werden damit nicht aktiviert. Bestehende Bruttogrenzen, Regelabläufe und Konfigurationen bleiben erhalten. #166 ist erst teilweise umgesetzt; EEBUS-/LPC-Vertrag und zusammenhängende Runtime-Integration bleiben offen. [Releasehinweise](docs/release-0.17.0-alpha.116.md).
 
 [Alle älteren Änderungen und historischen Detailbeschreibungen](CHANGELOG_OLD.md).
 
