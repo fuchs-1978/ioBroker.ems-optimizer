@@ -1,4 +1,4 @@
-# #166: geprüfter Restumfang und offene Voraussetzung am 21.10.2026
+# #166: unabhängiger Bilanzkern und offene Integration am 21.10.2026
 
 ## Ausgangspunkt und Abschlussstatus
 
@@ -10,9 +10,14 @@ vor Verwendung anhand GitHub-Metadaten dem Autor `fuchs-1978` zugeordnet.
 #166 hatte keine Kommentare. Weitere Arbeitsgrundlagen sind die ebenfalls
 autorengeprüften #219, #60, #7, #8, #216 und #26; keine fremden Issues.
 
-**Die Implementierung ist nicht abgeschlossen und hier nicht begonnen.**
-Es gibt keine neue Laufzeitfunktion, Versionsanhebung, Installation oder
-Veröffentlichung. Die Diagnosefortschreibung steht getrennt in
+**Der unabhängige Bilanzkern ist in [PR #221](https://github.com/fuchs-1978/ioBroker.ems-optimizer/pull/221)
+implementiert und getestet; der Gesamtumfang von #166 ist damit noch nicht abgeschlossen.**
+Dieser Teilschritt ist eine reine protokollunabhängige Berechnung mit Unit-
+Gegenproben. Er wird nicht an Engine, Ausgangscontroller oder Admin angeschlossen
+und trifft keine Annahme über die unbekannte LPC-Schnittstelle. Die bisherige
+produktive generische LPC-/Bruttobegrenzung bleibt unverändert. Es gibt keine
+Versionsanhebung, Main-Übernahme, Installation oder Veröffentlichung durch
+diesen Auftrag. Die Diagnosefortschreibung steht getrennt in
 [issue220-diagnosis-followup.md](issue220-diagnosis-followup.md).
 
 ## Quellenprüfung nach Veröffentlichung der Umgebung, 21.10.2026
@@ -50,12 +55,24 @@ normative LPC-Spezifikation festgestellt. Öffentlicher Fremdadaptercode ist
 dafür kein Ersatz und belegt auch nicht den tatsächlich installierten Endpunkt.
 Die Ursache des Timeouts ist nicht nachgewiesen.
 
-Die jüngste Anweisung verlangt zuerst erfolgreichen Zugriff auf die offiziellen
-BNetzA-, VDE- und EEBUS-Quellen. Die EEBUS-Voraussetzung bleibt daher offen;
-abhängige Runtimeänderungen werden noch nicht vorgenommen. Ein direkter
-offizieller LPC-Spezifikationslink kann die nächste gezielte Prüfung ermöglichen.
-Die frühere Aufforderung zur Veröffentlichung des Umgebungsentwurfs ist erledigt
-und wird nicht wiederholt. Keine Installation oder Adapterveröffentlichung.
+Eine anschließend ausdrücklich beauftragte begrenzte Suche blieb auf öffentliche
+GitHub-Metadaten beschränkt; die beiden erfolglosen Webabrufe wurden nicht
+wiederholt. `EEBUS` liefert als Organisationsname HTTP 404. Die Suche nach
+EEBUS-Organisationen fand `EEBusInitiative` ohne Domainverifikation, Homepage oder
+öffentliche Repositories. Der ebenfalls nicht domainverifizierte Kandidat
+`EEBUServiceGmbH` enthält ein öffentliches SPINE-Emulatorprojekt; das ist anhand
+der Metadaten kein verifizierter normativer LPC-Vertrag. Der Kandidatenpfad
+`EEBUServiceGmbH/eebus_specifications` liefert HTTP 404. Das beweist keine
+allgemeine Abwesenheit veröffentlichter EEBUS-Spezifikationen, sondern benennt die
+Grenze dieser Suche. Keine fremden Issues oder Drittanbieter-LPC-Semantik wurden
+als neue Grundlage übernommen.
+
+Die neueste Anweisung erlaubt ausdrücklich nur die davon unabhängigen Arbeiten.
+Deshalb wird der reine Bilanzkern weiterentwickelt; die EEBUS-/LPC-Voraussetzung
+bleibt für die davon abhängige Integration offen. Tatsächliche Endpoint-, Gruppen-
+und Messverträge müssen vor positiver Freigabe geklärt werden. Die frühere
+Aufforderung zur Veröffentlichung des Umgebungsentwurfs ist erledigt und wird
+nicht wiederholt. Keine Installation oder Adapterveröffentlichung.
 
 ## Vorhandene Funktionen wiederverwenden
 
@@ -78,7 +95,99 @@ verhindern keine generische Implementierung: Ein neuer expliziter, standardmäß
 deaktivierter Vertrag kann diese Bindungen definieren. Ihre physische Richtigkeit
 und Aktivierung bleiben eine spätere Anlagenaufgabe.
 
-## Erforderlicher zusammenhängender Softwarevertrag
+## Unabhängiger Berechnungskern in diesem Teilschritt
+
+`lib/grid-operator-accounting.js` stellt die reinen Funktionen
+`evaluateGroupAccounting(input)`, `commandBudget(result, deviceId, requestedW)`
+und `reserveGroupCommands(snapshot, proposalsObject)` bereit. Die erste berechnet
+eine ausdrücklich deklarierte Gruppenbilanz; die zweite prüft einen einzelnen
+Verbrauchsvorschlag, die dritte einen gemeinsamen Vorschlagsvektor. Der Kern
+liest oder schreibt keine ioBroker-States, kennt keine LPC-Zustandsnamen und
+vergibt keine Stellbefehle. Vorhandene GZF-/Budgetquellen werden nicht nachgebaut.
+
+Der Eingabevertrag trennt:
+
+- `mode`: ohne explizites `groupNet` besitzt der Kern keine neue Budgetautorität.
+  Der inaktive Rückgabewert ersetzt keine Prüfung des bestehenden Bruttolimits.
+- `limit` und `group`: bereits validiertes aktives Netzbudget sowie passende
+  Gruppen-/Messgrenzen-IDs; Teilnehmer sind ausdrücklich deklariert. Ein Stand
+  beschreibt genau eine vollständige gemeinsame Gruppe je Messgrenze. Separat
+  berechnete Gruppenresultate derselben Grenze dürfen nicht als unabhängige
+  Eigenstrombudgets addiert werden.
+- `site` und `participantMeters`: vollständiger signierter NVP aus getrenntem
+  Import/Export und nicht überlappende tatsächliche AC-Teilnehmeraufnahme.
+  Gesteuerte Teilnehmer benötigen Einzelmessung; eine vollständige passive
+  Aggregatmessung darf mehrere eindeutig zugeordnete Teilnehmer abdecken.
+- `storage`: ausdrücklich kein Speicher oder vollständige vorzeichenbehaftete
+  AC-Abdeckung. Unbekannter Umfang wird nicht als fehlender Speicher ausgegeben.
+- `devices`: tatsächliche Messung, aktueller Verbrauchsbefehl und konservative
+  High-Water-Reserve. Befehl und Reserve sind keine Quelle für Eigenstrom.
+- Zeit-/Qualitätsvertrag: `ack=true`, `q=0`, gültige Einheit und vollständiger
+  AC-Umfang, endlicher Quellenzeitpunkt bis zur Prüfuhr und begrenztes Alter.
+  Der vorgegebene maximale Quellenversatz ist standardmäßig 0 ms. Ein explizit
+  zugelassener Versatz beweist keine physisch synchrone Aufnahme.
+
+Die reine Bilanz mit Teilnehmer-Bruttoaufnahme `R` und signiertem NVP `P`
+ordnet Haushalts-/Nichtteilnehmerverbrauch zuerst der lokalen Versorgung zu.
+Die mathematisch verfügbare lokale Leistung ist `max(0, R-P)`; die aktuell davon
+gedeckte Aufnahme ist `min(R, max(0, R-P))`. Der so zugeordnete tatsächliche
+Gruppennetzbezug ist `min(R, max(0, P))`. Diese Zuordnung ist eine ausdrückliche
+konservative EMS-Strategie, keine als Normtext ausgegebene einzelne BNetzA-Formel.
+
+Beispiele mit 4.200 W Netzbudget, ohne Speicher oder offene Stellwirkung:
+
+| Teilnehmer-Ist `R` | NVP `P` | Verfügbare lokale Leistung | Gruppennetzbezug | Zulässiges Bruttobudget |
+| ---: | ---: | ---: | ---: | ---: |
+| 3.000 W | +5.000 W | 0 W | 3.000 W | 4.200 W |
+| 3.000 W | +1.000 W | 2.000 W | 1.000 W | 6.200 W |
+| 3.000 W | −1.000 W | 4.000 W | 0 W | 8.200 W |
+
+Der dritte Fall trennt bereits genutzte lokale Aufnahme von zusätzlich
+verfügbarem Export. Speicherentladung wird für die spätere zusätzliche
+Verbrauchsfreigabe konservativ ausgeschlossen; diese Umsetzungspolitik darf die
+Diagnose des tatsächlich beobachteten Gruppennetzbezugs nicht überschreiben.
+PV, BHKW und Speicher werden nicht nochmals auf den NVP-Rest addiert.
+
+Die Rückgabe trennt deshalb `rawOwnAvailableW`, `ownUsedW` und
+`actualGroupNetW` als zugeordnete beobachtete Bilanz von
+`eligibleOwnAvailableW` nach dem konservativen Speicherabzug. Von Letzterem
+zieht `ownAvailableW` noch offene Nichtteilnehmerwirkungen ab. Erst daraus
+entsteht `grossBudgetW`; `committedGroupW` umfasst dagegen tatsächliche
+Teilnehmeraufnahme plus deren offene Wirkungen. Reserven schreiben die
+beobachtete Bilanz nicht nachträglich um.
+
+Ein gemeinsamer Stand wird gegen offene Teilnehmer- und
+Nichtteilnehmerwirkungen geprüft. Der Aufrufer muss deren Reserven bereits
+belastbar liefern; der Kern stellt weder ACK-Reihenfolge noch Reservefreigabe
+fest. `commandBudget` ist eine Vorschau, keine atomare Reservierung: Mehrere
+einzelne Vorschläge aus demselben unveränderten Stand beweisen keine einmalige
+Vergabe. `reserveGroupCommands` prüft deshalb einen gemeinsamen Vektor gegen
+einen Eigenstrompool, verändert den Ausgangsstand nicht und liefert einen
+separat fortgeschriebenen Reservierungsstand. Eine spätere Integration muss
+angenommene Aufträge vor weiteren Freigaben konsistent reservieren und den Stand
+erneut prüfen. Die reine Funktion löst weder gleichzeitige Runtimezugriffe noch
+ACK-/Reservefreigaben. Ungültige Messverträge liefern keine positive Freigabe;
+ein Nullvorschlag bleibt möglich.
+
+Bei einem gemeinsamen Bruttobudget von 5.200 W sind zwei unabhängige Vorschauen
+über jeweils 3.000 W kein gemeinsamer 6.000-W-Nachweis. Der gemeinsame Vektor
+muss abgewiesen werden; ebenso die zweite Erhöhung nach Übernahme des ersten
+unveränderlich fortgeschriebenen `next`-Stands. Die Rückgabe trennt `allowed`,
+`withinBudget`, `safeReduction` und den optionalen Folgestand `next`.
+
+Eine zulässige Reduktion (`allowed`) kann einen bereits überschrittenen Stand
+verringern, obwohl alte elektrische Aufnahme und deren Reserve noch nicht
+vollständig abgebaut sind. Das ist von einem nachweislich innerhalb des Budgets
+liegenden Zustand (`withinBudget`) zu unterscheiden; eine erlaubte Reduktion
+ist keine Abnahme der Grenzkonformität. Die alte Reserve bleibt bis zum
+unabhängigen Nachweis maßgeblich.
+
+Damit werden keine Brutto-Haushalts-, PV- oder BHKW-Einzelwerte aus einem
+Nettoresiduum erfunden. Quantisierung, Prioritätsvergabe, tatsächliche
+Limitinterpretation und produktive Ausgangs-/Wiederanlaufverträge bleiben
+Aufgaben der noch offenen Integration.
+
+## Noch zu erfüllender zusammenhängender Integrationsvertrag
 
 1. Stabile Gruppen-/Messgrenzenidentität und explizite Zuordnung der Teilnehmer
    zu Ausgängen und vollständigen AC-Messungen. Aggregat und enthaltene Teilzähler
@@ -139,8 +248,30 @@ Der anfänglich unbeschreibbare npm-Homecache wurde durch einen expliziten
 beschreibbaren Cache ersetzt. Das ist ein Umgebungsbefund, kein Codefehler.
 Die Ergebnisse prüfen **bestehendes alpha.115**, nicht die fehlende #166-Funktion.
 
-Erst nach erfüllter Voraussetzung und implementiertem, geprüftem Restumfang
-folgen eine konsistente neue Version, abschließende CI, Main-Übernahme und ein
-neuer Tag/Release. Keine Diagnoseversion. Natürliche aktive §14a-/LPC-Abnahme,
-tatsächliche Messgrenzen und Energiepotenzial bleiben getrennt; Score 71/100,
-Änderung 0. Die konkreten nächsten SQL-Prüfpunkte stehen im Diagnosefolgeplan.
+Abschlussprüfung des neuen unabhängigen Kerns:
+
+| Prüfung | Ergebnis |
+| --- | --- |
+| Neue reine Bilanz-/Reservierungsregressionen, Node 22/24 | jeweils 159 bestanden, 0 Fehler, 0 übersprungen |
+| Vollständiges `npm test`, Node 22/24 | jeweils 2.549 bestanden, 0 Fehler, 0 übersprungen |
+| Unveränderte Differentialvergleiche, Node 22/24 | 19 Architekturszenarien mit 342.308 identischen Beobachtungen; 13 Wallboxszenarien mit acht gleichen Verträgen und fünf bereits erwarteten Unterschieden bestanden |
+| Paket-/Installationsprüfung, Node 22/24 | bestanden; der neue Kern wird zusätzlich direkt aus dem isoliert installierten Tarball geladen und mit einer Bilanz-/Budgetgegenprobe ausgeführt |
+
+Die Tests prüfen NULL/ACK/q, Alter/Zukunft und beide Versatzrichtungen,
+vollständige/überlappende WP- und Speichergrenzen, einmaligen gemeinsamen
+Spielraum mehrerer Verbraucher, gleichzeitig vorgeschlagene Teilnehmer-/EHZ-
+Erhöhungen, unveränderte Reserven nach Reduktionsaufträgen sowie getrennte
+beobachtete und freigabefähige Speicherwirkung. Keine bestehenden Tests wurden
+abgeschwächt. Der Produktionsloader, die bisherigen Ausgangscontroller und
+Konfigurationsvorgaben sind unverändert; der neue Kern wird bislang nur von
+Tests und der isolierten Paketprüfung geladen. Diese Ergebnisse belegen keine
+aktive #166-Regelung oder reale Betriebsabnahme.
+
+Der aktuelle Auftrag umfasst den unabhängigen Teilschritt im PR mit seinen
+Prüfungen. Main-Übernahme, neue Adapterversion, Tag/Release und Installation
+werden entsprechend der neuesten Anweisung nicht durchgeführt. Die spätere
+Integration benötigt zuerst die offenen Schnittstellen-/Messverträge und
+Nachweise über den produktiven Loader und sämtliche unabhängigen Ausgänge.
+Natürliche aktive §14a-/LPC-Abnahme, tatsächliche Messgrenzen und Energiepotenzial
+bleiben getrennt; Score 71/100, Änderung 0. Die konkreten nächsten SQL-Prüfpunkte
+stehen im Diagnosefolgeplan.
