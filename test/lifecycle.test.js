@@ -1002,3 +1002,97 @@ for(const failed of [true,false])test('SQL shutdown drain failure or unknown com
     await a.prepareUnload({allowHandoff:false});assert.equal(closed,true);
     assert.ok(warnings.some(message=>/drain failure|verification fence retained/.test(message)));
 });
+
+async function queuedGroupBattery() {
+    const acId = 'sunenergyxt500.0.heads.1.grid.GP';
+    const h = await require('./control-plant').plant({battery: true, sourceQuality: 0,
+        initialSurplusW: 6000, nativeConfig: {
+            dhwControlEnabled: false,
+            par14aAccountingMode: 'groupNet', par14aGroupId: 'controlled-loads',
+            par14aBoundaryId: 'whole-site', par14aSiteScope: 'whole-site-ac',
+            par14aAccountingMaxAgeS: 30, par14aAccountingMaxSkewMs: 0,
+            par14aStorageCoverage: 'complete-ac', par14aStorageMeters: [
+                {powerId: acId, powerUnit: 'W', powerScope: 'total-ac', direction: 'discharge-positive'}],
+            par14aBudgetMode: 'fixed', par14aLimitW: 4200,
+            par14aParticipants: [
+                {name: 'EV2', kind: 'wallbox', connectionPowerW: 22080, deviceId: 'Wallbox2',
+                    powerId: 'DP_WB2_POWER', powerUnit: 'kW', powerScope: 'total-ac'},
+                {name: 'StorageCharging', kind: 'storage', connectionPowerW: 5000, deviceId: 'Battery',
+                    powerId: acId, powerUnit: 'W', powerScope: 'total-ac'}]
+        }});
+    h.mapping.DP_PAR14A = 'network.contact';
+    h.mapping.DP_LPC_STATE = ''; h.mapping.DP_LPC_LIMIT = '';
+    h.mapping.DP_BATTERY_AC_POWER = acId;
+    h.run("CFG.dp.par14a='network.contact';CFG.dp.lpcState='';CFG.dp.lpcLimit=''");
+    h.put('network.contact', true);
+    h.setWallboxPhysical(2, {allow: 1, amps: 18});
+    await h.replayAt(h.now() + 1, [], {allocate: false, output: false});
+    // Observe the clean startup before the new current-process output claim.
+    // Otherwise an intentionally inherited claim must first take the existing
+    // safe-zero recovery path, which is a different lifecycle scenario.
+    h.run('initializeBatteryOwnership()');
+    h.own('Devices.MyPV_DHW.Present', false);
+    h.own('Devices.MyPV_DHW.ControlEnabled', false);
+    h.own('Devices.Wallbox2.OutputOwned', true);
+    h.own('Devices.Wallbox2.OutputActive', true);
+    h.own('Devices.Wallbox2.OutputCommand_A', 18);
+    h.own('Devices.Wallbox2.OutputReservedPower_W', 4140);
+    h.own('Control.Valid', true); h.own('Control.LastUpdate', h.now());
+    h.own('Control.Targets.Battery_W', 1000);
+    h.own('Devices.Battery.OutputOwned', true);
+    h.own('Devices.Battery.OutputSetpointId', h.config.batterySetpointId);
+    h.own('Devices.Battery.OutputCommandInternal_W', 0);
+    // Use the actual main adapter queue and actual production VM against the
+    // same source cache. No output rule or electrical check is stubbed here.
+    const a = adapter(), writes = [];
+    a.config = h.config; a.stateCache = h.states; a.engineContext = h.engineContext;
+    a.allowedForeignWriteIds.add(h.config.batterySetpointId);
+    a.setForeignStateAsync = async (id, value) => writes.push({id, value});
+    return {a, h, writes, id: h.config.batterySetpointId};
+}
+
+for (const change of ['unchanged sources', 'bad original NVP quality', 'fresh generation loss']) {
+    test(`group-net physical queue revalidates after durable reservation wait: ${change}`, async () => {
+        const {a, h, id, writes} = await queuedGroupBattery();
+        const key = 'ems.0.Devices.Battery.OutputReservedCharge_W';
+        let finishPersistence, markPersistenceStarted;
+        const persistenceStarted = new Promise(resolve => {markPersistenceStarted = resolve;});
+        a.setStateAsync = async relative => {
+            if (relative === 'Devices.Battery.OutputReservedCharge_W') {
+                markPersistenceStarted();
+                await new Promise(resolve => {finishPersistence = resolve;});
+            }
+        };
+        const persistence = a.setCompatState(key, 1000);
+        await persistenceStarted;
+        const check = () => a.runEngine('checkQueuedElectricalOutput("Battery", -1000)');
+        assert.equal(check().allowed, true, JSON.stringify(check()));
+        let completion;
+        assert.equal(a.writeForeignStateGuarded(id, -1000, (error, result) => {completion = {error, result};}), true);
+        await new Promise(resolve => setImmediate(resolve));
+        assert.equal(writes.length, 0, 'positive command must await the actual durable reservation');
+        if (change === 'bad original NVP quality') {
+            a.onStateChange('DP_GRID_EXPORT', {...a.getCachedState('DP_GRID_EXPORT'), q: 64});
+        } else if (change === 'fresh generation loss') {
+            a.onStateChange('DP_GRID_IMPORT', {val: 4140, ack: true, q: 0, ts: h.now()});
+            a.onStateChange('DP_GRID_EXPORT', {val: 0, ack: true, q: 0, ts: h.now()});
+        }
+        assert.equal(check().allowed, change === 'unchanged sources', JSON.stringify(check()));
+        assert.equal(h.value('Control.Targets.Battery_W'), 1000,
+            'the source change, rather than a new allocation, must revoke the old command');
+        finishPersistence(); await persistence;
+        await Promise.allSettled([...a.pendingForeignWrites]);
+        await Promise.resolve();
+        if (change === 'unchanged sources') {
+            assert.deepEqual(writes, [{id, value: -1000}], 'qualified queued charging remains possible');
+            assert.equal(completion.error, null);
+        } else {
+            assert.deepEqual(writes, [], 'revoked queued charging must never reach the physical writer');
+            assert.ok(completion.error);
+        }
+        assert.equal(a.getCachedState(key).val, 1000, 'rejection cannot release an unproved high-water reservation');
+        assert.equal(a.writeForeignStateGuarded(id, 0), true, 'safe zero remains possible after any source failure');
+        await Promise.allSettled([...a.pendingForeignWrites]);
+        assert.equal(writes.at(-1).value, 0);
+    });
+}

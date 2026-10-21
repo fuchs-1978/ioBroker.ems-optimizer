@@ -264,6 +264,14 @@
     "par14aLimitId": "",
     "par14aLimitUnit": "W",
     "par14aParticipants": [],
+    "par14aAccountingMode": "legacyGross",
+    "par14aGroupId": "",
+    "par14aBoundaryId": "",
+    "par14aSiteScope": "unconfigured",
+    "par14aAccountingMaxAgeS": 30,
+    "par14aAccountingMaxSkewMs": 0,
+    "par14aStorageCoverage": "unconfigured",
+    "par14aStorageMeters": [],
     "par14aGzfOverrideEnabled": false,
     "par14aGzfFactors": [
       {

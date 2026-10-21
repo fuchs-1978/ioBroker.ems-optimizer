@@ -3092,6 +3092,200 @@ test('output independently enforces EMS binary budget, external units and invali
     }
 });
 
+function groupOutputSetup(count = 1) {
+    const now = 1000000;
+    const h = setup({now: () => now});
+    for (let wb = 1; wb < count; wb++) h.enableWallbox(wb);
+    Object.assign(h.config, {
+        par14aAccountingMode: 'groupNet', par14aGroupId: 'group', par14aBoundaryId: 'site',
+        par14aSiteScope: 'whole-site-ac', par14aAccountingMaxAgeS: 30,
+        par14aAccountingMaxSkewMs: 0, par14aStorageCoverage: 'none', par14aStorageMeters: [],
+        par14aParticipants: Array.from({length: count}, (_, wb) => ({name: `ev${wb}`, kind: 'wallbox',
+            connectionPowerW: 7360, deviceId: `Wallbox${wb}`, powerId: h.mapping[`DP_WB${wb}_POWER`],
+            powerUnit: 'kW', powerScope: 'total-ac'}))
+    });
+    // The new group mode does not infer a normative contract for generic LPC.
+    h.mapping.DP_LPC_STATE = '';
+    h.mapping.DP_LPC_LIMIT = '';
+    h.groupPut = (id, value, extra = {}) => h.put(id, value, {ts: now, q: 0, ...extra});
+    for (const [id, state] of h.states) h.states.set(id, {...state, ts: now, q: 0});
+    h.adapter.setCompatState = (id, value, ack = true) => h.groupPut(id, value, {ack});
+    h.adapter.queueCompatState = async (id, value) => {
+        if (!h.states.has(id)) h.groupPut(id, value);
+    };
+    h.groupPut('par14a', true);
+    h.groupPut('import', 0);
+    h.groupPut('export', 0);
+    return h;
+}
+
+test('group output independently accounts passive WP once and retains per-device net/gross separation', () => {
+    const {deviceGroupLimit} = require('../lib/grid-operator-runtime');
+    const h = groupOutputSetup();
+    h.config.heatPumpPresent = true;
+    h.config.heatPumpPowerId = 'wp';
+    h.config.heatPumpPowerScope = 'total';
+    h.config.par14aParticipants.push({name: 'wp', kind: 'heatPump', connectionPowerW: 8000,
+        deviceId: '', powerId: 'wp', powerUnit: 'W', powerScope: 'total-ac'});
+    h.groupPut('ems.0.Devices.HeatPump.Present', true);
+    h.groupPut('power', 3);
+    h.groupPut('wp', 1000);
+    h.groupPut('import', 2000);
+    const limit = h.output.gridOperatorLimit(h.mapping);
+    assert.equal(limit.valid, true, limit.reason);
+    assert.equal(limit.groupNet, true);
+    assert.equal(limit.budgetW, null, 'the group result is not a scalar cap over every managed device');
+    assert.equal(limit.snapshot.actualGroupGrossW, 4000);
+    assert.equal(limit.snapshot.grossBudgetW, 6200);
+    assert.equal(deviceGroupLimit(limit, 'Wallbox0').maximumW, 5200);
+    const d = {wb: 0, confirmedPhases: 1};
+    assert.equal(h.output.groupWriteProblem(d, 'command', 22), '');
+    assert.notEqual(h.output.groupWriteProblem(d, 'command', 23), '');
+});
+
+test('group output uses original measurement hook rather than optimistic modeled power', () => {
+    const h = groupOutputSetup();
+    h.groupPut('power', 3);
+    h.groupPut('import', 1000);
+    const output = new WallboxOutput(h.adapter, {now: () => 1000000,
+        measurementSource: id => id === 'power' ? {val: 0, ts: 1000000, ack: true, q: 0} : undefined});
+    const result = output.gridOperatorLimit(h.mapping);
+    assert.equal(result.valid, true, result.reason);
+    assert.equal(result.snapshot.actualGroupGrossW, 0);
+    assert.equal(result.snapshot.ownAvailableW, 0,
+        'a modeled participant load must not create own-supply credit against the real NVP');
+});
+
+test('group output withdraws a prior allocation after PV loss before issuing a nonparallel command', async () => {
+    const h = groupOutputSetup();
+    h.groupPut('export', 2000);
+    await h.output.initialize();
+    const d = h.output.devices[0];
+    assert.equal(h.output.groupWriteProblem(d, 'command', 26), '');
+    h.groupPut('export', 0);
+    h.groupPut('import', 5000);
+    await assert.rejects(h.output.send(d, 'command', 26));
+    assert.deepEqual(h.writes, []);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val, 0,
+        'an already denied proposal must not install a new high-water reservation');
+});
+
+test('group output rejects source failure before ON and still permits a safe OFF', async () => {
+    const h = groupOutputSetup();
+    await h.output.initialize();
+    const d = h.output.devices[0];
+    await h.output.send(d, 'command', 6);
+    d.pending = {amps: 6, start: true};
+    h.groupPut('import', 0, {q: 1});
+    await assert.rejects(h.output.send(d, 'allow', 1));
+    await h.output.send(d, 'allow', 0);
+    assert.deepEqual(h.writes, [{id: 'cmd', val: 6}, {id: 'allow', val: 0}]);
+});
+
+test('group output rechecks after reservation publication immediately before dispatch', async () => {
+    const h = groupOutputSetup();
+    h.groupPut('export', 2000);
+    await h.output.initialize();
+    const publish = h.adapter.setCompatState;
+    h.adapter.setCompatState = (id, value, ack) => {
+        publish(id, value, ack);
+        if (id === 'ems.0.Devices.Wallbox0.OutputReservedPower_W' && value > 0)
+            h.groupPut('export', null);
+    };
+    await assert.rejects(h.output.send(h.output.devices[0], 'command', 26));
+    assert.deepEqual(h.writes, []);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val, 5980,
+        'uncertain accepted publication is retained conservatively, never silently released');
+});
+
+test('group output retains the independent 3P admission margin after allocation changes', () => {
+    const h = groupOutputSetup();
+    const d = {wb: 0, confirmedPhases: 3, activeSince: 0, lastA: 6};
+    assert.match(h.output.groupWriteProblem(d, 'command', 6), /3P-Startreserve/);
+    h.groupPut('export', 240);
+    assert.equal(h.output.groupWriteProblem(d, 'command', 6), '');
+    h.groupPut('export', 239);
+    assert.match(h.output.groupWriteProblem(d, 'allow', 1), /3P-Startreserve/);
+    d.activeSince = 999000;
+    assert.equal(h.output.groupWriteProblem(d, 'command', 6), '',
+        'a running session keeps its existing current without reapplying admission margin');
+});
+
+test('group output publishes reservation before await and blocks a second wallbox from spending it', async () => {
+    const h = groupOutputSetup(2);
+    await h.output.initialize();
+    let complete;
+    h.adapter.writeRecordedForeignState = (id, value) => {
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val, 2300);
+        h.writes.push({id, val: value});
+        return new Promise(resolve => { complete = resolve; });
+    };
+    const first = h.output.send(h.output.devices[0], 'command', 10);
+    try {
+        await assert.rejects(h.output.send(h.output.devices[1], 'command', 10));
+        assert.deepEqual(h.writes, [{id: 'cmd', val: 10}]);
+        assert.equal(h.states.get('ems.0.Devices.Wallbox1.OutputReservedPower_W').val, 0);
+    } finally {
+        complete?.();
+        await first;
+    }
+});
+
+function fractionalGroupOutput() {
+    const h = groupOutputSetup();
+    h.config.wallboxParallelChargingEnabled = true;
+    h.config.wallboxNominalVoltageV = 221.06;
+    h.groupPut('ems.0.Config.WallboxParallelChargingEnabled', true);
+    h.groupPut('ems.0.Config.WallboxNominalVoltage_V', 221.06);
+    h.groupPut('ems.0.Control.Targets.Wallbox0_W', 4200);
+    h.groupPut('ems.0.Control.Targets.Wallbox0_A', 19);
+    h.groupPut('ems.0.Control.ParallelWallboxAllocation_JSON', JSON.stringify({schema: 1,
+        timestamp: 1000000, valid: true, voltage: 221.06, order: [0], hardBudgetW: null,
+        budgetW: 4201, allocations: [{wb: 0, authorized: true, targetA: 19,
+            phases: 1, reservedW: 4201, minimumW: 6 * 221.06}]}));
+    return h;
+}
+
+test('group output uses exact nominal watts after a fractional-voltage budget change', async () => {
+    const h = fractionalGroupOutput();
+    await h.output.initialize();
+    const d = h.output.devices[0];
+    h.groupPut('export', 1);
+    assert.equal(h.output.groupWriteProblem(d, 'command', 19), '');
+    h.groupPut('export', 0);
+    assert.equal(Math.round(19 * 221.06), 4200);
+    assert.ok(19 * 221.06 > 4200);
+    assert.notEqual(h.output.groupWriteProblem(d, 'command', 19), '');
+    assert.notEqual(h.output.parallelWriteProblem(d, 'command', 19, h.mapping), '');
+    await assert.rejects(h.output.send(d, 'command', 19));
+    assert.deepEqual(h.writes, []);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val, 0);
+});
+
+test('group output rounds a fractional nominal reservation upward before await', async () => {
+    const h = fractionalGroupOutput();
+    h.groupPut('export', 1);
+    await h.output.initialize();
+    let complete;
+    h.adapter.writeRecordedForeignState = (id, value) => {
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val, 4201,
+            'a peer must see the ceiling of 4200.14 W before dispatch first yields');
+        h.writes.push({id, val: value});
+        return new Promise(resolve => { complete = resolve; });
+    };
+    const pending = h.output.send(h.output.devices[0], 'command', 19);
+    try {
+        assert.deepEqual(h.writes, [{id: 'cmd', val: 19}]);
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val, 4201);
+    } finally {
+        complete?.();
+        await pending;
+    }
+    h.output.publishReservedPower(h.output.devices[0], 19 * 221.06);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val, 4201,
+        'later nominal publications also preserve a conservative fractional reservation');
+});
+
 async function delayedRampHarness() {
     let now = 1000000000000;
     const h = setup({now: () => now});

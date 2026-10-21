@@ -18,6 +18,8 @@ try {
     assert.ok(packed.files.some(file => file.path === 'lib/wallbox-allocation.js'));
     assert.ok(packed.files.some(file => file.path === 'lib/wallbox-source-diagnostics.js'));
     assert.ok(packed.files.some(file => file.path === 'lib/grid-operator-accounting.js'));
+    assert.ok(packed.files.some(file => file.path === 'lib/grid-operator-runtime.js'));
+    assert.ok(packed.files.some(file => file.path === 'lib/engine/grid-operator-control.js'));
     assert.ok(!packed.files.some(file => /^(test|node_modules|\.github)\//.test(file.path)));
     fs.writeFileSync(path.join(directory, 'package.json'), '{"name":"ems-artifact-check","private":true}');
     npm(['install', '--omit=dev', '--package-lock=false', '--no-audit', '--no-fund',
@@ -28,8 +30,8 @@ try {
     assert.equal(localRequire('./io-package.json').common.version, packed.version);
     assert.equal(typeof localRequire('node-schedule').scheduleJob, 'function');
     assert.ok(localRequire.resolve('@iobroker/adapter-core'));
-    // Exercise the new pure core from the installed package, independently of
-    // the deliberately unchanged production loader and output controllers.
+    // Exercise the pure policy from the installed package before verifying its
+    // active production-loader boundary below. Neither harness connects to I/O.
     const accounting = localRequire('./lib/grid-operator-accounting');
     const reading = (id, val) => ({id, boundaryId: 'site', unit: 'W', scope: 'total-ac',
         state: {val, ts: 2000000, ack: true, q: 0}});
@@ -61,6 +63,31 @@ try {
     assert.equal(vm.runInContext('splitRealtimePair(6000, 9000, 7360, 50).wallboxW', context), 3000);
     assert.equal(vm.runInContext('quantizeWallbox(1380, {phaseSwitchEnabled:false, maximumPhases:1, minCurrent1pA:6, maxCurrent1pA:16, maximumPowerW:3680}, 0).amps', context), 6);
     assert.equal(typeof localRequire('./lib/wallbox-output'), 'function');
+    // The installable artifact must contain an actual runtime connection,
+    // not just a separately loadable policy file or a diagnostic-only import.
+    const groupConfig = {par14aAccountingMode: 'groupNet', par14aGroupId: 'group',
+        par14aBoundaryId: 'site', par14aSiteScope: 'whole-site-ac', par14aId: 'meter.limit',
+        par14aBudgetMode: 'fixed', par14aLimitW: 4200, par14aStorageCoverage: 'none',
+        par14aStorageMeters: [], wb0Present: true, wb1Present: false, wb2Present: false,
+        batteryPresent: false, heatingPresent: false, dhwPresent: false,
+        par14aParticipants: [{name: 'ev', kind: 'wallbox', connectionPowerW: 11000,
+            deviceId: 'Wallbox0', powerId: 'meter.ev', powerUnit: 'kW', powerScope: 'total-ac'}]};
+    const groupStates = new Map(Object.entries({'meter.import': 1000, 'meter.export': 0,
+        'meter.limit': true, 'meter.ev': 3}).map(([id, val]) => [id, {val, ack: true, q: 0, ts: 2000000}]));
+    for (const name of ['Wallbox0', 'Wallbox1', 'Wallbox2', 'MyPV_DHW', 'MyPV_Heating', 'Battery'])
+        groupStates.set(`ems.0.Devices.${name}.Present`, {val: name === 'Wallbox0', ack: true, q: 0, ts: 2000000});
+    const groupContext = loader.createEngineContext('ems.0', {DP_GRID_IMPORT: 'meter.import',
+        DP_GRID_EXPORT: 'meter.export', DP_PAR14A: 'meter.limit', DP_WB0_POWER: 'meter.ev'}, {
+        nativeConfig: groupConfig, console, Date: class extends Date {static now() {return 2000000;}},
+        getState: id => groupStates.get(id), existsState: id => groupStates.has(id),
+        setState: (id, val) => groupStates.set(id, {val, ack: true, q: 0, ts: 2000000}),
+        log() {}, writeForeignState() {assert.fail('group artifact check attempted a foreign write');}
+    });
+    const groupLimit = vm.runInContext('currentConsumptionLimit()', groupContext);
+    assert.equal(groupLimit.groupNet, true);
+    assert.equal(groupLimit.snapshot.grossBudgetW, 6200);
+    assert.equal(vm.runInContext("gridGroupCommandCheck('Wallbox0',6200).allowed", groupContext), true);
+    assert.equal(vm.runInContext("gridGroupCommandCheck('Wallbox0',6201).allowed", groupContext), false);
     const module = {exports: {}};
     // The controller is intentionally absent. Verify the installed entry point
     // using only an Adapter constructor; no ready event, schedules or I/O run.

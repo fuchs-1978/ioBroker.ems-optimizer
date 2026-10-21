@@ -1,5 +1,12 @@
 # #166: unabhängiger Bilanzkern und offene Integration am 21.10.2026
 
+> Historischer Stand des vorbereitenden Kerns bis alpha.116 / PR #221.
+> Die anschließende aktive Opt-in-Anbindung und die erneute Quellenprüfung
+> stehen in [issue166-runtime-integration.md](issue166-runtime-integration.md).
+> EEBUS ist inzwischen erreichbar; normativer Download und konkreter
+> LPC-Endpunktvertrag bleiben ungeprüft. Die früheren Timeoutbefunde unten
+> dokumentieren ausschließlich den damaligen Abruf.
+
 ## Ausgangspunkt und Abschlussstatus
 
 Codebasis ist main

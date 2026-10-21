@@ -15,6 +15,7 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
     initialSurplusW = 6000, batteryPlanW = 0, lpcLimitW = null, phaseBiasW = [0, 0, 0],
     batteryDelayMs = 2000, heatingDelayMs = 4000, dhwDelayMs = 4000,
     batteryDcFactor = 1, batteryDcPvW = 0, wb2InitialPhaseMode = null,
+    nativeConfig: configOverrides = {}, sourceQuality,
     initialTime = Date.UTC(2026, 8, 21, 12)} = {}) {
     let now = initialTime, surplusW = 6000, idleWallboxNoiseKW = 0;
     let heaterW = 0, heaterCommandW = 0, physicalAllow = 0, physicalA = 6;
@@ -34,7 +35,8 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
     }
     const put = (id, val, extra = {}) => {
         const previous = states.get(id);
-        const state = {val, ack: true, ts: now, ...extra};
+        const state = {val, ack: true, ts: now,
+            ...(sourceQuality === undefined ? {} : {q: sourceQuality}), ...extra};
         states.set(id, state);
         if (!id.startsWith('ems.0.Debug.')) recorder?.capture(id, state, previous);
     };
@@ -80,6 +82,7 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         wb0AllowOutputId: 'goe0.allow', wb0ConnectionId: 'goe0.connection', wb0ErrorId: 'goe0.error'});
     if (adoptRunningMii) config.wallboxParallelChargingEnabled = true;
     if (!wallbox) config.wb2ControlEnabled = false;
+    Object.assign(config, configOverrides);
     const writeForeign = (id, val, callback) => {
         writes.push({id, val, at: now});
         if (id === 'DP_DHW_SETPOINT') {
@@ -337,7 +340,8 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
             batteryStatus: value('Devices.Battery.OutputStatus'), heatingStatus: value('Devices.MyPV_Heating.OutputStatus'),
             status: value('Devices.Wallbox2.OutputStatus'), heaterStatus: value('Devices.MyPV_DHW.OutputStatus')});
     };
-    return {states, writes, trace, put, own, value, get output() {return output;}, diagnosticWrites, config,
+    return {states, writes, trace, put, own, value, get output() {return output;}, diagnosticWrites,
+        config, mapping, engineContext: ctx,
         now: () => now,
         run: code => vm.runInContext(code, ctx),
         // A manual input frame uses the real allocator/output path while
