@@ -17,6 +17,7 @@ try {
     const packed = JSON.parse(npm(['pack', '--json', '--pack-destination', directory], root))[0];
     assert.ok(packed.files.some(file => file.path === 'lib/wallbox-allocation.js'));
     assert.ok(packed.files.some(file => file.path === 'lib/wallbox-source-diagnostics.js'));
+    assert.ok(packed.files.some(file => file.path === 'lib/grid-operator-accounting.js'));
     assert.ok(!packed.files.some(file => /^(test|node_modules|\.github)\//.test(file.path)));
     fs.writeFileSync(path.join(directory, 'package.json'), '{"name":"ems-artifact-check","private":true}');
     npm(['install', '--omit=dev', '--package-lock=false', '--no-audit', '--no-fund',
@@ -27,6 +28,23 @@ try {
     assert.equal(localRequire('./io-package.json').common.version, packed.version);
     assert.equal(typeof localRequire('node-schedule').scheduleJob, 'function');
     assert.ok(localRequire.resolve('@iobroker/adapter-core'));
+    // Exercise the new pure core from the installed package, independently of
+    // the deliberately unchanged production loader and output controllers.
+    const accounting = localRequire('./lib/grid-operator-accounting');
+    const reading = (id, val) => ({id, boundaryId: 'site', unit: 'W', scope: 'total-ac',
+        state: {val, ts: 2000000, ack: true, q: 0}});
+    const core = accounting.evaluateGroupAccounting({mode: 'groupNet', now: 2000000,
+        limit: {valid: true, active: true, budgetW: 4200, groupId: 'group', boundaryId: 'site'},
+        group: {id: 'group', boundaryId: 'site', participants: [{id: 'ev', deviceId: 'Wallbox0'}]},
+        site: {import: reading('import', 1000), export: reading('export', 0)},
+        participantMeters: [{...reading('ev', 3000), participantIds: ['ev']}],
+        storage: {coverage: 'none', meters: []},
+        devices: [{id: 'Wallbox0', participantId: 'ev', measurement: reading('ev', 3000),
+            commandW: 3000, reservedW: 3000}]});
+    assert.equal(core.valid, true);
+    assert.equal(core.actualGroupNetW, 1000);
+    assert.equal(core.grossBudgetW, 6200);
+    assert.equal(accounting.reserveGroupCommands(core, {Wallbox0: 6201}).allowed, false);
     const states = new Map();
     const loader = localRequire('./lib/engine-loader');
     const context = loader.createEngineContext('ems.0', {}, {

@@ -1,5 +1,9 @@
 ## Frühere README-Versionseinträge
 
+### 0.17.0-alpha.115 (2026-10-20)
+
+Der nächste ausgeschaltete EMS-geführte Empfänger kann bereits vor dem Ladeende des laufenden Fahrzeugs 1P vorbereiten, wenn das hypothetische Ersatzbudget dafür samt Startreserve reicht, für 3P aber nicht. Das ist ausschließlich Phasenvorbereitung: keine neue Ladefreigabe, kein vorweggenommenes Startbudget und keine Änderung der Fahrzeugreihenfolge. Eigene Fristen und unabhängiger Phasen-ACK bleiben erhalten; vor Übernahme muss der Geber AUS und elektrisch ruhig sein. Eine kalte Phasenbestätigung beendet die 90-s-Markierung für Lastwechsel erst nach neuen AUS-/Nullproben. [Releasehinweise](docs/release-0.17.0-alpha.115.md).
+
 ### 0.17.0-alpha.114 (2026-10-20)
 
 Frische, bestätigte Wallbox-Messwerte bis −30 W werden intern als 0 W mit gedrosselter Warnung behandelt. Vor einem Pflichtladestart in 3P gibt der optionale EHZ die benötigte Leistung samt Startreserve frei; reale Reservierungen bleiben bis zum Nachweis erhalten. Bei einer einzelnen qualifizierten ±1-A-Sollstromabweichung ist pro eigenem Ladezyklus genau ein begrenzter Korrekturversuch ohne EIN oder Stromerhöhung möglich. Wiederholter Widerspruch, fehlender ACK und Schutzgrenzen führen weiterhin zum Stopp. Die 600-s-Stoppverzögerung bleibt unverändert. [Releasehinweise](docs/release-0.17.0-alpha.114.md).
@@ -28,6 +32,36 @@ Beim einphasigen Antwortnachweis lokale go-e-Kanäle unabhängig von der Hauspha
 Vor dem Journalabschluss bei geordnetem EMS-Neustart bis zu zwei Sekunden auf tatsächliche SQL-Historienantwort samt dauerhaftem Sperrenabschluss warten. Aktor-Abschaltungen erfolgen vorher. Bei unbekanntem Abschluss bleibt die Sperre erhalten und wird deutlich gemeldet; keine größere Queue, kein Löschen unbestätigter Daten und keine erhöhte SQL-Parallelität. Bereits verwaiste Anfragen benötigen weiterhin den nachgewiesenen SQL-Adapter-Neustart und die vorhandenen lesenden Wiederanlaufprüfungen. [Releasehinweise](docs/release-0.17.0-alpha.109.md).
 
 ## Archived package news (repository checker cleanup)
+
+### 0.17.0-alpha.96
+
+- **en:** Retain bounded historical recorder queue-loss episodes with session, limits, rejected scope and separate local wait/append context; preserve recording contents, durability and capacity limits.
+- **de:** Begrenzte historische Recorder-Verlustepisoden mit Sitzung, getroffener Grenze, abgelehntem Umfang und getrenntem lokalem Warte-/Appendkontext erhalten; Originalinhalte, Haltbarkeit und Kapazitaetsgrenzen bleiben erhalten.
+
+### 0.17.0-alpha.95
+
+- **en:** Use the configured PV import tolerance as the shared hold ceiling with a fixed 20 W admission margin, including running minimum-SoC charging; keep mandatory floors from funding discretionary extra steps.
+- **de:** Eingestellte PV-Bezugstoleranz als gemeinsame Haltegrenze mit 20 W Zuschaltabstand verwenden, auch bei laufender Mindest-SoC-Ladung; Pflichtladebudgets erzeugen keine zusaetzlichen PV-Schrittfreigaben.
+
+### 0.17.0-alpha.94
+
+- **en:** Reject unusable stratified-DHW shares before parallel wallbox allocation so surplus reaches charging vehicles instead of being reserved for a heater target that becomes zero; expose requested/usable heater budgets.
+- **de:** Wegen Pufferschichtung unbrauchbare EHZ-Anteile vor der Wallboxverteilung freigeben statt fuer einen spaeter auf null gesetzten Heizstab zu reservieren; angefordertes und nutzbares Heizbudget anzeigen.
+
+### 0.17.0-alpha.93
+
+- **en:** Preserve fractional energy-based SoC progress when a whole-percent vehicle report agrees with its rounded estimate at report time; retain authoritative corrections including lower arrival SoC and existing reset/freshness guards.
+- **de:** Nachkommafortschritt der SoC-Schaetzung bei passender gerundeter Fahrzeugmeldung erhalten; abweichende Meldungen einschliesslich niedrigerem Ankunfts-SoC sowie Reset- und Frischeschutz bleiben wirksam.
+
+### 0.17.0-alpha.92
+
+- **en:** Optional per-vehicle charging-energy SoC estimates with retained aligned anchors, separate reported/estimated diagnostics, reset/session guards and independent output checks; preserve raw price-energy accounting.
+- **de:** Optionale SoC-Schaetzung je Fahrzeug aus Ladeenergie mit persistenter zeitlich zugeordneter Basis, getrennten Diagnosewerten, Reset-/Sitzungsschutz und unabhaengiger Ausgangspruefung; Preis-Energiebilanz bleibt auf echten Meldungen.
+
+### 0.17.0-alpha.91
+
+- **en:** Prevent nominal PV ceiling down-up cycles during minimum-SoC charging by retaining proven measured current in planner and output; preserve nominal hard caps and immediate reduction on actual deficits.
+- **de:** Pendeln an der nominellen PV-Grenze auch waehrend Mindest-SoC-Ladung verhindern: nachgewiesenen real gedeckten Strom in Zuteilung und Ausgang halten; harte Grenzen und Absenkung bei realem Defizit erhalten.
 
 ### 0.17.0-alpha.90
 
