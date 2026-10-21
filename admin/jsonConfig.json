@@ -200,21 +200,21 @@
           "sm": 12,
           "clone": true,
           "noDelete": false,
-          "hidden": "data.par14aBudgetMode !== 'ems'",
+          "hidden": "data.par14aBudgetMode !== 'ems' && data.par14aAccountingMode !== 'groupNet'",
           "items": [
             {
               "type": "text",
               "attr": "name",
               "title": "Unique participant name",
               "default": "",
-              "width": "35%"
+              "width": "17%"
             },
             {
               "type": "select",
               "attr": "kind",
               "title": "Type of controllable device",
               "default": "wallbox",
-              "width": "30%",
+              "width": "15%",
               "options": [
                 {
                   "value": "wallbox",
@@ -241,7 +241,77 @@
               "default": 11000,
               "min": 1,
               "max": 1000000,
-              "width": "35%"
+              "width": "15%"
+            },
+            {
+              "type": "select",
+              "attr": "deviceId",
+              "title": "EMS-controlled participant binding",
+              "default": "",
+              "width": "13%",
+              "options": [
+                {
+                  "value": "",
+                  "label": "Measured participant without EMS output"
+                },
+                {
+                  "value": "Wallbox0",
+                  "label": "Wallbox 0"
+                },
+                {
+                  "value": "Wallbox1",
+                  "label": "Wallbox 1"
+                },
+                {
+                  "value": "Wallbox2",
+                  "label": "Wallbox 2"
+                },
+                {
+                  "value": "Battery",
+                  "label": "Battery charging"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "attr": "powerId",
+              "title": "Original AC power data point",
+              "default": "",
+              "width": "20%"
+            },
+            {
+              "type": "select",
+              "attr": "powerUnit",
+              "title": "Power unit",
+              "default": "W",
+              "width": "7%",
+              "options": [
+                {
+                  "value": "W",
+                  "label": "W"
+                },
+                {
+                  "value": "kW",
+                  "label": "kW"
+                }
+              ]
+            },
+            {
+              "type": "select",
+              "attr": "powerScope",
+              "title": "Complete AC power scope",
+              "default": "unconfigured",
+              "width": "13%",
+              "options": [
+                {
+                  "value": "unconfigured",
+                  "label": "Coverage not declared"
+                },
+                {
+                  "value": "total-ac",
+                  "label": "Complete AC power including relevant auxiliary loads"
+                }
+              ]
             }
           ],
           "xs": 12,
@@ -251,7 +321,7 @@
         },
         "par14aCalculationHelp": {
           "type": "staticText",
-          "text": "Count the agreed permanently assigned EMS devices, not connected cars. Heat pumps and cooling systems are each grouped; each electrical load including auxiliaries must be entered once. Standalone heaters are not additional participants. Only devices/groups above 4200 W count. Standard: 4200 + (n-1)*GZF*4200 W. With WP/cooling above 11000 W: max(0.4*P_WP,0.4*P_cooling) + (n-1)*GZF*4200 W. Result: Control.GridOperatorCalculation_JSON after saving. This calculation does not prove registration or implement the pending own-generation/net-import balance. Existing common gross-power protection remains conservative.",
+          "text": "Count the agreed permanently assigned EMS devices, not connected cars. Heat pumps and cooling systems are each grouped; each electrical load including auxiliaries must be entered once. Standalone heaters are not additional participants. Only devices/groups above 4200 W count. Standard: 4200 + (n-1)*GZF*4200 W. With WP/cooling above 11000 W: max(0.4*P_WP,0.4*P_cooling) + (n-1)*GZF*4200 W. Result: Control.GridOperatorCalculation_JSON after saving. Participant calculation does not prove registration or complete AC coverage; group net accounting must be selected and configured separately.",
           "newLine": true,
           "hidden": "data.par14aBudgetMode !== 'ems'",
           "xs": 12,
@@ -393,13 +463,272 @@
         },
         "par14aScopeHelp": {
           "type": "staticText",
-          "text": "Binary contact and LPC must refer to the same configured EMS group. An external LPC total budget is used directly, never multiplied by GZF. Changing the budget source is opt-in; existing fixed limits and signal mappings remain unchanged. The current runtime still applies the resulting value conservatively as a shared gross-power ceiling.",
+          "text": "Existing fixed limits and signal mappings remain unchanged in legacy gross mode. Group net mode applies only to an explicitly declared binary-contact group and complete AC boundary. Configured LPC inputs block the new mode pending a verified official interface contract. External total budgets are used directly and never multiplied by GZF.",
           "newLine": true,
           "xs": 12,
           "sm": 12,
           "md": 12,
           "lg": 12,
           "xl": 12
+        },
+        "_groupAccountingHeader": {
+          "type": "header",
+          "text": "Group net-import accounting",
+          "size": 3,
+          "newLine": true
+        },
+        "par14aAccountingMode": {
+          "type": "select",
+          "label": "Grid-operator accounting mode",
+          "default": "legacyGross",
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "options": [
+            {
+              "value": "legacyGross",
+              "label": "Existing conservative gross-power ceiling"
+            },
+            {
+              "value": "groupNet",
+              "label": "Declared group net import with measured own supply"
+            }
+          ],
+          "help": "Group net accounting requires an explicitly declared participant group and complete AC measurement boundary. Existing settings remain in conservative gross mode until you select the new mode. This does not enable Master Control or arm any output. Configured LPC inputs block the new mode until their official interface contract is verified."
+        },
+        "par14aGroupId": {
+          "type": "text",
+          "label": "Declared grid-operator participant group ID",
+          "default": "",
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "hidden": "data.par14aAccountingMode !== 'groupNet'"
+        },
+        "par14aBoundaryId": {
+          "type": "text",
+          "label": "Common AC measurement boundary ID",
+          "default": "",
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "hidden": "data.par14aAccountingMode !== 'groupNet'"
+        },
+        "par14aSiteScope": {
+          "type": "select",
+          "label": "Grid import/export measurement coverage",
+          "default": "unconfigured",
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "hidden": "data.par14aAccountingMode !== 'groupNet'",
+          "options": [
+            {
+              "value": "unconfigured",
+              "label": "Coverage not declared"
+            },
+            {
+              "value": "whole-site-ac",
+              "label": "Complete site AC import and export at the declared boundary"
+            }
+          ]
+        },
+        "par14aAccountingSiteHelp": {
+          "type": "staticText",
+          "text": "The existing grid import/export mappings must be separate nonnegative watt measurements for the complete declared site boundary. The site balance already contains PV, CHP and storage effects; these are never added a second time. Do not use a partial circuit or an inverter/DC reading as whole-site proof.",
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "hidden": "data.par14aAccountingMode !== 'groupNet'"
+        },
+        "par14aAccountingMaxAgeS": {
+          "type": "number",
+          "label": "Maximum accounting source age (seconds)",
+          "default": 30,
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "hidden": "data.par14aAccountingMode !== 'groupNet'",
+          "min": 0.1,
+          "max": 30,
+          "step": 0.1
+        },
+        "par14aAccountingMaxSkewMs": {
+          "type": "number",
+          "label": "Maximum accounting source timestamp span (milliseconds)",
+          "default": 0,
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "hidden": "data.par14aAccountingMode !== 'groupNet'",
+          "min": 0,
+          "max": 1000,
+          "step": 1
+        },
+        "par14aAccountingTimeHelp": {
+          "type": "staticText",
+          "text": "Only finite original values with ACK=true, q=0 and valid nonfuture source timestamps can increase the gross budget. All accounting sources must satisfy the age and timestamp-span bounds together. A permitted timestamp span is not proof of synchronous device sampling. Missing or unknown measurements never create free budget.",
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "hidden": "data.par14aAccountingMode !== 'groupNet'"
+        },
+        "par14aStorageCoverage": {
+          "type": "select",
+          "label": "Storage coverage within the AC boundary",
+          "default": "unconfigured",
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "hidden": "data.par14aAccountingMode !== 'groupNet'",
+          "options": [
+            {
+              "value": "unconfigured",
+              "label": "Storage coverage not declared"
+            },
+            {
+              "value": "none",
+              "label": "No electricity storage within this AC boundary"
+            },
+            {
+              "value": "complete-ac",
+              "label": "All storage covered by complete signed AC meters"
+            }
+          ]
+        },
+        "par14aStorageMeters": {
+          "type": "table",
+          "label": "Complete signed storage AC measurements",
+          "default": [],
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "hidden": "data.par14aAccountingMode !== 'groupNet' || data.par14aStorageCoverage !== 'complete-ac'",
+          "clone": true,
+          "noDelete": false,
+          "items": [
+            {
+              "type": "text",
+              "attr": "powerId",
+              "title": "Original AC power data point",
+              "default": "",
+              "width": "40%"
+            },
+            {
+              "type": "select",
+              "attr": "powerUnit",
+              "title": "Power unit",
+              "default": "W",
+              "width": "10%",
+              "options": [
+                {
+                  "value": "W",
+                  "label": "W"
+                },
+                {
+                  "value": "kW",
+                  "label": "kW"
+                }
+              ]
+            },
+            {
+              "type": "select",
+              "attr": "powerScope",
+              "title": "Complete AC power scope",
+              "default": "unconfigured",
+              "width": "25%",
+              "options": [
+                {
+                  "value": "unconfigured",
+                  "label": "Coverage not declared"
+                },
+                {
+                  "value": "total-ac",
+                  "label": "Complete AC power including relevant auxiliary loads"
+                }
+              ]
+            },
+            {
+              "type": "select",
+              "attr": "direction",
+              "title": "Storage power sign convention",
+              "default": "charge-positive",
+              "width": "25%",
+              "options": [
+                {
+                  "value": "charge-positive",
+                  "label": "Positive charging / negative discharging"
+                },
+                {
+                  "value": "discharge-positive",
+                  "label": "Positive discharging / negative charging"
+                }
+              ]
+            }
+          ]
+        },
+        "par14aStorageHelp": {
+          "type": "staticText",
+          "text": "Declare every storage AC meter and its actual sign convention. Battery/DC telemetry does not replace AC measurements. Unknown storage coverage blocks group net accounting. Observed discharge is diagnosed separately and cannot fund additional discretionary charging or heating.",
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "hidden": "data.par14aAccountingMode !== 'groupNet'"
+        },
+        "par14aParticipantMeterHelp": {
+          "type": "staticText",
+          "text": "For group net mode, bind every participant to its original complete AC measurement, including heat-pump auxiliary or emergency heaters. A controlled wallbox or battery requires its own complete meter. Passive participants may share one complete aggregate meter only when its coverage is declared once without overlapping sub-meters. Standalone DHW or heating-buffer heaters are not additional section-14a participants. Empty output binding means measured participant without EMS control. Missing bindings or incomplete coverage block positive group-budget grants.",
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "hidden": "data.par14aAccountingMode !== 'groupNet'"
+        },
+        "par14aControlledBatteryHelp": {
+          "type": "staticText",
+          "text": "For an EMS-controlled multi-head SunEnergy battery, bind the storage participant to Battery and enter @controlled-battery-ac as its power data point, W and complete AC scope. This token represents the charging sum of all selected controlled heads; it is not an ioBroker state and creates no extra subscription. Every selected head must appear in the storage AC table with its original grid.GP measurement, W, complete AC scope and positive-discharge sign convention. Missing or mismatched head coverage blocks the group budget; DC batteryPower values cannot replace it.",
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "hidden": "data.par14aAccountingMode !== 'groupNet'"
         }
       }
     },

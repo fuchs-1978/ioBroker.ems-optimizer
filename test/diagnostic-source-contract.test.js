@@ -92,3 +92,56 @@ test('cyclic write timestamps, measurement deviations and numeric reason details
     assert.equal(descriptor('Devices.MyPV_DHW.OutputCommand_W').discrete, true,
         'a changed actuator request remains an immediate decision');
 });
+
+function groupAccountingConfig() {
+    return {par14aAccountingMode: 'groupNet', par14aGroupId: 'agreed-group', par14aBoundaryId: 'site-ac',
+        par14aSiteScope: 'whole-site-ac', par14aAccountingMaxAgeS: 30, par14aAccountingMaxSkewMs: 0,
+        par14aParticipants: [
+            {name: 'EV', kind: 'wallbox', connectionPowerW: 11000, deviceId: 'Wallbox0',
+                powerId: 'vehicle.acPower', powerUnit: 'kW', powerScope: 'total-ac'},
+            {name: 'WP with auxiliary heater', kind: 'heatPump', connectionPowerW: 12000, deviceId: '',
+                powerId: 'heatpump.completeAc', powerUnit: 'W', powerScope: 'total-ac'}
+        ], par14aStorageCoverage: 'complete-ac', par14aStorageMeters: [
+            {powerId: 'storage.completeAc', powerUnit: 'W', powerScope: 'total-ac', direction: 'charge-positive'}
+        ]};
+}
+
+test('group accounting uses one explicit raw-source inventory for preload and recording with declared power units', () => {
+    const config = groupAccountingConfig();
+    const before = structuredClone(config);
+    const contract = buildDiagnosticSourceContract({namespace: 'ems.0', config,
+        mapping: {DP_WB0_POWER: 'vehicle.acPower'}});
+    const meters = contract.filter(source => source.keys.some(key => key.startsWith('grid-operator.accounting.')));
+    assert.deepEqual(meters.map(source => source.id),
+        ['vehicle.acPower', 'heatpump.completeAc', 'storage.completeAc']);
+    for (const meter of meters) {
+        assert.equal(meter.discrete, false);
+        assert.equal(meter.maxGapMs, 10000);
+        assert.equal(meter.powerScale, meter.id === 'vehicle.acPower' ? 1000 : 1);
+    }
+    assert.equal(contract.filter(source => source.id === 'vehicle.acPower').length, 1,
+        'a participant/normal-wallbox alias is recorded only once');
+    assert.deepEqual(config, before, 'inventory never changes the declared configuration');
+});
+
+test('legacy migration adds no participant or storage subscriptions until group net accounting is selected', () => {
+    for (const mode of [undefined, 'legacyGross']) {
+        const config = {...groupAccountingConfig(), par14aAccountingMode: mode};
+        const contract = buildDiagnosticSourceContract({namespace: 'ems.0', config});
+        assert.equal(contract.some(source => source.keys.some(key => key.startsWith('grid-operator.accounting.'))), false);
+        for (const id of ['vehicle.acPower', 'heatpump.completeAc', 'storage.completeAc'])
+            assert.equal(contract.some(source => source.id === id), false, id);
+    }
+});
+
+test('accounting source inventory never subscribes wildcards, control characters or its own generated feedback', () => {
+    for (const id of ['meter.*', 'meter.?', 'meter.\ninvalid', 'ems.0.Debug.DecisionRecord',
+        'ems.0.Control.GridOperatorBudget_W', 'x'.repeat(513)]) {
+        const config = {...groupAccountingConfig(), par14aParticipants: [
+            {...groupAccountingConfig().par14aParticipants[0], powerId: id}
+        ], par14aStorageCoverage: 'none', par14aStorageMeters: []};
+        const contract = buildDiagnosticSourceContract({namespace: 'ems.0', config});
+        assert.equal(contract.some(source => source.id === id
+            && source.keys.some(key => key.startsWith('grid-operator.accounting.'))), false, JSON.stringify(id));
+    }
+});

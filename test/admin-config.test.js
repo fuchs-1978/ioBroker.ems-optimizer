@@ -75,7 +75,7 @@ test('update defaults never arm a productive output', () => {
 });
 
 test('package manifests publish the same alpha version', () => {
-    assert.equal(packageJson.version, '0.17.0-alpha.116');
+    assert.equal(packageJson.version, '0.17.0-alpha.117');
     assert.equal(ioPackage.common.version, packageJson.version);
     const core = fs.readFileSync('lib/engine/core.js', 'utf8');
     const bootstrap = fs.readFileSync('lib/engine/bootstrap.js', 'utf8');
@@ -137,6 +137,71 @@ test('grid tab exposes opt-in EMS GZF sources and preserves existing keys and fi
         assert.ok(texts[tabs.gridConnectionTab.label]);
         for(const key of ['par14aBudgetMode','par14aParticipants','par14aLimitId','par14aGzfFactors'])
             assert.ok(texts[fields[key].label]);
+    }
+});
+
+test('group net accounting defaults preserve the legacy limit and require explicit physical declarations', () => {
+    const fields = tabs.gridConnectionTab.items;
+    const expected = {par14aAccountingMode: 'legacyGross', par14aGroupId: '', par14aBoundaryId: '',
+        par14aSiteScope: 'unconfigured', par14aAccountingMaxAgeS: 30, par14aAccountingMaxSkewMs: 0,
+        par14aStorageCoverage: 'unconfigured', par14aStorageMeters: []};
+    for (const [key, value] of Object.entries(expected)) {
+        assert.deepEqual(ioPackage.native[key], value, `native default ${key}`);
+        assert.deepEqual(fields[key].default, value, `Admin default ${key}`);
+    }
+    assert.equal(ioPackage.native.par14aBudgetMode, 'fixed');
+    assert.equal(ioPackage.native.par14aLimitW, 4200);
+    assert.deepEqual(ioPackage.native.par14aParticipants, []);
+    assert.deepEqual(fields.par14aAccountingMode.options.map(row => row.value), ['legacyGross', 'groupNet']);
+    assert.equal(fields.par14aAccountingMaxAgeS.max, 30);
+    assert.equal(fields.par14aAccountingMaxSkewMs.min, 0);
+    assert.equal(fields.par14aAccountingMaxSkewMs.max, 1000);
+    assert.deepEqual(fields.par14aSiteScope.options.map(row => row.value), ['unconfigured', 'whole-site-ac']);
+    assert.deepEqual(fields.par14aStorageCoverage.options.map(row => row.value),
+        ['unconfigured', 'none', 'complete-ac']);
+    assert.match(fields.par14aAccountingMode.help, /does not enable Master Control or arm any output/);
+    assert.match(fields.par14aAccountingMode.help, /Configured LPC inputs block the new mode/);
+});
+
+test('participant and storage tables declare complete measurements without creating extra heater participants', () => {
+    const fields = tabs.gridConnectionTab.items;
+    const participants = Object.fromEntries(fields.par14aParticipants.items.map(row => [row.attr, row]));
+    const storage = Object.fromEntries(fields.par14aStorageMeters.items.map(row => [row.attr, row]));
+    assert.equal(fields.par14aParticipants.hidden,
+        "data.par14aBudgetMode !== 'ems' && data.par14aAccountingMode !== 'groupNet'");
+    assert.deepEqual(participants.deviceId.options.map(row => row.value),
+        ['', 'Wallbox0', 'Wallbox1', 'Wallbox2', 'Battery']);
+    assert.equal(participants.deviceId.default, '');
+    for (const meters of [participants, storage]) {
+        assert.equal(meters.powerId.default, '');
+        assert.equal(meters.powerUnit.default, 'W');
+        assert.deepEqual(meters.powerUnit.options.map(row => row.value), ['W', 'kW']);
+        assert.equal(meters.powerScope.default, 'unconfigured');
+        assert.deepEqual(meters.powerScope.options.map(row => row.value), ['unconfigured', 'total-ac']);
+    }
+    assert.deepEqual(storage.direction.options.map(row => row.value), ['charge-positive', 'discharge-positive']);
+    assert.match(fields.par14aParticipantMeterHelp.text, /Standalone DHW or heating-buffer heaters are not additional/);
+});
+
+test('new group-accounting controls and measurement guidance are translated in German and English', () => {
+    const fields = tabs.gridConnectionTab.items;
+    const names = ['_groupAccountingHeader', 'par14aAccountingMode', 'par14aGroupId', 'par14aBoundaryId',
+        'par14aSiteScope', 'par14aAccountingSiteHelp', 'par14aAccountingMaxAgeS', 'par14aAccountingMaxSkewMs',
+        'par14aAccountingTimeHelp', 'par14aStorageCoverage', 'par14aStorageMeters', 'par14aStorageHelp',
+        'par14aParticipantMeterHelp', 'par14aControlledBatteryHelp', 'par14aScopeHelp', 'par14aCalculationHelp'];
+    const texts = new Set();
+    const collect = field => {
+        for (const key of ['label', 'help', 'text', 'title']) if (field[key]) texts.add(field[key]);
+        for (const option of field.options || []) if (option.label && !['W', 'kW'].includes(option.label))
+            texts.add(option.label);
+        for (const child of field.items || []) collect(child);
+    };
+    names.forEach(name => collect(fields[name]));
+    fields.par14aParticipants.items.filter(row => ['deviceId', 'powerId', 'powerUnit', 'powerScope'].includes(row.attr))
+        .forEach(collect);
+    for (const locale of ['de', 'en']) {
+        const translations = JSON.parse(fs.readFileSync(`admin/i18n/${locale}/translations.json`, 'utf8'));
+        for (const text of texts) assert.ok(translations[text], `${locale}: missing ${text}`);
     }
 });
 

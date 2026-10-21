@@ -10,7 +10,7 @@ const grid = require('../lib/grid-constraints');
 test('production engine contexts retain module order, isolated state and no implicit bootstrap', () => {
     assert.deepEqual(MODULES, ['core', 'config-mapping', 'history', 'prices', 'forecast', 'vehicles',
         'dhw-controller', 'battery-controller', 'heating-controller', 'heatpump-controller',
-        'energy-coordination', 'planner', 'observer', 'realtime', 'dhw-output']);
+        'energy-coordination', 'grid-operator-control', 'planner', 'observer', 'realtime', 'dhw-output']);
     assert.ok(Object.isFrozen(MODULES));
     const sandbox = {nativeConfig: {}, Date: class extends Date {static now() {return 2000000;}},
         getState: () => null, existsState: () => false,
