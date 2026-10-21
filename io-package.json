@@ -1,9 +1,13 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.117",
+    "version": "0.17.0-alpha.118",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.118": {
+        "en": "Use a conservative shared gross ceiling without solar credit when valid group measurements are asynchronous. Preserve source times, source rejection and electrical reservations.",
+        "de": "Bei gültigen zeitversetzten Gruppenmessungen gemeinsames konservatives Bruttobudget ohne Eigenstromzuschlag verwenden. Originalzeiten, Quellenprüfung und elektrische Reserven bleiben erhalten."
+      },
       "0.17.0-alpha.117": {
         "en": "Connect explicit opt-in group net/own-supply accounting to allocation and all output guards, with complete AC coverage, shared pending reservations and fresh checks after queued writes. Existing installations keep legacy gross limits; configured unverified LPC blocks the new mode. No automatic activation or installation.",
         "de": "Explizite optionale Gruppen-Netz-/Eigenstrombilanz mit Zuteilung und allen Ausgangspruefungen verbinden: vollstaendige AC-Abdeckung, gemeinsame offene Reserven und frische Pruefung nach Schreibwartezeiten. Bestehende Installationen behalten Bruttogrenzen; ungeprueft konfiguriertes LPC sperrt den neuen Modus. Keine automatische Aktivierung oder Installation."

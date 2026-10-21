@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.117**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.118**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -106,7 +106,7 @@ Nach Speichern zeigt `Control.GridOperatorCalculation_JSON` Quelle, Zahl, Faktor
 | `par14aSiteScope` | `unconfigured` | `whole-site-ac` bestätigt, dass die vorhandenen getrennten Netzbezugs-/Rückspeisequellen den gesamten deklarierten Anschluss in W messen. |
 | `par14aParticipants` | leer | Zusätzliche Spalten: `deviceId`, `powerId`, `powerUnit`, `powerScope`. `deviceId` ist leer für rein gemessene Teilnehmer oder exakt `Wallbox0`, `Wallbox1`, `Wallbox2`, `Battery`. AC-Gesamtmessung einschließlich WP-Zusatzverbrauchern ausdrücklich als `total-ac` deklarieren; keine überlappenden Teilzähler. |
 | `par14aStorageCoverage`, `par14aStorageMeters` | `unconfigured` / leer | Explizit kein Speicher (`none`) oder vollständige vorzeichenbehaftete AC-Abdeckung (`complete-ac`) mit Datenpunkt, Einheit, `total-ac` und Vorzeichen je Zähler. |
-| `par14aAccountingMaxAgeS`, `par14aAccountingMaxSkewMs` | 30 s / 0 ms | Gemeinsame Quellenalter- und Versatzgrenze; höchstens 30 s bzw. 1000 ms. Standard 0 ms verlangt identische Originalzeitstempel. |
+| `par14aAccountingMaxAgeS`, `par14aAccountingMaxSkewMs` | 30 s / 0 ms | Gemeinsame Quellenalter- und Versatzgrenze; höchstens 30 s bzw. 1000 ms. Standard 0 ms verlangt für den Eigenstromzuschlag identische Originalzeitstempel. Bei frischen gültigen, aber zeitversetzten Quellen gilt ausschließlich das gemeinsame Bruttobudget in Höhe des Netzbudgets; die Netz-/Eigenstromzuordnung bleibt unbekannt. |
 
 Eine gesteuerte Wallbox muss ihre bereits konfigurierte kW-Istquelle verwenden. Ein SunEnergy-Mehrkopfspeicher wird über `Battery` und den besonderen Teilnehmer-Leistungswert `@controlled-battery-ac` in W gebunden. Das ist eine interne Ladesumme, kein zusätzlicher ioBroker-Datenpunkt. Die Speicherliste muss dafür jeden ausgewählten Kopf mit vollständiger AC-Quelle `heads.N.grid.GP`, Einheit W und positivem Entladevorzeichen abdecken. DC-Leistung oder ein unvollständiger Adaptergesamtwert sind kein Ersatz.
 
@@ -865,9 +865,9 @@ Ab alpha.114 akzeptieren Wallbox-Ausgang und zentrale Phasenbudgetprüfung best�
 
 ## Changelog
 
-### 0.17.0-alpha.117 (2026-10-21)
+### 0.17.0-alpha.118 (2026-10-22)
 
-Bindet die ausdrücklich konfigurierte Gruppen-Netz-/Eigenstrombilanz an den produktiven Regler, die gemeinsame Leistungsverteilung sowie Wallbox-, EHZ-, Heizpuffer- und Speicherausgänge an. Vollständige AC-Messgrenzen, Originalqualität und gemeinsame ausstehende Stellwirkungen begrenzen jede Freigabe; wartende Befehle werden vor dem Schreiben erneut geprüft. Standard und bestehende Konfiguration bleiben im bisherigen Bruttomodus. Der neue Modus unterstützt vorhandene Binärkontakt-Budgets aus Festwert, EMS-Berechnung oder externer Gesamtbudgetquelle; konfigurierte LPC-Eingänge sperren ihn bis zum verifizierten Schnittstellenvertrag. Keine automatische Aktivierung oder Installation; reale Abnahme bleibt offen. [Releasehinweise](docs/release-0.17.0-alpha.117.md).
+Zeitversetzte, weiterhin frische und gültige Originalmessungen führen im ausdrücklich eingerichteten Gruppenmodus bei aktiver Binärkontakt-Begrenzung zu einer gemeinsamen konservativen Bruttogrenze ohne Eigenstromzuschlag. Der Regler erfindet keine synchronen Zeitstempel oder Netzbezugsnachweise. Ungültige Quellen, offene Stellwirkungen und Ausgangsprüfungen behalten ihre Schutzwirkung. Bestehender Bruttomodus unverändert; keine automatische Aktivierung oder Installation. [Details](docs/release-0.17.0-alpha.118.md).
 
 [Alle älteren Änderungen und historischen Detailbeschreibungen](CHANGELOG_OLD.md).
 
