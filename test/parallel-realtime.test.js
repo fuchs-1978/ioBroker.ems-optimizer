@@ -1447,3 +1447,30 @@ test('redistributed PV does not bypass the follower start delay', () => {
     assert.equal(follower.start.reason, 'start-delay');
     assert.equal(follower.start.startDelayRemainingS, 300);
 });
+
+
+test('target completion during donor phase settling retains handoff until confirmed stop', () => {
+    const h = completedParallelChargeFixture();
+    h.step(() => h.put('ems.0.Devices.Wallbox1.PhaseTransitionActive', true));
+    h.complete();
+    assert.equal(h.diagnostic(2).start.vehicleHandoff.qualified, true);
+    assert.equal(h.diagnostic(2).start.vehicleHandoff.reason, 'donor-stop-confirmation-pending');
+    h.acknowledgeStop();
+    let targets = h.step(h.releaseQuiet);
+    assert.equal(targets.amps[2], 0, 'a still pending phase transition is not waived by allocation');
+    targets = h.step(() => h.put('ems.0.Devices.Wallbox1.PhaseTransitionActive', false));
+    assert.ok(targets.amps[2] >= 6);
+    assert.equal(h.diagnostic(2).start.reason, 'prepared-vehicle-handoff');
+    assert.equal(h.diagnostic(2).start.startDelayRemainingS, 0);
+});
+
+test('busy donor cannot manufacture a handoff without an observed charging episode', () => {
+    const h = completedParallelChargeFixture({observeIdle: false});
+    h.step(() => h.put('ems.0.Devices.Wallbox1.PhaseTransitionActive', true));
+    h.complete(); h.acknowledgeStop();
+    const targets = h.step(() => {
+        h.releaseQuiet(); h.put('ems.0.Devices.Wallbox1.PhaseTransitionActive', false);
+    });
+    assert.equal(targets.amps[2], 0);
+    assert.ok(h.diagnostic(2).start.startDelayRemainingS > 0);
+});

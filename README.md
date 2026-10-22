@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.121**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.122**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -864,6 +864,10 @@ Bereits vorhandene SQL-Skalarhistorien, Retention und Anlagenkonfiguration werde
 Ab alpha.114 akzeptieren Wallbox-Ausgang und zentrale Phasenbudgetprüfung bestätigte, frische, qualitativ gültige Leistungswerte zwischen −0,03 und 0 kW intern als 0 W, mit höchstens einer Warnung je Minute und Wallbox. Die positive Leerlaufgrenze bleibt bei 20 W. Die originale negative Rohmessung bleibt in der Diagnose erhalten. Größere negative Werte, fehlende/ungültige Werte, schlechtes q, fehlendes ACK und veraltete Quellen bleiben gesperrt. Diese Toleranz gilt für Wallboxleistung; die Verträge anderer Quellen werden dadurch nicht geändert.
 
 ## Changelog
+
+### 0.17.0-alpha.122 (2026-10-22)
+
+Eine beobachtete Ziel-SoC-Uebergabe geht bei noch aktivem Phasen-Nachlauf des abgebenden Fahrzeugs nicht mehr verloren. Der Nachfolger wartet auf bestaetigtes AUS, elektrische Ruhe und freigegebenes Budget, statt allein wegen dieser Ueberlappung erneut die Startverzoegerung zu durchlaufen. [Details](docs/release-0.17.0-alpha.122.md).
 
 ### 0.17.0-alpha.121 (2026-10-22)
 

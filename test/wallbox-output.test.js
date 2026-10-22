@@ -3509,3 +3509,24 @@ test('native phase pause retains operator hard limits', async () => {
     assert.equal(h.output.phaseAllowPauses.has(d), false);
     assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, false);
 });
+
+for (const pendingMode of [false, true]) test(`confirmed electrical stop clears loaded phase grace, pending mode=${pendingMode}`, async () => {
+    let now = 1000000;
+    const h = setup({now: () => now}); await h.start(); h.writes.length = 0;
+    const d = h.output.devices[0];
+    d.phaseTransitionUntil = now + 90000;
+    if (pendingMode) d.phaseRequest = {phases: 3, since: now};
+    h.put('ems.0.Devices.Wallbox0.PhaseTransitionActive', true);
+    h.put('power', 3.68); h.put('i1', 16);
+    h.put('ems.0.Vehicles.Wallbox0.Release', false); await h.output.tick();
+    now += 1000; h.refresh(); h.ack('allow', 0); await h.output.tick();
+    assert.equal(d.owned, true, 'OFF ACK alone retains ownership and transition');
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.PhaseTransitionActive').val, true);
+    assert.ok(d.phaseTransitionUntil > now);
+    h.electricalOff(); await h.output.tick();
+    assert.equal(d.owned, false);
+    assert.equal(d.phaseTransitionUntil, pendingMode ? 1090000 : 0);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.PhaseTransitionActive').val, pendingMode);
+    assert.equal(Boolean(d.phaseRequest), pendingMode, 'no mode ACK is fabricated');
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+});
