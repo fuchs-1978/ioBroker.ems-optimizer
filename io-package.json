@@ -1,9 +1,13 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.122",
+    "version": "0.17.0-alpha.123",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.123": {
+        "en": "Bridge short telemetry gaps for confirmed running wallboxes up to 60 seconds total sample age with fresh SMA, unchanged current, full reservations and conservative limits.",
+        "de": "Kurze Messluecken bestaetigt laufender Wallboxen bis maximal 60 Sekunden Messwertalter ueberbruecken: aktuelle SMA-Werte, unveraenderter Strom, volle Reservierung und konservative Grenzen."
+      },
       "0.17.0-alpha.122": {
         "en": "Retain qualified target-SoC handoffs during donor phase settling. End loaded phase grace only after confirmed OFF and fresh electrical zero; keep pending mode requests and all start gates intact.",
         "de": "Qualifizierte Ziel-SoC-Uebergabe waehrend des Phasenuebergangs vormerken. Phasen-Nachlauf erst nach bestaetigtem AUS und frischer elektrischer Ruhe beenden; offene Modusanforderungen und Startgrenzen bleiben wirksam."
