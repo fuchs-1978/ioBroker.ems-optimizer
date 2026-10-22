@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.119**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.120**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -865,9 +865,9 @@ Ab alpha.114 akzeptieren Wallbox-Ausgang und zentrale Phasenbudgetprüfung best�
 
 ## Changelog
 
-### 0.17.0-alpha.119 (2026-10-22)
+### 0.17.0-alpha.120 (2026-10-22)
 
-Pro Teilnehmer trennt `budgetIncluded` die lokale Budgetberechnung von der vollständigen Gruppenmessung und gemeinsamen Budgetverteilung. Fehlender Hakenwert erhält bestehendes Verhalten; explizit `false` nimmt nur die Berechnungsgrundlage heraus. Externe Budgets bleiben unverändert, LPC-Sperre und Ausgangsschutz bleiben bestehen. Die Liste muss weiterhin die vereinbarte Gruppe abbilden; keine automatische Anmeldung oder reale Abnahme.
+Wartende Wallboxen geben aktuell ungenutzte PV-Anteile an weitere ladebereite Fahrzeuge weiter, bevor der optionale Heizstab den Rest erhält. Eine manuelle Priorisierung des bereits ladenden Fahrzeugs ist dafür nicht erforderlich. Startverzögerungen, notwendige Lastreduktionen, physische Reservierungen und gemeinsame Leistungsgrenzen bleiben wirksam. Die Diagnose zeigt den weitergereichten Anteil als `redistributedW`. [Details](docs/release-0.17.0-alpha.120.md).
 
 [Alle älteren Änderungen und historischen Detailbeschreibungen](CHANGELOG_OLD.md).
 

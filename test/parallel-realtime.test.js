@@ -1409,3 +1409,41 @@ for(const [name,change] of [
     const t=s.h.update(s.budget??7000,s.hard??7000);
     assert.notEqual(t.phases[1],3);
 });
+
+test('waiting priority car passes unused PV to a running follower before the optional heater', () => {
+    const h = engine({production: true, dhwControlEnabled: true, wallboxPriority: 2});
+    h.exclude(0);
+    h.put('DP_DHW_PARALLEL_RELEASE', false);
+    h.put('ems.0.Config.WallboxStartDelay_s', 300);
+    h.owned(1, 6, 1310);
+    const target = h.update(4285);
+    assert.equal(target.amps[2], 0, 'priority car still observes its own start delay');
+    assert.ok(target.amps[1] > 6, 'running EQV receives usable surplus without manual priority');
+    assert.ok(target.dhw < 1000, 'heater receives only remaining unusable watts');
+    assert.ok(target.dhw + target.reserve.reduce((sum, value) => sum + value, 0) <= 4285);
+});
+
+test('redistributed PV respects heater reservations and the shared 4.2 kW ceiling', () => {
+    const h = engine({production: true, dhwControlEnabled: true, wallboxPriority: 2});
+    h.exclude(0);
+    h.put('DP_DHW_PARALLEL_RELEASE', false);
+    h.put('ems.0.Config.WallboxStartDelay_s', 300);
+    h.put('ems.0.Devices.MyPV_DHW.OutputReservedPower_W', 1000);
+    h.put('DP_DHW_OUTPUT1', 1000);
+    h.owned(1, 6, 1310);
+    const target = h.update(6000, 4200);
+    assert.ok(target.amps[1] > 6);
+    assert.ok(target.watts.reduce((sum, value) => sum + value, 0) + 1000 <= 4200);
+});
+
+test('redistributed PV does not bypass the follower start delay', () => {
+    const h = engine({production: true, dhwControlEnabled: true, wallboxPriority: 2});
+    h.exclude(0);
+    h.put('DP_DHW_PARALLEL_RELEASE', false);
+    h.put('ems.0.Config.WallboxStartDelay_s', 300);
+    const target = h.update(4285);
+    assert.deepEqual(target.amps, [0, 0, 0]);
+    const follower = JSON.parse(h.states.get('ems.0.Control.Wallbox1.AllocationDiagnostics_JSON').val);
+    assert.equal(follower.start.reason, 'start-delay');
+    assert.equal(follower.start.startDelayRemainingS, 300);
+});

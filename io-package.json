@@ -1,9 +1,13 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.119",
+    "version": "0.17.0-alpha.120",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.120": {
+        "en": "Pass unused waiting-wallbox PV shares to eligible followers before optional heating, preserving start delays, pending reservations and shared limits.",
+        "de": "Ungenutzte PV-Anteile wartender Wallboxen vor optionaler Heizleistung an weitere ladebereite Fahrzeuge weitergeben. Startzeiten, offene Leistungsreservierungen und gemeinsame Grenzen bleiben wirksam."
+      },
       "0.17.0-alpha.119": {
         "en": "Separate participant selection for local budget calculation from full shared group accounting. Preserve existing selections and external budgets.",
         "de": "Teilnehmerauswahl für lokale Budgetberechnung von vollständiger gemeinsamer Gruppenbilanz trennen. Bestehende Auswahl und externe Budgets bleiben erhalten."

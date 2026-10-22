@@ -1,3 +1,7 @@
+### 0.17.0-alpha.119 (2026-10-22)
+
+Pro Teilnehmer trennt `budgetIncluded` die lokale Budgetberechnung von der vollständigen Gruppenmessung und gemeinsamen Budgetverteilung. Fehlender Hakenwert erhält bestehendes Verhalten; explizit `false` nimmt nur die Berechnungsgrundlage heraus. Externe Budgets bleiben unverändert, LPC-Sperre und Ausgangsschutz bleiben bestehen. Die Liste muss weiterhin die vereinbarte Gruppe abbilden; keine automatische Anmeldung oder reale Abnahme.
+
 ### 0.17.0-alpha.118 (2026-10-22)
 
 Zeitversetzte, weiterhin frische und gültige Originalmessungen führen im ausdrücklich eingerichteten Gruppenmodus bei aktiver Binärkontakt-Begrenzung zu einer gemeinsamen konservativen Bruttogrenze ohne Eigenstromzuschlag. Der Regler erfindet keine synchronen Zeitstempel oder Netzbezugsnachweise. Ungültige Quellen, offene Stellwirkungen und Ausgangsprüfungen behalten ihre Schutzwirkung. Bestehender Bruttomodus unverändert; keine automatische Aktivierung oder Installation. [Details](docs/release-0.17.0-alpha.118.md).
