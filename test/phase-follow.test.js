@@ -19,7 +19,7 @@ function fixture() {
         setState: (id, val) => {writes.push({id, val}); put(id, val, {ack: false});},
         setTimeout: fn => {timers.add(fn); return fn;}, clearTimeout: fn => timers.delete(fn),
         log: (text, level) => logs.push({text, level})}, [box], {now: () => now});
-    const advance = () => {now += 20000; fresh();};
+    const advance = (ms = 20000, refresh = true) => {now += ms; if (refresh) fresh();};
     const fire = () => {for (const fn of [...timers]) {timers.delete(fn); fn();}};
     return {follower, box, put, own, fresh, advance, fire, timers, writes, logs, now: () => now};
 }
@@ -62,4 +62,56 @@ test('callback rechecks master, source validity and target; disconnect/restart p
         });
     const h = fixture(); h.follower.check(h.box); const callback = [...h.timers][0];
     h.follower.cancel(); callback(); assert.equal(h.logs.length, 0);
+});
+
+
+test('retained target survives startup delay and ACK timeout without target refresh', () => {
+    const h = fixture();
+    h.own('Control.Valid', false);
+    h.follower.check(h.box);
+    assert.equal(h.writes.length, 0);
+    h.advance(30000, false);
+    h.own('Control.Valid', true); h.own('Control.LastUpdate', h.now());
+    h.follower.check(h.box);
+    assert.equal(h.writes.length, 1);
+    h.advance(20000, false); h.own('Control.LastUpdate', h.now());
+    h.put('mode', 2); h.fire();
+    assert.equal(h.logs.at(-1).level, 'info');
+    h.follower.check(h.box);
+    assert.equal(h.writes.length, 1);
+});
+
+test('unacknowledged retained target retries only after 60 seconds', () => {
+    const h = fixture(); h.follower.check(h.box);
+    h.advance(20000, false); h.own('Control.LastUpdate', h.now()); h.fire();
+    assert.equal(h.logs.at(-1).level, 'error');
+    h.follower.check(h.box); assert.equal(h.writes.length, 1);
+    h.advance(39999, false); h.own('Control.LastUpdate', h.now());
+    h.follower.check(h.box); assert.equal(h.writes.length, 1);
+    h.advance(1, false); h.own('Control.LastUpdate', h.now());
+    h.follower.check(h.box); assert.equal(h.writes.length, 2);
+});
+
+test('retained targets cannot bypass stale heartbeat or invalid target metadata', async t => {
+    for (const change of [
+        h => {},
+        h => h.own('Control.LastUpdate', h.now(), {ts: 1}),
+        h => h.own('Control.LastUpdate', 1),
+        ...[{ack: false}, {q: 64}, {val: null}, {val: 2}, {ts: 0}, {ts: 2000000}].map(extra =>
+            h => {h.own('Control.LastUpdate', h.now());
+                h.own('Control.Targets.Wallbox1_Phases', 3, extra);})
+    ]) await t.test('invalid control or target', () => {
+        const h = fixture(); h.advance(30000, false); change(h);
+        h.follower.check(h.box); assert.equal(h.writes.length, 0);
+    });
+});
+
+test('invalid or changed retained target cannot confirm pending command', async t => {
+    for (const value of [null, 2, 1]) await t.test(String(value), () => {
+        const h = fixture(); h.follower.check(h.box);
+        h.advance(20000, false); h.own('Control.LastUpdate', h.now());
+        h.own('Control.Targets.Wallbox1_Phases', value); h.put('mode', 2); h.fire();
+        assert.equal(h.logs.length, 0);
+        assert.equal(h.follower.pending.size, 0);
+    });
 });
