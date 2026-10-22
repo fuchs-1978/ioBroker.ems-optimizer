@@ -3525,7 +3525,7 @@ for (const pendingMode of [false, true]) test(`confirmed electrical stop clears 
     assert.ok(d.phaseTransitionUntil > now);
     h.electricalOff(); await h.output.tick();
     assert.equal(d.owned, false);
-    assert.equal(d.phaseTransitionUntil, 0);
+    assert.equal(d.phaseTransitionUntil, pendingMode ? 1090000 : 0);
     assert.equal(h.states.get('ems.0.Devices.Wallbox0.PhaseTransitionActive').val, pendingMode);
     assert.equal(Boolean(d.phaseRequest), pendingMode, 'no mode ACK is fabricated');
     assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
