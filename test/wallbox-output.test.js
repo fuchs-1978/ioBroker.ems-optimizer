@@ -3,13 +3,14 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const WallboxOutput = require('../lib/wallbox-output');
 
-function setup({now: readNow = () => Date.now(), responseCurrentA = null, responseEvidence = null} = {}) {
+function setup({now: readNow = () => Date.now(), responseCurrentA = null, responseEvidence = null, sourceQuality, publicationOffsetMs = 1} = {}) {
     const states = new Map(), writes = [];
     let now = readNow();
     // A test publication follows the previous command within the logical
     // millisecond. Explicit old timestamps remain available for stale-input
     // and pre-command response regressions below.
-    const put = (id, val, extra = {}) => states.set(id, {val, ack: true, ts: readNow() + 1, ...extra});
+    const put = (id, val, extra = {}) => states.set(id, {val, ack: true, ts: readNow() + publicationOffsetMs,
+        ...(sourceQuality === undefined ? {} : {q: sourceQuality}), ...extra});
     const mapping = {DP_WB0_CAR: 'car', DP_WB0_SOC: 'soc', DP_WB0_ALLOW: 'userAllow',
         DP_WB0_POWER: 'power', DP_WB0_L1_A: 'i1', DP_WB0_L2_A: 'i2', DP_WB0_L3_A: 'i3',
         DP_GRID_IMPORT: 'import', DP_GRID_EXPORT: 'export', DP_HA_CRITICAL: 'critical',
@@ -3531,9 +3532,19 @@ for (const pendingMode of [false, true]) test(`confirmed electrical stop clears 
     assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
 });
 
-async function telemetryBridgeFixture() {
+async function telemetryBridgeFixture({groupNet = false} = {}) {
     let now = 1000000;
-    const h = setup({now: () => now});
+    const h = setup({now: () => now, ...(groupNet ? {sourceQuality: 0, publicationOffsetMs: 0} : {})});
+    if (groupNet) {
+        Object.assign(h.config, {par14aAccountingMode: 'groupNet', par14aGroupId: 'group',
+            par14aBoundaryId: 'site', par14aSiteScope: 'whole-site-ac',
+            par14aAccountingMaxAgeS: 30, par14aAccountingMaxSkewMs: 0,
+            par14aStorageCoverage: 'none', par14aStorageMeters: [],
+            par14aParticipants: [{name: 'ev0', kind: 'wallbox', connectionPowerW: 7360,
+                deviceId: 'Wallbox0', powerId: 'power', powerUnit: 'kW', powerScope: 'total-ac'}]});
+        h.mapping.DP_LPC_STATE = '';
+        h.mapping.DP_LPC_LIMIT = '';
+    }
     h.put('ems.0.Control.Targets.Wallbox0_W', 1380);
     await h.start(); now += 1000; h.refresh();
     h.put('power', 1.32); h.put('i1', 5.9);
@@ -3549,8 +3560,8 @@ async function telemetryBridgeFixture() {
     }};
 }
 
-test('SMA-supervised telemetry gap holds confirmed current without writes or timestamp fabrication', async () => {
-    const h = await telemetryBridgeFixture();
+for (const groupNet of [false, true]) test(`SMA-supervised telemetry gap holds confirmed current without writes or timestamp fabrication, groupNet=${groupNet}`, async () => {
+    const h = await telemetryBridgeFixture({groupNet});
     h.advance(31000); await h.output.tick();
     assert.equal(h.output.devices[0].owned, true);
     assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val, /TELEMETRIE/);
@@ -3563,7 +3574,7 @@ test('SMA-supervised telemetry gap holds confirmed current without writes or tim
     assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
 });
 
-for (const [name, fault] of [
+for (const groupNet of [false, true]) for (const [name, fault] of [
     ['SMA missing', h => h.states.delete('import')],
     ['SMA stale', h => h.put('import', 0, {ts: 1})],
     ['SMA bad quality', h => h.put('h1', 10, {q: 64})],
@@ -3579,21 +3590,83 @@ for (const [name, fault] of [
     ['phase change', h => h.put('ems.0.Control.Targets.Wallbox0_Phases', 3)],
     ['priority change', h => h.config.wallboxPriority = 2],
     ['current limit reduction', h => h.config.wb0CommissioningMaxA = 5],
-    ['LPC reduction', h => {h.put('lpc', 'limited'); h.put('lpcLimit', 1000);}],
+    ['LPC reduction', h => {
+        h.mapping.DP_LPC_STATE = 'lpc'; h.mapping.DP_LPC_LIMIT = 'lpcLimit';
+        h.put('lpc', 'limited'); h.put('lpcLimit', 1000);
+    }],
     ['PV no longer sufficient', h => {h.put('export', 0); h.put('import', 500);}],
     ['unknown prior session', h => h.output.telemetryBridgeProofs.delete(h.output.devices[0])]
-]) test(`telemetry bridge stops for ${name}`, async () => {
-    const h = await telemetryBridgeFixture(); h.advance(31000); fault(h); await h.output.tick();
+]) test(`telemetry bridge stops for ${name}, groupNet=${groupNet}`, async () => {
+    const h = await telemetryBridgeFixture({groupNet}); h.advance(31000); fault(h); await h.output.tick();
     assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, false);
     if (name !== 'external OFF') assert.ok(h.writes.some(w => w.id === 'allow' && w.val === 0));
     assert.ok(!h.writes.some(w => w.id === 'allow' && w.val === 1));
 });
 
-test('fresh device recovery leaves telemetry bridge through the normal controller', async () => {
-    const h = await telemetryBridgeFixture(); h.advance(31000); await h.output.tick();
+for (const groupNet of [false, true]) test(`fresh device recovery leaves telemetry bridge through the normal controller, groupNet=${groupNet}`, async () => {
+    const h = await telemetryBridgeFixture({groupNet}); h.advance(31000); await h.output.tick();
     for (const [id, state] of h.freeze) h.put(id, state.val);
     await h.output.tick();
     assert.doesNotMatch(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val, /TELEMETRIE/);
     assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, true);
     assert.ok(!h.writes.some(w => w.id === 'allow' && w.val === 0));
+});
+
+test('inactive groupNet accepts an old unchanged valid contact but never refreshes its timestamp', async () => {
+    const h = await telemetryBridgeFixture({groupNet: true});
+    h.advance(31000);
+    h.put('par14a', false, {ts: 1});
+    const contact = {...h.states.get('par14a')};
+    const limit = h.output.gridOperatorLimit(h.mapping);
+    assert.equal(limit.valid, true, limit.reason);
+    assert.equal(limit.active, false);
+    await h.output.tick();
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val, /TELEMETRIE/);
+    assert.deepEqual(h.writes, []);
+    assert.deepEqual(h.states.get('par14a'), contact);
+});
+
+test('activating a valid groupNet constraint ends an ongoing bridge even with enough group budget', async () => {
+    const h = await telemetryBridgeFixture({groupNet: true});
+    h.advance(31000); await h.output.tick();
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val, /TELEMETRIE/);
+    h.advance(1000);
+    // Fresh AC observations can establish the group budget, but the still
+    // old device error status must not gain an exception under an active cap.
+    for (const [id, state] of h.freeze) if (id !== 'error') h.put(id, state.val);
+    h.put('par14a', true);
+    const limit = h.output.gridOperatorLimit(h.mapping);
+    assert.equal(limit.valid, true, limit.reason);
+    assert.equal(limit.groupNet, true);
+    assert.equal(limit.active, true);
+    const {checkGroupCommand} = require('../lib/grid-operator-runtime');
+    assert.equal(checkGroupCommand(limit, 'Wallbox0', 1380).allowed, true,
+        'this regression must exercise an otherwise affordable active group');
+    await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, false);
+    assert.ok(h.writes.some(w => w.id === 'allow' && w.val === 0));
+    assert.ok(!h.writes.some(w => w.id === 'allow' && w.val === 1));
+});
+
+for (const [name, change] of [
+    ['missing contact', h => h.states.delete('par14a')],
+    ['unacknowledged contact', h => h.put('par14a', false, {ack: false})],
+    ['bad contact quality', h => h.put('par14a', false, {q: 64})],
+    ['unknown contact value', h => h.put('par14a', null)],
+    ['future contact timestamp', h => h.put('par14a', false, {ts: h.states.get('ems.0.Control.LastUpdate').val + 1000})],
+    ['missing group identity', h => h.config.par14aGroupId = ''],
+    ['unknown measurement boundary', h => h.config.par14aSiteScope = 'unknown'],
+    ['configured LPC state', h => h.mapping.DP_LPC_STATE = 'lpc'],
+    ['configured LPC limit', h => h.mapping.DP_LPC_LIMIT = 'lpcLimit'],
+    ['missing external budget', h => {h.config.par14aBudgetMode = 'external'; h.mapping.DP_PAR14A_LIMIT = 'absent';}]
+]) test(`inactive groupNet bridge fails closed for ${name}`, async () => {
+    const h = await telemetryBridgeFixture({groupNet: true});
+    h.advance(31000); await h.output.tick();
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val, /TELEMETRIE/);
+    h.advance(1000); change(h);
+    assert.equal(h.output.gridOperatorLimit(h.mapping).valid, false);
+    await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, false);
+    assert.ok(h.writes.some(w => w.id === 'allow' && w.val === 0));
+    assert.ok(!h.writes.some(w => w.id === 'allow' && w.val === 1));
 });
