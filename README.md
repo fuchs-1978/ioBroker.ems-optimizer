@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.123**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.124**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -865,17 +865,9 @@ Ab alpha.114 akzeptieren Wallbox-Ausgang und zentrale Phasenbudgetprüfung best�
 
 ## Changelog
 
-### 0.17.0-alpha.123 (2026-10-22)
+### 0.17.0-alpha.124 (2026-10-22)
 
-Bestaetigt laufende Wallboxen koennen kurze Messluecken bis maximal 60 Sekunden Messwertalter ohne neue Schaltbefehle ueberbruecken. Aktuelle SMA-Werte und konservativ nachgewiesene Leistungsreserven bleiben Voraussetzung. [Details](docs/release-0.17.0-alpha.123.md).
-
-### 0.17.0-alpha.122 (2026-10-22)
-
-Eine beobachtete Ziel-SoC-Uebergabe geht bei noch aktivem Phasen-Nachlauf des abgebenden Fahrzeugs nicht mehr verloren. Der Nachfolger wartet auf bestaetigtes AUS, elektrische Ruhe und freigegebenes Budget, statt allein wegen dieser Ueberlappung erneut die Startverzoegerung zu durchlaufen. [Details](docs/release-0.17.0-alpha.122.md).
-
-### 0.17.0-alpha.121 (2026-10-22)
-
-Bei einer in derselben Sitzung beobachteten, laufenden EMS-Phasenumschaltung wartet der Ausgang begrenzt auf die automatische Wiederfreigabe der Wallbox, wenn diese vorübergehend `allow=0` meldet. Ein zusätzlicher AUS-Befehl und ein dadurch verursachter neuer Startfall werden vermieden. Kein automatischer EIN-Befehl; Stopps, Datenprüfung und Leistungsgrenzen bleiben wirksam. [Details](docs/release-0.17.0-alpha.121.md).
+Die begrenzte Telemetrieueberbrueckung bestaetigt laufender Wallboxen gilt jetzt auch im groupNet-Modus, wenn die Gruppenbegrenzung gueltig und ausdruecklich inaktiv ist. Aktive oder unklare Begrenzungen bleiben ausgeschlossen. Frische SMA-Werte, volle Leistungsreserven, unveraenderte Strom-/Phasenstellung und maximal 60 Sekunden Quellenalter bleiben Voraussetzung; keine neuen Ladebefehle. [Details](docs/release-0.17.0-alpha.124.md).
 
 [Alle älteren Änderungen und historischen Detailbeschreibungen](CHANGELOG_OLD.md).
 
