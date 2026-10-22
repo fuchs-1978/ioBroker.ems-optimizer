@@ -1,9 +1,13 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.120",
+    "version": "0.17.0-alpha.121",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.121": {
+        "en": "Avoid turning a bounded native pause during an observed EMS phase switch into an external stop. Wait for charger-owned allow recovery without sending ON; preserve all stop and budget gates.",
+        "de": "Beobachtete native Pause beim EMS-Phasenwechsel nicht als externen Stopp behandeln. Begrenzt auf selbststaendige Ladefreigabe warten, ohne EIN zu senden; Abschalt- und Budgetgrenzen bleiben wirksam."
+      },
       "0.17.0-alpha.120": {
         "en": "Pass unused waiting-wallbox PV shares to eligible followers before optional heating, preserving start delays, pending reservations and shared limits.",
         "de": "Ungenutzte PV-Anteile wartender Wallboxen vor optionaler Heizleistung an weitere ladebereite Fahrzeuge weitergeben. Startzeiten, offene Leistungsreservierungen und gemeinsame Grenzen bleiben wirksam."
