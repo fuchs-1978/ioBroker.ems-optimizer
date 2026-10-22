@@ -1,3 +1,15 @@
+### 0.17.0-alpha.123 (2026-10-22)
+
+Bestaetigt laufende Wallboxen koennen kurze Messluecken bis maximal 60 Sekunden Messwertalter ohne neue Schaltbefehle ueberbruecken. Aktuelle SMA-Werte und konservativ nachgewiesene Leistungsreserven bleiben Voraussetzung. [Details](docs/release-0.17.0-alpha.123.md).
+
+### 0.17.0-alpha.122 (2026-10-22)
+
+Eine beobachtete Ziel-SoC-Uebergabe geht bei noch aktivem Phasen-Nachlauf des abgebenden Fahrzeugs nicht mehr verloren. Der Nachfolger wartet auf bestaetigtes AUS, elektrische Ruhe und freigegebenes Budget, statt allein wegen dieser Ueberlappung erneut die Startverzoegerung zu durchlaufen. [Details](docs/release-0.17.0-alpha.122.md).
+
+### 0.17.0-alpha.121 (2026-10-22)
+
+Bei einer in derselben Sitzung beobachteten, laufenden EMS-Phasenumschaltung wartet der Ausgang begrenzt auf die automatische Wiederfreigabe der Wallbox, wenn diese vorübergehend `allow=0` meldet. Ein zusätzlicher AUS-Befehl und ein dadurch verursachter neuer Startfall werden vermieden. Kein automatischer EIN-Befehl; Stopps, Datenprüfung und Leistungsgrenzen bleiben wirksam. [Details](docs/release-0.17.0-alpha.121.md).
+
 ### 0.17.0-alpha.120 (2026-10-22)
 
 Wartende Wallboxen geben aktuell ungenutzte PV-Anteile an weitere ladebereite Fahrzeuge weiter, bevor der optionale Heizstab den Rest erhält. Eine manuelle Priorisierung des bereits ladenden Fahrzeugs ist dafür nicht erforderlich. Startverzögerungen, notwendige Lastreduktionen, physische Reservierungen und gemeinsame Leistungsgrenzen bleiben wirksam. Die Diagnose zeigt den weitergereichten Anteil als `redistributedW`. [Details](docs/release-0.17.0-alpha.120.md).
