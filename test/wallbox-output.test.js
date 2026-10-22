@@ -3530,3 +3530,70 @@ for (const pendingMode of [false, true]) test(`confirmed electrical stop clears 
     assert.equal(Boolean(d.phaseRequest), pendingMode, 'no mode ACK is fabricated');
     assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
 });
+
+async function telemetryBridgeFixture() {
+    let now = 1000000;
+    const h = setup({now: () => now});
+    h.put('ems.0.Control.Targets.Wallbox0_W', 1380);
+    await h.start(); now += 1000; h.refresh();
+    h.put('power', 1.32); h.put('i1', 5.9);
+    await h.output.tick();
+    now += 1000; h.refresh(); await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'confirmed');
+    const ids = ['error', 'car', 'allow', 'feedback', 'power', 'i1', 'i2', 'i3'];
+    const freeze = new Map(ids.map(id => [id, {...h.states.get(id)}]));
+    h.writes.length = 0;
+    return {...h, freeze, advance: ms => {
+        now += ms; h.refresh();
+        for (const [id, state] of freeze) h.states.set(id, {...state});
+    }};
+}
+
+test('SMA-supervised telemetry gap holds confirmed current without writes or timestamp fabrication', async () => {
+    const h = await telemetryBridgeFixture();
+    h.advance(31000); await h.output.tick();
+    assert.equal(h.output.devices[0].owned, true);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val, /TELEMETRIE/);
+    assert.deepEqual(h.writes, []);
+    assert.ok(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val >= 1380);
+    assert.deepEqual(h.states.get('power'), h.freeze.get('power'));
+    h.advance(28000); await h.output.tick();
+    assert.deepEqual(h.writes, []);
+    h.advance(2000); await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+});
+
+for (const [name, fault] of [
+    ['SMA missing', h => h.states.delete('import')],
+    ['SMA stale', h => h.put('import', 0, {ts: 1})],
+    ['SMA bad quality', h => h.put('h1', 10, {q: 64})],
+    ['phase overload', h => h.put('h1', 100)],
+    ['error code', h => h.put('error', 1)],
+    ['offline', h => h.put('connection', false)],
+    ['bad device quality', h => h.put('power', 1.32, {q: 64})],
+    ['unacknowledged device value', h => h.put('allow', 1, {ack: false})],
+    ['external OFF', h => h.put('allow', 0)],
+    ['user stop', h => h.put('userAllow', false)],
+    ['target reached', h => h.put('soc', 80)],
+    ['master off', h => h.put('ems.0.System.RealOutputsEnabled', false)],
+    ['phase change', h => h.put('ems.0.Control.Targets.Wallbox0_Phases', 3)],
+    ['priority change', h => h.config.wallboxPriority = 2],
+    ['current limit reduction', h => h.config.wb0CommissioningMaxA = 5],
+    ['LPC reduction', h => {h.put('lpc', 'limited'); h.put('lpcLimit', 1000);}],
+    ['PV no longer sufficient', h => {h.put('export', 0); h.put('import', 500);}],
+    ['unknown prior session', h => h.output.telemetryBridgeProofs.delete(h.output.devices[0])]
+]) test(`telemetry bridge stops for ${name}`, async () => {
+    const h = await telemetryBridgeFixture(); h.advance(31000); fault(h); await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, false);
+    if (name !== 'external OFF') assert.ok(h.writes.some(w => w.id === 'allow' && w.val === 0));
+    assert.ok(!h.writes.some(w => w.id === 'allow' && w.val === 1));
+});
+
+test('fresh device recovery leaves telemetry bridge through the normal controller', async () => {
+    const h = await telemetryBridgeFixture(); h.advance(31000); await h.output.tick();
+    for (const [id, state] of h.freeze) h.put(id, state.val);
+    await h.output.tick();
+    assert.doesNotMatch(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val, /TELEMETRIE/);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, true);
+    assert.ok(!h.writes.some(w => w.id === 'allow' && w.val === 0));
+});
