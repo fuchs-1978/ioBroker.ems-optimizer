@@ -1,9 +1,13 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.121",
+    "version": "0.17.0-alpha.122",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.122": {
+        "en": "Retain qualified target-SoC handoffs during donor phase settling. End loaded phase grace only after confirmed OFF and fresh electrical zero; keep pending mode requests and all start gates intact.",
+        "de": "Qualifizierte Ziel-SoC-Uebergabe waehrend des Phasenuebergangs vormerken. Phasen-Nachlauf erst nach bestaetigtem AUS und frischer elektrischer Ruhe beenden; offene Modusanforderungen und Startgrenzen bleiben wirksam."
+      },
       "0.17.0-alpha.121": {
         "en": "Avoid turning a bounded native pause during an observed EMS phase switch into an external stop. Wait for charger-owned allow recovery without sending ON; preserve all stop and budget gates.",
         "de": "Beobachtete native Pause beim EMS-Phasenwechsel nicht als externen Stopp behandeln. Begrenzt auf selbststaendige Ladefreigabe warten, ohne EIN zu senden; Abschalt- und Budgetgrenzen bleiben wirksam."
