@@ -1,9 +1,13 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.118",
+    "version": "0.17.0-alpha.119",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.119": {
+        "en": "Separate participant selection for local budget calculation from full shared group accounting. Preserve existing selections and external budgets.",
+        "de": "Teilnehmerauswahl für lokale Budgetberechnung von vollständiger gemeinsamer Gruppenbilanz trennen. Bestehende Auswahl und externe Budgets bleiben erhalten."
+      },
       "0.17.0-alpha.118": {
         "en": "Use a conservative shared gross ceiling without solar credit when valid group measurements are asynchronous. Preserve source times, source rejection and electrical reservations.",
         "de": "Bei gültigen zeitversetzten Gruppenmessungen gemeinsames konservatives Bruttobudget ohne Eigenstromzuschlag verwenden. Originalzeiten, Quellenprüfung und elektrische Reserven bleiben erhalten."

@@ -210,6 +210,13 @@
               "width": "17%"
             },
             {
+              "type": "checkbox",
+              "attr": "budgetIncluded",
+              "title": "Count towards budget calculation",
+              "default": true,
+              "width": "10%"
+            },
+            {
               "type": "select",
               "attr": "kind",
               "title": "Type of controllable device",
@@ -321,7 +328,7 @@
         },
         "par14aCalculationHelp": {
           "type": "staticText",
-          "text": "Count the agreed permanently assigned EMS devices, not connected cars. Heat pumps and cooling systems are each grouped; each electrical load including auxiliaries must be entered once. Standalone heaters are not additional participants. Only devices/groups above 4200 W count. Standard: 4200 + (n-1)*GZF*4200 W. With WP/cooling above 11000 W: max(0.4*P_WP,0.4*P_cooling) + (n-1)*GZF*4200 W. Result: Control.GridOperatorCalculation_JSON after saving. Participant calculation does not prove registration or complete AC coverage; group net accounting must be selected and configured separately.",
+          "text": "Count the agreed permanently assigned EMS devices, not connected cars. Heat pumps and cooling systems are each grouped; each electrical load including auxiliaries must be entered once. Standalone heaters are not additional participants. Only devices/groups above 4200 W count. Standard: 4200 + (n-1)*GZF*4200 W. With WP/cooling above 11000 W: max(0.4*P_WP,0.4*P_cooling) + (n-1)*GZF*4200 W. Result: Control.GridOperatorCalculation_JSON after saving. Participant calculation does not prove registration or complete AC coverage; group net accounting must be selected and configured separately. Unchecked participants remain fully measured and share the same group ceiling. The checkbox changes only the local minimum-budget calculation; it does not establish registration or change the agreed group. External budgets are used unchanged. Existing rows without this flag continue to count.",
           "newLine": true,
           "hidden": "data.par14aBudgetMode !== 'ems'",
           "xs": 12,

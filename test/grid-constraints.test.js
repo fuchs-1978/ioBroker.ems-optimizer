@@ -139,3 +139,35 @@ test('PV allowance setting is the hold ceiling with a 20 W admission margin', ()
         assert.equal(pvImportAdmissionW(setting),expected);
     for(const value of [-1,201,NaN,Infinity,'100',null])assert.equal(pvImportAdmissionW(value),0);
 });
+
+test('budget selection counts WB0 and WP but keeps the complete distribution declaration unchanged', () => {
+    const rows = [
+        {name:'WB0',kind:'wallbox',connectionPowerW:22000,budgetIncluded:true},
+        {name:'WB1',kind:'wallbox',connectionPowerW:22000,budgetIncluded:false},
+        {name:'WB2',kind:'wallbox',connectionPowerW:22000,budgetIncluded:false},
+        {name:'WP',kind:'heatPump',connectionPowerW:10000,budgetIncluded:true}
+    ];
+    const before = structuredClone(rows);
+    const result = calculateEmsMinimum({participants:rows});
+    assert.equal(result.valid,true);
+    assert.equal(result.count,2);
+    assert.equal(result.budgetW,7560);
+    assert.equal(result.excluded.length,2);
+    assert.deepEqual(rows,before);
+    rows[3].connectionPowerW=12000;
+    assert.equal(calculateEmsMinimum({participants:rows}).budgetW,8160);
+    assert.equal(binaryContactBudget({par14aBudgetMode:'external',par14aParticipants:rows},4200).budgetW,4200);
+});
+
+test('budget flags preserve migration and reject malformed or empty selections', () => {
+    const rows=participants(3);
+    assert.equal(calculateEmsMinimum({participants:rows}).budgetW,10500);
+    for (const row of rows) row.budgetIncluded=false;
+    assert.equal(calculateEmsMinimum({participants:rows}).valid,false);
+    rows[0].budgetIncluded='false';
+    assert.equal(calculateEmsMinimum({participants:rows}).valid,false);
+    rows[0].budgetIncluded=true;
+    assert.equal(calculateEmsMinimum({participants:rows}).budgetW,4200);
+    rows[1].connectionPowerW=null;
+    assert.equal(calculateEmsMinimum({participants:rows}).valid,false);
+});
