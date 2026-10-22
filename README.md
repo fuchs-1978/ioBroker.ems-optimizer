@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.118**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.119**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -104,7 +104,7 @@ Nach Speichern zeigt `Control.GridOperatorCalculation_JSON` Quelle, Zahl, Faktor
 | --- | --- | --- |
 | `par14aGroupId`, `par14aBoundaryId` | leer | Stabile Kennungen der tatsächlich vereinbarten Teilnehmergruppe und vollständigen gemeinsamen AC-Messgrenze. |
 | `par14aSiteScope` | `unconfigured` | `whole-site-ac` bestätigt, dass die vorhandenen getrennten Netzbezugs-/Rückspeisequellen den gesamten deklarierten Anschluss in W messen. |
-| `par14aParticipants` | leer | Zusätzliche Spalten: `deviceId`, `powerId`, `powerUnit`, `powerScope`. `deviceId` ist leer für rein gemessene Teilnehmer oder exakt `Wallbox0`, `Wallbox1`, `Wallbox2`, `Battery`. AC-Gesamtmessung einschließlich WP-Zusatzverbrauchern ausdrücklich als `total-ac` deklarieren; keine überlappenden Teilzähler. |
+| `par14aParticipants` | leer | `budgetIncluded`: Haken zählt zur lokalen Budgetberechnung (fehlendes Feld = true); alle Zeilen bleiben in Messung und gemeinsamer Begrenzung. Zusätzliche Spalten: `deviceId`, `powerId`, `powerUnit`, `powerScope`. `deviceId` ist leer für rein gemessene Teilnehmer oder exakt `Wallbox0`, `Wallbox1`, `Wallbox2`, `Battery`. AC-Gesamtmessung einschließlich WP-Zusatzverbrauchern ausdrücklich als `total-ac` deklarieren; keine überlappenden Teilzähler. |
 | `par14aStorageCoverage`, `par14aStorageMeters` | `unconfigured` / leer | Explizit kein Speicher (`none`) oder vollständige vorzeichenbehaftete AC-Abdeckung (`complete-ac`) mit Datenpunkt, Einheit, `total-ac` und Vorzeichen je Zähler. |
 | `par14aAccountingMaxAgeS`, `par14aAccountingMaxSkewMs` | 30 s / 0 ms | Gemeinsame Quellenalter- und Versatzgrenze; höchstens 30 s bzw. 1000 ms. Standard 0 ms verlangt für den Eigenstromzuschlag identische Originalzeitstempel. Bei frischen gültigen, aber zeitversetzten Quellen gilt ausschließlich das gemeinsame Bruttobudget in Höhe des Netzbudgets; die Netz-/Eigenstromzuordnung bleibt unbekannt. |
 
@@ -865,9 +865,9 @@ Ab alpha.114 akzeptieren Wallbox-Ausgang und zentrale Phasenbudgetprüfung best�
 
 ## Changelog
 
-### 0.17.0-alpha.118 (2026-10-22)
+### 0.17.0-alpha.119 (2026-10-22)
 
-Zeitversetzte, weiterhin frische und gültige Originalmessungen führen im ausdrücklich eingerichteten Gruppenmodus bei aktiver Binärkontakt-Begrenzung zu einer gemeinsamen konservativen Bruttogrenze ohne Eigenstromzuschlag. Der Regler erfindet keine synchronen Zeitstempel oder Netzbezugsnachweise. Ungültige Quellen, offene Stellwirkungen und Ausgangsprüfungen behalten ihre Schutzwirkung. Bestehender Bruttomodus unverändert; keine automatische Aktivierung oder Installation. [Details](docs/release-0.17.0-alpha.118.md).
+Pro Teilnehmer trennt `budgetIncluded` die lokale Budgetberechnung von der vollständigen Gruppenmessung und gemeinsamen Budgetverteilung. Fehlender Hakenwert erhält bestehendes Verhalten; explizit `false` nimmt nur die Berechnungsgrundlage heraus. Externe Budgets bleiben unverändert, LPC-Sperre und Ausgangsschutz bleiben bestehen. Die Liste muss weiterhin die vereinbarte Gruppe abbilden; keine automatische Anmeldung oder reale Abnahme.
 
 [Alle älteren Änderungen und historischen Detailbeschreibungen](CHANGELOG_OLD.md).
 

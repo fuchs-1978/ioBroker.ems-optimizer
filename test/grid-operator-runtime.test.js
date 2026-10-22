@@ -597,3 +597,20 @@ test('the verified single-head total is one alias for its retained current GS cl
     assert.equal(result.snapshot.eligibleOwnAvailableW, 1500);
     assert.equal(result.snapshot.rawSources.filter(source => source.id === powerId).length, 1);
 });
+
+test('uncounted participant remains measured and shares the selected population budget', () => {
+    const f=fixture({actualW:0,importW:3000});
+    f.config.par14aBudgetMode='ems';
+    f.config.par14aParticipants[0].budgetIncluded=false;
+    f.config.par14aParticipants.push({name:'WP',kind:'heatPump',connectionPowerW:10000,
+        budgetIncluded:true,deviceId:'',powerId:'wp.ac',powerUnit:'W',powerScope:'total-ac'});
+    f.put('wp.ac',3000);
+    const result=f.evaluate();
+    assert.equal(result.valid,true,result.reason);
+    assert.equal(result.calculation.count,1);
+    assert.equal(result.snapshot.netBudgetW,4200);
+    assert.equal(checkGroupCommand(result,'Wallbox0',4200).allowed,false);
+    assert.equal(checkGroupCommand(result,'Wallbox0',1200).allowed,true);
+    f.states.get('wb0.power').ts=NOW-30001;
+    denied(f);
+});
