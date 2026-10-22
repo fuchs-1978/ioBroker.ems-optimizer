@@ -1,6 +1,7 @@
 'use strict';
 
 /* Repository proposal only. No installation or activation by the adapter.
+ * Phase follower revision 2: retained targets, heartbeat-gated retries.
  * Copy/review locally before use. The example starts disabled.
  * go-e performs its own phase transition; mode ACK is not electrical proof.
  */
@@ -12,6 +13,8 @@ function createPhaseFollower(api, wallboxes, {root = 'ems-optimizer.0', timeoutM
     const good = (s, maxAge = Infinity) => s && s.ack === true
         && Number(s.q ?? 0) === 0 && Number.isFinite(s.ts) && s.ts > 0
         && s.ts <= now() && now() - s.ts <= maxAge;
+    // Targets are retained values; only the control heartbeat must be recent.
+    const validTarget = s => good(s) && [1, 3].includes(s.val);
     const read = key => api.getState(`${root}.${key}`);
     function permitted(wb) {
         const master = read('System.RealOutputsEnabled');
@@ -32,7 +35,7 @@ function createPhaseFollower(api, wallboxes, {root = 'ems-optimizer.0', timeoutM
     function check(wb) {
         if (!permitted(wb)) { cancel(); return; }
         const target = read(`Control.Targets.Wallbox${wb.wb}_Phases`);
-        if (!good(target, 10000) || ![1, 3].includes(target.val)) return;
+        if (!validTarget(target)) return;
         const mode = target.val === 3 ? 2 : 1;
         const old = pending.get(wb.wb);
         if (old) {
@@ -60,7 +63,7 @@ function createPhaseFollower(api, wallboxes, {root = 'ems-optimizer.0', timeoutM
             pending.delete(wb.wb);
             if (!permitted(wb)) { cancel(); return; }
             const currentTarget = read(`Control.Targets.Wallbox${wb.wb}_Phases`);
-            if (!good(currentTarget, 10000) || (currentTarget.val === 3 ? 2 : 1) !== mode) return;
+            if (!validTarget(currentTarget) || (currentTarget.val === 3 ? 2 : 1) !== mode) return;
             const source = api.getState(wb.mode);
             const confirmed = good(source, timeoutMs) && source.ts > request.at && source.val === mode;
             api.log(`${wb.name}: ${confirmed ? 'frische go-e-Modus-ACK' : 'Phasen-Timeout/ungueltige ACK'}; `
