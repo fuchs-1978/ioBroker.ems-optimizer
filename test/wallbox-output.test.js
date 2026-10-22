@@ -3449,3 +3449,63 @@ for (const fault of ['device', 'data lost', 'too late']) test('longer restart bu
     assert.ok(h.writes.some(w => w.id === 'allow' && w.val === 0));
     assert.equal(h.adoptionProof().valid, false);
 });
+
+async function nativePhasePauseFixture() {
+    let now = 1000000000000;
+    const h = setup({now: () => now});
+    Object.assign(h.config, {wb0PhaseSwitchEnabled: true, wb0PhaseModeId: 'phaseMode',
+        wb0MaxCurrent3pA: 16, wb0MaxPowerW: 11040});
+    h.put('phaseMode', 2); h.put('ems.0.Control.Targets.Wallbox0_Phases', 3);
+    await h.start();
+    now += 2000; h.refresh();
+    h.put('power', 4.14); for (const id of ['i1', 'i2', 'i3']) h.put(id, 6);
+    h.put('ems.0.Control.Targets.Wallbox0_Phases', 1);
+    await h.output.tick();
+    const d = h.output.devices[0];
+    assert.ok(h.output.phaseAllowPauses.get(d), 'live phase request qualifies a bounded pause');
+    now += 2000; h.refresh(); h.put('phaseMode', 1); h.ack('allow', 0); h.electricalOff();
+    const before = h.writes.length;
+    await h.output.tick();
+    assert.equal(d.stopRequest, null, 'native pause does not become an external stop');
+    assert.equal(d.owned, true);
+    assert.equal(h.writes.length, before, 'no OFF or ON is manufactured');
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val, /EMS-Phasenpause/);
+    return {h, d, advance: ms => {now += ms; h.refresh();}};
+}
+
+test('owned EMS phase pause waits for native allow recovery without sending OFF or ON', async () => {
+    const {h, d, advance} = await nativePhasePauseFixture();
+    advance(2000); h.ack('allow', 1); h.put('power', 1.38); h.put('i1', 6);
+    const before = h.writes.length;
+    await h.output.tick();
+    assert.equal(h.output.phaseAllowPauses.has(d), false);
+    assert.equal(d.stopRequest, null);
+    assert.equal(h.writes.slice(before).some(row => row.id === 'allow'), false,
+        'native recovery does not require a fresh start sequence');
+});
+
+test('native phase pause cannot bypass a user stop', async () => {
+    const {h, d, advance} = await nativePhasePauseFixture();
+    advance(2000); h.put('userAllow', false);
+    await h.output.tick();
+    assert.equal(h.output.phaseAllowPauses.has(d), false);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, false);
+});
+
+test('native phase pause expires rather than authorizing an automatic ON', async () => {
+    const {h, d, advance} = await nativePhasePauseFixture();
+    const before = h.writes.length;
+    advance(181000);
+    await h.output.tick();
+    assert.equal(h.output.phaseAllowPauses.has(d), false);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, false);
+    assert.equal(h.writes.slice(before).some(row => row.id === 'allow' && row.val === 1), false);
+});
+
+test('native phase pause retains operator hard limits', async () => {
+    const {h, d, advance} = await nativePhasePauseFixture();
+    advance(2000); h.put('lpc', 'limited'); h.put('lpcLimit', 1000);
+    await h.output.tick();
+    assert.equal(h.output.phaseAllowPauses.has(d), false);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, false);
+});

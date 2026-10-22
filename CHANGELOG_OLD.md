@@ -1,3 +1,7 @@
+### 0.17.0-alpha.120 (2026-10-22)
+
+Wartende Wallboxen geben aktuell ungenutzte PV-Anteile an weitere ladebereite Fahrzeuge weiter, bevor der optionale Heizstab den Rest erhält. Eine manuelle Priorisierung des bereits ladenden Fahrzeugs ist dafür nicht erforderlich. Startverzögerungen, notwendige Lastreduktionen, physische Reservierungen und gemeinsame Leistungsgrenzen bleiben wirksam. Die Diagnose zeigt den weitergereichten Anteil als `redistributedW`. [Details](docs/release-0.17.0-alpha.120.md).
+
 ### 0.17.0-alpha.119 (2026-10-22)
 
 Pro Teilnehmer trennt `budgetIncluded` die lokale Budgetberechnung von der vollständigen Gruppenmessung und gemeinsamen Budgetverteilung. Fehlender Hakenwert erhält bestehendes Verhalten; explizit `false` nimmt nur die Berechnungsgrundlage heraus. Externe Budgets bleiben unverändert, LPC-Sperre und Ausgangsschutz bleiben bestehen. Die Liste muss weiterhin die vereinbarte Gruppe abbilden; keine automatische Anmeldung oder reale Abnahme.
