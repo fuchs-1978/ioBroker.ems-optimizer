@@ -1203,6 +1203,18 @@
           "md": 4,
           "lg": 4,
           "xl": 4
+        },
+        "sourcePowerHistoryEnabled": {
+          "type": "checkbox",
+          "label": "Reduce unchanged PV and wallbox SQL power repeats to 10 minutes",
+          "help": "At startup, manages only already enabled SQL histories of the configured PV and wallbox power sources. Records value changes without delta, block or debounce filtering, including zero transitions; keeps retention and other sources unchanged. Disable to stop future management; existing SQL settings are not restored. SQL repeats do not prove device freshness.",
+          "default": true,
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         }
       }
     },

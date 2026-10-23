@@ -201,6 +201,11 @@ async function worker(tree) {
         const {adapter} = compile(source, path.join(tree, 'test/lifecycle-audit-fixture.js'),
             {auditClock: class extends Date {static now() {return 2000000;}}});
         const a = adapter();
+        // Isolate the new optional scalar-history setup, just like startShadow
+        // below. Its own metadata/status is intentional alpha.125 behavior;
+        // source-power-history/lifecycle tests cover it separately. Keep all
+        // pre-existing ordered output/startup/shutdown traces byte-exact.
+        if (a.sourcePowerHistory) a.sourcePowerHistory.initialize = async () => {};
         a.setStateAsync = async (...args) => record({kind: 'state', args});
         a.preloadStates = async () => {
             for (const key of ['Plan.Valid', 'Control.Valid', 'System.DataValid'])

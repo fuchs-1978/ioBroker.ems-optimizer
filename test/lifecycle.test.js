@@ -28,6 +28,24 @@ function adapter(adapterCore = {}) {
     return instance;
 }
 
+test('source power history setup starts after output initialization and cannot hold up productive startup', async () => {
+    const a = adapter(), order = [];
+    for (const method of ['preloadStates', 'migrateBatteryCadence', 'startEngine', 'applyNativeVehicleSettings',
+        'applyNativeEmsSettings', 'flushOwnWrites', 'persistBatteryCadenceMigration']) a[method] = async () => {};
+    a.runEngine = () => {};
+    a.publishMappingStatus = () => {};
+    a.outputMetadata.refresh = async () => {};
+    a.wallboxOutput.initialize = async () => {order.push('outputs-ready');};
+    a.startDebug = a.startShadow = a.startMarketPrices = async () => {};
+    let finish;
+    a.sourcePowerHistory.initialize = () => {order.push('history-start'); return new Promise(resolve => {finish = resolve;});};
+    await a.initializeAdapter();
+    assert.deepEqual(order, ['outputs-ready', 'history-start']);
+    assert.ok(a.sourcePowerHistoryInitialization);
+    finish();
+    await a.sourcePowerHistoryInitialization;
+});
+
 test('alpha84 connects actual command events, Modbus resets and the VM receipt without confusing database completion',async()=>{
     const a=adapter();let now=1000;
     const id='modbus.4.holdingRegisters.1000_Power';
