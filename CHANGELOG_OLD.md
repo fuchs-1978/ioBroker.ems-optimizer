@@ -1,3 +1,7 @@
+### 0.17.0-alpha.127 (2026-10-23)
+
+Bestaetigte laufende Ladung bleibt bei Nichterreichbarkeit der Wallbox oder ausbleibenden Poll-Rueckmeldungen mit voller Leistungsreserve bestehen, solange frische SMA-Gesamt-/Phasenmessungen und alle weiteren Schutzpruefungen passen. Dauerhafte Statuswarnung ohne neue Stellbefehle oder rein altersbedingtes AUS; nach frischer Wiederverbindung normale Regelung ohne erzwungenen Zwischenstopp. Gilt auch fuer Mii mit SoC-Stromreduzierung und manueller Mindestladung. [Details und Grenzen](docs/release-0.17.0-alpha.127.md).
+
 ### 0.17.0-alpha.126 (2026-10-23)
 
 Manuelle Wallbox-Mindestladung richtet sich in Live-Regelung und Fahrplan nach dem gültigen EMS-SoC und Ladeziel. Ein veraltetes oder fehlendes externes socfrei kann sie nicht mehr blockieren oder bei ungültigem EMS-SoC freigeben. Das alte Skript PV_Ueberschuss_SOCmin ist für die EMS-Ladesteuerung nicht mehr erforderlich. [Details](docs/release-0.17.0-alpha.126.md).

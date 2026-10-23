@@ -3673,6 +3673,25 @@ test('manual minimum permits its authorized grid import while communication is a
     assert.deepEqual(h.writes, []);
 });
 
+test('confirmed lower current retires an old high reserve only after post-ACK electrical feedback', async () => {
+    const now=1000000, h=setup({now:()=>now});
+    await h.start();
+    const d=h.output.devices[0];
+    d.parallelCommandAt=now-1000; d.parallelReservationW=2300;
+    h.put('ems.0.Devices.Wallbox0.OutputReservedPower_W',2300);
+    h.put('feedback',6,{ts:now-500});
+    const samples={power:1.31,i1:5.9,i2:0,i3:0};
+    for(const [id,val] of Object.entries(samples))h.put(id,val,{ts:now-700});
+    assert.equal(h.output.parallelLoadReservations(h.mapping,1).wallboxesW[0],2300,
+        'current ACK alone does not reclaim the previous possible draw');
+    for(const [id,val] of Object.entries(samples))h.put(id,val,{ts:now-100});
+    assert.equal(h.output.parallelLoadReservations(h.mapping,1).wallboxesW[0],1380,
+        'fresh response permits the lower command reserve, never less than nominal 6 A');
+    d.stopRequest={reason:'user stop'};
+    assert.equal(h.output.parallelLoadReservations(h.mapping,1).wallboxesW[0],2300,
+        'a pending stop cannot surrender its retained high-water reserve');
+});
+
 test('a genuine user stop keeps full lost-device reserve until OFF and fresh electrical zero', async () => {
     const h = await telemetryBridgeFixture();
     h.advance(61000); h.put('connection', false); await h.output.tick();

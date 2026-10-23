@@ -1002,6 +1002,54 @@ function measuredHoldEngine(wb = 0) {
     return h;
 }
 
+function fixedOnePhaseMeasuredEngine(wb = 0) {
+    const h = measuredHoldEngine(wb);
+    h.nativeConfig[`wb${wb}PhaseSwitchEnabled`] = false;
+    h.nativeConfig[`wb${wb}PhaseModeId`] = '';
+    h.put(`ems.0.Vehicles.Wallbox${wb}.PhaseSwitchEnabled`, false);
+    h.states.delete(`DP_WB${wb}_PHASE_MODE`);
+    h.owned(wb, 6, 1310);
+    h.put(`DP_WB${wb}_AMIN`, 6);
+    h.nativeConfig.wallboxPVImportToleranceW = 100;
+    h.run('updateVehicles()');
+    return h;
+}
+
+for (const wb of [0,1,2]) test(`fixed 1P WB${wb} without mode ACK uses 1310 W response to admit the next PV ampere`, () => {
+    const h = fixedOnePhaseMeasuredEngine(wb);
+    const target = h.update(1569);
+    const d = JSON.parse(h.states.get(`ems.0.Control.Wallbox${wb}.AllocationDiagnostics_JSON`).val);
+    assert.equal(target.amps[wb], 7, JSON.stringify(d));
+    assert.equal(d.actualPowerW, 1310);
+    assert.equal(d.responseBasis, 'power-response');
+    assert.equal(d.measuredPVStep, true);
+    assert.equal(d.phases, 1);
+    assert.ok(target.reserve[wb] >= 1610, 'soft PV measurement must not shrink the hard command reserve');
+});
+
+test('fixed 1P measured PV step still needs the full nominal hard budget', () => {
+    const h = fixedOnePhaseMeasuredEngine();
+    assert.equal(h.update(1569,1600).amps[0],6);
+    assert.equal(h.update(1569,1610).amps[0],7);
+});
+
+for (const [name, change] of [
+    ['real pending mode request', h=>h.put('ems.0.Devices.Wallbox0.PhaseSwitchPending',true)],
+    ['real phase settling', h=>h.put('ems.0.Devices.Wallbox0.PhaseTransitionActive',true)],
+    ['different actual topology', h=>h.put('ems.0.Devices.Wallbox0.OutputPhases',3)],
+    ['pending electrical response', h=>h.put('ems.0.Devices.Wallbox0.ResponsePending',true)],
+    ['bad power quality', h=>h.put('DP_WB0_POWER',1.31,{q:64})],
+    ['unconfirmed power', h=>h.put('DP_WB0_POWER',1.31,{ack:false})],
+    ['stale power', h=>h.put('DP_WB0_POWER',1.31,{ts:Date.now()-31000})],
+    ['switchable topology with missing mode feedback', h=>{
+        h.nativeConfig.wb0PhaseSwitchEnabled=true;
+        h.put('ems.0.Vehicles.Wallbox0.PhaseSwitchEnabled',true);
+    }]
+]) test(`fixed-topology correction cannot grant the measured PV step with ${name}`,()=>{
+    const h=fixedOnePhaseMeasuredEngine();change(h);h.run('updateVehicles()');
+    assert.ok(h.update(1569).amps[0]<=6);
+});
+
 test('confirmed running EQV-like response survives a nominal soft cap without a down-up cycle', () => {
     const h = measuredHoldEngine();
     for (const budget of [1800, 1750, 1810, 1740]) {
