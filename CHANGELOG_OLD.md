@@ -1,3 +1,7 @@
+### 0.17.0-alpha.128 (2026-10-23)
+
+Feste einphasige Wallboxen wie der Mii benötigen keine Phasenmodus-Rückmeldung für bestätigte leistungsbasierte PV-Stromschritte. Eine fehlende psm-Quelle wird nicht mehr als laufender Phasenwechsel behandelt. Harte Strom-/Leistungsreserven bleiben nominal; echte offene Phasenwechsel und unbestätigte elektrische Antworten bleiben geschützt. [Details](docs/release-0.17.0-alpha.128.md).
+
 ### 0.17.0-alpha.127 (2026-10-23)
 
 Bestaetigte laufende Ladung bleibt bei Nichterreichbarkeit der Wallbox oder ausbleibenden Poll-Rueckmeldungen mit voller Leistungsreserve bestehen, solange frische SMA-Gesamt-/Phasenmessungen und alle weiteren Schutzpruefungen passen. Dauerhafte Statuswarnung ohne neue Stellbefehle oder rein altersbedingtes AUS; nach frischer Wiederverbindung normale Regelung ohne erzwungenen Zwischenstopp. Gilt auch fuer Mii mit SoC-Stromreduzierung und manueller Mindestladung. [Details und Grenzen](docs/release-0.17.0-alpha.127.md).

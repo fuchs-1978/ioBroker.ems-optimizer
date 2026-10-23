@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.128**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.129**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -874,9 +874,9 @@ Der Status `Debug.SourcePowerHistory` nennt je konfigurierter Quelle `configured
 
 ## Changelog
 
-### 0.17.0-alpha.128 (2026-10-23)
+### 0.17.0-alpha.129 (2026-10-23)
 
-Feste einphasige Wallboxen wie der Mii benötigen keine Phasenmodus-Rückmeldung für bestätigte leistungsbasierte PV-Stromschritte. Eine fehlende psm-Quelle wird nicht mehr als laufender Phasenwechsel behandelt. Harte Strom-/Leistungsreserven bleiben nominal; echte offene Phasenwechsel und unbestätigte elektrische Antworten bleiben geschützt. [Details](docs/release-0.17.0-alpha.128.md).
+Test- und Releaseprüfung umfassen Node.js 22, 24 und 26. Mindestversionen von adapter-core/testing wurden aktualisiert. Die letzten sieben Versionsnachrichten bleiben im Manifest; die Paketprüfung verhindert ein erneutes Überschreiten der Grenze. Ältere Änderungen bleiben im Changelog erhalten. [Details](docs/release-0.17.0-alpha.129.md).
 
 [Alle älteren Änderungen und historischen Detailbeschreibungen](CHANGELOG_OLD.md).
 
