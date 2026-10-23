@@ -1,9 +1,13 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.129",
+    "version": "0.17.0-alpha.130",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.130": {
+        "en": "Prefer a small grid import: migrate neutral targets once to 50 W and allow physically funded one-amp PV steps beyond the nominal soft conversion, retaining full hard reservations.",
+        "de": "Kleinen Netzbezug bevorzugen: neutralen Sollwert einmalig auf 50 W umstellen und messtechnisch gedeckte 1-A-PV-Schritte trotz nominaler Umrechnung zulassen; harte Leistungsreserven bleiben erhalten."
+      },
       "0.17.0-alpha.129": {
         "en": "Validate Node.js 22/24/26, update adapter-core/testing minimums and bound published news with an automatic package guard.",
         "de": "Node.js 22/24/26 pruefen, Mindestversionen von adapter-core/testing aktualisieren und Versionsnachrichten mit automatischer Paketpruefung begrenzen."
@@ -27,10 +31,6 @@
       "0.17.0-alpha.124": {
         "en": "Allow the bounded no-write wallbox telemetry bridge with a valid explicitly inactive groupNet constraint; keep active or unknown group limits, configured LPC fences and all existing safety checks effective.",
         "de": "Begrenzte Wallbox-Telemetrieueberbrueckung auch bei gueltiger, ausdruecklich inaktiver groupNet-Begrenzung erlauben. Aktive/unklare Grenzen, konfigurierte LPC-Sperren und bestehende Schutzpruefungen bleiben wirksam."
-      },
-      "0.17.0-alpha.123": {
-        "en": "Bridge short telemetry gaps for confirmed running wallboxes up to 60 seconds total sample age with fresh SMA, unchanged current, full reservations and conservative limits.",
-        "de": "Kurze Messluecken bestaetigt laufender Wallboxen bis maximal 60 Sekunden Messwertalter ueberbruecken: aktuelle SMA-Werte, unveraenderter Strom, volle Reservierung und konservative Grenzen."
       }
     },
     "titleLang": {

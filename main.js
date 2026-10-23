@@ -1,6 +1,7 @@
 "use strict";
 
 const fs = require("node:fs");
+const {migratedGridTarget} = require("./lib/grid-target-migration");
 const path = require("node:path");
 const vm = require("node:vm");
 const schedule = require("node-schedule");
@@ -107,6 +108,7 @@ class EmsOptimizer extends utils.Adapter {
         await this.preloadStates();
         if (this.unloading) return;
         await this.migrateBatteryCadence();
+        this.migrateGridTarget();
         if (this.unloading) return;
         const dhwActualMirrorId = String(this.config.dhwActualMirrorId || "").trim();
         if (dhwActualMirrorId) this.allowedForeignWriteIds.add(dhwActualMirrorId);
@@ -139,6 +141,7 @@ class EmsOptimizer extends utils.Adapter {
         // Optional source-history metadata setup never delays actuator startup.
         this.sourcePowerHistoryInitialization = this.sourcePowerHistory.initialize().catch(error => this.warnDebug(error));
         await this.persistBatteryCadenceMigration();
+        await this.persistGridTargetMigration();
     }
 
     warnDebug(error) {
@@ -560,6 +563,28 @@ class EmsOptimizer extends utils.Adapter {
             await this.queueCompatState(`${this.namespace}.${relativeId}`, fallback,
                 {type: "boolean", role: "indicator"});
             this.setCompatState(`${this.namespace}.${relativeId}`, value, true);
+        }
+    }
+
+    migrateGridTarget() {
+        const previous = this.getCachedState(`${this.namespace}.System.Version`)?.val;
+        const target = migratedGridTarget(previous, this.config.targetGridPowerW);
+        if (target === null) return;
+        this.config.targetGridPowerW = target;
+        this.gridTargetMigrationPending = true;
+    }
+
+    async persistGridTargetMigration() {
+        if (!this.gridTargetMigrationPending || this.unloading) return;
+        // Persist only after ownership recovery/output initialization. Saving
+        // native settings can restart the adapter; a failure remains visible.
+        try {
+            await this.extendForeignObjectAsync(`system.adapter.${this.namespace}`,
+                {native: {targetGridPowerW: 50}});
+            this.gridTargetMigrationPending = false;
+            this.log.info('NVP target migrated from 0 W to 50 W import (alpha.130)');
+        } catch (error) {
+            this.log.warn(`NVP target is 50 W for this run; saving failed: ${error.message}. Set targetGridPowerW to 50 W in Admin.`);
         }
     }
 
