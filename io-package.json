@@ -1,9 +1,13 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.130",
+    "version": "0.17.0-alpha.131",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.131": {
+        "en": "Observe coherent delayed go-e current polls for up to 10 seconds with live protection checks and full reservations before stopping.",
+        "de": "Zusammenpassende verspaetete go-e-Sollstrommeldungen bis zu 10 Sekunden beruhigen lassen; laufende Schutzpruefungen und volle Reserven bleiben aktiv."
+      },
       "0.17.0-alpha.130": {
         "en": "Prefer a small grid import: migrate neutral targets once to 50 W and allow physically funded one-amp PV steps beyond the nominal soft conversion, retaining full hard reservations.",
         "de": "Kleinen Netzbezug bevorzugen: neutralen Sollwert einmalig auf 50 W umstellen und messtechnisch gedeckte 1-A-PV-Schritte trotz nominaler Umrechnung zulassen; harte Leistungsreserven bleiben erhalten."
@@ -27,10 +31,6 @@
       "0.17.0-alpha.125": {
         "en": "PV and wallbox power SQL history retains changes, with unchanged values repeated every 10 minutes.",
         "de": "PV- und Wallbox-Leistung: SQL erhält Änderungen, unveränderte Werte werden alle 10 Minuten wiederholt."
-      },
-      "0.17.0-alpha.124": {
-        "en": "Allow the bounded no-write wallbox telemetry bridge with a valid explicitly inactive groupNet constraint; keep active or unknown group limits, configured LPC fences and all existing safety checks effective.",
-        "de": "Begrenzte Wallbox-Telemetrieueberbrueckung auch bei gueltiger, ausdruecklich inaktiver groupNet-Begrenzung erlauben. Aktive/unklare Grenzen, konfigurierte LPC-Sperren und bestehende Schutzpruefungen bleiben wirksam."
       }
     },
     "titleLang": {

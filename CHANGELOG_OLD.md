@@ -2311,3 +2311,9 @@ Adapters sind.
 Bridge short telemetry gaps for confirmed running wallboxes up to 60 seconds total sample age with fresh SMA, unchanged current, full reservations and conservative limits.
 
 Kurze Messluecken bestaetigt laufender Wallboxen bis maximal 60 Sekunden Messwertalter ueberbruecken: aktuelle SMA-Werte, unveraenderter Strom, volle Reservierung und konservative Grenzen.
+
+## Archived package news for alpha.131
+
+### 0.17.0-alpha.124
+
+Allow the bounded no-write wallbox telemetry bridge with a valid explicitly inactive groupNet constraint; keep active or unknown group limits, configured LPC fences and all existing safety checks effective.

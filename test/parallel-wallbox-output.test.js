@@ -2112,3 +2112,40 @@ test('an unanswered measured probe cannot fund a second measured probe from unch
     h.advance(46000);h.grant([13]);h.put('export',400);h.writes.length=0;await h.output.tick();
     assert.ok(!h.writes.some(w=>w.id==='cmd'&&w.val>11));assert.equal(d.limitedProbeAttempts,1);
 });
+
+for (const phases of [1, 3]) test(`coherent old go-e poll settles without OFF or new current in ${phases}P`, async () => {
+    const h = await correctionCandidate(phases);
+    h.ack('cmd', 11);
+    await h.output.tick();
+    assert.deepEqual(h.writes, []);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val, /beruhigen/);
+    assert.ok(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val >= 11 * phases * 230);
+    const deadline = h.output.devices[0].feedbackSettle.until;
+    h.advance(4000); h.grant([10], {phases: [phases]});
+    await h.output.tick();
+    assert.equal(h.output.devices[0].feedbackSettle.until, deadline);
+    h.ack('cmd', 10); h.measure(0, 10, phases);
+    await h.output.tick();
+    assert.deepEqual(h.writes, []);
+    assert.equal(h.output.devices[0].lastA, 10);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, true);
+    // Matching polls cannot replenish the same command's observation window.
+    h.advance(7000); h.grant([10], {phases: [phases]}); h.ack('cmd', 11); h.ack('feedback', 11);
+    await h.output.tick();
+    assert.deepEqual(h.writes.at(-1), {id: 'allow', val: 0});
+});
+
+for (const [name, change] of [
+    ['stale SMA', h => h.put('import', 0, {ts: 1})],
+    ['house overload', h => h.put('h1', 80)],
+    ['hard shared cap', h => h.grant([10], {hardBudgetW: 2300})],
+    ['device error', h => h.put('error', 5)],
+    ['release withdrawn', h => h.put('userAllow', false)],
+    ['lower target', h => { h.grant([8]); h.put('export', 0); }]
+]) test(`go-e settling rechecks ${name} on every tick`, async () => {
+    const h = await correctionCandidate(); h.ack('cmd', 11);
+    await h.output.tick(); assert.deepEqual(h.writes, []);
+    h.advance(2000); h.grant([10]); change(h);
+    await h.output.tick();
+    assert.deepEqual(h.writes.at(-1), {id: 'allow', val: 0});
+});
