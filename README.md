@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.126**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.127**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -352,6 +352,12 @@ Zählerwerte müssen bestätigt, plausibel und höchstens 60 Sekunden alt sein. 
 | Stufe 1: Maximalstrom je Phase<br>`wb0Taper1MaxA` | 13 A | Maximalstrom je Phase für Stufe 1 in A; ersetzt keine Schutzgrenze und kann den verfügbaren Restüberschuss bewusst ungenutzt lassen. |
 | Stufe 2: Abstand unter dem Ziel<br>`wb0Taper2DeltaPct` | 2 Prozentpunkte | Engerer Abstand in Prozentpunkten unter Ziel für Stufe 2. Passend unterhalb des Stufe-1-Abstands wählen. |
 | Stufe 2: Maximalstrom je Phase<br>`wb0Taper2MaxA` | 8 A | Maximalstrom je Phase für Stufe 2 in A. Nicht unter physischem Mindeststrom konfigurieren, wenn reguläre Ladung fortgesetzt werden soll. |
+
+### Kommunikationsausfall einer laufenden Wallbox
+
+Ab alpha.127 darf eine im laufenden EMS-Prozess elektrisch bestaetigte, unveraenderte Ladung bei Nichterreichbarkeit der Wallbox oder ausbleibenden Poll-Rueckmeldungen bestehen bleiben. Das EMS zeigt `TELEMETRIE-WARNUNG` mit Quellenalter und reservierter Leistung; einmal pro Ausfall wird gewarnt. Es sendet weder neue Strom-/Freigabebefehle noch Phasenwechsel und erzeugt keinen AUS-Auftrag allein wegen 30/60 Sekunden Wallbox-Messwertalter. Frische SMA-Gesamt-/Phasenwerte, gueltige EMS-/Fahrzeugfreigaben und konservativ eingehaltene Leistungs-/Schutzgrenzen bleiben Voraussetzung. Die bisher bestaetigte beziehungsweise noch moegliche Leistung bleibt voll reserviert, auch wenn der letzte Messwert darunter lag. Alte Quellenzeitstempel und ACK/Qualitaet werden nicht veraendert.
+
+Nach Wiederverbindung geht die Ladung mit frischen Rueckmeldungen in die normale Regelung zurueck. Benutzer-AUS, Zielerreichung, echte Geraetefehler, unbekannte/ueberschrittene Schutzgrenzen oder fehlende SMA-Ueberwachung bleiben Abschaltgruende. Bei einem solchen AUS bleibt die Reserve bis zu bestaetigtem AUS und frischer elektrischer Ruhe bestehen. Ein aktiver oder unklarer groupNet-Vertrag erhaelt keine Ausnahme von seinen eigenstaendigen Messnachweisen. Unbestaetigte Starts, offene Stell-/Phasenwechsel, unbekannte Sitzungen nach Neustart und Schattenmodelle erhalten keine Kommunikationsausnahme. Eine aktivierte SoC-Stromreduzierung allein verhindert den Warnzustand nicht; ihre aktuelle Stromgrenze gilt weiter.
 
 ### Preisabhängiges Fahrzeugladen
 
@@ -868,9 +874,9 @@ Der Status `Debug.SourcePowerHistory` nennt je konfigurierter Quelle `configured
 
 ## Changelog
 
-### 0.17.0-alpha.126 (2026-10-23)
+### 0.17.0-alpha.127 (2026-10-23)
 
-Manuelle Wallbox-Mindestladung richtet sich in Live-Regelung und Fahrplan nach dem gültigen EMS-SoC und Ladeziel. Ein veraltetes oder fehlendes externes socfrei kann sie nicht mehr blockieren oder bei ungültigem EMS-SoC freigeben. Das alte Skript PV_Ueberschuss_SOCmin ist für die EMS-Ladesteuerung nicht mehr erforderlich. [Details](docs/release-0.17.0-alpha.126.md).
+Bestaetigte laufende Ladung bleibt bei Nichterreichbarkeit der Wallbox oder ausbleibenden Poll-Rueckmeldungen mit voller Leistungsreserve bestehen, solange frische SMA-Gesamt-/Phasenmessungen und alle weiteren Schutzpruefungen passen. Dauerhafte Statuswarnung ohne neue Stellbefehle oder rein altersbedingtes AUS; nach frischer Wiederverbindung normale Regelung ohne erzwungenen Zwischenstopp. Gilt auch fuer Mii mit SoC-Stromreduzierung und manueller Mindestladung. [Details und Grenzen](docs/release-0.17.0-alpha.127.md).
 
 [Alle älteren Änderungen und historischen Detailbeschreibungen](CHANGELOG_OLD.md).
 
