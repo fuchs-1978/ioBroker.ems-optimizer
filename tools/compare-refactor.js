@@ -67,7 +67,19 @@ async function worker(tree) {
     assert.equal(plantSource.split('states.set(id, state);').length, 2);
     plantSource = 'const auditEvent = module.auditEvent;\n' + plantSource.replace(
         'states.set(id, state);', 'states.set(id, state); auditEvent({kind:"state", at:now, id, state});');
-    const {plant} = compile(plantSource, path.join(tree, 'test/control-plant.js'), {auditEvent: record});
+    const {plant: createPlant} = compile(plantSource, path.join(tree, 'test/control-plant.js'), {auditEvent: record});
+    const plant = async options => {
+        const h = await createPlant(options);
+        // These byte-exact historical traces cover unchanged, confirmed
+        // topology. Explicitly supply their synthetic 1P mode observation:
+        // alpha.128 intentionally changes measured diagnostics/steps when a
+        // fixed device has no psm source. That missing-source contract is
+        // tested separately by fixed-one-phase-pv-step and parallel-realtime.
+        // Never manufacture mode feedback in production or switchable cases.
+        for (const wb of [0, 2]) if (h.config[`wb${wb}ControlEnabled`]
+            && !h.config[`wb${wb}PhaseSwitchEnabled`]) h.put(`DP_WB${wb}_PHASE_MODE`, 1);
+        return h;
+    };
     const checkpoint = h => record({kind: 'checkpoint', at: h.now(), commands: h.writes,
         trace: h.trace, diagnostics: h.diagnosticWrites, states: [...h.states],
         devices: h.output.devices,
