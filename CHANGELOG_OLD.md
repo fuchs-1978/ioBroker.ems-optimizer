@@ -2302,3 +2302,12 @@ Adapters sind.
 | 0.1.2 | Vier Unterzähler, Profile je Wochentag/Feiertag und getrennte Preisbestandteile. |
 | 0.1.1 | Wetter- und PV-Prognose für fünf PV-Flächen. |
 | 0.1.0 | Erster reiner Beobachtungsmodus. |
+
+
+## Archived package news for alpha.130
+
+### 0.17.0-alpha.123
+
+Bridge short telemetry gaps for confirmed running wallboxes up to 60 seconds total sample age with fresh SMA, unchanged current, full reservations and conservative limits.
+
+Kurze Messluecken bestaetigt laufender Wallboxen bis maximal 60 Sekunden Messwertalter ueberbruecken: aktuelle SMA-Werte, unveraenderter Strom, volle Reservierung und konservative Grenzen.

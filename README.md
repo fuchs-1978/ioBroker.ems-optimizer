@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.129**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.130**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -873,6 +873,11 @@ Ab alpha.114 akzeptieren Wallbox-Ausgang und zentrale Phasenbudgetprüfung best�
 Der Status `Debug.SourcePowerHistory` nennt je konfigurierter Quelle `configured`, `already-configured`, `skipped` oder einen Fehler. Die Bestätigung betrifft persistierte SQL-Einstellungen, keinen erfolgreichen SQL-Datensatz oder durchgehende Gerätefrische. Unveränderte Leistung benötigt nach der Umstellung bis zu 600 s bis zur nächsten SQL-Wiederholung. Für Quellenfrische und kurze Unterbrechungen weiterhin reale Quellenzeiten/Qualität und ereignisorientierte DecisionRecords auswerten; längere Historienabstände nicht als Geräteausfall interpretieren. Tagesenergie und Ereigniserhalt müssen nach manueller Installation real nachgewiesen werden.
 
 ## Changelog
+
+### 0.17.0-alpha.130 (2026-10-23)
+
+Einmalige Umstellung bisheriger 0-W-NVP-Ziele auf 50 W Bezug. Messtechnisch gedeckte PV-Stromschritte werden nicht mehr allein durch die nominale Watt/Ampere-Umrechnung blockiert. [Details](docs/release-0.17.0-alpha.130.md).
+
 
 ### 0.17.0-alpha.129 (2026-10-23)
 

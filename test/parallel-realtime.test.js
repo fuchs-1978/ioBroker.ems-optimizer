@@ -1536,3 +1536,31 @@ test('busy donor cannot manufacture a handoff without an observed charging episo
     assert.equal(targets.amps[2], 0);
     assert.ok(h.diagnostic(2).start.startDelayRemainingS > 0);
 });
+
+test('confirmed low actual draw admits one PV ampere beyond a multi-amp nominal gap', () => {
+    const h = measuredHoldEngine(2);
+    h.nativeConfig.wallboxPVImportToleranceW = 100;
+    h.owned(2, 17, 3300);
+    const target = h.update(3600);
+    assert.equal(target.amps[2], 18);
+    assert.ok(target.reserve[2] >= 4140);
+    const d = JSON.parse(h.states.get('ems.0.Control.Wallbox2.AllocationDiagnostics_JSON').val);
+    assert.equal(d.nominalMaximumA, 15);
+    assert.equal(d.measuredPVStep, true);
+    assert.ok(h.update(3600, 4139).amps[2] <= 17, 'one watt below full nominal hard reserve denies increase');
+    assert.equal(h.update(3600, 4140).amps[2], 18);
+    assert.equal(h.update(3449).amps[2], 17, '81 W above soft target exceeds 80 W admission');
+    h.put('ems.0.Devices.Wallbox2.ResponsePending', true);
+    h.put('ems.0.Devices.Wallbox2.ResponseState', 'vehicle_response');
+    assert.ok(h.update(3600).amps[2] <= 17, 'no further increase while previous effect is unknown');
+});
+
+test('50 W target prefers predicted 100 W import over 130 W export at confirmed low draw', () => {
+    const h = measuredHoldEngine(2);
+    h.nativeConfig.wallboxPVImportToleranceW = 100;
+    h.owned(2, 17, 3300);
+    // Allocation input includes NVP target: actual + export + target.
+    assert.equal(h.update(3300 + 130 + 50).amps[2], 18);
+    h.owned(2, 18, 3530);
+    assert.equal(h.update(3480).amps[2], 18, 'settled 100 W import is held without a down/up cycle');
+});

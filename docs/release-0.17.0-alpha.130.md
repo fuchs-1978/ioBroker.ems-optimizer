@@ -1,0 +1,9 @@
+# 0.17.0-alpha.130 — kleiner Bezug statt dauerhafter Rueckspeisung
+
+Beim Upgrade von alpha.129 oder aelter wird ein expliziter NVP-Sollwert von 0 W einmalig auf +50 W Bezug umgestellt und nach Initialisierung der Ausgaenge in der nativen Konfiguration gespeichert. Andere Sollwerte bleiben erhalten; eine spaetere bewusste Rueckstellung auf 0 W bleibt moeglich. Neue Installationen und unbekannte Versionsstaende werden nicht migriert. Schlaegt das Speichern fehl, meldet das Log die notwendige Admin-Korrektur; dann gelten 50 W nur fuer den laufenden Prozess.
+
+Bei einer physisch bestaetigten Ladung kann der naechste einzelne Ampere-Schritt bereits durch gemessene Leistung und Netzueberschuss gedeckt sein, obwohl die pauschale Umrechnung mit 230 V einen kleineren Strom ergibt. Die zusaetzliche Begrenzung auf nominales PV-Maximum plus ein Ampere entfällt. Zulassung anhand realer Leistung, konfigurierte gemeinsame Bezugstoleranz mit 20 W Hysterese, aktuelle Rueckmeldungen und vollstaendige nominale Reservierung gegen harte Grenzen bleiben erforderlich. Der Ausgang prueft den Schritt weiterhin unabhaengig; es werden keine offenen Fahrzeugantworten uebersprungen.
+
+Mit +50 W Ziel und 100 W bestehender Bezugstoleranz kann ein 230-W-Schritt beispielsweise 130 W Einspeisung in 100 W Bezug verwandeln. Das ist eine Zielvorgabe, keine Garantie eines exakten Mittelwerts bei wechselnder PV, Haushaltslast oder verzoegerter Fahrzeugreaktion. Die Toleranz selbst wird nicht erhoeht. Keine pauschale Verkuerzung der Antwortfristen, keine Aenderung des Phasenskripts.
+
+Validierung: Regressionen fuer den nominalen Abstand, vollen harten Grenzwert, fehlenden Ueberschuss, fehlende Bestaetigung und Upgrade-Migration; komplette GitHub-Pruefungen einschliesslich historischer Vergleiche und Paketinstallation erforderlich. Lokale Ausfuehrung war wegen nicht verfuegbarer Entwicklungsumgebung nicht moeglich.
