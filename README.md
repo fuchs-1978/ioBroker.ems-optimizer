@@ -4,6 +4,10 @@ Aktuelle Adapterversion: **0.17.0-alpha.130**. Diese deutsche Bedienungsanleitun
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
+## 0.17.0-alpha.131
+
+Verspaetete zusammenpassende go-e-Sollstrommeldungen erhalten bis zu 10 Sekunden Beruhigungszeit bei weiterhin gueltigen Schutzmessungen. [Versionshinweise](docs/release-0.17.0-alpha.131.md).
+
 ## Inhaltsverzeichnis
 
 - [Betriebsarten und sichere Zuständigkeit](#betriebsarten-und-sichere-zuständigkeit)
