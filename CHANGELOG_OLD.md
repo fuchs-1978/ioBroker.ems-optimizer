@@ -1,3 +1,7 @@
+### 0.17.0-alpha.126 (2026-10-23)
+
+Manuelle Wallbox-Mindestladung richtet sich in Live-Regelung und Fahrplan nach dem gültigen EMS-SoC und Ladeziel. Ein veraltetes oder fehlendes externes socfrei kann sie nicht mehr blockieren oder bei ungültigem EMS-SoC freigeben. Das alte Skript PV_Ueberschuss_SOCmin ist für die EMS-Ladesteuerung nicht mehr erforderlich. [Details](docs/release-0.17.0-alpha.126.md).
+
 ### 0.17.0-alpha.125 (2026-10-23)
 
 Bereits aktivierte SQL-Historien der konfigurierten PV- und drei Wallbox-Leistungsquellen behalten Wertänderungen einschließlich 0 ↔ Leistung; unveränderte Werte werden nur alle zehn Minuten wiederholt. Delta-, Block- und Entprellfilter dieser Quellen werden aufgehoben, Aufbewahrung und andere Historien bleiben erhalten. [Details](docs/release-0.17.0-alpha.125.md).

@@ -35,5 +35,42 @@ for (const groupNet of [false, true]) for (const parallel of [false, true]) for 
         'the bridge neither stops nor writes another charger setpoint');
     assert.ok(h.value('Devices.Wallbox2.OutputReservedPower_W') >= 1380);
     await h.replayAt(at + 61001, samples);
-    assert.equal(h.value('Devices.Wallbox2.OutputActive'), false);
+    assert.equal(h.value('Devices.Wallbox2.OutputActive'), true);
+    await h.replayAt(at + 601001, samples);
+    assert.equal(h.value('Devices.Wallbox2.OutputActive'), true);
+    assert.ok(!h.writes.some(w => ['goe.allow', 'goe.cmd'].includes(w.id)));
+    assert.ok(h.value('Devices.Wallbox2.OutputReservedPower_W') >= 1380);
+});
+
+for (const parallel of [false,true]) test(`real Mii manual minimum survives offline beyond 60 s with taper; parallel=${parallel}`, async () => {
+    const h = await plant({mii:true, wallbox:false, startDelayS:5, minimumRuntimeS:0,
+        initialSurplusW:1000, split:false,
+        nativeConfig:{wallboxParallelChargingEnabled:parallel, wb0TaperEnabled:true,
+            wb0SocEstimationEnabled:true, wb0CapacityKWh:32.3, wb0SocEfficiencyPct:90,
+            wb0SocEnergyId:'DP_WB0_SOC_ENERGY'}});
+    h.run("CFG.dp.wallboxSocMeasuredAt[0]=''");
+    h.mapping.DP_WB0_SOC_MEASURED_AT='';
+    h.put('DP_WB0_SOC',53); h.put('DP_WB0_MIN_SOC',50); h.put('DP_WB0_TARGET',100);
+    h.put('DP_WB0_AMIN',6); h.put('DP_WB0_RELEASE',0);
+    h.put('DP_WB0_SOC_ENERGY',10);
+    await h.advance(40);
+    assert.equal(h.physical().miiAllow,1,h.value('Devices.Wallbox0.OutputStatus'));
+    assert.equal(h.value('Devices.Wallbox0.ResponseState'),'confirmed');
+    const ids=['goe0.error','DP_WB0_CAR','goe0.allow','goe0.feedback','DP_WB0_POWER',
+        ...[1,2,3].map(p=>`DP_WB0_L${p}_A`)];
+    const frozen=ids.map(id=>[id,h.states.get(id).val,{...h.states.get(id)}]);
+    const at=h.now(); h.writes.length=0;
+    for(const offset of [1000,31000,61000,601000]) {
+        await h.replayAt(at+offset,[...frozen,['goe0.connection',false]]);
+        assert.equal(h.physical().miiAllow,1,h.value('Devices.Wallbox0.OutputStatus'));
+        assert.match(h.value('Devices.Wallbox0.OutputStatus'),/TELEMETRIE/);
+        assert.ok(h.value('Devices.Wallbox0.OutputReservedPower_W')>=1380);
+        assert.ok(!h.writes.some(w=>['goe0.allow','goe0.cmd'].includes(w.id)));
+        assert.equal(h.value('Control.Targets.Wallbox0_Phases'),1);
+        assert.equal(h.physical().heaterW,0,'the missing Mii load is not given to the heater');
+    }
+    await h.advance(10); // fresh device polls and normal allocator/output path
+    assert.equal(h.physical().miiAllow,1);
+    assert.equal(h.value('Devices.Wallbox0.ResponseState'),'confirmed');
+    assert.ok(!h.writes.some(w=>w.id==='goe0.allow'&&w.val===0),'no queued age-only OFF after recovery');
 });
