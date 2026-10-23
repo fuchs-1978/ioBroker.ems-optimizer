@@ -1,3 +1,7 @@
+### 0.17.0-alpha.125 (2026-10-23)
+
+Bereits aktivierte SQL-Historien der konfigurierten PV- und drei Wallbox-Leistungsquellen behalten Wertänderungen einschließlich 0 ↔ Leistung; unveränderte Werte werden nur alle zehn Minuten wiederholt. Delta-, Block- und Entprellfilter dieser Quellen werden aufgehoben, Aufbewahrung und andere Historien bleiben erhalten. [Details](docs/release-0.17.0-alpha.125.md).
+
 ### 0.17.0-alpha.124 (2026-10-22)
 
 Die begrenzte Telemetrieueberbrueckung bestaetigt laufender Wallboxen gilt jetzt auch im groupNet-Modus, wenn die Gruppenbegrenzung gueltig und ausdruecklich inaktiv ist. Aktive oder unklare Begrenzungen bleiben ausgeschlossen. Frische SMA-Werte, volle Leistungsreserven, unveraenderte Strom-/Phasenstellung und maximal 60 Sekunden Quellenalter bleiben Voraussetzung; keine neuen Ladebefehle. [Details](docs/release-0.17.0-alpha.124.md).

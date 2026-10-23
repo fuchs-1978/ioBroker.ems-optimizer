@@ -2331,14 +2331,15 @@
         },
         "wb0ReleaseId": {
           "type": "text",
-          "label": "EMS release / socfrei",
+          "label": "Legacy socfrei comparison input (optional)",
           "default": "",
           "sm": 6,
           "newLine": true,
           "xs": 12,
           "md": 6,
           "lg": 6,
-          "xl": 6
+          "xl": 6,
+          "help": "Optional historical comparison only. Charging decisions, including manual minimum current, use the qualified EMS SoC and configured target; this input cannot authorize or block charging. The old SOCmin script can remain disabled after this version is installed."
         },
         "wb0UserAllowId": {
           "type": "text",
@@ -2736,7 +2737,7 @@
         },
         "wb0LowSocStepsEnabled": {
           "type": "checkbox",
-          "label": "Use minimum-current stages when socfrei = 2",
+          "label": "Use minimum-current stages below the EMS minimum SoC",
           "default": true,
           "sm": 12,
           "newLine": true,
@@ -3136,14 +3137,15 @@
         },
         "wb1ReleaseId": {
           "type": "text",
-          "label": "EMS release / socfrei",
+          "label": "Legacy socfrei comparison input (optional)",
           "default": "",
           "sm": 6,
           "newLine": true,
           "xs": 12,
           "md": 6,
           "lg": 6,
-          "xl": 6
+          "xl": 6,
+          "help": "Optional historical comparison only. Charging decisions, including manual minimum current, use the qualified EMS SoC and configured target; this input cannot authorize or block charging. The old SOCmin script can remain disabled after this version is installed."
         },
         "wb1UserAllowId": {
           "type": "text",
@@ -3541,7 +3543,7 @@
         },
         "wb1LowSocStepsEnabled": {
           "type": "checkbox",
-          "label": "Use minimum-current stages when socfrei = 2",
+          "label": "Use minimum-current stages below the EMS minimum SoC",
           "default": true,
           "sm": 12,
           "newLine": true,
@@ -3941,14 +3943,15 @@
         },
         "wb2ReleaseId": {
           "type": "text",
-          "label": "EMS release / socfrei",
+          "label": "Legacy socfrei comparison input (optional)",
           "default": "",
           "sm": 6,
           "newLine": true,
           "xs": 12,
           "md": 6,
           "lg": 6,
-          "xl": 6
+          "xl": 6,
+          "help": "Optional historical comparison only. Charging decisions, including manual minimum current, use the qualified EMS SoC and configured target; this input cannot authorize or block charging. The old SOCmin script can remain disabled after this version is installed."
         },
         "wb2UserAllowId": {
           "type": "text",
@@ -4346,7 +4349,7 @@
         },
         "wb2LowSocStepsEnabled": {
           "type": "checkbox",
-          "label": "Use minimum-current stages when socfrei = 2",
+          "label": "Use minimum-current stages below the EMS minimum SoC",
           "default": true,
           "sm": 12,
           "newLine": true,

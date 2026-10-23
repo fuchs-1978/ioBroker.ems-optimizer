@@ -1,9 +1,13 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.125",
+    "version": "0.17.0-alpha.126",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.126": {
+        "en": "Manual wallbox minimum charging now uses the qualified EMS SoC and target in live control and planning; legacy socfrei is comparison telemetry only.",
+        "de": "Manuelle Wallbox-Mindestladung nutzt in Live-Regelung und Planung nur den gültigen EMS-SoC samt Ladeziel; altes socfrei dient nur noch zum Vergleich."
+      },
       "0.17.0-alpha.125": {
         "en": "PV and wallbox power SQL history retains changes, with unchanged values repeated every 10 minutes.",
         "de": "PV- und Wallbox-Leistung: SQL erhält Änderungen, unveränderte Werte werden alle 10 Minuten wiederholt."

@@ -107,6 +107,20 @@ function engine({production = false, clock = Date, ...config} = {}) {
     return {nativeConfig, states, put, run, plans, update, exclude, owned};
 }
 
+test('manual Mii minimum receives a protected start with no PV despite stale script SOC release zero', () => {
+    const h = engine({production: true, dhwControlEnabled: true});
+    h.exclude(1); h.exclude(2);
+    h.put('DP_WB0_SOC', 51); h.put('DP_WB0_MIN_SOC', 50); h.put('DP_WB0_TARGET', 90);
+    h.put('DP_WB0_RELEASE', 0); h.put('DP_WB0_AMIN', 6);
+    h.run('updateVehicles()');
+    const result = h.update(0, Infinity, {valueW: 1400});
+    assert.equal(result.amps[0], 6, 'explicit manual minimum must authorize 1380 W without PV');
+    assert.equal(result.watts[0], 1380);
+    assert.equal(result.dhw, 0, 'optional EHZ cannot consume an unprovided PV budget');
+    h.put('DP_WB0_SOC', 90); h.run('updateVehicles()');
+    assert.equal(h.update(0).amps[0], 0, 'target SoC still stops manual charging');
+});
+
 test('optional EHZ yields a mandatory 3P start plus reserve before the car can start; its physical reservation remains binding', () => {
     const h = engine({production: true, dhwControlEnabled: true,
         wb2PhaseControlMode: 'ems', wb2PhaseModeId: 'raw.phase2'});
