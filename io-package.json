@@ -1,9 +1,13 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.128",
+    "version": "0.17.0-alpha.129",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.129": {
+        "en": "Validate Node.js 22/24/26, update adapter-core/testing minimums and bound published news with an automatic package guard.",
+        "de": "Node.js 22/24/26 pruefen, Mindestversionen von adapter-core/testing aktualisieren und Versionsnachrichten mit automatischer Paketpruefung begrenzen."
+      },
       "0.17.0-alpha.128": {
         "en": "Fixed 1P wallboxes without phase-mode feedback retain qualified measured power for PV amp steps; nominal hard reserves and real pending phase transitions remain protected.",
         "de": "Feste 1P-Wallboxen ohne Phasenmodus-Rueckmeldung nutzen bestaetigte Istleistung fuer PV-Stromschritte; nominale Schutzreserven und echte offene Phasenwechsel bleiben erhalten."
@@ -75,58 +79,6 @@
       "0.17.0-alpha.111": {
         "en": "Allow a bounded measured one-amp PV probe after a timely acknowledged partial vehicle response; preserve nominal hard reservations, response deadlines and the two-attempt limit.",
         "de": "Nach rechtzeitig bestaetigter teilweiser Fahrzeugantwort einen begrenzten gemessenen 1-A-PV-Versuch zulassen; nominale Schutzreserven, Antwortfristen und Grenze von zwei Versuchen erhalten."
-      },
-      "0.17.0-alpha.110": {
-        "en": "Retain confirmed single-phase uptake across house-phase mapping, same-millisecond ordering and unchanged ACK repolls using the original command proof without renewing response deadlines; prevent journal health writes after close. Live acceptance remains open.",
-        "de": "Bestaetigte einphasige Aufnahme bei Hausphasenzuordnung, gleicher Millisekunde und unveraenderten ACK-Polls mit urspruenglichem Befehlsnachweis halten, ohne Antwortfristen zu erneuern; Journal-Healthschreiben nach Abschluss verhindern. Reale Abnahme bleibt offen."
-      },
-      "0.17.0-alpha.109": {
-        "en": "Drain actual SQL history completion and durable verification-fence updates before closing the journal on orderly shutdown, bounded to two seconds after actuator cleanup; retain and report unresolved fences.",
-        "de": "Bei geordnetem Neustart nach Aktorbereinigung bis zu zwei Sekunden auf echte SQL-Historienantwort und dauerhaften Sperrenabschluss vor Journalabschluss warten; unbekannte Sperren erhalten und melden."
-      },
-      "0.17.0-alpha.108": {
-        "en": "Bridge confirmed charging across an older allocation using the same electrical sample only when explicit pending-to-confirmed timing proves the edge; preserve reservations and admit no extra current.",
-        "de": "Bestaetigte Ladung bei aelterer Zuteilung mit identischem Messwert nur bei nachgewiesenem Uebergang von ausstehender zu bestaetigter Antwort halten; Reserven erhalten und keinen Zusatzstrom zulassen."
-      },
-      "0.17.0-alpha.107": {
-        "en": "Permit bounded relative reductions of an acknowledged reserved one-amp command before the first post-ACK power poll; preserve nominal hard limits and never authorize an extra increase from this evidence.",
-        "de": "Bestaetigten reservierten Ein-Ampere-Befehl vor erster Leistungsmessung nach ACK begrenzt relativ zuruecknehmen; nominale Schutzgrenzen erhalten und daraus keine weitere Erhoehung ableiten."
-      },
-      "0.17.0-alpha.106": {
-        "en": "Retain an admitted measured one-amp PV step within its original acknowledged response deadline while net import remains within tolerance; preserve its proof, reservations and all safety limits without admitting another step.",
-        "de": "Bereits zugelassenen gemessenen 1-A-PV-Schritt innerhalb seiner urspruenglichen bestaetigten Antwortfrist bei eingehaltenem Netzbudget halten; Nachweis, Reserven und Schutzgrenzen erhalten, keinen weiteren Schritt zulassen."
-      },
-      "0.17.0-alpha.105": {
-        "en": "Retain confirmed measured charging across stale soft allocations without assuming nominal voltage uptake; match small measured deficits with relative current reductions while preserving nominal hard reservations.",
-        "de": "Bestaetigte reale Ladeleistung gegenueber aelteren Softzuteilungen ohne pauschale Nennspannungsannahme halten; kleine gemessene Defizite durch relative Stromruecknahme ausgleichen und nominale Schutzreserven erhalten."
-      },
-      "0.17.0-alpha.104": {
-        "en": "Permit up to two fully funded one-amp retries after an acknowledged current increase times out without electrical progress; require fresh response and restore ordinary control after real uptake.",
-        "de": "Nach bestaetigter Stromerhoehung ohne ausreichende elektrische Antwort bis zu zwei vollstaendig gedeckte 1-A-Nachregelversuche erlauben; frische Messwerte verlangen und nach echter Aufnahme normal weiterregeln."
-      },
-      "0.17.0-alpha.103": {
-        "en": "Provide at least 15 minutes for restart/history initialization, including legacy settings, and let timely stabilization finish with separate bounded scheduling margin; retain safety gates.",
-        "de": "Mindestens 15 Minuten fuer Neustart und Historienaufbau auch bei alten Einstellungen; rechtzeitig begonnene Stabilisierung mit eigener begrenzter Zeitreserve abschliessen und Schutzpruefungen erhalten."
-      },
-      "0.17.0-alpha.102": {
-        "en": "Log bounded SQL history startup progress per source, elapsed completion/readiness and paced retry attempts without changing query or control behavior.",
-        "de": "SQL-Historienfortschritt je Quelle, Abschluss mit Dauer und Bereitschaft sowie automatische Start-Wiederholungen protokollieren; Abfragen und Regelung unveraendert."
-      },
-      "0.17.0-alpha.101": {
-        "en": "Hold an already reserved, physically confirmed current when a newer wallbox response supersedes an older allocation measurement; preserve live deficits, peer/heater commitments and hard limits.",
-        "de": "Bereits reservierten und elektrisch bestaetigten Strom bei neuerer Wallboxantwort gegenueber alter Zuteilungsmessung halten; reale Defizite, Fremdlastzusagen und Schutzgrenzen erhalten."
-      },
-      "0.17.0-alpha.100": {
-        "en": "Isolate delayed telemetry of confirmed idle OFF wallboxes from running peers without reclaiming stale load or allowing a new start; retain pending reservations and shared protection checks.",
-        "de": "Verzoegerte Messwerte bestaetigt ungenutzter AUS-Wallboxen von laufenden Ladungen isolieren; alte Last nicht anrechnen, keinen Start erlauben und Reservierungen sowie Schutzpruefungen erhalten."
-      },
-      "0.17.0-alpha.99": {
-        "en": "Automatically clear stop-confirmation timeouts after fresh acknowledged OFF and physical standstill; preserve unrelated faults and all ordinary restart gates.",
-        "de": "Abschalt-Timeouts nach frischem bestaetigtem AUS und elektrischem Stillstand automatisch aufheben; andere Fehler und regulaere Wiederanlaufpruefungen erhalten."
-      },
-      "0.17.0-alpha.98": {
-        "en": "Require measured current and power progress before confirming an admitted wallbox increase; retain the measured pending command across ACK processing without extending response deadlines.",
-        "de": "Strom- und Leistungsantwort vor Bestaetigung einer zugelassenen Wallboxerhoehung nachweisen; gemessenen offenen Befehl beim ACK-Uebergang halten, ohne Antwortfristen zu verlaengern."
       }
     },
     "titleLang": {
