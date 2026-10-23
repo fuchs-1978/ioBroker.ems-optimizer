@@ -876,7 +876,7 @@ Der Status `Debug.SourcePowerHistory` nennt je konfigurierter Quelle `configured
 
 ### 0.17.0-alpha.129 (2026-10-23)
 
-Test- und Releaseprüfung umfassen Node.js 22, 24 und 26. Mindestversionen von adapter-core/testing wurden aktualisiert. Die letzten 19 Versionsnachrichten bleiben im Manifest; die Paketprüfung verhindert ein erneutes Überschreiten der Grenze. Ältere Änderungen bleiben im Changelog erhalten. [Details](docs/release-0.17.0-alpha.129.md).
+Test- und Releaseprüfung umfassen Node.js 22, 24 und 26. Mindestversionen von adapter-core/testing wurden aktualisiert. Die letzten sieben Versionsnachrichten bleiben im Manifest; die Paketprüfung verhindert ein erneutes Überschreiten der Grenze. Ältere Änderungen bleiben im Changelog erhalten. [Details](docs/release-0.17.0-alpha.129.md).
 
 [Alle älteren Änderungen und historischen Detailbeschreibungen](CHANGELOG_OLD.md).
 

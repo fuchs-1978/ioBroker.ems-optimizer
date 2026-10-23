@@ -10,9 +10,9 @@ function metadata(count) {
         [`0.17.0-alpha.${129 - i}`, {de: 'Änderung', en: 'Change'}]))}}];
 }
 
-test('package guard accepts the last 19 versions and rejects a twentieth addition', () => {
-    assert.doesNotThrow(() => validatePackageMetadata(...metadata(19)));
-    assert.throws(() => validatePackageMetadata(...metadata(20)), /fewer than 20 entries/);
+test('package guard accepts the last 7 versions and rejects an eighth addition', () => {
+    assert.doesNotThrow(() => validatePackageMetadata(...metadata(7)));
+    assert.throws(() => validatePackageMetadata(...metadata(8)), /at most 7 entries/);
 });
 
 test('package guard requires current release notes, not just a short old list', () => {

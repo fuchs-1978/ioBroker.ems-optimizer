@@ -31,54 +31,6 @@
       "0.17.0-alpha.123": {
         "en": "Bridge short telemetry gaps for confirmed running wallboxes up to 60 seconds total sample age with fresh SMA, unchanged current, full reservations and conservative limits.",
         "de": "Kurze Messluecken bestaetigt laufender Wallboxen bis maximal 60 Sekunden Messwertalter ueberbruecken: aktuelle SMA-Werte, unveraenderter Strom, volle Reservierung und konservative Grenzen."
-      },
-      "0.17.0-alpha.122": {
-        "en": "Retain qualified target-SoC handoffs during donor phase settling. End loaded phase grace only after confirmed OFF and fresh electrical zero; keep pending mode requests and all start gates intact.",
-        "de": "Qualifizierte Ziel-SoC-Uebergabe waehrend des Phasenuebergangs vormerken. Phasen-Nachlauf erst nach bestaetigtem AUS und frischer elektrischer Ruhe beenden; offene Modusanforderungen und Startgrenzen bleiben wirksam."
-      },
-      "0.17.0-alpha.121": {
-        "en": "Avoid turning a bounded native pause during an observed EMS phase switch into an external stop. Wait for charger-owned allow recovery without sending ON; preserve all stop and budget gates.",
-        "de": "Beobachtete native Pause beim EMS-Phasenwechsel nicht als externen Stopp behandeln. Begrenzt auf selbststaendige Ladefreigabe warten, ohne EIN zu senden; Abschalt- und Budgetgrenzen bleiben wirksam."
-      },
-      "0.17.0-alpha.120": {
-        "en": "Pass unused waiting-wallbox PV shares to eligible followers before optional heating, preserving start delays, pending reservations and shared limits.",
-        "de": "Ungenutzte PV-Anteile wartender Wallboxen vor optionaler Heizleistung an weitere ladebereite Fahrzeuge weitergeben. Startzeiten, offene Leistungsreservierungen und gemeinsame Grenzen bleiben wirksam."
-      },
-      "0.17.0-alpha.119": {
-        "en": "Separate participant selection for local budget calculation from full shared group accounting. Preserve existing selections and external budgets.",
-        "de": "Teilnehmerauswahl für lokale Budgetberechnung von vollständiger gemeinsamer Gruppenbilanz trennen. Bestehende Auswahl und externe Budgets bleiben erhalten."
-      },
-      "0.17.0-alpha.118": {
-        "en": "Use a conservative shared gross ceiling without solar credit when valid group measurements are asynchronous. Preserve source times, source rejection and electrical reservations.",
-        "de": "Bei gültigen zeitversetzten Gruppenmessungen gemeinsames konservatives Bruttobudget ohne Eigenstromzuschlag verwenden. Originalzeiten, Quellenprüfung und elektrische Reserven bleiben erhalten."
-      },
-      "0.17.0-alpha.117": {
-        "en": "Connect explicit opt-in group net/own-supply accounting to allocation and all output guards, with complete AC coverage, shared pending reservations and fresh checks after queued writes. Existing installations keep legacy gross limits; configured unverified LPC blocks the new mode. No automatic activation or installation.",
-        "de": "Explizite optionale Gruppen-Netz-/Eigenstrombilanz mit Zuteilung und allen Ausgangspruefungen verbinden: vollstaendige AC-Abdeckung, gemeinsame offene Reserven und frische Pruefung nach Schreibwartezeiten. Bestehende Installationen behalten Bruttogrenzen; ungeprueft konfiguriertes LPC sperrt den neuen Modus. Keine automatische Aktivierung oder Installation."
-      },
-      "0.17.0-alpha.116": {
-        "en": "Publish existing alpha.111–115 runtime fixes and add a tested, independent group net/own-supply accounting core. The new core is not connected to production control; existing limits and LPC interpretation remain unchanged. No automatic activation or installation.",
-        "de": "Vorhandene Laufzeitkorrekturen aus alpha.111–115 veroeffentlichen und getesteten, unabhaengigen Gruppen-Netz-/Eigenstrom-Bilanzkern ergaenzen. Neuer Kern ohne Produktivanbindung; bestehende Grenzen und LPC-Auslegung bleiben unveraendert. Keine automatische Aktivierung oder Installation."
-      },
-      "0.17.0-alpha.115": {
-        "en": "Prepare the next stopped EMS-controlled receiver for 1P using bounded replacement capacity while the current vehicle keeps charging. Preserve actual grants, phase ACK deadlines and donor OFF/quiet; complete cold phase preparation only with post-ACK OFF/zero evidence.",
-        "de": "Naechsten ausgeschalteten EMS-Empfaenger anhand begrenzten Ersatzbudgets auf 1P vorbereiten, waehrend das erste Auto weiterlaedt. Reale Zuteilung, Phasen-ACK-Frist und Geber-AUS/Ruhe erhalten; kalte Vorbereitung erst nach neuem AUS-/Nullnachweis abschliessen."
-      },
-      "0.17.0-alpha.114": {
-        "en": "Treat qualified -30 W wallbox zero noise as a throttled warning; let optional EHZ yield before a mandatory 3P start with admission reserve; permit one bounded current-feedback correction per owned run without ON or increases. Live acceptance remains open.",
-        "de": "Gueltige -30 W Wallbox-Nullabweichung nur gedrosselt warnen; optionalen EHZ vor Pflichtladestart in 3P samt Startreserve absenken; einmalige begrenzte Sollstrom-Korrektur je eigenem Ladezyklus ohne EIN oder Erhoehung. Reale Abnahme offen."
-      },
-      "0.17.0-alpha.113": {
-        "en": "Keep the current observation timestamp while preserving the original qualified 3P preparation; ordinary control cycles no longer manufacture a gap and restart the phase countdown. Real gaps and safety limits remain binding.",
-        "de": "Bei qualifizierter 3P-Vorbereitung den aktuellen Beobachtungszeitpunkt fortschreiben; regulaere Reglerzyklen erzeugen keine kuenstliche Luecke mit neuem Countdown. Echte Luecken und Schutzgrenzen bleiben wirksam."
-      },
-      "0.17.0-alpha.112": {
-        "en": "Preserve inherited EMS phase targets during checked restart warmup while invalidating power/current budgets; keep actual phase feedback, transition deadlines and stop safeguards binding.",
-        "de": "Bei gepruefter Neustart-Uebernahme geerbte EMS-Phasenziele waehrend des Anlaufs erhalten, Leistungs- und Strombudgets weiter sperren; echte Phasenrueckmeldung, Fristen und Schutzstopps bleiben wirksam."
-      },
-      "0.17.0-alpha.111": {
-        "en": "Allow a bounded measured one-amp PV probe after a timely acknowledged partial vehicle response; preserve nominal hard reservations, response deadlines and the two-attempt limit.",
-        "de": "Nach rechtzeitig bestaetigter teilweiser Fahrzeugantwort einen begrenzten gemessenen 1-A-PV-Versuch zulassen; nominale Schutzreserven, Antwortfristen und Grenze von zwei Versuchen erhalten."
       }
     },
     "titleLang": {
