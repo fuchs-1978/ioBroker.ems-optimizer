@@ -496,13 +496,50 @@ test('EQV low-SoC 25 A request is clipped by phase and vehicle maximum',()=>{
     assert.equal(h.run('vehicleState(1).minCurrent1pA'),25);
     assert.equal(h.run('vehicleState(1).minCurrent3pA'),16);
 });
-test('manual amin forces its configured minimum while socfrei is positive',()=>{
+test('manual amin forces its configured minimum from qualified EMS SoC',()=>{
     const h=engine();h.put('DP_WB0_AMIN',12);h.put('DP_WB0_RELEASE',1);h.run('updateVehicles()');
     assert.equal(h.run('vehicleState(0).manualMinimumCurrentA'),12);
     assert.equal(h.run('vehicleState(0).mustCharge'),true);
     h.run('updateSlowTargets(0,[{valueW:0},{valueW:0},{valueW:0}],{valueW:0})');
     assert.equal(h.run('slowTargets.wallboxA[0]'),12);
 });
+
+for (const wb of [0,1,2]) for (const legacy of [0,2,'missing']) {
+    test(`manual 6 A uses EMS SoC 51 below target 90 with legacy=${legacy}, WB${wb}`,()=>{
+        const h=engine();
+        h.put(`DP_WB${wb}_SOC`,51);h.put(`DP_WB${wb}_MIN_SOC`,50);
+        h.put(`DP_WB${wb}_TARGET`,90);h.put(`DP_WB${wb}_AMIN`,6);
+        if(legacy==='missing')h.states.delete(`DP_WB${wb}_RELEASE`);
+        else h.put(`DP_WB${wb}_RELEASE`,legacy);
+        h.put('alias.0.mii.soc',94); // obsolete script source must not authorize or block the EMS
+        h.run('updateVehicles()');
+        assert.equal(h.run(`vehicleState(${wb}).release`),true);
+        assert.equal(h.run(`vehicleState(${wb}).mustCharge`),true);
+        assert.equal(h.run(`vehicleState(${wb}).manualMinimumCurrentA`),6);
+        assert.match(h.run(`vehicleState(${wb}).status`),/Manueller Mindeststrom/);
+        assert.equal(h.run(`plannedVehicleAtSoc(vehicleState(${wb}),5).mustCharge`),true);
+        assert.equal(h.run(`plannedVehicleAtSoc(vehicleState(${wb}),0).mustCharge`),false,
+            'projected target SoC ends manual import');
+        h.put(`DP_WB${wb}_AMIN`,0);h.run('updateVehicles()');
+        assert.equal(h.run(`vehicleState(${wb}).mustCharge`),false,'manual zero returns to PV-flexible operation');
+    });
+}
+
+for (const reason of ['target','allow','unplugged','invalid','stale','unacknowledged']) {
+    test(`legacy release cannot bypass ${reason} for manual minimum`,()=>{
+        const h=engine();h.put('DP_WB0_SOC',51);h.put('DP_WB0_TARGET',90);
+        h.put('DP_WB0_AMIN',6);h.put('DP_WB0_RELEASE',2);
+        if(reason==='target')h.put('DP_WB0_SOC',90);
+        if(reason==='allow')h.put('DP_WB0_ALLOW',false);
+        if(reason==='unplugged')h.put('DP_WB0_CAR',1);
+        if(reason==='invalid')h.put('DP_WB0_SOC',null);
+        if(reason==='stale')h.states.get('DP_WB0_SOC').ts=Date.now()-7200001;
+        if(reason==='unacknowledged')h.states.get('DP_WB0_SOC').ack=false;
+        h.run('updateVehicles()');
+        assert.equal(h.run('vehicleState(0).release'),false);
+        assert.equal(h.run('vehicleState(0).mustCharge'),false);
+    });
+}
 test('upper taper safety limit wins over a higher manual minimum',()=>{
     const h=engine({wb0TaperEnabled:true});h.put('DP_WB0_SOC',79);h.put('DP_WB0_AMIN',16);
     h.run('updateVehicles()');
@@ -1421,4 +1458,23 @@ test('price ledger receives reported SoC energy, not an already interpolated def
     const input=h.run('priceInputs.find(x=>x.wb===0)');
     assert.ok(Math.abs(input.gridEnergyKWh-(80-40)/100*50/.9)<1e-9);
     assert.ok(h.states.get('ems.0.Vehicles.Wallbox0.SoC_pct').val>40);
+});
+
+for (const wb of [0,1,2]) test(`manual minimum uses internal energy-estimated SoC and stops at its target, WB${wb}`,()=>{
+    let now=1800000000000;
+    class Clock extends Date {static now(){return now;}}
+    const h=engine({[`wb${wb}SocEstimationEnabled`]:true,[`wb${wb}CapacityKWh`]:50,
+        [`wb${wb}SocEfficiencyPct`]:90},Clock);
+    h.put(`DP_WB${wb}_SOC`,51);h.put(`DP_WB${wb}_SOC_MEASURED_AT`,now);
+    h.put(`DP_WB${wb}_SOC_ENERGY`,10);h.put(`DP_WB${wb}_MIN_SOC`,50);
+    h.put(`DP_WB${wb}_TARGET`,52);h.put(`DP_WB${wb}_AMIN`,6);
+    h.put(`DP_WB${wb}_RELEASE`,0);h.put('alias.0.mii.soc',94);
+    h.run('updateVehicles()');
+    assert.equal(h.run(`vehicleState(${wb}).mustCharge`),true);
+    now+=30000;h.put(`DP_WB${wb}_SOC_ENERGY`,10.6);h.run('updateVehicles()');
+    assert.ok(h.run(`vehicleState(${wb}).socPct`)>=52);
+    assert.equal(h.run(`vehicleState(${wb}).release`),false);
+    assert.equal(h.run(`vehicleState(${wb}).mustCharge`),false);
+    assert.equal(h.states.get(`DP_WB${wb}_SOC`).val,51,'reported source stays unchanged');
+    assert.equal(h.states.get(`DP_WB${wb}_RELEASE`).val,0,'legacy script output stays untouched');
 });

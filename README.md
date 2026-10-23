@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.125**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.126**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -317,7 +317,7 @@ Zählerwerte müssen bestätigt, plausibel und höchstens 60 Sekunden alt sein. 
 | --- | --- | --- |
 | Externer Mindest-SoC<br>`wb0MinSocId` | leer | Numerisches externes Mindest-SoC-Objekt in %, wenn SoC-Grenzen extern gewählt sind. Unter dieser Grenze besteht Ladebedarf auch mit Netzstrom, soweit Freigaben und Schutz passen. |
 | Externer Ziel-SoC<br>`wb0TargetSocId` | leer | Numerisches externes Ziel-SoC-Objekt in %. Obere Ladegrenze. Priorität erzwingt kein Laden darüber hinaus; Ziel wird mindestens auf Mindest-SoC begrenzt. |
-| EMS-Freigabe / socfrei<br>`wb0ReleaseId` | leer | Vorhandener Vergleichs-/Bedienwert socfrei: 0 gesperrt, 1 PV-flexibel, 2 historisch Pflichtladefall. Der EMS berechnet aktuelle SoC-Pflicht aus den gemappten SoC-Grenzen neu; ein stehengebliebenes 2 erzwingt nicht Netzladung bis Ziel. Bei manuellem Mindeststrom ist die Quelle weiter relevant. |
+| Historischer socfrei-Vergleichswert (optional)<br>`wb0ReleaseId` | leer | Nur Vergleichsanzeige, ohne Einfluss auf Ladefreigabe, manuelle Mindestladung oder Fahrplan. Das EMS verwendet dafür ausschließlich seinen gültigen SoC einschließlich optionaler Energie-Fortschreibung sowie die eingestellten Mindest-/Zielwerte. Nach Installation von alpha.126 kann PV_Ueberschuss_SOCmin für den EMS-Betrieb ausgeschaltet werden; Min-/Max-Bedienung und Phasenrückmeldung bleiben separat erforderlich. |
 | Ladefreigabe durch Benutzer<br>`wb0UserAllowId` | leer | Benutzerfreigabe, boolesch/numerisch. Sperre verhindert Ladung trotz Priorität oder Mindestbedarf. Nicht mit dem vom EMS geschriebenen go-e-Ausgang verwechseln, sonst wäre eigener AUS-Befehl eine Benutzersperre. |
 | Fahrzeug-Verbindungsstatus<br>`wb0CarStateId` | leer | Numerischer go-e-Fahrzeugstatus; im unterstützten Vertrag gelten 2/3/4 als angeschlossen und 1 als kein Fahrzeug. Keine Freigabe oder Fehlerquelle eintragen. Ändert die Berechtigung und den Energie-Ladeblock. |
 | Aktuelle Phasenanzahl<br>`wb0PhaseStateId` | leer | Anzahl der Phasen als 1/3 für die Fahrzeug-/Planungsbasis. Nicht die go-e-Moduskodierung 1/2 ungeändert verwenden; bestätigten Modus separat unten zuordnen. |
@@ -366,7 +366,7 @@ Zählerwerte müssen bestätigt, plausibel und höchstens 60 Sekunden alt sein. 
 | Feld / technischer Schlüssel | Auslieferung | Zweck und erwartete Eingabe |
 | --- | --- | --- |
 | Vorhandener Datenpunkt für den manuellen Mindeststrom<br>`wb0ManualMinCurrentId` | javascript.0.ev.amin0 | Vorhandenes numerisches Objekt für manuell gewünschten Mindeststrom in A. 0 = kein zusätzlicher manueller Mindeststrom. Nicht mit go-e-Stellregister verwechseln. Aktiver manueller Bedarf kann Netzbezug erlauben; harte Grenzen bleiben vorrangig. |
-| Mindeststromstufen bei socfrei = 2 verwenden<br>`wb0LowSocStepsEnabled` | EIN | Aktiviert zusätzliche Mindeststromstufen für den niedrigen SoC/Pflichtladefall. Im parallelen Mindestbetrieb verwendet der EMS geschützte einphasige Mindestreservierungen; alte höhere Booststufen werden nicht zusätzlich als konkurrierende Reservierung gezählt. |
+| Mindeststromstufen unterhalb des EMS-Mindest-SoC verwenden<br>`wb0LowSocStepsEnabled` | EIN | Aktiviert zusätzliche Mindeststromstufen für den niedrigen SoC/Pflichtladefall. Im parallelen Mindestbetrieb verwendet der EMS geschützte einphasige Mindestreservierungen; alte höhere Booststufen werden nicht zusätzlich als konkurrierende Reservierung gezählt. |
 | Niedriger SoC, Stufe 1: bis einschließlich<br>`wb0LowSoc1ThresholdPct` | 30 % | SoC-Schwelle in %, bis einschließlich der zugehörige niedrige-SoC-Strom gilt. Stufen konsistent von höherem zu niedrigerem SoC anordnen; kein Ziel-SoC. |
 | Niedriger SoC, Stufe 1: Mindeststrom<br>`wb0LowSoc1MinA` | 10 A | Gewünschter Mindeststrom dieser niedrigen-SoC-Stufe in A. 0 deaktiviert die Stufe; phasenabhängige Maximalströme und harte Budgets bleiben wirksam. |
 | Niedriger SoC, Stufe 2: bis einschließlich<br>`wb0LowSoc2ThresholdPct` | 10 % | SoC-Schwelle in %, bis einschließlich der zugehörige niedrige-SoC-Strom gilt. Stufen konsistent von höherem zu niedrigerem SoC anordnen; kein Ziel-SoC. |
@@ -868,9 +868,9 @@ Der Status `Debug.SourcePowerHistory` nennt je konfigurierter Quelle `configured
 
 ## Changelog
 
-### 0.17.0-alpha.125 (2026-10-23)
+### 0.17.0-alpha.126 (2026-10-23)
 
-Bereits aktivierte SQL-Historien der konfigurierten PV- und drei Wallbox-Leistungsquellen behalten Wertänderungen einschließlich 0 ↔ Leistung; unveränderte Werte werden nur alle zehn Minuten wiederholt. Delta-, Block- und Entprellfilter dieser Quellen werden aufgehoben, Aufbewahrung und andere Historien bleiben erhalten. [Details](docs/release-0.17.0-alpha.125.md).
+Manuelle Wallbox-Mindestladung richtet sich in Live-Regelung und Fahrplan nach dem gültigen EMS-SoC und Ladeziel. Ein veraltetes oder fehlendes externes socfrei kann sie nicht mehr blockieren oder bei ungültigem EMS-SoC freigeben. Das alte Skript PV_Ueberschuss_SOCmin ist für die EMS-Ladesteuerung nicht mehr erforderlich. [Details](docs/release-0.17.0-alpha.126.md).
 
 [Alle älteren Änderungen und historischen Detailbeschreibungen](CHANGELOG_OLD.md).
 
