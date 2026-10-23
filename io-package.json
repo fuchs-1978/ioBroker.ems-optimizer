@@ -1,9 +1,13 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.124",
+    "version": "0.17.0-alpha.125",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.125": {
+        "en": "PV and wallbox power SQL history retains changes, with unchanged values repeated every 10 minutes.",
+        "de": "PV- und Wallbox-Leistung: SQL erhält Änderungen, unveränderte Werte werden alle 10 Minuten wiederholt."
+      },
       "0.17.0-alpha.124": {
         "en": "Allow the bounded no-write wallbox telemetry bridge with a valid explicitly inactive groupNet constraint; keep active or unknown group limits, configured LPC fences and all existing safety checks effective.",
         "de": "Begrenzte Wallbox-Telemetrieueberbrueckung auch bei gueltiger, ausdruecklich inaktiver groupNet-Begrenzung erlauben. Aktive/unklare Grenzen, konfigurierte LPC-Sperren und bestehende Schutzpruefungen bleiben wirksam."
@@ -733,7 +737,8 @@
     "bhkwPowerMaxAgeS": 120,
     "bhkwEnergyMaxAgeS": 86400,
     "wallboxResponseSettleTimeoutS": 45,
-    "wallboxResponseCurrentToleranceA": 1.5
+    "wallboxResponseCurrentToleranceA": 1.5,
+    "sourcePowerHistoryEnabled": true
   },
   "objects": [],
   "instanceObjects": [

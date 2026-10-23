@@ -1,3 +1,7 @@
+### 0.17.0-alpha.124 (2026-10-22)
+
+Die begrenzte Telemetrieueberbrueckung bestaetigt laufender Wallboxen gilt jetzt auch im groupNet-Modus, wenn die Gruppenbegrenzung gueltig und ausdruecklich inaktiv ist. Aktive oder unklare Begrenzungen bleiben ausgeschlossen. Frische SMA-Werte, volle Leistungsreserven, unveraenderte Strom-/Phasenstellung und maximal 60 Sekunden Quellenalter bleiben Voraussetzung; keine neuen Ladebefehle. [Details](docs/release-0.17.0-alpha.124.md).
+
 ### 0.17.0-alpha.123 (2026-10-22)
 
 Bestaetigt laufende Wallboxen koennen kurze Messluecken bis maximal 60 Sekunden Messwertalter ohne neue Schaltbefehle ueberbruecken. Aktuelle SMA-Werte und konservativ nachgewiesene Leistungsreserven bleiben Voraussetzung. [Details](docs/release-0.17.0-alpha.123.md).

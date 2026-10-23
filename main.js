@@ -10,6 +10,7 @@ const DebugRecorder = require("./lib/debug-recorder");
 const {LatestStateWriter, isDisplaySeries} = require("./lib/latest-state-writer");
 const ShadowController = require("./lib/shadow-controller");
 const ShadowHistory = require("./lib/shadow-history");
+const {SourcePowerHistory} = require("./lib/source-power-history");
 const {createEngineContext} = require("./lib/engine-loader");
 const gridConstraints = require("./lib/grid-constraints");
 const {buildNativeMapping, houseConnectionSettings, FIELD_TO_MAPPING,
@@ -61,6 +62,7 @@ class EmsOptimizer extends utils.Adapter {
             createContext: sandbox => createEngineContext(this.namespace, this.readMapping(), sandbox, 'ems-shadow-decisions')
         });
         this.shadowHistory = new ShadowHistory(this);
+        this.sourcePowerHistory = new SourcePowerHistory(this);
         this.marketPrices = new MarketPrices(this, {onUpdate: () => {
             if (this.engineContext && !this.unloading)
                 this.runEngine('requestForecastRebuild();');
@@ -134,6 +136,8 @@ class EmsOptimizer extends utils.Adapter {
         this.debugInitialization = this.startDebug();
         this.shadowInitialization = this.startShadow();
         this.marketInitialization = this.startMarketPrices();
+        // Optional source-history metadata setup never delays actuator startup.
+        this.sourcePowerHistoryInitialization = this.sourcePowerHistory.initialize().catch(error => this.warnDebug(error));
         await this.persistBatteryCadenceMigration();
     }
 
@@ -1048,6 +1052,7 @@ class EmsOptimizer extends utils.Adapter {
         this.marketPrices?.stop();
         try { this.shadowHistory?.stop(); }
         catch (error) { this.warnDebug(error); }
+        this.sourcePowerHistory?.stop();
         this.wallboxOutput.stopping = true;
         for (const job of this.jobs) job.cancel();
         for (const timer of this.timers) clearTimeout(timer);
