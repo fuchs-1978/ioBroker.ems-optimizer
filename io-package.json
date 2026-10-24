@@ -1,9 +1,13 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.135",
+    "version": "0.17.0-alpha.136",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.136": {
+        "en": "Reserve independent episode slots for export, deviations and gaps; keep category-specific drop counters and prioritize relevant cases under the 64 kB limit.",
+        "de": "Getrennte Speicherplaetze fuer Einspeisung, Abweichungen und Luecken; Verdraengungen je Kategorie ausweisen und wichtige Faelle unter der 64-kB-Grenze erhalten."
+      },
       "0.17.0-alpha.135": {
         "en": "Honor explicit manual wallbox minimum current without a valid forecast plan, retaining live source, release, SOC and protection gates.",
         "de": "Expliziten manuellen Wallbox-Mindeststrom auch ohne gueltigen Fahrplan ausfuehren; aktuelle Quellen, Freigaben, Ziel-SoC und Schutzgrenzen bleiben massgeblich."
@@ -27,10 +31,6 @@
       "0.17.0-alpha.130": {
         "en": "Prefer a small grid import: migrate neutral targets once to 50 W and allow physically funded one-amp PV steps beyond the nominal soft conversion, retaining full hard reservations.",
         "de": "Kleinen Netzbezug bevorzugen: neutralen Sollwert einmalig auf 50 W umstellen und messtechnisch gedeckte 1-A-PV-Schritte trotz nominaler Umrechnung zulassen; harte Leistungsreserven bleiben erhalten."
-      },
-      "0.17.0-alpha.129": {
-        "en": "Validate Node.js 22/24/26, update adapter-core/testing minimums and bound published news with an automatic package guard.",
-        "de": "Node.js 22/24/26 pruefen, Mindestversionen von adapter-core/testing aktualisieren und Versionsnachrichten mit automatischer Paketpruefung begrenzen."
       }
     },
     "titleLang": {
