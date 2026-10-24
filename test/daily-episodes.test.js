@@ -98,3 +98,19 @@ test('byte-pressure trimming removes ordinary deviation before export across bot
     assert.equal(prior.investigation.closed.length,1);assert.equal(current.investigation.closed.length,0);
     assert.equal(current.investigation.retention.droppedByType.deviation,1);
 });
+
+test('episode context preserves the authoritative heater minimum without suppressing export',()=>{
+    const s={system:{RealOutputsEnabled:true},control:{SelectedWallbox:2},wallboxes:[],
+        ehz:{actual_W:0,TemperatureValid:true,MinimumAdmissionPower_W:900,Release:true,
+            TemperaturePowerLimit_W:9000,TopTemperature_C:68.4,BottomTemperature_C:53.2}};
+    const ctx=e.context(s,0);assert.equal(ctx.ehzAdmission.minimumW,900);
+    const p=frame();for(let i=0;i<12;i++)e.observe(p,start+i*5000,start+(i+1)*5000,
+        {grid:-850},{grid:-850},['grid'],ctx,0);
+    const w=e.windows(p).find(x=>x.type==='export');
+    assert.equal(w.contextStart.ehzAdmission.minimumW,900);
+    assert.equal(w.contextEnd.ehzAdmission.minimumW,900);
+    assert.equal(w.estimatedMagnitudeWh,850/60,'actual export remains recorded');
+    s.ehz.TemperatureValid=false;assert.equal(e.context(s,0).ehzAdmission.minimumW,null);
+    delete s.ehz.MinimumAdmissionPower_W;s.ehz.TemperatureValid=true;
+    assert.equal(e.context(s,0).ehzAdmission.minimumW,null,'legacy records stay unknown');
+});
