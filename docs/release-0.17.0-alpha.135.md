@@ -1,0 +1,11 @@
+# 0.17.0-alpha.135 – manueller Mindeststrom ohne Fahrplan
+
+Eine explizite manuelle Wallbox-Mindeststromvorgabe (z. B. Mii 6 A) ist ein Benutzerauftrag: innerhalb der wirksamen Grenzen mindestens diesen Strom laden, bis der Ziel-SoC erreicht oder die Freigabe entzogen wird. Ein SQL-Historienfehler, ungültiger 48-h-Fahrplan oder fehlender aktueller Fahrplan-Slot darf diesen Auftrag nicht allein blockieren.
+
+Der Echtzeitregler verwendet dafür einen engen manuellen Ersatzpfad mit der bestehenden sequenziellen bzw. parallelen Wallboxzuteilung und der unveränderten produktiven Ausgangssteuerung. Nur aktuell freigegebene Fahrzeuge mit explizitem manuellem Mindeststrom sind auswählbar. Netzbezug ist damit für diese Mindestladung autorisiert, auch ohne PV-Überschuss. Der Pfad fordert keinen zusätzlichen PV-/Preisbedarf und keine neuen Wärme-/Speicher-/PV-Boost-Leistungen an. Ohne gültigen Plan wird kein Plan als gültig markiert; Vorhersagefelder ohne belastbare Berechnung bleiben null. Sobald ein echter gültiger Plan samt aktuellem Slot vorliegt, übernimmt der normale Regler wieder.
+
+Master-, Einzel-/Geräte-/Benutzerfreigaben, Quellenqualität und -frische, SoC-/Phasenvertrag, Hausanschlussschutz, Betreiber-/LPC-Grenzen, ausstehende Stellwirkungen und bestehende Peer-/Heizlastreserven bleiben wirksam. Keine neue pauschale Netzbezugsfreigabe für Automatik-, Preis- oder niedrige-SoC-Ladung ohne manuelle Vorgabe. Ein Mindeststrom über den wirksamen Schutzgrenzen wird nicht erzwungen. Eine echte Geräte-/Kommunikationsstörung kann weiterhin blockieren.
+
+Die Beobachtung am 24.10.2026 nach Update auf alpha.134: SQL-Historienabruf abgebrochen, Plan.Valid=false, Mii manuell 6 A und Release=true, aber Parallelzuteilung ungültig. Vor dem Fix im Anlagenmodell reproduziert; danach Start mit 6 A ohne Überschuss und Stopp bei Ziel-SoC nachgewiesen.
+
+18 Regressionen prüfen sequenziellen und parallelen Betrieb, fehlenden Plan, fehlenden aktuellen Slot, unveränderte Plan.Valid-Kennzeichnung, keine Heizleistung, Ziel-SoC/Entzug der manuellen Vorgabe, fehlenden manuellen Auftrag, Master AUS, Benutzerfreigabe AUS, Hausanschlussschutz, ungültige SMA-Qualität, Gerätefehler und hartes Leistungslimit. Reale Nachbeobachtung nach Installation erforderlich.
