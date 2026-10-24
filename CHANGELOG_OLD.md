@@ -2325,3 +2325,11 @@ Allow the bounded no-write wallbox telemetry bridge with a valid explicitly inac
 Manual wallbox minimum charging now uses the qualified EMS SoC and target in live control and planning; legacy socfrei is comparison telemetry only.
 
 Manuelle Wallbox-Mindestladung nutzt in Live-Regelung und Planung nur den gültigen EMS-SoC samt Ladeziel; altes socfrei dient nur noch zum Vergleich.
+
+## Archived package news for alpha.134
+
+### 0.17.0-alpha.127
+
+An established charger can retain its confirmed current and full reservation through lost communication while fresh SMA and protection checks remain valid; warning instead of age-only OFF, including Mii taper and manual minimum charging.
+
+Bestaetigte laufende Ladung bleibt bei Kommunikationsausfall mit voller Reserve bestehen, solange SMA und Schutzpruefungen gueltig sind; Warnung statt altersbedingtem AUS, auch beim Mii mit SoC-Stromreduzierung und manuellem Mindeststrom.
