@@ -1,9 +1,13 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.132",
+    "version": "0.17.0-alpha.133",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.133": {
+        "en": "Add time-stamped investigation episodes for sustained export, grid-target deviation and source gaps to compact daily summaries.",
+        "de": "Zeitlich markierte Untersuchungsfenster fuer laengere Einspeisung, NVP-Sollabweichung und Quellenluecken in der kompakten Tagesbilanz."
+      },
       "0.17.0-alpha.132": {
         "en": "Add bounded passive daily energy and coverage summaries with restart-safe checkpoints; no SQL scans or actuator changes.",
         "de": "Kompakte passive Tagesbilanzen mit Energie, Datenabdeckung und neustartfestem Pruefstand; keine SQL-Vollabrufe oder Aktoraenderungen."
@@ -27,10 +31,6 @@
       "0.17.0-alpha.127": {
         "en": "An established charger can retain its confirmed current and full reservation through lost communication while fresh SMA and protection checks remain valid; warning instead of age-only OFF, including Mii taper and manual minimum charging.",
         "de": "Bestaetigte laufende Ladung bleibt bei Kommunikationsausfall mit voller Reserve bestehen, solange SMA und Schutzpruefungen gueltig sind; Warnung statt altersbedingtem AUS, auch beim Mii mit SoC-Stromreduzierung und manuellem Mindeststrom."
-      },
-      "0.17.0-alpha.126": {
-        "en": "Manual wallbox minimum charging now uses the qualified EMS SoC and target in live control and planning; legacy socfrei is comparison telemetry only.",
-        "de": "Manuelle Wallbox-Mindestladung nutzt in Live-Regelung und Planung nur den gültigen EMS-SoC samt Ladeziel; altes socfrei dient nur noch zum Vergleich."
       }
     },
     "titleLang": {

@@ -173,7 +173,9 @@ class EmsOptimizer extends utils.Adapter {
             const sample = () => {
                 if (this.unloading) return;
                 try {
-                    this.dailySummary.sample(this.debugRecorder.snapshot(), {
+                    const snapshot = this.debugRecorder.snapshot();
+                    snapshot.control.TargetGridPower_W = this.debugRecorder.own('Control.TargetGridPower_W');
+                    this.dailySummary.sample(snapshot, {
                         dropped: this.shadowController?.recordDropped,
                         writeErrors: this.shadowController?.recordWriteErrors
                     });
