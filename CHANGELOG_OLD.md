@@ -2341,3 +2341,11 @@ Bestaetigte laufende Ladung bleibt bei Kommunikationsausfall mit voller Reserve 
 Fixed 1P wallboxes without phase-mode feedback retain qualified measured power for PV amp steps; nominal hard reserves and real pending phase transitions remain protected.
 
 Feste 1P-Wallboxen ohne Phasenmodus-Rueckmeldung nutzen bestaetigte Istleistung fuer PV-Stromschritte; nominale Schutzreserven und echte offene Phasenwechsel bleiben erhalten.
+
+## Archived package news for alpha.136
+
+### 0.17.0-alpha.129
+
+Validate Node.js 22/24/26, update adapter-core/testing minimums and bound published news with an automatic package guard.
+
+Node.js 22/24/26 pruefen, Mindestversionen von adapter-core/testing aktualisieren und Versionsnachrichten mit automatischer Paketpruefung begrenzen.

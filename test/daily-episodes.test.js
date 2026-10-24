@@ -53,7 +53,48 @@ test('closed episodes remain bounded with explicit overflow and checkpoint valid
     const p=frame(); for(let j=0;j<40;j++) {
         for(let i=0;i<12;i++) tick(p,j*13+i); tick(p,j*13+12,50);
     }
-    assert.equal(p.investigation.closed.length,24); assert.ok(p.investigation.overflow>0);
+    assert.ok(p.investigation.closed.length<=24); assert.ok(p.investigation.overflow>0);
     assert.equal(e.valid(p.investigation,p),true);
     p.investigation.active={bad:{}}; assert.equal(e.valid(p.investigation,p),false);
+});
+function episode(p, type, i, watts=0) {
+    const at=start+i*1000;
+    e.ensure(p,at).closed.push({type,source:type.includes('gap')?'all':'grid',from:at,to:at+60000,
+        durationMs:60000,minimumMs:30000,peakW:watts,peakAt:at,magnitudeWms:watts*60000});
+    e.retain(p);
+}
+test('many strong import deviations cannot evict weaker export or quality-gap cases',()=>{
+    const p=frame();episode(p,'export',0,250);episode(p,'source-gap',1);episode(p,'sampling-gap',2);
+    for(let i=3;i<100;i++) episode(p,'deviation',i,7000);
+    assert.ok(p.investigation.closed.some(x=>x.type==='export'));
+    assert.ok(p.investigation.closed.some(x=>x.type==='source-gap'));
+    assert.ok(p.investigation.closed.some(x=>x.type==='sampling-gap'));
+    assert.ok(p.investigation.closed.length<=24);
+    assert.ok(p.investigation.retention.droppedByType.deviation>0);
+    assert.equal(p.investigation.retention.droppedByType.export,0);
+});
+test('all categories stay bounded, retain strongest in category, and account each discard',()=>{
+    const p=frame();for(let i=0;i<40;i++) for(const type of Object.keys(e.RETENTION)) episode(p,type,i,i+1);
+    assert.equal(p.investigation.closed.length,24);
+    for(const [type,limit] of Object.entries(e.RETENTION)) {
+        const items=p.investigation.closed.filter(x=>x.type===type);
+        assert.equal(items.length,limit);assert.ok(items.some(x=>x.peakW===40));
+        assert.equal(p.investigation.retention.droppedByType[type],40-limit);
+    }
+    assert.equal(p.investigation.overflow,160-24);
+});
+test('legacy checkpoint migration preserves unknown historical overflow and existing export',()=>{
+    const p=frame();const d=e.ensure(p,start);delete d.retention;d.overflow=7;
+    for(let i=0;i<23;i++) d.closed.push({type:'deviation',from:start,to:start+60000,durationMs:60000,magnitudeWms:10000000});
+    d.closed.push({type:'export',from:start,to:start+60000,durationMs:60000,magnitudeWms:100});
+    e.retain(p);
+    assert.equal(d.retention.overflowBeforeRetention,7);
+    assert.equal(d.retention.droppedByType.deviation,15);
+    assert.equal(d.overflow,22);assert.ok(d.closed.some(x=>x.type==='export'));
+});
+test('byte-pressure trimming removes ordinary deviation before export across both periods',()=>{
+    const prior=frame(),current=frame();episode(prior,'export',0,250);episode(current,'deviation',1,7000);
+    assert.equal(e.dropForSize([prior,current]),true);
+    assert.equal(prior.investigation.closed.length,1);assert.equal(current.investigation.closed.length,0);
+    assert.equal(current.investigation.retention.droppedByType.deviation,1);
 });
