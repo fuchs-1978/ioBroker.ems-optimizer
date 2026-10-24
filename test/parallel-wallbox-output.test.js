@@ -2184,3 +2184,25 @@ test('interrupted export restarts the early probe observation', async () => {
     h.advance(2000); h.grant([16]); await h.output.tick();
     assert.ok(h.writes.some(w=>w.id==='cmd' && w.val===11));
 });
+
+test('14:21:30 confirmed EQE 9 A at 7.9 A holds across an older 8 A allocation',async()=>{
+    const h=await eqeStaleAllocation({amps:9,actualW:1730,actualA:7.9,targetA:8,exportW:439.1});
+    await h.output.tick();
+    assert.deepEqual(h.writes,[],'a newer confirmed partial response must not be reversed by the preceding allocation');
+    assert.equal(h.output.devices[0].lastA,9);
+});
+
+for(const [name,change] of [
+    ['fresh allocation',h=>{const a=JSON.parse(h.states.get('ems.0.Control.ParallelWallboxAllocation_JSON').val);h.put('ems.0.Control.Wallbox0.AllocationDiagnostics_JSON',JSON.stringify({valid:true,timestamp:a.timestamp,measuredPowerAt:1010002}));}],
+    ['limited unconfirmed response',h=>h.put('ems.0.Devices.Wallbox0.ResponseState','limited')],
+    ['withdrawn full reservation',h=>{const key='ems.0.Control.ParallelWallboxAllocation_JSON';const a=JSON.parse(h.states.get(key).val);a.allocations[0].reservedW=1840;h.put(key,JSON.stringify(a));}],
+    ['hard current cap',h=>{h.config.wb0CommissioningMaxA=8;}],
+    ['real grid deficit',h=>{h.put('export',0);h.put('import',500);}],
+    ['current outside the confirmed offset',h=>h.put('i1',5.8,{ts:1010002})],
+    ['pre-command measurement',h=>h.put('power',1.73,{ts:999999})]
+])test('confirmed offset allocation hold yields to '+name,async()=>{
+    const h=await eqeStaleAllocation({amps:9,actualW:1730,actualA:7.9,targetA:8,exportW:439.1});
+    change(h);await h.output.tick();
+    assert.ok(h.writes.some(w=>w.id==='cmd'&&w.val<9||w.id==='allow'&&w.val===0));
+    assert.ok(!h.writes.some(w=>w.id==='cmd'&&w.val>9));
+});

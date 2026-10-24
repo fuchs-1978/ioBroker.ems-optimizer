@@ -1,3 +1,7 @@
+### 0.17.0-alpha.132 (2026-10-24)
+
+Kompakte passive Tagesbilanzen mit Energie, Datenabdeckung und neustartfestem Pruefstand; keine SQL-Vollabrufe oder Aktoraenderungen.
+
 ### 0.17.0-alpha.131 (2026-10-23)
 
 Zusammenpassende verspaetete go-e-Sollstrommeldungen bis zu 10 Sekunden beruhigen lassen; laufende Schutzpruefungen und volle Reserven bleiben aktiv.
