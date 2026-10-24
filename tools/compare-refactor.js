@@ -36,10 +36,49 @@ async function worker(tree) {
     packageMetadata.version = '0.17.0-alpha.96';
     const readSource = fs.readFileSync.bind(fs);
     const versionSources = new Set(['core.js', 'bootstrap.js'].map(name => path.join(tree, 'lib/engine', name)));
+    const admissionSource = path.join(tree, 'lib/engine/dhw-controller.js');
+    const heaterOutputSource = path.join(tree, 'lib/engine/dhw-output.js');
+    const recorderSource = path.join(tree, 'lib/debug-recorder.js');
     fs.readFileSync = (filename, options) => {
         const data = readSource(filename, options);
-        if (!versionSources.has(String(filename))) return data;
-        const pinned = String(data).replaceAll(adapterVersion, '0.17.0-alpha.96');
+        if (!versionSources.has(String(filename)) && String(filename) !== admissionSource
+            && String(filename) !== recorderSource && String(filename) !== heaterOutputSource) return data;
+        let pinned = String(data).replaceAll(adapterVersion, '0.17.0-alpha.96');
+        // alpha.138 adds one passive state definition. Supply that same
+        // unknown diagnostic slot to the historical fixture, rather than
+        // dropping state writes/checkpoints or relaxing command comparison.
+        // Its evaluated values and status/context are tested independently.
+        if (String(filename).endsWith('/core.js') && !pinned.includes('MinimumAdmissionPower_W')) {
+            const anchor = "    stateDef(`${r}.Devices.MyPV_DHW.TemperaturePowerLimit_W`, 0, 'number', 'value.power', 'W', 'Temperaturabhaengige Leistungsgrenze');";
+            assert.equal(pinned.split(anchor).length, 2);
+            pinned = pinned.replace(anchor, anchor + "\n    stateDef(`${r}.Devices.MyPV_DHW.MinimumAdmissionPower_W`, null, 'number', 'value.power', 'W', 'Schichtungsabhaengige Mindestleistung; null bei unbekannten Temperaturen, keine Leistungsfreigabe');");
+        }
+        if (String(filename) === admissionSource && !pinned.includes('MinimumAdmissionPower_W')) {
+            const anchor = '    write(`${r}.TemperaturePowerLimit_W`, Math.round(temperaturePowerLimitW));';
+            assert.equal(pinned.split(anchor).length, 2);
+            // Read-only annotation of the old rule; do not alter its target
+            // function or any actuator path in the baseline.
+            pinned = pinned.replace(anchor, anchor + '\n    write(`${r}.MinimumAdmissionPower_W`, valid ? (top - bottom > 15 ? 900 : top > 35 ? 500 : 0) : null);');
+        }
+        if (String(filename) === recorderSource && !pinned.includes('MinimumAdmissionPower_W')) {
+            const anchor = "'TemperaturePowerLimit_W', 'BottomTemperature_C'";
+            assert.equal(pinned.split(anchor).length, 2);
+            pinned = pinned.replace(anchor, "'TemperaturePowerLimit_W', 'MinimumAdmissionPower_W', 'BottomTemperature_C'");
+        }
+        if (String(filename) === heaterOutputSource && !pinned.includes('MinimumAdmissionPower_W')) {
+            const anchor = "        reason = 'Fahrplan-/EMS-Freigabe ohne Leistungsbudget';";
+            assert.equal(pinned.split(anchor).length, 2);
+            // Forward-port only the intentional status explanation. The
+            // baseline's desiredW, caps, ramps and writes stay untouched.
+            pinned = pinned.replace(anchor, anchor + `
+        const minimumW = getState(\`\${r}.Devices.MyPV_DHW.MinimumAdmissionPower_W\`)?.val;
+        const availableW = Math.max(0, actualW - gridErrorW);
+        if (fineRegulation && getState(\`\${r}.Devices.MyPV_DHW.TemperatureValid\`)?.val === true
+            && typeof minimumW === 'number' && Number.isFinite(minimumW) && minimumW > 0
+            && gridErrorW < -deadbandW && availableW < minimumW) {
+            reason = \`Ueberschuss \${Math.round(availableW)} W unter Schichtungsminimum \${minimumW} W; kein Heizstart\`;
+        }`);
+        }
         return typeof data === 'string' ? pinned : Buffer.from(pinned);
     };
     let hash, eventCount, scenario;

@@ -146,3 +146,16 @@ test('unchanged thermal diagnostics refresh at most once a minute but invalidity
     h.put('bottom', 50, {ack: false}); h.tick();
     assert.equal(count(), 4);
 });
+
+for (const [top,bottom,minimum] of [[68.4,53.2,900],[68.4,53.5,500],[35,30,0]]) {
+    test(`layering minimum ${minimum} W is published by the same admission rule`, () => {
+        const h=harness();h.put('top',top);h.put('bottom',bottom);h.tick();
+        assert.equal(h.value('MinimumAdmissionPower_W'),minimum);
+        if(minimum>0) assert.equal(h.target(minimum-1),0);
+        assert.equal(h.target(Math.max(1000,minimum)),Math.max(1000,minimum));
+    });
+}
+test('unknown temperature cannot publish a known layering minimum', () => {
+    const h=harness();h.put('bottom',null);h.tick();
+    assert.equal(h.value('MinimumAdmissionPower_W'),null);
+});

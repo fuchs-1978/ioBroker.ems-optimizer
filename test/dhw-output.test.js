@@ -1110,3 +1110,12 @@ test('EHZ tracks the actual smaller queued transport without inventing a zero or
     assert.match(h.states.get('ems.0.Devices.MyPV_DHW.OutputStatus').val,/Budget.*reduziert/);
     assert.ok(h.states.get('ems.0.Devices.MyPV_DHW.OutputReservedPower_W').val>=requested);
 });
+
+test('export below the known layering minimum explains zero budget without changing the output',()=>{
+    const h=outputHarness();h.own('Control.Targets.MyPV_DHW_W',0);
+    h.own('Devices.MyPV_DHW.MinimumAdmissionPower_W',900);
+    h.own('Devices.MyPV_DHW.TemperatureValid',true);
+    h.put('gridOut',850);h.tick();
+    assert.equal(h.commands().at(-1),0);
+    assert.match(h.states.get('ems.0.Devices.MyPV_DHW.ControlReason').val,/unter Schichtungsminimum 900 W/);
+});

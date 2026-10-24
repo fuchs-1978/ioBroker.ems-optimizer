@@ -1,9 +1,13 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.137",
+    "version": "0.17.0-alpha.138",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.138": {
+        "en": "Explain export below the existing heater layering minimum; record the authoritative admission threshold in decision snapshots and episode context without hiding export or changing control limits.",
+        "de": "Einspeisung unter dem bestehenden Heizstab-Schichtungsminimum erklaeren; wirksame Mindestleistung in Entscheidungen und Episodenkontext speichern, ohne Einspeisung auszublenden oder Regelgrenzen zu aendern."
+      },
       "0.17.0-alpha.137": {
         "en": "Allow a bounded one-amp response probe after ten seconds of sustained measured export; preserve ACK, electrical freshness, allocation and hard protection gates.",
         "de": "Begrenzten 1-A-Pruefschritt nach zehn Sekunden anhaltender gemessener Einspeisung erlauben; Bestaetigung, frische Messwerte, Zuteilung und Schutzgrenzen bleiben erforderlich."
@@ -27,10 +31,6 @@
       "0.17.0-alpha.132": {
         "en": "Add bounded passive daily energy and coverage summaries with restart-safe checkpoints; no SQL scans or actuator changes.",
         "de": "Kompakte passive Tagesbilanzen mit Energie, Datenabdeckung und neustartfestem Pruefstand; keine SQL-Vollabrufe oder Aktoraenderungen."
-      },
-      "0.17.0-alpha.131": {
-        "en": "Observe coherent delayed go-e current polls for up to 10 seconds with live protection checks and full reservations before stopping.",
-        "de": "Zusammenpassende verspaetete go-e-Sollstrommeldungen bis zu 10 Sekunden beruhigen lassen; laufende Schutzpruefungen und volle Reserven bleiben aktiv."
       }
     },
     "titleLang": {

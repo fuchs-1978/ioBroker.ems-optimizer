@@ -1,3 +1,7 @@
+### 0.17.0-alpha.131 (2026-10-23)
+
+Zusammenpassende verspaetete go-e-Sollstrommeldungen bis zu 10 Sekunden beruhigen lassen; laufende Schutzpruefungen und volle Reserven bleiben aktiv.
+
 ### 0.17.0-alpha.130 (2026-10-23)
 
 Kleinen Netzbezug bevorzugen: neutralen Sollwert einmalig auf 50 W umstellen und messtechnisch gedeckte 1-A-PV-Schritte trotz nominaler Umrechnung zulassen; harte Leistungsreserven bleiben erhalten.
