@@ -78,3 +78,23 @@ test('two periods of multibyte reasons are trimmed to the hard byte budget', asy
     assert.ok(Buffer.byteLength(a.writes.at(-1).val) <= MAX_BYTES);
     assert.ok(d.data.previous.eventOverflow > 0);
 });
+test('qualified episodes survive checkpoint and restart without covering downtime', async () => {
+    const a=adapter(), d=new DailySummary(a); await d.initialize();
+    for(let i=0;i<14;i++) {const s=snapshot(at+i*5000,-800);s.control.TargetGridPower_W=50;d.sample(s);}
+    await d.stop(); const r=new DailySummary(adapter(a.writes.at(-1).val)); await r.initialize();
+    const s=snapshot(at+120000,-800);s.control.TargetGridPower_W=50;r.sample(s);
+    const windows=r.report().current.investigationWindows;
+    assert.equal(windows.find(w=>w.type==='export').endReason,'restart');
+    assert.equal(windows.find(w=>w.type==='export').durationMs,65000);
+    assert.equal(windows.find(w=>w.type==='sampling-gap').durationMs,55000);
+});
+test('period rollover clips episode boundaries and accepts old alpha.132 checkpoint totals', async () => {
+    const a=adapter(), d=new DailySummary(a); await d.initialize();const b=period(at).to;
+    for(let i=0;i<16;i++) {const s=snapshot(b-70000+i*5000,-800);s.control.TargetGridPower_W=50;d.sample(s);}
+    const w=d.report().previous.investigationWindows.find(x=>x.type==='export');
+    assert.equal(w.to,b); assert.equal(w.endReason,'period-end');
+    assert.ok(w.investigateTo<=b);
+    const old=d.report();delete old.current.investigation;delete old.current.investigationWindows;
+    const r=new DailySummary(adapter(JSON.stringify(old))); await r.initialize();
+    assert.equal(r.data.current.sources.grid.coveredMs,d.data.current.sources.grid.coveredMs);
+});

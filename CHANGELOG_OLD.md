@@ -2317,3 +2317,11 @@ Kurze Messluecken bestaetigt laufender Wallboxen bis maximal 60 Sekunden Messwer
 ### 0.17.0-alpha.124
 
 Allow the bounded no-write wallbox telemetry bridge with a valid explicitly inactive groupNet constraint; keep active or unknown group limits, configured LPC fences and all existing safety checks effective.
+
+## Archived package news for alpha.133
+
+### 0.17.0-alpha.126
+
+Manual wallbox minimum charging now uses the qualified EMS SoC and target in live control and planning; legacy socfrei is comparison telemetry only.
+
+Manuelle Wallbox-Mindestladung nutzt in Live-Regelung und Planung nur den gültigen EMS-SoC samt Ladeziel; altes socfrei dient nur noch zum Vergleich.
