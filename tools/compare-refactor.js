@@ -218,6 +218,13 @@ async function worker(tree) {
         // source-power-history/lifecycle tests cover it separately. Keep all
         // pre-existing ordered output/startup/shutdown traces byte-exact.
         if (a.sourcePowerHistory) a.sourcePowerHistory.initialize = async () => {};
+        // alpha.132 adds passive summary state creation/checkpoints, not control
+        // behavior. Its bounded persistence/coverage contract is tested in
+        // daily-summary.test.js. Keep the original actuator trace exact.
+        if (a.dailySummary) {
+            a.startDailySummary = async () => {};
+            a.dailySummary.stop = async () => {};
+        }
         a.setStateAsync = async (...args) => record({kind: 'state', args});
         a.preloadStates = async () => {
             for (const key of ['Plan.Valid', 'Control.Valid', 'System.DataValid'])

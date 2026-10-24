@@ -8,6 +8,7 @@ const schedule = require("node-schedule");
 const utils = require("@iobroker/adapter-core");
 const WallboxOutput = require("./lib/wallbox-output");
 const DebugRecorder = require("./lib/debug-recorder");
+const {DailySummary} = require("./lib/daily-summary");
 const {LatestStateWriter, isDisplaySeries} = require("./lib/latest-state-writer");
 const ShadowController = require("./lib/shadow-controller");
 const ShadowHistory = require("./lib/shadow-history");
@@ -59,6 +60,7 @@ class EmsOptimizer extends utils.Adapter {
         this.wallboxOutput = new WallboxOutput(this);
         this.outputMetadata = new OutputMetadata(this);
         this.debugRecorder = new DebugRecorder(this);
+        this.dailySummary = new DailySummary(this);
         this.shadowController = new ShadowController(this, {
             createContext: sandbox => createEngineContext(this.namespace, this.readMapping(), sandbox, 'ems-shadow-decisions')
         });
@@ -136,6 +138,7 @@ class EmsOptimizer extends utils.Adapter {
         this.log.info(`EMS Optimizer ${require('./package.json').version} started; alpha outputs require explicit release`);
         // Diagnostics must never hold up actuator initialization or scheduling.
         this.debugInitialization = this.startDebug();
+        this.dailySummaryInitialization = this.startDailySummary();
         this.shadowInitialization = this.startShadow();
         this.marketInitialization = this.startMarketPrices();
         // Optional source-history metadata setup never delays actuator startup.
@@ -161,6 +164,24 @@ class EmsOptimizer extends utils.Adapter {
             this.warnDebug(error);
             return false;
         }
+    }
+
+    async startDailySummary() {
+        try {
+            await this.dailySummary.initialize();
+            if (this.unloading) return;
+            const sample = () => {
+                if (this.unloading) return;
+                try {
+                    this.dailySummary.sample(this.debugRecorder.snapshot(), {
+                        dropped: this.shadowController?.recordDropped,
+                        writeErrors: this.shadowController?.recordWriteErrors
+                    });
+                } catch (error) { this.warnDebug(error); }
+            };
+            sample();
+            this.registerSchedule('*/5 * * * * *', sample);
+        } catch (error) { this.warnDebug(error); }
     }
 
     async startDebug() {
@@ -1078,6 +1099,8 @@ class EmsOptimizer extends utils.Adapter {
         try { this.shadowHistory?.stop(); }
         catch (error) { this.warnDebug(error); }
         this.sourcePowerHistory?.stop();
+        // Passive checkpoint starts independently of actuator stop queues.
+        this.dailySummaryStop = this.dailySummary?.stop().catch(error => this.warnDebug(error));
         this.wallboxOutput.stopping = true;
         for (const job of this.jobs) job.cancel();
         for (const timer of this.timers) clearTimeout(timer);
@@ -1130,6 +1153,7 @@ class EmsOptimizer extends utils.Adapter {
             this.log.error(`Cannot stop output on unload: ${result.reason}`);
         // Real independent stops always precede diagnostic disk completion.
         await this.runShadow('finishRecording');
+        await this.dailySummaryStop;
         if (this.decisionRecordDelivery?.stopAndDrain) {
             try {
                 const drained = await this.decisionRecordDelivery.stopAndDrain(2000);
