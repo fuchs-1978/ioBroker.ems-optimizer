@@ -147,7 +147,8 @@ test('unchanged thermal diagnostics refresh at most once a minute but invalidity
     assert.equal(count(), 4);
 });
 
-for (const [top,bottom,minimum] of [[68.4,53.2,900],[68.4,53.5,500],[35,30,0]]) {
+for (const [top,bottom,minimum] of [[68.4,53.2,900],[68.4,53.5,500],[35,30,0],
+    [67.9,52.9,500],[68.4,53.4,500],[68.1,53.1,500],[68.4001,53.4,900]]) {
     test(`layering minimum ${minimum} W is published by the same admission rule`, () => {
         const h=harness();h.put('top',top);h.put('bottom',bottom);h.tick();
         assert.equal(h.value('MinimumAdmissionPower_W'),minimum);
