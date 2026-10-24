@@ -1,3 +1,7 @@
+### 0.17.0-alpha.133 (2026-10-24)
+
+Zeitlich markierte Export-, Abweichungs- und Lueckenepisoden mit begrenzten Untersuchungsfenstern; historische Erfassung bleibt begrenzt.
+
 ### 0.17.0-alpha.132 (2026-10-24)
 
 Kompakte passive Tagesbilanzen mit Energie, Datenabdeckung und neustartfestem Pruefstand; keine SQL-Vollabrufe oder Aktoraenderungen.

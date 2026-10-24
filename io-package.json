@@ -1,9 +1,13 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.139",
+    "version": "0.17.0-alpha.140",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.140": {
+        "en": "Correct floating-point noise at exactly 15 K heater layering; retain signed grid and target at diagnostic peaks without rewriting legacy evidence.",
+        "de": "Rundungsrauschen an exakt15 K Heizstab-Schichtung korrigieren; Netzleistung und Sollwert mit Vorzeichen am Diagnosepeak erhalten, Altdaten unbekannt lassen."
+      },
       "0.17.0-alpha.139": {
         "en": "Retain a confirmed current with a bounded vehicle offset when power is newer than the parallel allocation; keep strict same-sample confirmation, full reservations and hard limits.",
         "de": "Bestaetigten Strom mit begrenzter Fahrzeugabweichung bei neuerer Leistung gegen alte Parallelzuteilung halten; strenge Gleichproben-Bestaetigung, volle Reserven und Schutzgrenzen erhalten."
@@ -27,10 +31,6 @@
       "0.17.0-alpha.134": {
         "en": "Retain confirmed charging through fresh-feedback recovery before the parallel allocator refreshes an own-power age rejection; preserve safety gates and reservations.",
         "de": "Bestaetigte Ladung bei frischer Rueckmeldung vor Erneuerung einer allein altersbedingt ungueltigen Parallelzuteilung halten; Schutzpruefungen und Reserven bleiben erhalten."
-      },
-      "0.17.0-alpha.133": {
-        "en": "Add time-stamped investigation episodes for sustained export, grid-target deviation and source gaps to compact daily summaries.",
-        "de": "Zeitlich markierte Untersuchungsfenster fuer laengere Einspeisung, NVP-Sollabweichung und Quellenluecken in der kompakten Tagesbilanz."
       }
     },
     "titleLang": {
