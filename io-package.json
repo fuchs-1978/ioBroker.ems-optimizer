@@ -1,9 +1,13 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.138",
+    "version": "0.17.0-alpha.139",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.139": {
+        "en": "Retain a confirmed current with a bounded vehicle offset when power is newer than the parallel allocation; keep strict same-sample confirmation, full reservations and hard limits.",
+        "de": "Bestaetigten Strom mit begrenzter Fahrzeugabweichung bei neuerer Leistung gegen alte Parallelzuteilung halten; strenge Gleichproben-Bestaetigung, volle Reserven und Schutzgrenzen erhalten."
+      },
       "0.17.0-alpha.138": {
         "en": "Explain export below the existing heater layering minimum; record the authoritative admission threshold in decision snapshots and episode context without hiding export or changing control limits.",
         "de": "Einspeisung unter dem bestehenden Heizstab-Schichtungsminimum erklaeren; wirksame Mindestleistung in Entscheidungen und Episodenkontext speichern, ohne Einspeisung auszublenden oder Regelgrenzen zu aendern."
@@ -27,10 +31,6 @@
       "0.17.0-alpha.133": {
         "en": "Add time-stamped investigation episodes for sustained export, grid-target deviation and source gaps to compact daily summaries.",
         "de": "Zeitlich markierte Untersuchungsfenster fuer laengere Einspeisung, NVP-Sollabweichung und Quellenluecken in der kompakten Tagesbilanz."
-      },
-      "0.17.0-alpha.132": {
-        "en": "Add bounded passive daily energy and coverage summaries with restart-safe checkpoints; no SQL scans or actuator changes.",
-        "de": "Kompakte passive Tagesbilanzen mit Energie, Datenabdeckung und neustartfestem Pruefstand; keine SQL-Vollabrufe oder Aktoraenderungen."
       }
     },
     "titleLang": {
