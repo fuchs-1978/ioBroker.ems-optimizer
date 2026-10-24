@@ -74,3 +74,40 @@ for (const parallel of [false,true]) test(`real Mii manual minimum survives offl
     assert.equal(h.value('Devices.Wallbox0.ResponseState'),'confirmed');
     assert.ok(!h.writes.some(w=>w.id==='goe0.allow'&&w.val===0),'no queued age-only OFF after recovery');
 });
+
+for (const groupNet of [false,true]) for (const failure of [null, 'master', 'device', 'house', 'SMA', 'external-off'])
+test(`fresh Mii feedback before allocator recovery; groupNet=${groupNet}; failure=${failure}`, async () => {
+    const h=await plant({mii:true,wallbox:false,startDelayS:0,split:false,initialSurplusW:3000,sourceQuality:groupNet?0:undefined,
+        nativeConfig:{wallboxParallelChargingEnabled:true,
+            ...(groupNet?{par14aAccountingMode:'groupNet',par14aGroupId:'group',par14aBoundaryId:'site',
+                par14aSiteScope:'whole-site-ac',par14aId:'group.contact',par14aAccountingMaxAgeS:30,
+                par14aAccountingMaxSkewMs:0,par14aStorageCoverage:'none',par14aStorageMeters:[],
+                par14aParticipants:[{name:'mii',kind:'wallbox',connectionPowerW:3680,deviceId:'Wallbox0',
+                    powerId:'DP_WB0_POWER',powerUnit:'kW',powerScope:'total-ac'}]}:{})}});
+    if(groupNet) h.put('group.contact',false);
+    h.put('DP_WB0_AMIN',6);await h.advance(90);
+    assert.equal(h.value('Devices.Wallbox0.ResponseState'),'confirmed');
+    const ids=['goe0.error','DP_WB0_CAR','goe0.allow','goe0.feedback','DP_WB0_POWER',
+        ...[1,2,3].map(p=>`DP_WB0_L${p}_A`)];
+    const frozen=ids.map(id=>[id,h.states.get(id).val,{...h.states.get(id)}]);
+    const at=h.now();h.writes.length=0;
+    await h.replayAt(at+31000,frozen);
+    assert.match(h.value('Devices.Wallbox0.OutputStatus'),/TELEMETRIE/);
+    assert.equal(JSON.parse(h.value('Control.ParallelWallboxAllocation_JSON')).valid,false);
+    // Fresh device poll arrives AFTER the allocator's rejection, BEFORE its next cycle.
+    const faults={master:[['ems.0.System.RealOutputsEnabled',false]],device:[['goe0.error',1]],
+        house:[['DP_HA_CRITICAL',true]],SMA:[['DP_GRID_IMPORT',0,{q:64}]],
+        'external-off':[['goe0.allow',0]]};
+    await h.replayAt(at+32000,failure?faults[failure]:[],{allocate:false});
+    if(failure) {
+        assert.equal(h.value('Devices.Wallbox0.OutputActive'),false,h.value('Devices.Wallbox0.OutputStatus'));
+        if(failure!=='external-off') assert.ok(h.writes.some(w=>w.id==='goe0.allow'&&w.val===0),'real safety/release loss still stops');
+        assert.ok(!h.writes.some(w=>w.id==='goe0.allow'&&w.val===1),'never re-enable after withdrawn release');
+        return;
+    }
+    assert.equal(h.value('Devices.Wallbox0.OutputActive'),true,h.value('Devices.Wallbox0.OutputStatus'));
+    assert.ok(!h.writes.some(w=>['goe0.allow','goe0.cmd'].includes(w.id)),'no stale-allocation OFF or new command');
+    assert.ok(h.value('Devices.Wallbox0.OutputReservedPower_W')>=1380);
+    await h.replayAt(at+33000);
+    assert.equal(h.value('Devices.Wallbox0.OutputActive'),true,h.value('Devices.Wallbox0.OutputStatus'));
+});
