@@ -1,9 +1,13 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.136",
+    "version": "0.17.0-alpha.137",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.137": {
+        "en": "Allow a bounded one-amp response probe after ten seconds of sustained measured export; preserve ACK, electrical freshness, allocation and hard protection gates.",
+        "de": "Begrenzten 1-A-Pruefschritt nach zehn Sekunden anhaltender gemessener Einspeisung erlauben; Bestaetigung, frische Messwerte, Zuteilung und Schutzgrenzen bleiben erforderlich."
+      },
       "0.17.0-alpha.136": {
         "en": "Reserve independent episode slots for export, deviations and gaps; keep category-specific drop counters and prioritize relevant cases under the 64 kB limit.",
         "de": "Getrennte Speicherplaetze fuer Einspeisung, Abweichungen und Luecken; Verdraengungen je Kategorie ausweisen und wichtige Faelle unter der 64-kB-Grenze erhalten."
@@ -27,10 +31,6 @@
       "0.17.0-alpha.131": {
         "en": "Observe coherent delayed go-e current polls for up to 10 seconds with live protection checks and full reservations before stopping.",
         "de": "Zusammenpassende verspaetete go-e-Sollstrommeldungen bis zu 10 Sekunden beruhigen lassen; laufende Schutzpruefungen und volle Reserven bleiben aktiv."
-      },
-      "0.17.0-alpha.130": {
-        "en": "Prefer a small grid import: migrate neutral targets once to 50 W and allow physically funded one-amp PV steps beyond the nominal soft conversion, retaining full hard reservations.",
-        "de": "Kleinen Netzbezug bevorzugen: neutralen Sollwert einmalig auf 50 W umstellen und messtechnisch gedeckte 1-A-PV-Schritte trotz nominaler Umrechnung zulassen; harte Leistungsreserven bleiben erhalten."
       }
     },
     "titleLang": {

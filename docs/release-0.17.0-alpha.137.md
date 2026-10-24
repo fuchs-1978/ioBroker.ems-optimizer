@@ -1,0 +1,11 @@
+# 0.17.0-alpha.137 – begrenzter früher Prüfschritt bei verzögerter Fahrzeugantwort
+
+Die untersuchte Rückspeisung vom 24.10.2026, 14:55:45–14:57:05 Uhr (Berlin), enthielt eine bestätigte 10-A-Vorgabe bei zunächst 7,8–7,9 A gemessenem Fahrzeugstrom. Der vorhandene begrenzte 11-A-Prüfschritt wurde erst nach Ablauf der 45-Sekunden-Antwortzeit ausgeführt. Danach reagierte der EQE wieder. Die Daten beweisen nicht, warum das Fahrzeug zunächst weniger Strom abnahm.
+
+Die bestehende Prüfschrittlogik darf jetzt früher einen einzelnen zusätzlichen Ampere-Schritt versuchen, wenn zehn Sekunden lang ausreichend gemessene Rückspeisung beobachtet wird: mindestens ein nominaler Ampere-Schritt plus 200 W. Import und Export müssen frisch und höchstens fünf Sekunden gegeneinander versetzt sein. Nach Ablauf der Beobachtung werden erneut frische Netz-, Leistungs- und Strommessungen verlangt. Unterbrochener Überschuss setzt diese Beobachtung zurück.
+
+Der Strom muss innerhalb von drei Ampere unter der Vorgabe und mindestens bei 6 A liegen. Die vorherige Erhöhung benötigt eine Befehlsbestätigung und eine echte elektrische Messung. Start, Phasenwechsel und angenommene Schattenantworten erhalten diese Ausnahme nicht. Der bestehende produktive Parallelpfad prüft weiterhin Freigaben, Reservierungen, harte Strom-/Leistungs- und Gruppenlimits, frisches Netzbudget und erneute elektrische Messungen vor dem Schreiben. Eine fehlende Fahrzeugantwort wird niemals als bestätigt markiert.
+
+Höchstens zwei unbeantwortete Prüfschritte bleiben erlaubt. Jeder ist maximal 1 A groß und muss durch die aktuelle Zuteilung und das live geprüfte Budget gedeckt sein. Ohne diese Bedingungen gilt die bisherige Antwortzeit. Ein Fahrzeug, das tatsächlich begrenzt, kann dadurch nicht unbegrenzt hochgeschrieben werden. Die Änderung gilt für den beschriebenen Antwortfall unabhängig von Fahrzeugnamen oder Wallboxnummer.
+
+Regressionen prüfen den frühen 10→11-A-Schritt, zu kurze/unterbrochene Beobachtung, fehlenden Überschuss, alte Messwerte, entzogene Freigabe, Stromlimit und die Begrenzung auf zwei Versuche. Die bestehende Testmatrix für gemessene und nominale Reservierungen bleibt aktiv. Softwaretests ersetzen die Beobachtung nach Installation nicht.
