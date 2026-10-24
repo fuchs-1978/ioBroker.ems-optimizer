@@ -1704,7 +1704,7 @@ for(const [fault,change] of [
     ['hard current limit',h=>{h.config.wb0CommissioningMaxA=10;}],
     ['withdrawn grant',h=>h.grant([0])]
 ]) test('limited response probe retains safety: '+fault, async()=>{
-    const h=await eqeLimitedReply();h.advance(fault==='before deadline'?10000:46000);h.grant([16]);change(h);
+    const h=await eqeLimitedReply();h.advance(fault==='before deadline'?8000:46000);h.grant([16]);change(h);
     h.writes.length=0;await h.output.tick();assert.ok(!h.writes.some(w=>w.id==='cmd'&&w.val>10));
 });
 
@@ -2148,4 +2148,39 @@ for (const [name, change] of [
     h.advance(2000); h.grant([10]); change(h);
     await h.output.tick();
     assert.deepEqual(h.writes.at(-1), {id: 'allow', val: 0});
+});
+
+async function earlySurplusReply() {
+    const h = await eqeLimitedReply();
+    h.advance(2000); h.grant([16]); await h.output.tick();
+    h.writes.length = 0;
+    return h;
+}
+test('sustained export permits one 11 A probe before the 45 s response deadline', async () => {
+    const h = await earlySurplusReply();
+    h.advance(10000); h.grant([16]); await h.output.tick();
+    assert.deepEqual(h.writes, [{id:'cmd', val:11}]);
+    assert.equal(h.output.devices[0].limitedProbeAttempts, 1);
+    assert.equal(h.output.devices[0].response.amps, 11);
+});
+for (const [name, change] of [
+    ['short observation', h => h.advance(6000)],
+    ['export disappeared', h => {h.advance(10000); h.put('export', 0);}],
+    ['only 400 W export', h => {h.advance(10000); h.put('export', 400);}],
+    ['stale electrical sample', h => {h.advance(10000); h.put('power', 1.75, {ts:1});}],
+    ['hard current cap', h => {h.advance(10000); h.config.wb0CommissioningMaxA=10;}],
+    ['withdrawn release', h => {h.advance(10000); h.put('ems.0.Vehicles.Wallbox0.Release', false);}],
+    ['two unanswered probes', h => {h.advance(10000); h.output.devices[0].limitedProbeAttempts=2;}]
+]) test('early surplus probe rejects '+name, async () => {
+    const h=await earlySurplusReply(); change(h); h.grant([16]); await h.output.tick();
+    assert.ok(!h.writes.some(w=>w.id==='cmd' && w.val>10));
+});
+test('interrupted export restarts the early probe observation', async () => {
+    const h=await earlySurplusReply();
+    h.advance(6000); h.grant([16]); h.put('export',0); await h.output.tick();
+    h.advance(2000); h.grant([16]); h.put('export',2200); await h.output.tick();
+    h.advance(8000); h.grant([16]); h.writes.length=0; await h.output.tick();
+    assert.ok(!h.writes.some(w=>w.id==='cmd' && w.val>10));
+    h.advance(2000); h.grant([16]); await h.output.tick();
+    assert.ok(h.writes.some(w=>w.id==='cmd' && w.val===11));
 });

@@ -1,3 +1,7 @@
+### 0.17.0-alpha.130 (2026-10-23)
+
+Kleinen Netzbezug bevorzugen: neutralen Sollwert einmalig auf 50 W umstellen und messtechnisch gedeckte 1-A-PV-Schritte trotz nominaler Umrechnung zulassen; harte Leistungsreserven bleiben erhalten.
+
 ### 0.17.0-alpha.128 (2026-10-23)
 
 Feste einphasige Wallboxen wie der Mii benötigen keine Phasenmodus-Rückmeldung für bestätigte leistungsbasierte PV-Stromschritte. Eine fehlende psm-Quelle wird nicht mehr als laufender Phasenwechsel behandelt. Harte Strom-/Leistungsreserven bleiben nominal; echte offene Phasenwechsel und unbestätigte elektrische Antworten bleiben geschützt. [Details](docs/release-0.17.0-alpha.128.md).
