@@ -3604,7 +3604,6 @@ for (const groupNet of [false, true]) for (const [name, fault] of [
         h.mapping.DP_LPC_STATE = 'lpc'; h.mapping.DP_LPC_LIMIT = 'lpcLimit';
         h.put('lpc', 'limited'); h.put('lpcLimit', 1000);
     }],
-    ['PV no longer sufficient', h => {h.put('export', 0); h.put('import', 500);}],
     ['unknown prior session', h => h.output.telemetryBridgeProofs.delete(h.output.devices[0])]
 ]) test(`telemetry bridge stops for ${name}, groupNet=${groupNet}`, async () => {
     const h = await telemetryBridgeFixture({groupNet}); h.advance(31000); fault(h); await h.output.tick();
@@ -3790,4 +3789,102 @@ for (const [name, change] of [
     assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, false);
     assert.ok(h.writes.some(w => w.id === 'allow' && w.val === 0));
     assert.ok(!h.writes.some(w => w.id === 'allow' && w.val === 1));
+});
+
+async function acknowledgedTelemetryStep({phases = 1} = {}) {
+    const h = await telemetryBridgeFixture({phases});
+    h.advance(1000); h.refresh();
+    const d = h.output.devices[0];
+    h.put('ems.0.Control.Targets.Wallbox0_W', 9 * 230 * phases);
+    d.pending = {stage:'current', amps:9, at:h.states.get('ems.0.Control.LastUpdate').val, start:false};
+    await h.output.send(d, 'command', 9);
+    h.ack('feedback', 9);
+    const sampledAt = d.response.at;
+    h.put('power', 1.76 * phases, {ts:sampledAt});
+    for (let p=1;p<=3;p++) h.put(`i${p}`, p===1 || phases===3 ? 7.9 : 0, {ts:sampledAt});
+    await h.output.tick();
+    assert.equal(d.lastA,9);
+    assert.equal(d.pending,null);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val,'vehicle_response');
+    // A normal fresh controller tick witnesses this exact acknowledged step.
+    await h.output.tick();
+    for (const id of h.freeze.keys()) h.freeze.set(id,{...h.states.get(id)});
+    h.writes.length=0;
+    return h;
+}
+
+for (const phases of [1,3]) test(`acknowledged 9 A step survives age-only outage while awaiting electrical uptake, ${phases}P`,async()=>{
+    const h=await acknowledgedTelemetryStep({phases});
+    const d=h.output.devices[0], response=d.response, ackAt=response.ackAt;
+    const source={...h.states.get('power')};
+    for (const ms of [31000,31000,600000]) {
+        h.advance(ms); await h.output.tick();
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,true,
+            h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val);
+        assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,/TELEMETRIE/);
+        assert.deepEqual(h.writes,[]);
+        assert.ok(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val>=9*230*phases);
+        assert.equal(d.response,response,'do not pretend electrical confirmation');
+        assert.equal(d.response.ackAt,ackAt,'do not move the original response deadline');
+        assert.deepEqual(h.states.get('power'),source,'do not freshen old device data');
+    }
+    h.refresh(); h.put('power',2.0*phases); h.put('i1',8.9);
+    h.put('i2',phases===3?8.9:0);h.put('i3',phases===3?8.9:0);
+    await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,true);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val,'confirmed');
+    assert.ok(!h.writes.some(w=>w.id==='allow'&&w.val===0));
+});
+
+for (const kind of ['confirmed','awaiting']) test(`communication hold tolerates ordinary household import with safe fresh SMA, ${kind}`,async()=>{
+    const h=kind==='awaiting'?await acknowledgedTelemetryStep():await telemetryBridgeFixture();
+    h.advance(31000);h.put('export',0);h.put('import',500);
+    await h.output.tick();
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,/TELEMETRIE/);
+    assert.deepEqual(h.writes,[]);
+});
+
+for (const [name,change] of [
+    ['device fault',h=>h.put('error',1)],
+    ['SMA stale',h=>h.put('import',0,{ts:1})],
+    ['phase overload',h=>h.put('h1',100)],
+    ['user release withdrawn',h=>h.put('userAllow',false)],
+    ['master off',h=>h.put('ems.0.System.RealOutputsEnabled',false)],
+    ['target SoC reached',h=>h.put('soc',80)],
+    ['wrong current feedback',h=>h.put('feedback',10)],
+    ['unacknowledged feedback',h=>h.put('feedback',9,{ack:false})],
+    ['phase switch pending',h=>h.put('ems.0.Control.Targets.Wallbox0_Phases',3)],
+    ['LPC limit',h=>{h.mapping.DP_LPC_STATE='lpc';h.mapping.DP_LPC_LIMIT='lpcLimit';h.put('lpc','limited');h.put('lpcLimit',1000);}]
+]) test(`acknowledged-step telemetry hold preserves ${name} stop`,async()=>{
+    const h=await acknowledgedTelemetryStep();h.advance(31000);change(h);await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,false);
+    assert.ok(h.writes.some(w=>w.id==='allow'&&w.val===0));
+    assert.ok(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val>=2070);
+});
+
+for (const [name,change] of [
+    ['startup',d=>{d.response.start=true;}],
+    ['phase transition',d=>{d.response.phaseChange=true;}],
+    ['missing ACK',d=>{d.response.ackAt=0;}],
+    ['late ACK',d=>{d.response.ackAt=d.response.at+21000;}],
+    ['different command',d=>{d.response.amps=10;}],
+    ['different ACK source',d=>{d.response.ackId=d.ids.allow;}]
+]) test(`acknowledged-step hold never reuses its proof for ${name}`,async()=>{
+    const h=await acknowledgedTelemetryStep();h.advance(31000);change(h.output.devices[0]);await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,false);
+    assert.ok(h.writes.some(w=>w.id==='allow'&&w.val===0));
+});
+
+test('limited electrical response keeps its original deadline during communication hold',async()=>{
+    const h=await acknowledgedTelemetryStep();h.advance(46000);h.refresh();
+    h.put('power',1.0);h.put('i1',4.5);
+    await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val,'limited');
+    await h.output.tick();
+    for(const id of h.freeze.keys())h.freeze.set(id,{...h.states.get(id)});
+    const response=h.output.devices[0].response,ackAt=response.ackAt;h.writes.length=0;
+    h.advance(31000);await h.output.tick();
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,/TELEMETRIE/);
+    assert.equal(h.output.devices[0].response.ackAt,ackAt);
+    assert.deepEqual(h.writes,[]);
 });

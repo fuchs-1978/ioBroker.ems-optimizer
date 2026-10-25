@@ -1,9 +1,13 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.145",
+    "version": "0.17.0-alpha.146",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.146": {
+        "en": "Hold an established acknowledged current step through communication loss with full reservation and fresh SMA protection; household import alone does not trigger a telemetry stop.",
+        "de": "Bestaetigten Stromschritt einer laufenden Ladung bei Kommunikationsausfall mit voller Reserve und frischem SMA-Schutz halten; Haushaltsbezug allein loest keinen Telemetriestopp aus."
+      },
       "0.17.0-alpha.145": {
         "en": "Transfer a witnessed charging qualification after unplugging in parallel mode, retaining bounded donor history, real OFF/quiet confirmation, budgets and recipient gates.",
         "de": "Beobachtete Ladequalifikation nach Abstecken auch im Parallelbetrieb uebergeben; begrenzte Vorgeschichte, echtes AUS/Stillstand, Budgets und Empfaengerfreigaben bleiben erforderlich."
@@ -27,10 +31,6 @@
       "0.17.0-alpha.140": {
         "en": "Correct floating-point noise at exactly 15 K heater layering; retain signed grid and target at diagnostic peaks without rewriting legacy evidence.",
         "de": "Rundungsrauschen an exakt15 K Heizstab-Schichtung korrigieren; Netzleistung und Sollwert mit Vorzeichen am Diagnosepeak erhalten, Altdaten unbekannt lassen."
-      },
-      "0.17.0-alpha.139": {
-        "en": "Retain a confirmed current with a bounded vehicle offset when power is newer than the parallel allocation; keep strict same-sample confirmation, full reservations and hard limits.",
-        "de": "Bestaetigten Strom mit begrenzter Fahrzeugabweichung bei neuerer Leistung gegen alte Parallelzuteilung halten; strenge Gleichproben-Bestaetigung, volle Reserven und Schutzgrenzen erhalten."
       }
     },
     "titleLang": {

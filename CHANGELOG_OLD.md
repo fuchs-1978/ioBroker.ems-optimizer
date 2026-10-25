@@ -1,3 +1,7 @@
+### 0.17.0-alpha.139 (2026-10-24)
+
+Bestaetigten Strom mit begrenzter Fahrzeugabweichung bei neuerer Leistung gegen alte Parallelzuteilung halten; strenge Gleichproben-Bestaetigung, volle Reserven und Schutzgrenzen erhalten.
+
 ### 0.17.0-alpha.138 (2026-10-24)
 
 Einspeisung unter dem bestehenden Heizstab-Schichtungsminimum erklaeren; wirksame Mindestleistung in Entscheidungen und Episodenkontext speichern, ohne Einspeisung auszublenden oder Regelgrenzen zu aendern.

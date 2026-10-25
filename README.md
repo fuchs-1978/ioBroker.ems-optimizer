@@ -1,8 +1,12 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.145**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.146**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
+
+## 0.17.0-alpha.146
+
+Kommunikationswarnung auch waehrend der elektrischen Antwort auf einen bereits bestaetigten Stromschritt; volle Reserve und unabhaengiger SMA-Schutz bleiben bestehen. [Befund und Grenzen](docs/release-0.17.0-alpha.146.md).
 
 ## 0.17.0-alpha.145
 
@@ -417,7 +421,7 @@ Zählerwerte müssen bestätigt, plausibel und höchstens 60 Sekunden alt sein. 
 
 Ab alpha.127 darf eine im laufenden EMS-Prozess elektrisch bestaetigte, unveraenderte Ladung bei Nichterreichbarkeit der Wallbox oder ausbleibenden Poll-Rueckmeldungen bestehen bleiben. Das EMS zeigt `TELEMETRIE-WARNUNG` mit Quellenalter und reservierter Leistung; einmal pro Ausfall wird gewarnt. Es sendet weder neue Strom-/Freigabebefehle noch Phasenwechsel und erzeugt keinen AUS-Auftrag allein wegen 30/60 Sekunden Wallbox-Messwertalter. Frische SMA-Gesamt-/Phasenwerte, gueltige EMS-/Fahrzeugfreigaben und konservativ eingehaltene Leistungs-/Schutzgrenzen bleiben Voraussetzung. Die bisher bestaetigte beziehungsweise noch moegliche Leistung bleibt voll reserviert, auch wenn der letzte Messwert darunter lag. Alte Quellenzeitstempel und ACK/Qualitaet werden nicht veraendert.
 
-Nach Wiederverbindung geht die Ladung mit frischen Rueckmeldungen in die normale Regelung zurueck. Benutzer-AUS, Zielerreichung, echte Geraetefehler, unbekannte/ueberschrittene Schutzgrenzen oder fehlende SMA-Ueberwachung bleiben Abschaltgruende. Bei einem solchen AUS bleibt die Reserve bis zu bestaetigtem AUS und frischer elektrischer Ruhe bestehen. Ein aktiver oder unklarer groupNet-Vertrag erhaelt keine Ausnahme von seinen eigenstaendigen Messnachweisen. Unbestaetigte Starts, offene Stell-/Phasenwechsel, unbekannte Sitzungen nach Neustart und Schattenmodelle erhalten keine Kommunikationsausnahme. Eine aktivierte SoC-Stromreduzierung allein verhindert den Warnzustand nicht; ihre aktuelle Stromgrenze gilt weiter.
+Nach Wiederverbindung geht die Ladung mit frischen Rueckmeldungen in die normale Regelung zurueck. Benutzer-AUS, Zielerreichung, echte Geraetefehler, unbekannte/ueberschrittene Schutzgrenzen oder fehlende SMA-Ueberwachung bleiben Abschaltgruende. Bei einem solchen AUS bleibt die Reserve bis zu bestaetigtem AUS und frischer elektrischer Ruhe bestehen. Ein aktiver oder unklarer groupNet-Vertrag erhaelt keine Ausnahme von seinen eigenstaendigen Messnachweisen. Ab alpha.146 umfasst die Warnstrategie auch einen bereits rechtzeitig bestaetigten Stromschritt einer vorher laufenden Ladung, dessen elektrische Aufnahme noch aussteht oder begrenzt bleibt. Der genaue Befehl und sein urspruenglicher ACK-/Antwortzeitpunkt bleiben erhalten; keine weitere Erhoehung, keine erfundene elektrische Bestaetigung und kein Zuruecksetzen der Antwortfrist. Gewoehnlicher Haushaltsbezug allein beendet diesen Warnzustand nicht; dadurch kann waehrend des Kommunikationsausfalls Netzenergie bezogen werden. Nach Erholung gilt wieder die normale Budgetregelung. Unbestaetigte Starts oder Strombefehle, offene Phasenwechsel, unbekannte Sitzungen nach Neustart und Schattenmodelle erhalten keine Kommunikationsausnahme. Eine aktivierte SoC-Stromreduzierung allein verhindert den Warnzustand nicht; ihre aktuelle Stromgrenze gilt weiter.
 
 ### Preisabhängiges Fahrzeugladen
 

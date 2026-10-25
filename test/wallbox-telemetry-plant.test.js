@@ -111,3 +111,33 @@ test(`fresh Mii feedback before allocator recovery; groupNet=${groupNet}; failur
     await h.replayAt(at+33000);
     assert.equal(h.value('Devices.Wallbox0.OutputActive'),true,h.value('Devices.Wallbox0.OutputStatus'));
 });
+
+for (const split of [false,true]) test(`real parallel allocator retains acknowledged Mii step before uptake during telemetry outage, heater=${split}`,async()=>{
+    const h=await plant({mii:true,wallbox:false,startDelayS:0,split,initialSurplusW:split?6000:3000,
+        nativeConfig:{wallboxParallelChargingEnabled:true,wb0CommissioningMaxA:8}});
+    await h.advance(90);
+    assert.equal(h.value('Devices.Wallbox0.ResponseState'),'confirmed');
+    const d=h.output.devices[0];
+    h.config.wb0CommissioningMaxA=16;
+    h.setSurplus(split?7000:3500);
+    const at=h.now()+1000;
+    await h.replayAt(at);
+    assert.equal(d.pending?.stage,'current',h.value('Devices.Wallbox0.OutputStatus'));
+    const amps=d.pending.amps;
+    await h.replayAt(at+1000,[['goe0.feedback',amps],
+        ['DP_WB0_POWER',1.76,{ts:at}],['DP_WB0_L1_A',7.9,{ts:at}]]);
+    assert.equal(h.value('Devices.Wallbox0.ResponseState'),'vehicle_response');
+    await h.replayAt(at+2000,[['goe0.feedback',amps],
+        ['DP_WB0_POWER',1.76,{ts:at}],['DP_WB0_L1_A',7.9,{ts:at}]]);
+    const ids=['goe0.error','DP_WB0_CAR','goe0.allow','goe0.feedback','DP_WB0_POWER',
+        ...[1,2,3].map(p=>`DP_WB0_L${p}_A`)];
+    const frozen=ids.map(id=>[id,h.states.get(id).val,{...h.states.get(id)}]);
+    h.writes.length=0;
+    for(const offset of [33000,63000,603000]) {
+        await h.replayAt(at+offset,frozen);
+        assert.equal(h.value('Devices.Wallbox0.OutputActive'),true,h.value('Devices.Wallbox0.OutputStatus'));
+        assert.match(h.value('Devices.Wallbox0.OutputStatus'),/TELEMETRIE/);
+        assert.ok(h.value('Devices.Wallbox0.OutputReservedPower_W')>=amps*230);
+        assert.ok(!h.writes.some(w=>['goe0.allow','goe0.cmd'].includes(w.id)),JSON.stringify(h.writes));
+    }
+});
