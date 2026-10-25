@@ -95,6 +95,30 @@ test('recording integration uses private instance data and a matching published 
     }
 });
 
+test('recording restores the failure checkpoint independently of SQL and cannot use it to clear a fence', async () => {
+    const Failures = require('../lib/sql-query-failures');
+    const history = new Failures();
+    history.capture({verificationId: 'decision-record:42', start: 1, end: 2, limit: 32,
+        beganAt: 1, issued: true}, 'deadline', 'transport', 3);
+    const directory = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'ems-failure-restore-'));
+    const a = adapter({getAbsoluteInstanceDataDir: () => directory});
+    a.getStateAsync = async id => {
+        assert.equal(id, 'Debug.Shadow.RecordSQLFailures_JSON');
+        return {val: JSON.stringify(history.report())};
+    };
+    a.sendTo = () => assert.fail('restoring diagnostics must not query SQL');
+    try {
+        await a.startDecisionRecording();
+        assert.deepEqual(a.decisionRecordDelivery.queryFailures.report().failures, history.report().failures);
+        assert.equal(a.decisionRecordDelivery.queryFailures.report().checkpointStatus, 'restored');
+        assert.equal(a.decisionRecordDelivery.sqlConfirmed, 0);
+        assert.equal(a.decisionRecordDelivery.queryCount, 0);
+    } finally {
+        a.decisionRecordDelivery?.stop(); await a.decisionRecordJournal?.close();
+        fs.rmSync(directory, {recursive: true, force: true});
+    }
+});
+
 test('independent SQL verification uses bounded raw history reads and observes completion only in callback', async () => {
     const a = adapter(); a.config.historyInstance = 'sql.0';
     let complete; const calls = [];

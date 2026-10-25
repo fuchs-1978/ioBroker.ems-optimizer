@@ -1496,6 +1496,27 @@ test('large recorder status JSON is coalesced at one second while changed loss c
     assert.equal(JSON.parse(cache.get('ems.0.Debug.Shadow.RecordJournalStatus').val).bytes, bytes);
 });
 
+test('SQL failure checkpoint publishes only changes at one Hz and is excluded from automatic SQL history', async () => {
+    const Failures = require('../lib/sql-query-failures');
+    const h = await fixture();
+    const failures = new Failures();
+    h.adapter.decisionRecordDelivery = {health: () => ({}), queryFailures: failures};
+    h.adapter.sqlDiagnosticBackoff = {degraded: true};
+    h.advance(1000);
+    h.shadow.publishRecordHealth(); await h.flush();
+    const count = () => h.writes.filter(w => w.id.endsWith('.RecordSQLFailures_JSON')).length;
+    const initial = count(); assert.equal(initial, 1);
+    assert.ok(!h.shadow.historyIds.some(id => id.endsWith('.RecordSQLFailures_JSON')));
+    failures.capture({verificationId: 'decision-record:42', start: 1, end: 2,
+        limit: 32, beganAt: 1}, 'deadline', 'transport', 3);
+    h.shadow.beginScalarFrame();
+    h.advance(10); h.shadow.publishRecordHealth(); await h.flush(); assert.equal(count(), initial);
+    h.advance(1000); h.shadow.publishRecordHealth(); await h.flush(); assert.equal(count(), initial + 1);
+    assert.ok(!h.shadow.scalarFrame.has('RecordSQLFailures_JSON'), 'a discarded slow scalar frame must not lose the error checkpoint');
+    h.advance(1000); h.shadow.publishRecordHealth(); await h.flush(); assert.equal(count(), initial + 1);
+    assert.equal(JSON.parse(h.value('RecordSQLFailures_JSON')).failures.length, 1);
+});
+
 test('durable recorder drains bounded batches in order, keeps queue caps and resets encoding after failure', async () => {
     const saved = [], batches = [];
     let fail = false, ticks = 0;

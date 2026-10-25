@@ -421,14 +421,29 @@ async function worker(tree) {
     finish();
 
     start('sql-exact-confirmation-and-query-order');
+    // alpha.141 adds passive phase measurements. The number of profiling
+    // clock reads must not itself advance the mock time of the old query
+    // contract. Exact phase/callback/checkpoint behavior is covered by the
+    // dedicated failure regressions; keep all pre-existing SQL fields and
+    // publication, confirmation and request ordering in this comparison.
+    Object.defineProperty(performance, 'now', {configurable: true, value: () => 100000});
+    const existingQuery = query => {
+        if (!query) return query;
+        const {journalBeginAt, journalBeginMs, transportAt, callbackAt, transportWaitMs,
+            transportSettledAt, fenceCompletedAt, fenceCompleteMs, ...existing} = query;
+        return existing;
+    };
     source = fs.readFileSync(path.join(tree, 'test/decision-record-delivery.test.js'), 'utf8');
     source = source.slice(0, source.indexOf('\ntest(')) + '\nmodule.exports = {fixture};';
     const {fixture: deliveryFixture} = compile(source, path.join(tree, 'test/delivery-audit-fixture.js'));
     const delivery = deliveryFixture(16, {bundleOriginals: true});
     for (let n = 0; n < 4; n++) {
         await delivery.delivery.tick();
+        const health = delivery.delivery.health();
+        health.lastQuery = existingQuery(health.lastQuery);
+        health.recentQueries = health.recentQueries.map(existingQuery);
         record({publications: delivery.publications, confirmations: delivery.confirmations,
-            queries: delivery.queries, health: delivery.delivery.health()});
+            queries: delivery.queries, health});
         delivery.advance(1000);
     }
     assert.equal(delivery.stored.size, 0);

@@ -27,6 +27,7 @@ const batteryTemperatureReserve = require("./lib/battery-temperature-reserve");
 const sunEnergyHeads = require("./lib/sunenergy-heads");
 const DecisionRecordJournal = require("./lib/decision-record-journal");
 const DecisionRecordDelivery = require("./lib/decision-record-delivery");
+const SqlQueryFailures = require("./lib/sql-query-failures");
 const {SqlVerificationRecovery} = require("./lib/sql-verification-recovery");
 const SqlDiagnosticBackoff = require("./lib/sql-diagnostic-backoff");
 const {buildDiagnosticSourceContract} = require("./lib/diagnostic-source-contract");
@@ -263,7 +264,15 @@ class EmsOptimizer extends utils.Adapter {
             await journal.initialize();
             if (this.unloading) { await journal.close(); return; }
             this.decisionRecordJournal = journal;
+            let queryFailures;
+            try {
+                const saved = await this.getStateAsync('Debug.Shadow.RecordSQLFailures_JSON');
+                queryFailures = new SqlQueryFailures(saved?.val);
+            } catch {
+                queryFailures = new SqlQueryFailures(); queryFailures.checkpointStatus = 'unavailable';
+            }
             this.decisionRecordDelivery = new DecisionRecordDelivery({journal, publishIntervalMs: 5000,
+                queryFailures,
                 backoff: this.sqlDiagnosticBackoff, maxPublishPerTick: 16, maxWritesPerTick: 4,
                 maxOriginalsPerTick: 64, maxReadOriginalBytes: 2 * 1024 * 1024,
                 maxVerificationSpanMs: 10000,
@@ -1172,6 +1181,14 @@ class EmsOptimizer extends utils.Adapter {
             }
             catch (error) { this.warnDebug(error); }
             finally { clearTimeout(timer); }
+        }
+        // Passive final checkpoint includes a late callback observed while
+        // draining; it never clears a fence or confirms an original record.
+        if (this.decisionRecordDelivery?.queryFailures) {
+            try {
+                await this.setCompatState(`${this.namespace}.Debug.Shadow.RecordSQLFailures_JSON`,
+                    JSON.stringify(this.decisionRecordDelivery.queryFailures.report()), true);
+            } catch (error) {this.warnDebug(error);}
         }
         await this.flushOwnWrites();
         this.runDebug('stop', handoffPrepared ? 'Adapter-Neustart mit gepruefter Wallbox-Uebergabe'
