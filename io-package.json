@@ -1,9 +1,13 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.146",
+    "version": "0.17.0-alpha.147",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.147": {
+        "en": "Separate bounded immutable journal reads from serialized mutations; pin original groups until readers finish so slow publication reads cannot block durable appends.",
+        "de": "Begrenzte unveraenderliche Journal-Lesezugriffe von serialisierten Aenderungen trennen; Originalgruppen bis Leseabschluss halten, damit langsame Publikationslesungen dauerhafte Appends nicht blockieren."
+      },
       "0.17.0-alpha.146": {
         "en": "Hold an established acknowledged current step through communication loss with full reservation and fresh SMA protection; household import alone does not trigger a telemetry stop.",
         "de": "Bestaetigten Stromschritt einer laufenden Ladung bei Kommunikationsausfall mit voller Reserve und frischem SMA-Schutz halten; Haushaltsbezug allein loest keinen Telemetriestopp aus."
@@ -27,10 +31,6 @@
       "0.17.0-alpha.141": {
         "en": "Retain bounded SQL verification failures across successful reads and adapter restarts; distinguish journal, transport and late callback timings without extra SQL queries or relaxed recovery gates.",
         "de": "Begrenzten SQL-Prueffehlerverlauf ueber Erfolge und Adapterneustarts erhalten; Journal-, Transport- und spaete Antwortzeiten trennen, ohne Zusatzabfragen oder gelockerte Recoverygrenzen."
-      },
-      "0.17.0-alpha.140": {
-        "en": "Correct floating-point noise at exactly 15 K heater layering; retain signed grid and target at diagnostic peaks without rewriting legacy evidence.",
-        "de": "Rundungsrauschen an exakt15 K Heizstab-Schichtung korrigieren; Netzleistung und Sollwert mit Vorzeichen am Diagnosepeak erhalten, Altdaten unbekannt lassen."
       }
     },
     "titleLang": {

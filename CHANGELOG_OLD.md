@@ -1,3 +1,7 @@
+### 0.17.0-alpha.140 (2026-10-25)
+
+Rundungsrauschen an exakt15 K Heizstab-Schichtung korrigieren; Netzleistung und Sollwert mit Vorzeichen am Diagnosepeak erhalten, Altdaten unbekannt lassen.
+
 ### 0.17.0-alpha.139 (2026-10-24)
 
 Bestaetigten Strom mit begrenzter Fahrzeugabweichung bei neuerer Leistung gegen alte Parallelzuteilung halten; strenge Gleichproben-Bestaetigung, volle Reserven und Schutzgrenzen erhalten.

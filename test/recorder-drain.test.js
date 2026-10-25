@@ -21,14 +21,13 @@ const payload = sequence => JSON.stringify({schema: 2, recordSession: 'drain',
 const proof = entry => ({id: entry.id, proof: {kind: 'independent-history-match',
     recordSession: entry.recordSession, recordSequence: entry.recordSequence, sha256: entry.sha256}});
 
-test('source appends overtake queued reads but a sustained burst still serves the read and SQL fence', async t => {
+test('source appends and the fair SQL fence progress while publication reads use their own bounded lane', async t => {
     const {journal} = await fixture(t);
     await journal.append(payload(1));
     const read = journal._readBoundedFile.bind(journal);
     let release, entered;
     const gate = new Promise(resolve => {release = resolve;});
     const started = new Promise(resolve => {entered = resolve;});
-    t.after(release);
     let first = true;
     journal._readBoundedFile = async (...args) => {
         if (first) {first = false; entered(); await gate;}
@@ -37,18 +36,29 @@ test('source appends overtake queued reads but a sustained burst still serves th
     const active = journal.readBatch();
     await started;
     const queuedRead = journal.readBatch({limit: 16});
+    const persist = journal._persistVerification.bind(journal);
+    let sequencesAtFence;
+    journal._persistVerification = async (...args) => {
+        sequencesAtFence = [...journal.entries.values()].map(e => e.recordSequence);
+        return persist(...args);
+    };
     const query = {verificationId: 'fair-fence', start: 1, end: 2, limit: 2, beganAt: 1};
     const fence = journal.beginVerification(query);
     const appends = Array.from({length: 10}, (_, i) => journal.append(payload(i + 2)));
-    release();
-    await active;
-    const early = await queuedRead;
-    assert.deepEqual(early.map(entry => entry.recordSequence), [1, 2, 3, 4, 5],
-        'four FIFO appends get priority, then the older read gets a turn');
-    await fence;
-    assert.equal(journal.health().sqlVerificationPending, true);
-    await assert.rejects(journal.beginVerification({...query, verificationId: 'forbidden-overlap'}), /already pending/);
-    await Promise.all(appends);
+    try {
+        let timer;
+        try {await Promise.race([fence, new Promise((_, reject) => {
+            timer = setTimeout(() => reject(new Error('SQL fence blocked behind immutable read')), 2000);
+        })]);} finally {clearTimeout(timer);}
+        assert.deepEqual(sequencesAtFence, [1, 2, 3, 4, 5],
+            'four FIFO appends get priority, then the older SQL fence gets a turn');
+        assert.equal(journal.health().sqlVerificationPending, true);
+        await assert.rejects(journal.beginVerification({...query, verificationId: 'forbidden-overlap'}), /already pending/);
+        await Promise.all(appends);
+        assert.equal(journal.health().records, 11, 'a stalled reader cannot own the append lane');
+    } finally {release(); await active;}
+    assert.deepEqual((await queuedRead).map(entry => entry.recordSequence),
+        Array.from({length: 11}, (_, i) => i + 1), 'the next read selects a complete current snapshot');
     assert.deepEqual((await journal.readBatch({limit: 16})).map(entry => entry.payload),
         Array.from({length: 11}, (_, i) => payload(i + 1)));
     await journal.completeVerification({kind: 'observed-backend-completion',
