@@ -1,9 +1,13 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.144",
+    "version": "0.17.0-alpha.145",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.145": {
+        "en": "Transfer a witnessed charging qualification after unplugging in parallel mode, retaining bounded donor history, real OFF/quiet confirmation, budgets and recipient gates.",
+        "de": "Beobachtete Ladequalifikation nach Abstecken auch im Parallelbetrieb uebergeben; begrenzte Vorgeschichte, echtes AUS/Stillstand, Budgets und Empfaengerfreigaben bleiben erforderlich."
+      },
       "0.17.0-alpha.144": {
         "en": "Verify late SQL replies with the same exact original checks; retire proven backlog without another read, preserving deadlines, fences and shutdown safety.",
         "de": "Spaete SQL-Antworten mit denselben exakten Originalnachweisen auswerten; bestaetigten Rueckstau ohne erneuten Abruf abbauen, Fristen, Sperren und sauberes Beenden erhalten."
@@ -27,10 +31,6 @@
       "0.17.0-alpha.139": {
         "en": "Retain a confirmed current with a bounded vehicle offset when power is newer than the parallel allocation; keep strict same-sample confirmation, full reservations and hard limits.",
         "de": "Bestaetigten Strom mit begrenzter Fahrzeugabweichung bei neuerer Leistung gegen alte Parallelzuteilung halten; strenge Gleichproben-Bestaetigung, volle Reserven und Schutzgrenzen erhalten."
-      },
-      "0.17.0-alpha.138": {
-        "en": "Explain export below the existing heater layering minimum; record the authoritative admission threshold in decision snapshots and episode context without hiding export or changing control limits.",
-        "de": "Einspeisung unter dem bestehenden Heizstab-Schichtungsminimum erklaeren; wirksame Mindestleistung in Entscheidungen und Episodenkontext speichern, ohne Einspeisung auszublenden oder Regelgrenzen zu aendern."
       }
     },
     "titleLang": {

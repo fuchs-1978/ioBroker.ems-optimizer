@@ -1895,3 +1895,20 @@ test('sequential handoff preserves its logical minimum through a long exact phas
     assert.equal(before.miiW, 0, 'donor must be electrically quiet before receiver starts');
 });
 
+
+test('parallel unplug transfers a witnessed EQE charge to Mii without a new 300s delay',async()=>{
+    const h=await plant({mii:true,startDelayS:300,split:false,wallboxStopResponseDelayMs:10000});
+    h.config.wallboxParallelChargingEnabled=true;
+    h.own('Config.WallboxParallelChargingEnabled',true);
+    h.put('DP_WB0_ALLOW',0);
+    await h.advance(400);
+    assert.equal(h.physical().allow,1,h.diagnostic());
+    assert.ok(h.run('wallboxVehicleHandoffObservation[2].qualified'));
+    const at=h.now();h.put('DP_WB2_CAR',1);h.put('DP_WB0_ALLOW',1);
+    await h.advance(60);
+    const on=h.writes.find(x=>x.id==='goe0.allow'&&x.val===1&&x.at>at);
+    assert.ok(on&&on.at<at+300000,h.diagnostic()+' '+JSON.stringify(h.run('wallboxVehicleHandoff')));
+    const quiet=h.trace.find(x=>x.at>at&&x.physicalAllow===0&&x.wbW===0);
+    assert.ok(quiet&&on.at>=quiet.at,'real donor OFF and electrical quiet precede recipient ON');
+    assert.ok(!h.trace.some(x=>x.wbW>0&&x.miiW>0),'no overlap');
+});
