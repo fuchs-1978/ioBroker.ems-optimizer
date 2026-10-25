@@ -1,3 +1,31 @@
+### 0.17.0-alpha.149
+
+Die kompakte Tagesbilanz schuetzt je Periode die sechs juengsten Wallboxstopps und zwei Recorderfehler-Beobachtungen innerhalb der unveraenderten 64-kB-Grenze. Sollstrom-Konfliktstopps nennen die erste gescheiterte Korrekturbedingung; Quellwerte/Zeiten/ACK/q bleiben getrennt vom Reglerverhalten dokumentiert. [Vertrag, Grenzen und reale Abnahme](docs/release-0.17.0-alpha.149.md).
+
+### 0.17.0-alpha.148
+
+Recorder-Speichernachweise lesen direkt aus der Datenbank statt aus dem moeglichen SQL-Adaptercache. Eine begrenzte SELECT-Anfrage je bisherigem Prueffenster, ohne Historien-Randwertabfragen; exakte Originalpruefung und Sperren bleiben bestehen. Die Ursache einer langen Transportantwort ist damit nicht bewiesen oder sicher behoben. [Befund, Grenzen und reale Abnahme](docs/release-0.17.0-alpha.148.md).
+
+### 0.17.0-alpha.147
+
+Langsame lokale Journal-Lesungen blockieren nicht mehr die dauerhaften Recorder-Appends. Unveraenderliche Originale bleiben gegen Bereinigung gepinnt; Leseparallelitaet, Dateipruefungen, SQL-Nachweise und Kapazitaeten bleiben begrenzt. [Befund, Softwaretests und reale Abnahme](docs/release-0.17.0-alpha.147.md).
+
+### 0.17.0-alpha.146
+
+Kommunikationswarnung auch waehrend der elektrischen Antwort auf einen bereits bestaetigten Stromschritt; volle Reserve und unabhaengiger SMA-Schutz bleiben bestehen. [Befund und Grenzen](docs/release-0.17.0-alpha.146.md).
+
+### 0.17.0-alpha.145
+
+Qualifizierte Absteck-Uebergabe jetzt auch im Parallelbetrieb, mit bestaetigtem Spender-AUS und elektrischer Ruhe. [Ablauf und Grenzen](docs/release-0.17.0-alpha.145.md).
+
+### 0.17.0-alpha.144
+
+Verspaetete SQL-Antworten werden nach denselben Paket-/Sitzungs-/Sequenz-/Hashpruefungen weiterverarbeitet. Damit belegte Originale benoetigen keine erneute Nachweisabfrage; der urspruengliche Fristfehler bleibt dokumentiert. Keine Lockerung der SQL-Sperren oder Schutzgrenzen. [Befund, Grenzen und reale Abnahme](docs/release-0.17.0-alpha.144.md).
+
+### 0.17.0-alpha.143
+
+Phasenwahl vor der Ladefreigabe auch bei manueller/Pflicht-Mindestladung aus dem aktuell belegten eigenen Fahrzeugbudget. Kein vermeidbarer1P-Start mit anschliessender3P-Qualifikation bei bereits ausreichendem Startbudget; reale Phasenbestaetigung und Schutzgrenzen bleiben erforderlich. [Umfang, Regression und Grenzen](docs/release-0.17.0-alpha.143.md).
+
 ### 0.17.0-alpha.142 (2026-10-25)
 
 Recorder-Schreibvorrang fair begrenzen, Journalbereinigung in kleine Schritte teilen und Sammelschreiben wirksamer nutzen; SQL-Nachweise und Regelgrenzen bleiben erhalten. [Details](docs/release-0.17.0-alpha.142.md).

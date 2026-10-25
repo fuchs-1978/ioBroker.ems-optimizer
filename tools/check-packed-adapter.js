@@ -28,6 +28,13 @@ try {
     const localRequire = createRequire(path.join(installed, 'package.json'));
     assert.equal(localRequire('./package.json').version, packed.version);
     assert.equal(localRequire('./io-package.json').common.version, packed.version);
+    for (const language of ['en', 'de', 'es', 'fr', 'it', 'nl', 'pl', 'pt', 'ru', 'uk', 'zh-cn']) {
+        const catalog = localRequire(`./admin/i18n/${language}/translations.json`);
+        assert.deepEqual(Object.keys(catalog).sort(),
+            Object.keys(localRequire('./admin/i18n/en/translations.json')).sort());
+    }
+    assert.ok(fs.existsSync(path.join(installed, 'README.de.md')));
+
     assert.equal(typeof localRequire('node-schedule').scheduleJob, 'function');
     assert.ok(localRequire.resolve('@iobroker/adapter-core'));
     // Exercise the pure policy from the installed package before verifying its

@@ -6,40 +6,121 @@
     "news": {
       "0.17.0-alpha.149": {
         "en": "Protect recent wallbox stops and recorder error observations within the existing daily-summary byte limit; record the first failed current-correction gate and exact source evidence without delaying OFF.",
-        "de": "Junge Wallboxstopps und Recorderfehler innerhalb der bestehenden Tagesbilanz-Bytegrenze schuetzen; erste gescheiterte Sollstrom-Korrekturbedingung samt Quellnachweisen speichern, ohne AUS zu verzoegern."
+        "de": "Junge Wallboxstopps und Recorderfehler innerhalb der bestehenden Tagesbilanz-Bytegrenze schuetzen; erste gescheiterte Sollstrom-Korrekturbedingung samt Quellnachweisen speichern, ohne AUS zu verzoegern.",
+        "es": "Proteger las paradas recientes de recarga y los errores del registro dentro del límite de bytes del resumen diario; registrar la primera condición fallida de corrección de corriente y las fuentes exactas sin retrasar el apagado.",
+        "fr": "Préserver les arrêts récents des bornes et les erreurs du journal dans la limite en octets du bilan quotidien ; enregistrer la première condition de correction du courant non satisfaite et les sources exactes sans retarder l’arrêt.",
+        "it": "Proteggere gli arresti recenti delle stazioni di ricarica e gli errori del registro entro il limite in byte del riepilogo giornaliero; registrare la prima condizione fallita di correzione della corrente e le fonti esatte senza ritardare lo spegnimento.",
+        "nl": "Bescherm recente laadstops en recorderfouten binnen de bestaande bytegrens van het dagoverzicht; leg de eerste mislukte voorwaarde voor stroomcorrectie en exacte brongegevens vast zonder UIT te vertragen.",
+        "pl": "Ochrona ostatnich zatrzymań ładowania i błędów rejestratora w istniejącym limicie bajtów podsumowania dnia; zapis pierwszego niespełnionego warunku korekty prądu i dokładnych danych źródłowych bez opóźniania wyłączenia.",
+        "pt": "Proteger as paragens recentes de carregamento e os erros do registo dentro do limite de bytes do resumo diário; registar a primeira condição falhada de correção de corrente e as fontes exatas sem atrasar o desligamento.",
+        "ru": "Сохранение недавних остановок зарядки и ошибок регистратора в пределах существующего лимита байтов суточной сводки; запись первого невыполненного условия коррекции тока и точных исходных данных без задержки выключения.",
+        "uk": "Збереження недавніх зупинок заряджання та помилок реєстратора в межах наявного ліміту байтів добової зведеної інформації; запис першої невиконаної умови корекції струму й точних вихідних даних без затримки вимкнення.",
+        "zh-cn": "在每日摘要现有字节上限内保留最近的充电停止事件和记录器错误；记录首个未满足的电流纠正条件及精确源数据，不延迟关断。"
       },
       "0.17.0-alpha.148": {
         "en": "Verify recorder persistence with one bounded database-only SELECT instead of cache-capable getHistory; retain exact originals, query fences, deadlines and late callback processing.",
-        "de": "Recorder-Speicherung mit einer begrenzten direkten Datenbanklesung statt cachefaehigem getHistory pruefen; exakte Originale, Abfragesperren, Fristen und spaete Antwortverarbeitung erhalten."
+        "de": "Recorder-Speicherung mit einer begrenzten direkten Datenbanklesung statt cachefaehigem getHistory pruefen; exakte Originale, Abfragesperren, Fristen und spaete Antwortverarbeitung erhalten.",
+        "es": "Comprobar la persistencia del registro con una consulta SELECT limitada y directa a la base de datos; conservar originales, bloqueos, plazos y respuestas tardías.",
+        "fr": "Vérifier la persistance des enregistrements par une requête SELECT bornée directement en base ; conserver les originaux, les verrous, les délais et le traitement des réponses tardives.",
+        "it": "Verificare la persistenza dei record con una SELECT limitata direttamente sul database; mantenere originali, blocchi, scadenze e gestione delle risposte tardive.",
+        "nl": "Controleer duurzame recorderopslag met één begrensde SELECT rechtstreeks op de database; behoud exacte originelen, queryblokkeringen, termijnen en verwerking van late antwoorden.",
+        "pl": "Sprawdzanie trwałego zapisu rejestratora przez jedno ograniczone zapytanie SELECT bezpośrednio do bazy; zachowanie oryginałów, blokad, terminów i obsługi spóźnionych odpowiedzi.",
+        "pt": "Verificar a persistência dos registos com uma SELECT limitada diretamente na base de dados; manter originais, bloqueios, prazos e processamento de respostas tardias.",
+        "ru": "Проверка сохранности записей одним ограниченным SELECT непосредственно в базе данных; сохранены оригиналы, блокировки запросов, сроки и обработка поздних ответов.",
+        "uk": "Перевірка збереження записів одним обмеженим SELECT безпосередньо в базі даних; збережено оригінали, блокування запитів, строки та обробку пізніх відповідей.",
+        "zh-cn": "使用一次有界的数据库直连 SELECT 验证记录是否持久保存；保留精确原始记录、查询锁、期限及迟到响应处理。"
       },
       "0.17.0-alpha.147": {
         "en": "Separate bounded immutable journal reads from serialized mutations; pin original groups until readers finish so slow publication reads cannot block durable appends.",
-        "de": "Begrenzte unveraenderliche Journal-Lesezugriffe von serialisierten Aenderungen trennen; Originalgruppen bis Leseabschluss halten, damit langsame Publikationslesungen dauerhafte Appends nicht blockieren."
+        "de": "Begrenzte unveraenderliche Journal-Lesezugriffe von serialisierten Aenderungen trennen; Originalgruppen bis Leseabschluss halten, damit langsame Publikationslesungen dauerhafte Appends nicht blockieren.",
+        "es": "Separar las lecturas limitadas del diario inmutable de las modificaciones serializadas; mantener los grupos originales hasta que terminen las lecturas para evitar bloquear la escritura duradera.",
+        "fr": "Séparer les lectures bornées du journal immuable des modifications sérialisées ; conserver les groupes originaux jusqu’à la fin des lectures afin de ne pas bloquer les écritures durables.",
+        "it": "Separare le letture limitate del diario immutabile dalle modifiche serializzate; conservare i gruppi originali fino alla fine delle letture per non bloccare le scritture durature.",
+        "nl": "Scheid begrensde lezingen van het onveranderlijke journaal van geserialiseerde wijzigingen; houd originele groepen vast totdat lezingen eindigen, zodat duurzame toevoegingen niet worden geblokkeerd.",
+        "pl": "Oddzielenie ograniczonych odczytów niezmiennego dziennika od szeregowych zmian; zachowanie grup oryginałów do zakończenia odczytu, aby nie blokować trwałego dopisywania.",
+        "pt": "Separar as leituras limitadas do diário imutável das alterações serializadas; manter os grupos originais até terminarem as leituras para não bloquear gravações duradouras.",
+        "ru": "Ограниченные чтения неизменяемого журнала отделены от последовательных изменений; исходные группы удерживаются до конца чтения, чтобы не блокировать долговечную запись.",
+        "uk": "Обмежені читання незмінного журналу відокремлено від послідовних змін; початкові групи утримуються до завершення читання, щоб не блокувати довговічний запис.",
+        "zh-cn": "将有界的不可变日志读取与串行修改分离；读取结束前保留原始记录组，避免阻塞持久追加写入。"
       },
       "0.17.0-alpha.146": {
         "en": "Hold an established acknowledged current step through communication loss with full reservation and fresh SMA protection; household import alone does not trigger a telemetry stop.",
-        "de": "Bestaetigten Stromschritt einer laufenden Ladung bei Kommunikationsausfall mit voller Reserve und frischem SMA-Schutz halten; Haushaltsbezug allein loest keinen Telemetriestopp aus."
+        "de": "Bestaetigten Stromschritt einer laufenden Ladung bei Kommunikationsausfall mit voller Reserve und frischem SMA-Schutz halten; Haushaltsbezug allein loest keinen Telemetriestopp aus.",
+        "es": "Mantener un paso de corriente confirmado durante una interrupción de comunicación, con reserva completa y protección SMA actual; el consumo doméstico por sí solo no provoca una parada de telemetría.",
+        "fr": "Maintenir un palier de courant acquitté pendant une perte de communication, avec réserve complète et protection SMA récente ; la consommation domestique seule ne déclenche pas un arrêt de télémétrie.",
+        "it": "Mantenere un passo di corrente confermato durante un’interruzione di comunicazione con riserva completa e protezione SMA aggiornata; il solo consumo domestico non provoca un arresto per telemetria.",
+        "nl": "Behoud een bevestigde stroomstap bij communicatieverlies met volledige reservering en verse SMA-beveiliging; huishoudelijk verbruik alleen veroorzaakt geen telemetriestop.",
+        "pl": "Utrzymanie potwierdzonego kroku prądu podczas utraty łączności z pełną rezerwą i aktualną ochroną SMA; sam pobór domowy nie wywołuje zatrzymania z powodu telemetrii.",
+        "pt": "Manter um passo de corrente confirmado durante perda de comunicação, com reserva completa e proteção SMA atual; o consumo doméstico por si só não provoca paragem por telemetria.",
+        "ru": "Подтверждённая ступень тока сохраняется при потере связи с полным резервом и свежей защитой SMA; одно лишь бытовое потребление не вызывает остановку из-за телеметрии.",
+        "uk": "Підтверджений крок струму утримується при втраті зв’язку з повним резервом і свіжим захистом SMA; саме побутове споживання не спричиняє зупинку через телеметрію.",
+        "zh-cn": "通信中断时保留已确认的电流步进、完整功率预留和最新 SMA 保护；仅有家庭用电不会触发遥测停机。"
       },
       "0.17.0-alpha.145": {
         "en": "Transfer a witnessed charging qualification after unplugging in parallel mode, retaining bounded donor history, real OFF/quiet confirmation, budgets and recipient gates.",
-        "de": "Beobachtete Ladequalifikation nach Abstecken auch im Parallelbetrieb uebergeben; begrenzte Vorgeschichte, echtes AUS/Stillstand, Budgets und Empfaengerfreigaben bleiben erforderlich."
+        "de": "Beobachtete Ladequalifikation nach Abstecken auch im Parallelbetrieb uebergeben; begrenzte Vorgeschichte, echtes AUS/Stillstand, Budgets und Empfaengerfreigaben bleiben erforderlich.",
+        "es": "Transferir la cualificación de carga observada tras desconectar en modo paralelo; conservar el historial limitado, la confirmación real de apagado y reposo, los presupuestos y las condiciones del receptor.",
+        "fr": "Transférer la qualification de charge observée après débranchement en mode parallèle ; conserver l’historique borné, la confirmation réelle d’arrêt et de repos, les budgets et les conditions du destinataire.",
+        "it": "Trasferire la qualificazione di carica osservata dopo lo scollegamento in modalità parallela; conservare cronologia limitata, conferma reale di spegnimento e quiete, budget e condizioni del destinatario.",
+        "nl": "Draag een waargenomen laadkwalificatie na loskoppelen ook in parallelbedrijf over; behoud begrensde voorgeschiedenis, echte UIT-/stilstandbevestiging, budgetten en ontvangervoorwaarden.",
+        "pl": "Przekazanie zaobserwowanej kwalifikacji ładowania po odłączeniu także w trybie równoległym; zachowanie ograniczonej historii, rzeczywistego potwierdzenia wyłączenia i spoczynku, budżetów i warunków odbiorcy.",
+        "pt": "Transferir a qualificação de carga observada após desligar também em modo paralelo; manter histórico limitado, confirmação real de desligamento e repouso, orçamentos e condições do destinatário.",
+        "ru": "Передача наблюдённой квалификации зарядки после отключения также в параллельном режиме; сохранены ограниченная история, реальное подтверждение выключения и покоя, бюджеты и условия получателя.",
+        "uk": "Передавання спостереженої кваліфікації заряджання після від’єднання також у паралельному режимі; збережено обмежену історію, реальне підтвердження вимкнення й спокою, бюджети та умови отримувача.",
+        "zh-cn": "并行模式下也可在拔枪后传递已观察到的充电资格；仍要求有界历史、真实关断与电气静止确认、功率预算和接收方条件。"
       },
       "0.17.0-alpha.144": {
         "en": "Verify late SQL replies with the same exact original checks; retire proven backlog without another read, preserving deadlines, fences and shutdown safety.",
-        "de": "Spaete SQL-Antworten mit denselben exakten Originalnachweisen auswerten; bestaetigten Rueckstau ohne erneuten Abruf abbauen, Fristen, Sperren und sauberes Beenden erhalten."
+        "de": "Spaete SQL-Antworten mit denselben exakten Originalnachweisen auswerten; bestaetigten Rueckstau ohne erneuten Abruf abbauen, Fristen, Sperren und sauberes Beenden erhalten.",
+        "es": "Validar las respuestas SQL tardías contra los originales exactos; retirar los datos confirmados sin otra lectura, manteniendo plazos, bloqueos y apagado seguro.",
+        "fr": "Vérifier les réponses SQL tardives avec les mêmes originaux exacts ; retirer les données confirmées sans nouvelle lecture, en conservant délais, verrous et arrêt sûr.",
+        "it": "Verificare le risposte SQL tardive con gli stessi originali esatti; rimuovere i dati confermati senza un’altra lettura, mantenendo scadenze, blocchi e arresto sicuro.",
+        "nl": "Controleer late SQL-antwoorden tegen dezelfde exacte originelen; verwijder bewezen achterstand zonder nieuwe lezing en behoud termijnen, blokkeringen en veilige afsluiting.",
+        "pl": "Weryfikacja spóźnionych odpowiedzi SQL względem tych samych dokładnych oryginałów; usunięcie potwierdzonych zaległości bez kolejnego odczytu, z zachowaniem terminów, blokad i bezpiecznego wyłączania.",
+        "pt": "Verificar respostas SQL tardias com os mesmos originais exatos; retirar dados confirmados sem outra leitura, mantendo prazos, bloqueios e encerramento seguro.",
+        "ru": "Поздние ответы SQL проверяются по тем же точным оригиналам; подтверждённые записи удаляются из очереди без нового чтения с сохранением сроков, блокировок и безопасного завершения.",
+        "uk": "Пізні відповіді SQL перевіряються за тими самими точними оригіналами; підтверджені записи вилучаються з черги без нового читання зі збереженням строків, блокувань і безпечного завершення.",
+        "zh-cn": "按相同的精确原始记录规则校验迟到的 SQL 响应；无需再次读取即可清除已证实积压，同时保留期限、查询锁和安全关闭机制。"
       },
       "0.17.0-alpha.143": {
         "en": "Choose the funded vehicle phase mode before release also for manual or mandatory minimum charging; retain running qualification and all safety gates.",
-        "de": "Phasenwahl vor Ladefreigabe auch bei manueller oder Pflicht-Mindestladung aus dem belegten Fahrzeugbudget; laufende Qualifikation und Schutzpruefungen bleiben erhalten."
+        "de": "Phasenwahl vor Ladefreigabe auch bei manueller oder Pflicht-Mindestladung aus dem belegten Fahrzeugbudget; laufende Qualifikation und Schutzpruefungen bleiben erhalten.",
+        "es": "Elegir las fases financiadas antes de autorizar también la carga mínima manual u obligatoria; conservar la cualificación durante la carga y todas las protecciones.",
+        "fr": "Choisir les phases couvertes par le budget avant autorisation, également pour la charge minimale manuelle ou obligatoire ; conserver la qualification en fonctionnement et toutes les protections.",
+        "it": "Scegliere le fasi coperte dal budget prima del consenso anche per la carica minima manuale od obbligatoria; mantenere la qualificazione durante la marcia e tutte le protezioni.",
+        "nl": "Kies de door het budget gedekte fasen vóór vrijgave ook bij handmatig of verplicht minimumladen; behoud kwalificatie tijdens bedrijf en alle beveiligingen.",
+        "pl": "Wybór faz pokrytych budżetem przed zezwoleniem również dla ręcznego lub obowiązkowego ładowania minimalnego; zachowanie kwalifikacji podczas pracy i wszystkich zabezpieczeń.",
+        "pt": "Escolher as fases cobertas pelo orçamento antes da autorização também na carga mínima manual ou obrigatória; manter a qualificação durante a operação e todas as proteções.",
+        "ru": "Выбор обеспеченного бюджетом числа фаз до разрешения также при ручной или обязательной минимальной зарядке; сохранены квалификация во время работы и все защитные проверки.",
+        "uk": "Вибір забезпеченої бюджетом кількості фаз до дозволу також для ручного або обов’язкового мінімального заряджання; збережено кваліфікацію під час роботи та всі захисні перевірки.",
+        "zh-cn": "手动或强制最低充电也在放行前选择预算能够支持的相数；保留运行中的资格判定及全部保护检查。"
       }
     },
     "titleLang": {
       "en": "EMS Optimizer",
-      "de": "EMS-Optimierer"
+      "de": "EMS-Optimierer",
+      "es": "EMS Optimizer",
+      "fr": "EMS Optimizer",
+      "it": "EMS Optimizer",
+      "nl": "EMS Optimizer",
+      "pl": "EMS Optimizer",
+      "pt": "EMS Optimizer",
+      "ru": "EMS Optimizer",
+      "uk": "EMS Optimizer",
+      "zh-cn": "EMS Optimizer"
     },
     "desc": {
       "en": "Forecast-based energy management observer",
-      "de": "Prognosebasierter Energiemanagement-Beobachter"
+      "de": "Prognosebasierter Energiemanagement-Beobachter",
+      "es": "Gestión de energía basada en previsiones",
+      "fr": "Gestion de l’énergie fondée sur les prévisions",
+      "it": "Gestione energetica basata sulle previsioni",
+      "nl": "Energiebeheer op basis van prognoses",
+      "pl": "Zarządzanie energią na podstawie prognoz",
+      "pt": "Gestão de energia baseada em previsões",
+      "ru": "Управление энергией на основе прогнозов",
+      "uk": "Керування енергією на основі прогнозів",
+      "zh-cn": "基于预测的能源管理"
     },
     "authors": [
       "fuchs-1978"
