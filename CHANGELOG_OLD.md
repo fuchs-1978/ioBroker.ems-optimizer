@@ -1,3 +1,7 @@
+### 0.17.0-alpha.137 (2026-10-24)
+
+Begrenzter frueher1-A-Pruefschritt nach zehn Sekunden anhaltender Einspeisung bei bestaetigter Fahrzeugantwort; ACK-, Quellen-, Budget- und Schutzpruefungen bleiben wirksam. [Details](docs/release-0.17.0-alpha.137.md).
+
 ### 0.17.0-alpha.136 (2026-10-24)
 
 Getrennte begrenzte Kontingente schuetzen Export-/Abweichungs-/Quellenluecken-/Samplingepisoden vor gegenseitiger Verdraengung. Alte unbekannte Verluste bleiben unbekannt. [Details](docs/release-0.17.0-alpha.136.md).

@@ -1149,3 +1149,157 @@ test('an inherited orphan fence remains unknown even when this process has no ba
     assert.equal(result.settled,true);assert.equal(result.fencePending,true);
     assert.equal(h.queries.length,0);assert.equal(h.confirmations.length,0);
 });
+
+// Controlled deadlines: no sleep, SQL server or live adapter is involved.
+async function alpha144Late(t, count = 1, options = {}) {
+    let finish, started, calls = 0;
+    const issued = new Promise(resolve => {started = resolve;});
+    const h = fixture(count, {...options, readHistory: () => {
+        calls++; started(); return new Promise(resolve => {finish = resolve;});
+    }});
+    t.mock.timers.enable({apis: ['setTimeout']});
+    const running = h.delivery.tick({force: true});
+    await issued; t.mock.timers.tick(21); await running;
+    assert.equal(h.delivery.health().backendBlocked, true);
+    return {...h, finish, calls: () => calls};
+}
+const alpha144Flush = () => new Promise(resolve => setImmediate(resolve));
+
+test('alpha144 late bundled exact matches retire once without another SQL read and retain the deadline', async t => {
+    const h = await alpha144Late(t, 2, {bundleOriginals: true});
+    h.advance(76000);
+    const row = {ts: 100000, val: h.publications[0]};
+    h.finish({result: [row, row], backendCompletionObserved: true});
+    await alpha144Flush();
+    assert.equal(h.stored.size, 0);
+    assert.equal(h.delivery.health().pendingEntries, 0);
+    assert.equal(h.delivery.health().pendingWindows, 0);
+    assert.equal(h.confirmations.length, 2);
+    assert.equal(h.delivery.health().sqlConfirmed, 2);
+    assert.equal(h.delivery.health().queryErrors, 1);
+    assert.equal(h.delivery.health().lastQuery.outcome, 'error');
+    const failure = h.delivery.queryFailures.report().failures[0];
+    assert.equal(failure.reason, 'deadline');
+    assert.equal(failure.lateOutcome, 'complete');
+    assert.equal(failure.lateConfirmedRecords, 2);
+    assert.equal(failure.lateProcessedAt, 176000);
+    assert.equal(h.delivery.health().lastFreshSQLProof, null, 'old proof is not fresh recovery');
+    await h.delivery.tick({force: true});
+    assert.equal(h.calls(), 1);
+    const Failures = require('../lib/sql-query-failures');
+    assert.equal(new Failures(JSON.stringify(h.delivery.queryFailures.report())).checkpointStatus, 'restored');
+});
+
+test('alpha144 late empty response is not a new complete miss or a storage proof', async t => {
+    const h = await alpha144Late(t);
+    h.finish({result: [], backendCompletionObserved: true}); await alpha144Flush();
+    assert.equal(h.delivery.health().backendBlocked, false);
+    assert.equal(h.stored.size, 1);
+    assert.equal([...h.delivery.entries.values()][0].completeMisses, 0);
+    assert.equal(h.delivery.health().republishAttempts, 0);
+    assert.equal(h.delivery.queryFailures.report().failures[0].lateOutcome, 'complete');
+    assert.equal(h.delivery.queryFailures.report().failures[0].lateConfirmedRecords, 0);
+});
+
+for (const kind of ['rows', 'outside-window', 'row-limit', 'payload-cap', 'hash', 'session', 'damaged-bundle', 'no-completion', 'sql-error']) {
+    test(`alpha144 late ${kind} cannot falsely confirm storage`, async t => {
+        const h = await alpha144Late(t, 1, kind === 'payload-cap' ? {maxResponseBytes: 1} : {});
+        const row = {ts: 100000, val: h.publications[0]};
+        let result = [row], backendCompletionObserved = true;
+        if (kind === 'rows') result = 'invalid';
+        if (kind === 'outside-window') result = [{...row, ts: 1}];
+        if (kind === 'row-limit') result = Array(33).fill(row);
+        if (kind === 'hash') result = [{...row, val: JSON.stringify({...JSON.parse(unpackOriginals(row.val)[0]), timestamp: 999})}];
+        if (kind === 'session') result = [{...row, val: JSON.stringify({...JSON.parse(unpackOriginals(row.val)[0]), recordSession: 18})}];
+        if (kind === 'damaged-bundle') result = [{...row, val: JSON.stringify({schema: 4, records: [row.val, 'broken']})}];
+        if (kind === 'no-completion') backendCompletionObserved = false;
+        h.finish({result, backendCompletionObserved, ...(kind === 'sql-error' ? {error: 'failed'} : {})});
+        await alpha144Flush();
+        assert.equal(h.stored.size, 1); assert.equal(h.confirmations.length, 0);
+        assert.equal(h.delivery.health().queryErrors, 1, 'one failed call, not a second failed call');
+        assert.equal(h.calls(), 1);
+        assert.equal(h.delivery.health().backendBlocked, kind === 'no-completion');
+        assert.ok(h.delivery.queryFailures.report().failures[0].lateOutcome);
+    });
+}
+
+test('alpha144 late proof keeps the gate and shutdown drain until durable confirmation finishes', async t => {
+    let release, confirmStarted, confirmationEntered = false;
+    const started = new Promise(resolve => {confirmStarted = resolve;});
+    const h = await alpha144Late(t);
+    const confirm = h.journal.confirmStored.bind(h.journal);
+    h.journal.confirmStored = async (...args) => {
+        confirmationEntered = true; confirmStarted();
+        await new Promise(resolve => {release = resolve;}); return confirm(...args);
+    };
+    h.finish({result: [{ts: 100000, val: h.publications[0]}], backendCompletionObserved: true});
+    await alpha144Flush();
+    assert.equal(confirmationEntered, true);
+    await started;
+    assert.equal(h.delivery.health().backendBlocked, true);
+    assert.equal(h.delivery.health().activeSqlRequests, 1);
+    await h.delivery.tick({force: true}); assert.equal(h.calls(), 1);
+    let drained = false;
+    const drain = h.delivery.stopAndDrain().then(result => {drained = true; return result;});
+    await alpha144Flush(); assert.equal(drained, false);
+    release(); const result = await drain;
+    assert.equal(result.settled, true);
+    assert.equal(h.stored.size, 0);
+    assert.equal(h.delivery.health().backendBlocked, false);
+});
+
+test('alpha144 callback after stop clears only the completed fence and keeps every original', async t => {
+    const h = await alpha144Late(t);
+    h.delivery.stop();
+    h.finish({result: [{ts: 100000, val: h.publications[0]}], backendCompletionObserved: true});
+    await alpha144Flush();
+    assert.equal(h.delivery.health().backendBlocked, false);
+    assert.equal(h.stored.size, 1); assert.equal(h.confirmations.length, 0);
+    assert.equal(h.delivery.queryFailures.report().failures[0].lateOutcome, 'stopped');
+});
+
+test('alpha144 failed late durable fence completion keeps originals and blocks another query', async t => {
+    let pending = false;
+    const h = await alpha144Late(t, 1, {journal: {
+        readBatch: async () => [{id: '0000000000000001', recordSession: 17, recordSequence: 1,
+            payload: JSON.stringify({schema: 2, recordSession: 17, recordSequence: 1}),
+            sha256: createHash('sha256').update(JSON.stringify({schema: 2, recordSession: 17, recordSequence: 1})).digest('hex')}],
+        markPublished() {}, confirmStored() {assert.fail('must not confirm');},
+        beginVerification: async () => {pending = true;},
+        completeVerification: async () => {throw new Error('local fsync failed');},
+        health: () => ({sqlVerificationPending: pending})
+    }});
+    h.finish({result: [], backendCompletionObserved: true}); await alpha144Flush();
+    await h.delivery.tick({force: true});
+    assert.equal(h.calls(), 1);
+    assert.equal(h.delivery.health().backendBlocked, true);
+    assert.equal(h.delivery.queryFailures.report().failures[0].lateOutcome, 'local-journal');
+});
+
+test('alpha144 real journal persists a late exact confirmation across restart', {timeout: 10000}, async t => {
+    const fs = require('node:fs/promises'), path = require('node:path'), os = require('node:os');
+    const Journal = require('../lib/decision-record-journal');
+    const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'ems-late-proof-'));
+    let journal = new Journal({directory}), finish, started, payload;
+    const issued = new Promise(resolve => {started = resolve;});
+    try {
+        await journal.initialize(); await journal.append(fixture().entries[0].payload);
+        const d = new DecisionRecordDelivery({journal, now: () => 100000, queryTimeoutMs: 50,
+            publish: async val => {payload = val; return {publishedAt: 100000};},
+            readHistory: () => {started(); return new Promise(resolve => {finish = resolve;});}});
+        t.mock.timers.enable({apis: ['setTimeout']});
+        const running = d.tick({force: true}); await issued;
+        t.mock.timers.tick(51); await running;
+        assert.equal(journal.health().sqlVerificationPending, true);
+        finish({result: [{ts: 100000, val: payload}], backendCompletionObserved: true});
+        await Promise.all([...d.backendOperations]);
+        assert.equal(d.sqlConfirmed, 1);
+        assert.equal(journal.health().unconfirmedRecords, 0);
+        assert.equal(journal.health().sqlVerificationPending, false);
+        t.mock.timers.reset(); await journal.close();
+        journal = new Journal({directory}); await journal.initialize();
+        assert.equal(journal.health().unconfirmedRecords, 0);
+        assert.equal(journal.health().sqlVerificationPending, false);
+        assert.equal(journal.health().sqlConfirmedRecords, 1);
+    } finally {t.mock.timers.reset(); await journal.close(); await fs.rm(directory, {recursive: true, force: true});}
+});
