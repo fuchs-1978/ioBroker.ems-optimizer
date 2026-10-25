@@ -338,6 +338,24 @@ async function worker(tree) {
     }
     finish();
 
+    // alpha.142 deliberately changes the local drain/cleanup schedule and
+    // group size. Pin ONLY this explicit policy in both recorder fixtures;
+    // comparing its old timing/health bytes would assert the removed behavior.
+    // The five recorder-drain regressions separately fail on unchanged141 and
+    // pass on142. Keep codec, source/event capture, capacity/loss accounting,
+    // real files, restart and ALL other scenarios/actuator traces comparable.
+    // No fields, records, hashes or outputs are dropped from the comparison.
+    const pinRecorderDrainPolicy = h => {
+        const Journal = require(path.join(root, 'lib/decision-record-journal'));
+        const Shadow = require(path.join(root, 'lib/shadow-controller'));
+        for (const method of ['health', '_enqueue', 'setRecorderBacklog', '_scheduleRetirement',
+            '_nextConfirmedGroup', '_retireConfirmedGroups', '_retireGroup', 'expireOldGroups', 'prepareReplay'])
+            h.journal[method] = Journal.prototype[method];
+        Object.assign(h.journal, {operationQueue: [], operationRunning: false,
+            appendTurns: 0, recorderBacklog: 0, retirementPending: false});
+        h.recorder.enqueueDurableBatch = Shadow.prototype.enqueueDurableBatch;
+    };
+
     // Reuse the existing gated real-file fixture with a controlled clock.
     // Both trees perform actual write/fsync/read operations; no SQL is contacted.
     start('recorder-queue-loss-journal-durability-and-restart');
@@ -346,6 +364,7 @@ async function worker(tree) {
     const {fixture} = compile(source, path.join(tree, 'test/recorder-audit-fixture.js'));
     const cleanups = [];
     const h = await fixture({after: fn => cleanups.push(fn)}, true);
+    pinRecorderDrainPolicy(h);
     const originalNow = Date.now;
     Date.now = h.now;
     try {
@@ -377,6 +396,7 @@ async function worker(tree) {
         const Journal = require(path.join(tree, 'lib/decision-record-journal'));
         const reopened = new Journal({directory: h.directory, now: h.now});
         await reopened.initialize();
+        pinRecorderDrainPolicy({journal: reopened, recorder: {}});
         record(await reopened.readBatch({limit: 512, maxBytes: 16 * 1024 * 1024}));
         record(reopened.health()); await reopened.close();
     } finally {
@@ -394,6 +414,7 @@ async function worker(tree) {
     const {fixture: byteFixture, largeRawContext} = compile(source, path.join(tree, 'test/recorder-byte-audit-fixture.js'));
     const byteCleanups = [];
     const bytes = await byteFixture({after: fn => byteCleanups.push(fn)}, true);
+    pinRecorderDrainPolicy(bytes);
     Date.now = bytes.now;
     try {
         bytes.recorder.enqueueRecord(largeRawContext(bytes.now()));

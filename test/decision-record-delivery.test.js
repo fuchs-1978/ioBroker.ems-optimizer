@@ -107,6 +107,9 @@ test('real retained checkpoint groups retire after bounded bundled SQL proof, no
         }
         delivery.stop();
         assert.equal(journal.health().unconfirmedRecords, 0);
+        // Proof completion no longer waits for every old group's cleanup.
+        // The bounded maintenance chain must finish without another SQL query.
+        await journal.tail;
         assert.equal(journal.health().records, 4, 'latest dependency basis remains; all closed groups retire');
         assert.equal(journal.health().expiredRecords, 0);
         assert.equal(journal.health().rejectedRecords, 0);
