@@ -1,10 +1,10 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.141",
+    "version": "0.17.0-alpha.142",
     "stopTimeout": 10000,
     "news": {
-      "0.17.0-alpha.141": {
+      "0.17.0-alpha.142": {
         "en": "Retain bounded SQL verification failures across successful reads and adapter restarts; distinguish journal, transport and late callback timings without extra SQL queries or relaxed recovery gates.",
         "de": "Begrenzten SQL-Prueffehlerverlauf ueber Erfolge und Adapterneustarts erhalten; Journal-, Transport- und spaete Antwortzeiten trennen, ohne Zusatzabfragen oder gelockerte Recoverygrenzen."
       },

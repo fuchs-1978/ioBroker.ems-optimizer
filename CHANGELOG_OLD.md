@@ -1,3 +1,7 @@
+### 0.17.0-alpha.135 (2026-10-24)
+
+Manueller Wallbox-Mindeststrom bleibt ohne gueltigen Fahrplan verfuegbar; SoC-, Freigabe- und Schutzpruefungen bleiben wirksam. [Details](docs/release-0.17.0-alpha.135.md).
+
 ### 0.17.0-alpha.134 (2026-10-24)
 
 Bestaetigte Ladung bei frischer Rueckmeldung vor Erneuerung einer allein altersbedingt ungueltigen Parallelzuteilung halten; Schutzpruefungen und Reserven bleiben erhalten.
