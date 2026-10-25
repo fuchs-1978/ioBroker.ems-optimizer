@@ -23,3 +23,23 @@ test('all visible Admin texts resolve through complete English and German catalo
     assert.equal(de.General, 'Allgemein');
     assert.match(de['Writable go-e release (allow_charging, numeric 0/1)'], /allow_charging.*0\/1/);
 });
+
+// The repository checker requires these eleven catalog paths. Checking every
+// key (not only today's visible fields) catches incomplete catalog updates.
+const languages = ['en', 'de', 'es', 'fr', 'it', 'nl', 'pl', 'pt', 'ru', 'uk', 'zh-cn'];
+for (const language of languages) {
+    test(`${language}: complete non-empty Admin catalog and manifest translations`, () => {
+        const catalog = JSON.parse(fs.readFileSync(`admin/i18n/${language}/translations.json`, 'utf8'));
+        assert.deepEqual(Object.keys(catalog).sort(), Object.keys(en).sort());
+        for (const key of Object.keys(en)) {
+            assert.equal(typeof catalog[key], 'string', `${language}: ${key}`);
+            assert.ok(catalog[key].trim(), `${language}: empty ${key}`);
+        }
+        const common = JSON.parse(fs.readFileSync('io-package.json', 'utf8')).common;
+        for (const [name, texts] of Object.entries({titleLang: common.titleLang,
+            desc: common.desc, ...common.news})) {
+            assert.equal(typeof texts[language], 'string', `${name}: missing ${language}`);
+            assert.ok(texts[language].trim(), `${name}: empty ${language}`);
+        }
+    });
+}
