@@ -1,3 +1,7 @@
+### 0.17.0-alpha.142 (2026-10-25)
+
+Recorder-Schreibvorrang fair begrenzen, Journalbereinigung in kleine Schritte teilen und Sammelschreiben wirksamer nutzen; SQL-Nachweise und Regelgrenzen bleiben erhalten. [Details](docs/release-0.17.0-alpha.142.md).
+
 ### 0.17.0-alpha.141 (2026-10-25)
 
 Begrenzten SQL-Prueffehlerverlauf ueber Erfolge und Adapterneustarts erhalten; Journal-, Transport- und spaete Antwortzeiten trennen, ohne Zusatzabfragen oder gelockerte Recoverygrenzen. [Details](docs/release-0.17.0-alpha.141.md).

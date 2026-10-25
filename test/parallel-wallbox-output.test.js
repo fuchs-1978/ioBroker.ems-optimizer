@@ -163,6 +163,77 @@ async function correctionCandidate(phases = 1) {
     return h;
 }
 
+test('current conflict records concrete command gate and original evidence before unchanged OFF', async () => {
+    const h=await correctionCandidate();h.ack('cmd',9);
+    const command={...h.states.get('cmd')},feedback={...h.states.get('feedback')};
+    await h.output.tick();
+    assert.deepEqual(h.writes,[{id:'allow',val:0}]);
+    const diag=JSON.parse(h.states.get('ems.0.Devices.Wallbox0.CurrentConflict_JSON').val);
+    assert.equal(diag.gate,'command-not-own-current');assert.equal(diag.diagnosticOnly,true);
+    assert.equal(diag.expectedA,10);assert.equal(diag.observedA,11);
+    assert.deepEqual(diag.command,{val:command.val,ts:command.ts,lc:null,ack:true,q:null});
+    assert.deepEqual(diag.feedback,{val:feedback.val,ts:feedback.ts,lc:null,ack:true,q:null});
+    assert.ok(Buffer.byteLength(JSON.stringify(diag))<4096);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val,
+        new RegExp(`\\[current:${diag.at}:command-not-own-current\\]$`));
+    assert.equal(h.output.devices[0].currentCorrection,undefined,'diagnostic is no restart/correction permission');
+    const held=JSON.stringify(diag);await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.CurrentConflict_JSON').val,held);
+});
+
+for(const [gate,change,args] of [
+    ['correction-used',d=>{d.currentCorrection={result:'confirmed'};}],
+    ['not-owned',d=>{d.owned=false;}],['recovering',d=>{d.recovering=true;}],
+    ['no-active-run',d=>{d.activeSince=0;}],
+    ['allow-not-on',()=>{},{allow:0}],['phase-switch',()=>{},{phaseSwitchPending:true}],
+    ['phase-transition',()=>{},{conservativePhaseTransition:true}],
+    ['phase-unconfirmed',d=>{d.confirmedPhases=3;}],
+    ['budget-step-pending',d=>{d.measuredBudgetStep={};}],
+    ['shared-feedback-id',d=>{d.ids.feedback=d.ids.command;}],
+    ['not-one-amp-difference',()=>{},{feedbackA:12}],
+    ['feedback-below-minimum',()=>{},{minimumA:12}],
+    ['feedback-above-maximum',()=>{},{maxA:10}],
+    ['no-electrical-load',()=>{},{actualKW:0}],
+    ['measured-below-minimum',()=>{},{measuredA:0}]
+]) test(`current correction diagnostic identifies first failed gate ${gate}`,async()=>{
+    const h=await correctionCandidate(),d=h.output.devices[0];change(d);
+    let reason;
+    h.output.stop=async(device,value)=>{assert.equal(device,d);reason=value;};
+    await h.output.handleCurrentCorrection(d,{feedbackA:11,allow:1,amps:10,maxA:32,minimumA:6,
+        phases:1,phaseSwitchPending:false,conservativePhaseTransition:false,actualKW:2.3,measuredA:10,...args});
+    assert.equal(d.lastCurrentConflict.gate,gate);
+    assert.match(reason,/Sollstrom-Rueckmeldung widerspruechlich/);
+    assert.equal(h.writes.length,0);
+});
+
+for(const mode of ['pending','reject','throw']) test(`conflict diagnostic storage ${mode} cannot delay or skip OFF`,async()=>{
+    const h=await correctionCandidate();h.ack('cmd',9);
+    const original=h.adapter.setCompatState;let finish;
+    h.adapter.setCompatState=(id,value,ack)=>{
+        if(!id.endsWith('.CurrentConflict_JSON'))return original(id,value,ack);
+        original(id,value,ack);
+        if(mode==='throw')throw new Error('fixture diagnostic failure');
+        if(mode==='reject')return Promise.reject(new Error('fixture diagnostic failure'));
+        return new Promise(resolve=>{finish=resolve;});
+    };
+    let done=false;const tick=h.output.tick().then(()=>{done=true;});
+    await new Promise(resolve=>setImmediate(resolve));
+    try {assert.equal(done,true);assert.deepEqual(h.writes,[{id:'allow',val:0}]);}
+    finally {finish?.();await tick;}
+});
+
+test('diagnostic sources retain false ACK, bad q and NULL without affecting gate short-circuit',async()=>{
+    const h=await correctionCandidate(),d=h.output.devices[0];d.currentCorrection={result:'confirmed'};
+    h.put('feedback',11,{ack:false,q:64,lc:null});
+    h.output.responseEvidence=()=>{assert.fail('later gate must not be evaluated');};
+    h.output.stop=async()=>{};
+    await h.output.handleCurrentCorrection(d,{feedbackA:11,allow:1,amps:10,maxA:32,minimumA:6,
+        phases:1,phaseSwitchPending:false,conservativePhaseTransition:false,actualKW:2.3,measuredA:10});
+    assert.equal(d.lastCurrentConflict.gate,'correction-used');
+    assert.equal(d.lastCurrentConflict.feedback.ack,false);
+    assert.equal(d.lastCurrentConflict.feedback.q,64);assert.equal(d.lastCurrentConflict.feedback.lc,null);
+});
+
 for (const phases of [1, 3]) test(`issue216: isolated 10/11/10 A conflict is corrected once in ${phases}P without ON or OFF`, async () => {
     const h = await correctionCandidate(phases);
     await h.output.tick();

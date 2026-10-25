@@ -65,6 +65,19 @@ function fixture(initial = {}) {
     return {adapter, recorder, cache, writes, definitions, clock, put, change, command, json, settle};
 }
 
+test('current conflict snapshot and stop context preserve evidence only for the matching stop',()=>{
+    const f=fixture(),diag={schema:1,diagnosticOnly:true,at:f.clock.now,wb:2,gate:'command-not-own-current',
+        expectedA:10,observedA:11,command:{val:9,ts:f.clock.now-2,lc:null,ack:false,q:64}};
+    f.adapter.wallboxOutput={devices:[{wb:2,ids:{},lastCurrentConflict:diag}]};
+    f.put('ems.0.Devices.Wallbox2.LastStopReason',`conflict [current:${diag.at}:${diag.gate}]`);
+    const s=f.recorder.snapshot(),w=s.wallboxes[2];
+    assert.deepEqual(JSON.parse(JSON.stringify(w.currentConflict)),diag);
+    assert.deepEqual(JSON.parse(JSON.stringify(f.recorder.context(s).wallboxes[2].currentConflict)),diag);
+    f.put('ems.0.Devices.Wallbox2.LastStopReason','normal SoC end');
+    assert.equal(Object.hasOwn(f.recorder.snapshot().wallboxes[2],'currentConflict'),false);
+    assert.doesNotMatch(JSON.stringify(s),/NEVER-EXPORT/);
+});
+
 test('SunEnergy head diagnostics require every coherent source and never export private replies', () => {
     const f = fixture();
     Object.assign(f.adapter.config, {batteryDispatchMode: 'sunenergy-heads', batteryHeadCount: 2,

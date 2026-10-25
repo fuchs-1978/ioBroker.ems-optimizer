@@ -1,9 +1,13 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.148",
+    "version": "0.17.0-alpha.149",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.149": {
+        "en": "Protect recent wallbox stops and recorder error observations within the existing daily-summary byte limit; record the first failed current-correction gate and exact source evidence without delaying OFF.",
+        "de": "Junge Wallboxstopps und Recorderfehler innerhalb der bestehenden Tagesbilanz-Bytegrenze schuetzen; erste gescheiterte Sollstrom-Korrekturbedingung samt Quellnachweisen speichern, ohne AUS zu verzoegern."
+      },
       "0.17.0-alpha.148": {
         "en": "Verify recorder persistence with one bounded database-only SELECT instead of cache-capable getHistory; retain exact originals, query fences, deadlines and late callback processing.",
         "de": "Recorder-Speicherung mit einer begrenzten direkten Datenbanklesung statt cachefaehigem getHistory pruefen; exakte Originale, Abfragesperren, Fristen und spaete Antwortverarbeitung erhalten."
@@ -27,10 +31,6 @@
       "0.17.0-alpha.143": {
         "en": "Choose the funded vehicle phase mode before release also for manual or mandatory minimum charging; retain running qualification and all safety gates.",
         "de": "Phasenwahl vor Ladefreigabe auch bei manueller oder Pflicht-Mindestladung aus dem belegten Fahrzeugbudget; laufende Qualifikation und Schutzpruefungen bleiben erhalten."
-      },
-      "0.17.0-alpha.142": {
-        "en": "Prioritize recorder appends fairly, bound journal cleanup and share more durable group commits without changing SQL proofs or control limits.",
-        "de": "Recorder-Schreibvorrang fair begrenzen, Journalbereinigung in kleine Schritte teilen und Sammelschreiben wirksamer nutzen; SQL-Nachweise und Regelgrenzen bleiben erhalten."
       }
     },
     "titleLang": {
