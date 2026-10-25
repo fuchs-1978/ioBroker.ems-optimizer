@@ -190,6 +190,35 @@ test('confirmed stopped target selects one phase immediately from a low real sta
         'a running charger still observes real qualification and hold');
 });
 
+for (const [name, maximum1pA, budgetW] of [['EQE', 20, 7000], ['EQV', 32, 9000]])
+    test(`${name} manual minimum selects funded three-phase topology before release instead of starting its running timer`, () => {
+        const h = phaseEngine({phaseSwitchRealUpDelayS: 300, phaseSwitchMinHoldMin: 15}, 1);
+        h.vehicle.mustCharge = true;
+        h.vehicle.maxCurrent1pA = maximum1pA;
+        h.vehicle.maximumPowerW = 22080;
+        assert.equal(h.run(0, budgetW, {preStartReady: true}), 3);
+        assert.equal(h.diagnostic().reason, 'pre-start-budget-phase');
+        assert.equal(h.diagnostic().remainingS, 0);
+        h.vehicle.phaseFeedbackValid = false;
+        assert.equal(h.run(5, budgetW, {pending: true, valid: false, preStartReady: false}), 3,
+            'the requested destination remains pending, never a fabricated mode ACK');
+    });
+
+test('manual pre-start phase selection retains vehicle limits and requires real stopped-source proof', () => {
+    const fixed = phaseEngine({}, 1);
+    fixed.vehicle.mustCharge = true; fixed.vehicle.phaseSwitchEnabled = false;
+    assert.equal(fixed.run(0, 9000, {preStartReady: true}), 1, 'fixed Mii topology stays one phase');
+    for (const context of [{preStartReady: false}, {preStartReady: true, valid: false},
+        {preStartReady: true, pending: true}]) {
+        const h = phaseEngine({}, 1); h.vehicle.mustCharge = true;
+        assert.equal(h.run(0, 7000, context), 1,
+            'an active, unproven or in-flight vehicle cannot acquire the idle shortcut');
+    }
+    const low = phaseEngine({}, 3); low.vehicle.mustCharge = true;
+    assert.equal(low.run(0, 2300, {preStartReady: true, forceOnePhase: true}), 1);
+    assert.equal(low.diagnostic().reason, 'parallel-minimum-one-phase');
+});
+
 test('missing stop proof, invalid budget and insufficient start power do not bypass phase qualification', () => {
     for (const context of [{preStartReady: false}, {preStartReady: true, valid: false},
         {preStartReady: true, pending: true}]) {
