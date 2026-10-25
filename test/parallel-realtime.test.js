@@ -1586,3 +1586,66 @@ test('50 W target prefers predicted 100 W import over 130 W export at confirmed 
     h.owned(2, 18, 3530);
     assert.equal(h.update(3480).amps[2], 18, 'settled 100 W import is held without a down/up cycle');
 });
+
+function disconnectedParallelFixture(options={}) {
+    const h=completedParallelChargeFixture(options);
+    const unplug=(watts=4600,hard=4600)=>h.step(()=>h.put('DP_WB1_CAR',1),watts,hard);
+    const quiet=()=>{h.releaseQuiet();h.put('DP_WB1_CAR',1);};
+    return {...h,unplug,quiet};
+}
+test('parallel unplug retains witnessed qualification while donor stop is pending',()=>{
+    const h=disconnectedParallelFixture();
+    assert.equal(h.unplug().amps[2],0);
+    assert.equal(h.diagnostic(2).start.vehicleHandoff.qualified,true);
+    assert.equal(h.diagnostic(2).start.vehicleHandoff.reason,'donor-stop-confirmation-pending');
+    h.acknowledgeStop();
+    assert.ok(h.step(h.quiet).amps[2]>=6);
+    assert.equal(h.diagnostic(2).start.reason,'prepared-vehicle-handoff');
+    assert.equal(h.diagnostic(2).start.startDelayRemainingS,0);
+});
+test('parallel unplug can wait briefly for sufficient budget without fabricating a donor',()=>{
+    const h=disconnectedParallelFixture();assert.equal(h.unplug(1075,1075).amps[2],0);
+    assert.ok(h.run('wallboxDisconnectedDonor'));
+    assert.ok(h.step(h.quiet,3115,3115).amps[2]>=6);
+    assert.equal(h.diagnostic(2).start.reason,'prepared-vehicle-handoff');
+});
+for(const [name,change] of [
+    ['no observed idle-to-charge episode',null],
+    ['unconfirmed donor power',h=>h.put('DP_WB1_POWER',4.6,{ack:false})],
+    ['bad donor current quality',h=>h.put('DP_WB1_L1_A',20,{q:64})],
+    ['donor device error',h=>h.put('raw.error1',1)]
+])test('parallel unplug cannot qualify with '+name,()=>{
+    const h=disconnectedParallelFixture({observeIdle:name!=='no observed idle-to-charge episode'});
+    h.step(()=>{h.put('DP_WB1_CAR',1);change?.(h);});
+    assert.notEqual(h.diagnostic(2).start?.vehicleHandoff?.qualified,true);
+});
+test('disconnected parallel donor still requires fresh ACK and physical quiet',()=>{
+    const h=disconnectedParallelFixture();h.unplug();
+    for(const mutate of [
+        ()=>{h.quiet();h.put('raw.allow1',1);},
+        ()=>{h.quiet();h.put('DP_WB1_POWER',0.8);h.put('DP_WB1_L1_A',3.5);},
+        ()=>{h.quiet();h.put('ems.0.Devices.Wallbox1.OutputOwned',true);}
+    ])assert.equal(h.step(mutate).amps[2],0);
+    assert.ok(h.step(h.quiet).amps[2]>=6);
+});
+test('qualified unplug loses shortcut after a real budget deficit',()=>{
+    const h=disconnectedParallelFixture();h.unplug();h.step(()=>{},1000,1000);
+    assert.equal(h.step(h.quiet).amps[2],0,JSON.stringify({diagnostic:h.diagnostic(2),handoff:h.run('wallboxVehicleHandoff'),token:h.run('wallboxDisconnectedDonor')}));
+    assert.ok(h.diagnostic(2).start.startDelayRemainingS>0);
+});
+test('disconnected donor expires rather than qualifying a much later parallel start',()=>{
+    const h=disconnectedParallelFixture();h.unplug(1000,1000);
+    h.advance(100000);assert.equal(h.step(h.quiet).amps[2],0);
+    assert.notEqual(h.diagnostic(2).start.vehicleHandoff.qualified,true);
+});
+
+for(const [name,change] of [
+    ['recipient release withdrawn',h=>h.put('DP_WB2_ALLOW',false)],
+    ['master disabled',h=>h.put('ems.0.Control.Enabled',false)],
+    ['bad donor source',h=>h.put('DP_WB1_POWER',0,{q:64})],
+    ['priority changed',h=>{h.nativeConfig.wallboxPriority=2;}]
+])test('prepared disconnected parallel transfer yields to '+name,()=>{
+    const h=disconnectedParallelFixture();h.unplug();
+    assert.equal(h.step(()=>{h.quiet();change(h);}).amps[2],0);
+    assert.notEqual(h.diagnostic(2).start?.vehicleHandoff?.eligible,true);
+});

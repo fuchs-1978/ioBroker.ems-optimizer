@@ -1,3 +1,7 @@
+### 0.17.0-alpha.138 (2026-10-24)
+
+Einspeisung unter dem bestehenden Heizstab-Schichtungsminimum erklaeren; wirksame Mindestleistung in Entscheidungen und Episodenkontext speichern, ohne Einspeisung auszublenden oder Regelgrenzen zu aendern.
+
 ### 0.17.0-alpha.137 (2026-10-24)
 
 Begrenzter frueher1-A-Pruefschritt nach zehn Sekunden anhaltender Einspeisung bei bestaetigter Fahrzeugantwort; ACK-, Quellen-, Budget- und Schutzpruefungen bleiben wirksam. [Details](docs/release-0.17.0-alpha.137.md).
