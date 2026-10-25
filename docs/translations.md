@@ -1,24 +1,37 @@
 # Translation coverage
 
-The Admin catalogs cover all 565 English keys in these eleven languages:
-`en`, `de`, `es`, `fr`, `it`, `nl`, `pl`, `pt`, `ru`, `uk`, `zh-cn`.
+The Admin interface has complete catalogs for all 567 English keys in eleven
+languages: English (`en`), German (`de`), Spanish (`es`), French (`fr`), Italian
+(`it`), Dutch (`nl`), Polish (`pl`), Portuguese (`pt`), Russian (`ru`), Ukrainian
+(`uk`) and Simplified Chinese (`zh-cn`). Field labels, choices, written-out units, tooltips and
+extended guidance are translated; the nine additional catalogs no longer use
+the English help-text fallback introduced in PR #261.
 
-Key completeness is a structural check, not a claim of complete translation.
-English and German retain their existing complete catalogs. The nine newly
-added catalogs translate the main navigation and use explicit English fallback
-text for most field labels and technical help. Full linguistic translation and
-review of these entries is still outstanding. Technical IDs and product names
-must remain unchanged.
+Shared units, phase names, product names, technical identifiers and interface
+values intentionally remain literal. For example, `kWh`, `L1`, `EEBUS`,
+`allow_charging`, `info.lastUpdate`, `Europe/Berlin` and
+`@controlled-battery-ac` must not be translated into different API names.
+Some ordinary words are also identical in two languages, such as Spanish
+“General”, Italian “Standard” and French “3 phases”.
 
-The manifest title, description and all seven retained version messages cover
-all eleven languages. The product name remains EMS Optimizer in most locales.
+The nine additional translations were produced with local translation models
+and reviewed for technical terms, literal identifiers, numerical values and
+critical commissioning/protection instructions. The complete commissioning,
+heating-buffer, forecast-reserve and SunEnergy safety paragraphs were explicitly edited.
+Models are development tools, not adapter dependencies or shipped assets.
 
-`test/admin-i18n.test.js` checks exact catalog key parity, non-empty string
-values and manifest coverage, including every retained news item. It also
-checks that visible Admin strings resolve in the English and German source
-catalogs. Do not remove the structural checks when adding new settings.
+The manifest title, description and all seven retained version messages also
+cover all eleven languages. The product name remains EMS Optimizer in most
+locales.
 
-When adding a key, update every catalog in the same change. If an English
-fallback is needed, record it honestly; do not label key parity as completed
-translation. Issue #197 can mark missing-file findings E5010/W5603 as fixed,
-but the remaining linguistic work must stay explicit.
+`test/admin-i18n.test.js` checks exact key parity, non-empty values and manifest
+coverage for every retained news item. It also rejects copied English help
+sentences and unexpected identical English field labels, checks numerical
+values and literal technical identifiers, and rejects tokenizer artifacts.
+The packed-artifact check verifies that all eleven catalogs are installed.
+
+When adding a setting, update every catalog in the same change. A complete key
+set alone is not sufficient: translate the explanatory text while preserving
+interface names, physical quantities and the meaning of permission and safety
+conditions. These checks address the translation findings in issue #197;
+unrelated repository-checker findings are tracked separately in that issue.

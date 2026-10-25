@@ -563,5 +563,7 @@
   "At startup, manages only already enabled SQL histories of the configured PV and wallbox power sources. Records value changes without delta, block or debounce filtering, including zero transitions; keeps retention and other sources unchanged. Disable to stop future management; existing SQL settings are not restored. SQL repeats do not prove device freshness.": "At startup, manages only already enabled SQL histories of the configured PV and wallbox power sources. Records value changes without delta, block or debounce filtering, including zero transitions; keeps retention and other sources unchanged. Disable to stop future management; existing SQL settings are not restored. SQL repeats do not prove device freshness.",
   "Legacy socfrei comparison input (optional)": "Legacy socfrei comparison input (optional)",
   "Optional historical comparison only. Charging decisions, including manual minimum current, use the qualified EMS SoC and configured target; this input cannot authorize or block charging. The old SOCmin script can remain disabled after this version is installed.": "Optional historical comparison only. Charging decisions, including manual minimum current, use the qualified EMS SoC and configured target; this input cannot authorize or block charging. The old SOCmin script can remain disabled after this version is installed.",
-  "Use minimum-current stages below the EMS minimum SoC": "Use minimum-current stages below the EMS minimum SoC"
+  "Use minimum-current stages below the EMS minimum SoC": "Use minimum-current stages below the EMS minimum SoC",
+  "days": "days",
+  "percentage points": "percentage points"
 }
