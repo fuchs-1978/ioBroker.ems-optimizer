@@ -1,9 +1,13 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.140",
+    "version": "0.17.0-alpha.141",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.141": {
+        "en": "Retain bounded SQL verification failures across successful reads and adapter restarts; distinguish journal, transport and late callback timings without extra SQL queries or relaxed recovery gates.",
+        "de": "Begrenzten SQL-Prueffehlerverlauf ueber Erfolge und Adapterneustarts erhalten; Journal-, Transport- und spaete Antwortzeiten trennen, ohne Zusatzabfragen oder gelockerte Recoverygrenzen."
+      },
       "0.17.0-alpha.140": {
         "en": "Correct floating-point noise at exactly 15 K heater layering; retain signed grid and target at diagnostic peaks without rewriting legacy evidence.",
         "de": "Rundungsrauschen an exakt15 K Heizstab-Schichtung korrigieren; Netzleistung und Sollwert mit Vorzeichen am Diagnosepeak erhalten, Altdaten unbekannt lassen."
@@ -27,10 +31,6 @@
       "0.17.0-alpha.135": {
         "en": "Honor explicit manual wallbox minimum current without a valid forecast plan, retaining live source, release, SOC and protection gates.",
         "de": "Expliziten manuellen Wallbox-Mindeststrom auch ohne gueltigen Fahrplan ausfuehren; aktuelle Quellen, Freigaben, Ziel-SoC und Schutzgrenzen bleiben massgeblich."
-      },
-      "0.17.0-alpha.134": {
-        "en": "Retain confirmed charging through fresh-feedback recovery before the parallel allocator refreshes an own-power age rejection; preserve safety gates and reservations.",
-        "de": "Bestaetigte Ladung bei frischer Rueckmeldung vor Erneuerung einer allein altersbedingt ungueltigen Parallelzuteilung halten; Schutzpruefungen und Reserven bleiben erhalten."
       }
     },
     "titleLang": {

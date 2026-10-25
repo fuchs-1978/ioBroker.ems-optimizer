@@ -1,3 +1,7 @@
+### 0.17.0-alpha.134 (2026-10-24)
+
+Bestaetigte Ladung bei frischer Rueckmeldung vor Erneuerung einer allein altersbedingt ungueltigen Parallelzuteilung halten; Schutzpruefungen und Reserven bleiben erhalten.
+
 ### 0.17.0-alpha.133 (2026-10-24)
 
 Zeitlich markierte Export-, Abweichungs- und Lueckenepisoden mit begrenzten Untersuchungsfenstern; historische Erfassung bleibt begrenzt.
