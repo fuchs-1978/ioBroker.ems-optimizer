@@ -1,3 +1,7 @@
+### 0.17.0-alpha.136 (2026-10-24)
+
+Getrennte begrenzte Kontingente schuetzen Export-/Abweichungs-/Quellenluecken-/Samplingepisoden vor gegenseitiger Verdraengung. Alte unbekannte Verluste bleiben unbekannt. [Details](docs/release-0.17.0-alpha.136.md).
+
 ### 0.17.0-alpha.135 (2026-10-24)
 
 Manueller Wallbox-Mindeststrom bleibt ohne gueltigen Fahrplan verfuegbar; SoC-, Freigabe- und Schutzpruefungen bleiben wirksam. [Details](docs/release-0.17.0-alpha.135.md).

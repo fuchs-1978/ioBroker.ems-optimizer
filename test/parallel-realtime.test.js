@@ -121,6 +121,28 @@ test('manual Mii minimum receives a protected start with no PV despite stale scr
     assert.equal(h.update(0).amps[0], 0, 'target SoC still stops manual charging');
 });
 
+for (const [minimumA, hardLimit] of [[6, Infinity], [6, 3000], [20, Infinity]]) test(`manual EQE ${minimumA} A pre-start topology uses its own usable budget, hard limit ${hardLimit}`, () => {
+    const h = engine({production: true, wb2PhaseControlMode: 'ems', wb2PhaseModeId: 'raw.phase2',
+        phaseSwitchRealUpDelayS: 300});
+    h.exclude(0); h.exclude(1);
+    h.put('ems.0.Vehicles.Wallbox2.PhaseSwitchEnabled', true);
+    h.put('ems.0.Vehicles.Wallbox2.MaximumPhases', 3);
+    h.put('ems.0.Vehicles.Wallbox2.MaxCurrent1P_A', 20);
+    h.put('ems.0.Vehicles.Wallbox2.MaxCurrent3P_A', 32);
+    h.put('ems.0.Config.Wallbox2MaxPower_W', 22080);
+    h.put('ems.0.Config.WallboxStartReserve_W', 150);
+    h.put('DP_WB2_AMIN', minimumA);
+    h.put('raw.phase2', 1);
+    h.run('updateVehicles()');
+    const result = h.update(7000, hardLimit);
+    const canStart3p = minimumA === 6 && hardLimit === Infinity;
+    assert.equal(result.phases[2], canStart3p ? 3 : 1);
+    const diagnostic = JSON.parse(h.states.get('ems.0.Control.Wallbox2.PhaseDecision_JSON').val);
+    assert.equal(diagnostic.reason, canStart3p ? 'pre-start-budget-phase' : 'parallel-minimum-one-phase');
+    assert.ok(result.reserve.reduce((sum, watts) => sum + watts, 0) <= hardLimit);
+    assert.equal(h.states.get('raw.phase2').val, 1, 'the allocator never manufactures hardware confirmation');
+});
+
 test('optional EHZ yields a mandatory 3P start plus reserve before the car can start; its physical reservation remains binding', () => {
     const h = engine({production: true, dhwControlEnabled: true,
         wb2PhaseControlMode: 'ems', wb2PhaseModeId: 'raw.phase2'});

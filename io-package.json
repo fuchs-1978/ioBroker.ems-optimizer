@@ -1,10 +1,18 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.142",
+    "version": "0.17.0-alpha.143",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.143": {
+        "en": "Choose the funded vehicle phase mode before release also for manual or mandatory minimum charging; retain running qualification and all safety gates.",
+        "de": "Phasenwahl vor Ladefreigabe auch bei manueller oder Pflicht-Mindestladung aus dem belegten Fahrzeugbudget; laufende Qualifikation und Schutzpruefungen bleiben erhalten."
+      },
       "0.17.0-alpha.142": {
+        "en": "Prioritize recorder appends fairly, bound journal cleanup and share more durable group commits without changing SQL proofs or control limits.",
+        "de": "Recorder-Schreibvorrang fair begrenzen, Journalbereinigung in kleine Schritte teilen und Sammelschreiben wirksamer nutzen; SQL-Nachweise und Regelgrenzen bleiben erhalten."
+      },
+      "0.17.0-alpha.141": {
         "en": "Retain bounded SQL verification failures across successful reads and adapter restarts; distinguish journal, transport and late callback timings without extra SQL queries or relaxed recovery gates.",
         "de": "Begrenzten SQL-Prueffehlerverlauf ueber Erfolge und Adapterneustarts erhalten; Journal-, Transport- und spaete Antwortzeiten trennen, ohne Zusatzabfragen oder gelockerte Recoverygrenzen."
       },
@@ -23,14 +31,6 @@
       "0.17.0-alpha.137": {
         "en": "Allow a bounded one-amp response probe after ten seconds of sustained measured export; preserve ACK, electrical freshness, allocation and hard protection gates.",
         "de": "Begrenzten 1-A-Pruefschritt nach zehn Sekunden anhaltender gemessener Einspeisung erlauben; Bestaetigung, frische Messwerte, Zuteilung und Schutzgrenzen bleiben erforderlich."
-      },
-      "0.17.0-alpha.136": {
-        "en": "Reserve independent episode slots for export, deviations and gaps; keep category-specific drop counters and prioritize relevant cases under the 64 kB limit.",
-        "de": "Getrennte Speicherplaetze fuer Einspeisung, Abweichungen und Luecken; Verdraengungen je Kategorie ausweisen und wichtige Faelle unter der 64-kB-Grenze erhalten."
-      },
-      "0.17.0-alpha.135": {
-        "en": "Honor explicit manual wallbox minimum current without a valid forecast plan, retaining live source, release, SOC and protection gates.",
-        "de": "Expliziten manuellen Wallbox-Mindeststrom auch ohne gueltigen Fahrplan ausfuehren; aktuelle Quellen, Freigaben, Ziel-SoC und Schutzgrenzen bleiben massgeblich."
       }
     },
     "titleLang": {
