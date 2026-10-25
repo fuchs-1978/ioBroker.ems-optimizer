@@ -182,6 +182,7 @@ test('large raw contexts reach the byte bound with separate wait, append and con
     enqueue();
     await h.started;
     const localRead = h.journal.readBatch({limit: 2, maxBytes: 256 * 1024});
+    await Promise.resolve(); // The independent read lane submits its short selection turn.
     enqueue();
     h.advance(4500);
     for (let index = 0; index < 160; index++) {enqueue(); h.advance(10);}
@@ -260,4 +261,39 @@ test('large raw contexts reach the byte bound with separate wait, append and con
     assert.deepEqual(newSession.recording.localJournal.lossEpisodes, history,
         'a new session carries the old loss evidence without changing its session identity');
     await restarted.close();
+});
+
+test('a stalled publication read cannot fill the recorder byte queue while durable appends remain available',async t=>{
+    const h=await fixture(t,false);t.mock.method(Date,'now',h.now);
+    h.recorder.enqueueRecord(largeRawContext(h.now()));await h.recorder.recordAppendTail;
+    let entered,releaseRead;const started=new Promise(r=>{entered=r;}),gate=new Promise(r=>{releaseRead=r;});
+    const read=h.journal._readBoundedFile.bind(h.journal);
+    h.journal._readBoundedFile=async(...args)=>{entered();await gate;return read(...args);};
+    const reading=h.journal.readBatch({limit:1});await started;
+    const expected=[];
+    try {
+        for(let n=0;n<140;n++) {
+            h.advance(100);const original=largeRawContext(h.now());expected.push(original);
+            h.recorder.enqueueRecord(original);
+            let timer;
+            try {await Promise.race([h.recorder.recordAppendTail,new Promise((_,reject)=>{
+                timer=setTimeout(()=>reject(new Error('recorder drain blocked by immutable read')),2000);
+            })]);} finally {clearTimeout(timer);}
+            assert.equal(h.recorder.recordDropped,0);
+            assert.equal(h.recorder.durablePending.size,0);
+            assert.equal(h.recorder.durablePendingBytes,0);
+        }
+        assert.equal(h.journal.health().records,141);
+    } finally {releaseRead();await reading;await h.recorder.recordAppendTail;}
+    const stored=await h.journal.readBatch({limit:150,maxBytes:32*1024*1024});
+    const decoder=new DecisionRecordDecoder();const decoded=stored.map(e=>decoder.decode(JSON.parse(e.payload)));
+    assert.equal(decoded.length,141);assert.ok(decoded.every(e=>!e.reconstruction));
+    for(let n=0;n<expected.length;n++)assert.deepEqual(decoded[n+1].production,expected[n].production);
+    await h.recorder.finishRecording();
+    const final=await h.journal.readBatch({limit:150,maxBytes:32*1024*1024});
+    assert.deepEqual(final.slice(0,stored.length).map(e=>e.sha256),stored.map(e=>e.sha256));
+    await h.journal.close();
+    const recovered=new DecisionRecordJournal({directory:h.directory,now:h.now});await recovered.initialize();
+    try {assert.deepEqual((await recovered.readBatch({limit:150,maxBytes:32*1024*1024})).map(e=>e.sha256),final.map(e=>e.sha256));}
+    finally {await recovered.close();}
 });

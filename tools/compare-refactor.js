@@ -338,21 +338,23 @@ async function worker(tree) {
     }
     finish();
 
-    // alpha.142 deliberately changes the local drain/cleanup schedule and
+    // alpha.142 and alpha.147 deliberately change the local drain/read/cleanup schedule and
     // group size. Pin ONLY this explicit policy in both recorder fixtures;
     // comparing its old timing/health bytes would assert the removed behavior.
-    // The five recorder-drain regressions separately fail on unchanged141 and
-    // pass on142. Keep codec, source/event capture, capacity/loss accounting,
+    // Recorder-drain regressions fail on unchanged141; the stalled-read
+    // regressions separately fail on146 and pass on147. Keep codec, source/event capture, capacity/loss accounting,
     // real files, restart and ALL other scenarios/actuator traces comparable.
     // No fields, records, hashes or outputs are dropped from the comparison.
     const pinRecorderDrainPolicy = h => {
         const Journal = require(path.join(root, 'lib/decision-record-journal'));
         const Shadow = require(path.join(root, 'lib/shadow-controller'));
         for (const method of ['health', '_enqueue', 'setRecorderBacklog', '_scheduleRetirement',
-            '_nextConfirmedGroup', '_retireConfirmedGroups', '_retireGroup', 'expireOldGroups', 'prepareReplay'])
+            '_nextConfirmedGroup', '_retireConfirmedGroups', '_retireGroup', 'expireOldGroups', 'prepareReplay',
+            'readBatch', '_readBatch', 'close'])
             h.journal[method] = Journal.prototype[method];
         Object.assign(h.journal, {operationQueue: [], operationRunning: false,
-            appendTurns: 0, recorderBacklog: 0, retirementPending: false});
+            appendTurns: 0, recorderBacklog: 0, retirementPending: false,
+            readTail: Promise.resolve(), readPins: new Set(), activeRead: null});
         h.recorder.enqueueDurableBatch = Shadow.prototype.enqueueDurableBatch;
     };
 

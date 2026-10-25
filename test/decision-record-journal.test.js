@@ -728,7 +728,7 @@ test('group commit shares directory barriers, bounds file concurrency and surviv
     await restarted.close();
 });
 
-test('append batch timing separates a queued local read wait from the active durable append', async t => {
+test('append batch timing excludes an independent stalled immutable read', async t => {
     let now = 1000, enteredRead, releaseRead, enteredAppend, releaseAppend;
     const reading = new Promise(resolve => {enteredRead = resolve;});
     const readGate = new Promise(resolve => {releaseRead = resolve;});
@@ -749,22 +749,21 @@ test('append batch timing separates a queued local read wait from the active dur
     now += 200;
     const originals = [payload(2), payload(3)];
     const writing = journal.appendBatch(originals);
-    assert.equal(journal.health().activeOperation.kind, 'read-batch');
-    assert.equal(journal.health().queuedOperations, 1);
-    now += 300;
-    releaseRead();
     await appending;
+    assert.equal(journal.health().activeRead.records, 1);
+    now += 300;
     assert.equal(journal.health().activeOperation.kind, 'append-batch');
-    assert.equal(journal.health().activeOperation.waitMs, 300);
+    assert.equal(journal.health().activeOperation.waitMs, 0);
     assert.equal(journal.health().records, 1, 'the running append is not yet a durable original');
     now += 700;
     releaseAppend();
     await writing;
+    releaseRead();
     await localRead;
     assert.deepEqual(journal.health().lastAppendBatch, {records: 2,
         bytes: originals.reduce((sum, original) => sum + Buffer.byteLength(original), 0),
-        elapsedMs: 1000, parallelFiles: 4, queuedAt: 1200, startedAt: 1500,
-        completedAt: 2200, waitMs: 300, appendMs: 700});
+        elapsedMs: 1000, parallelFiles: 4, queuedAt: 1200, startedAt: 1200,
+        completedAt: 2200, waitMs: 0, appendMs: 1000});
     assert.deepEqual((await journal.readBatch()).map(entry => entry.payload), [payload(1), ...originals]);
     await journal.close();
 });
