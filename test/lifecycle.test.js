@@ -119,22 +119,23 @@ test('recording restores the failure checkpoint independently of SQL and cannot 
     }
 });
 
-test('independent SQL verification uses bounded raw history reads and observes completion only in callback', async () => {
+test('independent SQL verification uses bounded database-only reads and observes completion only in callback', async () => {
     const a = adapter(); a.config.historyInstance = 'sql.0';
+    a.getForeignObjectAsync = async id => id.startsWith('system.adapter.')
+        ? {native: {dbtype: 'mysql', dbname: 'iobroker'}} : {common: {}};
     let complete; const calls = [];
     a.sendTo = (instance, command, message, callback) => {calls.push({instance, command, message}); complete = callback;};
     let done = false;
     const reading = a.readDecisionRecordHistory({start: 1000, end: 3000, limit: 32}).then(value => {
         done = true; return value;
     });
-    await Promise.resolve();
+    await new Promise(resolve => setImmediate(resolve));
     assert.equal(done, false, 'issuing a query cannot prove backend completion');
     assert.equal(calls.length, 1);
-    assert.equal(calls[0].command, 'getHistory');
-    assert.equal(calls[0].message.id, 'ems.0.Debug.Shadow.DecisionRecord');
-    assert.equal(calls[0].message.options.aggregate, 'none');
-    assert.equal(calls[0].message.options.ignoreNull, false);
-    assert.equal(calls[0].message.options.count, 32);
+    assert.equal(calls[0].command, 'query');
+    assert.match(calls[0].message, /name = 'ems\.0\.Debug\.Shadow\.DecisionRecord' AND type = 1/);
+    assert.match(calls[0].message, /ts >= 1000 AND ts <= 3000 ORDER BY ts ASC LIMIT 32;/);
+    assert.doesNotMatch(calls[0].message, /UNION|COUNT|JOIN/);
     complete({result: [{ts: 2000, val: null, ack: false, q: 64}]});
     const response = await reading;
     assert.equal(response.backendCompletionObserved, true);
@@ -149,6 +150,43 @@ test('missing SQL configuration proves only a local non-invocation, never backen
     assert.equal(response.backendCompletionObserved, false);
     assert.equal(response.backendRequestIssued, false);
     assert.match(response.localNotIssuedEvidence, /configuration/i);
+});
+
+test('SQL cache-only originals cannot retire the real journal; later database originals can', async () => {
+    const Journal = require('../lib/decision-record-journal');
+    const Delivery = require('../lib/decision-record-delivery');
+    const directory = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'ems-db-only-'));
+    let clock = 100000;
+    const journal = new Journal({directory, now: () => clock});
+    const a = adapter(); a.config.historyInstance = 'sql.0';
+    a.getForeignObjectAsync = async key => key.startsWith('system.adapter.')
+        ? {native: {dbtype: 'mysql', dbname: 'iobroker'}} : {common: {}};
+    const cache = [], database = [], commands = [];
+    a.sendTo = (instance, command, sql, callback) => {
+        commands.push(command);
+        // Faithful getHistory distinction: it can answer from unsaved cache.
+        callback({result: command === 'getHistory' ? cache : database});
+    };
+    const delivery = new Delivery({journal, now: () => clock,
+        publish: async val => {cache.push({ts: clock, val}); return {publishedAt: clock};},
+        readHistory: options => a.readDecisionRecordHistory(options), minQueryGapMs: 1,
+        checkIntervalMs: 10, queryTimeoutMs: 1000});
+    try {
+        await journal.initialize();
+        await journal.append(JSON.stringify({schema: 2, recordSession: 'db-only', recordSequence: 1,
+            timestamp: 1, event: {type: 'source.update', sampleSequence: 1,
+                state: {val: null, ts: 1, lc: 1, ack: false, q: 64}}}));
+        await delivery.tick();
+        assert.equal(cache.length, 1);
+        assert.equal(delivery.sqlConfirmed, 0, 'a cached original is not a persisted SQL proof');
+        assert.equal((await journal.readBatch({limit: 4})).length, 1);
+        assert.deepEqual(commands, ['query']);
+        database.push(...cache); clock += 5000;
+        await delivery.tick();
+        assert.equal(delivery.sqlConfirmed, 1);
+        assert.equal((await journal.readBatch({limit: 4})).length, 0);
+        assert.deepEqual(commands, ['query', 'query']);
+    } finally {delivery.stop(); await journal.close(); fs.rmSync(directory, {recursive:true,force:true});}
 });
 
 test('diagnostic pump sources are read and subscribed by exact ID without namespace expansion', async () => {

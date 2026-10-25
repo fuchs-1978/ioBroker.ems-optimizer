@@ -1,0 +1,29 @@
+# 0.17.0-alpha.148 – Recorder-Nachweis direkt aus der Datenbank
+
+## Beleg und Ursachenabgrenzung
+
+Am 25.10.2026 unter laufender alpha.147: SQL-Verifikation ausgegeben um 17:02:51.286 MEZ, lokale 30-s-Frist um 17:03:21.274, eigentlicher Callback erst um 17:08:13.342. Gemessene Transportwartezeit 322.055,637 ms. Journal-Beginn 14,456 ms und Fence-Abschluss 10,578 ms sind getrennte lokale Phasen. Die bestehende alpha.144-Verarbeitung verarbeitete die spaete Antwort mit 17 exakten Originaltreffern. Das ist kein Nachweis von 322 Sekunden reiner Datenbanklaufzeit. Nachrichtenweg, SQL-Adapterwarteschlange, Datenbank und Rueckweg bleiben als Ursache ungetrennt; keine DB-Prozess-/Sperr-/Indexsicht vorhanden.
+
+Dabei wurde ein unabhaengiger Nachweisfehler im EMS-Code gefunden: `readDecisionRecordHistory` verwendete SQL-Adapter-`getHistory`. Die gepruefte offizielle [SQL-Adapterversion v4.2.1](https://github.com/ioBroker/ioBroker.sql/blob/eaa7fcfeb8c915fda64a6272253145a1f64361e7/src/main.ts) kann bei `aggregate:none` vollstaendig aus Cache/in-flight-Daten antworten oder diese mit Datenbankzeilen mischen. Ein exakter Originaltreffer daraus beweist daher keine Datenbankpersistenz. Die [MySQL-Historienabfrage](https://github.com/ioBroker/ioBroker.sql/blob/eaa7fcfeb8c915fda64a6272253145a1f64361e7/src/lib/mysql.ts) erzeugt zudem Vorgaenger-/Nachfolgerabfragen per UNION; `removeBorderValues` entfernt die Randwerte erst spaeter. Dass diese Arbeit die beobachtete lange Antwort verursacht hat, ist nicht belegt.
+
+## Korrektur
+
+Nur der produktive Recorder-Speichernachweis wechselt auf `sendTo(sql.N, 'query', SELECT, callback)`: eine begrenzte reine Datenbanklesung, exakter gespeicherter Datenpunktname (einschliesslich konfiguriertem SQL-Alias), Typ 1, `ts_string`, inklusive Zeitgrenzen, aufsteigende Sortierung und Limit hoechstens 32. Ein Fenster umfasst weiterhin hoechstens zehn Sekunden. Die Metadatenzuordnung ist Teil desselben SELECT; keine getrennte Metadaten-/COUNT-Abfrage, Historienaggregation, Randwert- oder Quellenjoin-Abfrage. Keine automatische Tabellenerzeugung oder sonstige SQL-Mutation.
+
+Die vier SQL-Adapterdialekte MySQL/MariaDB, PostgreSQL, SQLite und MSSQL erhalten passende Tabellenqualifizierung und LIMIT/TOP. Instanz, Namespace, SQL-/Aliasnamen und Zeit-/Mengengrenzen werden vor Dispatch streng validiert. Nicht unterstuetzte Konfiguration oder fehlende Metadaten fuehren zu einem ausdruecklich lokal nicht ausgegebenen Auftrag, niemals zum Cache-Fallback. Erlaubte Datenbanknamen: ASCII-Buchstaben/Ziffern/Unterstrich/Bindestrich (1–128 Zeichen); Datenpunkt-/Aliasnamen zusaetzlich Punkt/Doppelpunkt (bis 1024 Zeichen). Andere Namen bleiben ohne SQL-Speichernachweis statt unsicher interpoliert zu werden.
+
+ioBroker-Objektlesungen koennen asynchron warten. Nach deren Abschluss werden Abort, Unload und die ausgewaehlte SQL-Instanz erneut geprueft: kein nachtraeglicher Dispatch nach lokalem Abbruch. Nach tatsaechlichem Dispatch ist Abort weiterhin kein Backendabschluss; nur der echte Callback ermoeglicht den Abschluss der zugehoerigen dauerhaften Sperre. SQL-Fehler, leere Antworten und exakte Speichertreffer bleiben verschiedene Ergebnisse. Sitzung/Sequenz/Hash, vollstaendige Transportpaketvalidierung, Mengen-/Bytegrenzen, Rueckstau, spaete Originalverarbeitung und Shutdownregeln bleiben bestehen.
+
+## Grenzen
+
+Dies korrigiert den Datenbanknachweis und entfernt dafuer unnoetige Historienarbeit. Es ist **kein bewiesener Fix der 322-s-Transportverzoegerung** und kein pauschaler Last-/Geschwindigkeitsgewinn: statt eines moeglichen Cachetreffers muss nun tatsaechlich eine Datenbanklesung erfolgen. Anfragezahl, Parallelitaet, Timeout und Backoff werden nicht erhoeht. Abgelehnte SELECT-Rechte werden nicht automatisch erweitert. Der analytische getHistory-Weg fuer Lastprofile bleibt unveraendert.
+
+Aeltere getHistory-Bestaetigungen werden nicht rueckwirkend in Datenbanknachweise umgedeutet. Bereits so entfernte Journaloriginale koennen dadurch nicht wiederhergestellt werden. Alte kumulative Zaehler sind keine eindeutigen neuen Tages-/DB-Nachweise. Keine Migration, Installation, Neustarts, Retention-/Index-/Rechte-/SQL-Konfigurationsaenderung oder Regler-/Aktor-/Schutzregelveraenderung durch diesen Auftrag.
+
+## Softwaretests und spaetere reale Abnahme
+
+Eine Regression mit echtem Journal und der tatsaechlichen Adaptermethode stellt einen SQL-Adaptercache mit passendem Original einer leeren Datenbank gegenueber: kein Journalabbau, erst nach gleichem Datenbankoriginal exakte Bestaetigung. Diese Regression und der Adapter-Dispatchtest scheitern unter alpha.147. Zusaetzlich: vier Dialekte, unsichere Namen/unbegrenzte Fenster, SQL-Alias, fehlende Metadaten, Fehler-/Spaetcallback, Transportthrow ohne falsche Nichtausgabebestaetigung und Abbruch/Unload/Instanzwechsel waehrend Metadatenlesung. Ein lokaler SQLite-Test fuehrt den SELECT gegen echte Tabellen aus und prueft Typ, Namen, NULL, inklusive Raender und Limit; MySQL/PostgreSQL/MSSQL haben Dialektpruefungen, keine behauptete Live-DB-Abnahme. Bestehende Delivery-/Codec-/Spaetantwort-/Fence-/Shutdownregressionen bleiben erforderlich.
+
+Abschliessend lokal unter Node.js 24.22.1: 3089/3089 Tests bestanden (12 zusaetzliche Tests), Paketmetadaten mit sieben Versionsnachrichten, installierbarer Tarball mit 242 Dateien/720 erzeugten Zustaenden und beide historischen Verhaltensvergleiche bestanden. CI fuer Node.js 22/24/26 und Release werden getrennt im PR/Workflow belegt.
+
+Nach manueller Installation nur natuerliche neue Verifikationen beobachten: echte SELECT-Callbacks mit exakten Originaltreffern, Journalabbau getrennt von Ablauf/expiredUnconfirmed und lokalem Verlust, Fristen/Transportwartezeit und Sperren. Alte Fehler erhalten. Keine kuenstliche Last oder erneut geladenen historischen Problemfenster. Erst diese Nachweise koennen Datenbankzustellung und Laufzeitwirkung im Betrieb bestaetigen; Tests oder Release allein nicht.

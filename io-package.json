@@ -1,9 +1,13 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.147",
+    "version": "0.17.0-alpha.148",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.148": {
+        "en": "Verify recorder persistence with one bounded database-only SELECT instead of cache-capable getHistory; retain exact originals, query fences, deadlines and late callback processing.",
+        "de": "Recorder-Speicherung mit einer begrenzten direkten Datenbanklesung statt cachefaehigem getHistory pruefen; exakte Originale, Abfragesperren, Fristen und spaete Antwortverarbeitung erhalten."
+      },
       "0.17.0-alpha.147": {
         "en": "Separate bounded immutable journal reads from serialized mutations; pin original groups until readers finish so slow publication reads cannot block durable appends.",
         "de": "Begrenzte unveraenderliche Journal-Lesezugriffe von serialisierten Aenderungen trennen; Originalgruppen bis Leseabschluss halten, damit langsame Publikationslesungen dauerhafte Appends nicht blockieren."
@@ -27,10 +31,6 @@
       "0.17.0-alpha.142": {
         "en": "Prioritize recorder appends fairly, bound journal cleanup and share more durable group commits without changing SQL proofs or control limits.",
         "de": "Recorder-Schreibvorrang fair begrenzen, Journalbereinigung in kleine Schritte teilen und Sammelschreiben wirksamer nutzen; SQL-Nachweise und Regelgrenzen bleiben erhalten."
-      },
-      "0.17.0-alpha.141": {
-        "en": "Retain bounded SQL verification failures across successful reads and adapter restarts; distinguish journal, transport and late callback timings without extra SQL queries or relaxed recovery gates.",
-        "de": "Begrenzten SQL-Prueffehlerverlauf ueber Erfolge und Adapterneustarts erhalten; Journal-, Transport- und spaete Antwortzeiten trennen, ohne Zusatzabfragen oder gelockerte Recoverygrenzen."
       }
     },
     "titleLang": {
