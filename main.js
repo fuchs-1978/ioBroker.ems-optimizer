@@ -27,6 +27,7 @@ const batteryTemperatureReserve = require("./lib/battery-temperature-reserve");
 const sunEnergyHeads = require("./lib/sunenergy-heads");
 const DecisionRecordJournal = require("./lib/decision-record-journal");
 const DecisionRecordDelivery = require("./lib/decision-record-delivery");
+const {readDecisionRecordDatabase} = require("./lib/decision-record-sql");
 const SqlQueryFailures = require("./lib/sql-query-failures");
 const {SqlVerificationRecovery} = require("./lib/sql-verification-recovery");
 const SqlDiagnosticBackoff = require("./lib/sql-diagnostic-backoff");
@@ -316,21 +317,8 @@ class EmsOptimizer extends utils.Adapter {
         }
     }
 
-    readDecisionRecordHistory({start, end, limit}) {
-        const instance = String(this.config.historyInstance || '').trim();
-        if (!/^sql\.\d+$/.test(instance)) return Promise.resolve({error: 'No SQL instance configured',
-            backendCompletionObserved: false, backendRequestIssued: false,
-            localNotIssuedEvidence: 'Local configuration validation: no SQL transport was invoked'});
-        return new Promise((resolve, reject) => {
-            try {
-                // A callback from SQL itself is an observed query completion.
-                // A local deadline in delivery is not a backend cancellation.
-                this.sendTo(instance, 'getHistory', {id: `${this.namespace}.Debug.Shadow.DecisionRecord`,
-                    options: {start, end, count: limit, limit, aggregate: 'none', ignoreNull: false,
-                        removeBorderValues: true, returnNewestEntries: false}}, response =>
-                    resolve({...response, backendCompletionObserved: true}));
-            } catch (error) { reject(error); }
-        });
+    readDecisionRecordHistory(options) {
+        return readDecisionRecordDatabase(this, options);
     }
 
     async startMarketPrices() {
