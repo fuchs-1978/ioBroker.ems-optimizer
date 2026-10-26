@@ -37,7 +37,11 @@ test('real allocator and output complete stable 1P start through fluctuating PV 
     assert.deepEqual([...phases], [1], 'startup must not reselect 3P halfway through its countdown');
     const prepared = h.trace.filter(x => x.at > h.trace[0].at + 30000 && !x.physicalAllow);
     assert.ok(prepared.length > 100);
-    assert.ok(prepared.every(x => x.heaterTargetW <= Math.max(0, x.heaterW + x.wbW + x.miiW - x.gridW - 4600) + 100), 'heater sees only the quantized rest during preparation');
+    assert.ok(prepared.filter(x => x.heaterW > 1000).length > 100,
+        'confirmed topology lets EHZ use the countdown share instead of leaving both consumers off');
+    assert.ok(prepared.every(x => x.heaterTargetW + x.miiW <=
+        Math.max(0, x.heaterW + x.wbW + x.miiW - x.gridW) + 100),
+    'lending the start share cannot duplicate the real PV budget');
 });
 
 test('real 3P preparation retains budget through delayed phase ACK and returns from optional donor', async () => {

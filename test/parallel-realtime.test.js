@@ -1494,7 +1494,7 @@ for(const [name,change] of [
     assert.notEqual(t.phases[1],3);
 });
 
-test('waiting priority car passes unused PV to a running follower before the optional heater', () => {
+test('waiting priority car lends only its countdown share to EHZ and excess PV to a running follower', () => {
     const h = engine({production: true, dhwControlEnabled: true, wallboxPriority: 2});
     h.exclude(0);
     h.put('DP_DHW_PARALLEL_RELEASE', false);
@@ -1503,7 +1503,8 @@ test('waiting priority car passes unused PV to a running follower before the opt
     const target = h.update(4285);
     assert.equal(target.amps[2], 0, 'priority car still observes its own start delay');
     assert.ok(target.amps[1] > 6, 'running EQV receives usable surplus without manual priority');
-    assert.ok(target.dhw < 1000, 'heater receives only remaining unusable watts');
+    assert.ok(target.dhw >= 1380, 'heater may use the waiting car minimum during the countdown');
+    assert.ok(target.watts[1] + 1380 <= 4285, 'follower cannot take the protected start minimum');
     assert.ok(target.dhw + target.reserve.reduce((sum, value) => sum + value, 0) <= 4285);
 });
 
@@ -1700,6 +1701,63 @@ function blockedPriorityStart({phases = 3, budget = 4673, followerA = 6} = {}) {
     const diagnostic = wb => JSON.parse(h.states.get(`ems.0.Control.Wallbox${wb}.AllocationDiagnostics_JSON`).val);
     return {h, budget, diagnostic};
 }
+
+test('optional EHZ uses the five-minute Mii countdown budget, then yields without bypassing its physical reserve', () => {
+    let now = Date.now(); class Clock extends Date {static now() {return now;}}
+    const h = engine({production: true, clock: Clock, dhwControlEnabled: true});
+    h.exclude(1); h.exclude(2); h.put('DP_DHW_PARALLEL_RELEASE', false);
+    h.put('ems.0.Config.WallboxStartDelay_s', 300);
+    h.put('ems.0.Config.WallboxStartReserve_W', 150);
+    h.put('ems.0.Devices.MyPV_DHW.OutputReservedPower_W', 1400);
+    h.put('DP_DHW_OUTPUT1', 1400);
+    const diagnostic = () => JSON.parse(h.states.get('ems.0.Control.Wallbox0.AllocationDiagnostics_JSON').val);
+    for (let seconds = 0; seconds < 300; seconds += 5) {
+        for (const state of h.states.values()) state.ts = now;
+        const t = h.update(1600, 2000);
+        assert.equal(t.amps[0], 0, 'no car command during the countdown');
+        assert.equal(t.dhw, 1600, 'the heater can use the PV instead of exporting for five minutes');
+        assert.equal(diagnostic().start.reason, 'start-delay');
+        assert.equal(diagnostic().start.startDelayRemainingS, 300 - seconds);
+        h.put('ems.0.Devices.MyPV_DHW.OutputReservedPower_W', t.dhw);
+        h.put('DP_DHW_OUTPUT1', t.dhw);
+        now += 5000;
+    }
+    for (let tick = 0; tick < 4; tick++) {
+        for (const state of h.states.values()) state.ts = now;
+        const t = h.update(1600, 2000);
+        assert.equal(t.amps[0], 0, 'an expired timer cannot spend an unreleased heater reservation');
+        assert.ok(t.dhw <= 220, 'the completed countdown now withdraws the heater share');
+        assert.equal(diagnostic().start.reason, 'await-heater-reduction');
+        assert.equal(h.run('wallboxStartHistory[0].resetCount'), 0);
+        now += 5000;
+    }
+    h.put('ems.0.Devices.MyPV_DHW.OutputReservedPower_W', 0); h.put('DP_DHW_OUTPUT1', 0);
+    for (const state of h.states.values()) state.ts = now;
+    const t = h.update(1600, 2000);
+    assert.equal(t.amps[0], 6, 'confirmed reduction permits start without a second countdown');
+    assert.ok(t.dhw + t.watts[0] <= 1600);
+});
+
+for (const cause of ['PV deficit', 'hard ceiling', 'invalid grid', 'user release'])
+    test(`EHZ-funded countdown is revoked by ${cause}`, () => {
+        let now = Date.now(); class Clock extends Date {static now() {return now;}}
+        const h = engine({production: true, clock: Clock, dhwControlEnabled: true});
+        h.exclude(1); h.exclude(2); h.put('DP_DHW_PARALLEL_RELEASE', false);
+        h.put('ems.0.Config.WallboxStartDelay_s', 300);
+        h.put('ems.0.Config.WallboxStartReserve_W', 150);
+        h.put('ems.0.Devices.MyPV_DHW.OutputReservedPower_W', 1400);
+        h.put('DP_DHW_OUTPUT1', 1400);
+        h.update(1600, 2000);
+        assert.ok(h.run('wallboxStartCandidateSince[0]') > 0);
+        now += 5000;
+        for (const state of h.states.values()) state.ts = now;
+        if (cause === 'invalid grid') h.put('DP_GRID_IMPORT', 0, {q: 64});
+        if (cause === 'user release') h.put('DP_WB0_ALLOW', false);
+        const t = h.update(cause === 'PV deficit' ? 1000 : 1600,
+            cause === 'hard ceiling' ? 1200 : 2000);
+        assert.equal(t.amps[0], 0);
+        assert.equal(h.run('wallboxStartCandidateSince[0]'), 0);
+    });
 
 test('blocked preferred 3P start withdraws optional EQV and leaves the heater at zero', () => {
     const {h, budget, diagnostic} = blockedPriorityStart();
