@@ -1,3 +1,9 @@
+## 0.17.0-alpha.156
+
+- Let the optional EHZ use the preferred car’s protected share during its start countdown, while retaining that claim against other vehicles.
+- Keep physical heater reservations binding for charger commands; qualify against a prospective heater reduction without restarting the completed countdown.
+- Cover the Mii five-minute case, delayed heater response, PV fluctuations, hard limits, release withdrawal and manual minimum charging in regression tests.
+
 ## 0.17.0-alpha.155
 
 - Retain valid aged vehicle SoC for control; show age and unknown data explicitly rather than a false zero.
