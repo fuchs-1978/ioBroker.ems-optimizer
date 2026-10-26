@@ -1681,3 +1681,78 @@ test('priority start retains its minimum while lending only excess to EQV over r
     }
     assert.equal(started, true, 'five-minute start qualification completes instead of resetting indefinitely');
 });
+
+function blockedPriorityStart({phases = 3, budget = 4673, followerA = 6} = {}) {
+    const h = engine({production: true, dhwControlEnabled: true,
+        wallboxPriority: 2, wb2PhaseControlMode: 'ems', wb2PhaseModeId: 'raw.phase2'});
+    h.exclude(0); h.put('DP_DHW_PARALLEL_RELEASE', false);
+    h.put('ems.0.Config.WallboxStartDelay_s', 300);
+    h.put('ems.0.Config.WallboxStartReserve_W', 150);
+    h.put('ems.0.Vehicles.Wallbox2.PhaseSwitchEnabled', true);
+    h.put('ems.0.Vehicles.Wallbox2.MaximumPhases', 3);
+    h.put('ems.0.Vehicles.Wallbox2.MaxCurrent1P_A', 20);
+    h.put('DP_WB2_PHASE_MODE', phases === 3 ? 2 : 1);
+    h.put('raw.phase2', phases === 3 ? 2 : 1);
+    h.put('ems.0.Control.Targets.Wallbox2_Phases', phases);
+    h.plans[2] = {valueW: budget, phases};
+    h.owned(1, followerA, followerA * 230 - 100);
+    h.run("wallboxParallelPriorityRequest = {index:2, pending:false, validObserved:true, until:Date.now()+300000}; updateVehicles();");
+    const diagnostic = wb => JSON.parse(h.states.get(`ems.0.Control.Wallbox${wb}.AllocationDiagnostics_JSON`).val);
+    return {h, budget, diagnostic};
+}
+
+test('blocked preferred 3P start withdraws optional EQV and leaves the heater at zero', () => {
+    const {h, budget, diagnostic} = blockedPriorityStart();
+    h.put('ems.0.Devices.MyPV_DHW.OutputReservedPower_W', 3400);
+    h.put('DP_DHW_OUTPUT1', 3400);
+    const t = h.update(budget, 20000);
+    assert.equal(diagnostic(2).reclaimPriorityStart, true, JSON.stringify(diagnostic(2)));
+    assert.equal(diagnostic(2).qualificationClaimW, budget);
+    assert.equal(t.dhw, 0, 'optional heater must yield before preferred start');
+    assert.equal(t.amps[2], 0, 'reclaim is no start authorization');
+    assert.equal(t.amps[1], 0);
+    const a = JSON.parse(h.states.get('ems.0.Control.ParallelWallboxAllocation_JSON').val);
+    assert.equal(a.allocations.find(x => x.wb === 1).authorized, false,
+        'optional donor cannot retain a stop-delay floor against the preferred claim');
+    assert.ok(a.allocations.find(x => x.wb === 1).reservedW >= 1380,
+        'donor physical reservation remains until independent stop evidence');
+    assert.equal(a.priorityHandoff, null, 'never recycle expired handoff evidence');
+    h.put('ems.0.Devices.MyPV_DHW.OutputReservedPower_W', 0);
+    h.put('DP_DHW_OUTPUT1', 0);
+    h.update(budget, 20000);
+    assert.equal(diagnostic(2).start.reason, 'safety-cap-below-minimum',
+        'heater yield alone cannot remove the donor reservation');
+    h.put('ems.0.Devices.Wallbox1.OutputActive', false);
+    h.put('ems.0.Devices.Wallbox1.OutputOwned', false);
+    h.put('ems.0.Devices.Wallbox1.OutputReservedPower_W', 0);
+    h.put('ems.0.Devices.Wallbox1.OutputCommand_A', 0);
+    h.put('raw.allow1', 0); h.put('raw.amps1', 0); h.put('DP_WB1_POWER', 0);
+    for (const phase of [1, 2, 3]) h.put(`DP_WB1_L${phase}_A`, 0);
+    const after = h.update(budget, 20000);
+    assert.equal(diagnostic(2).start.reason, 'start-delay');
+    assert.equal(diagnostic(2).start.startDelayRemainingS, 300);
+    assert.equal(after.amps[2], 0, 'fresh ordinary start countdown remains mandatory');
+});
+
+test('blocked preferred 1P start reclaims the EQV share before arming', () => {
+    const {h, budget, diagnostic} = blockedPriorityStart({phases: 1, budget: 3352, followerA: 9});
+    const t = h.update(budget, 20000);
+    assert.equal(diagnostic(2).reclaimPriorityStart, true, JSON.stringify(diagnostic(2)));
+    assert.equal(t.dhw, 0);
+    assert.equal(t.amps[2], 0);
+});
+
+for (const [name, change] of [
+    ['mandatory EQV floor', h => {h.put('DP_WB1_MIN_SOC', 60); h.put('DP_WB1_SOC', 50); h.run('updateVehicles()');}],
+    ['insufficient whole budget', h => {}],
+    ['invalid sources', h => h.put('DP_GRID_IMPORT', 0, {ack: false})]
+]) test('priority reclaim preserves '+name, () => {
+    const {h, diagnostic} = blockedPriorityStart(); change(h);
+    const t = h.update(name === 'insufficient whole budget' ? 1200 : 4673, 20000);
+    const a = JSON.parse(h.states.get('ems.0.Control.ParallelWallboxAllocation_JSON').val);
+    if (name === 'mandatory EQV floor') {
+        assert.equal(a.allocations.find(x => x.wb === 1).authorized, true);
+        assert.ok(t.amps[1] >= 6);
+    } else assert.notEqual(diagnostic(2).reclaimPriorityStart, true);
+    assert.equal(t.amps[2], 0);
+});

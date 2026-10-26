@@ -1,3 +1,8 @@
+## 0.17.0-alpha.153
+
+- Reclaim a preferred idle vehicle's budget when optional peer/heater reservations prevent arming its start countdown. Withdraw an optional follower with no usable remainder instead of waiting on its stop-delay floor.
+- Keep physical reserves, mandatory charging floors, normal start delay and alpha.151 output response logic unchanged.
+
 ## 0.17.0-alpha.152
 
 - Preserve a qualifying parallel start's minimum budget before redistributing surplus to followers and the optional heater.
