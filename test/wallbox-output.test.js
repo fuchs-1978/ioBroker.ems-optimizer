@@ -3888,3 +3888,80 @@ test('limited electrical response keeps its original deadline during communicati
     assert.equal(h.output.devices[0].response.ackAt,ackAt);
     assert.deepEqual(h.writes,[]);
 });
+
+for(const estimated of [false,true]) test(`physical output applies retained 84% with estimation=${estimated}`,async()=>{
+    let now=1800000000000;const h=setup({now:()=>now});
+    Object.assign(h.config,{wb0SocEstimationEnabled:estimated,wb0CapacityKWh:32.3,wb0SocEfficiencyPct:90});
+    h.put('soc',84,{ts:now-3*3600000});
+    await h.output.initialize();await h.output.tick();
+    assert.equal(h.output.vehicleSoc(0,h.mapping),84);
+    assert.ok(!h.writes.some(w=>w.id==='allow'&&w.val===1));
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val,/Ziel-SoC erreicht/);
+    h.put('ems.0.Vehicles.Wallbox0.TargetSoC_pct',90);
+    await h.output.tick();h.ack('allow',0);
+    await h.output.tick();h.ack('feedback',6);
+    await h.output.tick();h.ack('allow',1);
+    await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val,true);
+});
+
+async function noDrawHarness() {
+    let now=1800000000000;const h=setup({now:()=>now});
+    h.step=async(ms=2000)=>{now+=ms;h.refresh();await h.output.tick();};
+    h.now=()=>now;
+    await h.start();
+    await h.step();
+    return h;
+}
+
+test('15-minute no-draw stop retains watts until physical OFF/quiet, persists pause, retries without stealing a peer',async()=>{
+    const h=await noDrawHarness();
+    for(let i=0;i<449;i++)await h.step();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.NoDrawPaused').val,false);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.NoDrawElapsed_s').val,898);
+    await h.step();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.NoDrawPaused').val,true);
+    assert.deepEqual(h.writes.at(-1),{id:'allow',val:0});
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputOwned').val,true);
+    assert.ok(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val>=1380);
+    h.ack('allow',0);h.put('power',.3);await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputOwned').val,true,'OFF alone does not release residual power');
+    h.electricalOff();await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputOwned').val,false);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val,0);
+    const saved=h.states.get('ems.0.Devices.Wallbox0.NoDrawPause_JSON').val;
+    const restarted=new WallboxOutput(h.adapter,{now:h.now});await restarted.initialize();await restarted.tick();
+    assert.equal(restarted.devices[0].noDrawPause.at,JSON.parse(saved).at);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.NoDrawPaused').val,true);
+    h.put('ems.0.Devices.Wallbox1.OutputActive',true);
+    await h.step(900000);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.NoDrawPaused').val,true,'working peer is not preempted at retry time');
+    h.put('ems.0.Devices.Wallbox1.OutputActive',false);await h.step();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.NoDrawPaused').val,false);
+});
+
+for(const change of ['draw','phase','bad-quality','scheduler-gap']) test(`no-draw qualification restarts after ${change}`,async()=>{
+    const h=await noDrawHarness();
+    for(let i=0;i<440;i++)await h.step();
+    if(change==='draw'){h.ack('power',.5);h.ack('i1',2);await h.output.tick();h.electricalOff();}
+    if(change==='phase'){h.output.devices[0].phaseRequest={since:h.now(),phases:3};await h.output.tick();h.output.devices[0].phaseRequest=null;}
+    if(change==='bad-quality'){h.put('power',0,{q:64});await h.output.tick();}
+    if(change==='scheduler-gap')await h.step(31000);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.NoDrawPaused').val,false);
+    assert.ok(h.states.get('ems.0.Devices.Wallbox0.NoDrawElapsed_s').val<880);
+});
+
+for(const mode of ['throw','reject','pending']) test(`no-draw diagnostic ${mode} cannot delay physical OFF`,async()=>{
+    const h=await noDrawHarness();for(let i=0;i<449;i++)await h.step();
+    const publish=h.adapter.setCompatState;let finish;
+    h.adapter.setCompatState=(id,val,ack)=>{
+        if(!id.endsWith('.NoDrawPause_JSON'))return publish(id,val,ack);
+        if(mode==='throw')throw new Error('diagnostic unavailable');
+        if(mode==='reject')return Promise.reject(new Error('diagnostic unavailable'));
+        return new Promise(resolve=>{finish=resolve;});
+    };
+    await h.step();
+    assert.deepEqual(h.writes.at(-1),{id:'allow',val:0});
+    assert.ok(h.output.devices[0].stopRequest);
+    finish?.();
+});

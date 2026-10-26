@@ -10,6 +10,7 @@ const vm = require('node:vm');
 const Module = require('node:module');
 const {createHash} = require('node:crypto');
 const {execFileSync} = require('node:child_process');
+const {historicalStateView} = require('./historical-state-view');
 const BASE = '9585b276c75c3ed79634204ba8318166e577dc44';
 const root = path.resolve(__dirname, '..');
 
@@ -44,6 +45,12 @@ async function worker(tree) {
         if (!versionSources.has(String(filename)) && String(filename) !== admissionSource
             && String(filename) !== recorderSource && String(filename) !== heaterOutputSource) return data;
         let pinned = String(data).replaceAll(adapterVersion, '0.17.0-alpha.96');
+        // alpha.155 represents an unknown initial vehicle SoC as null. Align
+        // only the object default; observed reports and all control writes
+        // still come from the respective production tree.
+        if (String(filename).endsWith('/core.js')) pinned = pinned.replace(
+            'stateDef(`${r}.Vehicles.Wallbox${wb}.SoC_pct`, 0,',
+            'stateDef(`${r}.Vehicles.Wallbox${wb}.SoC_pct`, null,');
         // alpha.138 adds one passive state definition. Supply that same
         // unknown diagnostic slot to the historical fixture, rather than
         // dropping state writes/checkpoints or relaxing command comparison.
@@ -87,6 +94,8 @@ async function worker(tree) {
     // absent/explicit undefined). Apart from pinned version metadata above,
     // strings, including published JSON and transport bytes, stay exact.
     const record = value => {
+        value = historicalStateView(value);
+        if (value === undefined) return;
         const serialized = JSON.stringify(value, (_key, item) => {
             if (item === undefined) return {$auditType: 'undefined'};
             if (typeof item === 'number' && (!Number.isFinite(item) || Object.is(item, -0)))
@@ -101,7 +110,7 @@ async function worker(tree) {
         results.push({scenario, events: eventCount, sha256: hash.digest('hex')});
     };
     // One shared fixture, evaluated with each tree's own production loader and
-    // controllers. Record every state write, including intermediate transitions.
+    // controllers. Record every pre-existing state write, including intermediate transitions.
     let plantSource = fs.readFileSync(path.join(root, 'test/control-plant.js'), 'utf8');
     assert.equal(plantSource.split('states.set(id, state);').length, 2);
     plantSource = 'const auditEvent = module.auditEvent;\n' + plantSource.replace(

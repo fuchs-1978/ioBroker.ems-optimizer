@@ -62,7 +62,9 @@ test('counter spikes cannot become SoC, stale anchors expire and values stay bou
     const h=harness();h.run();assert.equal(h.run({now:T+1000,counter:state(15,T+1000)}).reason,'energy-jump');
     const full=harness({reported:state(99.9)});full.run();
     assert.equal(full.run({now:T+60000,counter:state(10.5,T+60000)}).value,100);
-    assert.equal(full.run({now:T+7201000,counter:state(11,T+7201000)}).valid,false);
+    const retained=full.run({now:T+7201000,counter:state(11,T+7201000)});
+    assert.equal(retained.valid,true);assert.equal(retained.value,100);
+    assert.equal(retained.stale,true, 'expired interpolation retains known progress, not fabricated new kWh');
 });
 
 
@@ -144,4 +146,23 @@ test('a lower disagreeing report ahead of its counter poll takes effect immediat
     h.run({now:T+600000,counter:state(10.2,T+600000)});
     const r=h.run({now:T+605000,reported:state(38,T+605000)});
     assert.equal(r.value,38);assert.equal(r.estimated,false);
+});
+
+test('old authenticated cloud report remains usable through restart while its age stays explicit',()=>{
+    const h=harness({now:T+10800000,reported:state(84),car:state(1,T+10800000)});
+    const r=h.run();assert.equal(r.value,84);assert.equal(r.valid,true);
+    assert.equal(r.stale,true);assert.equal(r.ageS,10800);assert.equal(r.estimated,false);
+    assert.equal(estimateSoc(h.input()).value,84);
+    const fresh=h.run({reported:state(63,T+10800000)});
+    assert.equal(fresh.value,63);assert.equal(fresh.stale,false);
+});
+
+test('retained estimate cannot migrate to another source or override a newly reported lower SoC',()=>{
+    const h=harness({reported:state(70)});h.run();h.run({now:T+60000,counter:state(10.5,T+60000)});
+    const old=h.run({now:T+7201000,counter:state(11,T+7201000)});
+    assert.equal(old.value,70.9);assert.equal(old.valid,true);
+    const changed=estimateSoc({...h.input(),signature:'another-car'});
+    assert.equal(changed.value,70);assert.equal(changed.estimated,false);
+    const newReport=h.run({reported:state(60,T+7201000)});
+    assert.equal(newReport.value,60);
 });

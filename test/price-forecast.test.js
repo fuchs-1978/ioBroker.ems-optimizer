@@ -26,7 +26,7 @@ function engine(config = {}, clock = '2026-10-01T14:00:00Z') {
         static now() { return now; }
     }
     const put = (id, val, extra = {}) => states.set(id, {val, ts: now, ack: true, q: 0, ...extra});
-    const context = vm.createContext({nativeConfig: config, Date: Clock,
+    const context = vm.createContext({vehicleSocEstimator: require('../lib/vehicle-soc-estimator'), nativeConfig: config, Date: Clock,
         getState: id => states.get(id), existsState: id => states.has(id),
         createState: (id, val) => { if (!states.has(id)) put(id, val); }, setState: put, log() {}});
     for (const file of ['core', 'prices', 'forecast', 'history', 'vehicles', 'planner', 'heatpump-controller']) {

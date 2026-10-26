@@ -122,12 +122,14 @@ test('null SoC is not a valid 0 percent reading',()=>{
 test('invalid SoC quality, command echoes and timestamps never become mandatory zero-percent readings',()=>{
     const now=Date.now();
     const invalid=[{val:false},{val:' '},{val:0,ack:false},{val:0,q:64},
-        {val:0,ts:now+60000},{val:0,ts:0},{val:0,ts:now-7200001}];
+        {val:0,ts:now+60000},{val:0,ts:0}];
     for(const overrides of invalid) {
         const h=engine();h.states.set('DP_WB0_SOC',{val:0,ack:true,ts:now,...overrides});
         h.run('updateVehicles()');
         assert.equal(h.run('vehicleState(0).socValid'),false,JSON.stringify(overrides));
         assert.equal(h.run('vehicleState(0).release'),false,JSON.stringify(overrides));
+        assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.SoC_pct').val,null,
+            'unusable source is unknown, never a manufactured 0 percent');
     }
 });
 test('taper follows simulated SoC in later slots and affects quantization',()=>{
@@ -525,7 +527,7 @@ for (const wb of [0,1,2]) for (const legacy of [0,2,'missing']) {
     });
 }
 
-for (const reason of ['target','allow','unplugged','invalid','stale','unacknowledged']) {
+for (const reason of ['target','allow','unplugged','invalid','future','unacknowledged']) {
     test(`legacy release cannot bypass ${reason} for manual minimum`,()=>{
         const h=engine();h.put('DP_WB0_SOC',51);h.put('DP_WB0_TARGET',90);
         h.put('DP_WB0_AMIN',6);h.put('DP_WB0_RELEASE',2);
@@ -533,7 +535,7 @@ for (const reason of ['target','allow','unplugged','invalid','stale','unacknowle
         if(reason==='allow')h.put('DP_WB0_ALLOW',false);
         if(reason==='unplugged')h.put('DP_WB0_CAR',1);
         if(reason==='invalid')h.put('DP_WB0_SOC',null);
-        if(reason==='stale')h.states.get('DP_WB0_SOC').ts=Date.now()-7200001;
+        if(reason==='future')h.states.get('DP_WB0_SOC').ts=Date.now()+60000;
         if(reason==='unacknowledged')h.states.get('DP_WB0_SOC').ack=false;
         h.run('updateVehicles()');
         assert.equal(h.run('vehicleState(0).release'),false);
@@ -1477,4 +1479,38 @@ for (const wb of [0,1,2]) test(`manual minimum uses internal energy-estimated So
     assert.equal(h.run(`vehicleState(${wb}).mustCharge`),false);
     assert.equal(h.states.get(`DP_WB${wb}_SOC`).val,51,'reported source stays unchanged');
     assert.equal(h.states.get(`DP_WB${wb}_RELEASE`).val,0,'legacy script output stays untouched');
+});
+
+for (const estimated of [false,true]) test(`Mii keeps a 3-hour-old 84% for target and minimum decisions; estimation=${estimated}`,()=>{
+    let now=1800000000000;
+    class Clock extends Date {static now(){return now;}}
+    const h=engine({wb0SocEstimationEnabled:estimated,wb0CapacityKWh:32.3,wb0SocEfficiencyPct:90},Clock);
+    const reportAt=now-3*3600000;
+    h.states.set('DP_WB0_SOC',{val:84,ts:reportAt,ack:true,q:0});
+    h.put('DP_WB0_CAR',1);h.run('updateVehicles()');
+    assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.SoC_pct').val,84);
+    assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.SoCValid').val,true);
+    assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.SoCStale').val,true);
+    assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.SoCAge_s').val,10800);
+    assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.SoCReportedAt').val,reportAt);
+    h.put('DP_WB0_CAR',3);h.put('DP_WB0_AMIN',6);h.run('updateVehicles()');
+    assert.equal(h.run('vehicleState(0).release'),false,'84% already meets the 80% target, even with manual minimum');
+    h.put('DP_WB0_TARGET',90);h.run('updateVehicles()');
+    assert.equal(h.run('vehicleState(0).release'),true);
+    assert.equal(h.run('vehicleState(0).mustCharge'),true);
+    h.put('DP_WB0_SOC',60);h.run('updateVehicles()');
+    assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.SoC_pct').val,60,'new lower report replaces old value');
+    assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.SoCStale').val,false);
+});
+
+test('no-draw pause excludes a manually required preferred vehicle from current allocation inputs',()=>{
+    const h=engine();h.put('DP_WB0_AMIN',6);h.run('updateVehicles()');
+    assert.equal(h.run('vehicleState(0).release'),true);
+    h.put('ems.0.Devices.Wallbox0.NoDrawPaused',true);
+    assert.equal(h.run('vehicleState(0).release'),false,'fast gate rejects the retained release before next vehicle refresh');
+    h.run('updateVehicles()');
+    assert.equal(h.run('vehicleState(0).mustCharge'),false);
+    assert.equal(h.run('vehicleState(1).release'),true);
+    h.put('ems.0.Devices.Wallbox0.NoDrawPaused',false);h.run('updateVehicles()');
+    assert.equal(h.run('vehicleState(0).release'),true);
 });

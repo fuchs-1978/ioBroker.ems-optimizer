@@ -15,7 +15,7 @@ function engine(config = {}, clock = null) {
         static now() { return now; }
     }
     const put = (id, val) => states.set(id, {val, ts: now, ack: true});
-    const context = vm.createContext({nativeConfig: config, Date: Clock,
+    const context = vm.createContext({vehicleSocEstimator: require('../lib/vehicle-soc-estimator'), nativeConfig: config, Date: Clock,
         getState: id => states.get(id), existsState: id => states.has(id),
         createState: (id, val) => { if (!states.has(id)) put(id, val); },
         setState: put, log: () => {}});

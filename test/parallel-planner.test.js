@@ -14,7 +14,7 @@ function fixture(config = {}, minute = 0) {
         constructor(...args) { super(...(args.length ? args : [now])); }
         static now() { return now; }
     }
-    const context = vm.createContext({nativeConfig: {wallboxParallelChargingEnabled: true,
+    const context = vm.createContext({vehicleSocEstimator: require('../lib/vehicle-soc-estimator'), nativeConfig: {wallboxParallelChargingEnabled: true,
         wb0PhaseControlMode: 'ems', wb1PhaseControlMode: 'ems', wb2PhaseControlMode: 'ems', ...config},
     Date: Clock, getState: id => states.get(id), existsState: id => states.has(id),
     createState: (id, val) => { if (!states.has(id)) put(id, val); }, setState: put, log() {}});

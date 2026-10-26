@@ -11,6 +11,7 @@ const vm = require('node:vm');
 const Module = require('node:module');
 const {createHash} = require('node:crypto');
 const {execFileSync} = require('node:child_process');
+const {historicalStateView} = require('./historical-state-view');
 const BASE = '25fd38b4e5a3568a6d1aeefda5277c94397c7e91';
 const root = path.resolve(__dirname, '..');
 
@@ -27,6 +28,7 @@ function fixture(tree) {
 }
 
 function summary(name, trace, contract) {
+    trace = historicalStateView(trace);
     return {scenario: name, events: trace.length,
         sha256: createHash('sha256').update(JSON.stringify(trace)).digest('hex'), contract};
 }
@@ -107,7 +109,7 @@ async function worker(tree, fixed) {
             assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
         }
         const name = `current-ack-${mode}`;
-        if (!changed) unchanged.push({scenario: name, trace: a.trace});
+        if (!changed) unchanged.push({scenario: name, trace: historicalStateView(a.trace)});
         results.push(summary(name, a.trace, {changed, writes: final.writes,
             fault: d.fault, pending: d.pending, lastA: d.lastA}));
     }

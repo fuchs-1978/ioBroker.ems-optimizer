@@ -19,7 +19,7 @@ function fixture(config = {}) {
             constructor(...args) { super(...(args.length ? args : [now])); }
             static now() { return now; }
         }
-        context = vm.createContext({nativeConfig, Date: Clock,
+        context = vm.createContext({vehicleSocEstimator: require('../lib/vehicle-soc-estimator'), nativeConfig, Date: Clock,
             getState: id => states.get(id), existsState: id => states.has(id),
             setState: put, createState: (id, value) => { if (!states.has(id)) put(id, value); }, log() {}});
         for (const file of ['core', 'vehicles', 'config-mapping']) {
