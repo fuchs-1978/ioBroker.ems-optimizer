@@ -248,3 +248,36 @@ test('pre-start topology proof rejects release echoes, residual draw and an unfi
         h.states.set(id, previous);
     }
 });
+
+test('continuous cold start locks 1P through changing PV and only qualifies 3P after starting', () => {
+    const h = phaseEngine({phaseSwitchRealUpDelayS: 300}, 1);
+    assert.equal(h.run(0, 3200, {preStartReady: true, starting: true}), 1);
+    for (let second = 5; second <= 305; second += 5)
+        assert.equal(h.run(second, second % 10 ? 5200 : 3900,
+            {preStartReady: true, starting: true}), 1);
+    assert.equal(h.run(310, 5500, {starting: false}), 1);
+    assert.equal(h.continuous(315, 605, 5500), 1);
+    assert.equal(h.run(610, 5500), 3);
+});
+
+test('cold 3P preparation downgrades once on genuine loss of funding and never bounces back before ON', () => {
+    const h = phaseEngine({}, 1);
+    assert.equal(h.run(0, 6500, {preStartReady: true, starting: true}), 3);
+    h.vehicle.confirmedPhases = 3;
+    assert.equal(h.run(5, 3800, {preStartReady: true, starting: true}), 1);
+    h.vehicle.confirmedPhases = 1;
+    for (let second = 10; second <= 310; second += 5)
+        assert.equal(h.run(second, 6500, {preStartReady: true, starting: true}), 1);
+});
+
+test('cold destination survives its command echo but loses continuity after invalid budget', () => {
+    const h = phaseEngine({}, 1);
+    h.run(0, 6500, {preStartReady: true, starting: true});
+    h.vehicle.phaseFeedbackValid = false;
+    assert.equal(h.run(5, 6500, {starting: true, pending: true, valid: false}), 3);
+    h.vehicle.phaseFeedbackValid = true; h.vehicle.confirmedPhases = 3;
+    assert.equal(h.run(10, 6500, {starting: true, preStartReady: true}), 3);
+    h.run(15, 6500, {starting: true, valid: false});
+    assert.equal(h.ctx.wallboxStartPreparation, undefined);
+    assert.equal(vm.runInContext('wallboxStartPreparation[1]', h.ctx), null);
+});

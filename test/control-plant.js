@@ -15,11 +15,13 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
     initialSurplusW = 6000, batteryPlanW = 0, lpcLimitW = null, phaseBiasW = [0, 0, 0],
     batteryDelayMs = 2000, heatingDelayMs = 4000, dhwDelayMs = 4000,
     batteryDcFactor = 1, batteryDcPvW = 0, wb2InitialPhaseMode = null,
-    nativeConfig: configOverrides = {}, sourceQuality,
+    nativeConfig: configOverrides = {}, sourceQuality, phaseResponseDelayMs = null,
     initialTime = Date.UTC(2026, 8, 21, 12)} = {}) {
     let now = initialTime, surplusW = 6000, idleWallboxNoiseKW = 0;
     let heaterW = 0, heaterCommandW = 0, physicalAllow = 0, physicalA = 6;
     let wallboxWriteDelayMs = 0;
+    let physicalPhases = phaseResponseDelayMs !== null && wb2InitialPhaseMode === 2 ? 3 : 1;
+    let phaseDestination = physicalPhases, phaseSequence = 0;
     let physicalPowerAllow = 0, miiAllow = 0, miiPowerAllow = 0, miiA = 6;
     const wallboxStopAck = [true, true, true];
     const wallboxCurrentQuality = [0, 0, 0];
@@ -272,7 +274,7 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         await recorder.initialize();
     }
     const refresh = () => {
-        const wbW = physicalPowerAllow ? physicalA * 230 : 0;
+        const wbW = physicalPowerAllow ? physicalA * 230 * physicalPhases : 0;
         const miiW = miiPowerAllow ? miiA * 230 : 0;
         const gridW = heaterW + heatingW + batteryW + wbW + miiW - surplusW;
         for (const [id, state] of states) if (state.ack && !id.startsWith('ems.0.')) put(id, state.val);
@@ -288,7 +290,8 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
             const currentQuality = wallboxCurrentQuality[wb] ? {q: wallboxCurrentQuality[wb]} : {};
             put(`DP_WB${wb}_L1_A`, wb === 2 && physicalPowerAllow ? physicalA : wb === 0 && miiPowerAllow ? miiA : 0,
                 currentQuality);
-            put(`DP_WB${wb}_L2_A`, 0, currentQuality); put(`DP_WB${wb}_L3_A`, 0, currentQuality);
+            put(`DP_WB${wb}_L2_A`, wb === 2 && physicalPowerAllow && physicalPhases === 3 ? physicalA : 0, currentQuality);
+            put(`DP_WB${wb}_L3_A`, wb === 2 && physicalPowerAllow && physicalPhases === 3 ? physicalA : 0, currentQuality);
         }
         const stagedPhases = (watts, stage) => watts <= stage ? [watts, 0, 0]
             : watts <= stage * 2 ? [watts - stage, stage, 0] : [watts - stage * 2, stage, stage];
@@ -297,7 +300,9 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
             put(`DP_DHW_OUTPUT${phase + 1}`, wwPhases[phase]);
             put(`hk.power${phase + 1}`, hkPhases[phase]);
             const phasePowerW = -surplusW / 3 + phaseBiasW[phase]
-                + wwPhases[phase] + hkPhases[phase] + (phase === 0 ? wbW + miiW + batteryW : 0);
+                + wwPhases[phase] + hkPhases[phase]
+                + (physicalPhases === 3 ? wbW / 3 : phase === 0 ? wbW : 0)
+                + (phase === 0 ? miiW + batteryW : 0);
             put(`DP_DHW_HA_L${phase + 1}_CURRENT_A`, Math.max(0, phasePowerW / 230));
         }
         for (const key of ['System.LastUpdate', 'Plan.LastUpdate']) own(key, now);
@@ -323,16 +328,30 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
             vm.runInContext('updateVehicles();updateDhwSimulation()', ctx);
         }
         vm.runInContext('realtimeControl();updateBatteryProductionOutput()', ctx);
+        if (phaseResponseDelayMs !== null) {
+            const target = value('Control.Targets.Wallbox2_Phases');
+            if ([1, 3].includes(target) && target !== phaseDestination) {
+                phaseDestination = target;
+                const sequence = ++phaseSequence;
+                put('goe.phase', target === 3 ? 2 : 1, {ack: false});
+                events.push({at: now + phaseResponseDelayMs, run: () => {
+                    if (sequence !== phaseSequence) return;
+                    physicalPhases = target;
+                    put('goe.phase', target === 3 ? 2 : 1);
+                }});
+            }
+        }
         if (now % 2000 === 0) await output.tick();
         if (now % 5000 === 0) {
             vm.runInContext('updateDhwProductionOutput();updateHeatingProductionOutput()', ctx);
             recorder?.sample();
         }
-        trace.push({at: now, wbW: physicalPowerAllow ? physicalA * 230 : 0,
+        trace.push({at: now, wbW: physicalPowerAllow ? physicalA * 230 * physicalPhases : 0,
             miiW: miiPowerAllow ? miiA * 230 : 0, heaterW, heatingW, batteryW,
-            gridW: heaterW + heatingW + batteryW + (physicalPowerAllow ? physicalA * 230 : 0)
+            gridW: heaterW + heatingW + batteryW + (physicalPowerAllow ? physicalA * 230 * physicalPhases : 0)
                 + (miiPowerAllow ? miiA * 230 : 0) - surplusW,
             fine: value('Control.FineRegulator'), physicalAllow, miiAllow,
+            ...(phaseResponseDelayMs !== null ? {physicalPhases, requestedPhases: value('Control.Targets.Wallbox2_Phases')} : {}),
             selectedWallbox: value('Control.SelectedWallbox'),
             phaseImportW: [1, 2, 3].map(p => Number(states.get(`DP_DHW_HA_L${p}_CURRENT_A`)?.val || 0) * 230),
             targetW: value('Control.Targets.Wallbox2_W'), heaterTargetW: value('Control.Targets.MyPV_DHW_W'),
@@ -389,7 +408,7 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         },
         advance: async seconds => { for (let second = 0; second < seconds; second++) await tick(); },
         physical: () => ({allow: physicalAllow, amps: physicalA, miiAllow, miiAmps: miiA,
-            wbPowerW: physicalPowerAllow ? physicalA * 230 : 0, miiPowerW: miiPowerAllow ? miiA * 230 : 0,
+            wbPowerW: physicalPowerAllow ? physicalA * 230 * physicalPhases : 0, miiPowerW: miiPowerAllow ? miiA * 230 : 0,
             heaterW, heatingW, batteryW}),
         diagnostic: () => JSON.stringify(trace.slice(-12), null, 2)};
 }

@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.153",
+    "version": "0.17.0-alpha.154",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.154": {
+        "en": "Stabilize the complete wallbox start lifecycle across phase changes, restart adoption and heater/ramp budgeting.",
+        "de": "Wallbox-Startablauf ueber Phasenwechsel, Neustart-Uebernahme und Heizstab-/Hochlaufbudget stabilisiert.",
+        "es": "Estabilizar el arranque completo de carga durante cambios de fase, reinicios y reparto con el calentador.",
+        "fr": "Stabiliser le démarrage complet de charge pendant les changements de phase, redémarrages et répartition avec le chauffage.",
+        "it": "Stabilizzare l’avvio completo della ricarica durante cambi di fase, riavvii e ripartizione con il riscaldatore.",
+        "nl": "Stabiliseer de volledige laadstart bij fasewissels, herstarts en budgetverdeling met de verwarming.",
+        "pl": "Stabilizacja całego rozruchu ładowania przy zmianach faz, ponownym uruchomieniu i podziale budżetu z grzałką.",
+        "pt": "Estabilizar o arranque completo da carga durante mudanças de fase, reinícios e repartição com o aquecimento.",
+        "ru": "Стабилизация полного запуска зарядки при смене фаз, перезапуске и распределении мощности с нагревателем.",
+        "uk": "Стабілізація повного запуску заряджання при зміні фаз, перезапуску та розподілі потужності з нагрівачем.",
+        "zh-cn": "稳定切相、重启接管以及加热器和升流功率分配期间的完整充电启动流程。"
+      },
       "0.17.0-alpha.153": {
         "en": "Return blocked priority starts from optional followers and release the heater budget; preserve physical stop proofs and start delays.",
         "de": "Blockierten Prioritaetsstart durch Freigabe optionaler Fahrzeuge und des Heizstabs ermoeglichen; Abschaltnachweise und Startwartezeit erhalten.",
@@ -81,19 +94,6 @@
         "ru": "Проверка сохранности записей одним ограниченным SELECT непосредственно в базе данных; сохранены оригиналы, блокировки запросов, сроки и обработка поздних ответов.",
         "uk": "Перевірка збереження записів одним обмеженим SELECT безпосередньо в базі даних; збережено оригінали, блокування запитів, строки та обробку пізніх відповідей.",
         "zh-cn": "使用一次有界的数据库直连 SELECT 验证记录是否持久保存；保留精确原始记录、查询锁、期限及迟到响应处理。"
-      },
-      "0.17.0-alpha.147": {
-        "en": "Separate bounded immutable journal reads from serialized mutations; pin original groups until readers finish so slow publication reads cannot block durable appends.",
-        "de": "Begrenzte unveraenderliche Journal-Lesezugriffe von serialisierten Aenderungen trennen; Originalgruppen bis Leseabschluss halten, damit langsame Publikationslesungen dauerhafte Appends nicht blockieren.",
-        "es": "Separar las lecturas limitadas del diario inmutable de las modificaciones serializadas; mantener los grupos originales hasta que terminen las lecturas para evitar bloquear la escritura duradera.",
-        "fr": "Séparer les lectures bornées du journal immuable des modifications sérialisées ; conserver les groupes originaux jusqu’à la fin des lectures afin de ne pas bloquer les écritures durables.",
-        "it": "Separare le letture limitate del diario immutabile dalle modifiche serializzate; conservare i gruppi originali fino alla fine delle letture per non bloccare le scritture durature.",
-        "nl": "Scheid begrensde lezingen van het onveranderlijke journaal van geserialiseerde wijzigingen; houd originele groepen vast totdat lezingen eindigen, zodat duurzame toevoegingen niet worden geblokkeerd.",
-        "pl": "Oddzielenie ograniczonych odczytów niezmiennego dziennika od szeregowych zmian; zachowanie grup oryginałów do zakończenia odczytu, aby nie blokować trwałego dopisywania.",
-        "pt": "Separar as leituras limitadas do diário imutável das alterações serializadas; manter os grupos originais até terminarem as leituras para não bloquear gravações duradouras.",
-        "ru": "Ограниченные чтения неизменяемого журнала отделены от последовательных изменений; исходные группы удерживаются до конца чтения, чтобы не блокировать долговечную запись.",
-        "uk": "Обмежені читання незмінного журналу відокремлено від послідовних змін; початкові групи утримуються до завершення читання, щоб не блокувати довговічний запис.",
-        "zh-cn": "将有界的不可变日志读取与串行修改分离；读取结束前保留原始记录组，避免阻塞持久追加写入。"
       }
     },
     "titleLang": {

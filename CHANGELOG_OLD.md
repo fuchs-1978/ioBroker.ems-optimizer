@@ -1,3 +1,10 @@
+## 0.17.0-alpha.154
+
+- Keep cold-start phase choice stable until ON; allow a safe 3P-to-1P fallback on real funding loss without bouncing back before start.
+- Preserve known bounded phase command echoes and planned startup/ramp demand instead of donating that budget to the optional heater.
+- Honor fresh controller withdrawal of an optional donor during restart adoption; absent/stale planning still retains startup continuity.
+- Add full allocator/output/heater simulations with delayed phase ACKs, PV changes, release withdrawal and restart donation.
+
 ## 0.17.0-alpha.153
 
 - Reclaim a preferred idle vehicle's budget when optional peer/heater reservations prevent arming its start countdown. Withdraw an optional follower with no usable remainder instead of waiting on its stop-delay floor.
