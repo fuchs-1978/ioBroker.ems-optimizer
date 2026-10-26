@@ -2330,3 +2330,37 @@ test('withdrawn optional priority donor stops despite its minimum runtime and re
     assert.ok(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val >= 1380,
         'an OFF command alone does not release the donor power');
 });
+
+for (const condition of ['fresh withdrawal', 'invalid publication', 'old publication', 'no fresh plan'])
+    test('restart continuity distinguishes '+condition, async () => {
+        const h = parallelSetup(1); await h.startParallel([6]);
+        const d = h.output.devices[0]; d.recovering = true;
+        h.put('ems.0.Control.RestartHandoffActive', true);
+        h.put('ems.0.Control.RestartHandoffSince', 999000);
+        h.put('ems.0.Plan.Valid', condition !== 'no fresh plan');
+        h.put('ems.0.Plan.LastUpdate', 1000000);
+        h.put('ems.0.System.LastUpdate', 1000000);
+        h.put('ems.0.Control.LastUpdate', 1000000);
+        h.put('ems.0.Control.Valid', true);
+        const id = 'ems.0.Control.ParallelWallboxAllocation_JSON';
+        const a = JSON.parse(h.states.get(id).val);
+        a.allocations[0].authorized = false; a.allocations[0].targetA = 0; a.budgetW = 0;
+        if (condition === 'invalid publication') a.valid = false;
+        if (condition === 'old publication') a.timestamp -= 60000;
+        h.put(id, JSON.stringify(a));
+        const reason = h.output.gate(d, h.mapping, h.output.gridOperatorLimit(h.mapping));
+        if (condition === 'fresh withdrawal') assert.match(reason, /ohne gemeinsame Ladezuteilung/);
+        else assert.equal(reason, 'WAIT_RESTART_HANDOFF');
+    });
+
+for (const [label, value, phases] of [
+    ['fractional', 10.5, 1], ['below hardware minimum', 5, 1],
+    ['above device range', 33, 1], ['wrong topology', 10, 3]
+]) test('phase preparation rejects '+label, () => {
+    const h = parallelSetup(1);
+    const id = 'ems.0.Control.ParallelWallboxAllocation_JSON';
+    const a = JSON.parse(h.states.get(id).val);
+    Object.assign(a.allocations[0], {phasePreparationA: value, phases, targetA: 6});
+    h.put(id, JSON.stringify(a));
+    assert.equal(h.output.parallelAllocation(0).valid, false);
+});

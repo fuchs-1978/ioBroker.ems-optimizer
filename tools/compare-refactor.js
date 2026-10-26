@@ -141,14 +141,14 @@ async function worker(tree) {
         }],
         // alpha.152 deliberately changes lending during a pending start delay.
         // Compare restart adoption/handoff without that changed delay policy;
-        // parallel-realtime's repeated 300-s start regression covers the fix.
-        ['restart-adopted-owner-and-handoff', {mii: true, adoptRunningMii: true, split: false, startDelayS: 0}, h => {
+        // alpha.154's start-lifecycle tests cover delayed starts and recipient
+        // transfer. This old byte-exact spine isolates donor adoption/stop
+        // at the already stable 6-A load, with no receiving wallbox, rather
+        // than requiring the fixed transfer or ramp/heat allocation to reproduce its historical defect.
+        ['restart-adopted-owner-continuity', {mii: true, adoptRunningMii: true, wallbox: false, split: false, startDelayS: 0, initialSurplusW: 1480}, h => {
             h.put('DP_WB_PRIORITY', 2); h.put('DP_WB0_SOC', 100);
         }],
         ['soc-maximum-and-output-stop', {split: false}, h => h.put('DP_WB2_SOC', 100)],
-        ['phase-request-and-confirmation', {wb2InitialPhaseMode: 1}, h => {
-            h.put('goe.phase', 2); h.own('Vehicles.Wallbox2.MaximumPhases', 3);
-        }],
         ['battery-heating-and-diagnostics', {battery: true, heating: true, diagnostics: true}, h => {
             h.setBatteryResponse(false); h.setSurplus(2000);
         }]
@@ -166,6 +166,34 @@ async function worker(tree) {
         await h.output.stopAll(); checkpoint(h);
         finish();
     }
+    // The old mixed cold-start/mode fixture intentionally differs in 154.
+    // Keep the running 300-s up / 120-s down qualification byte-exact here;
+    // start-lifecycle tests exercise the full changed allocator/output path.
+    start('running-real-phase-qualification');
+    {
+        let source = fs.readFileSync(path.join(root, 'test/realtime-phase.test.js'), 'utf8');
+        source = source.slice(0, source.indexOf('\ntest(')) + '\nmodule.exports = {phaseEngine};';
+        // These extracted arithmetic/measurement modules did not exist at
+        // alpha.96 and are unused by this pure phase-policy replay. Do not
+        // substitute any production phase function from the current tree.
+        source = source.replace("wallboxAllocationPolicy: require('../lib/wallbox-allocation')", 'wallboxAllocationPolicy: {}')
+            .replace("normalizeWallboxPowerKW: require('../lib/wallbox-measurement').normalizeWallboxPowerKW", 'normalizeWallboxPowerKW: value => value');
+        const {phaseEngine} = compile(source, path.join(tree, 'test/phase-audit-fixture.js'));
+        const h = phaseEngine({phaseSwitchRealUpDelayS: 300, phaseSwitchRealDownDelayS: 120}, 1);
+        let phase;
+        for (let second = 0; second <= 300; second += 5) {
+            phase = h.run(second, 6500);
+            record({phase, diagnostic: h.diagnostic(), states: [...h.states]});
+        }
+        assert.equal(phase, 3);
+        h.vehicle.confirmedPhases = 3;
+        for (let second = 305; second <= 425; second += 5) {
+            phase = h.run(second, 3500);
+            record({phase, diagnostic: h.diagnostic(), states: [...h.states]});
+        }
+        assert.equal(phase, 1);
+    }
+    finish();
     start('missing-stale-future-and-bad-quality-sources');
     {
         const h = await plant({split: false});

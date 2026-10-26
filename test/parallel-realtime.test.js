@@ -1756,3 +1756,19 @@ for (const [name, change] of [
     } else assert.notEqual(diagnostic(2).reclaimPriorityStart, true);
     assert.equal(t.amps[2], 0);
 });
+
+for (const [name, change] of [
+    ['good echo', () => {}],
+    ['wrong destination', h => h.put('raw.phase2', 1, {ack: false})],
+    ['bad mode quality', h => h.put('raw.phase2', 2, {ack: false, q: 64})],
+    ['unacknowledged target', h => h.put('ems.0.Control.Targets.Wallbox2_Phases', 3, {ack: false})],
+    ['driver timeout', h => h.put('ems.0.Devices.Wallbox2.PhaseSwitchTimedOut', true)],
+    ['expired request', h => h.run('wallboxStartPreparation[2].requestedAt = Date.now()-181000')]
+]) test('prepared native phase echo is bounded: '+name, () => {
+    const {h} = blockedPriorityStart({phases: 1, budget: 6500, followerA: 6});
+    h.update(6500, 20000);
+    h.put('ems.0.Control.Targets.Wallbox2_Phases', 3);
+    h.put('raw.phase2', 2, {ack: false});
+    change(h);
+    assert.equal(h.run('wallboxStartPhaseEcho(2, vehicleState(2), Date.now())'), name === 'good echo');
+});
