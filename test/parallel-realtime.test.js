@@ -1649,3 +1649,35 @@ for(const [name,change] of [
     assert.equal(h.step(()=>{h.quiet();change(h);}).amps[2],0);
     assert.notEqual(h.diagnostic(2).start?.vehicleHandoff?.eligible,true);
 });
+
+test('priority start retains its minimum while lending only excess to EQV over repeated live cycles', () => {
+    let now = Date.now(); class Clock extends Date {static now() {return now;}}
+    const h = engine({production: true, clock: Clock, dhwControlEnabled: true,
+        wallboxPriority: 2, wb2PhaseControlMode: 'ems'});
+    h.exclude(0); h.put('DP_DHW_PARALLEL_RELEASE', false);
+    h.put('ems.0.Config.WallboxStartDelay_s', 300);
+    h.put('ems.0.Config.WallboxStartReserve_W', 150);
+    h.put('ems.0.Vehicles.Wallbox2.PhaseSwitchEnabled', true);
+    h.put('ems.0.Vehicles.Wallbox2.MaximumPhases', 3);
+    h.put('ems.0.Vehicles.Wallbox2.MaxCurrent1P_A', 20);
+    h.put('DP_WB2_PHASE_MODE', 3);
+    h.put('ems.0.Control.Targets.Wallbox2_Phases', 3);
+    h.plans[2] = {valueW: 7430, phases: 3};
+    h.owned(1, 6, 1270);
+    let started = false;
+    for (let tick = 0; tick < 54; tick++) {
+        for (const state of h.states.values()) state.ts = now;
+        const t = h.update(7430, 20000);
+        const d = JSON.parse(h.states.get('ems.0.Control.Wallbox2.AllocationDiagnostics_JSON').val);
+        if (t.amps[2] > 0) {started = true; break;}
+        assert.equal(d.start.reason, 'start-delay');
+        assert.ok(t.amps[1] >= 6, 'follower continues on the genuine remainder');
+        assert.ok(t.watts[1] + t.dhw + 4140 <= 7430,
+            JSON.stringify({tick,t,claim:d.qualificationClaimW}));
+        h.owned(1, t.amps[1], t.amps[1] * 230);
+        h.put('ems.0.Devices.MyPV_DHW.OutputReservedPower_W', t.dhw);
+        h.put('DP_DHW_OUTPUT1', t.dhw);
+        now += 6000;
+    }
+    assert.equal(started, true, 'five-minute start qualification completes instead of resetting indefinitely');
+});

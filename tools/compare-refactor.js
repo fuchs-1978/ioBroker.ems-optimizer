@@ -139,7 +139,10 @@ async function worker(tree) {
         ['lpc-and-house-phase-ceiling', {mii: true, lpcLimitW: 4200, phaseBiasW: [6000, -3000, -3000]}, h => {
             h.put('lpc.limit', 1380); h.put('DP_WB2_MIN_SOC', 90);
         }],
-        ['restart-adopted-owner-and-handoff', {mii: true, adoptRunningMii: true, split: false}, h => {
+        // alpha.152 deliberately changes lending during a pending start delay.
+        // Compare restart adoption/handoff without that changed delay policy;
+        // parallel-realtime's repeated 300-s start regression covers the fix.
+        ['restart-adopted-owner-and-handoff', {mii: true, adoptRunningMii: true, split: false, startDelayS: 0}, h => {
             h.put('DP_WB_PRIORITY', 2); h.put('DP_WB0_SOC', 100);
         }],
         ['soc-maximum-and-output-stop', {split: false}, h => h.put('DP_WB2_SOC', 100)],
