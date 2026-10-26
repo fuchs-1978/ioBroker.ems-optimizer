@@ -1,3 +1,8 @@
+## 0.17.0-alpha.152
+
+- Preserve a qualifying parallel start's minimum budget before redistributing surplus to followers and the optional heater.
+- Prevent follower targets repeatedly collapsing when the preferred car reclaims its start budget. Keep physical reservations, hard limits and alpha.151 response handling unchanged.
+
 ## 0.17.0-alpha.151
 
 - Fruehen 1-A-Nachregelversuch nach zehn Sekunden anhaltender Einspeisung auch fuer gemessenes PV-Budget freigeben; bisher wartete dieser Pfad trotzdem bis zum vollen Antworttimeout.
