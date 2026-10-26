@@ -1,3 +1,8 @@
+## 0.17.0-alpha.151
+
+- Fruehen 1-A-Nachregelversuch nach zehn Sekunden anhaltender Einspeisung auch fuer gemessenes PV-Budget freigeben; bisher wartete dieser Pfad trotzdem bis zum vollen Antworttimeout.
+- Maximal zwei unbeantwortete Versuche, frische Messwerte, ACK und alle Schutzgrenzen bleiben erforderlich. Reale Abnahme nach Installation offen.
+
 ## 0.17.0-alpha.150
 
 - SQL-Lernhistorie: Tagesabschnitte, inkrementelles Nachladen mit zwei Viertelstunden Ueberlappung und Wiederaufnahme abgeschlossener Abschnitte.

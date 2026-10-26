@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.150",
+    "version": "0.17.0-alpha.151",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.151": {
+        "en": "Allow the existing early one-amp retry to use measured PV funding for vehicles with a persistent current offset; retain response and safety limits.",
+        "de": "Vorhandenen fruehen 1-A-Nachregelversuch auch mit gemessenem PV-Budget bei bleibendem Stromversatz erlauben; Antwort- und Schutzgrenzen erhalten.",
+        "es": "Permitir el reintento temprano de un amperio con presupuesto solar medido y mantener los límites de seguridad.",
+        "fr": "Autoriser la reprise précoce d’un ampère avec le budget solaire mesuré, en conservant les limites de sécurité.",
+        "it": "Consentire il tentativo anticipato di un ampere con budget fotovoltaico misurato, mantenendo i limiti di sicurezza.",
+        "nl": "Sta de vroege stap van één ampère toe met gemeten PV-budget; behoud de veiligheidsgrenzen.",
+        "pl": "Wczesna próba zwiększenia o jeden amper z mierzonym budżetem PV przy zachowaniu granic bezpieczeństwa.",
+        "pt": "Permitir a tentativa antecipada de um ampere com orçamento solar medido, mantendo os limites de segurança.",
+        "ru": "Ранний повторный шаг на один ампер с измеренным бюджетом ФЭ при сохранении защитных ограничений.",
+        "uk": "Ранній повторний крок на один ампер із виміряним бюджетом ФЕ зі збереженням захисних обмежень.",
+        "zh-cn": "允许现有提前一安培重试使用实测光伏预算，保留响应与安全限制。"
+      },
       "0.17.0-alpha.150": {
         "en": "Load SQL learning history incrementally in daily chunks; resume completed chunks and retry background failures without overlapping unresolved queries.",
         "de": "SQL-Lernhistorie inkrementell in Tagesabschnitten laden; abgeschlossene Abschnitte fortsetzen und Hintergrundfehler ohne ueberlappende offene Abfragen wiederholen.",
@@ -81,19 +94,6 @@
         "ru": "Передача наблюдённой квалификации зарядки после отключения также в параллельном режиме; сохранены ограниченная история, реальное подтверждение выключения и покоя, бюджеты и условия получателя.",
         "uk": "Передавання спостереженої кваліфікації заряджання після від’єднання також у паралельному режимі; збережено обмежену історію, реальне підтвердження вимкнення й спокою, бюджети та умови отримувача.",
         "zh-cn": "并行模式下也可在拔枪后传递已观察到的充电资格；仍要求有界历史、真实关断与电气静止确认、功率预算和接收方条件。"
-      },
-      "0.17.0-alpha.144": {
-        "en": "Verify late SQL replies with the same exact original checks; retire proven backlog without another read, preserving deadlines, fences and shutdown safety.",
-        "de": "Spaete SQL-Antworten mit denselben exakten Originalnachweisen auswerten; bestaetigten Rueckstau ohne erneuten Abruf abbauen, Fristen, Sperren und sauberes Beenden erhalten.",
-        "es": "Validar las respuestas SQL tardías contra los originales exactos; retirar los datos confirmados sin otra lectura, manteniendo plazos, bloqueos y apagado seguro.",
-        "fr": "Vérifier les réponses SQL tardives avec les mêmes originaux exacts ; retirer les données confirmées sans nouvelle lecture, en conservant délais, verrous et arrêt sûr.",
-        "it": "Verificare le risposte SQL tardive con gli stessi originali esatti; rimuovere i dati confermati senza un’altra lettura, mantenendo scadenze, blocchi e arresto sicuro.",
-        "nl": "Controleer late SQL-antwoorden tegen dezelfde exacte originelen; verwijder bewezen achterstand zonder nieuwe lezing en behoud termijnen, blokkeringen en veilige afsluiting.",
-        "pl": "Weryfikacja spóźnionych odpowiedzi SQL względem tych samych dokładnych oryginałów; usunięcie potwierdzonych zaległości bez kolejnego odczytu, z zachowaniem terminów, blokad i bezpiecznego wyłączania.",
-        "pt": "Verificar respostas SQL tardias com os mesmos originais exatos; retirar dados confirmados sem outra leitura, mantendo prazos, bloqueios e encerramento seguro.",
-        "ru": "Поздние ответы SQL проверяются по тем же точным оригиналам; подтверждённые записи удаляются из очереди без нового чтения с сохранением сроков, блокировок и безопасного завершения.",
-        "uk": "Пізні відповіді SQL перевіряються за тими самими точними оригіналами; підтверджені записи вилучаються з черги без нового читання зі збереженням строків, блокувань і безпечного завершення.",
-        "zh-cn": "按相同的精确原始记录规则校验迟到的 SQL 响应；无需再次读取即可清除已证实积压，同时保留期限、查询锁和安全关闭机制。"
       }
     },
     "titleLang": {

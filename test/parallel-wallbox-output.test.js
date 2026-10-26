@@ -2277,3 +2277,37 @@ for(const [name,change] of [
     assert.ok(h.writes.some(w=>w.id==='cmd'&&w.val<9||w.id==='allow'&&w.val===0));
     assert.ok(!h.writes.some(w=>w.id==='cmd'&&w.val>9));
 });
+
+test('persistent EQE offset permits a measured funded step after sustained export instead of 45 seconds', async () => {
+    const h = await eqeLimitedReply();
+    h.grant([11]); h.put('export', 500);
+    await h.output.tick(); // begin sustained-export qualification
+    h.advance(12000); h.grant([11]); h.put('export', 500);
+    h.measure(0, 7.8); h.ack('feedback', 10); h.put('power', 1.75);
+    h.writes.length = 0;
+    await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'cmd', val: 11}]);
+    const d = h.output.devices[0];
+    assert.equal(d.limitedProbeAttempts, 1);
+    assert.ok(d.measuredBudgetStep);
+    // Constant offset is acceptable when the real uptake follows the step.
+    h.advance(2000); h.grant([11]);
+    h.measure(0, 8.8); h.ack('feedback', 11); h.put('power', 1.98);
+    await h.output.tick();
+    assert.equal(d.response, null);
+    assert.equal(d.limitedProbeAttempts, 0);
+});
+
+for (const [name, change] of [
+    ['insufficient export', h => h.put('export', 100)],
+    ['unconfirmed command', h => h.put('feedback', 10, {ack: false})],
+    ['old electrical sample', h => h.put('power', 1.75, {ts: 1})],
+    ['hard limit', h => {h.config.wb0CommissioningMaxA = 10;}],
+    ['exhausted retries', h => {h.output.devices[0].limitedProbeAttempts = 2;}]
+]) test('early measured offset probe retains ' + name, async () => {
+    const h = await eqeLimitedReply();
+    h.grant([11]); h.put('export', 500); await h.output.tick();
+    h.advance(12000); h.grant([11]); h.put('export', 500);
+    change(h); h.writes.length = 0; await h.output.tick();
+    assert.ok(!h.writes.some(w => w.id === 'cmd' && w.val > 10));
+});
