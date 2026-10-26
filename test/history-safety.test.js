@@ -160,3 +160,43 @@ test('late metadata approval after the timeout cannot start a SQL request', asyn
     approve(true);
     for (let i = 0; i < 5; i++) await Promise.resolve();
 });
+
+test('history refresh only reads the new tail and replaces overlap without duplicates', async () => {
+    const calls = [];
+    const run = engine({calls});
+    run(`pause=async()=>{}; getHistory=async(id,start,end)=>{
+        calls.push({start,end}); return [{ts:start,val:calls.length},{ts:end,val:999}];
+    };`);
+    await run("getHistoryChunked('pv', 0, 3*86400000)");
+    assert.equal(calls.length, 3);
+    assert.ok(calls.every(c => c.end - c.start <= 86400000));
+    const rows = await run("getHistoryChunked('pv', 86400000, 4*86400000)");
+    assert.equal(calls[3].start, 3*86400000 - 1800000);
+    assert.ok(rows.every(row => row.ts >= 86400000 && row.ts < 4*86400000));
+    assert.equal(new Set(rows.map(row => row.ts)).size, rows.length);
+});
+
+test('failed chunk resumes from completed work and unresolved SQL blocks a new build', async () => {
+    const calls = [];
+    const run = engine({calls, setState() {}, log() {}});
+    run(`pause=async()=>{}; getHistory=async(id,start,end)=>{
+        calls.push(start); if(calls.length===2) throw new Error('failed chunk');
+        return [{ts:start,val:10}];
+    };`);
+    await assert.rejects(run("getHistoryChunked('pv',0,3*86400000)"), /failed chunk/);
+    await run("getHistoryChunked('pv',0,3*86400000)");
+    assert.equal(calls[2], 86400000 - 1800000);
+    run('historyUnresolvedQueries=1');
+    await run('buildHistory()');
+    assert.equal(run('historyBuilding'), false);
+});
+
+test('background refresh failure preserves completed profiles and schedules paced recovery', async () => {
+    const run = engine({setState() {}, log() {}});
+    run(`historyReady=true; historyProfiles.pv[0]=123;
+        getHistoryChunked=async()=>{const e=new Error('SQL busy');e.backendCompletionObserved=true;throw e;};`);
+    await run('buildHistory()');
+    assert.equal(run('historyReady'), true);
+    assert.equal(run('historyProfiles.pv[0]'), 123);
+    assert.ok(run('historyRetryAt') > Date.now());
+});

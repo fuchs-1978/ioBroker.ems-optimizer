@@ -2,7 +2,7 @@
 
 Forecast-based energy management for ioBroker. Combines PV and grid measurements, load history, weather forecasts and electricity prices in a rolling 48-hour plan.
 
-**Current version: 0.17.0-alpha.149.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
+**Current version: 0.17.0-alpha.150.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
 
 [Deutsche Bedienungsanleitung](README.de.md) · [Release history](CHANGELOG_OLD.md) · [Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
@@ -63,9 +63,9 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 
 ## Changelog
 
-### 0.17.0-alpha.149 (2026-10-25)
+### 0.17.0-alpha.150 (2026-10-26)
 
-Retain critical daily events separately from routine changes and diagnose wallbox current-conflict gates. Existing control and safety decisions remain unchanged. [Release details](docs/release-0.17.0-alpha.149.md).
+Load SQL learning history incrementally in daily chunks, resume completed work after errors and retry background refreshes without overlapping unresolved queries. [Release details](docs/release-0.17.0-alpha.150.md).
 
 [Earlier changes](CHANGELOG_OLD.md). Keep only the latest release summary here; detailed commissioning evidence belongs in the linked release documents and issues.
 

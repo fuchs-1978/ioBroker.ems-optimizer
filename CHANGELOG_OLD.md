@@ -1,3 +1,9 @@
+## 0.17.0-alpha.150
+
+- SQL-Lernhistorie: Tagesabschnitte, inkrementelles Nachladen mit zwei Viertelstunden Ueberlappung und Wiederaufnahme abgeschlossener Abschnitte.
+- Bis zu drei Wiederholungen mit 60 Sekunden Abstand auch bei Hintergrundfehlern. Ungeklaerte SQL-Abschluesse sperren weitere Historienlaeufe; spaete Antworten erlauben anschliessend Wiederholung.
+- Letzte abgeschlossene Profile bleiben bei Abruffehlern erhalten. Cache gilt nur im laufenden Prozess; Neustart laedt SQL erneut. Bereits abgeschlossene alte Intervalle werden nicht auf nachtraegliche SQL-Korrekturen abgefragt.
+
 ### 0.17.0-alpha.149
 
 Die kompakte Tagesbilanz schuetzt je Periode die sechs juengsten Wallboxstopps und zwei Recorderfehler-Beobachtungen innerhalb der unveraenderten 64-kB-Grenze. Sollstrom-Konfliktstopps nennen die erste gescheiterte Korrekturbedingung; Quellwerte/Zeiten/ACK/q bleiben getrennt vom Reglerverhalten dokumentiert. [Vertrag, Grenzen und reale Abnahme](docs/release-0.17.0-alpha.149.md).

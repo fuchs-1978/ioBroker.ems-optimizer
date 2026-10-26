@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.149",
+    "version": "0.17.0-alpha.150",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.150": {
+        "en": "Load SQL learning history incrementally in daily chunks; resume completed chunks and retry background failures without overlapping unresolved queries.",
+        "de": "SQL-Lernhistorie inkrementell in Tagesabschnitten laden; abgeschlossene Abschnitte fortsetzen und Hintergrundfehler ohne ueberlappende offene Abfragen wiederholen.",
+        "es": "Cargar el historial SQL de forma incremental en bloques diarios y reintentar los errores sin consultas pendientes superpuestas.",
+        "fr": "Charger progressivement l’historique SQL par jour et réessayer après un échec sans superposer les requêtes en attente.",
+        "it": "Caricare la cronologia SQL in modo incrementale per giorno e riprovare senza sovrapporre richieste pendenti.",
+        "nl": "SQL-historie incrementeel per dag laden en fouten opnieuw proberen zonder openstaande aanvragen te overlappen.",
+        "pl": "Przyrostowe pobieranie historii SQL w częściach dziennych i ponawianie błędów bez nakładania oczekujących zapytań.",
+        "pt": "Carregar o histórico SQL incrementalmente em blocos diários e repetir falhas sem sobrepor consultas pendentes.",
+        "ru": "Постепенная загрузка истории SQL по дням и повтор после ошибок без наложения незавершённых запросов.",
+        "uk": "Поступове завантаження історії SQL за днями та повтор після помилок без накладання незавершених запитів.",
+        "zh-cn": "按天增量加载 SQL 历史，保留已完成分段并重试后台错误，避免未完成查询重叠。"
+      },
       "0.17.0-alpha.149": {
         "en": "Protect recent wallbox stops and recorder error observations within the existing daily-summary byte limit; record the first failed current-correction gate and exact source evidence without delaying OFF.",
         "de": "Junge Wallboxstopps und Recorderfehler innerhalb der bestehenden Tagesbilanz-Bytegrenze schuetzen; erste gescheiterte Sollstrom-Korrekturbedingung samt Quellnachweisen speichern, ohne AUS zu verzoegern.",
@@ -81,19 +94,6 @@
         "ru": "Поздние ответы SQL проверяются по тем же точным оригиналам; подтверждённые записи удаляются из очереди без нового чтения с сохранением сроков, блокировок и безопасного завершения.",
         "uk": "Пізні відповіді SQL перевіряються за тими самими точними оригіналами; підтверджені записи вилучаються з черги без нового читання зі збереженням строків, блокувань і безпечного завершення.",
         "zh-cn": "按相同的精确原始记录规则校验迟到的 SQL 响应；无需再次读取即可清除已证实积压，同时保留期限、查询锁和安全关闭机制。"
-      },
-      "0.17.0-alpha.143": {
-        "en": "Choose the funded vehicle phase mode before release also for manual or mandatory minimum charging; retain running qualification and all safety gates.",
-        "de": "Phasenwahl vor Ladefreigabe auch bei manueller oder Pflicht-Mindestladung aus dem belegten Fahrzeugbudget; laufende Qualifikation und Schutzpruefungen bleiben erhalten.",
-        "es": "Elegir las fases financiadas antes de autorizar también la carga mínima manual u obligatoria; conservar la cualificación durante la carga y todas las protecciones.",
-        "fr": "Choisir les phases couvertes par le budget avant autorisation, également pour la charge minimale manuelle ou obligatoire ; conserver la qualification en fonctionnement et toutes les protections.",
-        "it": "Scegliere le fasi coperte dal budget prima del consenso anche per la carica minima manuale od obbligatoria; mantenere la qualificazione durante la marcia e tutte le protezioni.",
-        "nl": "Kies de door het budget gedekte fasen vóór vrijgave ook bij handmatig of verplicht minimumladen; behoud kwalificatie tijdens bedrijf en alle beveiligingen.",
-        "pl": "Wybór faz pokrytych budżetem przed zezwoleniem również dla ręcznego lub obowiązkowego ładowania minimalnego; zachowanie kwalifikacji podczas pracy i wszystkich zabezpieczeń.",
-        "pt": "Escolher as fases cobertas pelo orçamento antes da autorização também na carga mínima manual ou obrigatória; manter a qualificação durante a operação e todas as proteções.",
-        "ru": "Выбор обеспеченного бюджетом числа фаз до разрешения также при ручной или обязательной минимальной зарядке; сохранены квалификация во время работы и все защитные проверки.",
-        "uk": "Вибір забезпеченої бюджетом кількості фаз до дозволу також для ручного або обов’язкового мінімального заряджання; збережено кваліфікацію під час роботи та всі захисні перевірки.",
-        "zh-cn": "手动或强制最低充电也在放行前选择预算能够支持的相数；保留运行中的资格判定及全部保护检查。"
       }
     },
     "titleLang": {
