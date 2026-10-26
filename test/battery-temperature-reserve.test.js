@@ -192,7 +192,7 @@ function engine({time = evening, config = {}, retained = null} = {}) {
         batteryProductionArmed: true, globalWriteEnabled: true, batteryPresent: true,
         batteryControlEnabled: true, batteryHeartbeatId: ids.heartbeat, batteryOnlineId: ids.online,
         batteryManualModeId: ids.mm, batteryLocalModeId: ids.lm};
-    const ctx = vm.createContext({wallboxAllocationPolicy: require('../lib/wallbox-allocation'), Date: Clock, nativeConfig, batteryTemperatureReserve: policy,
+    const ctx = vm.createContext({vehicleSocEstimator: require('../lib/vehicle-soc-estimator'), wallboxAllocationPolicy: require('../lib/wallbox-allocation'), Date: Clock, nativeConfig, batteryTemperatureReserve: policy,
         gridConstraints: require('../lib/grid-constraints'),
         getState: id => states.get(id), existsState: id => states.has(id),
         createState: (id, value) => { if (!states.has(id)) put(id, value); }, setState: put, log() {},

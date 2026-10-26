@@ -1,3 +1,9 @@
+## 0.17.0-alpha.155
+
+- Retain valid aged vehicle SoC for control; show age and unknown data explicitly rather than a false zero.
+- Pause a confirmed charging session after 15 continuous minutes without electrical uptake; preserve its reservation until OFF and electrical quiet are proven.
+- Persist the pause across restarts and retry after at least 15 minutes only when other vehicles are no longer charging, or on a new explicit user/plug request.
+
 ## 0.17.0-alpha.154
 
 - Keep cold-start phase choice stable until ON; allow a safe 3P-to-1P fallback on real funding loss without bouncing back before start.
