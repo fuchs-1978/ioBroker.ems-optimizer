@@ -2311,3 +2311,22 @@ for (const [name, change] of [
     change(h); h.writes.length = 0; await h.output.tick();
     assert.ok(!h.writes.some(w => w.id === 'cmd' && w.val > 10));
 });
+
+test('withdrawn optional priority donor stops despite its minimum runtime and retains physical reservation', async () => {
+    const h = parallelSetup(1);
+    h.config.wallboxMinimumRunTimeS = 600;
+    h.config.wallboxStopDelayS = 600;
+    await h.startParallel([6]);
+    const id = 'ems.0.Control.ParallelWallboxAllocation_JSON';
+    const a = JSON.parse(h.states.get(id).val);
+    a.allocations[0].authorized = false;
+    a.allocations[0].targetA = 0;
+    a.allocations[0].reservedW = 1380;
+    a.budgetW = 0;
+    h.put(id, JSON.stringify(a));
+    h.writes.length = 0;
+    await h.output.tick();
+    assert.ok(h.writes.some(x => x.id === 'allow' && x.val === 0));
+    assert.ok(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val >= 1380,
+        'an OFF command alone does not release the donor power');
+});
