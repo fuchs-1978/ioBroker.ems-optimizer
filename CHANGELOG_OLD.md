@@ -2469,3 +2469,7 @@ Feste 1P-Wallboxen ohne Phasenmodus-Rueckmeldung nutzen bestaetigte Istleistung 
 Validate Node.js 22/24/26, update adapter-core/testing minimums and bound published news with an automatic package guard.
 
 Node.js 22/24/26 pruefen, Mindestversionen von adapter-core/testing aktualisieren und Versionsnachrichten mit automatischer Paketpruefung begrenzen.
+
+### 0.17.0-alpha.150
+
+Load SQL learning history incrementally in daily chunks; resume completed chunks and retry background failures without overlapping unresolved queries.

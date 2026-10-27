@@ -3791,7 +3791,7 @@ for (const [name, change] of [
     assert.ok(!h.writes.some(w => w.id === 'allow' && w.val === 1));
 });
 
-async function acknowledgedTelemetryStep({phases = 1} = {}) {
+async function acknowledgedTelemetryStep({phases = 1, witnessTick = true} = {}) {
     const h = await telemetryBridgeFixture({phases});
     h.advance(1000); h.refresh();
     const d = h.output.devices[0];
@@ -3806,8 +3806,8 @@ async function acknowledgedTelemetryStep({phases = 1} = {}) {
     assert.equal(d.lastA,9);
     assert.equal(d.pending,null);
     assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val,'vehicle_response');
-    // A normal fresh controller tick witnesses this exact acknowledged step.
-    await h.output.tick();
+    // Optional later tick must not be required to retain the acknowledged step.
+    if (witnessTick) await h.output.tick();
     for (const id of h.freeze.keys()) h.freeze.set(id,{...h.states.get(id)});
     h.writes.length=0;
     return h;
@@ -3964,4 +3964,35 @@ for(const mode of ['throw','reject','pending']) test(`no-draw diagnostic ${mode}
     assert.deepEqual(h.writes.at(-1),{id:'allow',val:0});
     assert.ok(h.output.devices[0].stopRequest);
     finish?.();
+});
+
+for (const phases of [1, 3]) test(`acknowledged step is protected immediately before the next poll, ${phases}P`, async () => {
+    const h = await acknowledgedTelemetryStep({phases, witnessTick: false});
+    const response = h.output.devices[0].response;
+    h.advance(31000);
+    await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, true,
+        h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val, /TELEMETRIE/);
+    assert.deepEqual(h.writes, []);
+    assert.equal(h.output.devices[0].response, response);
+    assert.ok(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val >= 9 * 230 * phases);
+});
+
+test('3P telemetry hold survives allocator fallback to idle 1P on an explicitly stale own-power source', async () => {
+    const h = await telemetryBridgeFixture({phases: 3});
+    h.advance(31000);
+    h.config.wallboxParallelChargingEnabled = true;
+    const now = h.output.now();
+    h.put('ems.0.Control.ParallelWallboxAllocation_JSON', JSON.stringify({schema: 1, valid: false,
+        timestamp: now, sourceDiagnostics: [{id: 'power', reason: 'source-stale', ack: true,
+            ts: h.states.get('power').ts, maximumAgeMs: 30000}]}), {ts: now});
+    h.put('ems.0.Control.Targets.Wallbox0_Phases', 1);
+    await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, true,
+        h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val, /6 A \/ 3P gehalten/);
+    assert.deepEqual(h.writes, []);
+    assert.equal(h.states.get('phaseMode').val, 2);
+    assert.ok(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val >= 4140);
 });

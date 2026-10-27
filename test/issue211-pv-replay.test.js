@@ -137,7 +137,6 @@ for (const [name, modify, values, options] of [
             ['DP_WB0_L3_A', 0], ['goe0.allow', 1], ['goe0.feedback', 6]]}, {mii: true}],
     ['bad wallbox power quality', () => {}, {extra: [['DP_WB2_POWER', 1.45, {q: 64}]]}],
     ['missing wallbox power', () => {}, {extra: [['DP_WB2_POWER', null]]}],
-    ['stale wallbox power', () => {}, {powerAt: SECOND - 31001}],
     ['electrical samples before the original command ACK', () => {},
         {powerAt: FIRST + 100, currentAt: FIRST + 99}],
     ['future grid timestamp', () => {}, {gridAt: SECOND + 9000}],
@@ -260,3 +259,18 @@ for (const writeDelayMs of [5, 400]) {
     });
 }
 
+
+// Age alone is a no-write hold with fresh independent SMA protection (alpha.157).
+// Missing/bad-quality samples above remain stop/reduction conditions.
+test('issue211 confirmed partial response holds through age-only power gap without another current command', async () => {
+    const h = await runningSixAmps(3);
+    await issueFirstStep(h);
+    await replay(h, SECOND);
+    h.writes.length = 0;
+    await replay(h, SECOND + 6000, {powerAt: SECOND - 31001});
+    assert.equal(h.value('Devices.Wallbox2.OutputActive'), true, diagnostic(h));
+    assert.match(h.value('Devices.Wallbox2.OutputStatus'), /TELEMETRIE/);
+    assert.equal(h.output.devices[2].lastA, 7);
+    assert.ok(h.value('Devices.Wallbox2.OutputReservedPower_W') >= 1610);
+    assert.ok(!h.writes.some(write => ['goe.cmd', 'goe.allow'].includes(write.id)), diagnostic(h));
+});

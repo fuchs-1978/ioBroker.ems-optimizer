@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.156",
+    "version": "0.17.0-alpha.157",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.157": {
+        "en": "Retain confirmed charging through telemetry gaps with fresh SMA protection; capture current acknowledgements immediately and preserve peer reserves and confirmed phase topology.",
+        "de": "Bestaetigte Ladung bei Telemetrieluecken mit aktuellem SMA-Schutz halten; Strombestaetigungen sofort sichern sowie Peer-Reserven und bestaetigte Phasen erhalten.",
+        "es": "Mantener la carga confirmada durante interrupciones de telemetría con protección SMA actual; conservar reservas y fases confirmadas.",
+        "fr": "Maintenir la charge confirmée lors des pertes de télémétrie avec protection SMA actuelle ; conserver les réserves et les phases confirmées.",
+        "it": "Mantenere la ricarica confermata durante interruzioni della telemetria con protezione SMA aggiornata; conservare riserve e fasi confermate.",
+        "nl": "Behoud bevestigd laden bij telemetrie-uitval met actuele SMA-beveiliging; behoud reserves en bevestigde fasen.",
+        "pl": "Utrzymuj potwierdzone ładowanie przy utracie telemetrii z aktualną ochroną SMA; zachowaj rezerwy i potwierdzone fazy.",
+        "pt": "Manter a carga confirmada durante falhas de telemetria com proteção SMA atual; preservar reservas e fases confirmadas.",
+        "ru": "Сохранять подтверждённую зарядку при потере телеметрии с актуальной защитой SMA; сохранять резервы и подтверждённые фазы.",
+        "uk": "Зберігати підтверджене заряджання при втраті телеметрії з актуальним захистом SMA; зберігати резерви й підтверджені фази.",
+        "zh-cn": "遥测中断时，在有效的 SMA 保护下保持已确认的充电；立即记录电流确认，并保留其他设备功率预留及已确认相位。"
+      },
       "0.17.0-alpha.156": {
         "en": "Keep the optional heater running during the preferred vehicle’s start delay; hand over power after the countdown with physical reservations still enforced.",
         "de": "Optionalen Heizstab waehrend der Einschaltverzoegerung des bevorzugten Fahrzeugs weiter nutzen; Leistung nach dem Countdown mit weiter wirksamen physischen Reservierungen uebergeben.",
@@ -81,19 +94,6 @@
         "ru": "Ранний повторный шаг на один ампер с измеренным бюджетом ФЭ при сохранении защитных ограничений.",
         "uk": "Ранній повторний крок на один ампер із виміряним бюджетом ФЕ зі збереженням захисних обмежень.",
         "zh-cn": "允许现有提前一安培重试使用实测光伏预算，保留响应与安全限制。"
-      },
-      "0.17.0-alpha.150": {
-        "en": "Load SQL learning history incrementally in daily chunks; resume completed chunks and retry background failures without overlapping unresolved queries.",
-        "de": "SQL-Lernhistorie inkrementell in Tagesabschnitten laden; abgeschlossene Abschnitte fortsetzen und Hintergrundfehler ohne ueberlappende offene Abfragen wiederholen.",
-        "es": "Cargar el historial SQL de forma incremental en bloques diarios y reintentar los errores sin consultas pendientes superpuestas.",
-        "fr": "Charger progressivement l’historique SQL par jour et réessayer après un échec sans superposer les requêtes en attente.",
-        "it": "Caricare la cronologia SQL in modo incrementale per giorno e riprovare senza sovrapporre richieste pendenti.",
-        "nl": "SQL-historie incrementeel per dag laden en fouten opnieuw proberen zonder openstaande aanvragen te overlappen.",
-        "pl": "Przyrostowe pobieranie historii SQL w częściach dziennych i ponawianie błędów bez nakładania oczekujących zapytań.",
-        "pt": "Carregar o histórico SQL incrementalmente em blocos diários e repetir falhas sem sobrepor consultas pendentes.",
-        "ru": "Постепенная загрузка истории SQL по дням и повтор после ошибок без наложения незавершённых запросов.",
-        "uk": "Поступове завантаження історії SQL за днями та повтор після помилок без накладання незавершених запитів.",
-        "zh-cn": "按天增量加载 SQL 历史，保留已完成分段并重试后台错误，避免未完成查询重叠。"
       }
     },
     "titleLang": {
