@@ -582,6 +582,10 @@ test('escaped error text and maximum-width episode metadata stay within the heal
     const maximum = keys => Object.fromEntries(keys.map(key => [key, widest]));
     journal.lastAppendBatch = maximum(['records', 'bytes', 'elapsedMs', 'parallelFiles',
         'queuedAt', 'startedAt', 'completedAt', 'waitMs', 'appendMs']);
+    journal.lastAppendBatch.phases = maximum(['write-files', 'link-files', 'commit-directory-sync',
+        'unlink-temporaries', 'cleanup-directory-sync']);
+    journal.activeOperation = {kind:'append-batch', ...maximum(['queuedAt','startedAt','waitMs']),
+        phase:'write-files',phaseStartedAt:widest,fileIO:{open:0,write:0,sync:4,close:0}};
     for (let index = 0; index < 4; index++) journal.reportLoss('\u0000'.repeat(1000), 1, {
         kind: 'recorder-queue-full', recordSession: 'A'.repeat(79) + index,
         recordSequence: index + 1, eventAt: widest, observedAt: widest, rawBytes: 100000 + index,
@@ -590,6 +594,7 @@ test('escaped error text and maximum-width episode metadata stay within the heal
             active: maximum(['queuedAt', 'startedAt', 'waitMs', 'elapsedMs', 'records', 'rawBytes',
                 'firstSequence', 'lastSequence'])}
     });
+    journal.activeOperation = null;
     await journal.tail;
     const counterKeys = ['rejectedRecords', 'writeErrors', 'readErrors', 'sqlConfirmedRecords',
         'expiredRecords', 'expiredUnconfirmedRecords'];
@@ -763,7 +768,9 @@ test('append batch timing excludes an independent stalled immutable read', async
     assert.deepEqual(journal.health().lastAppendBatch, {records: 2,
         bytes: originals.reduce((sum, original) => sum + Buffer.byteLength(original), 0),
         elapsedMs: 1000, parallelFiles: 4, queuedAt: 1200, startedAt: 1200,
-        completedAt: 2200, waitMs: 0, appendMs: 1000});
+        completedAt: 2200, waitMs: 0, appendMs: 1000,
+        phases: {'write-files': 1000, 'link-files': 0, 'commit-directory-sync': 0,
+            'unlink-temporaries': 0, 'cleanup-directory-sync': 0}});
     assert.deepEqual((await journal.readBatch()).map(entry => entry.payload), [payload(1), ...originals]);
     await journal.close();
 });

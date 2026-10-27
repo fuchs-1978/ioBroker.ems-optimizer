@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.158",
+    "version": "0.17.0-alpha.159",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.159": {
+        "en": "Identify stalled journal append phases and pending file operations in bounded recorder-loss diagnostics; preserve all durability and SQL proof limits.",
+        "de": "Blockierte Journal-Appendphasen und wartende Dateioperationen in begrenzter Verlustdiagnose unterscheiden; Haltbarkeits- und SQL-Nachweisgrenzen erhalten.",
+        "es": "Distinguir fases de escritura del diario bloqueadas sin cambiar límites de durabilidad ni pruebas SQL.",
+        "fr": "Distinguer les phases bloquées du journal sans modifier la durabilité ni les preuves SQL.",
+        "it": "Distinguere le fasi bloccate del journal senza modificare durabilità o prove SQL.",
+        "nl": "Onderscheid vastlopende journaalfasen zonder duurzaamheidsgrenzen of SQL-bewijzen te wijzigen.",
+        "pl": "Rozróżniaj zablokowane fazy dziennika bez zmiany trwałości i dowodów SQL.",
+        "pt": "Distinguir fases bloqueadas do diário sem alterar durabilidade ou provas SQL.",
+        "ru": "Различать задержанные фазы журнала без изменения гарантий сохранности и проверок SQL.",
+        "uk": "Розрізняти затримані фази журналу без зміни гарантій збереження й перевірок SQL.",
+        "zh-cn": "区分日志追加阻塞阶段，保持持久性保障和 SQL 验证限制。"
+      },
       "0.17.0-alpha.158": {
         "en": "Count observed recorder losses across same-period sampling gaps without inventing energy coverage; retain restart and period-boundary uncertainty.",
         "de": "Beobachtete Recorderverluste trotz Beobachtungsluecken derselben Tagesperiode zaehlen; Energieabdeckung sowie Neustart- und Periodengrenzen bleiben unbekannt.",
@@ -81,19 +94,6 @@
         "ru": "Освобождение бюджета других автомобилей и нагревателя для приоритетного запуска с сохранением подтверждения остановки и задержки.",
         "uk": "Звільнення бюджету інших автомобілів і нагрівача для пріоритетного запуску зі збереженням підтвердження зупинки та затримки.",
         "zh-cn": "为优先车辆启动释放其他车辆和加热器的功率预算，保留停止确认和启动等待。"
-      },
-      "0.17.0-alpha.152": {
-        "en": "Stabilize parallel wallbox start qualification and follower budgets; preserve early measured EQE response retries.",
-        "de": "Parallele Startqualifikation und EQV-Budget stabilisiert; schnelle gemessene EQE-Nachregelung beibehalten.",
-        "es": "Estabilizar el presupuesto de arranque paralelo y del EQV; conservar la regulación rápida del EQE.",
-        "fr": "Stabiliser le budget de démarrage parallèle et du EQV ; conserver la régulation rapide du EQE.",
-        "it": "Stabilizzare il budget di avvio parallelo e del EQV; mantenere la regolazione rapida del EQE.",
-        "nl": "Stabiliseer het parallelle startbudget en het EQV-budget; behoud de snelle EQE-regeling.",
-        "pl": "Stabilizacja budżetu rozruchu równoległego i EQV; zachowanie szybkiej regulacji EQE.",
-        "pt": "Estabilizar o orçamento de arranque paralelo e do EQV; manter a regulação rápida do EQE.",
-        "ru": "Стабилизация бюджета параллельного запуска и EQV с сохранением быстрого регулирования EQE.",
-        "uk": "Стабілізація бюджету паралельного запуску та EQV зі збереженням швидкого регулювання EQE.",
-        "zh-cn": "稳定并行启动和 EQV 功率预算，保留 EQE 快速调节。"
       }
     },
     "titleLang": {
