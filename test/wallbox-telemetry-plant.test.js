@@ -141,3 +141,31 @@ for (const split of [false,true]) test(`real parallel allocator retains acknowle
         assert.ok(!h.writes.some(w=>['goe0.allow','goe0.cmd'].includes(w.id)),JSON.stringify(h.writes));
     }
 });
+
+for (const failure of [null, 'SMA', 'house', 'master', 'device'])
+test(`simultaneous Mii and EQE telemetry age keeps reserves with safe SMA; failure=${failure}`, async () => {
+    const h = await plant({mii: true, startDelayS: 0, split: false, initialSurplusW: 6000,
+        nativeConfig: {wallboxParallelChargingEnabled: true, wb0CommissioningMaxA: 6, wb2CommissioningMaxA: 6}});
+    h.put('DP_WB0_AMIN', 6); h.put('DP_WB2_AMIN', 6);
+    await h.advance(90);
+    for (const wb of [0, 2]) assert.equal(h.value(`Devices.Wallbox${wb}.ResponseState`), 'confirmed');
+    const ids = [0, 2].flatMap(wb => [wb === 0 ? 'goe0.error' : 'goe.error', `DP_WB${wb}_CAR`,
+        wb === 0 ? 'goe0.allow' : 'goe.allow', wb === 0 ? 'goe0.feedback' : 'goe.feedback',
+        `DP_WB${wb}_POWER`, ...[1, 2, 3].map(p => `DP_WB${wb}_L${p}_A`)]);
+    const frozen = ids.map(id => [id, h.states.get(id).val, {...h.states.get(id)}]);
+    const faults = {SMA: [['DP_GRID_IMPORT', 0, {q: 64}]], house: [['DP_HA_CRITICAL', true]],
+        master: [['ems.0.System.RealOutputsEnabled', false]], device: [['goe.error', 1]]};
+    h.writes.length = 0;
+    await h.replayAt(h.now() + 31000, [...frozen, ...(faults[failure] || [])]);
+    if (failure) {
+        assert.equal(h.value('Devices.Wallbox2.OutputActive'), false, h.value('Devices.Wallbox2.OutputStatus'));
+        assert.ok(!h.writes.some(w => ['goe.allow', 'goe0.allow'].includes(w.id) && w.val === 1));
+        return;
+    }
+    for (const wb of [0, 2]) {
+        assert.equal(h.value(`Devices.Wallbox${wb}.OutputActive`), true, h.value(`Devices.Wallbox${wb}.OutputStatus`));
+        assert.match(h.value(`Devices.Wallbox${wb}.OutputStatus`), /TELEMETRIE/);
+        assert.ok(h.value(`Devices.Wallbox${wb}.OutputReservedPower_W`) >= 1380);
+    }
+    assert.ok(!h.writes.some(w => ['goe.allow', 'goe0.allow', 'goe.cmd', 'goe0.cmd'].includes(w.id)));
+});
