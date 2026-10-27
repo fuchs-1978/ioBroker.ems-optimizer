@@ -88,6 +88,16 @@ async function worker(tree) {
         }
         return typeof data === 'string' ? pinned : Buffer.from(pinned);
     };
+    // alpha.159 adds passive append phase metadata. Align ONLY these new
+    // leaves before originals and loss checkpoints are serialized/compressed.
+    // Keep every pre-existing timing, queue, durability and command field.
+    // Dedicated delayed-I/O regressions assert the new metadata and barriers.
+    const historicalAppendHealth = health => {
+        if (health.lastAppendBatch) delete health.lastAppendBatch.phases;
+        if (health.activeOperation) for (const key of ['phase', 'phaseStartedAt', 'phaseElapsedMs', 'fileIO'])
+            delete health.activeOperation[key];
+        return health;
+    };
     let hash, eventCount, scenario;
     const results = [];
     // Preserve values JSON would otherwise collapse (e.g. NaN/null, -0/0,
@@ -395,6 +405,11 @@ async function worker(tree) {
         Object.assign(h.journal, {operationQueue: [], operationRunning: false,
             appendTurns: 0, recorderBacklog: 0, retirementPending: false,
             readTail: Promise.resolve(), readPins: new Set(), activeRead: null});
+        const journalHealth = h.journal.health.bind(h.journal);
+        h.journal.health = () => historicalAppendHealth(journalHealth());
+        const recordLoss = h.journal.lossDiagnostics.record.bind(h.journal.lossDiagnostics);
+        h.journal.lossDiagnostics.record = (value, count, journal) =>
+            recordLoss(value, count, historicalAppendHealth(structuredClone(journal)));
         h.recorder.enqueueDurableBatch = Shadow.prototype.enqueueDurableBatch;
     };
 
