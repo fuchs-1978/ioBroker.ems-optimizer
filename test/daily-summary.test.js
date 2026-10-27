@@ -15,6 +15,46 @@ function snapshot(ts, watts = 1000) {
         wallboxes: [0, 1, 2].map(wb => ({wb, actual_W: 1000, LastStopAt: 0, ConfirmedPhases: 1}))};
 }
 const at = Date.parse('2026-10-24T10:00:00Z');
+test('recorder counter increases across a same-period sampling gap remain counted without energy coverage', async () => {
+    const d = new DailySummary(adapter()); await d.initialize();
+    d.sample(snapshot(at), {dropped: 0, writeErrors: 0});
+    d.sample(snapshot(at + 12343), {dropped: 32, writeErrors: 32});
+    d.sample(snapshot(at + 17343), {dropped: 53, writeErrors: 53});
+    assert.equal(d.data.current.recorder.droppedObserved, 53);
+    assert.equal(d.data.current.recorder.writeErrorsObserved, 53);
+    assert.equal(d.data.current.sources.grid.coveredMs, 5000);
+    assert.equal(d.data.current.sources.grid.importWh, 1000 * 5 / 3600);
+    assert.deepEqual(d.data.current.events.filter(e => e.type === 'recorder.dropped').map(e => e.detail.delta), [32, 21]);
+});
+test('recorder reset across a sampling gap establishes a baseline instead of negative losses', async () => {
+    const d = new DailySummary(adapter()); await d.initialize();
+    d.sample(snapshot(at), {dropped: 53, writeErrors: 53});
+    d.sample(snapshot(at + 20000), {dropped: 0, writeErrors: 0});
+    d.sample(snapshot(at + 25000), {dropped: 2, writeErrors: 2});
+    assert.equal(d.data.current.recorder.droppedObserved, 2);
+    assert.equal(d.data.current.recorder.writeErrorsObserved, 2);
+    assert.equal(d.data.current.recorder.counterResets, 2);
+});
+test('restart does not attribute the unknown counter baseline to the restored day', async () => {
+    const a = adapter(), d = new DailySummary(a); await d.initialize();
+    d.sample(snapshot(at), {dropped: 0, writeErrors: 0});
+    d.sample(snapshot(at + 5000), {dropped: 3, writeErrors: 3}); await d.stop();
+    const r = new DailySummary(adapter(a.writes.at(-1).val)); await r.initialize();
+    r.sample(snapshot(at + 60000), {dropped: 50, writeErrors: 50});
+    r.sample(snapshot(at + 80000), {dropped: 52, writeErrors: 52});
+    assert.equal(r.data.current.recorder.droppedObserved, 5);
+    assert.equal(r.data.current.sources.grid.coveredMs, 5000);
+});
+test('counter increments across a long period boundary remain unassigned', async () => {
+    const d = new DailySummary(adapter()); await d.initialize(); const b = period(at).to;
+    d.sample(snapshot(b - 15000), {dropped: 10, writeErrors: 10});
+    d.sample(snapshot(b + 5000), {dropped: 20, writeErrors: 20});
+    d.sample(snapshot(b + 10000), {dropped: 21, writeErrors: 21});
+    assert.equal(d.data.previous.recorder.droppedObserved, 0);
+    assert.equal(d.data.current.recorder.droppedObserved, 1);
+    assert.equal(d.data.previous.sources.grid.coveredMs, 0);
+    assert.equal(d.data.current.sources.grid.coveredMs, 5000);
+});
 test('Berlin 20h periods handle both DST changes independently of host timezone', () => {
     assert.equal(period(Date.parse('2026-10-25T12:00Z')).to - period(Date.parse('2026-10-25T12:00Z')).from, 25 * 3600000);
     assert.equal(period(Date.parse('2026-03-29T12:00Z')).to - period(Date.parse('2026-03-29T12:00Z')).from, 23 * 3600000);
@@ -164,15 +204,15 @@ test('legacy overflow and empty event list are retained without inventing recove
     assert.equal(r.data.current.eventOverflow,35);assert.equal(r.report().current.eventRetention.protectedOverflow,0);
 });
 
-test('recorder counter increases create bounded error observations; resets/gaps create no invented errors', async () => {
+test('recorder increases stay observed across gaps while resets never create negative losses', async () => {
     const d=new DailySummary(adapter());await d.initialize();
     d.sample(snapshot(at),{dropped:10,writeErrors:5});
     d.sample(snapshot(at+5000),{dropped:12,writeErrors:6});
     assert.deepEqual(d.data.current.events.map(e=>[e.type,e.detail.delta]),[['recorder.dropped',2],['recorder.writeErrors',1]]);
     d.sample(snapshot(at+10000),{dropped:0,writeErrors:0});
     d.sample(snapshot(at+100000),{dropped:50,writeErrors:50});
-    assert.equal(d.data.current.events.length,2);
-    assert.deepEqual(d.data.current.recorder,{droppedObserved:2,writeErrorsObserved:1,counterResets:2});
+    assert.equal(d.data.current.events.length,4);
+    assert.deepEqual(d.data.current.recorder,{droppedObserved:52,writeErrorsObserved:51,counterResets:2});
 });
 
 test('irreducible base still respects 64 kB and explicitly counts forced protected event losses', async () => {

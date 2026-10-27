@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.157",
+    "version": "0.17.0-alpha.158",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.158": {
+        "en": "Count observed recorder losses across same-period sampling gaps without inventing energy coverage; retain restart and period-boundary uncertainty.",
+        "de": "Beobachtete Recorderverluste trotz Beobachtungsluecken derselben Tagesperiode zaehlen; Energieabdeckung sowie Neustart- und Periodengrenzen bleiben unbekannt.",
+        "es": "Contar pérdidas observadas del grabador durante huecos del mismo periodo sin inventar cobertura energética.",
+        "fr": "Compter les pertes observées pendant les lacunes de la même période sans inventer de couverture énergétique.",
+        "it": "Contare le perdite osservate nelle lacune dello stesso periodo senza inventare copertura energetica.",
+        "nl": "Tel waargenomen recorderverliezen over meetgaten binnen dezelfde periode zonder energiedekking te verzinnen.",
+        "pl": "Zliczaj zaobserwowane straty rejestratora podczas przerw w tym samym okresie bez tworzenia pokrycia energii.",
+        "pt": "Contar perdas observadas do gravador em lacunas do mesmo período sem inventar cobertura energética.",
+        "ru": "Учитывать наблюдаемые потери регистратора при пропусках внутри периода без вымышленного покрытия энергии.",
+        "uk": "Враховувати спостережені втрати реєстратора під час пропусків у межах періоду без вигаданого покриття енергії.",
+        "zh-cn": "统计同一周期采样间隔中已观察到的记录丢失，不虚构能源覆盖。"
+      },
       "0.17.0-alpha.157": {
         "en": "Retain confirmed charging through telemetry gaps with fresh SMA protection; capture current acknowledgements immediately and preserve peer reserves and confirmed phase topology.",
         "de": "Bestaetigte Ladung bei Telemetrieluecken mit aktuellem SMA-Schutz halten; Strombestaetigungen sofort sichern sowie Peer-Reserven und bestaetigte Phasen erhalten.",
@@ -81,19 +94,6 @@
         "ru": "Стабилизация бюджета параллельного запуска и EQV с сохранением быстрого регулирования EQE.",
         "uk": "Стабілізація бюджету паралельного запуску та EQV зі збереженням швидкого регулювання EQE.",
         "zh-cn": "稳定并行启动和 EQV 功率预算，保留 EQE 快速调节。"
-      },
-      "0.17.0-alpha.151": {
-        "en": "Allow the existing early one-amp retry to use measured PV funding for vehicles with a persistent current offset; retain response and safety limits.",
-        "de": "Vorhandenen fruehen 1-A-Nachregelversuch auch mit gemessenem PV-Budget bei bleibendem Stromversatz erlauben; Antwort- und Schutzgrenzen erhalten.",
-        "es": "Permitir el reintento temprano de un amperio con presupuesto solar medido y mantener los límites de seguridad.",
-        "fr": "Autoriser la reprise précoce d’un ampère avec le budget solaire mesuré, en conservant les limites de sécurité.",
-        "it": "Consentire il tentativo anticipato di un ampere con budget fotovoltaico misurato, mantenendo i limiti di sicurezza.",
-        "nl": "Sta de vroege stap van één ampère toe met gemeten PV-budget; behoud de veiligheidsgrenzen.",
-        "pl": "Wczesna próba zwiększenia o jeden amper z mierzonym budżetem PV przy zachowaniu granic bezpieczeństwa.",
-        "pt": "Permitir a tentativa antecipada de um ampere com orçamento solar medido, mantendo os limites de segurança.",
-        "ru": "Ранний повторный шаг на один ампер с измеренным бюджетом ФЭ при сохранении защитных ограничений.",
-        "uk": "Ранній повторний крок на один ампер із виміряним бюджетом ФЕ зі збереженням захисних обмежень.",
-        "zh-cn": "允许现有提前一安培重试使用实测光伏预算，保留响应与安全限制。"
       }
     },
     "titleLang": {
