@@ -134,8 +134,14 @@ test('independent SQL verification uses bounded database-only reads and observes
     assert.equal(calls.length, 1);
     assert.equal(calls[0].command, 'query');
     assert.match(calls[0].message, /name = 'ems\.0\.Debug\.Shadow\.DecisionRecord' AND type = 1/);
-    assert.match(calls[0].message, /ts >= 1000 AND ts <= 3000 ORDER BY ts ASC LIMIT 32;/);
-    assert.doesNotMatch(calls[0].message, /UNION|COUNT|JOIN/);
+    assert.match(calls[0].message, /^SELECT id, type .*LIMIT 2;/);
+    complete({result: [{id: 73, type: 1}]});
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(done, false, 'metadata completion alone cannot prove original storage');
+    assert.equal(calls.length, 2);
+    assert.match(calls[1].message, /WHERE id = 73 AND ts >= 1000 AND ts <= 3000 AND EXISTS/);
+    assert.match(calls[1].message, /ORDER BY ts ASC LIMIT 32;/);
+    assert.doesNotMatch(calls[1].message, /UNION|COUNT|JOIN|id = \(SELECT/);
     complete({result: [{ts: 2000, val: null, ack: false, q: 64}]});
     const response = await reading;
     assert.equal(response.backendCompletionObserved, true);
@@ -165,7 +171,8 @@ test('SQL cache-only originals cannot retire the real journal; later database or
     a.sendTo = (instance, command, sql, callback) => {
         commands.push(command);
         // Faithful getHistory distinction: it can answer from unsaved cache.
-        callback({result: command === 'getHistory' ? cache : database});
+        callback({result: command === 'getHistory' ? cache
+            : /^SELECT id, type/.test(sql) ? [{id: 73, type: 1}] : database});
     };
     const delivery = new Delivery({journal, now: () => clock,
         publish: async val => {cache.push({ts: clock, val}); return {publishedAt: clock};},
@@ -180,12 +187,12 @@ test('SQL cache-only originals cannot retire the real journal; later database or
         assert.equal(cache.length, 1);
         assert.equal(delivery.sqlConfirmed, 0, 'a cached original is not a persisted SQL proof');
         assert.equal((await journal.readBatch({limit: 4})).length, 1);
-        assert.deepEqual(commands, ['query']);
+        assert.deepEqual(commands, ['query', 'query'], 'cold lookup then database-only history');
         database.push(...cache); clock += 5000;
         await delivery.tick();
         assert.equal(delivery.sqlConfirmed, 1);
         assert.equal((await journal.readBatch({limit: 4})).length, 0);
-        assert.deepEqual(commands, ['query', 'query']);
+        assert.deepEqual(commands, ['query', 'query', 'query', 'query'], 'empty result invalidated ID; later lookup still cannot prove storage');
     } finally {delivery.stop(); await journal.close(); fs.rmSync(directory, {recursive:true,force:true});}
 });
 
