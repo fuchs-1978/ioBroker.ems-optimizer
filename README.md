@@ -2,7 +2,7 @@
 
 Forecast-based energy management for ioBroker. Combines PV and grid measurements, load history, weather forecasts and electricity prices in a rolling 48-hour plan.
 
-**Current version: 0.17.0-alpha.159.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
+**Current version: 0.17.0-alpha.160.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
 
 [Deutsche Bedienungsanleitung](README.de.md) · [Release history](CHANGELOG_OLD.md) · [Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
@@ -62,6 +62,10 @@ npm run test:equivalence
 Admin translation catalogs are stored in `admin/i18n/<language>/translations.json`. Keep their keys aligned with the English catalog and all visible Admin texts. Package metadata and every retained release message must cover the supported languages. See [translation coverage and checks](docs/translations.md).
 
 ## Changelog
+
+### 0.17.0-alpha.160 (2026-10-28)
+
+Store compact journal batches in dependency-aligned immutable segments, preserving original hashes and independent SQL proofs. Verified offline storage relocation, legacy export and bounded host SQL/storage inspection are available. Older binaries require offline legacy export before downgrade. [Release and maintenance instructions](docs/release-0.17.0-alpha.160.md).
 
 ### 0.17.0-alpha.159 (2026-10-27)
 

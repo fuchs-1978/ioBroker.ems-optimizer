@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.159",
+    "version": "0.17.0-alpha.160",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.160": {
+        "en": "Group compact journal originals in durable segments; add verified offline relocation/legacy export and targeted SQL index/storage inspection. Physical latency cause and live acceptance remain open.",
+        "de": "Kompakte Journaloriginale in haltbaren Segmenten buendeln; geprueften Offline-Speicherwechsel/Rueckexport und gezielte SQL-Index-/Speicherpruefung ergaenzen. Physische Verzoegerungsursache und reale Abnahme bleiben offen.",
+        "es": "Agrupar originales en segmentos duraderos; añadir traslado sin conexión, exportación y revisión de índices SQL. Validación real pendiente.",
+        "fr": "Regrouper les originaux en segments durables ; ajouter migration hors ligne, export et inspection SQL. Validation réelle ouverte.",
+        "it": "Raggruppare originali in segmenti durevoli; aggiungere trasferimento offline, esportazione e controllo indici SQL. Verifica reale aperta.",
+        "nl": "Bundel originelen in duurzame segmenten; voeg offline verplaatsing, export en SQL-indexcontrole toe. Praktijkvalidatie blijft open.",
+        "pl": "Grupuj oryginały w trwałe segmenty; dodaj przenoszenie offline, eksport i kontrolę indeksów SQL. Odbiór rzeczywisty pozostaje otwarty.",
+        "pt": "Agrupar originais em segmentos duráveis; adicionar migração offline, exportação e inspeção de índices SQL. Validação real pendente.",
+        "ru": "Группировать оригиналы в устойчивые сегменты; добавить перенос офлайн, экспорт и проверку индексов SQL. Реальная проверка открыта.",
+        "uk": "Групувати оригінали у стійкі сегменти; додати перенесення офлайн, експорт і перевірку індексів SQL. Реальна перевірка відкрита.",
+        "zh-cn": "将原始记录合并到持久段中，添加离线迁移、旧格式导出和 SQL 索引检查。实际验证仍待完成。"
+      },
       "0.17.0-alpha.159": {
         "en": "Identify stalled journal append phases and pending file operations in bounded recorder-loss diagnostics; preserve all durability and SQL proof limits.",
         "de": "Blockierte Journal-Appendphasen und wartende Dateioperationen in begrenzter Verlustdiagnose unterscheiden; Haltbarkeits- und SQL-Nachweisgrenzen erhalten.",
@@ -81,19 +94,6 @@
         "ru": "Стабилизация полного запуска зарядки при смене фаз, перезапуске и распределении мощности с нагревателем.",
         "uk": "Стабілізація повного запуску заряджання при зміні фаз, перезапуску та розподілі потужності з нагрівачем.",
         "zh-cn": "稳定切相、重启接管以及加热器和升流功率分配期间的完整充电启动流程。"
-      },
-      "0.17.0-alpha.153": {
-        "en": "Return blocked priority starts from optional followers and release the heater budget; preserve physical stop proofs and start delays.",
-        "de": "Blockierten Prioritaetsstart durch Freigabe optionaler Fahrzeuge und des Heizstabs ermoeglichen; Abschaltnachweise und Startwartezeit erhalten.",
-        "es": "Liberar vehículos secundarios y calentador para el arranque prioritario, manteniendo la confirmación de parada y la espera.",
-        "fr": "Libérer les véhicules secondaires et le chauffage pour le démarrage prioritaire, avec confirmation d’arrêt et délai conservés.",
-        "it": "Liberare veicoli secondari e riscaldatore per l’avvio prioritario, mantenendo conferma di arresto e attesa.",
-        "nl": "Geef budget van andere voertuigen en verwarming vrij voor de prioriteitsstart; behoud stopbewijs en wachttijd.",
-        "pl": "Zwolnienie budżetu pozostałych pojazdów i grzałki dla startu priorytetowego z zachowaniem potwierdzeń i opóźnień.",
-        "pt": "Libertar veículos secundários e aquecimento para o arranque prioritário, mantendo confirmação de paragem e espera.",
-        "ru": "Освобождение бюджета других автомобилей и нагревателя для приоритетного запуска с сохранением подтверждения остановки и задержки.",
-        "uk": "Звільнення бюджету інших автомобілів і нагрівача для пріоритетного запуску зі збереженням підтвердження зупинки та затримки.",
-        "zh-cn": "为优先车辆启动释放其他车辆和加热器的功率预算，保留停止确认和启动等待。"
       }
     },
     "titleLang": {
@@ -170,6 +170,7 @@
     "multiWallboxAlphaArmed": false,
     "wallboxParallelChargingEnabled": true,
     "historyInstance": "",
+    "recorderJournalRoot": "",
     "historyDays": 84,
     "diagnosticPumpSourcesJson": "[]",
     "pvPowerId": "",

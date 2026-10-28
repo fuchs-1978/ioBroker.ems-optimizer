@@ -25,6 +25,7 @@ const heatPumpTelemetryParser = require("./lib/heatpump-telemetry");
 const {normalizeWallboxPowerKW} = require("./lib/wallbox-measurement");
 const batteryTemperatureReserve = require("./lib/battery-temperature-reserve");
 const sunEnergyHeads = require("./lib/sunenergy-heads");
+const {journalDirectory} = require("./lib/journal-location");
 const DecisionRecordJournal = require("./lib/decision-record-journal");
 const DecisionRecordDelivery = require("./lib/decision-record-delivery");
 const {readDecisionRecordDatabase} = require("./lib/decision-record-sql");
@@ -260,8 +261,9 @@ class EmsOptimizer extends utils.Adapter {
         // files never belong to the package or to public diagnostic reports.
         try {
             const dataDirectory = utils.getAbsoluteInstanceDataDir(this);
-            const journal = new DecisionRecordJournal({directory: path.join(dataDirectory, 'decision-record-journal'),
-                maxRecordBytes: 512 * 1024});
+            const directory = await journalDirectory(dataDirectory, this.config.recorderJournalRoot, this.namespace);
+            const journal = new DecisionRecordJournal({directory,
+                maxRecordBytes: 512 * 1024, segmentBatches: true});
             await journal.initialize();
             if (this.unloading) { await journal.close(); return; }
             this.decisionRecordJournal = journal;
