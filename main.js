@@ -35,6 +35,8 @@ const {SqlVerificationRecovery} = require("./lib/sql-verification-recovery");
 const SqlDiagnosticBackoff = require("./lib/sql-diagnostic-backoff");
 const {buildDiagnosticSourceContract} = require("./lib/diagnostic-source-contract");
 const {HeaterWriteProof} = require("./lib/heater-write-proof");
+const {adapterTimers} = require("./lib/adapter-timers");
+const shutdownTimers = require("node:timers");
 
 class EmsOptimizer extends utils.Adapter {
     constructor(options = {}) {
@@ -46,6 +48,7 @@ class EmsOptimizer extends utils.Adapter {
         this.listeners = [];
         this.jobs = [];
         this.timers = new Set();
+        this.runtimeTimers = adapterTimers(this);
         this.engineContext = null;
         this.allowedForeignWriteIds = new Set();
         this.zeroOnlyForeignWriteIds = new Set();
@@ -763,10 +766,10 @@ class EmsOptimizer extends utils.Adapter {
         };
         try {
             await Promise.race([drain(),
-                new Promise(resolve => { timeout = setTimeout(resolve, 250); })]);
+                new Promise(resolve => { timeout = shutdownTimers.setTimeout(resolve, 250); })]);
         } finally {
             expired = true;
-            clearTimeout(timeout);
+            shutdownTimers.clearTimeout(timeout);
         }
     }
 
@@ -1039,7 +1042,7 @@ class EmsOptimizer extends utils.Adapter {
                 adapter.log[fn](String(message));
             },
             setTimeout(callback, delay, ...args) {
-                const timer = setTimeout(() => {
+                const timer = adapter.runtimeTimers.setTimeout(() => {
                     adapter.timers.delete(timer);
                     if (!adapter.unloading) callback(...args);
                 }, delay);
@@ -1047,7 +1050,7 @@ class EmsOptimizer extends utils.Adapter {
                 return timer;
             },
             clearTimeout(timer) {
-                clearTimeout(timer);
+                adapter.runtimeTimers.clearTimeout(timer);
                 adapter.timers.delete(timer);
             }
         };
@@ -1110,7 +1113,7 @@ class EmsOptimizer extends utils.Adapter {
         this.dailySummaryStop = this.dailySummary?.stop().catch(error => this.warnDebug(error));
         this.wallboxOutput.stopping = true;
         for (const job of this.jobs) job.cancel();
-        for (const timer of this.timers) clearTimeout(timer);
+        for (const timer of this.timers) this.runtimeTimers.clearTimeout(timer);
         this.jobs = [];
         this.timers.clear();
         // Issue independent stops before waiting for any foreign channel.
@@ -1172,11 +1175,11 @@ class EmsOptimizer extends utils.Adapter {
             let timer;
             try {
                 const closed = await Promise.race([this.decisionRecordJournal.close().then(() => true),
-                    new Promise(resolve => {timer = setTimeout(() => resolve(false), 250);})]);
+                    new Promise(resolve => {timer = shutdownTimers.setTimeout(() => resolve(false), 250);})]);
                 if (!closed) this.warnDebug(new Error('Lokaler Journalabschluss noch offen; keine Speicherbestaetigung'));
             }
             catch (error) { this.warnDebug(error); }
-            finally { clearTimeout(timer); }
+            finally { shutdownTimers.clearTimeout(timer); }
         }
         // Passive final checkpoint includes a late callback observed while
         // draining; it never clears a fence or confirms an original record.

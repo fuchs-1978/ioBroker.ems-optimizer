@@ -94,7 +94,7 @@ test('unacknowledged retained target retries only after 60 seconds', () => {
 
 test('retained targets cannot bypass stale heartbeat or invalid target metadata', async t => {
     for (const change of [
-        h => {},
+        _h => {},
         h => h.own('Control.LastUpdate', h.now(), {ts: 1}),
         h => h.own('Control.LastUpdate', 1),
         ...[{ack: false}, {q: 64}, {val: null}, {val: 2}, {ts: 0}, {ts: 2000000}].map(extra =>

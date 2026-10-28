@@ -24,3 +24,7 @@ secrets/
 
 # Historical release documentation.
 CHANGELOG_OLD.md
+
+# Development-only static analysis and reproducible CI installation.
+eslint.config.mjs
+package-lock.json

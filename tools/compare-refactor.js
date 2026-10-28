@@ -324,7 +324,12 @@ async function worker(tree) {
             a[method] = async () => record({kind: 'startup', method});
         a.outputMetadata.refresh = async () => record({kind: 'metadata'});
         a.publishMappingStatus = () => record({kind: 'mapping'});
-        a.runEngine = source => record({kind: 'engine', source});
+        // alpha.163 routes bootstrap timeouts through the existing sandbox
+        // delegate. This fixture records source text rather than running it;
+        // align only that API spelling. Timer ownership/cancellation and the
+        // executed bootstrap order are tested separately, with unchanged traces.
+        a.runEngine = source => record({kind: 'engine',
+            source: source.replace(/\bengineTimers\.(setTimeout|clearTimeout)\b/g, '$1')});
         a.wallboxOutput.initialize = async () => record({kind: 'initialize-output', states: [...a.stateCache]});
         await a.onReady();
         a.engineContext = {};
