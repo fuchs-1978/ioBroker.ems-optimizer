@@ -28,6 +28,42 @@ function adapter(adapterCore = {}) {
     return instance;
 }
 
+test('operator display initialization failure cannot disable existing daily sampling or create SQL requests', async () => {
+    const a = adapter(), calls = [];
+    a.operatorDiagnostics.initialize = async () => {throw new Error('display unavailable');};
+    a.dailySummary = {initialize: async () => {}, sample: () => calls.push('sample'), report: () => ({})};
+    a.debugRecorder.snapshot = () => ({control: {}});
+    a.debugRecorder.own = () => null;
+    a.registerSchedule = (expression, callback) => calls.push({expression, callback});
+    a.sendTo = () => assert.fail('presentation initiated a SQL/backend request');
+    await a.startDailySummary();
+    assert.equal(calls[0], 'sample');
+    assert.equal(calls[1].expression, '*/5 * * * * *');
+    calls[1].callback(); assert.equal(calls[2], 'sample');
+});
+
+test('operator display writes stop with unload before further scheduled observations', async () => {
+    const a = adapter(), writes = [];
+    a.setStateAsync = async (id, state) => writes.push({id, state});
+    await a.operatorDiagnostics.initialize();
+    writes.length = 0;
+    a.operatorDiagnostics.stop();
+    a.operatorDiagnostics.publish({ts: Date.now()}, {});
+    await new Promise(resolve => setImmediate(resolve));
+    assert.deepEqual(writes, []);
+});
+
+test('stalled operator object setup does not hold up the existing sampler', async () => {
+    const a = adapter(); let complete, samples = 0;
+    a.operatorDiagnostics.initialize = () => new Promise(resolve => {complete = resolve;});
+    a.dailySummary = {initialize: async () => {}, sample: () => samples++, report: () => ({})};
+    a.debugRecorder.snapshot = () => ({control: {}}); a.debugRecorder.own = () => null;
+    a.registerSchedule = () => {};
+    await a.startDailySummary();
+    assert.equal(samples, 1);
+    complete();
+});
+
 test('source power history setup starts after output initialization and cannot hold up productive startup', async () => {
     const a = adapter(), order = [];
     for (const method of ['preloadStates', 'migrateBatteryCadence', 'startEngine', 'applyNativeVehicleSettings',

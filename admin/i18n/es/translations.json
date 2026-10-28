@@ -565,5 +565,13 @@
   "Optional historical comparison only. Charging decisions, including manual minimum current, use the qualified EMS SoC and configured target; this input cannot authorize or block charging. The old SOCmin script can remain disabled after this version is installed.": "Sólo una comparación histórica opcional. las decisiones de recarga de la batería, incluida la corriente mínima manual, utilizan el EMS SoC cualificado y el objetivo configurado; esta entrada no puede autorizar ni bloquear la recarga de la batería. El antiguo script SOCmin puede permanecer desactivado después de que esta versión se instale.",
   "Use minimum-current stages below the EMS minimum SoC": "Utilice las etapas de corriente mínima por debajo del EMS mínimo SoC",
   "days": "días",
-  "percentage points": "puntos porcentuales"
+  "percentage points": "puntos porcentuales",
+  "EMS overview": "Resumen del EMS",
+  "Live explanation": "Explicación en directo",
+  "Recorder quality": "Calidad del registro",
+  "SQL confirmation": "Confirmación de SQL",
+  "External history assessment": "Evaluación del historial externo",
+  "Current balance period": "Período de balance actual",
+  "Previous balance period": "Período de balance anterior",
+  "Read-only diagnostics; no additional SQL queries.": "Diagnóstico de solo lectura; sin consultas SQL adicionales."
 }

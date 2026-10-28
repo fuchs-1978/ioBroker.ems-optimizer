@@ -1,11 +1,15 @@
 # Translation coverage
 
-The Admin interface has complete catalogs for all 567 English keys in eleven
+The Admin interface has complete catalogs for all 575 English keys in eleven
 languages: English (`en`), German (`de`), Spanish (`es`), French (`fr`), Italian
 (`it`), Dutch (`nl`), Polish (`pl`), Portuguese (`pt`), Russian (`ru`), Ukrainian
 (`uk`) and Simplified Chinese (`zh-cn`). Field labels, choices, written-out units, tooltips and
 extended guidance are translated; the nine additional catalogs no longer use
 the English help-text fallback introduced in PR #261.
+
+Alpha.162 adds eight translated overview labels. Dynamic operator explanations
+and daily reviews are currently German; catalog coverage does not imply that
+runtime diagnostic sentences are localized into every Admin language.
 
 Shared units, phase names, product names, technical identifiers and interface
 values intentionally remain literal. For example, `kWh`, `L1`, `EEBUS`,

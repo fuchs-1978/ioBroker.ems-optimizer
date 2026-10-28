@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.161",
+    "version": "0.17.0-alpha.162",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.162": {
+        "en": "Add read-only live explanations, separate recorder/SQL/history quality and bounded daily reviews from existing observations. No new SQL queries or control changes; unknown goals and costs remain explicit.",
+        "de": "Lesende Live-Erklärung, getrennte Recorder-/SQL-/Historienqualität und begrenzte Tagesrückblicke aus vorhandenen Beobachtungen. Keine neuen SQL-Abfragen oder Regeländerungen; unbekannte Ziele und Kosten bleiben ausdrücklich offen.",
+        "es": "Añade explicaciones en directo, calidad separada de registro, SQL e historial y resúmenes diarios acotados. Sin nuevas consultas SQL ni cambios de control; objetivos y costes desconocidos se indican expresamente.",
+        "fr": "Ajoute des explications en direct, des qualités distinctes pour enregistrement, SQL et historique et des bilans quotidiens bornés. Aucune nouvelle requête SQL ni modification de régulation ; objectifs et coûts inconnus signalés.",
+        "it": "Aggiunge spiegazioni in tempo reale, qualità separate di registrazione, SQL e storico e riepiloghi giornalieri limitati. Nessuna nuova query SQL o modifica del controllo; obiettivi e costi sconosciuti restano espliciti.",
+        "nl": "Voegt actuele uitleg, afzonderlijke kwaliteit voor registratie, SQL en historie en begrensde dagoverzichten toe. Geen nieuwe SQL-query’s of regelwijzigingen; onbekende doelen en kosten blijven zichtbaar.",
+        "pl": "Dodaje bieżące wyjaśnienia, oddzielną ocenę rejestracji, SQL i historii oraz ograniczone podsumowania dzienne. Bez nowych zapytań SQL i zmian sterowania; nieznane cele i koszty są wyraźnie oznaczone.",
+        "pt": "Acrescenta explicações em tempo real, qualidade separada de registo, SQL e histórico e resumos diários limitados. Sem novas consultas SQL nem alterações de controlo; objetivos e custos desconhecidos ficam explícitos.",
+        "ru": "Добавлены текущие объяснения, раздельная оценка регистрации, SQL и истории и ограниченные суточные обзоры. Без новых запросов SQL и изменений управления; неизвестные цели и затраты указаны явно.",
+        "uk": "Додано поточні пояснення, окрему оцінку запису, SQL та історії й обмежені добові огляди. Без нових запитів SQL і змін керування; невідомі цілі та витрати позначено явно.",
+        "zh-cn": "增加基于现有观测的只读实时说明、独立记录与 SQL 及历史质量状态和有限每日回顾。不增加 SQL 查询或修改控制；明确标示未知目标与成本。"
+      },
       "0.17.0-alpha.161": {
         "en": "Resolve and briefly cache the SQL datapoint ID for direct (id,ts) range verification; preserve exact name/type guards, bounded queries, durable fences and late replies. Document operator SQL index/thread-cache findings without claiming a measured latency fix.",
         "de": "SQL-Datenpunkt-ID begrenzt aufloesen und zwischenspeichern, dann direkte (id,ts)-Bereichspruefung nutzen; Namens-/Typpruefung, Grenzen, dauerhafte Sperren und spaete Antworten erhalten. SQL-Index-/Thread-Cache-Befunde dokumentieren; reale Latenzwirkung offen.",
@@ -81,19 +94,6 @@
         "ru": "Продолжать работу дополнительного нагревателя во время задержки запуска приоритетного автомобиля; затем передавать мощность с учётом физических резервов.",
         "uk": "Продовжувати роботу додаткового нагрівача під час затримки запуску пріоритетного автомобіля; потім передавати потужність з урахуванням фізичних резервів.",
         "zh-cn": "在优先车辆的启动延时期间继续使用可选加热器；倒计时结束后移交功率，仍遵守实际功率预留限制。"
-      },
-      "0.17.0-alpha.155": {
-        "en": "Retain the last usable vehicle SoC with explicit age; pause charging after 15 minutes without power uptake and release its reservation after confirmed OFF.",
-        "de": "Letzten brauchbaren Fahrzeug-SoC mit Altersanzeige behalten; nach 15 Minuten ohne Leistungsaufnahme pausieren und die Reserve nach bestaetigtem AUS freigeben.",
-        "es": "Conservar el último estado de carga válido e indicar su antigüedad; pausar tras 15 minutos sin consumo y liberar la reserva después de confirmar la parada.",
-        "fr": "Conserver le dernier état de charge valide avec son ancienneté ; suspendre après 15 minutes sans consommation et libérer la réserve après confirmation de l’arrêt.",
-        "it": "Mantenere l’ultimo stato di carica valido indicandone l’età; sospendere dopo 15 minuti senza assorbimento e liberare la riserva dopo la conferma di arresto.",
-        "nl": "Behoud de laatst bruikbare laadstatus met ouderdom; pauzeer na 15 minuten zonder stroomafname en geef de reserve vrij na bevestigde uitschakeling.",
-        "pl": "Zachowaj ostatni prawidłowy poziom naładowania z informacją o wieku; wstrzymaj ładowanie po 15 minutach bez poboru i zwolnij rezerwę po potwierdzeniu wyłączenia.",
-        "pt": "Manter o último estado de carga válido com indicação da idade; pausar após 15 minutos sem consumo e libertar a reserva após confirmação da paragem.",
-        "ru": "Сохранять последний достоверный уровень заряда с указанием давности; приостанавливать зарядку после 15 минут без потребления и освобождать резерв после подтверждения отключения.",
-        "uk": "Зберігати останній достовірний рівень заряду із зазначенням давності; призупиняти заряджання після 15 хвилин без споживання та звільняти резерв після підтвердження вимкнення.",
-        "zh-cn": "保留最后有效的车辆电量并显示数据年龄；连续15分钟无功率消耗后暂停充电，确认关闭后释放预留功率。"
       }
     },
     "titleLang": {

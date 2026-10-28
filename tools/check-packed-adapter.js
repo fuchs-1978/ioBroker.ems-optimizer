@@ -17,6 +17,7 @@ try {
     const packed = JSON.parse(npm(['pack', '--json', '--pack-destination', directory], root))[0];
     assert.ok(packed.files.some(file => file.path === 'lib/wallbox-allocation.js'));
     assert.ok(packed.files.some(file => file.path === 'lib/wallbox-source-diagnostics.js'));
+    assert.ok(packed.files.some(file => file.path === 'lib/operator-diagnostics.js'));
     assert.ok(packed.files.some(file => file.path === 'lib/grid-operator-accounting.js'));
     assert.ok(packed.files.some(file => file.path === 'lib/grid-operator-runtime.js'));
     assert.ok(packed.files.some(file => file.path === 'lib/engine/grid-operator-control.js'));
@@ -112,7 +113,15 @@ try {
         require: name => name === '@iobroker/adapter-core' ? {Adapter} : localRequire(name)
     });
     assert.equal(typeof module.exports, 'function');
-    assert.ok(module.exports());
+    const instance = module.exports();
+    assert.ok(instance);
+    assert.ok(instance.operatorDiagnostics instanceof localRequire('./lib/operator-diagnostics').OperatorDiagnostics);
+    assert.equal(typeof instance.operatorDiagnostics.initialize, 'function');
+    const presentation = localRequire('./lib/operator-diagnostics');
+    const unknownQuality = presentation.quality({now: 2000000});
+    const view = presentation.buildReport({ts: 2000000}, unknownQuality, {}, 2000000);
+    assert.equal(view.quality.externalHistory.status, 'nicht geprüft');
+    assert.equal(view.daily.current, null);
     console.log(JSON.stringify({node: process.version, version: localRequire('./package.json').version,
         files: packed.files.length, states: states.size, installedTarball: true}));
 } finally {
