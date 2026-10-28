@@ -565,5 +565,13 @@
   "Optional historical comparison only. Charging decisions, including manual minimum current, use the qualified EMS SoC and configured target; this input cannot authorize or block charging. The old SOCmin script can remain disabled after this version is installed.": "只有可选的历史比较. 电池充电决策,包括手动最低电流,使用合格的EMS SoC和配置目标;此输入不能授权或阻止电池充电. 在这个版本安装后,旧的 SOCmin 脚本仍然可以被禁用.",
   "Use minimum-current stages below the EMS minimum SoC": "使用低于EMS最低SoC的最小电流阶段",
   "days": "天",
-  "percentage points": "百分点"
+  "percentage points": "百分点",
+  "EMS overview": "EMS 概览",
+  "Live explanation": "实时说明",
+  "Recorder quality": "记录质量",
+  "SQL confirmation": "SQL 存储确认",
+  "External history assessment": "外部历史评估",
+  "Current balance period": "当前统计周期",
+  "Previous balance period": "上一统计周期",
+  "Read-only diagnostics; no additional SQL queries.": "只读诊断；不增加 SQL 查询。"
 }

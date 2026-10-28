@@ -9,6 +9,7 @@ const utils = require("@iobroker/adapter-core");
 const WallboxOutput = require("./lib/wallbox-output");
 const DebugRecorder = require("./lib/debug-recorder");
 const {DailySummary} = require("./lib/daily-summary");
+const {OperatorDiagnostics} = require("./lib/operator-diagnostics");
 const {LatestStateWriter, isDisplaySeries} = require("./lib/latest-state-writer");
 const ShadowController = require("./lib/shadow-controller");
 const ShadowHistory = require("./lib/shadow-history");
@@ -64,6 +65,7 @@ class EmsOptimizer extends utils.Adapter {
         this.outputMetadata = new OutputMetadata(this);
         this.debugRecorder = new DebugRecorder(this);
         this.dailySummary = new DailySummary(this);
+        this.operatorDiagnostics = new OperatorDiagnostics(this);
         this.shadowController = new ShadowController(this, {
             createContext: sandbox => createEngineContext(this.namespace, this.readMapping(), sandbox, 'ems-shadow-decisions')
         });
@@ -172,6 +174,8 @@ class EmsOptimizer extends utils.Adapter {
     async startDailySummary() {
         try {
             await this.dailySummary.initialize();
+            // Optional display setup must not delay the existing daily sampler.
+            void this.operatorDiagnostics.initialize().catch(error => this.warnDebug(error));
             if (this.unloading) return;
             const sample = () => {
                 if (this.unloading) return;
@@ -182,6 +186,7 @@ class EmsOptimizer extends utils.Adapter {
                         dropped: this.shadowController?.recordDropped,
                         writeErrors: this.shadowController?.recordWriteErrors
                     });
+                    this.operatorDiagnostics.publish(snapshot, this.dailySummary.report());
                 } catch (error) { this.warnDebug(error); }
             };
             sample();
@@ -1095,6 +1100,7 @@ class EmsOptimizer extends utils.Adapter {
         if (typeof this.requireLog === "function") this.requireLog(false);
         this.runShadow('beginShutdown');
         this.unloading = true;
+        this.operatorDiagnostics?.stop();
         this.decisionRecordDelivery?.stop();
         this.marketPrices?.stop();
         try { this.shadowHistory?.stop(); }

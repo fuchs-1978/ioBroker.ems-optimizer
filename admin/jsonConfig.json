@@ -2,6 +2,106 @@
   "i18n": true,
   "type": "tabs",
   "items": {
+    "diagnosticsTab": {
+      "type": "panel",
+      "label": "EMS overview",
+      "items": {
+        "_notice": {
+          "type": "staticText",
+          "text": "Read-only diagnostics; no additional SQL queries.",
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "newLine": true
+        },
+        "_Live": {
+          "type": "state",
+          "oid": "Diagnostics.Live",
+          "label": "Live explanation",
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "newLine": true
+        },
+        "_Recorder": {
+          "type": "state",
+          "oid": "Diagnostics.Recorder",
+          "label": "Recorder quality",
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "newLine": true
+        },
+        "_SQL": {
+          "type": "state",
+          "oid": "Diagnostics.SQL",
+          "label": "SQL confirmation",
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "newLine": true
+        },
+        "_History": {
+          "type": "state",
+          "oid": "Diagnostics.History",
+          "label": "External history assessment",
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "newLine": true
+        },
+        "_CurrentDay": {
+          "type": "state",
+          "oid": "Diagnostics.CurrentDay",
+          "label": "Current balance period",
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "newLine": true
+        },
+        "_PreviousDay": {
+          "type": "state",
+          "oid": "Diagnostics.PreviousDay",
+          "label": "Previous balance period",
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "newLine": true
+        }
+      }
+    },
     "generalTab": {
       "type": "panel",
       "label": "General",
