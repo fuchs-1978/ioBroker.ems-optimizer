@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.160",
+    "version": "0.17.0-alpha.161",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.161": {
+        "en": "Resolve and briefly cache the SQL datapoint ID for direct (id,ts) range verification; preserve exact name/type guards, bounded queries, durable fences and late replies. Document operator SQL index/thread-cache findings without claiming a measured latency fix.",
+        "de": "SQL-Datenpunkt-ID begrenzt aufloesen und zwischenspeichern, dann direkte (id,ts)-Bereichspruefung nutzen; Namens-/Typpruefung, Grenzen, dauerhafte Sperren und spaete Antworten erhalten. SQL-Index-/Thread-Cache-Befunde dokumentieren; reale Latenzwirkung offen.",
+        "es": "Resolver y almacenar temporalmente el ID SQL para consultas de rango con controles exactos. Documentar diagnóstico SQL; mejora real pendiente.",
+        "fr": "Résoudre et mémoriser brièvement l’ID SQL pour la recherche par plage avec contrôles exacts. Documenter le diagnostic SQL ; gain réel à vérifier.",
+        "it": "Risolvere e memorizzare brevemente l’ID SQL per ricerche per intervallo con verifiche esatte. Documentare la diagnosi SQL; beneficio reale da verificare.",
+        "nl": "SQL-ID tijdelijk cachen voor directe bereikcontrole met exacte naam- en typecontrole. SQL-bevindingen vastleggen; praktijkwinst nog open.",
+        "pl": "Rozwiązuj i krótko buforuj ID SQL dla kontroli zakresu z dokładną walidacją. Udokumentuj diagnozę SQL; rzeczywista poprawa pozostaje otwarta.",
+        "pt": "Resolver e guardar temporariamente o ID SQL para consultas por intervalo com validação exata. Documentar diagnóstico SQL; ganho real pendente.",
+        "ru": "Временно кэшировать ID SQL для диапазонной проверки с точной проверкой имени и типа. Документировать диагностику; эффект задержки ещё не подтверждён.",
+        "uk": "Тимчасово кешувати ID SQL для діапазонної перевірки з точною перевіркою імені й типу. Документувати діагностику; ефект затримки ще не підтверджено.",
+        "zh-cn": "短暂缓存 SQL 数据点 ID，直接按范围验证，并保留名称、类型及迟到回复检查。记录 SQL 诊断，实际延迟改善待验证。"
+      },
       "0.17.0-alpha.160": {
         "en": "Group compact journal originals in durable segments; add verified offline relocation/legacy export and targeted SQL index/storage inspection. Physical latency cause and live acceptance remain open.",
         "de": "Kompakte Journaloriginale in haltbaren Segmenten buendeln; geprueften Offline-Speicherwechsel/Rueckexport und gezielte SQL-Index-/Speicherpruefung ergaenzen. Physische Verzoegerungsursache und reale Abnahme bleiben offen.",
@@ -81,19 +94,6 @@
         "ru": "Сохранять последний достоверный уровень заряда с указанием давности; приостанавливать зарядку после 15 минут без потребления и освобождать резерв после подтверждения отключения.",
         "uk": "Зберігати останній достовірний рівень заряду із зазначенням давності; призупиняти заряджання після 15 хвилин без споживання та звільняти резерв після підтвердження вимкнення.",
         "zh-cn": "保留最后有效的车辆电量并显示数据年龄；连续15分钟无功率消耗后暂停充电，确认关闭后释放预留功率。"
-      },
-      "0.17.0-alpha.154": {
-        "en": "Stabilize the complete wallbox start lifecycle across phase changes, restart adoption and heater/ramp budgeting.",
-        "de": "Wallbox-Startablauf ueber Phasenwechsel, Neustart-Uebernahme und Heizstab-/Hochlaufbudget stabilisiert.",
-        "es": "Estabilizar el arranque completo de carga durante cambios de fase, reinicios y reparto con el calentador.",
-        "fr": "Stabiliser le démarrage complet de charge pendant les changements de phase, redémarrages et répartition avec le chauffage.",
-        "it": "Stabilizzare l’avvio completo della ricarica durante cambi di fase, riavvii e ripartizione con il riscaldatore.",
-        "nl": "Stabiliseer de volledige laadstart bij fasewissels, herstarts en budgetverdeling met de verwarming.",
-        "pl": "Stabilizacja całego rozruchu ładowania przy zmianach faz, ponownym uruchomieniu i podziale budżetu z grzałką.",
-        "pt": "Estabilizar o arranque completo da carga durante mudanças de fase, reinícios e repartição com o aquecimento.",
-        "ru": "Стабилизация полного запуска зарядки при смене фаз, перезапуске и распределении мощности с нагревателем.",
-        "uk": "Стабілізація повного запуску заряджання при зміні фаз, перезапуску та розподілі потужності з нагрівачем.",
-        "zh-cn": "稳定切相、重启接管以及加热器和升流功率分配期间的完整充电启动流程。"
       }
     },
     "titleLang": {

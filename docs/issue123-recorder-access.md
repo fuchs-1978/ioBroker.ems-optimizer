@@ -106,3 +106,17 @@ Ein SQL-Fenster richtet sich nach der unveränderten Rohzeilenzeit `row.ts`. Die
 Für einen historischen Ereignisabschnitt werden deshalb die originalen SQL-Fenster und ein **gesondertes begrenztes SQL-Fenster der tatsächlich beobachteten Nachlieferung** dokumentiert und gelesen. Dessen Grenzen folgen den protokollierten Veröffentlichungs-/Nachweiszeiten; sie werden nicht aus einer vermuteten alten Ereigniszeit oder aus einem bloß aktuellen Gesundheitszustand abgeleitet. Fehlen diese Nachlieferungszeiten oder der unabhängige Backendabschluss nach einem Fehler, bleibt das ein offener Nachweis; es startet kein automatischer mehrstündiger Suchlauf.
 
 Die Rohseiten beider Zeitabschnitte werden mit ihren ursprünglichen SQL-Zeiten und Abfrageprotokollen erhalten und gemeinsam verarbeitet. Der vorhandene Batchcodec dedupliziert Session/Recordsequenz, prüft Konflikte vor der Rekonstruktion und ordnet innerhalb jeder Session nach der maßgeblichen Originalsequenz. Das ist besonders für verspätet nachgelieferte Deltas wichtig: Ein einzelner laufender Reader kann in SQL-Empfangsreihenfolge zunächst eine Lücke oder Rückwärtsfolge erkennen, die erst der vollständig zusammengeführte Export mit tatsächlicher Vollbasis klärt. Die Probeauswertung dedupliziert zusätzlich Session/Sample-Sequenz. Erst nach dieser gemeinsamen Prüfung wird anhand der ursprünglichen Ereignis-/Quellenzeiten auf den gewünschten Betriebsabschnitt eingeschränkt. Weder Nachlieferung noch Neusortierung erfinden eine fehlende Basis, eine frühere ACK-Beobachtung oder einen vollständigen historischen Tagesabruf.
+
+## alpha.161 – numerische ID und begrenzte Metadatenaufloesung
+
+Die produktive Verifikation loest den exakten Datenpunkt-/Aliasnamen und Typ1
+bei Cachemiss mit maximal zwei Metadatenzeilen auf. Maximal ein Eintrag pro
+Adaptergeneration fuer fuenf Minuten; Instanz-/Ziel-/Aliaswechsel und Fehler
+verwerfen ihn. Der Daten-SELECT nutzt eine numerische ID plus feste Zeitgrenzen
+und einen exakten ID-/Namens-/Typguard. Metadaten sind niemals ein Speichernachweis.
+Beide nacheinander ausgefuehrten Statements gehoeren zur selben dauerhaften
+Sperre und Gesamtfrist; nach Fristablauf startet ein spaeter Metadaten-Callback
+keinen zweiten SELECT. Cachetreffer benoetigen einen SELECT, Cachemiss hoechstens
+zwei; queryCount zaehlt weiterhin Verifikationsvorgaenge. Historische Aussagen
+ueber genau einen SELECT ohne Metadatenabfrage beschreiben den vorherigen Stand.
+[SQL-Befunde, Sicherheitsvertrag und Abnahmegrenzen](release-0.17.0-alpha.161.md).
