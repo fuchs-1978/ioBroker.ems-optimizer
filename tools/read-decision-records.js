@@ -1,5 +1,7 @@
 'use strict';
 
+const offlineTimers = require('node:timers');
+
 const {createHash} = require('node:crypto');
 const {DecisionRecordDecoder} = require('../lib/decision-record-codec');
 const {expandTransportRows} = require('../lib/decision-record-transport');
@@ -267,7 +269,7 @@ async function readDecisionRecordHistory({readHistory, start, end, windowMs = 20
     }
     async function pace() {
         while (lastIssuedAt !== null && performance.now() - lastIssuedAt < minGapMs)
-            await new Promise(resolve => setTimeout(resolve, Math.ceil(minGapMs - (performance.now() - lastIssuedAt))));
+            await new Promise(resolve => offlineTimers.setTimeout(resolve, Math.ceil(minGapMs - (performance.now() - lastIssuedAt))));
     }
     async function window(from, to, errorDepth = 0) {
         if (report.stoppedReason) { miss(from, to, report.stoppedReason); return; }
@@ -304,7 +306,7 @@ async function readDecisionRecordHistory({readHistory, start, end, windowMs = 20
         const controller = new AbortController();
         try {
             const deadline = new Promise((resolve, reject) => {
-                timer = setTimeout(() => {
+                timer = offlineTimers.setTimeout(() => {
                     timedOut = true;
                     controller.abort();
                     reject(new Error('local query deadline; backend completion unknown; retrieval stopped'));
@@ -332,7 +334,7 @@ async function readDecisionRecordHistory({readHistory, start, end, windowMs = 20
             if (timedOut) {query.backendCompletion = 'unknown'; query.backendCompletionEvidence = null;}
             failure = query.originalError.message; rows = undefined;
         }
-        finally { clearTimeout(timer); }
+        finally { offlineTimers.clearTimeout(timer); }
         query.endedAtUTC = new Date().toISOString();
         query.elapsedMs = performance.now() - began;
         query.rows = rawRows?.length ?? 0;

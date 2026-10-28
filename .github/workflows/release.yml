@@ -44,8 +44,11 @@ jobs:
           assert.equal(require('./io-package.json').common.version, version);
           assert.ok(fs.statSync(`docs/release-${version}.md`).isFile());
           JS
-      - run: npm install --package-lock=false --no-audit --no-fund
+      - run: npm ci --no-audit --no-fund
+      - run: npm run lint
+      - run: npm run check:admin
       - run: npm test
+      - run: npm run test:metadata
       - run: npm run test:package
       - run: npm run test:artifact
       - run: npm run test:equivalence

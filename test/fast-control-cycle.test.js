@@ -28,6 +28,7 @@ function bootstrapHarness({headMode = false} = {}) {
         'buildForecast', 'requestForecastRebuild', 'batteryEffectiveMinimumSoc']) {
         context[name] = () => calls.push(name);
     }
+    context.engineTimers = {setTimeout: context.setTimeout, clearTimeout: () => {}};
     vm.runInContext(source('bootstrap'), context);
     calls.length = 0;
     return {jobs, timers, calls, writes, messages, context, listeners};

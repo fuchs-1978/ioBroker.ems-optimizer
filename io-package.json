@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.162",
+    "version": "0.17.0-alpha.163",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.163": {
+        "en": "Add standard CI, shared ESLint checks, adapter-owned runtime timers, a complete responsive Admin audit and a committed dependency lockfile with npm ci. Preserve bounded shutdown deadlines; no npm or Latest publication.",
+        "de": "Standard-CI, gemeinsame ESLint-Prüfung, adaptereigene Laufzeit-Timer, vollständige responsive Admin-Prüfung und feste Abhängigkeiten mit npm ci ergänzen. Begrenzte Abschlussfristen erhalten; keine npm- oder Latest-Veröffentlichung.",
+        "es": "Añade CI estándar, ESLint compartido, temporizadores del adaptador, revisión adaptable de Admin y dependencias fijadas con npm ci. Mantiene los plazos de cierre; sin publicar en npm ni Latest.",
+        "fr": "Ajoute la CI standard, ESLint partagé, les temporisateurs de l’adaptateur, le contrôle responsive Admin et les dépendances verrouillées avec npm ci. Délais de fermeture conservés ; aucune publication npm ou Latest.",
+        "it": "Aggiunge CI standard, ESLint condiviso, timer gestiti dall’adattatore, verifica responsive di Admin e dipendenze bloccate con npm ci. Conserva i limiti di chiusura; nessuna pubblicazione npm o Latest.",
+        "nl": "Voegt standaard-CI, gedeelde ESLint-controles, adaptertimers, volledige responsieve Admin-controle en vastgelegde afhankelijkheden met npm ci toe. Afsluittermijnen blijven behouden; geen npm- of Latest-publicatie.",
+        "pl": "Dodaje standardowe CI, wspólny ESLint, timery adaptera, pełną kontrolę responsywności Admin i ustalone zależności przez npm ci. Zachowuje limity zamykania; bez publikacji w npm i Latest.",
+        "pt": "Adiciona CI padrão, ESLint partilhado, temporizadores do adaptador, verificação responsiva completa do Admin e dependências fixadas com npm ci. Mantém os prazos de encerramento; sem publicação npm ou Latest.",
+        "ru": "Добавлены стандартная CI, общие проверки ESLint, таймеры адаптера, полная проверка адаптивности Admin и фиксация зависимостей с npm ci. Сохранены сроки завершения; без публикации в npm и Latest.",
+        "uk": "Додано стандартну CI, спільні перевірки ESLint, таймери адаптера, повну перевірку адаптивності Admin і фіксацію залежностей з npm ci. Збережено строки завершення; без публікації в npm і Latest.",
+        "zh-cn": "增加标准 CI、共享 ESLint 检查、适配器管理的运行计时器、完整的 Admin 响应式检查，以及使用 npm ci 的依赖锁定文件。保留有限关闭期限；不发布到 npm 或 Latest。"
+      },
       "0.17.0-alpha.162": {
         "en": "Add read-only live explanations, separate recorder/SQL/history quality and bounded daily reviews from existing observations. No new SQL queries or control changes; unknown goals and costs remain explicit.",
         "de": "Lesende Live-Erklärung, getrennte Recorder-/SQL-/Historienqualität und begrenzte Tagesrückblicke aus vorhandenen Beobachtungen. Keine neuen SQL-Abfragen oder Regeländerungen; unbekannte Ziele und Kosten bleiben ausdrücklich offen.",
@@ -81,19 +94,6 @@
         "ru": "Сохранять подтверждённую зарядку при потере телеметрии с актуальной защитой SMA; сохранять резервы и подтверждённые фазы.",
         "uk": "Зберігати підтверджене заряджання при втраті телеметрії з актуальним захистом SMA; зберігати резерви й підтверджені фази.",
         "zh-cn": "遥测中断时，在有效的 SMA 保护下保持已确认的充电；立即记录电流确认，并保留其他设备功率预留及已确认相位。"
-      },
-      "0.17.0-alpha.156": {
-        "en": "Keep the optional heater running during the preferred vehicle’s start delay; hand over power after the countdown with physical reservations still enforced.",
-        "de": "Optionalen Heizstab waehrend der Einschaltverzoegerung des bevorzugten Fahrzeugs weiter nutzen; Leistung nach dem Countdown mit weiter wirksamen physischen Reservierungen uebergeben.",
-        "es": "Mantener activo el calentador opcional durante el retardo de arranque del vehículo prioritario; transferir la potencia al finalizar respetando las reservas físicas.",
-        "fr": "Maintenir le chauffage optionnel pendant la temporisation de démarrage du véhicule prioritaire ; transférer la puissance ensuite en respectant les réserves physiques.",
-        "it": "Mantenere attivo il riscaldatore opzionale durante il ritardo di avvio del veicolo prioritario; trasferire poi la potenza rispettando le riserve fisiche.",
-        "nl": "Laat de optionele verwarming werken tijdens de startvertraging van het voorkeursvoertuig; draag daarna vermogen over met behoud van fysieke reserveringen.",
-        "pl": "Utrzymuj pracę opcjonalnej grzałki podczas opóźnienia startu priorytetowego pojazdu; następnie przekaż moc z zachowaniem rezerw fizycznych.",
-        "pt": "Manter o aquecedor opcional ativo durante o atraso de arranque do veículo prioritário; transferir depois a potência respeitando as reservas físicas.",
-        "ru": "Продолжать работу дополнительного нагревателя во время задержки запуска приоритетного автомобиля; затем передавать мощность с учётом физических резервов.",
-        "uk": "Продовжувати роботу додаткового нагрівача під час затримки запуску пріоритетного автомобіля; потім передавати потужність з урахуванням фізичних резервів.",
-        "zh-cn": "在优先车辆的启动延时期间继续使用可选加热器；倒计时结束后移交功率，仍遵守实际功率预留限制。"
       }
     },
     "titleLang": {

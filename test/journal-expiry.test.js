@@ -23,7 +23,7 @@ test('expiry keeps recent records and records exact loss identity before deletin
 
 test('expiry is whole-chain only, preserves a live delta basis and takes the newest member age',async t=>{
  const d=await dir(t);let at=1000;const j=new Journal({directory:d,now:()=>at});await j.initialize();const f=frames();
- const a=await j.append(f[0]);at=2000;await j.append(f[1]);at=1000+AGE;assert.deepEqual(await j.expireOldGroups(),[]);
+ await j.append(f[0]);at=2000;await j.append(f[1]);at=1000+AGE;assert.deepEqual(await j.expireOldGroups(),[]);
  await j.append(f[2]);assert.deepEqual(await j.expireOldGroups(),[],'closed chain contains a newer delta');
  at=2000+AGE;assert.equal((await j.expireOldGroups()).length,2);assert.equal(j.health().expiredUnconfirmedRecords,2);
  const remain=await j.readBatch();assert.equal(remain.length,1);assert.equal(JSON.parse(remain[0].payload).frameType,'snapshot');

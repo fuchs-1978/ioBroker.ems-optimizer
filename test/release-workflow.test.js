@@ -10,7 +10,7 @@ const {spawnSync} = require('node:child_process');
 const workflow = fs.readFileSync(path.join(__dirname, '../.github/workflows/release.yml'), 'utf8');
 const marker = '        run: |\n';
 const script = workflow.slice(workflow.lastIndexOf(marker) + marker.length)
-    .split('\n').map(line => line.replace(/^          /, '')).join('\n');
+    .split('\n').map(line => line.replace(/^ {10}/, '')).join('\n');
 
 for (const scenario of ['new', 'existing-release', 'existing-tag', 'moved-main', 'main-api-failure', 'api-failure', 'malformed-release-list', 'invalid-list-shape', 'invalid-release-entry', 'git-failure', 'publish-failure']) {
     test(`release shell preserves existing publications and fails closed: ${scenario}`, () => {

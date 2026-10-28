@@ -1802,7 +1802,7 @@ test('blocked preferred 1P start reclaims the EQV share before arming', () => {
 
 for (const [name, change] of [
     ['mandatory EQV floor', h => {h.put('DP_WB1_MIN_SOC', 60); h.put('DP_WB1_SOC', 50); h.run('updateVehicles()');}],
-    ['insufficient whole budget', h => {}],
+    ['insufficient whole budget', _h => {}],
     ['invalid sources', h => h.put('DP_GRID_IMPORT', 0, {ack: false})]
 ]) test('priority reclaim preserves '+name, () => {
     const {h, diagnostic} = blockedPriorityStart(); change(h);
