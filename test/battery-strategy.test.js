@@ -50,3 +50,41 @@ test('night target lacks fictitious SOC for unknown or blocked vehicles', () => 
     x.snapshot.wallboxes[0].ControlEnabled = false;
     assert.equal(vehicleMinimums(x.snapshot.wallboxes, x.planning.vehicles)[0].status, 'disabled');
 });
+
+test('mobility reserve defaults off in preview and never adds a second night-energy requirement', () => {
+    const x = make(); x.snapshot.wallboxes[0].SoC_pct = 10;
+    const p = x.planning.vehicles[0]; p.mobilityReservePct = 0;
+    const before = strategy(x); assert.equal(before.vehicleNightTargets[0].mobilityReserve.status, 'disabled');
+    assert.equal(before.vehicleNightTargets[0].mobilityReserve.acKWh, 0);
+    p.mobilityReservePct = 15; p.deadlineEnabled = true; p.departureAt = now + 3600000;
+    const after = strategy(x), v = after.vehicleNightTargets[0];
+    assert.equal(v.mobilityReserve.targetPct, 15); assert.equal(v.mobilityReserve.status, 'reserve-needed');
+    assert.equal(v.mobilityReserve.acKWh, 2.5 / 0.9); assert.equal(v.departureAt, p.departureAt);
+    assert.equal(after.nightBattery.acKWh, before.nightBattery.acKWh);
+    assert.equal(v.mobilityReserve.automaticGridPermission, false);
+    assert.equal(after.productionReady, false);
+    p.mobilityReservePct = 70;
+    assert.equal(strategy(x).vehicleNightTargets[0].mobilityReserve.targetPct, 50);
+});
+test('invalid reserve never grants charging; configured departure is reused only when enabled', () => {
+    const x = make(), p = x.planning.vehicles[0];
+    for (const value of [null, undefined, NaN, -1, 101, '15']) {
+        p.mobilityReservePct = value;
+        const reserve = strategy(x).vehicleNightTargets[0].mobilityReserve;
+        assert.equal(reserve.status, 'unknown'); assert.equal(reserve.targetPct, null);
+        assert.equal(reserve.automaticGridPermission, false);
+    }
+    p.mobilityReservePct = 15; x.snapshot.wallboxes[0].SoC_pct = 10;
+    x.snapshot.wallboxes[0].UserRelease = false;
+    p.departureAt = now + 3600000; p.deadlineEnabled = false;
+    const v = strategy(x).vehicleNightTargets[0];
+    assert.equal(v.mobilityReserve.status, 'blocked'); assert.equal(v.departureAt, null);
+});
+test('vehicle reserve states start at zero and preserve an explicit setting when states are recreated', async () => {
+    const {plant} = require('./control-plant');
+    const h = await plant({wallbox: false});
+    for (const wb of [0, 1, 2]) assert.equal(h.value(`Vehicles.Wallbox${wb}.MobilityReserve_pct`), 0);
+    h.own('Vehicles.Wallbox1.MobilityReserve_pct', 15);
+    h.run('createStates()');
+    assert.equal(h.value('Vehicles.Wallbox1.MobilityReserve_pct'), 15);
+});

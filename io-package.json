@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.166",
+    "version": "0.17.0-alpha.167",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.167": {
+        "en": "Prepare a persistent per-vehicle mobility reserve, default 0 percent (off), in the EMS object tree. Show its bounded energy subset and existing departure in the read-only strategy preview. No productive price or immediate-charging change.",
+        "de": "Persistente Mobilitätsreserve je Fahrzeug im EMS-Baum vorbereiten, Vorgabe 0 Prozent (aus). Begrenzten Teilbedarf und vorhandene Abfahrt in der Strategie-Vorschau anzeigen. Keine produktive Änderung der Preis- oder Sofortladung.",
+        "es": "Prepara una reserva de movilidad por vehículo, 0 por ciento (desactivada), en el árbol EMS. Muestra su energía y la salida existente en la vista previa. Sin cambios de carga productiva.",
+        "fr": "Prépare une réserve de mobilité par véhicule, 0 pour cent (désactivée), dans EMS. Affiche son besoin et le départ existant dans l’aperçu. Aucun changement de charge productive.",
+        "it": "Prepara una riserva di mobilità per veicolo, 0 per cento (disattivata), nell’albero EMS. Mostra energia e partenza esistente nell’anteprima. Nessuna modifica alla ricarica produttiva.",
+        "nl": "Bereidt een mobiliteitsreserve per voertuig voor, 0 procent (uit), in de EMS-boom. Toont energie en bestaand vertrek in het voorbeeld. Geen wijziging van productief laden.",
+        "pl": "Przygotowuje rezerwę mobilności pojazdu, 0 procent (wyłączona), w drzewie EMS. Pokazuje energię i istniejący odjazd w podglądzie. Bez zmian ładowania produkcyjnego.",
+        "pt": "Prepara uma reserva de mobilidade por veículo, 0 por cento (desativada), na árvore EMS. Mostra energia e partida existente na prévia. Sem alterações à carga produtiva.",
+        "ru": "Подготовлен резерв мобильности каждого автомобиля, 0 процентов (выключен), в дереве EMS. В расчёте показаны энергия и существующий отъезд. Рабочая зарядка не изменена.",
+        "uk": "Підготовлено резерв мобільності кожного автомобіля, 0 відсотків (вимкнено), у дереві EMS. У розрахунку показано енергію та наявний від’їзд. Робоче заряджання не змінено.",
+        "zh-cn": "在 EMS 对象树中准备每辆车的出行储备，默认 0%（关闭）。只读策略预览显示所需能源和现有出发时间。不更改实际价格充电或立即充电。"
+      },
       "0.17.0-alpha.166": {
         "en": "Restructure the EMS overview with compact operating status, current notices and devices; collapse planning, daily balances and technical diagnostics. Presentation only; control and SQL remain unchanged.",
         "de": "EMS-Übersicht mit kurzem Betriebszustand, aktuellen Hinweisen und Geräten strukturieren; Fahrplan, Tagesbilanzen und technische Diagnose einklappbar. Nur Darstellung; Regelung und SQL unverändert.",
@@ -81,19 +94,6 @@
         "ru": "Временно кэшировать ID SQL для диапазонной проверки с точной проверкой имени и типа. Документировать диагностику; эффект задержки ещё не подтверждён.",
         "uk": "Тимчасово кешувати ID SQL для діапазонної перевірки з точною перевіркою імені й типу. Документувати діагностику; ефект затримки ще не підтверджено.",
         "zh-cn": "短暂缓存 SQL 数据点 ID，直接按范围验证，并保留名称、类型及迟到回复检查。记录 SQL 诊断，实际延迟改善待验证。"
-      },
-      "0.17.0-alpha.160": {
-        "en": "Group compact journal originals in durable segments; add verified offline relocation/legacy export and targeted SQL index/storage inspection. Physical latency cause and live acceptance remain open.",
-        "de": "Kompakte Journaloriginale in haltbaren Segmenten buendeln; geprueften Offline-Speicherwechsel/Rueckexport und gezielte SQL-Index-/Speicherpruefung ergaenzen. Physische Verzoegerungsursache und reale Abnahme bleiben offen.",
-        "es": "Agrupar originales en segmentos duraderos; añadir traslado sin conexión, exportación y revisión de índices SQL. Validación real pendiente.",
-        "fr": "Regrouper les originaux en segments durables ; ajouter migration hors ligne, export et inspection SQL. Validation réelle ouverte.",
-        "it": "Raggruppare originali in segmenti durevoli; aggiungere trasferimento offline, esportazione e controllo indici SQL. Verifica reale aperta.",
-        "nl": "Bundel originelen in duurzame segmenten; voeg offline verplaatsing, export en SQL-indexcontrole toe. Praktijkvalidatie blijft open.",
-        "pl": "Grupuj oryginały w trwałe segmenty; dodaj przenoszenie offline, eksport i kontrolę indeksów SQL. Odbiór rzeczywisty pozostaje otwarty.",
-        "pt": "Agrupar originais em segmentos duráveis; adicionar migração offline, exportação e inspeção de índices SQL. Validação real pendente.",
-        "ru": "Группировать оригиналы в устойчивые сегменты; добавить перенос офлайн, экспорт и проверку индексов SQL. Реальная проверка открыта.",
-        "uk": "Групувати оригінали у стійкі сегменти; додати перенесення офлайн, експорт і перевірку індексів SQL. Реальна перевірка відкрита.",
-        "zh-cn": "将原始记录合并到持久段中，添加离线迁移、旧格式导出和 SQL 索引检查。实际验证仍待完成。"
       }
     },
     "titleLang": {

@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.166 (2026-10-29)
+
+- (fuchs-1978) Simplify the EMS overview into compact status, current notices and devices. Group planning, daily balances and full technical diagnostics in collapsable panels. Preserve all existing read-only details and unchanged control/SQL behavior. [Details](docs/release-0.17.0-alpha.166.md).
+
 ## 0.17.0-alpha.165 (2026-10-29)
 
 - (fuchs-1978) Prepare the staged battery-buffer strategy as a read-only preview with real device limits, vehicle-minimum priority and bounded optional vehicle support. Reuse staged evening targets and estimate the shared night energy gap without changing production allocation or granting hardware permission. [Details and limits](docs/release-0.17.0-alpha.165.md).
