@@ -7,7 +7,7 @@
 
 Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Combines PV and grid measurements, load history, weather forecasts and electricity prices in a rolling 48-hour plan.
 
-**Current version: 0.17.0-alpha.167.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
+**Current version: 0.17.0-alpha.168.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
 
 [Deutsche Bedienungsanleitung](README.de.md) · [Release history](CHANGELOG_OLD.md) · [Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
@@ -113,9 +113,9 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 
 ## Changelog
 
-### 0.17.0-alpha.167 (2026-10-29)
+### 0.17.0-alpha.168 (2026-10-29)
 
-- (fuchs-1978) Add persistent per-vehicle mobility-reserve inputs with a default of 0% (disabled). Show their bounded energy subset and existing departure in the read-only strategy preview; production charging is unchanged. [Details](docs/release-0.17.0-alpha.167.md).
+- (fuchs-1978) Continue vehicle SoC interpolation beyond two hours with persisted continuous valid energy-counter evidence. Preserve reset, gap and correction guards; do not invent progress for expired legacy anchors. [Details](docs/release-0.17.0-alpha.168.md).
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 

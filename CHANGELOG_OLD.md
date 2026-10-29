@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.167 (2026-10-29)
+
+- (fuchs-1978) Add persistent per-vehicle mobility-reserve inputs with a default of 0% (disabled). Show their bounded energy subset and existing departure in the read-only strategy preview; production charging is unchanged. [Details](docs/release-0.17.0-alpha.167.md).
+
 ## 0.17.0-alpha.166 (2026-10-29)
 
 - (fuchs-1978) Simplify the EMS overview into compact status, current notices and devices. Group planning, daily balances and full technical diagnostics in collapsable panels. Preserve all existing read-only details and unchanged control/SQL behavior. [Details](docs/release-0.17.0-alpha.166.md).

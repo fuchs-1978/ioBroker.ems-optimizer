@@ -166,3 +166,79 @@ test('retained estimate cannot migrate to another source or override a newly rep
     const newReport=h.run({reported:state(60,T+7201000)});
     assert.equal(newReport.value,60);
 });
+
+function continuousCharge(minutes = 180) {
+    const h = harness({reported: state(27), capacityKWh: 32.3});
+    let r = h.run();
+    for (let seconds = 30; seconds <= minutes * 60; seconds += 30) {
+        const at = T + seconds * 1000;
+        r = h.run({now: at, counter: state(10 + 1.53 * seconds / 3600, at)});
+    }
+    return {h, r};
+}
+test('continuous metered Mii charging advances beyond two hours with a bounded persisted ledger', () => {
+    const {h, r} = continuousCharge(300);
+    assert.equal(r.reason, 'energy-estimate'); assert.equal(r.stale, true);
+    assert.ok(Math.abs(r.value - (27 + 7.65 * 90 / 32.3)) < 1e-10);
+    assert.ok(r.ledger.samples.length <= 256);
+    assert.equal(r.ledger.basis.at, T, 'the original report time is not renewed');
+    assert.equal(r.ledger.basis.kwh, 10, 'the original counter anchor is not renewed');
+    assert.equal(r.ledger.basis.through, T + 18000000);
+    const restarted = estimateSoc(h.input());
+    assert.equal(restarted.value, r.value); assert.equal(restarted.reason, 'energy-estimate');
+    const nextAt = h.input().now + 30000;
+    const next = h.run({now: nextAt, counter: state(h.input().counter.val + 1.53 / 120, nextAt)});
+    assert.ok(Math.abs(next.value - r.value - (1.53 / 120) * 90 / 32.3) < 1e-10);
+});
+test('long interpolation stops extending after an observation gap, invalid energy or an inconsistent frame', () => {
+    for (const kind of ['gap', 'quality', 'stale', 'echo', 'same-timestamp-change']) {
+        const {h, r} = continuousCharge(); const at = h.input().now + 30000;
+        const priorKWh = h.input().counter.val;
+        let invalid;
+        if (kind === 'gap') invalid = h.run({now: at + 31000, counter: state(priorKWh + 0.02, at + 31000)});
+        if (kind === 'quality') invalid = h.run({now: at, counter: {...state(priorKWh + 0.01, at), q: 64}});
+        if (kind === 'stale') invalid = h.run({now: at + 31000});
+        if (kind === 'echo') invalid = h.run({now: at, counter: {...state(priorKWh + 0.01, at), ack: false}});
+        if (kind === 'same-timestamp-change') invalid = h.run({counter: state(priorKWh + 0.01, at - 30000)});
+        assert.equal(invalid.value, r.value, kind);
+        assert.equal(invalid.ledger.basis.continuous, false, kind);
+        const freshAt = h.input().now + 30000;
+        const held = h.run({now: freshAt, counter: state(priorKWh + 0.03, freshAt)});
+        assert.equal(held.value, r.value, 'a fresh poll alone cannot repair missing continuity');
+        const reportAt = freshAt + 30000;
+        const corrected = h.run({now: reportAt, reported: state(30, reportAt), counter: state(priorKWh + 0.04, reportAt)});
+        assert.equal(corrected.value, 30, 'new aligned lower report is authoritative');
+        assert.equal(corrected.ledger.basis.continuous, true);
+    }
+});
+test('expired legacy anchors and forged watermarks cannot retroactively create continuity', () => {
+    const {h, r} = continuousCharge();
+    for (const kind of ['legacy', 'mismatch']) {
+        const ledger = JSON.parse(h.input().ledgerText);
+        if (kind === 'legacy') { delete ledger.basis.continuous; delete ledger.basis.through; }
+        else ledger.basis.through -= 1;
+        const at = h.input().now + 30000;
+        const held = estimateSoc({...h.input(), now: at, counter: state(h.input().counter.val + 0.01, at), ledgerText: JSON.stringify(ledger)});
+        assert.equal(held.value, r.value); assert.match(held.reason, /retained-estimate/);
+    }
+});
+test('long-session rounded reports preserve fractions and reset/disconnect never adds energy', () => {
+    const {h, r} = continuousCharge(); const at = h.input().now + 30000;
+    const kwh = h.input().counter.val + 0.01;
+    const predicted = r.value + 0.01 * 90 / 32.3;
+    const rounded = h.run({now: at, reported: state(Math.round(predicted), at), counter: state(kwh, at)});
+    assert.ok(Math.abs(rounded.value - predicted) < 1e-10);
+    const reset = h.run({now: at + 30000, counter: state(0, at + 30000)});
+    assert.equal(reset.ledger.basis, null); assert.equal(reset.estimated, false);
+    const next = h.run({now: at + 60000, counter: state(0.01, at + 60000)});
+    assert.equal(next.estimated, false);
+    const other = continuousCharge();
+    const unplugged = other.h.run({car: state(1, other.h.input().now)});
+    assert.equal(unplugged.ledger.basis, null); assert.equal(unplugged.value, other.r.value);
+});
+test('SoC status separates live energy interpolation from a held estimate and preserves cloud age', () => {
+    const {socStatus} = require('../lib/vehicle-soc-estimator');
+    assert.match(socStatus({valid: true, estimated: true, reason: 'energy-estimate'}, {stale: true}), /Ladeenergie fortgeschrieben; Fahrzeugbericht aelter/);
+    assert.match(socStatus({valid: true, estimated: true, reason: 'retained-estimate:basis-invalid-or-stale'}, {stale: true}), /Letzter gueltiger SoC/);
+    assert.equal(socStatus({valid: false}, {stale: true}), 'SoC unbekannt/ungueltig');
+});

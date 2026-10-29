@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.167",
+    "version": "0.17.0-alpha.168",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.168": {
+        "en": "Continue vehicle SoC estimation beyond two hours only with a persisted uninterrupted valid energy-counter chain. Preserve reset, gap, quality, connection and report-correction guards; expired legacy anchors require a new aligned report.",
+        "de": "Fahrzeug-SoC nach zwei Stunden bei nachgewiesen durchgehend gültigem Energiezähler weiterschätzen. Reset-, Lücken-, Qualitäts-, Verbindungs- und Korrekturschutz erhalten; abgelaufene alte Basis braucht neue zugeordnete Fahrzeugmeldung.",
+        "es": "Continúa la estimación SoC tras dos horas solo con una cadena persistida y continua del contador válido. Conserva protecciones; bases antiguas vencidas requieren un nuevo informe alineado.",
+        "fr": "Poursuit l’estimation SoC après deux heures uniquement avec une chaîne persistée et continue du compteur valide. Protections conservées ; ancienne base expirée : nouveau relevé aligné requis.",
+        "it": "Continua la stima SoC oltre due ore solo con una catena persistente e continua del contatore valido. Mantiene le protezioni; una vecchia base scaduta richiede un nuovo dato allineato.",
+        "nl": "Schat voertuig-SoC na twee uur verder bij een bewezen ononderbroken geldige energiemeterketen. Beveiligingen blijven; verlopen oude basis vereist een nieuw uitgelijnd voertuigbericht.",
+        "pl": "Kontynuuje szacowanie SoC po dwóch godzinach tylko przy zapisanej ciągłości poprawnego licznika energii. Zachowuje zabezpieczenia; stara wygasła baza wymaga nowego zsynchronizowanego odczytu.",
+        "pt": "Continua a estimativa SoC após duas horas apenas com continuidade persistida do contador válido. Mantém proteções; base antiga expirada exige nova leitura alinhada.",
+        "ru": "Оценка SoC продолжается после двух часов только при сохранённом подтверждении непрерывности счётчика энергии. Защиты сохранены; старая просроченная база требует нового согласованного отчёта.",
+        "uk": "Оцінка SoC триває після двох годин лише за збереженого підтвердження безперервності лічильника енергії. Захисти збережено; стара прострочена база потребує нового узгодженого звіту.",
+        "zh-cn": "仅在已保存的有效电能计数器连续性得到证明时，超过两小时继续估算车辆电量。保留重置、数据缺口、质量、连接和报告校正保护；旧的过期基准需要新的对齐报告。"
+      },
       "0.17.0-alpha.167": {
         "en": "Prepare a persistent per-vehicle mobility reserve, default 0 percent (off), in the EMS object tree. Show its bounded energy subset and existing departure in the read-only strategy preview. No productive price or immediate-charging change.",
         "de": "Persistente Mobilitätsreserve je Fahrzeug im EMS-Baum vorbereiten, Vorgabe 0 Prozent (aus). Begrenzten Teilbedarf und vorhandene Abfahrt in der Strategie-Vorschau anzeigen. Keine produktive Änderung der Preis- oder Sofortladung.",
@@ -81,19 +94,6 @@
         "ru": "Добавлены текущие объяснения, раздельная оценка регистрации, SQL и истории и ограниченные суточные обзоры. Без новых запросов SQL и изменений управления; неизвестные цели и затраты указаны явно.",
         "uk": "Додано поточні пояснення, окрему оцінку запису, SQL та історії й обмежені добові огляди. Без нових запитів SQL і змін керування; невідомі цілі та витрати позначено явно.",
         "zh-cn": "增加基于现有观测的只读实时说明、独立记录与 SQL 及历史质量状态和有限每日回顾。不增加 SQL 查询或修改控制；明确标示未知目标与成本。"
-      },
-      "0.17.0-alpha.161": {
-        "en": "Resolve and briefly cache the SQL datapoint ID for direct (id,ts) range verification; preserve exact name/type guards, bounded queries, durable fences and late replies. Document operator SQL index/thread-cache findings without claiming a measured latency fix.",
-        "de": "SQL-Datenpunkt-ID begrenzt aufloesen und zwischenspeichern, dann direkte (id,ts)-Bereichspruefung nutzen; Namens-/Typpruefung, Grenzen, dauerhafte Sperren und spaete Antworten erhalten. SQL-Index-/Thread-Cache-Befunde dokumentieren; reale Latenzwirkung offen.",
-        "es": "Resolver y almacenar temporalmente el ID SQL para consultas de rango con controles exactos. Documentar diagnóstico SQL; mejora real pendiente.",
-        "fr": "Résoudre et mémoriser brièvement l’ID SQL pour la recherche par plage avec contrôles exacts. Documenter le diagnostic SQL ; gain réel à vérifier.",
-        "it": "Risolvere e memorizzare brevemente l’ID SQL per ricerche per intervallo con verifiche esatte. Documentare la diagnosi SQL; beneficio reale da verificare.",
-        "nl": "SQL-ID tijdelijk cachen voor directe bereikcontrole met exacte naam- en typecontrole. SQL-bevindingen vastleggen; praktijkwinst nog open.",
-        "pl": "Rozwiązuj i krótko buforuj ID SQL dla kontroli zakresu z dokładną walidacją. Udokumentuj diagnozę SQL; rzeczywista poprawa pozostaje otwarta.",
-        "pt": "Resolver e guardar temporariamente o ID SQL para consultas por intervalo com validação exata. Documentar diagnóstico SQL; ganho real pendente.",
-        "ru": "Временно кэшировать ID SQL для диапазонной проверки с точной проверкой имени и типа. Документировать диагностику; эффект задержки ещё не подтверждён.",
-        "uk": "Тимчасово кешувати ID SQL для діапазонної перевірки з точною перевіркою імені й типу. Документувати діагностику; ефект затримки ще не підтверджено.",
-        "zh-cn": "短暂缓存 SQL 数据点 ID，直接按范围验证，并保留名称、类型及迟到回复检查。记录 SQL 诊断，实际延迟改善待验证。"
       }
     },
     "titleLang": {
