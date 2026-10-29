@@ -99,6 +99,76 @@
           "lg": 12,
           "xl": 12,
           "newLine": true
+        },
+        "_Planning": {
+          "type": "state",
+          "oid": "Diagnostics.Planning",
+          "label": "Departure feasibility",
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "newLine": true
+        },
+        "_Configuration": {
+          "type": "state",
+          "oid": "Diagnostics.Configuration",
+          "label": "Configuration conflicts",
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "newLine": true
+        },
+        "_Transitions": {
+          "type": "state",
+          "oid": "Diagnostics.Transitions",
+          "label": "Transitions and response times",
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "newLine": true
+        },
+        "_RegulationQuality": {
+          "type": "state",
+          "oid": "Diagnostics.RegulationQuality",
+          "label": "Regulation quality",
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "newLine": true
+        },
+        "_ForecastInsights": {
+          "type": "state",
+          "oid": "Diagnostics.ForecastInsights",
+          "label": "Forecast uncertainty and load preview",
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "newLine": true
         }
       }
     },
@@ -1310,6 +1380,25 @@
           "help": "At startup, manages only already enabled SQL histories of the configured PV and wallbox power sources. Records value changes without delta, block or debounce filtering, including zero transitions; keeps retention and other sources unchanged. Disable to stop future management; existing SQL settings are not restored. SQL repeats do not prove device freshness.",
           "default": true,
           "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
+        },
+        "historyProfileMethod": {
+          "type": "select",
+          "label": "Historical load profile method",
+          "options": [
+            {
+              "label": "Median (compatible default)",
+              "value": "median"
+            },
+            {
+              "label": "Recent weighted profile (28 day half-life)",
+              "value": "recent-weighted"
+            }
+          ],
           "xs": 12,
           "sm": 12,
           "md": 12,

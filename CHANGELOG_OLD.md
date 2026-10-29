@@ -1,3 +1,7 @@
+## 0.17.0-alpha.157
+
+- Retain confirmed charging through telemetry gaps with fresh SMA protection; capture current acknowledgements immediately and preserve peer reserves and confirmed phase topology.
+
 ## 0.17.0-alpha.156
 
 - Let the optional EHZ use the preferred car’s protected share during its start countdown, while retaining that claim against other vehicles.
