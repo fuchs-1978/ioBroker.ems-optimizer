@@ -1,10 +1,28 @@
-# ioBroker EMS Optimizer
+![EMS Optimizer logo](admin/ems-optimizer.png)
 
-Forecast-based energy management for ioBroker. Combines PV and grid measurements, load history, weather forecasts and electricity prices in a rolling 48-hour plan.
+# EMS Optimizer
+
+[![Test and Release](https://github.com/fuchs-1978/ioBroker.ems-optimizer/actions/workflows/test-and-release.yml/badge.svg?branch=main)](https://github.com/fuchs-1978/ioBroker.ems-optimizer/actions/workflows/test-and-release.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Combines PV and grid measurements, load history, weather forecasts and electricity prices in a rolling 48-hour plan.
 
 **Current version: 0.17.0-alpha.165.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
 
 [Deutsche Bedienungsanleitung](README.de.md) · [Release history](CHANGELOG_OLD.md) · [Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
+
+## Contents
+
+- [Features](#features)
+- [Requirements](#requirements)
+- [Installation and setup](#installation-and-setup)
+- [Configuration](#configuration)
+- [Integrations](#integrations)
+- [Diagnostics](#diagnostics)
+- [Development](#development)
+- [Changelog](#changelog)
+- [Support](#support)
+- [License](#license)
 
 ## Features
 
@@ -15,6 +33,8 @@ Forecast-based energy management for ioBroker. Combines PV and grid measurements
 - Observe heat-pump telemetry and publish passive recommendations. Heat-pump, SG-Ready and KNX actuator commands are not implemented.
 - Record bounded diagnostic episodes and daily summaries for targeted investigation instead of full-day SQL downloads.
 
+The new staged battery/vehicle strategy in alpha.165 is **a read-only preview**, not a production control policy. `Diagnostics.BatteryStrategy` does not authorize battery-to-vehicle discharge or change vehicle night-charging targets. See the [release notes](docs/release-0.17.0-alpha.165.md) and [remaining battery integration work](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/25).
+
 ## Requirements
 
 - Node.js 22 or newer; CI covers Node.js 22, 24 and 26.
@@ -24,7 +44,7 @@ Forecast-based energy management for ioBroker. Combines PV and grid measurements
 
 ## Installation and setup
 
-For alpha testing, install this repository through the ioBroker Admin custom GitHub installation option. Review the release notes before updating. Installation alone does not enable or commission real outputs.
+The adapter is currently distributed for alpha testing through GitHub; npm and ioBroker beta/latest or stable publication are deferred. In ioBroker Admin, use **Adapters → Install from custom source → GitHub** and enter `https://github.com/fuchs-1978/ioBroker.ems-optimizer`. The exact labels depend on the Admin version. A moving `main` branch can include changes newer than a tagged release. Review the release notes before updating. Installation alone does not enable or commission real outputs.
 
 1. Map grid and generation measurements in the Admin configuration.
 2. Configure only the devices present at your installation, including their feedback, current limits and temperature or state-of-charge sources.
@@ -35,10 +55,38 @@ There must be one responsible controller per actuator register. Measurement, pro
 
 The [German Admin guide](README.de.md) documents every configuration tab, default values, device mappings and troubleshooting. Defaults are not recommendations for every installation; existing configuration may differ.
 
+## Configuration
+
+Open the instance settings in ioBroker Admin. Source fields require full existing state IDs, not display names or measured values. Use only the tabs needed for the devices installed at your site.
+
+| Area | What to configure |
+| --- | --- |
+| General and grid connection | Master/device releases, grid measurements, connection and phase limits, and any configured grid-operator restrictions. |
+| Measurements | PV generation and house consumption, with consistent signs, units and source timestamps. |
+| History and forecasts | History source, load-profile period, PV/weather inputs and holiday calendar. The default house-load profile uses the median by weekday and quarter-hour; recent weighting is optional. |
+| Prices and tariffs | Applicable energy prices and time-dependent grid charges, if price-based planning is used. |
+| Wallboxes | Each charger's command and feedback mapping, vehicle SoC, minimum/target SoC, priority and electrical limits. Phase switching additionally requires the external phase follower. |
+| Hot water and heating buffer | Available temperatures, permitted power, output mapping and explicit releases. EHZ means the electric heater. |
+| Battery | Actual device mappings, SoC and power limits, ownership and feedback. The new strategy preview remains separate from production control. |
+| Heat pump | Telemetry and passive recommendations; no heat-pump actuator commands. |
+
+Start with outputs disabled, check source validity and the plan, then commission each intended output separately. Missing devices should be disabled, not represented by artificial zero measurements. Detailed field descriptions, defaults and troubleshooting are in the [German Admin guide](README.de.md).
+
+## Integrations
+
+EMS Optimizer combines ioBroker states supplied by other adapters or scripts. A manufacturer link describes the equipment; it does not establish compatibility with every model or firmware.
+
+- [go-e chargers](https://go-e.com/): mapped charger commands and independent feedback; physical phase switching follows the external script contract.
+- [SMA](https://www.sma.de/): mapped generation and grid measurements, including the configured protection sources.
+- [my-PV](https://www.my-pv.com/): mapped electric-heater power commands and feedback where supported by the configured device interface.
+- SunEnergy battery heads: see the [battery configuration and device-profile requirements](README.de.md#admin-batteriespeicher) and [strategy limits](docs/release-0.17.0-alpha.165.md).
+- [STIEBEL ELTRON](https://www.stiebel-eltron.com/): heat-pump telemetry supplied through the configured ioBroker interface; passive recommendations only.
+
 ## Diagnostics
 
 | State group | Purpose |
 | --- | --- |
+| `Diagnostics.*` | Read-only live explanations, planning, configuration, battery preview, data quality and daily reviews. |
 | `System.Version` | Running adapter version; compare with installation and startup logs. |
 | `Plan.*`, `Forecast.*`, `Chart.*` | Planned or predicted values, rather than proof of actuator response. |
 | `Control.*` | Current budgets, allocation, phase decisions and control validity. |
@@ -46,6 +94,8 @@ The [German Admin guide](README.de.md) documents every configuration tab, defaul
 | `Debug.DailySummary_JSON` | Compact passive energy and coverage estimates with bounded investigation episodes. |
 | `Debug.Shadow.DecisionRecord` | Recorded original samples and decision context for targeted historical analysis. |
 | `Debug.Shadow.RecordDeliveryStatus` | Recorder backlog, transport and independent persistence evidence. |
+
+State names above are relative to the instance, for example `ems-optimizer.0.System.Version`.
 
 A current state does not prove historical coverage. Missing, stale, invalid or unacknowledged measurements remain unknown. A successful state write or history-cache response does not prove database persistence. The recorder uses bounded database-only SELECT queries for its independent persistence check; see the [recorder access contract](docs/issue123-recorder-access.md).
 
@@ -65,65 +115,9 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 
 ### 0.17.0-alpha.165 (2026-10-29)
 
-Prepare the staged battery-buffer strategy as a read-only preview with real device limits, vehicle-minimum priority and bounded optional vehicle support. Reuse staged evening targets and estimate the shared night energy gap without changing production allocation or granting hardware permission. [Details and limits](docs/release-0.17.0-alpha.165.md).
+- (fuchs-1978) Prepare the staged battery-buffer strategy as a read-only preview with real device limits, vehicle-minimum priority and bounded optional vehicle support. Reuse staged evening targets and estimate the shared night energy gap without changing production allocation or granting hardware permission. [Details and limits](docs/release-0.17.0-alpha.165.md).
 
-### 0.17.0-alpha.164 (2026-10-29)
-
-Add departure feasibility, configuration explanations, bounded transition/response analysis, regulation and forecast diagnostics, opt-in recent-weighted load profiles and a general offline version comparison. Existing energy allocation and SQL behavior remain unchanged by default. [Details and limits](docs/release-0.17.0-alpha.164.md).
-
-### 0.17.0-alpha.163 (2026-10-28)
-
-Add standard ioBroker CI, shared ESLint correctness checks, adapter-owned runtime timers, a complete responsive Admin audit and reproducible npm ci installations from the committed lockfile. Preserve bounded shutdown deadlines; npm and Latest publication remain excluded. [Details](docs/release-0.17.0-alpha.163.md).
-
-### 0.17.0-alpha.162 (2026-10-28)
-
-Add an EMS overview with read-only live explanations, independent recorder/SQL/history quality and current/previous daily reviews. Reuse existing observations without extra SQL queries or control changes; unknown historical goals, costs and external audit coverage remain explicit. [Details and acceptance limits](docs/release-0.17.0-alpha.162.md).
-
-### 0.17.0-alpha.161 (2026-10-28)
-
-Resolve the SQL datapoint ID once per bounded metadata-cache period and verify originals with a literal numeric ID and inclusive time range. Retain an exact name/type guard against ID reassignment; preserve durable query fences and late results. Operator EXPLAIN changed from `ref` / 4 key bytes / 4,587 estimated rows with the ID subquery to `range` / 12 bytes / 2 estimated rows with a literal ID. The existing `(id,ts)` primary key needs no new index. The operator enabled a 32-thread cache and observed 4,969 connections with only 173 new threads (approximately 96.5% reuse); this is separate database tuning, not an adapter setting or a measured cure of the SQL delay. [Full SQL findings and release details](docs/release-0.17.0-alpha.161.md).
-
-### 0.17.0-alpha.160 (2026-10-28)
-
-Store compact journal batches in dependency-aligned immutable segments, preserving original hashes and independent SQL proofs. Verified offline storage relocation, legacy export and bounded host SQL/storage inspection are available. Older binaries require offline legacy export before downgrade. [Release and maintenance instructions](docs/release-0.17.0-alpha.160.md).
-
-### 0.17.0-alpha.159 (2026-10-27)
-
-Distinguish record writes, file sync, links and directory commit/cleanup barriers in bounded journal loss diagnostics. This identifies future stalls; it is not a proven fix of the storage or SQL latency cause. [Release details](docs/release-0.17.0-alpha.159.md).
-
-### 0.17.0-alpha.158 (2026-10-27)
-
-Count observed recorder loss-counter increases across sampling gaps in the same reporting period. Energy gaps and unknown restart/boundary attribution stay unchanged. This corrects reporting, not the underlying recorder loss. [Release details](docs/release-0.17.0-alpha.158.md).
-
-### 0.17.0-alpha.157 (2026-10-27)
-
-Keep established charging through age-only device telemetry gaps under fresh SMA protection, including immediate current ACKs, simultaneous peer gaps and idle phase fallback. [Release details](docs/release-0.17.0-alpha.157.md).
-
-### 0.17.0-alpha.156 (2026-10-26)
-
-Keep the optional EHZ heating during the preferred vehicle’s start delay. After qualification, reduce the heater and wait for real capacity before charging; preserve the completed countdown. [Release details](docs/release-0.17.0-alpha.156.md).
-
-### 0.17.0-alpha.155 (2026-10-26)
-
-Keep an aged valid vehicle SoC with explicit age diagnostics. Stop an unresponsive charging session after 15 minutes, release power only after physical OFF, and serve other vehicles before retrying. [Release details](docs/release-0.17.0-alpha.155.md).
-
-### 0.17.0-alpha.154 (2026-10-26)
-
-Keep a continuous cold-start topology and budget through delayed phase acknowledgements. Release optional restart donors on fresh controller withdrawal and reserve ramp demand before allocating heater residuals. [Release details](docs/release-0.17.0-alpha.154.md).
-
-### 0.17.0-alpha.153 (2026-10-26)
-
-Reclaim a blocked preferred start from optional running followers and the heater; require physical stop/reduction proof and ordinary start qualification. [Release details](docs/release-0.17.0-alpha.153.md).
-
-### 0.17.0-alpha.152 (2026-10-26)
-
-Keep a waiting priority car's minimum start budget while passing only the remainder to followers and the heater. This prevents repeated start resets and EQV target collapses. Alpha.151 electrical retry behavior is unchanged. [Release details](docs/release-0.17.0-alpha.152.md).
-
-### 0.17.0-alpha.151 (2026-10-26)
-
-Use the existing early one-amp retry with measured PV funding when a vehicle retains a current offset. Electrical response, bounded retries and hard limits remain required. [Release details](docs/release-0.17.0-alpha.151.md).
-
-[Earlier changes](CHANGELOG_OLD.md). Keep only the latest release summary here; detailed commissioning evidence belongs in the linked release documents and issues.
+[Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 
 ## Support
 
@@ -131,4 +125,4 @@ Report bugs and feature requests through [GitHub Issues](https://github.com/fuch
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT License. Copyright (c) 2026 Carsten Reineke. See [LICENSE](LICENSE) for the full license text.
