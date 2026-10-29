@@ -581,5 +581,6 @@
   "Forecast uncertainty and load preview": "Неопределённость прогноза и предварительная нагрузка",
   "Historical load profile method": "Метод исторического профиля нагрузки",
   "Median (compatible default)": "Медиана (совместимая настройка по умолчанию)",
-  "Recent weighted profile (28 day half-life)": "Профиль с весом по давности (период полураспада 28 дней)"
+  "Recent weighted profile (28 day half-life)": "Профиль с весом по давности (период полураспада 28 дней)",
+  "Battery strategy preview": "Предварительная стратегия аккумулятора"
 }

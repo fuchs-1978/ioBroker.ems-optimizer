@@ -581,5 +581,6 @@
   "Forecast uncertainty and load preview": "Incertezza delle previsioni e anteprima del carico",
   "Historical load profile method": "Metodo del profilo di carico storico",
   "Median (compatible default)": "Mediana (impostazione predefinita compatibile)",
-  "Recent weighted profile (28 day half-life)": "Profilo ponderato recente (emivita di 28 giorni)"
+  "Recent weighted profile (28 day half-life)": "Profilo ponderato recente (emivita di 28 giorni)",
+  "Battery strategy preview": "Anteprima della strategia della batteria"
 }
