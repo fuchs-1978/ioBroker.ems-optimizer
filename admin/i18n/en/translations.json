@@ -573,5 +573,13 @@
   "External history assessment": "External history assessment",
   "Current balance period": "Current balance period",
   "Previous balance period": "Previous balance period",
-  "Read-only diagnostics; no additional SQL queries.": "Read-only diagnostics; no additional SQL queries."
+  "Read-only diagnostics; no additional SQL queries.": "Read-only diagnostics; no additional SQL queries.",
+  "Departure feasibility": "Departure feasibility",
+  "Configuration conflicts": "Configuration conflicts",
+  "Transitions and response times": "Transitions and response times",
+  "Regulation quality": "Regulation quality",
+  "Forecast uncertainty and load preview": "Forecast uncertainty and load preview",
+  "Historical load profile method": "Historical load profile method",
+  "Median (compatible default)": "Median (compatible default)",
+  "Recent weighted profile (28 day half-life)": "Recent weighted profile (28 day half-life)"
 }

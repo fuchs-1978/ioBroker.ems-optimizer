@@ -119,7 +119,7 @@ test('malformed/future/overcovered/negative daily data cannot produce a successf
     d.sources.grid.coveredMs = d.to - d.from; assert.equal(dailyPeriod(d, now, true), null);
     d.sources.grid.coveredMs = 5000; d.sources.grid.importWh = -1; assert.equal(dailyPeriod(d, now, true), null);
 });
-test('read-only publisher bounds stalled writes and sends only its own seven display states', async () => {
+test('read-only publisher bounds stalled writes and sends only its own twelve display states', async () => {
     const writes = [], objects = []; let unblock;
     const a = {namespace: 'ems.0', shadowController: {recordSession: 1, recordDropped: 0, recordWriteErrors: 0},
         queueCompatState: async (id, value, common) => objects.push({id, common}), getCachedState: () => null,
@@ -129,10 +129,10 @@ test('read-only publisher bounds stalled writes and sends only its own seven dis
     assert.ok(objects.every(o => o.common.write === false));
     p.publish(snapshot(), daily()); await new Promise(r => setImmediate(r));
     for (let i = 0; i < 100; i++) p.publish(snapshot(now + i), daily());
-    assert.equal(p.writer.entries.size, 7);
+    assert.equal(p.writer.entries.size, 12);
     assert.ok(writes.every(w => /^Diagnostics\./.test(w.id)));
     unblock(); await Promise.all([...p.writer.entries.values()].map(e => e.promise));
-    assert.ok(writes.length <= 14); assert.ok(writes.every(w => Buffer.byteLength(w.state.val) < MAX_BYTES));
+    assert.ok(writes.length <= 24); assert.ok(writes.every(w => Buffer.byteLength(w.state.val) < MAX_BYTES));
     p.stop(); const count = writes.length; p.publish(snapshot(), daily()); assert.equal(writes.length, count);
 });
 test('full display stays bounded and cannot manufacture a day, cost saving or external audit', () => {

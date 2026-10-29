@@ -1,6 +1,6 @@
 {
   "name": "iobroker.ems-optimizer",
-  "version": "0.17.0-alpha.163",
+  "version": "0.17.0-alpha.164",
   "description": "Forecast-based energy management observer for ioBroker",
   "author": {
     "name": "fuchs-1978"
@@ -30,7 +30,8 @@
     "check:admin": "node tools/check-admin-layout.js",
     "test:metadata": "node tools/check-package-metadata.js",
     "test:integration": "mocha test/integration.js --exit",
-    "test:unit": "npm test"
+    "test:unit": "npm test",
+    "compare:recorded": "node tools/compare-recorded-versions.js"
   },
   "dependencies": {
     "@iobroker/adapter-core": "^3.4.3",
@@ -43,5 +44,8 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/fuchs-1978/ioBroker.ems-optimizer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues"
   }
 }

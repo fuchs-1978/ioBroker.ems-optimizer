@@ -2,7 +2,7 @@
 
 Forecast-based energy management for ioBroker. Combines PV and grid measurements, load history, weather forecasts and electricity prices in a rolling 48-hour plan.
 
-**Current version: 0.17.0-alpha.163.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
+**Current version: 0.17.0-alpha.164.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
 
 [Deutsche Bedienungsanleitung](README.de.md) · [Release history](CHANGELOG_OLD.md) · [Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
@@ -63,6 +63,10 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 
 ## Changelog
 
+### 0.17.0-alpha.164 (2026-10-29)
+
+Add departure feasibility, configuration explanations, bounded transition/response analysis, regulation and forecast diagnostics, opt-in recent-weighted load profiles and a general offline version comparison. Existing energy allocation and SQL behavior remain unchanged by default. [Details and limits](docs/release-0.17.0-alpha.164.md).
+
 ### 0.17.0-alpha.163 (2026-10-28)
 
 Add standard ioBroker CI, shared ESLint correctness checks, adapter-owned runtime timers, a complete responsive Admin audit and reproducible npm ci installations from the committed lockfile. Preserve bounded shutdown deadlines; npm and Latest publication remain excluded. [Details](docs/release-0.17.0-alpha.163.md).
@@ -116,6 +120,10 @@ Keep a waiting priority car's minimum start budget while passing only the remain
 Use the existing early one-amp retry with measured PV funding when a vehicle retains a current offset. Electrical response, bounded retries and hard limits remain required. [Release details](docs/release-0.17.0-alpha.151.md).
 
 [Earlier changes](CHANGELOG_OLD.md). Keep only the latest release summary here; detailed commissioning evidence belongs in the linked release documents and issues.
+
+## Support
+
+Report bugs and feature requests through [GitHub Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues). See [SUPPORT.md](SUPPORT.md) for bounded diagnostic reporting and contact details.
 
 ## License
 

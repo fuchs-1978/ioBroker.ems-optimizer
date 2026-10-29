@@ -573,5 +573,13 @@
   "External history assessment": "Externe Historienauswertung",
   "Current balance period": "Laufende Bilanzperiode",
   "Previous balance period": "Vorherige Bilanzperiode",
-  "Read-only diagnostics; no additional SQL queries.": "Nur lesende Diagnose; keine zusätzlichen SQL-Abfragen."
+  "Read-only diagnostics; no additional SQL queries.": "Nur lesende Diagnose; keine zusätzlichen SQL-Abfragen.",
+  "Departure feasibility": "Erreichbarkeit der Abfahrtsziele",
+  "Configuration conflicts": "Konflikte in den Einstellungen",
+  "Transitions and response times": "Übergänge und Reaktionszeiten",
+  "Regulation quality": "Netzregelgüte",
+  "Forecast uncertainty and load preview": "Prognoseunsicherheit und Lastvorschau",
+  "Historical load profile method": "Verfahren für historische Lastprofile",
+  "Median (compatible default)": "Median (kompatible Voreinstellung)",
+  "Recent weighted profile (28 day half-life)": "Aktuell gewichtetes Profil (28 Tage Halbwertszeit)"
 }

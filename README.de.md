@@ -1,10 +1,12 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.163**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.164**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
 [Sprachabdeckung und Prüfungen](docs/translations.md) · [English overview](README.md) · [Versionshinweise](CHANGELOG_OLD.md)
+
+Version .164 ergänzt Abfahrts-Machbarkeit, Konfigurationshinweise, Übergangs-/Reaktionsauswertung, Netzregelgüte und Prognosevorschau sowie einen allgemeinen Offline-Versionsvergleich. Das neuere Lastprofil ist optional; der bisherige Median bleibt Standard. [Details und Grenzen](docs/release-0.17.0-alpha.164.md).
 
 Version .163 verbessert die Entwicklungsprüfung: Standard-CI, ESLint, adaptereigene Timer, vollständige Größenprüfung der Admin-Felder und reproduzierbare Installation der Abhängigkeiten. [Details](docs/release-0.17.0-alpha.163.md).
 
@@ -893,3 +895,5 @@ Speicher und Rückexport sind in den [Release- und Wartungshinweisen](docs/relea
 beschrieben. `recorderJournalRoot` ist eine optionale native Wartungseinstellung
 und setzt eine vorher geprüfte Offline-Kopie voraus. Keine automatische Migration
 oder Datenbankänderung durch die Installation.
+
+Support und Fehlermeldungen: [GitHub Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues), Hinweise in [SUPPORT.md](SUPPORT.md). Eine öffentliche Kontakt-E-Mail ist bislang nicht festgelegt.

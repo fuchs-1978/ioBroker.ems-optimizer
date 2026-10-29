@@ -573,5 +573,13 @@
   "External history assessment": "Beoordeling externe historie",
   "Current balance period": "Lopende balansperiode",
   "Previous balance period": "Vorige balansperiode",
-  "Read-only diagnostics; no additional SQL queries.": "Alleen-lezen diagnose; geen extra SQL-query’s."
+  "Read-only diagnostics; no additional SQL queries.": "Alleen-lezen diagnose; geen extra SQL-query’s.",
+  "Departure feasibility": "Haalbaarheid van vertrekdoelen",
+  "Configuration conflicts": "Configuratieconflicten",
+  "Transitions and response times": "Overgangen en reactietijden",
+  "Regulation quality": "Kwaliteit van netregeling",
+  "Forecast uncertainty and load preview": "Prognoseonzekerheid en belastingsvooruitblik",
+  "Historical load profile method": "Methode voor historisch belastingsprofiel",
+  "Median (compatible default)": "Mediaan (compatibele standaard)",
+  "Recent weighted profile (28 day half-life)": "Recent gewogen profiel (halfwaardetijd van 28 dagen)"
 }

@@ -573,5 +573,13 @@
   "External history assessment": "外部历史评估",
   "Current balance period": "当前统计周期",
   "Previous balance period": "上一统计周期",
-  "Read-only diagnostics; no additional SQL queries.": "只读诊断；不增加 SQL 查询。"
+  "Read-only diagnostics; no additional SQL queries.": "只读诊断；不增加 SQL 查询。",
+  "Departure feasibility": "出发目标可行性",
+  "Configuration conflicts": "配置冲突",
+  "Transitions and response times": "转换与响应时间",
+  "Regulation quality": "电网调节质量",
+  "Forecast uncertainty and load preview": "预测不确定性与负载预览",
+  "Historical load profile method": "历史负载曲线方法",
+  "Median (compatible default)": "中位数（兼容默认设置）",
+  "Recent weighted profile (28 day half-life)": "近期加权曲线（28天半衰期）"
 }
