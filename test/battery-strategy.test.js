@@ -47,4 +47,6 @@ test('night target lacks fictitious SOC for unknown or blocked vehicles', () => 
     assert.equal(vehicleMinimums(x.snapshot.wallboxes, x.planning.vehicles)[0].acKWh, null);
     x.snapshot.wallboxes[0].SoCValid = true; x.snapshot.wallboxes[0].UserRelease = false;
     assert.equal(vehicleMinimums(x.snapshot.wallboxes, x.planning.vehicles)[0].status, 'blocked');
+    x.snapshot.wallboxes[0].ControlEnabled = false;
+    assert.equal(vehicleMinimums(x.snapshot.wallboxes, x.planning.vehicles)[0].status, 'disabled');
 });
