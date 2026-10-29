@@ -582,5 +582,11 @@
   "Historical load profile method": "Methode voor historisch belastingsprofiel",
   "Median (compatible default)": "Mediaan (compatibele standaard)",
   "Recent weighted profile (28 day half-life)": "Recent gewogen profiel (halfwaardetijd van 28 dagen)",
-  "Battery strategy preview": "Voorbeeld van de batterijstrategie"
+  "Battery strategy preview": "Voorbeeld van de batterijstrategie",
+  "Operating status": "Bedrijfsstatus",
+  "Current notices": "Actuele meldingen",
+  "Devices at a glance": "Apparaten in één oogopslag",
+  "Planning and battery preview": "Planning en batterijvoorbeeld",
+  "Daily balances": "Dagbalansen",
+  "Technical diagnostics": "Technische diagnose"
 }

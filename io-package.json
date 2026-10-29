@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.165",
+    "version": "0.17.0-alpha.166",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.166": {
+        "en": "Restructure the EMS overview with compact operating status, current notices and devices; collapse planning, daily balances and technical diagnostics. Presentation only; control and SQL remain unchanged.",
+        "de": "EMS-Übersicht mit kurzem Betriebszustand, aktuellen Hinweisen und Geräten strukturieren; Fahrplan, Tagesbilanzen und technische Diagnose einklappbar. Nur Darstellung; Regelung und SQL unverändert.",
+        "es": "Reorganiza el resumen EMS con estado, avisos y dispositivos; plan, balances y diagnóstico plegables. Solo presentación; sin cambios de control ni SQL.",
+        "fr": "Réorganise la vue EMS avec état, avis et appareils ; plan, bilans et diagnostic repliables. Présentation seule ; régulation et SQL inchangés.",
+        "it": "Riorganizza la panoramica EMS con stato, avvisi e dispositivi; piano, bilanci e diagnostica richiudibili. Solo presentazione; controllo e SQL invariati.",
+        "nl": "Ordent het EMS-overzicht met status, meldingen en apparaten; planning, dagbalansen en diagnose inklapbaar. Alleen presentatie; regeling en SQL ongewijzigd.",
+        "pl": "Porządkuje przegląd EMS: stan, komunikaty i urządzenia; zwijany plan, bilanse i diagnostyka. Tylko prezentacja; sterowanie i SQL bez zmian.",
+        "pt": "Organiza a visão EMS com estado, avisos e dispositivos; plano, balanços e diagnóstico recolhíveis. Só apresentação; controlo e SQL inalterados.",
+        "ru": "Упорядочен обзор EMS: состояние, уведомления и устройства; сворачиваемые план, балансы и диагностика. Только отображение; управление и SQL без изменений.",
+        "uk": "Упорядковано огляд EMS: стан, повідомлення та пристрої; згортані план, баланси й діагностика. Лише відображення; керування та SQL без змін.",
+        "zh-cn": "重组 EMS 概览，显示简洁状态、当前提示和设备；计划、每日平衡和技术诊断可折叠。仅更改显示，控制与 SQL 不变。"
+      },
       "0.17.0-alpha.165": {
         "en": "Prepare a read-only staged battery strategy: buffer around the planned SoC, prioritize vehicle minima, bound optional vehicle support and estimate the night energy gap. Require fresh device SoC limits; no change to production allocation or hardware release.",
         "de": "Lesende gestufte Batteriestrategie vorbereiten: um Plan-SoC puffern, Fahrzeug-Minima priorisieren, optionale Fahrzeugunterstützung begrenzen und Nachtenergielücke schätzen. Frische Gerätegrenzen erforderlich; keine Änderung produktiver Zuteilung oder Hardwarefreigabe.",
@@ -81,19 +94,6 @@
         "ru": "Группировать оригиналы в устойчивые сегменты; добавить перенос офлайн, экспорт и проверку индексов SQL. Реальная проверка открыта.",
         "uk": "Групувати оригінали у стійкі сегменти; додати перенесення офлайн, експорт і перевірку індексів SQL. Реальна перевірка відкрита.",
         "zh-cn": "将原始记录合并到持久段中，添加离线迁移、旧格式导出和 SQL 索引检查。实际验证仍待完成。"
-      },
-      "0.17.0-alpha.159": {
-        "en": "Identify stalled journal append phases and pending file operations in bounded recorder-loss diagnostics; preserve all durability and SQL proof limits.",
-        "de": "Blockierte Journal-Appendphasen und wartende Dateioperationen in begrenzter Verlustdiagnose unterscheiden; Haltbarkeits- und SQL-Nachweisgrenzen erhalten.",
-        "es": "Distinguir fases de escritura del diario bloqueadas sin cambiar límites de durabilidad ni pruebas SQL.",
-        "fr": "Distinguer les phases bloquées du journal sans modifier la durabilité ni les preuves SQL.",
-        "it": "Distinguere le fasi bloccate del journal senza modificare durabilità o prove SQL.",
-        "nl": "Onderscheid vastlopende journaalfasen zonder duurzaamheidsgrenzen of SQL-bewijzen te wijzigen.",
-        "pl": "Rozróżniaj zablokowane fazy dziennika bez zmiany trwałości i dowodów SQL.",
-        "pt": "Distinguir fases bloqueadas do diário sem alterar durabilidade ou provas SQL.",
-        "ru": "Различать задержанные фазы журнала без изменения гарантий сохранности и проверок SQL.",
-        "uk": "Розрізняти затримані фази журналу без зміни гарантій збереження й перевірок SQL.",
-        "zh-cn": "区分日志追加阻塞阶段，保持持久性保障和 SQL 验证限制。"
       }
     },
     "titleLang": {

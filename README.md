@@ -7,7 +7,7 @@
 
 Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Combines PV and grid measurements, load history, weather forecasts and electricity prices in a rolling 48-hour plan.
 
-**Current version: 0.17.0-alpha.165.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
+**Current version: 0.17.0-alpha.166.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
 
 [Deutsche Bedienungsanleitung](README.de.md) · [Release history](CHANGELOG_OLD.md) · [Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
@@ -86,7 +86,7 @@ EMS Optimizer combines ioBroker states supplied by other adapters or scripts. A 
 
 | State group | Purpose |
 | --- | --- |
-| `Diagnostics.*` | Read-only live explanations, planning, configuration, battery preview, data quality and daily reviews. |
+| `Diagnostics.*` | Compact overview, current notices and devices; collapsable planning, daily balances and technical details in Admin. All displays are read-only. |
 | `System.Version` | Running adapter version; compare with installation and startup logs. |
 | `Plan.*`, `Forecast.*`, `Chart.*` | Planned or predicted values, rather than proof of actuator response. |
 | `Control.*` | Current budgets, allocation, phase decisions and control validity. |
@@ -113,9 +113,9 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 
 ## Changelog
 
-### 0.17.0-alpha.165 (2026-10-29)
+### 0.17.0-alpha.166 (2026-10-29)
 
-- (fuchs-1978) Prepare the staged battery-buffer strategy as a read-only preview with real device limits, vehicle-minimum priority and bounded optional vehicle support. Reuse staged evening targets and estimate the shared night energy gap without changing production allocation or granting hardware permission. [Details and limits](docs/release-0.17.0-alpha.165.md).
+- (fuchs-1978) Simplify the EMS overview into compact status, current notices and devices. Group planning, daily balances and full technical diagnostics in collapsable panels. Preserve all existing read-only details and unchanged control/SQL behavior. [Details](docs/release-0.17.0-alpha.166.md).
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 
