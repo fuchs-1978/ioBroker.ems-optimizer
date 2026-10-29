@@ -1889,7 +1889,13 @@ for(const [name,change] of [
     ['mismatched step',h=>{h.output.devices[0].measuredBudgetStep.amps=14;}]
 ]) test('asynchronous measured-step hold yields: '+name,async()=>{
     const h=await asynchronousMeasuredPVStep();change(h);await h.output.tick();
-    if(name==='missing admission')
+    if(name==='expired response') {
+        assert.deepEqual(h.writes, []);
+        assert.equal(h.output.devices[0].fault, '');
+        assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'vehicle_response');
+        assert.equal(h.output.devices[0].response.lateAckContinuation, true);
+        assert.ok(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val >= 13 * 230);
+    } else if(name==='missing admission')
         assert.notEqual(JSON.parse(h.states.get('ems.0.Devices.Wallbox0.IncreaseBudget_JSON').val).decision,'await-measured-step-response');
     else assert.ok(h.writes.some(w=>w.id==='cmd'&&w.val<13||w.id==='allow'&&w.val===0));
     assert.ok(!h.writes.some(w=>w.id==='cmd'&&w.val>13));

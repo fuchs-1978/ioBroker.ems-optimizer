@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.168",
+    "version": "0.17.0-alpha.169",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.169": {
+        "en": "Keep established charging through a missing follow-up current ACK only with fresh independent grid protection and conservative worst-case power reservations. No new commands; starts, phase changes and unsafe or unknown conditions retain stop protection.",
+        "de": "Laufende Ladung bei fehlendem Folge-Strom-ACK nur mit frischem unabhängigen Netzschutz und konservativer Leistungsreserve halten. Keine neuen Befehle; Starts, Phasenwechsel sowie unsichere oder unbekannte Bedingungen bleiben geschützt.",
+        "es": "Mantiene una carga establecida sin ACK de un cambio de corriente solo con protección de red independiente y actual y reserva conservadora. Sin nuevos comandos; se mantienen las protecciones de arranque, fases y condiciones inseguras.",
+        "fr": "Maintient une charge établie sans ACK du changement de courant uniquement avec protection réseau indépendante et récente et réserve prudente. Aucune nouvelle commande ; protections de démarrage, phases et conditions dangereuses conservées.",
+        "it": "Mantiene la ricarica avviata senza ACK del nuovo limite solo con protezione di rete indipendente aggiornata e riserva prudente. Nessun nuovo comando; restano le protezioni di avvio, fasi e condizioni non sicure.",
+        "nl": "Behoudt lopend laden zonder ACK van een stroomwijziging alleen met actuele onafhankelijke netbeveiliging en conservatieve reserve. Geen nieuwe opdrachten; start-, fase- en veiligheidsbeveiligingen blijven.",
+        "pl": "Utrzymuje trwające ładowanie bez ACK zmiany prądu tylko przy aktualnej niezależnej ochronie sieci i ostrożnej rezerwie mocy. Bez nowych poleceń; zabezpieczenia startu, faz i niebezpiecznych warunków pozostają.",
+        "pt": "Mantém a carga estabelecida sem ACK da alteração de corrente apenas com proteção de rede independente atual e reserva conservadora. Sem novos comandos; mantém proteções de arranque, fases e condições inseguras.",
+        "ru": "Сохраняет текущую зарядку без ACK изменения тока только при свежей независимой защите сети и консервативном резерве мощности. Без новых команд; защиты запуска, переключения фаз и опасных условий сохранены.",
+        "uk": "Зберігає поточне заряджання без ACK зміни струму лише за свіжого незалежного захисту мережі та консервативного резерву потужності. Без нових команд; захист запуску, фаз і небезпечних умов збережено.",
+        "zh-cn": "仅在独立电网保护数据新鲜且保留最坏情况功率裕量时，在后续电流命令缺少确认的情况下保持现有充电。不发送新命令；保留启动、相位切换和不安全或未知条件下的停机保护。"
+      },
       "0.17.0-alpha.168": {
         "en": "Continue vehicle SoC estimation beyond two hours only with a persisted uninterrupted valid energy-counter chain. Preserve reset, gap, quality, connection and report-correction guards; expired legacy anchors require a new aligned report.",
         "de": "Fahrzeug-SoC nach zwei Stunden bei nachgewiesen durchgehend gültigem Energiezähler weiterschätzen. Reset-, Lücken-, Qualitäts-, Verbindungs- und Korrekturschutz erhalten; abgelaufene alte Basis braucht neue zugeordnete Fahrzeugmeldung.",
@@ -81,19 +94,6 @@
         "ru": "Добавлены стандартная CI, общие проверки ESLint, таймеры адаптера, полная проверка адаптивности Admin и фиксация зависимостей с npm ci. Сохранены сроки завершения; без публикации в npm и Latest.",
         "uk": "Додано стандартну CI, спільні перевірки ESLint, таймери адаптера, повну перевірку адаптивності Admin і фіксацію залежностей з npm ci. Збережено строки завершення; без публікації в npm і Latest.",
         "zh-cn": "增加标准 CI、共享 ESLint 检查、适配器管理的运行计时器、完整的 Admin 响应式检查，以及使用 npm ci 的依赖锁定文件。保留有限关闭期限；不发布到 npm 或 Latest。"
-      },
-      "0.17.0-alpha.162": {
-        "en": "Add read-only live explanations, separate recorder/SQL/history quality and bounded daily reviews from existing observations. No new SQL queries or control changes; unknown goals and costs remain explicit.",
-        "de": "Lesende Live-Erklärung, getrennte Recorder-/SQL-/Historienqualität und begrenzte Tagesrückblicke aus vorhandenen Beobachtungen. Keine neuen SQL-Abfragen oder Regeländerungen; unbekannte Ziele und Kosten bleiben ausdrücklich offen.",
-        "es": "Añade explicaciones en directo, calidad separada de registro, SQL e historial y resúmenes diarios acotados. Sin nuevas consultas SQL ni cambios de control; objetivos y costes desconocidos se indican expresamente.",
-        "fr": "Ajoute des explications en direct, des qualités distinctes pour enregistrement, SQL et historique et des bilans quotidiens bornés. Aucune nouvelle requête SQL ni modification de régulation ; objectifs et coûts inconnus signalés.",
-        "it": "Aggiunge spiegazioni in tempo reale, qualità separate di registrazione, SQL e storico e riepiloghi giornalieri limitati. Nessuna nuova query SQL o modifica del controllo; obiettivi e costi sconosciuti restano espliciti.",
-        "nl": "Voegt actuele uitleg, afzonderlijke kwaliteit voor registratie, SQL en historie en begrensde dagoverzichten toe. Geen nieuwe SQL-query’s of regelwijzigingen; onbekende doelen en kosten blijven zichtbaar.",
-        "pl": "Dodaje bieżące wyjaśnienia, oddzielną ocenę rejestracji, SQL i historii oraz ograniczone podsumowania dzienne. Bez nowych zapytań SQL i zmian sterowania; nieznane cele i koszty są wyraźnie oznaczone.",
-        "pt": "Acrescenta explicações em tempo real, qualidade separada de registo, SQL e histórico e resumos diários limitados. Sem novas consultas SQL nem alterações de controlo; objetivos e custos desconhecidos ficam explícitos.",
-        "ru": "Добавлены текущие объяснения, раздельная оценка регистрации, SQL и истории и ограниченные суточные обзоры. Без новых запросов SQL и изменений управления; неизвестные цели и затраты указаны явно.",
-        "uk": "Додано поточні пояснення, окрему оцінку запису, SQL та історії й обмежені добові огляди. Без нових запитів SQL і змін керування; невідомі цілі та витрати позначено явно.",
-        "zh-cn": "增加基于现有观测的只读实时说明、独立记录与 SQL 及历史质量状态和有限每日回顾。不增加 SQL 查询或修改控制；明确标示未知目标与成本。"
       }
     },
     "titleLang": {

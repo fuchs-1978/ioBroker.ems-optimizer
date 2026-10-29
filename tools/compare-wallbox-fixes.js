@@ -66,9 +66,8 @@ async function worker(tree, fixed) {
             advance: ms => {now += ms; h.refresh();}};
     }
 
-    // The ordinary on-time case and rejected late/missing/invalid ACK cases
-    // remain byte-for-byte equal. Only timely processing after the deadline
-    // is intentionally different.
+    // Compare intended deadline and independently protected continuation changes.
+    // On-time and explicitly invalid/conflicting ACK cases remain byte exact.
     for (const mode of ['on-time', 'timely-delayed', 'late', 'missing', 'wrong-value', 'bad-quality', 'unacknowledged', 'stale']) {
         const a = harness();
         const {h} = a;
@@ -95,8 +94,21 @@ async function worker(tree, fixed) {
         h.writes.length = 0;
         await h.output.tick();
         const final = a.snapshot('ACK evaluated');
-        const changed = mode === 'timely-delayed';
-        if (mode === 'on-time' || (changed && fixed)) {
+        const changed = ['timely-delayed', 'late', 'missing', 'stale'].includes(mode);
+        if (fixed && ['late', 'missing', 'stale'].includes(mode)) {
+            assert.equal(d.fault, '');
+            assert.deepEqual(h.writes, []);
+            assert.ok(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val >= 2760);
+            assert.equal(d.response.at, issuedAt);
+            if (mode === 'late') {
+                assert.equal(d.pending, null);
+                assert.equal(d.response.ackAt, feedback.ts);
+                assert.equal(d.response.lateAckContinuation, true);
+            } else {
+                assert.equal(d.pending.amps, 12);
+                assert.equal(d.response.ackAt, 0);
+            }
+        } else if (mode === 'on-time' || (mode === 'timely-delayed' && fixed)) {
             assert.equal(d.fault, '');
             assert.equal(d.pending, null);
             assert.equal(d.response, null);
