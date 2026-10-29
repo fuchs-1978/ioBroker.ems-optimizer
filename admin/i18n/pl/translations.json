@@ -582,5 +582,11 @@
   "Historical load profile method": "Metoda historycznego profilu obciążenia",
   "Median (compatible default)": "Mediana (zgodna wartość domyślna)",
   "Recent weighted profile (28 day half-life)": "Profil z wagą aktualności (okres połowiczny 28 dni)",
-  "Battery strategy preview": "Podgląd strategii baterii"
+  "Battery strategy preview": "Podgląd strategii baterii",
+  "Operating status": "Stan pracy",
+  "Current notices": "Bieżące komunikaty",
+  "Devices at a glance": "Urządzenia w skrócie",
+  "Planning and battery preview": "Plan i podgląd baterii",
+  "Daily balances": "Bilanse dzienne",
+  "Technical diagnostics": "Diagnostyka techniczna"
 }

@@ -582,5 +582,11 @@
   "Historical load profile method": "历史负载曲线方法",
   "Median (compatible default)": "中位数（兼容默认设置）",
   "Recent weighted profile (28 day half-life)": "近期加权曲线（28天半衰期）",
-  "Battery strategy preview": "电池策略预览"
+  "Battery strategy preview": "电池策略预览",
+  "Operating status": "运行状态",
+  "Current notices": "当前提示",
+  "Devices at a glance": "设备概览",
+  "Planning and battery preview": "计划与电池预览",
+  "Daily balances": "每日能源平衡",
+  "Technical diagnostics": "技术诊断"
 }

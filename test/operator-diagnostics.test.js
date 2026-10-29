@@ -119,7 +119,7 @@ test('malformed/future/overcovered/negative daily data cannot produce a successf
     d.sources.grid.coveredMs = d.to - d.from; assert.equal(dailyPeriod(d, now, true), null);
     d.sources.grid.coveredMs = 5000; d.sources.grid.importWh = -1; assert.equal(dailyPeriod(d, now, true), null);
 });
-test('read-only publisher bounds stalled writes and sends only its own thirteen display states', async () => {
+test('read-only publisher bounds stalled writes and sends only its own sixteen display states', async () => {
     const writes = [], objects = []; let unblock;
     const a = {namespace: 'ems.0', shadowController: {recordSession: 1, recordDropped: 0, recordWriteErrors: 0},
         queueCompatState: async (id, value, common) => objects.push({id, common}), getCachedState: () => null,
@@ -129,10 +129,10 @@ test('read-only publisher bounds stalled writes and sends only its own thirteen 
     assert.ok(objects.every(o => o.common.write === false));
     p.publish(snapshot(), daily()); await new Promise(r => setImmediate(r));
     for (let i = 0; i < 100; i++) p.publish(snapshot(now + i), daily());
-    assert.equal(p.writer.entries.size, 13);
+    assert.equal(p.writer.entries.size, 16);
     assert.ok(writes.every(w => /^Diagnostics\./.test(w.id)));
     unblock(); await Promise.all([...p.writer.entries.values()].map(e => e.promise));
-    assert.ok(writes.length <= 26); assert.ok(writes.every(w => Buffer.byteLength(w.state.val) < MAX_BYTES));
+    assert.ok(writes.length <= 32); assert.ok(writes.every(w => Buffer.byteLength(w.state.val) < MAX_BYTES));
     p.stop(); const count = writes.length; p.publish(snapshot(), daily()); assert.equal(writes.length, count);
 });
 test('full display stays bounded and cannot manufacture a day, cost saving or external audit', () => {
@@ -141,4 +141,45 @@ test('full display stays bounded and cannot manufacture a day, cost saving or ex
     assert.match(r.display.SQL, /Fehler seit Start 1/); assert.match(r.display.History, /nicht geprüft/);
     assert.match(r.display.PreviousDay, /Keine gültige Tagesbilanz/);
     assert.match(r.display.CurrentDay, /Kosten\/Ersparnis: unbekannt/);
+});
+
+test('compact overview keeps current problems visible without promoting historical SQL errors', () => {
+    const q = quality(healthy());
+    let r = buildReport(snapshot(), q, daily(), now);
+    assert.match(r.display.Attention, /Keine aktuellen Hinweise/);
+    assert.doesNotMatch(r.display.Attention, /8537|Fehler seit Start|deadline/);
+    assert.match(r.display.Devices, /Mii: 0 W/);
+    assert.doesNotMatch(r.display.Devices, /PV-Budget|Mindestlauf|Leistungsquelle/);
+    const s = snapshot(); s.wallboxes[0].OutputFault = 'ACK fehlt';
+    r = buildReport(s, q, daily(), now);
+    assert.match(r.display.Attention, /ACK fehlt/);
+    assert.match(r.display.Configuration, /ACK fehlt/);
+    q.sql.status = 'blockiert'; q.recorder.droppedSinceStart = 1;
+    r = buildReport(snapshot(), q, daily(), now);
+    assert.match(r.display.Attention, /SQL: blockiert/);
+    assert.match(r.display.Attention, /1 Recorderverluste/);
+});
+test('stale operating summary never displays cached power or commands as current', () => {
+    const s = snapshot(); s.freshness.control.ageMs = 31000;
+    const r = buildReport(s, quality(healthy()), daily(), now);
+    assert.match(r.display.Overview, /Netzleistung unbekannt/);
+    assert.match(r.display.Attention, /nicht frisch belegt/);
+    assert.match(r.display.Devices, /Mii: unbekannt/);
+    assert.match(r.display.Devices, /Soll unbekannt/);
+});
+test('Admin overview preserves every original read-only detail under native collapsable panels', () => {
+    const fs = require('node:fs'), path = require('node:path');
+    const items = JSON.parse(fs.readFileSync(path.join(__dirname, '../admin/jsonConfig.json'))).items.diagnosticsTab.items;
+    assert.deepEqual(Object.keys(items).slice(0, 3), ['_Overview', '_Attention', '_Devices']);
+    const details = [];
+    for (const key of ['_planning', '_balances', '_technical']) {
+        assert.equal(items[key].type, 'panel'); assert.equal(items[key].collapsable, true);
+        for (const field of Object.values(items[key].items)) {
+            assert.equal(field.type, 'state'); assert.equal(field.controlled, false); assert.equal(field.doNotSave, true);
+            details.push(field.oid);
+        }
+    }
+    assert.deepEqual(details.sort(), ['Live', 'Planning', 'BatteryStrategy', 'CurrentDay', 'PreviousDay',
+        'Configuration', 'Recorder', 'SQL', 'History', 'Transitions', 'RegulationQuality', 'ForecastInsights']
+        .map(key => `Diagnostics.${key}`).sort());
 });

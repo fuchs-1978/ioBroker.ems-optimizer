@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.165**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.166**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -12,7 +12,7 @@ Version .163 verbessert die Entwicklungsprüfung: Standard-CI, ESLint, adapterei
 
 ## EMS-Übersicht: Erklärung, Datenqualität und Tagesrückblick
 
-Der neue erste Admin-Reiter **EMS-Übersicht** erklärt die aktuelle Regelung und zeigt Aufzeichnung, SQL-Speicherbestätigung sowie externe Historienprüfung getrennt. Laufende und vorherige Bilanz beginnen um 20 Uhr Europe/Berlin; Abdeckung, unbekannte Zeit und elektrische EHZ-Energie bleiben ausdrücklich sichtbar. Ohne angebundenen externen Prüfstand steht die Historie auf „nicht geprüft“. Historische Zielerreichung und Kosten bleiben ohne Beleg unbekannt. Die lesenden Zustände liegen unter `Diagnostics.*`; es entstehen keine zusätzlichen SQL-Abfragen oder Stellbefehle. [Versionsdetails](docs/release-0.17.0-alpha.162.md).
+Der erste Admin-Reiter **EMS-Übersicht** zeigt oben den kompakten **Betriebszustand**, **aktuelle Hinweise** und **Geräte auf einen Blick**. Aktuelle Konfigurations-/Ausgangshinweise und Probleme bei Aufzeichnung oder SQL bleiben oben sichtbar; historische SQL-Fristüberschreitungen werden nicht als aktuelle Störung ausgegeben. Darunter lassen sich **Fahrplan und Batterie-Vorschau**, **Tagesbilanzen** sowie **Technische Diagnose** einzeln aufklappen. Diese Bereiche sind zunächst geschlossen; Admin merkt sich den Öffnungszustand im jeweiligen Browser. Alle bisherigen Detailanzeigen bleiben erreichbar. Aufzeichnung, SQL-Speicherbestätigung und externe Historienprüfung bleiben getrennt. [Änderungen in alpha.166](docs/release-0.17.0-alpha.166.md). Laufende und vorherige Bilanz beginnen um 20 Uhr Europe/Berlin; Abdeckung, unbekannte Zeit und elektrische EHZ-Energie bleiben ausdrücklich sichtbar. Ohne angebundenen externen Prüfstand steht die Historie auf „nicht geprüft“. Historische Zielerreichung und Kosten bleiben ohne Beleg unbekannt. Die lesenden Zustände liegen unter `Diagnostics.*`; es entstehen keine zusätzlichen SQL-Abfragen oder Stellbefehle. [Versionsdetails](docs/release-0.17.0-alpha.162.md).
 
 ## Inhaltsverzeichnis
 

@@ -582,5 +582,11 @@
   "Historical load profile method": "Historical load profile method",
   "Median (compatible default)": "Median (compatible default)",
   "Recent weighted profile (28 day half-life)": "Recent weighted profile (28 day half-life)",
-  "Battery strategy preview": "Battery strategy preview"
+  "Battery strategy preview": "Battery strategy preview",
+  "Operating status": "Operating status",
+  "Current notices": "Current notices",
+  "Devices at a glance": "Devices at a glance",
+  "Planning and battery preview": "Planning and battery preview",
+  "Daily balances": "Daily balances",
+  "Technical diagnostics": "Technical diagnostics"
 }

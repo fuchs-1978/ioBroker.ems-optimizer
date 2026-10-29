@@ -582,5 +582,11 @@
   "Historical load profile method": "Метод исторического профиля нагрузки",
   "Median (compatible default)": "Медиана (совместимая настройка по умолчанию)",
   "Recent weighted profile (28 day half-life)": "Профиль с весом по давности (период полураспада 28 дней)",
-  "Battery strategy preview": "Предварительная стратегия аккумулятора"
+  "Battery strategy preview": "Предварительная стратегия аккумулятора",
+  "Operating status": "Состояние работы",
+  "Current notices": "Текущие уведомления",
+  "Devices at a glance": "Устройства: кратко",
+  "Planning and battery preview": "План и предварительный расчёт батареи",
+  "Daily balances": "Суточные балансы",
+  "Technical diagnostics": "Техническая диагностика"
 }
