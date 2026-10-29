@@ -236,3 +236,9 @@ test('long-session rounded reports preserve fractions and reset/disconnect never
     const unplugged = other.h.run({car: state(1, other.h.input().now)});
     assert.equal(unplugged.ledger.basis, null); assert.equal(unplugged.value, other.r.value);
 });
+test('SoC status separates live energy interpolation from a held estimate and preserves cloud age', () => {
+    const {socStatus} = require('../lib/vehicle-soc-estimator');
+    assert.match(socStatus({valid: true, estimated: true, reason: 'energy-estimate'}, {stale: true}), /Ladeenergie fortgeschrieben; Fahrzeugbericht aelter/);
+    assert.match(socStatus({valid: true, estimated: true, reason: 'retained-estimate:basis-invalid-or-stale'}, {stale: true}), /Letzter gueltiger SoC/);
+    assert.equal(socStatus({valid: false}, {stale: true}), 'SoC unbekannt/ungueltig');
+});
