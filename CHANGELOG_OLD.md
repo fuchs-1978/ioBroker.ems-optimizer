@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.168 (2026-10-29)
+
+- (fuchs-1978) Continue vehicle SoC interpolation beyond two hours with persisted continuous valid energy-counter evidence. Preserve reset, gap and correction guards; do not invent progress for expired legacy anchors. [Details](docs/release-0.17.0-alpha.168.md).
+
 ## 0.17.0-alpha.167 (2026-10-29)
 
 - (fuchs-1978) Add persistent per-vehicle mobility-reserve inputs with a default of 0% (disabled). Show their bounded energy subset and existing departure in the read-only strategy preview; production charging is unchanged. [Details](docs/release-0.17.0-alpha.167.md).

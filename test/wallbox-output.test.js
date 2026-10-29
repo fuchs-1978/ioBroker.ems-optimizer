@@ -3353,7 +3353,7 @@ test('a delayed ordinary-current ACK cannot promote pre-ACK electrical samples',
     assert.deepEqual(h.writes, []);
 });
 
-test('delayed processing still rejects invalid or untimely ordinary-current ACKs', async t => {
+test('delayed ordinary-current ACKs either retain independent safety or stop', async t => {
     const cases = [
         {name: 'missing', missing: true},
         {name: 'wrong value', value: 6},
@@ -3372,9 +3372,23 @@ test('delayed processing still rejects invalid or untimely ordinary-current ACKs
         if (item.missing) h.states.delete('feedback');
         h.put('i1', 12); h.put('power', 2.76);
         await h.output.tick();
-        assert.match(h.output.devices[0].fault, /Keine passende go-e-Rueckmeldung/);
-        assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
-        assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'timeout');
+        if (['wrong value', 'at command time', 'after deadline', 'stale'].includes(item.name)) {
+            assert.equal(h.output.devices[0].fault, '');
+            assert.deepEqual(h.writes, []);
+            assert.ok(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val >= 2760);
+            assert.equal(h.output.devices[0].response.at, h.issuedAt);
+            if (item.name === 'after deadline') {
+                assert.equal(h.output.devices[0].response.ackAt, h.issuedAt + 20001);
+                assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'vehicle_response');
+            } else {
+                assert.equal(h.output.devices[0].response.ackAt, 0);
+                assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'command_ack');
+            }
+        } else {
+            assert.match(h.output.devices[0].fault, /Keine passende go-e-Rueckmeldung/);
+            assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+            assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'timeout');
+        }
     });
 });
 
@@ -3995,4 +4009,94 @@ test('3P telemetry hold survives allocator fallback to idle 1P on an explicitly 
     assert.deepEqual(h.writes, []);
     assert.equal(h.states.get('phaseMode').val, 2);
     assert.ok(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val >= 4140);
+});
+
+
+async function unacknowledgedStep(phases = 1) {
+    const h = await telemetryBridgeFixture({phases});
+    h.advance(1000); h.refresh();
+    const d = h.output.devices[0];
+    d.pending = {stage: 'current', amps: 11, start: false, at: h.states.get('power').ts};
+    await h.output.send(d, 'command', 11);
+    h.writes.length = 0;
+    for (const id of h.freeze.keys()) h.freeze.set(id, {...h.states.get(id)});
+    return h;
+}
+for (const phases of [1, 3]) test(`unacknowledged follow-up holds worst-case reserve and original evidence, ${phases}P`, async () => {
+    const h = await unacknowledgedStep(phases);
+    const d = h.output.devices[0], sentAt = d.response.at;
+    h.advance(32000); await h.output.tick();
+    assert.equal(d.fault, '');
+    assert.equal(d.lastA, 6);
+    assert.equal(d.response.ackAt, 0);
+    assert.equal(d.response.at, sentAt);
+    assert.equal(d.pending.amps, 11);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val, /ACK-WARNUNG/);
+    assert.ok(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val >= 11 * 230 * phases);
+    h.advance(3600000); await h.output.tick();
+    assert.deepEqual(h.writes, []);
+    assert.deepEqual(h.states.get('power'), h.freeze.get('power'));
+});
+for (const [name, invalidate] of [
+    ['stale SMA', h => h.put('import', 0, {ts: 1})],
+    ['phase overload', h => h.put('h1', 100)],
+    ['explicit OFF', h => h.put('allow', 0)],
+    ['device fault', h => h.put('error', 1)],
+    ['bad quality', h => h.put('power', 1.32, {q: 64})],
+    ['conflicting current', h => h.put('feedback', 13)],
+    ['release withdrawn', h => h.put('userAllow', false)],
+    ['device cap below possible sent current', h => h.config.wb0CommissioningMaxA = 8],
+    ['no private witness', h => h.output.unacknowledgedCurrentProofs = new WeakMap()],
+    ['phase change', h => h.put('ems.0.Control.Targets.Wallbox0_Phases', 3)],
+    ['start request', h => h.output.devices[0].pending.start = true]
+]) test(`unacknowledged continuation rejects ${name}`, async () => {
+    const h = await unacknowledgedStep();
+    h.advance(32000); invalidate(h); await h.output.tick();
+    assert.match(h.output.devices[0].fault, /Keine passende go-e-Rueckmeldung/);
+    assert.deepEqual(h.writes, name === 'explicit OFF' ? [] : [{id: 'allow', val: 0}]);
+});
+
+test('late ACK after guarded hold retains actual ACK time and requires separate electrical evidence', async () => {
+    const h = await unacknowledgedStep();
+    const d = h.output.devices[0], sentAt = d.response.at;
+    h.advance(32000); await h.output.tick();
+    h.advance(1000); h.refresh(); h.ack('feedback', 11);
+    const ackAt = h.states.get('feedback').ts;
+    await h.output.tick();
+    assert.equal(d.pending, null);
+    assert.equal(d.lastA, 11);
+    assert.equal(d.response.at, sentAt);
+    assert.equal(d.response.ackAt, ackAt);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'vehicle_response');
+    assert.deepEqual(h.writes, []);
+    h.freeze.set('feedback', {...h.states.get('feedback')});
+    h.put('ems.0.Control.Targets.Wallbox0_W', 2530);
+    h.advance(1000); h.refresh(); h.put('power', 2.5); h.put('i1', 10.9);
+    await h.output.tick();
+    assert.equal(d.fault, '');
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseAcknowledgedAt').val, ackAt);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'confirmed');
+});
+
+test('unacknowledged reduction retains old confirmed current reservation', async () => {
+    const h = await unacknowledgedStep();
+    h.put('ems.0.Control.Targets.Wallbox0_W', 2530);
+    h.advance(1000); h.refresh(); h.ack('feedback', 11);
+    h.put('i1', 10.9); h.put('power', 2.5);
+    await h.output.tick();
+    h.freeze.set('feedback', {...h.states.get('feedback')});
+    h.advance(1000); h.refresh(); h.put('i1', 10.9); h.put('power', 2.5);
+    h.put('ems.0.Control.Targets.Wallbox0_W', 2530);
+    await h.output.tick();
+    const d = h.output.devices[0];
+    d.pending = {stage: 'current', amps: 6, start: false, at: h.states.get('power').ts};
+    await h.output.send(d, 'command', 6);
+    for (const id of h.freeze.keys()) h.freeze.set(id, {...h.states.get(id)});
+    h.writes.length = 0;
+    h.advance(32000); await h.output.tick();
+    assert.equal(d.fault, '');
+    assert.equal(d.lastA, 11);
+    assert.equal(d.pending.amps, 6);
+    assert.ok(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val >= 2530);
+    assert.deepEqual(h.writes, []);
 });
