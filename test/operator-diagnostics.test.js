@@ -183,3 +183,13 @@ test('Admin overview preserves every original read-only detail under native coll
         'Configuration', 'Recorder', 'SQL', 'History', 'Transitions', 'RegulationQuality', 'ForecastInsights']
         .map(key => `Diagnostics.${key}`).sort());
 });
+
+test('persisted mobility setting accepts user commands but rejects invalid values and quality', () => {
+    const {configuredPercent} = require('../lib/operator-diagnostics');
+    const s = {val: 0, ack: false, q: 0, ts: now - 86400000};
+    assert.equal(configuredPercent(s, now), 0);
+    assert.equal(configuredPercent({...s, val: 15, ack: true}, now), 15);
+    for (const bad of [null, {...s, val: -1}, {...s, val: 101}, {...s, val: '15'},
+        {...s, val: null}, {...s, q: 64}, {...s, ts: now + 1}, {...s, ts: 0}])
+        assert.equal(configuredPercent(bad, now), null);
+});

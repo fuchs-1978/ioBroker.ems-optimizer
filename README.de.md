@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.166**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.167**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -899,3 +899,11 @@ oder Datenbankänderung durch die Installation.
 Support und Fehlermeldungen: [GitHub Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues), Hinweise in [SUPPORT.md](SUPPORT.md). Eine öffentliche Kontakt-E-Mail ist bislang nicht festgelegt.
 
 Die Batteriestrategie-Vorschau in .165 bereitet Zielhaltung und Feinregelung, begrenzte Fahrzeugunterstützung sowie nächtlichen Mindestbedarf vor. Sie schaltet keine Hardware frei und ändert keine produktive Ladeplanung. [Grenzen und Voraussetzungen](docs/release-0.17.0-alpha.165.md).
+
+## Mobilitätsreserve und vorhandene Abfahrtszeit
+
+Je Fahrzeug liegt im Objektbaum der beschreibbare State `ems-optimizer.0.Vehicles.Wallbox0.MobilityReserve_pct` (analog Wallbox1/Wallbox2). Vorgabe **0 % = aus**; bestehende Eingaben bleiben bei Neustart/Update erhalten. Gültig sind Zahlen von 0 bis 100; die Vorschau begrenzt das Reserve-Ziel zusätzlich auf den Fahrzeug-Mindest-SoC. Ungültige Werte bleiben unbekannt. Die Reserve ist ein Teil des Mindestbedarfs und wird nicht als zusätzliche Nachtenergie addiert.
+
+Die vorhandenen `Vehicles.WallboxN.DepartureTime`-States verwenden `HH:MM`; `DepartureTimestamp` ist der daraus berechnete nächste Termin. Zusätzlich muss die bestehende Abfahrts-/Fristfunktion für das Fahrzeug eingeschaltet sein. Eine leere Zeit ist keine feste Abfahrt. Es werden keine Zeiten automatisch gesetzt oder vorhandene Einstellungen überschrieben.
+
+**Stand alpha.167:** Reserve und Abfahrt sind für die neue Strategie lesend vorbereitet. Mindest-SoC als Bereitschaftsziel bis Abfahrt, günstige Ladefenster, notwendige teurere Zusatzfenster und Sofortladen ausschließlich für die Reserve beziehungsweise ausdrücklichen Nutzerwunsch sind noch produktiv in [#25](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/25) zu integrieren. Die bisherige Sofortladung unter Mindest-SoC wird durch diesen neuen State noch nicht ersetzt; ein Reservewert ist noch keine Stellfreigabe.

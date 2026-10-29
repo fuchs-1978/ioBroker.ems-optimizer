@@ -45,6 +45,14 @@ async function worker(tree) {
         if (!versionSources.has(String(filename)) && String(filename) !== admissionSource
             && String(filename) !== recorderSource && String(filename) !== heaterOutputSource) return data;
         let pinned = String(data).replaceAll(adapterVersion, '0.17.0-alpha.96');
+        // alpha.167 introduces three unused production configuration slots.
+        // Give the historical fixture exactly the same zero-valued objects;
+        // retain all writes, input values and allocator decisions in the trace.
+        if (String(filename).endsWith('/core.js') && !pinned.includes('MobilityReserve_pct')) {
+            const anchor = "        configDef(`${r}.Vehicles.Wallbox${wb}.DepartureTime`, '06:00', 'string', 'text', '', `Abfahrtszeit Wallbox ${wb}`);";
+            assert.equal(pinned.split(anchor).length, 2);
+            pinned = pinned.replace(anchor, anchor + "\n        configDef(`${r}.Vehicles.Wallbox${wb}.MobilityReserve_pct`, 0, 'number', 'level', '%', `Mobilitaetsreserve Wallbox ${wb}; 0 deaktiviert; aktuell Strategie-Vorschau, keine produktive Sofortladefreigabe`);");
+        }
         // alpha.155 represents an unknown initial vehicle SoC as null. Align
         // only the object default; observed reports and all control writes
         // still come from the respective production tree.
