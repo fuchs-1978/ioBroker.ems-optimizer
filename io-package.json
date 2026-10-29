@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.164",
+    "version": "0.17.0-alpha.165",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.165": {
+        "en": "Prepare a read-only staged battery strategy: buffer around the planned SoC, prioritize vehicle minima, bound optional vehicle support and estimate the night energy gap. Require fresh device SoC limits; no change to production allocation or hardware release.",
+        "de": "Lesende gestufte Batteriestrategie vorbereiten: um Plan-SoC puffern, Fahrzeug-Minima priorisieren, optionale Fahrzeugunterstützung begrenzen und Nachtenergielücke schätzen. Frische Gerätegrenzen erforderlich; keine Änderung produktiver Zuteilung oder Hardwarefreigabe.",
+        "es": "Prepara una estrategia de batería de solo lectura con objetivos escalonados, prioridad de mínimos de vehículos y estimación de déficit nocturno. Exige límites recientes del dispositivo; sin cambiar la asignación productiva ni activar hardware.",
+        "fr": "Prépare une stratégie de batterie en lecture seule : objectifs progressifs, priorité aux minima des véhicules et estimation du déficit nocturne. Limites récentes exigées ; aucune modification de régulation ni activation matérielle.",
+        "it": "Prepara una strategia batteria in sola lettura con obiettivi graduali, priorità ai minimi dei veicoli e stima del deficit notturno. Richiede limiti recenti del dispositivo; nessuna modifica al controllo o attivazione hardware.",
+        "nl": "Bereidt een alleen-lezen batterijstrategie voor met getrapte doelen, prioriteit voor voertuigminima en een raming van het nachtelijke energietekort. Actuele apparaatgrenzen vereist; geen wijziging van productieregeling of hardwarevrijgave.",
+        "pl": "Przygotowuje strategię baterii tylko do odczytu: cele etapowe, priorytet minimów pojazdów i szacowanie nocnego deficytu energii. Wymaga aktualnych limitów urządzenia; bez zmian regulacji i aktywacji sprzętu.",
+        "pt": "Prepara uma estratégia de bateria só de leitura: metas graduais, prioridade aos mínimos dos veículos e estimativa do défice noturno. Exige limites recentes do dispositivo; sem alterar a regulação nem ativar equipamento.",
+        "ru": "Подготовлена стратегия аккумулятора только для чтения: ступенчатые цели, приоритет минимумов автомобилей и оценка ночного дефицита. Нужны свежие ограничения устройства; без изменения управления и включения оборудования.",
+        "uk": "Підготовлено стратегію батареї лише для читання: поетапні цілі, пріоритет мінімумів автомобілів та оцінка нічного дефіциту. Потрібні свіжі межі пристрою; без зміни керування й активації обладнання.",
+        "zh-cn": "准备只读分阶段电池策略：在计划电量附近缓冲，优先满足车辆最低电量，限制车辆供能并估计夜间能源缺口。需要最新设备限制；不更改生产调节或启用硬件。"
+      },
       "0.17.0-alpha.164": {
         "en": "Add read-only departure feasibility, configuration conflicts, bounded transition/response analysis, regulation metrics, empirical forecast bands and a general offline version replay. Offer recent-weighted load profiles as an opt-in; retain compatible defaults and explicit unknowns.",
         "de": "Lesende Abfahrts-Machbarkeit, Konfigurationskonflikte, begrenzte Übergangs-/Reaktionsauswertung, Regelgüte, empirische Prognosebereiche und allgemeinen Offline-Versionsvergleich ergänzen. Aktuell gewichtete Lastprofile optional; kompatible Vorgaben und Unbekannt-Zustände erhalten.",
@@ -81,19 +94,6 @@
         "ru": "Различать задержанные фазы журнала без изменения гарантий сохранности и проверок SQL.",
         "uk": "Розрізняти затримані фази журналу без зміни гарантій збереження й перевірок SQL.",
         "zh-cn": "区分日志追加阻塞阶段，保持持久性保障和 SQL 验证限制。"
-      },
-      "0.17.0-alpha.158": {
-        "en": "Count observed recorder losses across same-period sampling gaps without inventing energy coverage; retain restart and period-boundary uncertainty.",
-        "de": "Beobachtete Recorderverluste trotz Beobachtungsluecken derselben Tagesperiode zaehlen; Energieabdeckung sowie Neustart- und Periodengrenzen bleiben unbekannt.",
-        "es": "Contar pérdidas observadas del grabador durante huecos del mismo periodo sin inventar cobertura energética.",
-        "fr": "Compter les pertes observées pendant les lacunes de la même période sans inventer de couverture énergétique.",
-        "it": "Contare le perdite osservate nelle lacune dello stesso periodo senza inventare copertura energetica.",
-        "nl": "Tel waargenomen recorderverliezen over meetgaten binnen dezelfde periode zonder energiedekking te verzinnen.",
-        "pl": "Zliczaj zaobserwowane straty rejestratora podczas przerw w tym samym okresie bez tworzenia pokrycia energii.",
-        "pt": "Contar perdas observadas do gravador em lacunas do mesmo período sem inventar cobertura energética.",
-        "ru": "Учитывать наблюдаемые потери регистратора при пропусках внутри периода без вымышленного покрытия энергии.",
-        "uk": "Враховувати спостережені втрати реєстратора під час пропусків у межах періоду без вигаданого покриття енергії.",
-        "zh-cn": "统计同一周期采样间隔中已观察到的记录丢失，不虚构能源覆盖。"
       }
     },
     "titleLang": {

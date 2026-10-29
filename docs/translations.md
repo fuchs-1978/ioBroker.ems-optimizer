@@ -1,6 +1,6 @@
 # Translation coverage
 
-The Admin interface has complete catalogs for all 583 English keys in eleven
+The Admin interface has complete catalogs for all 584 English keys in eleven
 languages: English (`en`), German (`de`), Spanish (`es`), French (`fr`), Italian
 (`it`), Dutch (`nl`), Polish (`pl`), Portuguese (`pt`), Russian (`ru`), Ukrainian
 (`uk`) and Simplified Chinese (`zh-cn`). Field labels, choices, written-out units, tooltips and

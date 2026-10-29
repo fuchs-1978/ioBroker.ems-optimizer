@@ -581,5 +581,6 @@
   "Forecast uncertainty and load preview": "预测不确定性与负载预览",
   "Historical load profile method": "历史负载曲线方法",
   "Median (compatible default)": "中位数（兼容默认设置）",
-  "Recent weighted profile (28 day half-life)": "近期加权曲线（28天半衰期）"
+  "Recent weighted profile (28 day half-life)": "近期加权曲线（28天半衰期）",
+  "Battery strategy preview": "电池策略预览"
 }

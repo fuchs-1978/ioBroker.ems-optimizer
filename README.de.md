@@ -1,6 +1,6 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.164**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.165**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
@@ -897,3 +897,5 @@ und setzt eine vorher geprüfte Offline-Kopie voraus. Keine automatische Migrati
 oder Datenbankänderung durch die Installation.
 
 Support und Fehlermeldungen: [GitHub Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues), Hinweise in [SUPPORT.md](SUPPORT.md). Eine öffentliche Kontakt-E-Mail ist bislang nicht festgelegt.
+
+Die Batteriestrategie-Vorschau in .165 bereitet Zielhaltung und Feinregelung, begrenzte Fahrzeugunterstützung sowie nächtlichen Mindestbedarf vor. Sie schaltet keine Hardware frei und ändert keine produktive Ladeplanung. [Grenzen und Voraussetzungen](docs/release-0.17.0-alpha.165.md).

@@ -1,3 +1,7 @@
+## 0.17.0-alpha.158
+
+- Preserve observed recorder-loss counter increments across same-period sampling gaps without inventing energy coverage.
+
 ## 0.17.0-alpha.157
 
 - Retain confirmed charging through telemetry gaps with fresh SMA protection; capture current acknowledgements immediately and preserve peer reserves and confirmed phase topology.

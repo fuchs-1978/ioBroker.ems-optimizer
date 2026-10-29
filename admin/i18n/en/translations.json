@@ -581,5 +581,6 @@
   "Forecast uncertainty and load preview": "Forecast uncertainty and load preview",
   "Historical load profile method": "Historical load profile method",
   "Median (compatible default)": "Median (compatible default)",
-  "Recent weighted profile (28 day half-life)": "Recent weighted profile (28 day half-life)"
+  "Recent weighted profile (28 day half-life)": "Recent weighted profile (28 day half-life)",
+  "Battery strategy preview": "Battery strategy preview"
 }

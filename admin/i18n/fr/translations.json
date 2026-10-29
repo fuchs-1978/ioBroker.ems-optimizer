@@ -581,5 +581,6 @@
   "Forecast uncertainty and load preview": "Incertitude des prévisions et aperçu de charge",
   "Historical load profile method": "Méthode du profil de charge historique",
   "Median (compatible default)": "Médiane (réglage compatible par défaut)",
-  "Recent weighted profile (28 day half-life)": "Profil pondéré récent (demi-vie de 28 jours)"
+  "Recent weighted profile (28 day half-life)": "Profil pondéré récent (demi-vie de 28 jours)",
+  "Battery strategy preview": "Aperçu de la stratégie de batterie"
 }
