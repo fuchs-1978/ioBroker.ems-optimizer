@@ -1,3 +1,31 @@
+# Changelog archive
+
+Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
+
+## 0.17.0-alpha.164 (2026-10-29)
+
+Add departure feasibility, configuration explanations, bounded transition/response analysis, regulation and forecast diagnostics, opt-in recent-weighted load profiles and a general offline version comparison. Existing energy allocation and SQL behavior remain unchanged by default. [Details and limits](docs/release-0.17.0-alpha.164.md).
+
+## 0.17.0-alpha.163 (2026-10-28)
+
+Add standard ioBroker CI, shared ESLint correctness checks, adapter-owned runtime timers, a complete responsive Admin audit and reproducible npm ci installations from the committed lockfile. Preserve bounded shutdown deadlines; npm and Latest publication remain excluded. [Details](docs/release-0.17.0-alpha.163.md).
+
+## 0.17.0-alpha.162 (2026-10-28)
+
+Add an EMS overview with read-only live explanations, independent recorder/SQL/history quality and current/previous daily reviews. Reuse existing observations without extra SQL queries or control changes; unknown historical goals, costs and external audit coverage remain explicit. [Details and acceptance limits](docs/release-0.17.0-alpha.162.md).
+
+## 0.17.0-alpha.161 (2026-10-28)
+
+Resolve the SQL datapoint ID once per bounded metadata-cache period and verify originals with a literal numeric ID and inclusive time range. Retain an exact name/type guard against ID reassignment; preserve durable query fences and late results. Operator EXPLAIN changed from `ref` / 4 key bytes / 4,587 estimated rows with the ID subquery to `range` / 12 bytes / 2 estimated rows with a literal ID. The existing `(id,ts)` primary key needs no new index. The operator enabled a 32-thread cache and observed 4,969 connections with only 173 new threads (approximately 96.5% reuse); this is separate database tuning, not an adapter setting or a measured cure of the SQL delay. [Full SQL findings and release details](docs/release-0.17.0-alpha.161.md).
+
+## 0.17.0-alpha.160 (2026-10-28)
+
+Store compact journal batches in dependency-aligned immutable segments, preserving original hashes and independent SQL proofs. Verified offline storage relocation, legacy export and bounded host SQL/storage inspection are available. Older binaries require offline legacy export before downgrade. [Release and maintenance instructions](docs/release-0.17.0-alpha.160.md).
+
+## 0.17.0-alpha.159 (2026-10-27)
+
+Distinguish record writes, file sync, links and directory commit/cleanup barriers in bounded journal loss diagnostics. This identifies future stalls; it is not a proven fix of the storage or SQL latency cause. [Release details](docs/release-0.17.0-alpha.159.md).
+
 ## 0.17.0-alpha.158
 
 - Preserve observed recorder-loss counter increments across same-period sampling gaps without inventing energy coverage.
