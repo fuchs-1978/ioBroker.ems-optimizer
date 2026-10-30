@@ -7,7 +7,7 @@
 
 Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Combines PV and grid measurements, load history, weather forecasts and electricity prices in a rolling 48-hour plan.
 
-**Current version: 0.17.0-alpha.174.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
+**Current version: 0.17.0-alpha.175.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
 
 [Deutsche Bedienungsanleitung](README.de.md) · [Release history](CHANGELOG_OLD.md) · [Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
@@ -113,6 +113,10 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 
 ## Changelog
 
+### 0.17.0-alpha.175 (2026-10-30)
+
+- (fuchs-1978) Recover fast wallbox handoff after a brief source outage using bounded same-session proof and fresh stable electrical measurements. Preserve donor OFF, quiet-load and budget guards. [Details](docs/release-0.17.0-alpha.175.md).
+
 ### 0.17.0-alpha.174 (2026-10-30)
 
 - (fuchs-1978) Preserve vehicle SoC across cumulative AC counter rounding dips up to 1 Wh using a fixed high-water mark; never count rebounds twice. [Details](docs/release-0.17.0-alpha.174.md).
@@ -128,10 +132,6 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 ### 0.17.0-alpha.171 (2026-10-30)
 
 - (fuchs-1978) Add persistent manual SoC correction commands for each vehicle; protect against cloud republishing and qualify energy/session continuity. [Usage](docs/release-0.17.0-alpha.171.md).
-
-### 0.17.0-alpha.170 (2026-10-30)
-
-- (fuchs-1978) Guard foreign cache ordering and asynchronous reads; validate grid-pair timestamps with bounded conservative continuation and input diagnostics. [Details](docs/release-0.17.0-alpha.170.md).
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 

@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.174",
+    "version": "0.17.0-alpha.175",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.175": {
+        "en": "Recover fast wallbox handoff qualification after a brief source outage only for the same witnessed charging episode with fresh stable electrical evidence. Preserve OFF, quiet-load and budget checks.",
+        "de": "Schnelle Wallbox-Uebergabe nach kurzer Quellenstoerung fuer dieselbe beobachtete Ladung mit frischen stabilen Messwerten wieder freigeben. Ausschalt-, Lastfreiheits- und Budgetpruefungen bleiben erhalten.",
+        "es": "Recupera la transferencia rápida tras una breve interrupción solo para la misma carga observada con mediciones eléctricas nuevas y estables. Conserva comprobaciones de apagado, carga residual y presupuesto.",
+        "fr": "Rétablit le transfert rapide après une brève coupure uniquement pour la même charge observée avec des mesures électriques fraîches et stables. Conserve les contrôles d’arrêt, de charge résiduelle et de budget.",
+        "it": "Ripristina il passaggio rapido dopo una breve interruzione solo per la stessa carica osservata con misure elettriche fresche e stabili. Restano i controlli di arresto, carico residuo e budget.",
+        "nl": "Herstelt snelle overdracht na een korte bronstoring alleen voor dezelfde waargenomen laadsessie met verse stabiele elektrische metingen. Uit-, restlast- en budgetcontroles blijven behouden.",
+        "pl": "Przywraca szybkie przekazanie po krótkiej przerwie tylko dla tej samej obserwowanej sesji z nowymi stabilnymi pomiarami. Zachowuje kontrole wyłączenia, pozostałego obciążenia i budżetu.",
+        "pt": "Recupera a transferência rápida após uma breve falha apenas para a mesma carga observada com medições elétricas recentes e estáveis. Mantém verificações de paragem, carga residual e orçamento.",
+        "ru": "Восстанавливает быструю передачу после краткого сбоя только для той же наблюдавшейся зарядки при свежих стабильных измерениях. Проверки отключения, остаточной нагрузки и бюджета сохранены.",
+        "uk": "Відновлює швидку передачу після короткого збою лише для того самого спостереженого заряджання за свіжих стабільних вимірювань. Перевірки вимкнення, залишкового навантаження й бюджету збережено.",
+        "zh-cn": "短暂数据中断后，仅在同一已观测充电会话得到新鲜稳定电气测量确认时恢复快速切换资格；保留停机、剩余负载和功率预算检查。"
+      },
       "0.17.0-alpha.174": {
         "en": "Hold the cumulative AC energy high-water mark for downward jitter up to 1 Wh. Preserve SoC without counting rebounds twice; larger resets, stale readings and power spikes remain blocked.",
         "de": "Bei Rueckwaertsschwankungen bis 1 Wh den hoechsten kumulierten AC-Energiestand halten. SoC bleibt erhalten, ohne Rueckspruenge doppelt zu zaehlen; groessere Resets, alte Werte und Leistungsspruenge bleiben gesperrt.",
@@ -81,19 +94,6 @@
         "ru": "Сохраняет текущую зарядку без ACK изменения тока только при свежей независимой защите сети и консервативном резерве мощности. Без новых команд; защиты запуска, переключения фаз и опасных условий сохранены.",
         "uk": "Зберігає поточне заряджання без ACK зміни струму лише за свіжого незалежного захисту мережі та консервативного резерву потужності. Без нових команд; захист запуску, фаз і небезпечних умов збережено.",
         "zh-cn": "仅在独立电网保护数据新鲜且保留最坏情况功率裕量时，在后续电流命令缺少确认的情况下保持现有充电。不发送新命令；保留启动、相位切换和不安全或未知条件下的停机保护。"
-      },
-      "0.17.0-alpha.168": {
-        "en": "Continue vehicle SoC estimation beyond two hours only with a persisted uninterrupted valid energy-counter chain. Preserve reset, gap, quality, connection and report-correction guards; expired legacy anchors require a new aligned report.",
-        "de": "Fahrzeug-SoC nach zwei Stunden bei nachgewiesen durchgehend gültigem Energiezähler weiterschätzen. Reset-, Lücken-, Qualitäts-, Verbindungs- und Korrekturschutz erhalten; abgelaufene alte Basis braucht neue zugeordnete Fahrzeugmeldung.",
-        "es": "Continúa la estimación SoC tras dos horas solo con una cadena persistida y continua del contador válido. Conserva protecciones; bases antiguas vencidas requieren un nuevo informe alineado.",
-        "fr": "Poursuit l’estimation SoC après deux heures uniquement avec une chaîne persistée et continue du compteur valide. Protections conservées ; ancienne base expirée : nouveau relevé aligné requis.",
-        "it": "Continua la stima SoC oltre due ore solo con una catena persistente e continua del contatore valido. Mantiene le protezioni; una vecchia base scaduta richiede un nuovo dato allineato.",
-        "nl": "Schat voertuig-SoC na twee uur verder bij een bewezen ononderbroken geldige energiemeterketen. Beveiligingen blijven; verlopen oude basis vereist een nieuw uitgelijnd voertuigbericht.",
-        "pl": "Kontynuuje szacowanie SoC po dwóch godzinach tylko przy zapisanej ciągłości poprawnego licznika energii. Zachowuje zabezpieczenia; stara wygasła baza wymaga nowego zsynchronizowanego odczytu.",
-        "pt": "Continua a estimativa SoC após duas horas apenas com continuidade persistida do contador válido. Mantém proteções; base antiga expirada exige nova leitura alinhada.",
-        "ru": "Оценка SoC продолжается после двух часов только при сохранённом подтверждении непрерывности счётчика энергии. Защиты сохранены; старая просроченная база требует нового согласованного отчёта.",
-        "uk": "Оцінка SoC триває після двох годин лише за збереженого підтвердження безперервності лічильника енергії. Захисти збережено; стара прострочена база потребує нового узгодженого звіту.",
-        "zh-cn": "仅在已保存的有效电能计数器连续性得到证明时，超过两小时继续估算车辆电量。保留重置、数据缺口、质量、连接和报告校正保护；旧的过期基准需要新的对齐报告。"
       }
     },
     "titleLang": {
