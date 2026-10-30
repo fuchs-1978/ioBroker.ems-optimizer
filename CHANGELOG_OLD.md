@@ -2533,3 +2533,7 @@ Load SQL learning history incrementally in daily chunks; resume completed chunks
 ### 0.17.0-alpha.164
 
 Add read-only departure feasibility, configuration conflicts, bounded transition/response analysis, regulation metrics, empirical forecast bands and a general offline version replay. Offer recent-weighted load profiles as an opt-in; retain compatible defaults and explicit unknowns.
+
+### 0.17.0-alpha.165
+
+Prepare a read-only staged battery strategy: buffer around the planned SoC, prioritize vehicle minima, bound optional vehicle support and estimate the night energy gap. Require fresh device SoC limits; no change to production allocation or hardware release.

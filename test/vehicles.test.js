@@ -1542,3 +1542,47 @@ test('manual correction updates target release live and never writes the foreign
     assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.SoCCorrectionActive').val, false);
     assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.SoC_pct').val, 65);
 });
+
+test('plausible changed vehicle SoC ends manual correction live and publishes recovery status', () => {
+    let now = 1800000000000;
+    const h = engine({wb0SocEstimationEnabled: true, wb0CapacityKWh: 32.3,
+        wb0SocEfficiencyPct: 90}, class extends Date { static now() { return now; } });
+    h.run("requestForecastRebuild = () => {}; CFG.dp.wallboxSocMeasuredAt[0] = ''");
+    h.put('DP_WB0_SOC', 65); h.put('DP_WB0_SOC_ENERGY', 10); h.put('DP_WB0_TARGET', 90);
+    h.run('updateVehicles()');
+    h.run(`applyVehicleSocCorrection(0, {val:94, ack:false, ts:${now}, q:0})`);
+    now += 30000;
+    h.put('DP_WB0_SOC', 94); h.put('DP_WB0_SOC_ENERGY', 10);
+    h.run('updateVehicles()');
+    assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.SoC_pct').val, 94);
+    assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.SoCCorrectionActive').val, false);
+    assert.match(h.states.get('ems.0.Vehicles.Wallbox0.SoCCorrectionStatus').val, /automatisch/);
+    assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.Release').val, false);
+    assert.equal(h.states.get('DP_WB0_SOC').val, 94);
+    now += 30000;
+    h.put('DP_WB0_SOC_ENERGY', 10.1); h.run('updateVehicles()');
+    assert.ok(h.states.get('ems.0.Vehicles.Wallbox0.SoC_pct').val > 94);
+    now += 1000; h.put('DP_WB0_CAR', 1); h.run('updateVehicles()');
+    assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.SoCCorrection_pct').val, -1,
+        'unplug resets the command display even after automatic recovery removed the basis');
+});
+
+
+test('confirmed unplug clears correction, acknowledges -1 and does not reapply it after reconnect', () => {
+    let now = 1800000000000;
+    const h = engine({wb0SocEstimationEnabled: true, wb0CapacityKWh: 32.3,
+        wb0SocEfficiencyPct: 90}, class extends Date { static now() { return now; } });
+    h.run("requestForecastRebuild = () => {}; CFG.dp.wallboxSocMeasuredAt[0] = ''");
+    h.put('DP_WB0_SOC', 65); h.put('DP_WB0_SOC_ENERGY', 10); h.run('updateVehicles()');
+    h.run(`applyVehicleSocCorrection(0, {val:94, ack:false, ts:${now}, q:0})`);
+    now += 1000; h.put('DP_WB0_CAR', 1); h.run('updateVehicles()');
+    assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.SoCCorrection_pct').val, -1);
+    assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.SoCCorrection_pct').ack, true);
+    assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.SoCCorrectionActive').val, false);
+    assert.match(h.states.get('ems.0.Vehicles.Wallbox0.SoCCorrectionStatus').val, /abgesteckt/);
+    assert.equal(JSON.parse(h.states.get('ems.0.Vehicles.Wallbox0.SocEstimateLedger_JSON').val).manual, undefined);
+    now += 1000; h.put('DP_WB0_CAR', 2); h.put('DP_WB0_SOC', 65); h.put('DP_WB0_SOC_ENERGY', 10);
+    h.run('updateVehicles()');
+    assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.SoCCorrection_pct').val, -1);
+    assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.SoC_pct').val, 65);
+});
