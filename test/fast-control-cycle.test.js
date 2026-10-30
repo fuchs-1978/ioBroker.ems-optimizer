@@ -12,7 +12,7 @@ const source = name => fs.readFileSync(path.join(__dirname, '../lib/engine', `${
 function bootstrapHarness({headMode = false} = {}) {
     const jobs = [], timers = [], calls = [], writes = [], messages = [];
     const listeners = [];
-    const context = vm.createContext({SMA_GRID_MAX_AGE_MS,
+    const context = vm.createContext({gridMeasurement: new (require('../lib/grid-measurement').GridMeasurement)(), SMA_GRID_MAX_AGE_MS,
         CFG: {root: 'ems.0', refreshSeconds: 10, forecastRefreshMinutes: 15,
             dp: new Proxy({}, {get: (target, key) => key === 'batterySoc' ? 'sunenergyxt500.0.total.soc' : []})},
         getState: () => null,
@@ -84,7 +84,7 @@ test('failed fast calculation invalidates old budgets before the battery stop gu
 
 function gridHarness() {
     const states = new Map();
-    const context = vm.createContext({SMA_GRID_MAX_AGE_MS, nativeConfig: {}, Date,
+    const context = vm.createContext({gridMeasurement: new (require('../lib/grid-measurement').GridMeasurement)(), SMA_GRID_MAX_AGE_MS, nativeConfig: {}, Date,
         getState: id => states.get(id), existsState: id => states.has(id)});
     vm.runInContext(source('core'), context);
     vm.runInContext(source('realtime'), context);

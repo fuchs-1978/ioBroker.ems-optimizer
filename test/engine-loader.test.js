@@ -46,8 +46,8 @@ test('literal source mapping retains measurement quality and age validation', ()
     assert.equal(h.measurement().valid, true);
     h.states.set(id, {val: 1250, ack: true, ts: now, q: 64});
     assert.equal(h.measurement().valid, false);
-    assert.deepEqual(Array.from(h.measurement().invalid), [`${id}: ungültig`]);
+    assert.deepEqual(Array.from(h.measurement().invalid), [`${id}: Netzquelle fehlt/ungueltig/veraltet`]);
     h.states.set(id, {val: 1250, ack: true, ts: now - 3600000});
     assert.equal(h.measurement().valid, false);
-    assert.deepEqual(Array.from(h.measurement().invalid), [`${id}: veraltet`]);
+    assert.deepEqual(Array.from(h.measurement().invalid), [`${id}: Netzquelle fehlt/ungueltig/veraltet`]);
 });

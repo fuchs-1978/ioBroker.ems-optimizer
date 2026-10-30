@@ -26,7 +26,7 @@ function setup() {
     for (const [id, value] of Object.entries({hkOnline: true, cooling: false, hkTemp: 40,
         hk1: 0, hk2: 0, hk3: 0, h1: 10, h2: 10, h3: 10, gridIn: 0, gridOut: 6100,
         ww1: 0, ww2: 0, ww3: 0, critical: false})) put(id, value);
-    const ctx = vm.createContext({SMA_GRID_MAX_AGE_MS, Math, Number, Date: {now: () => now}, nativeConfig,
+    const ctx = vm.createContext({gridMeasurement: new (require('../lib/grid-measurement').GridMeasurement)(), SMA_GRID_MAX_AGE_MS, Math, Number, Date: {now: () => now}, nativeConfig,
         gridConstraints: require('../lib/grid-constraints'),
         CFG: {root: 'ems.0', dataMaxAgeMs: 120000, dp: {
             myPvHeatingTemp: 'hkTemp', myPvDhwOutputW: ['ww1', 'ww2', 'ww3'],

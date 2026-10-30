@@ -588,5 +588,9 @@
   "Devices at a glance": "Dispositivos num relance",
   "Planning and battery preview": "Plano e prévia da bateria",
   "Daily balances": "Balanços diários",
-  "Technical diagnostics": "Diagnóstico técnico"
+  "Technical diagnostics": "Diagnóstico técnico",
+  "Grid timestamp contract": "Contrato temporal da rede",
+  "Grid timestamp contract help": "Receção comum apenas quando ambos os valores têm a mesma hora do telegrama, como no adaptador SMA de teste. Publicação permite até 5 segundos de diferença sem provar um telegrama comum. Não renova medições antigas.",
+  "Publication times (maximum 5 s skew)": "Publicação (diferença máxima 5 s)",
+  "Shared telegram receipt time (exact match)": "Receção comum do telegrama (igualdade exata)"
 }

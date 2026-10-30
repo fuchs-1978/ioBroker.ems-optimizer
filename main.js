@@ -1,6 +1,8 @@
 "use strict";
 
 const fs = require("node:fs");
+const {InputStateCache} = require("./lib/input-state-cache");
+const {GridMeasurement} = require("./lib/grid-measurement");
 const {migratedGridTarget} = require("./lib/grid-target-migration");
 const path = require("node:path");
 const vm = require("node:vm");
@@ -43,6 +45,8 @@ class EmsOptimizer extends utils.Adapter {
         super({...options, name: "ems-optimizer"});
         this.stateCache = new Map();
         this.stateReceiptCache = new Map();
+        this.inputStates = new InputStateCache(this.stateCache, this.stateReceiptCache, {log: message => this.log.debug(message)});
+        this.gridMeasurement = new GridMeasurement();
         this.knownObjects = new Set();
         this.objectPromises = new Map();
         this.listeners = [];
@@ -359,13 +363,13 @@ class EmsOptimizer extends utils.Adapter {
         ])];
         for (const pattern of patterns) {
             try {
+                await this.subscribeForeignStatesAsync(pattern);
+                const readRevision = this.inputStates.beginRead();
                 const states = await this.getForeignStatesAsync(pattern);
                 for (const [id, state] of Object.entries(states || {})) {
-                    this.stateCache.set(id, state);
-                    this.stateReceiptCache.set(id, {receivedAt: Date.now(), via: 'initial-read'});
+                    this.acceptInputState(id, state, 'initial-read', readRevision);
                     this.knownObjects.add(id);
                 }
-                await this.subscribeForeignStatesAsync(pattern);
                 // The own-state read reveals persisted former ownership. Add
                 // only those exact foreign feedback states, even after changing
                 // back to the legacy mode or to another SunEnergy instance.
@@ -649,6 +653,13 @@ class EmsOptimizer extends utils.Adapter {
             ? id.slice(this.namespace.length + 1) : null;
     }
 
+    acceptInputState(id, state, via = 'stateChange', readRevision = null) {
+        this.inputStates.cache = this.stateCache;
+        this.inputStates.receipts = this.stateReceiptCache;
+        return this.inputStates.accept(id, state, via, readRevision,
+            via === 'stateChange' && this.ownRelative(id) !== null && state?.ack === false);
+    }
+
     getCachedStateReceipt(id) {
         return this.stateReceiptCache?.get(id) || null;
     }
@@ -675,6 +686,7 @@ class EmsOptimizer extends utils.Adapter {
                 native: {}
             });
             this.knownObjects.add(id);
+            const readRevision = this.inputStates.beginRead();
             const existing = await this.getStateAsync(relative);
             if (!existing) {
                 await this.setStateAsync(relative, initialValue, true);
@@ -684,7 +696,7 @@ class EmsOptimizer extends utils.Adapter {
                 // Do not overwrite a newer initialization/configuration write
                 // with a persisted value returned by the asynchronous read.
                 if (this.stateCache.get(id) === cachedBeforeCreate)
-                    this.stateCache.set(id, existing);
+                    this.acceptInputState(id, existing, 'own-initial-read', readRevision);
             }
         } catch (error) {
             this.log.warn(`Cannot create ${id}: ${error.message}`);
@@ -991,6 +1003,7 @@ class EmsOptimizer extends utils.Adapter {
             String,
             Boolean,
             nativeConfig: Object.freeze({...this.config}),
+            gridMeasurement: this.gridMeasurement,
             Array,
             Object,
             Map,
@@ -1062,18 +1075,12 @@ class EmsOptimizer extends utils.Adapter {
     }
 
     onStateChange(id, state) {
-        this.heaterWriteProof.observe(id, state);
         const previous = this.stateCache.get(id);
         if (this.ownRelative(id) !== null && state && previous && state.ack === true
             && (Number(state.ts) < Number(previous.ts)
                 || (this.pendingOwnWrites.has(id) && state.val !== previous.val))) return;
-        if (state) {
-            this.stateCache.set(id, state);
-            this.stateReceiptCache?.set(id, {receivedAt: Date.now(), via: 'stateChange'});
-        } else {
-            this.stateCache.delete(id);
-            this.stateReceiptCache?.delete(id);
-        }
+        if (!this.acceptInputState(id, state)) return;
+        this.heaterWriteProof.observe(id, state);
         if (this.unloading) {
             this.runShadow('captureProduction', id, state, previous);
             return;

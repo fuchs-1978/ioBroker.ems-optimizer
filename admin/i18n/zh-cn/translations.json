@@ -588,5 +588,9 @@
   "Devices at a glance": "设备概览",
   "Planning and battery preview": "计划与电池预览",
   "Daily balances": "每日能源平衡",
-  "Technical diagnostics": "技术诊断"
+  "Technical diagnostics": "技术诊断",
+  "Grid timestamp contract": "电网时间戳约定",
+  "Grid timestamp contract help": "仅当两个电网值携带相同的电报接收时间戳时，才使用共同接收时间，例如 SMA 测试适配器。发布时间允许最多 5 秒偏差，但不能证明来自同一电报。不会人为刷新旧测量值。",
+  "Publication times (maximum 5 s skew)": "发布时间（最大偏差 5 秒）",
+  "Shared telegram receipt time (exact match)": "共同电报接收时间（完全匹配）"
 }

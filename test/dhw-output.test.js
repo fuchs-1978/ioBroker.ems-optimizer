@@ -7,7 +7,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const {SMA_GRID_MAX_AGE_MS} = require('../lib/source-diagnostics');
 
-const context = vm.createContext({Math, SMA_GRID_MAX_AGE_MS, gridConstraints: require('../lib/grid-constraints')});
+const context = vm.createContext({gridMeasurement: new (require('../lib/grid-measurement').GridMeasurement)(), Math, SMA_GRID_MAX_AGE_MS, gridConstraints: require('../lib/grid-constraints')});
 vm.runInContext(fs.readFileSync(
     path.join(__dirname, '../lib/engine/dhw-output.js'), 'utf8'), context);
 const command = expression => vm.runInContext(expression, context);
@@ -62,7 +62,7 @@ function phaseLimit(direction) {
         ['pi1', 'pi2', 'pi3'].forEach(id => put(id, direction === 'import' ? 11270 : 0));
         ['pe1', 'pe2', 'pe3'].forEach(id => put(id, direction === 'export' ? 11270 : 0));
     }
-    const ctx = vm.createContext({Math, Date, SMA_GRID_MAX_AGE_MS, gridConstraints: require('../lib/grid-constraints'),
+    const ctx = vm.createContext({gridMeasurement: new (require('../lib/grid-measurement').GridMeasurement)(), Math, Date, SMA_GRID_MAX_AGE_MS, gridConstraints: require('../lib/grid-constraints'),
         CFG: {root: 'ems.0', dataMaxAgeMs: 120000, dp: {
             myPvDhwHaCurrentA: ['h1','h2','h3'], myPvDhwOutputW: ['o1','o2','o3'],
             haPhaseImportW: direction ? ['pi1','pi2','pi3'] : [],
@@ -115,7 +115,7 @@ function outputHarness({combined = false, simulate = false, directional = false,
     put('split', true);
     const nativeConfig = {combinedProductionArmed: true, wb0ProductionArmed: true};
     const consumptionLimit = {valid: true, active: false, budgetW: null};
-    const ctx = vm.createContext({Math, Date: {now: () => now}, SMA_GRID_MAX_AGE_MS,
+    const ctx = vm.createContext({gridMeasurement: new (require('../lib/grid-measurement').GridMeasurement)(), Math, Date: {now: () => now}, SMA_GRID_MAX_AGE_MS,
         gridConstraints: require('../lib/grid-constraints'), nativeConfig,
         CFG: {root: 'ems.0', dataMaxAgeMs: 120000, limits: {myPvDhwMaxW: 9000}, dp: {
             myPvDhwHaCurrentA: ['h1', 'h2', 'h3'], myPvDhwOutputW: ['o1', 'o2', 'o3'],
@@ -170,7 +170,8 @@ function outputHarness({combined = false, simulate = false, directional = false,
 test('DHW direct-grid contract accepts SMA samples through thirty seconds and retains invalid-feedback gates', () => {
     for (const id of ['gridIn', 'gridOut']) for (const ageMs of [10000, 16000, 29999, 30000, 30001]) {
         const h = outputHarness();
-        h.put(id, 0, {ts: 2000000 - ageMs});
+        h.put('gridIn', 0, {ts: 2000000 - ageMs});
+        h.put('gridOut', 0, {ts: 2000000 - ageMs});
         assert.equal(h.run('directGridPowerW()') !== null, ageMs <= 30000, `${id}: ${ageMs}`);
     }
     for (const id of ['gridIn', 'gridOut']) for (const invalid of ['missing', {val: null}, {ack: false}, {q: 64}]) {
@@ -206,6 +207,10 @@ test('a running DHW heater accepts older valid SMA telemetry but relinquishes ou
             h.run('dhwLastCommandW=3000; dhwLastCommandAt=1999000; dhwOutputWasActive=true');
             h.put('o1', 3000);
             h.put(id, id === 'gridOut' ? 6100 : 0, {ts: 2000000 - ageMs, ack: true, q: 0});
+            if (['gridIn', 'gridOut'].includes(id)) {
+                h.put('gridIn', 0, {ts: 2000000 - ageMs});
+                h.put('gridOut', 6100, {ts: 2000000 - ageMs});
+            }
             h.tick(); h.complete();
             assert.equal(h.commands().at(-1) > 0, ageMs <= 30000, `${id}: ${ageMs}`);
             if (ageMs > 30000) assert.equal(h.commands().at(-1), 0, 'stale SMA data cannot continue a heater output');
@@ -881,7 +886,7 @@ test('combined EHZ accepts three armed wallboxes only in alpha mode', () => {
         states.set(`ems.0.Devices.Wallbox${wb}.ControlEnabled`,{val:true});
     }
     states.set('ems.0.Config.DHWParallelDistributionEnabled',{val:true});
-    const ctx = vm.createContext({Math, gridConstraints: require('../lib/grid-constraints'),
+    const ctx = vm.createContext({gridMeasurement: new (require('../lib/grid-measurement').GridMeasurement)(), Math, gridConstraints: require('../lib/grid-constraints'),
         CFG:{root:'ems.0',dp:{dhwParallelRelease:'split'}},
         nativeConfig:{multiWallboxAlphaArmed:true,combinedProductionArmed:true,
             wb0ProductionArmed:true,wb1ProductionArmed:true,wb2ProductionArmed:true},

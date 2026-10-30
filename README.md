@@ -7,7 +7,7 @@
 
 Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Combines PV and grid measurements, load history, weather forecasts and electricity prices in a rolling 48-hour plan.
 
-**Current version: 0.17.0-alpha.169.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
+**Current version: 0.17.0-alpha.170.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
 
 [Deutsche Bedienungsanleitung](README.de.md) · [Release history](CHANGELOG_OLD.md) · [Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
@@ -113,9 +113,9 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 
 ## Changelog
 
-### 0.17.0-alpha.169 (2026-10-29)
+### 0.17.0-alpha.170 (2026-10-30)
 
-- (fuchs-1978) Preserve established charging through missing follow-up current ACKs with independent fresh grid protection and worst-case reservations. Keep start, phase and unsafe-condition protections. [Details](docs/release-0.17.0-alpha.169.md).
+- (fuchs-1978) Guard foreign cache ordering and asynchronous reads; validate grid-pair timestamps with bounded conservative continuation and input diagnostics. [Details](docs/release-0.17.0-alpha.170.md).
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 

@@ -588,5 +588,9 @@
   "Devices at a glance": "Пристрої: стисло",
   "Planning and battery preview": "План і попередній розрахунок батареї",
   "Daily balances": "Добові баланси",
-  "Technical diagnostics": "Технічна діагностика"
+  "Technical diagnostics": "Технічна діагностика",
+  "Grid timestamp contract": "Правила часових позначок мережі",
+  "Grid timestamp contract help": "Спільний час приймання — лише коли обидва значення мають однакову позначку телеграми, як у тестовому адаптері SMA. Публікація допускає до 5 секунд різниці без доказу спільної телеграми. Старі вимірювання не оновлюються штучно.",
+  "Publication times (maximum 5 s skew)": "Час публікації (різниця до 5 с)",
+  "Shared telegram receipt time (exact match)": "Спільне приймання телеграми (точний збіг)"
 }

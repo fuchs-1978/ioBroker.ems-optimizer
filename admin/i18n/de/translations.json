@@ -588,5 +588,9 @@
   "Devices at a glance": "Geräte auf einen Blick",
   "Planning and battery preview": "Fahrplan und Batterie-Vorschau",
   "Daily balances": "Tagesbilanzen",
-  "Technical diagnostics": "Technische Diagnose"
+  "Technical diagnostics": "Technische Diagnose",
+  "Grid timestamp contract": "Zeitstempelvertrag der Netzquelle",
+  "Grid timestamp contract help": "Gemeinsame Empfangszeit nur verwenden, wenn beide Netzwerte denselben Telegramm-Empfangszeitstempel tragen, etwa beim SMA-Testadapter. Sonst sind Veröffentlichungszeiten mit höchstens 5 Sekunden Versatz erlaubt; das beweist kein gemeinsames Telegramm. Alte Messwerte werden nicht aufgefrischt.",
+  "Publication times (maximum 5 s skew)": "Veröffentlichungszeiten (höchstens 5 s Versatz)",
+  "Shared telegram receipt time (exact match)": "Gemeinsame Telegramm-Empfangszeit (exakt gleich)"
 }
