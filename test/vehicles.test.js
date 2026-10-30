@@ -1514,3 +1514,31 @@ test('no-draw pause excludes a manually required preferred vehicle from current 
     h.put('ems.0.Devices.Wallbox0.NoDrawPaused',false);h.run('updateVehicles()');
     assert.equal(h.run('vehicleState(0).release'),true);
 });
+
+test('manual correction updates target release live and never writes the foreign SoC', () => {
+    let now = 1800000000000;
+    const h = engine({wb0SocEstimationEnabled: true, wb0CapacityKWh: 32.3,
+        wb0SocEfficiencyPct: 90}, class extends Date { static now() { return now; } });
+    h.run("requestForecastRebuild = () => {}; CFG.dp.wallboxSocMeasuredAt[0] = ''");
+    h.put('DP_WB0_SOC', 65);
+    h.put('DP_WB0_SOC_ENERGY', 10);
+    h.put('DP_WB0_TARGET', 90);
+    h.run('updateVehicles()');
+    h.run(`applyVehicleSocCorrection(0, {val:94, ack:false, ts:${now}, q:0})`);
+    assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.SoC_pct').val, 94);
+    assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.Release').val, false);
+    assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.SoCCorrectionActive').val, true);
+    assert.equal(h.states.get('DP_WB0_SOC').val, 65);
+    const before = h.states.get('ems.0.Vehicles.Wallbox0.SocEstimateLedger_JSON').val;
+    now += 1000;
+    h.run(`applyVehicleSocCorrection(0, {val:20, ack:true, ts:${now}, q:0})`);
+    assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.SocEstimateLedger_JSON').val, before);
+    h.put('DP_WB0_SOC', 65); h.put('DP_WB0_SOC_ENERGY', 10);
+    h.run('updateVehicles()');
+    assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.SoC_pct').val, 94);
+    h.run(`applyVehicleSocCorrection(0, {val:94, ack:false, ts:${now}, q:0})`);
+    assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.SoC_pct').val, 94);
+    h.run(`applyVehicleSocCorrection(0, {val:-1, ack:false, ts:${now}, q:0})`);
+    assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.SoCCorrectionActive').val, false);
+    assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.SoC_pct').val, 65);
+});

@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const {estimateSoc} = require('../lib/vehicle-soc-estimator');
+const {estimateSoc, correctSoc} = require('../lib/vehicle-soc-estimator');
 const T = 1800000000000;
 const state = (val, ts = T) => ({val, ts, ack: true, q: 0});
 function harness(extra = {}) {
@@ -241,4 +241,91 @@ test('SoC status separates live energy interpolation from a held estimate and pr
     assert.match(socStatus({valid: true, estimated: true, reason: 'energy-estimate'}, {stale: true}), /Ladeenergie fortgeschrieben; Fahrzeugbericht aelter/);
     assert.match(socStatus({valid: true, estimated: true, reason: 'retained-estimate:basis-invalid-or-stale'}, {stale: true}), /Letzter gueltiger SoC/);
     assert.equal(socStatus({valid: false}, {stale: true}), 'SoC unbekannt/ungueltig');
+});
+
+
+test('manual correction holds 94 against re-published 65 and counts only new charge across restart', () => {
+    const h = harness({reported: state(65)});
+    h.run();
+    const correction = correctSoc({...h.input(), value: 94});
+    assert.equal(correction.ok, true);
+    const r = h.run({ledgerText: JSON.stringify(correction.ledger), now: T + 30000,
+        counter: state(10.1, T + 30000), reported: state(65, T + 30000)});
+    assert.equal(r.manual, true);
+    assert.ok(Math.abs(r.value - 94.18) < 1e-10);
+    assert.equal(estimateSoc(h.input()).value, r.value);
+    assert.equal(h.run({reported: state(66, T + 30000)}).value, r.value,
+        'even changed cloud values without measurement evidence cannot undo manual correction');
+});
+
+test('manual correction rejects invalid inputs and accepts zero and same-value corrections', () => {
+    const input = harness().input();
+    for (const value of [null, '', '94', -2, -0.1, 101, NaN, Infinity])
+        assert.equal(correctSoc({...input, value}).ok, false, String(value));
+    for (const value of [0, 94, 100]) {
+        const a = correctSoc({...input, value});
+        assert.equal(a.ok, true);
+        assert.equal(correctSoc({...input, value, ledgerText: JSON.stringify(a.ledger)}).ok, true);
+    }
+    for (const update of [{car: state(1)}, {counter: state(10, T - 61000)},
+        {counter: {...state(10), ack: false}}])
+        assert.equal(correctSoc({...input, value: 94, ...update}).ok, false);
+});
+
+test('manual correction survives disconnect as suspended evidence and cannot charge using an old 94', () => {
+    const h = harness({reported: state(65)});
+    const correction = correctSoc({...h.input(), value: 94});
+    let r = h.run({ledgerText: JSON.stringify(correction.ledger), now: T + 1000, car: state(1, T + 1000)});
+    assert.equal(r.valid, false); assert.equal(r.value, null);
+    assert.equal(r.ledger.manual.soc, 94);
+    r = h.run({now: T + 2000, car: state(2, T + 2000), counter: state(10, T + 2000),
+        reported: state(65, T + 2000)});
+    assert.equal(r.valid, false);
+    const clear = correctSoc({...h.input(), value: -1});
+    r = h.run({ledgerText: JSON.stringify(clear.ledger)});
+    assert.equal(r.manual, undefined); assert.equal(r.value, 65);
+});
+
+test('counter reset, jump and long gap suspend manual estimation; normal charging transition does not', () => {
+    for (const update of [{now: T + 1000, counter: state(0, T + 1000)},
+        {now: T + 1000, counter: state(20, T + 1000)},
+        {now: T + 61000, counter: state(10.1, T + 61000)}]) {
+        const h = harness();
+        const correction = correctSoc({...h.input(), value: 94});
+        const r = h.run({ledgerText: JSON.stringify(correction.ledger), ...update});
+        assert.equal(r.valid, false);
+    }
+    const h = harness();
+    const correction = correctSoc({...h.input(), value: 94});
+    const r = h.run({ledgerText: JSON.stringify(correction.ledger), now: T + 1000,
+        car: {...state(3, T + 1000), lc: T + 1000}, counter: state(10, T + 1000)});
+    assert.equal(r.valid, true);
+});
+
+test('only a genuinely newer aligned vehicle measurement releases manual protection', () => {
+    const h = harness({measurementTimeConfigured: true, measurementTime: state(T)});
+    const correction = correctSoc({...h.input(), value: 94});
+    let r = h.run({ledgerText: JSON.stringify(correction.ledger), now: T + 30000,
+        reported: state(40, T + 30000), counter: state(10, T + 30000)});
+    assert.equal(r.value, 94);
+    r = h.run({now: T + 60000, measurementTime: state(T + 60000, T + 60000),
+        reported: state(95, T + 60000), counter: state(10.5, T + 60000)});
+    assert.equal(r.value, 95); assert.equal(r.manual, undefined);
+    assert.equal(r.ledger.manual, undefined);
+});
+
+
+test('repeated cloud SoC warns on a measured three-point deficit, but rounding does not', () => {
+    const h = harness({reported: state(65)}); h.run();
+    h.run({now: T + 30000, counter: state(10.5, T + 30000)});
+    let r = h.run({now: T + 60000, counter: state(11, T + 60000), reported: state(65, T + 60000)});
+    assert.equal(r.socWarning, false);
+    for (let i = 3; i <= 5; i++) h.run({now: T + i * 30000, counter: state(10 + i * 0.5, T + i * 30000)});
+    r = h.run({now: T + 180000, counter: state(13, T + 180000), reported: state(65, T + 180000)});
+    assert.equal(r.socWarning, true);
+    assert.match(r.socWarningText, /SoCCorrection_pct/);
+    assert.equal(h.run().socWarning, true);
+    const correction = correctSoc({...h.input(), value: 94});
+    r = h.run({ledgerText: JSON.stringify(correction.ledger)});
+    assert.equal(r.socWarning, false); assert.equal(r.value, 94);
 });

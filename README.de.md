@@ -919,3 +919,11 @@ Unter den Netzquellen gibt es den **Zeitstempelvertrag der Netzquelle**. Standar
 Bei kurzem Versatz kann das letzte passende Paar innerhalb seiner ursprünglichen Altersgrenze konservativ gehalten werden: keine Einspeisegutschrift, Bezug mindestens wie vorher bzw. aktuell gemeldet, keine neuen Stellbefehle. Eine bereits belegte Ladung bleibt nur bei weiterhin gültigen unabhängigen Schutzbedingungen erhalten. Fehlerhafte, fehlende oder veraltete Messwerte bekommen diese Ausnahme nicht. Die bestehende Schutzreserve wird nicht reduziert. `Diagnostics.Snapshot_JSON.inputStates` zeigt begrenzte Verwerfungszähler und den letzten Fall; `.gridMeasurement` zeigt Vertrag, Versatz, Originalzeiten und einen eventuellen Halt. Debug-Meldungen sind global auf höchstens eine pro Minute begrenzt.
 
 Nicht verhindert werden fehlende Zwischenwerte oder Controller-/Transportverzögerungen. Veröffentlichungszeitstempel beweisen keine physische Gleichzeitigkeit; gleiche Zeitstempel allein erlauben keine sichere Unterscheidung vertauschter Änderungen.
+
+
+### Manuelle Fahrzeug-SoC-Korrektur ab alpha.171
+
+Ist der Cloud-SoC veraltet, kann unter `Vehicles.Wallbox0.SoCCorrection_pct` (Mii),
+`Vehicles.Wallbox1.SoCCorrection_pct` (EQV) bzw. `Vehicles.Wallbox2.SoCCorrection_pct` (EQE)
+ein gepruefter aktueller SoC mit `ack=false` geschrieben werden. Kein Neustart fuer die Korrektur.
+`-1` hebt den Schutz bewusst auf. Status und Grenzen: [Bedienhinweise](docs/release-0.17.0-alpha.171.md).
