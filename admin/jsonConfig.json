@@ -1574,6 +1574,33 @@
           "lg": 12,
           "xl": 12,
           "newLine": true
+        },
+        "weatherArchiveEnabled": {
+          "type": "checkbox",
+          "label": "Archive Meteo forecasts for later learning",
+          "help": "While the load comparison is enabled, archive available weather hours with capture time, target time, source timestamps and original units in SQL for 90 days. Current provider values are estimates, not local measurements. Missing radiation stays unknown. Existing SQL settings of other sources are unchanged.",
+          "default": true,
+          "hidden": "!data.loadComparisonEnabled",
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "newLine": true
+        },
+        "_weatherArchiveStatus": {
+          "type": "state",
+          "oid": "Debug.WeatherArchive.Status",
+          "label": "Weather archive status",
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "newLine": true
         }
       }
     },

@@ -598,5 +598,8 @@
   "Include outside temperature in Lasso comparison": "Uwzględnij temperaturę zewnętrzną w porównaniu Lasso",
   "Uses the configured outside temperature source in SQL for training and fresh Open-Meteo forecasts for tomorrow. Missing history or forecast slots prevent a complete comparison; no fabricated temperatures. Adds one historical source only while comparison is enabled.": "Uczy się z temperatury zewnętrznej zapisanej w SQL i używa aktualnych prognoz Open-Meteo na jutro. Braki danych uniemożliwiają pełne porównanie. Jedno dodatkowe źródło historii tylko przy aktywnym porównaniu.",
   "Median / Lasso comparison status": "Stan porównania Mediana / Lasso",
-  "Median / Lasso measured comparison": "Porównanie z pomiarami Mediana / Lasso"
+  "Median / Lasso measured comparison": "Porównanie z pomiarami Mediana / Lasso",
+  "Archive Meteo forecasts for later learning": "Archiwizuj prognozy Meteo do przyszłego uczenia",
+  "While the load comparison is enabled, archive available weather hours with capture time, target time, source timestamps and original units in SQL for 90 days. Current provider values are estimates, not local measurements. Missing radiation stays unknown. Existing SQL settings of other sources are unchanged.": "Przy aktywnym porównaniu zapisuje godziny pogody z czasem pobrania, docelowym, źródłowym i oryginalnymi jednostkami w SQL przez 90 dni. Dane bieżące są szacunkami, nie lokalnymi pomiarami. Brak promieniowania pozostaje nieznany. Inne źródła SQL bez zmian.",
+  "Weather archive status": "Stan archiwum pogody"
 }

@@ -7,7 +7,7 @@
 
 Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Combines PV and grid measurements, load history, weather forecasts and electricity prices in a rolling 48-hour plan.
 
-**Current version: 0.17.0-alpha.177.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
+**Current version: 0.17.0-alpha.178.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
 
 [Deutsche Bedienungsanleitung](README.de.md) · [Release history](CHANGELOG_OLD.md) · [Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
@@ -113,6 +113,10 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 
 ## Changelog
 
+### 0.17.0-alpha.178 (2026-10-30)
+
+- (fuchs-1978) Archive available Meteo forecast vintages and current estimates in SQL for future load-learning comparisons, preserving capture/target/source times, units and unknowns. Production control is unchanged. [Setup](docs/release-0.17.0-alpha.178.md).
+
 ### 0.17.0-alpha.177 (2026-10-30)
 
 - (fuchs-1978) Align SQL temperature interval-center averages with cleaned load quarter-hours for Lasso training; ignore synthetic boundary anchors and preserve unknown/conflict guards. [Details](docs/release-0.17.0-alpha.177.md).
@@ -128,10 +132,6 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 ### 0.17.0-alpha.174 (2026-10-30)
 
 - (fuchs-1978) Preserve vehicle SoC across cumulative AC counter rounding dips up to 1 Wh using a fixed high-water mark; never count rebounds twice. [Details](docs/release-0.17.0-alpha.174.md).
-
-### 0.17.0-alpha.173 (2026-10-30)
-
-- (fuchs-1978) Preserve manual SoC across older cycle timestamps and fail closed on invalid manual evidence. [Details](docs/release-0.17.0-alpha.173.md).
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 

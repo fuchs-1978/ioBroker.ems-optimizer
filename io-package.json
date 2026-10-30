@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.177",
+    "version": "0.17.0-alpha.178",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.178": {
+        "en": "Archive available Meteo forecast vintages and current estimates with capture/target/source times and original units for 90 days in SQL while load comparison is enabled. Missing fields remain unknown; control is unchanged.",
+        "de": "Bei aktiviertem Lastvergleich verfuegbare Meteo-Prognosestaende und aktuelle Schaetzungen mit Erfassungs-, Ziel- und Quellzeit sowie Originaleinheiten 90 Tage in SQL archivieren. Fehlende Werte bleiben unbekannt; Regelung unveraendert.",
+        "es": "Archiva previsiones Meteo y estimaciones actuales con tiempos de captura, destino, origen y unidades durante 90 días en SQL al activar la comparación. Los valores ausentes siguen desconocidos; control sin cambios.",
+        "fr": "Archive les prévisions Meteo et estimations actuelles avec temps de capture, cible, source et unités pendant 90 jours dans SQL si la comparaison est active. Valeurs absentes inconnues ; contrôle inchangé.",
+        "it": "Archivia previsioni Meteo e stime attuali con tempi di acquisizione, destinazione, origine e unità per 90 giorni in SQL durante il confronto. Valori assenti sconosciuti; controllo invariato.",
+        "nl": "Archiveert bij actieve vergelijking Meteo-prognoses en actuele schattingen met vastleg-, doel- en brontijden en oorspronkelijke eenheden 90 dagen in SQL. Ontbrekende waarden blijven onbekend; regeling ongewijzigd.",
+        "pl": "Archiwizuje prognozy Meteo i bieżące szacunki z czasami pobrania, docelowymi, źródłowymi i jednostkami w SQL przez 90 dni przy aktywnym porównaniu. Braki pozostają nieznane; sterowanie bez zmian.",
+        "pt": "Arquiva previsões Meteo e estimativas atuais com tempos de captura, destino, origem e unidades durante 90 dias em SQL com a comparação ativa. Valores ausentes desconhecidos; controlo inalterado.",
+        "ru": "При активном сравнении прогнозы Meteo и текущие оценки архивируются в SQL на 90 дней с временами захвата, цели, источника и исходными единицами. Пропуски неизвестны; управление без изменений.",
+        "uk": "За активного порівняння прогнози Meteo й поточні оцінки архівуються в SQL на 90 днів із часом захоплення, цілі, джерела та вихідними одиницями. Пропуски невідомі; керування без змін.",
+        "zh-cn": "负载比较启用时，将Meteo预报版本和当前估算连同采集、目标及源时间戳和原始单位归档到SQL并保留90天。缺失值保持未知，控制逻辑不变。"
+      },
       "0.17.0-alpha.177": {
         "en": "Align SQL temperature interval-center averages with load quarter-hours in the Lasso comparison. Ignore synthetic boundary anchors and retain gap, conflict and completed-interval checks.",
         "de": "SQL-Temperaturmittelwerte aus der Intervallmitte den Last-Viertelstunden im Lasso-Vergleich zuordnen. Synthetische Randpunkte ignorieren; Luecken-, Konflikt- und Intervallabschlusspruefungen erhalten.",
@@ -81,19 +94,6 @@
         "ru": "Автоматический возврат от ручной коррекции к изменившемуся облачному SoC при согласовании с измеренным зарядом в пределах одного процентного пункта; защиты сессии, счётчика и давности сохранены.",
         "uk": "Автоматичне повернення від ручної корекції до зміненого хмарного SoC за відповідності виміряному заряду в межах одного відсоткового пункту; захист сесії, лічильника й давності збережено.",
         "zh-cn": "手动电量校正后，若变化的云端电量与实测充电推算相差不超过一个百分点，则自动恢复车辆数据源；保留会话、计数器和旧数据保护。"
-      },
-      "0.17.0-alpha.171": {
-        "en": "Add live persistent manual vehicle SoC corrections protected against repeated cloud values; suspend after session or counter discontinuity.",
-        "de": "Manuelle Fahrzeug-SoC-Korrektur ohne Neustart, persistent und gegen wiederholte Cloud-Werte geschuetzt; bei Sitzungs- oder Zaehlerunterbrechung aussetzen.",
-        "es": "Corrección manual persistente del SoC sin reinicio, protegida contra valores antiguos de la nube; advertencia de discrepancias y suspensión si se interrumpe la sesión o el contador.",
-        "fr": "Correction manuelle persistante du SoC sans redémarrage, protégée des anciennes valeurs cloud ; alerte de divergence et suspension en cas de rupture de session ou de compteur.",
-        "it": "Correzione manuale persistente del SoC senza riavvio, protetta dai vecchi dati cloud; avviso di discrepanza e sospensione dopo interruzioni di sessione o contatore.",
-        "nl": "Blijvende handmatige SoC-correctie zonder herstart, beschermd tegen oude cloudwaarden; waarschuwing bij afwijkingen en opschorting bij sessie- of telleronderbreking.",
-        "pl": "Trwała ręczna korekta SoC bez restartu, chroniona przed starymi danymi chmurowymi; ostrzeżenie o rozbieżności i zawieszenie po przerwaniu sesji lub licznika.",
-        "pt": "Correção manual persistente de SoC sem reinício, protegida contra dados antigos da nuvem; aviso de divergência e suspensão após interrupção da sessão ou contador.",
-        "ru": "Постоянная ручная коррекция SoC без перезапуска с защитой от старых облачных данных; предупреждение о расхождении и приостановка при разрыве сессии или счётчика.",
-        "uk": "Збережена ручна корекція SoC без перезапуску із захистом від старих хмарних даних; попередження про розбіжність і призупинення при розриві сесії чи лічильника.",
-        "zh-cn": "新增无需重启的持久化手动车辆电量校正，防止旧云端数据覆盖；差异警告，并在会话或电量计数中断后暂停估算。"
       }
     },
     "titleLang": {
@@ -740,7 +740,8 @@
     "historyProfileMethod": "median",
     "gridPairTimestampMode": "publication",
     "loadComparisonEnabled": false,
-    "loadComparisonTemperature": true
+    "loadComparisonTemperature": true,
+    "weatherArchiveEnabled": true
   },
   "objects": [],
   "instanceObjects": [

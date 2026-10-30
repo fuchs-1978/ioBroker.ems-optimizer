@@ -16,6 +16,7 @@ const {LatestStateWriter, isDisplaySeries} = require("./lib/latest-state-writer"
 const ShadowController = require("./lib/shadow-controller");
 const ShadowHistory = require("./lib/shadow-history");
 const {SourcePowerHistory} = require("./lib/source-power-history");
+const {WeatherForecastHistory} = require("./lib/weather-forecast-history");
 const {createEngineContext} = require("./lib/engine-loader");
 const gridConstraints = require("./lib/grid-constraints");
 const {buildNativeMapping, houseConnectionSettings, FIELD_TO_MAPPING,
@@ -78,6 +79,7 @@ class EmsOptimizer extends utils.Adapter {
         });
         this.shadowHistory = new ShadowHistory(this);
         this.sourcePowerHistory = new SourcePowerHistory(this);
+        this.weatherForecastHistory = new WeatherForecastHistory(this);
         this.marketPrices = new MarketPrices(this, {onUpdate: () => {
             if (this.engineContext && !this.unloading)
                 this.runEngine('requestForecastRebuild();');
@@ -155,6 +157,7 @@ class EmsOptimizer extends utils.Adapter {
         this.marketInitialization = this.startMarketPrices();
         // Optional source-history metadata setup never delays actuator startup.
         this.sourcePowerHistoryInitialization = this.sourcePowerHistory.initialize().catch(error => this.warnDebug(error));
+        this.weatherForecastHistoryInitialization = this.weatherForecastHistory.initialize().catch(error => this.warnDebug(error));
         await this.persistBatteryCadenceMigration();
         await this.persistGridTargetMigration();
     }
@@ -1117,6 +1120,7 @@ class EmsOptimizer extends utils.Adapter {
         try { this.shadowHistory?.stop(); }
         catch (error) { this.warnDebug(error); }
         this.sourcePowerHistory?.stop();
+        this.weatherForecastHistory?.stop();
         // Passive checkpoint starts independently of actuator stop queues.
         this.dailySummaryStop = this.dailySummary?.stop().catch(error => this.warnDebug(error));
         this.wallboxOutput.stopping = true;
