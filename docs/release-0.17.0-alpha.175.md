@@ -1,0 +1,11 @@
+# 0.17.0-alpha.175 – Wallbox-Uebergabe nach kurzer Kommunikationsstoerung
+
+Bei der untersuchten EQV-Ladung verlor eine kurze go-e-Kommunikationsstoerung um 14:04 Uhr am 30.10.2026 den bereits nachgewiesenen Laufzustand fuer die schnelle Fahrzeuguebergabe. Obwohl die Messwerte um 14:04:12 wieder vorlagen und die Ladung weiterlief, blieb beim spaeteren Prioritaetswechsel um 14:16:55 nur der normale Starttimer: active-donor-not-observed.
+
+Die Engine kann diesen Nachweis nun innerhalb von 60 Sekunden nach dem ersten Quellenausfall erneut aufbauen. Voraussetzung ist eine vorher im laufenden Prozess wirklich beobachtete Ladung, unveraenderte Aktivierungs- und Eigentumsidentitaet sowie durchgehend gueltige Steuerung. Nach Rueckkehr muessen frische Leistungs-, Phasenstrom-, Freigabe- und Stromlimitdaten dieselbe laufende Ladung mindestens zehn Sekunden bestaetigen. Das Fenster umfasst mindestens zwei langsame Regelzyklen und ist auf 30 Sekunden begrenzt. Auch die Zeitstempel der Messwerte muessen diese Dauer abdecken; wiederholtes Lesen desselben Cache-Werts reicht nicht.
+
+Ein weiterer Ausfall setzt die Stabilitaetspruefung zurueck, verlaengert aber die feste 60-Sekunden-Frist nicht. Neustart, Eigentumswechsel, echte Fehler, Phasenwechsel, Beobachtungsluecken oder eine inzwischen andere Fahrzeugauswahl verwerfen den Nachweis. Zurueckbehaltene Startflags allein erzeugen keine Berechtigung. Ein bereits verpasster oder verbrauchter Prioritaetswechsel wird nicht nachtraeglich neu gestartet.
+
+Die Wiederherstellung betrifft ausschliesslich den Nachweis fuer eine zukuenftige schnelle Uebergabe. Die bisherige Wallbox muss weiterhin bestaetigt ausgeschaltet sein und darf keine relevante Last mehr ziehen. Leistungsbudget und alle bestehenden Start- und Ausgangsschutzpruefungen gelten weiter. Eine Installation startet den Prozess neu; danach muss eine Ladung regulaer beobachtet oder durch die bestehende Neustartuebernahme bestaetigt werden.
+
+Regressionen pruefen Quellenalterung, Verbindungsausfall, feste Frist, frische stabile Messreihen, eingefrorene Zeitstempel, geaenderte Aktivierungsidentitaet, Eigentumsverlust, Steuerungsreset, echte Fehler, Phasenwechsel und unbewiesene Starts. Zusaetzlich werden fehlende Ausschaltbestaetigung, verbleibende Last und zu kleines Budget nach wiederhergestelltem Nachweis geprueft.

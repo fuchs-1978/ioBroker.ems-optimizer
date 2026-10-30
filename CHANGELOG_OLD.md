@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.170 (2026-10-30)
+
+- (fuchs-1978) Guard foreign cache ordering and asynchronous reads; validate grid-pair timestamps with bounded conservative continuation and input diagnostics. [Details](docs/release-0.17.0-alpha.170.md).
+
 ## 0.17.0-alpha.169 (2026-10-29)
 
 - (fuchs-1978) Preserve established charging through missing follow-up current ACKs with independent fresh grid protection and worst-case reservations. Keep start, phase and unsafe-condition protections. [Details](docs/release-0.17.0-alpha.169.md).

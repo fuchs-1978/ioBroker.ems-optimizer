@@ -1830,3 +1830,133 @@ for (const [name, change] of [
     change(h);
     assert.equal(h.run('wallboxStartPhaseEcho(2, vehicleState(2), Date.now())'), name === 'good echo');
 });
+
+// Real LC identities are preserved while the fixture refreshes polling times.
+function recoverableParallelChargeFixture(options) {
+    const h = completedParallelChargeFixture(options);
+    for (const key of ['OutputActive', 'OutputOwned']) {
+        const id = `ems.0.Devices.Wallbox1.${key}`;
+        h.put(id, true, {lc: h.now() - 1000});
+    }
+    h.step(); // Witness these identities during healthy running before any outage.
+    return h;
+}
+
+test('known running donor requalifies after a bounded source outage and fresh stable electrical evidence', () => {
+    const h = recoverableParallelChargeFixture();
+    assert.equal(h.run('wallboxVehicleHandoffObservation[1].qualified'), true);
+    h.step(() => h.put('DP_WB1_POWER', 4.6, {ts: h.now() - 31000}));
+    assert.equal(h.run('wallboxVehicleHandoffObservation[1].qualified'), false);
+    assert.ok(h.run('wallboxVehicleHandoffObservation[1].recovery'));
+    for (let i = 0; i < 5; i++) h.step();
+    assert.equal(h.run('wallboxVehicleHandoffObservation[1].qualified'), false, 'freshness alone is not stability');
+    for (let i = 0; i < 8; i++) h.step();
+    assert.equal(h.run('wallboxVehicleHandoffObservation[1].qualified'), true);
+    h.run('nativeConfig.wallboxPriority = 2'); h.step();
+    assert.equal(h.diagnostic(2).start.vehicleHandoff.qualified, true);
+    assert.equal(h.diagnostic(2).start.vehicleHandoff.reason, 'donor-stop-confirmation-pending');
+    assert.equal(h.step().amps[2], 0, 'requalification never replaces donor OFF and quiet evidence');
+    h.acknowledgeStop();
+    assert.ok(h.step(h.releaseQuiet).amps[2] >= 6);
+});
+
+test('connection outage cannot renew its fixed deadline and stable recovery cannot be instantaneous', () => {
+    const h = recoverableParallelChargeFixture();
+    h.step(() => h.put('raw.connected1', false));
+    const until = h.run('wallboxVehicleHandoffObservation[1].recovery.until');
+    for (let i = 0; i < 3; i++) h.step(() => h.put('raw.connected1', false));
+    assert.equal(h.run('wallboxVehicleHandoffObservation[1].recovery.until'), until);
+    h.step(() => h.put('raw.connected1', true));
+    assert.equal(h.run('wallboxVehicleHandoffObservation[1].qualified'), false);
+    for (let i = 0; i < 13; i++) h.step();
+    assert.equal(h.run('wallboxVehicleHandoffObservation[1].qualified'), true);
+});
+
+for (const cause of ['activation identity changed', 'ownership lost', 'control reset', 'observation gap',
+    'real fault', 'phase switch', 'expired', 'no witnessed episode', 'missing identity'])
+    test(`handoff requalification rejects ${cause}`, () => {
+        const h = recoverableParallelChargeFixture({observeIdle: cause !== 'no witnessed episode'});
+        if (cause === 'missing identity') {
+            for (const key of ['OutputActive', 'OutputOwned']) delete h.states.get(`ems.0.Devices.Wallbox1.${key}`).lc;
+        }
+        h.step(() => h.put('DP_WB1_POWER', 4.6, {ts: h.now() - 31000}));
+        if (cause === 'activation identity changed') h.put('ems.0.Devices.Wallbox1.OutputActive', true, {lc: h.now()});
+        if (cause === 'ownership lost') h.put('ems.0.Devices.Wallbox1.OutputOwned', false, {lc: h.now()});
+        if (cause === 'control reset') h.run('resetSlowTargets()');
+        if (cause === 'observation gap') h.advance(11000);
+        if (cause === 'real fault') h.put('raw.error1', 1);
+        if (cause === 'phase switch') h.put('ems.0.Devices.Wallbox1.PhaseSwitchPending', true);
+        if (cause === 'expired') for (let i = 0; i < 61; i++) h.step(() => h.put('raw.connected1', false));
+        for (let i = 0; i < 15; i++) h.step();
+        assert.equal(h.run('wallboxVehicleHandoffObservation[1].qualified'), false);
+    });
+
+test('a second source failure restarts stability but never restores a consumed selection opportunity', () => {
+    const h = recoverableParallelChargeFixture();
+    h.step(() => h.put('DP_WB1_POWER', 4.6, {ts: h.now() - 31000}));
+    for (let i = 0; i < 7; i++) h.step();
+    h.step(() => h.put('raw.connected1', false));
+    for (let i = 0; i < 6; i++) h.step();
+    assert.equal(h.run('wallboxVehicleHandoffObservation[1].qualified'), false);
+    h.run('nativeConfig.wallboxPriority = 2'); h.step();
+    assert.notEqual(h.diagnostic(2).start.vehicleHandoff.qualified, true);
+});
+
+
+test('an unobserved restart immediately before source failure cannot borrow the old episode identity', () => {
+    const h = recoverableParallelChargeFixture();
+    h.step(() => {
+        h.put('ems.0.Devices.Wallbox1.OutputActive', true, {lc: h.now()});
+        h.put('DP_WB1_POWER', 4.6, {ts: h.now() - 31000});
+    });
+    assert.equal(h.run('wallboxVehicleHandoffObservation[1].recovery'), null);
+    for (let i = 0; i < 15; i++) h.step();
+    assert.equal(h.run('wallboxVehicleHandoffObservation[1].qualified'), false);
+});
+
+test('requalification needs newly advancing raw evidence, not repeatedly read cached values', () => {
+    const h = recoverableParallelChargeFixture();
+    h.step(() => h.put('raw.connected1', false));
+    h.step(() => h.put('raw.connected1', true)); h.step();
+    const frozenAt = h.now();
+    for (let i = 0; i < 13; i++) h.step(() => {
+        for (const id of ['DP_WB1_POWER', 'DP_WB1_L1_A', 'DP_WB1_L2_A', 'DP_WB1_L3_A', 'raw.allow1', 'raw.amps1'])
+            h.states.get(id).ts = frozenAt;
+    });
+    assert.equal(h.run('wallboxVehicleHandoffObservation[1].qualified'), false);
+    h.step();
+    assert.equal(h.run('wallboxVehicleHandoffObservation[1].qualified'), true);
+});
+
+
+test('stable ownership publication time can identify a real own-state cache without lc', () => {
+    const h = recoverableParallelChargeFixture();
+    const ownershipAt = h.states.get('ems.0.Devices.Wallbox1.OutputOwned').lc;
+    delete h.states.get('ems.0.Devices.Wallbox1.OutputOwned').lc;
+    const step = mutate => h.step(() => {
+        h.states.get('ems.0.Devices.Wallbox1.OutputOwned').ts = ownershipAt;
+        mutate?.();
+    });
+    step();
+    step(() => h.put('raw.connected1', false));
+    assert.ok(h.run('wallboxVehicleHandoffObservation[1].recovery'));
+    step(() => h.put('raw.connected1', true));
+    for (let i = 0; i < 14; i++) step();
+    assert.equal(h.run('wallboxVehicleHandoffObservation[1].qualified'), true);
+});
+
+for (const cause of ['bad OFF acknowledgement', 'donor still draws', 'hard budget'])
+    test('recovered donor still enforces '+cause, () => {
+        const h = recoverableParallelChargeFixture();
+        h.step(() => h.put('raw.connected1', false));
+        h.step(() => h.put('raw.connected1', true));
+        for (let i = 0; i < 14; i++) h.step();
+        assert.equal(h.run('wallboxVehicleHandoffObservation[1].qualified'), true);
+        h.run('nativeConfig.wallboxPriority = 2'); h.step(); h.acknowledgeStop();
+        const result = h.step(() => {
+            h.releaseQuiet();
+            if (cause === 'bad OFF acknowledgement') h.put('raw.allow1', 0, {ack: false});
+            if (cause === 'donor still draws') h.put('DP_WB1_POWER', 0.8);
+        }, 4600, cause === 'hard budget' ? 1000 : 4600);
+        assert.equal(result.amps[2], 0);
+    });
