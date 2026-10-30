@@ -1521,6 +1521,59 @@
           "md": 12,
           "lg": 12,
           "xl": 12
+        },
+        "loadComparisonEnabled": {
+          "type": "checkbox",
+          "label": "Enable Median / Lasso forecast comparison",
+          "help": "Observation only: issue tomorrow once, retain predictions across restarts and compare with cleaned SQL baseload. Production planning keeps its selected profile. Training needs at least 28 usable days after lag alignment; results follow completed days. No brightness feature yet.",
+          "default": false,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "newLine": true
+        },
+        "loadComparisonTemperature": {
+          "type": "checkbox",
+          "label": "Include outside temperature in Lasso comparison",
+          "help": "Uses the configured outside temperature source in SQL for training and fresh Open-Meteo forecasts for tomorrow. Missing history or forecast slots prevent a complete comparison; no fabricated temperatures. Adds one historical source only while comparison is enabled.",
+          "default": true,
+          "hidden": "!data.loadComparisonEnabled",
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "newLine": true
+        },
+        "_loadComparisonStatus": {
+          "type": "state",
+          "oid": "Forecast.LoadComparison.Status",
+          "label": "Median / Lasso comparison status",
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "newLine": true
+        },
+        "_loadComparisonResult": {
+          "type": "state",
+          "oid": "Forecast.LoadComparison.Result",
+          "label": "Median / Lasso measured comparison",
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "newLine": true
         }
       }
     },

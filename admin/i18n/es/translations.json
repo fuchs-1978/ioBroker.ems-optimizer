@@ -592,5 +592,11 @@
   "Grid timestamp contract": "Contrato temporal de la red",
   "Grid timestamp contract help": "Use recepción común solo si ambos valores llevan la misma marca temporal del telegrama, como el adaptador SMA de prueba. Publicación permite hasta 5 segundos de desfase y no demuestra un telegrama común. No actualiza muestras antiguas.",
   "Publication times (maximum 5 s skew)": "Publicación (desfase máximo 5 s)",
-  "Shared telegram receipt time (exact match)": "Recepción común del telegrama (coincidencia exacta)"
+  "Shared telegram receipt time (exact match)": "Recepción común del telegrama (coincidencia exacta)",
+  "Enable Median / Lasso forecast comparison": "Activar comparación de previsiones Mediana / Lasso",
+  "Observation only: issue tomorrow once, retain predictions across restarts and compare with cleaned SQL baseload. Production planning keeps its selected profile. Training needs at least 28 usable days after lag alignment; results follow completed days. No brightness feature yet.": "Solo observación: guarda una previsión para mañana y la conserva tras reinicios. Compara con la carga base SQL depurada; la planificación mantiene su perfil. Requiere 28 días utilizables con retardos. Resultados tras días completos. Sin variable de luminosidad.",
+  "Include outside temperature in Lasso comparison": "Incluir temperatura exterior en la comparación Lasso",
+  "Uses the configured outside temperature source in SQL for training and fresh Open-Meteo forecasts for tomorrow. Missing history or forecast slots prevent a complete comparison; no fabricated temperatures. Adds one historical source only while comparison is enabled.": "Entrena con la temperatura exterior configurada en SQL y usa previsiones recientes de Open-Meteo para mañana. Los datos ausentes impiden una comparación completa. Añade una fuente histórica solo si el comparador está activo.",
+  "Median / Lasso comparison status": "Estado de comparación Mediana / Lasso",
+  "Median / Lasso measured comparison": "Comparación medida Mediana / Lasso"
 }

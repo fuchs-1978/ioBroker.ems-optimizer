@@ -592,5 +592,11 @@
   "Grid timestamp contract": "Contrat temporel du réseau",
   "Grid timestamp contract help": "Réception commune seulement si les deux valeurs portent le même horodatage du télégramme, comme l’adaptateur SMA de test. Publication autorise au plus 5 secondes de décalage sans prouver un télégramme commun. Les anciennes mesures ne sont pas rajeunies.",
   "Publication times (maximum 5 s skew)": "Publication (décalage maximal 5 s)",
-  "Shared telegram receipt time (exact match)": "Réception commune du télégramme (égalité exacte)"
+  "Shared telegram receipt time (exact match)": "Réception commune du télégramme (égalité exacte)",
+  "Enable Median / Lasso forecast comparison": "Activer la comparaison de prévisions Médiane / Lasso",
+  "Observation only: issue tomorrow once, retain predictions across restarts and compare with cleaned SQL baseload. Production planning keeps its selected profile. Training needs at least 28 usable days after lag alignment; results follow completed days. No brightness feature yet.": "Observation seule : conserve une prévision pour demain même après redémarrage, puis la compare à la charge de base SQL corrigée. La planification garde son profil. Au moins 28 jours utilisables avec retards sont nécessaires. Résultats après journées complètes. Sans luminosité.",
+  "Include outside temperature in Lasso comparison": "Inclure la température extérieure dans la comparaison Lasso",
+  "Uses the configured outside temperature source in SQL for training and fresh Open-Meteo forecasts for tomorrow. Missing history or forecast slots prevent a complete comparison; no fabricated temperatures. Adds one historical source only while comparison is enabled.": "Apprentissage avec la température extérieure configurée dans SQL et prévisions Open-Meteo récentes pour demain. Les données absentes empêchent une comparaison complète. Une source historique supplémentaire uniquement si le comparateur est actif.",
+  "Median / Lasso comparison status": "État de comparaison Médiane / Lasso",
+  "Median / Lasso measured comparison": "Comparaison mesurée Médiane / Lasso"
 }
