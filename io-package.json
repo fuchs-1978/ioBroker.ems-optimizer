@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.173",
+    "version": "0.17.0-alpha.174",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.174": {
+        "en": "Hold the cumulative AC energy high-water mark for downward jitter up to 1 Wh. Preserve SoC without counting rebounds twice; larger resets, stale readings and power spikes remain blocked.",
+        "de": "Bei Rueckwaertsschwankungen bis 1 Wh den hoechsten kumulierten AC-Energiestand halten. SoC bleibt erhalten, ohne Rueckspruenge doppelt zu zaehlen; groessere Resets, alte Werte und Leistungsspruenge bleiben gesperrt.",
+        "es": "Mantiene el máximo acumulado de energía ante oscilaciones negativas de hasta 1 Wh, sin contar rebotes dos veces; conserva protecciones contra reinicios mayores, datos viejos y saltos de potencia.",
+        "fr": "Conserve le maximum cumulé face aux fluctuations négatives jusqu’à 1 Wh, sans compter deux fois le rebond ; maintient les protections contre remises à zéro, données anciennes et sauts de puissance.",
+        "it": "Mantiene il massimo di energia cumulata per oscillazioni negative fino a 1 Wh, senza contare due volte il rimbalzo; restano le protezioni per reset maggiori, dati vecchi e salti di potenza.",
+        "nl": "Behoudt het hoogste cumulatieve energieniveau bij neerwaartse schommelingen tot 1 Wh zonder terugveren dubbel te tellen; grotere resets, oude data en vermogenssprongen blijven geblokkeerd.",
+        "pl": "Zachowuje maksimum energii skumulowanej przy spadkach do 1 Wh bez podwójnego zliczania odbicia; większe resety, stare dane i skoki mocy pozostają blokowane.",
+        "pt": "Mantém o máximo de energia acumulada para oscilações negativas até 1 Wh sem contar o retorno duas vezes; continuam bloqueados reinícios maiores, dados antigos e saltos de potência.",
+        "ru": "Удерживает максимум накопленной энергии при колебаниях вниз до 1 Вт·ч без двойного учёта возврата; большие сбросы, старые данные и скачки мощности блокируются.",
+        "uk": "Утримує максимум накопиченої енергії при коливаннях униз до 1 Вт·год без подвійного обліку повернення; більші скидання, старі дані й стрибки потужності блокуються.",
+        "zh-cn": "累计电量向下波动不超过1瓦时时保持已记录的最高值，不重复累计回升量；仍阻止较大复位、旧数据和功率突变。"
+      },
       "0.17.0-alpha.173": {
         "en": "Preserve manual SoC when an older cycle clock reads a newer persisted estimate. Invalid manual evidence blocks charging instead of silently restoring stale cloud SoC.",
         "de": "Manuellen SoC erhalten, wenn eine aeltere Zykluszeit eine neuere gespeicherte Schaetzung liest. Ungueltige manuelle Basis sperrt statt unbemerkt alten Cloud-SoC zu uebernehmen.",
@@ -81,19 +94,6 @@
         "ru": "Оценка SoC продолжается после двух часов только при сохранённом подтверждении непрерывности счётчика энергии. Защиты сохранены; старая просроченная база требует нового согласованного отчёта.",
         "uk": "Оцінка SoC триває після двох годин лише за збереженого підтвердження безперервності лічильника енергії. Захисти збережено; стара прострочена база потребує нового узгодженого звіту.",
         "zh-cn": "仅在已保存的有效电能计数器连续性得到证明时，超过两小时继续估算车辆电量。保留重置、数据缺口、质量、连接和报告校正保护；旧的过期基准需要新的对齐报告。"
-      },
-      "0.17.0-alpha.167": {
-        "en": "Prepare a persistent per-vehicle mobility reserve, default 0 percent (off), in the EMS object tree. Show its bounded energy subset and existing departure in the read-only strategy preview. No productive price or immediate-charging change.",
-        "de": "Persistente Mobilitätsreserve je Fahrzeug im EMS-Baum vorbereiten, Vorgabe 0 Prozent (aus). Begrenzten Teilbedarf und vorhandene Abfahrt in der Strategie-Vorschau anzeigen. Keine produktive Änderung der Preis- oder Sofortladung.",
-        "es": "Prepara una reserva de movilidad por vehículo, 0 por ciento (desactivada), en el árbol EMS. Muestra su energía y la salida existente en la vista previa. Sin cambios de carga productiva.",
-        "fr": "Prépare une réserve de mobilité par véhicule, 0 pour cent (désactivée), dans EMS. Affiche son besoin et le départ existant dans l’aperçu. Aucun changement de charge productive.",
-        "it": "Prepara una riserva di mobilità per veicolo, 0 per cento (disattivata), nell’albero EMS. Mostra energia e partenza esistente nell’anteprima. Nessuna modifica alla ricarica produttiva.",
-        "nl": "Bereidt een mobiliteitsreserve per voertuig voor, 0 procent (uit), in de EMS-boom. Toont energie en bestaand vertrek in het voorbeeld. Geen wijziging van productief laden.",
-        "pl": "Przygotowuje rezerwę mobilności pojazdu, 0 procent (wyłączona), w drzewie EMS. Pokazuje energię i istniejący odjazd w podglądzie. Bez zmian ładowania produkcyjnego.",
-        "pt": "Prepara uma reserva de mobilidade por veículo, 0 por cento (desativada), na árvore EMS. Mostra energia e partida existente na prévia. Sem alterações à carga produtiva.",
-        "ru": "Подготовлен резерв мобильности каждого автомобиля, 0 процентов (выключен), в дереве EMS. В расчёте показаны энергия и существующий отъезд. Рабочая зарядка не изменена.",
-        "uk": "Підготовлено резерв мобільності кожного автомобіля, 0 відсотків (вимкнено), у дереві EMS. У розрахунку показано енергію та наявний від’їзд. Робоче заряджання не змінено.",
-        "zh-cn": "在 EMS 对象树中准备每辆车的出行储备，默认 0%（关闭）。只读策略预览显示所需能源和现有出发时间。不更改实际价格充电或立即充电。"
       }
     },
     "titleLang": {

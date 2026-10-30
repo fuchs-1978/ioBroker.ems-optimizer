@@ -451,3 +451,48 @@ test('invalid persisted manual chronology fails closed and retains evidence inst
         assert.equal(r.manual, true); assert.ok(r.ledger.manual);
     }
 });
+
+test('observed go-e sub-Wh negative jitter preserves the manual 99.3% estimate', () => {
+    const h = correctedHarness({soc: 98, counter: state(14.542366666666666)});
+    let r;
+    for (let i = 1; i <= 10; i++) r = h.run({now: T + i * 30000,
+        counter: state(14.542366666666666 + i * (15.007747222222223 - 14.542366666666666) / 10, T + i * 30000)});
+    const before = r.value;
+    r = h.run({now: T + 330000, counter: state(15.007702777777777, T + 330000)});
+    assert.equal(r.valid, true); assert.equal(r.manual, true); assert.equal(r.value, before);
+    assert.equal(r.ledger.manual.suspended, false);
+    assert.equal(r.ledger.manual.lastKwh, 15.007747222222223);
+    assert.equal(estimateSoc(h.input()).value, before, 'restart holds the same high-water mark');
+});
+
+test('small counter dips and their rebound count no energy twice for manual and reported estimates', () => {
+    for (const manual of [false, true]) {
+        const h = manual ? correctedHarness() : harness(); h.run();
+        const advanced = h.run({now: T + 30000, counter: state(10.1, T + 30000)}).value;
+        assert.equal(h.run({now: T + 60000, counter: state(10.0995, T + 60000)}).value, advanced);
+        assert.equal(h.run({now: T + 90000, counter: state(10.1, T + 90000)}).value, advanced);
+        const next = h.run({now: T + 120000, counter: state(10.2, T + 120000)});
+        assert.ok(Math.abs(next.value - (advanced + 0.18)) < 1e-10);
+    }
+});
+
+test('counter rounding tolerance is bounded to the fixed high-water mark and cannot accumulate', () => {
+    const h = correctedHarness();
+    assert.equal(h.run({now: T + 30000, counter: state(9.9994, T + 30000)}).valid, true);
+    const r = h.run({now: T + 60000, counter: state(9.9988, T + 60000)});
+    assert.equal(r.valid, false); assert.equal(r.reason, 'manual-suspended');
+    const reset = correctedHarness();
+    assert.equal(reset.run({now: T + 30000, counter: state(0, T + 30000)}).valid, false);
+});
+
+test('counter rounding hold never refreshes stale or invalid readings or admits a power spike', () => {
+    for (const counter of [state(9.9995, T - 61000), {...state(9.9995), ack:false},
+        {...state(9.9995), q:64}]) {
+        const h = correctedHarness();
+        const r = h.run({now: T + 30000, counter});
+        assert.equal(r.reason, 'manual-retained-energy-unavailable');
+        assert.equal(r.ledger.manual.lastTs, T);
+    }
+    const h = correctedHarness();
+    assert.equal(h.run({now:T+1000,counter:state(20,T+1000)}).valid,false);
+});

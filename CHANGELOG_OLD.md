@@ -2541,3 +2541,7 @@ Prepare a read-only staged battery strategy: buffer around the planned SoC, prio
 ### 0.17.0-alpha.166
 
 Restructure the EMS overview with compact operating status, current notices and devices; collapse planning, daily balances and technical diagnostics. Presentation only; control and SQL remain unchanged.
+
+### 0.17.0-alpha.167
+
+Prepare a persistent per-vehicle mobility reserve, default 0 percent (off), in the EMS object tree. Show its bounded energy subset and existing departure in the read-only strategy preview. No productive price or immediate-charging change.
