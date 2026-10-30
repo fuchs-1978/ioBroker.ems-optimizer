@@ -272,18 +272,24 @@ test('manual correction rejects invalid inputs and accepts zero and same-value c
         assert.equal(correctSoc({...input, value: 94, ...update}).ok, false);
 });
 
-test('manual correction survives disconnect as suspended evidence and cannot charge using an old 94', () => {
+test('confirmed disconnect clears the manual basis; reconnect starts with the vehicle source', () => {
     const h = harness({reported: state(65)});
     const correction = correctSoc({...h.input(), value: 94});
     let r = h.run({ledgerText: JSON.stringify(correction.ledger), now: T + 1000, car: state(1, T + 1000)});
-    assert.equal(r.valid, false); assert.equal(r.value, null);
-    assert.equal(r.ledger.manual.soc, 94);
+    assert.equal(r.manualCleared, true); assert.equal(r.ledger.manual, undefined);
     r = h.run({now: T + 2000, car: state(2, T + 2000), counter: state(10, T + 2000),
         reported: state(65, T + 2000)});
-    assert.equal(r.valid, false);
-    const clear = correctSoc({...h.input(), value: -1});
-    r = h.run({ledgerText: JSON.stringify(clear.ledger)});
     assert.equal(r.manual, undefined); assert.equal(r.value, 65);
+});
+
+test('invalid or unknown connection suspends manual correction without pretending an unplug', () => {
+    for (const car of [undefined, {...state(1), ack: false}, {...state(1), q: 64}]) {
+        const h = harness();
+        const correction = correctSoc({...h.input(), value: 94});
+        const r = h.run({ledgerText: JSON.stringify(correction.ledger), now: T + 1000, car});
+        assert.equal(r.manual, true); assert.equal(r.valid, false);
+        assert.notEqual(r.manualCleared, true); assert.equal(r.ledger.manual.soc, 94);
+    }
 });
 
 test('counter reset, jump and long gap suspend manual estimation; normal charging transition does not', () => {
@@ -387,7 +393,7 @@ test('bad reports, gaps, resets and suspended sessions cannot trigger plausible 
         {counter: state(0, T + 30000)},
         {counter: state(20, T + 30000)},
         {now: T + 70000, counter: state(10, T + 70000), reported: state(94, T + 70000)},
-        {car: state(1, T + 30000)}
+        {car: {...state(1, T + 30000), q: 64}}
     ]) {
         const h = correctedHarness();
         const r = h.run({now: T + 30000, counter: state(10, T + 30000),
@@ -396,7 +402,7 @@ test('bad reports, gaps, resets and suspended sessions cannot trigger plausible 
         assert.equal(r.manual, true);
     }
     const h = correctedHarness();
-    h.run({now: T + 10000, car: state(1, T + 10000)});
+    h.run({now: T + 10000, car: {...state(1, T + 10000), q: 64}});
     const r = h.run({now: T + 30000, car: state(2, T + 30000),
         counter: state(10, T + 30000), reported: state(94, T + 30000)});
     assert.equal(r.valid, false); assert.equal(r.manual, true);
