@@ -30,7 +30,7 @@ test('complete Admin grid audit rejects missing, increasing and invalid widths b
     for (const bad of [{...field, sm: undefined}, {...field, md: 8}, {...field, xl: 0}, {...field, xs: 6}])
         assert.throws(() => checkLayout({items: {field: bad}}));
     assert.equal(checkLayout({items: {table: {...field, type: 'table', items: [{type: 'text', width: 100}]}}}).checked, 1);
-    assert.equal(checkLayout(JSON.parse(fs.readFileSync(path.join(__dirname, '../admin/jsonConfig.json')))).checked, 548);
+    assert.equal(checkLayout(JSON.parse(fs.readFileSync(path.join(__dirname, '../admin/jsonConfig.json')))).checked, 550);
 });
 test('shared ioBroker lint configuration catches real errors, VM typos and unowned runtime timers', async () => {
     const {ESLint} = await import('eslint'); const lint = new ESLint();
