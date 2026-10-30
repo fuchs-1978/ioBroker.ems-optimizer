@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.172",
+    "version": "0.17.0-alpha.173",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.173": {
+        "en": "Preserve manual SoC when an older cycle clock reads a newer persisted estimate. Invalid manual evidence blocks charging instead of silently restoring stale cloud SoC.",
+        "de": "Manuellen SoC erhalten, wenn eine aeltere Zykluszeit eine neuere gespeicherte Schaetzung liest. Ungueltige manuelle Basis sperrt statt unbemerkt alten Cloud-SoC zu uebernehmen.",
+        "es": "Conserva el SoC manual cuando un ciclo antiguo lee una estimación nueva. Una base manual inválida bloquea la carga en lugar de recuperar datos obsoletos de la nube.",
+        "fr": "Conserve le SoC manuel lorsqu’un ancien cycle lit une estimation plus récente. Une base manuelle invalide bloque la charge au lieu de rétablir un ancien SoC cloud.",
+        "it": "Mantiene il SoC manuale quando un ciclo precedente legge una stima più recente. Una base manuale non valida blocca la carica invece di ripristinare dati cloud vecchi.",
+        "nl": "Behoudt handmatige SoC als een oudere cyclustijd een nieuwere schatting leest. Een ongeldige handmatige basis blokkeert laden in plaats van oude cloud-SoC te herstellen.",
+        "pl": "Zachowuje ręczny SoC, gdy starszy czas cyklu odczytuje nowsze oszacowanie. Nieprawidłowa ręczna podstawa blokuje ładowanie zamiast przywracać stary SoC chmury.",
+        "pt": "Preserva o SoC manual quando um ciclo antigo lê uma estimativa mais recente. Uma base manual inválida bloqueia a carga em vez de restaurar dados antigos da nuvem.",
+        "ru": "Сохраняет ручной SoC, если старое время цикла читает новую оценку. Некорректная ручная база блокирует зарядку вместо возврата к устаревшему облачному SoC.",
+        "uk": "Зберігає ручний SoC, якщо старий час циклу читає новішу оцінку. Некоректна ручна база блокує заряджання замість повернення до застарілого хмарного SoC.",
+        "zh-cn": "当较早的控制周期时间读取较新的已保存估算时保留手动电量；无效的手动依据会阻止充电，而不会恢复旧云端电量。"
+      },
       "0.17.0-alpha.172": {
         "en": "Automatically return from manual SoC correction to a changed cloud value matching measured charging within one percentage point; preserve session, counter and stale-report guards.",
         "de": "Manuelle SoC-Korrektur automatisch aufheben, wenn ein geaenderter Cloud-Wert innerhalb eines Prozentpunkts zur gemessenen Ladefortschreibung passt; Sitzungs-, Zaehler- und Altersschutz erhalten.",
@@ -81,19 +94,6 @@
         "ru": "Подготовлен резерв мобильности каждого автомобиля, 0 процентов (выключен), в дереве EMS. В расчёте показаны энергия и существующий отъезд. Рабочая зарядка не изменена.",
         "uk": "Підготовлено резерв мобільності кожного автомобіля, 0 відсотків (вимкнено), у дереві EMS. У розрахунку показано енергію та наявний від’їзд. Робоче заряджання не змінено.",
         "zh-cn": "在 EMS 对象树中准备每辆车的出行储备，默认 0%（关闭）。只读策略预览显示所需能源和现有出发时间。不更改实际价格充电或立即充电。"
-      },
-      "0.17.0-alpha.166": {
-        "en": "Restructure the EMS overview with compact operating status, current notices and devices; collapse planning, daily balances and technical diagnostics. Presentation only; control and SQL remain unchanged.",
-        "de": "EMS-Übersicht mit kurzem Betriebszustand, aktuellen Hinweisen und Geräten strukturieren; Fahrplan, Tagesbilanzen und technische Diagnose einklappbar. Nur Darstellung; Regelung und SQL unverändert.",
-        "es": "Reorganiza el resumen EMS con estado, avisos y dispositivos; plan, balances y diagnóstico plegables. Solo presentación; sin cambios de control ni SQL.",
-        "fr": "Réorganise la vue EMS avec état, avis et appareils ; plan, bilans et diagnostic repliables. Présentation seule ; régulation et SQL inchangés.",
-        "it": "Riorganizza la panoramica EMS con stato, avvisi e dispositivi; piano, bilanci e diagnostica richiudibili. Solo presentazione; controllo e SQL invariati.",
-        "nl": "Ordent het EMS-overzicht met status, meldingen en apparaten; planning, dagbalansen en diagnose inklapbaar. Alleen presentatie; regeling en SQL ongewijzigd.",
-        "pl": "Porządkuje przegląd EMS: stan, komunikaty i urządzenia; zwijany plan, bilanse i diagnostyka. Tylko prezentacja; sterowanie i SQL bez zmian.",
-        "pt": "Organiza a visão EMS com estado, avisos e dispositivos; plano, balanços e diagnóstico recolhíveis. Só apresentação; controlo e SQL inalterados.",
-        "ru": "Упорядочен обзор EMS: состояние, уведомления и устройства; сворачиваемые план, балансы и диагностика. Только отображение; управление и SQL без изменений.",
-        "uk": "Упорядковано огляд EMS: стан, повідомлення та пристрої; згортані план, баланси й діагностика. Лише відображення; керування та SQL без змін.",
-        "zh-cn": "重组 EMS 概览，显示简洁状态、当前提示和设备；计划、每日平衡和技术诊断可折叠。仅更改显示，控制与 SQL 不变。"
       }
     },
     "titleLang": {

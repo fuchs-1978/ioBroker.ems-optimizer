@@ -424,3 +424,30 @@ test('alpha.171 manual ledgers migrate using the previously observed cloud value
         reported: state(94, T + 30000), counter: state(10, T + 30000)});
     assert.equal(r.automaticRecovery, true);
 });
+
+test('a one-millisecond older cycle clock cannot erase manual 94 or return cloud 65', () => {
+    const h = correctedHarness();
+    const current = h.run({now: T + 30000, counter: state(10, T + 30000)});
+    const older = h.run({now: T + 29999});
+    assert.equal(current.value, 94); assert.equal(older.value, 94);
+    assert.equal(older.manual, true); assert.deepEqual(older.ledger, current.ledger);
+    const fresh = h.run({now: T + 31000, counter: state(10.01, T + 31000)});
+    assert.ok(fresh.value > 94); assert.equal(fresh.manual, true);
+});
+
+test('an older evaluation immediately after correction retains the correction basis', () => {
+    const h = correctedHarness();
+    const r = h.run({now: T - 1});
+    assert.equal(r.value, 94); assert.equal(r.manual, true);
+});
+
+test('invalid persisted manual chronology fails closed and retains evidence instead of cloud 65', () => {
+    for (const change of [{lastAt: T + 10000}, {lastValue: null}, {lastKwh: -1}]) {
+        const h = correctedHarness();
+        const ledger = JSON.parse(h.input().ledgerText);
+        Object.assign(ledger.manual, change);
+        const r = h.run({ledgerText: JSON.stringify(ledger)});
+        assert.equal(r.valid, false); assert.equal(r.value, null);
+        assert.equal(r.manual, true); assert.ok(r.ledger.manual);
+    }
+});
