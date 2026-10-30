@@ -927,3 +927,8 @@ Ist der Cloud-SoC veraltet, kann unter `Vehicles.Wallbox0.SoCCorrection_pct` (Mi
 `Vehicles.Wallbox1.SoCCorrection_pct` (EQV) bzw. `Vehicles.Wallbox2.SoCCorrection_pct` (EQE)
 ein gepruefter aktueller SoC mit `ack=false` geschrieben werden. Kein Neustart fuer die Korrektur.
 `-1` hebt den Schutz bewusst auf. Status und Grenzen: [Bedienhinweise](docs/release-0.17.0-alpha.171.md).
+
+
+Ab alpha.172 kann ein tatsaechlich geaenderter Cloud-SoC die manuelle Basis automatisch abloesen,
+wenn er zur zeitlich zugeordneten Ladefortschreibung innerhalb eines Prozentpunkts passt.
+Schutzbedingungen und Status: [automatische Rueckkehr](docs/release-0.17.0-alpha.172.md).

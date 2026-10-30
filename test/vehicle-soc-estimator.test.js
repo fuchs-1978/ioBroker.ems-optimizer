@@ -329,3 +329,92 @@ test('repeated cloud SoC warns on a measured three-point deficit, but rounding d
     r = h.run({ledgerText: JSON.stringify(correction.ledger)});
     assert.equal(r.socWarning, false); assert.equal(r.value, 94);
 });
+
+function correctedHarness({soc = 94, reported = 65, ...extra} = {}) {
+    const h = harness({reported: state(reported), ...extra});
+    h.run();
+    const correction = correctSoc({...h.input(), value: soc});
+    h.run({ledgerText: JSON.stringify(correction.ledger)});
+    return h;
+}
+
+test('changed cloud 65 -> 94 automatically releases manual 94 while not charging', () => {
+    const h = correctedHarness();
+    const r = h.run({now: T + 30000, reported: state(94, T + 30000), counter: state(10, T + 30000)});
+    assert.equal(r.automaticRecovery, true); assert.equal(r.value, 94);
+    assert.equal(r.ledger.manual, undefined);
+    assert.equal(h.run().manual, undefined);
+});
+
+test('recovery compares charged manual SoC with inclusive one percentage-point tolerance', () => {
+    for (const [cloud, accepted] of [[94, false], [95, true], [96, true], [97, true], [98, false]]) {
+        const h = correctedHarness();
+        h.run({now: T + 30000, counter: state(10.5, T + 30000)});
+        h.run({now: T + 60000, counter: state(11, T + 60000)});
+        const r = h.run({now: T + 90000, counter: state(10 + 2 / 1.8, T + 90000),
+            reported: state(cloud, T + 90000)});
+        assert.equal(r.automaticRecovery === true, accepted, String(cloud));
+        if (!accepted) assert.equal(r.manual, true);
+    }
+});
+
+test('repeated matching cloud percentages and old timestamps do not release a correction', () => {
+    const same = correctedHarness({reported: 94});
+    assert.equal(same.run({now: T + 30000, counter: state(10, T + 30000),
+        reported: state(94, T + 30000)}).manual, true);
+    const old = correctedHarness();
+    assert.equal(old.run({now: T + 30000, counter: state(10, T + 30000),
+        reported: state(94, T)}).manual, true);
+    const unchanged = correctedHarness({soc: 65});
+    assert.equal(unchanged.run({now: T + 30000, counter: state(10, T + 30000),
+        reported: state(65, T + 30000)}).manual, true);
+});
+
+test('recovery waits for the counter poll and survives a restart while aligning the report', () => {
+    const h = correctedHarness();
+    let r = h.run({now: T + 30000, reported: state(94, T + 30000)});
+    assert.equal(r.manual, true);
+    assert.equal(estimateSoc(h.input()).manual, true);
+    r = h.run({now: T + 35000, counter: state(10, T + 35000)});
+    assert.equal(r.automaticRecovery, true); assert.equal(r.value, 94);
+});
+
+test('bad reports, gaps, resets and suspended sessions cannot trigger plausible cloud recovery', () => {
+    for (const update of [
+        {reported: {...state(94, T + 30000), ack: false}},
+        {reported: {...state(94, T + 30000), q: 64}},
+        {reported: state(94, T + 40000)},
+        {counter: state(0, T + 30000)},
+        {counter: state(20, T + 30000)},
+        {now: T + 70000, counter: state(10, T + 70000), reported: state(94, T + 70000)},
+        {car: state(1, T + 30000)}
+    ]) {
+        const h = correctedHarness();
+        const r = h.run({now: T + 30000, counter: state(10, T + 30000),
+            reported: state(94, T + 30000), ...update});
+        assert.notEqual(r.automaticRecovery, true, JSON.stringify(update));
+        assert.equal(r.manual, true);
+    }
+    const h = correctedHarness();
+    h.run({now: T + 10000, car: state(1, T + 10000)});
+    const r = h.run({now: T + 30000, car: state(2, T + 30000),
+        counter: state(10, T + 30000), reported: state(94, T + 30000)});
+    assert.equal(r.valid, false); assert.equal(r.manual, true);
+});
+
+test('a mismatching report does not become a new candidate just by re-publishing it', () => {
+    const h = correctedHarness();
+    assert.equal(h.run({now: T + 30000, reported: state(90, T + 30000),
+        counter: state(10, T + 30000)}).manual, true);
+    const r = h.run({now: T + 60000, reported: state(90, T + 60000), counter: state(10, T + 60000)});
+    assert.equal(r.manual, true); assert.equal(r.ledger.manual.recoveryCandidate, null);
+});
+
+test('alpha.171 manual ledgers migrate using the previously observed cloud value', () => {
+    const h = correctedHarness();
+    const ledger = JSON.parse(h.input().ledgerText);
+    delete ledger.manual.cloudValue; delete ledger.manual.cloudTs; delete ledger.manual.recoveryCandidate;
+    const r = h.run({now: T + 30000, ledgerText: JSON.stringify(ledger),
+        reported: state(94, T + 30000), counter: state(10, T + 30000)});
+    assert.equal(r.automaticRecovery, true);
+});

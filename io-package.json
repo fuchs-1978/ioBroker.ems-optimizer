@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.171",
+    "version": "0.17.0-alpha.172",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.172": {
+        "en": "Automatically return from manual SoC correction to a changed cloud value matching measured charging within one percentage point; preserve session, counter and stale-report guards.",
+        "de": "Manuelle SoC-Korrektur automatisch aufheben, wenn ein geaenderter Cloud-Wert innerhalb eines Prozentpunkts zur gemessenen Ladefortschreibung passt; Sitzungs-, Zaehler- und Altersschutz erhalten.",
+        "es": "Retorno automático desde la corrección manual a un SoC nuevo de la nube que coincide con la carga medida dentro de un punto porcentual; conserva las protecciones de sesión, contador y antigüedad.",
+        "fr": "Retour automatique après correction manuelle vers un SoC cloud modifié conforme à la charge mesurée à un point de pourcentage près ; protections de session, compteur et ancienneté conservées.",
+        "it": "Ritorno automatico dalla correzione manuale a un SoC cloud cambiato coerente con la carica misurata entro un punto percentuale; restano le protezioni di sessione, contatore e dati vecchi.",
+        "nl": "Automatisch terug van handmatige correctie naar een gewijzigde cloud-SoC die binnen één procentpunt bij gemeten laden past; sessie-, teller- en ouderdomsbeveiliging blijven behouden.",
+        "pl": "Automatyczny powrót z korekty ręcznej do zmienionego SoC chmury zgodnego z pomiarem ładowania w granicy jednego punktu procentowego; zachowane zabezpieczenia sesji, licznika i wieku danych.",
+        "pt": "Retorno automático da correção manual a um SoC alterado da nuvem compatível com a carga medida dentro de um ponto percentual; mantém proteções de sessão, contador e idade dos dados.",
+        "ru": "Автоматический возврат от ручной коррекции к изменившемуся облачному SoC при согласовании с измеренным зарядом в пределах одного процентного пункта; защиты сессии, счётчика и давности сохранены.",
+        "uk": "Автоматичне повернення від ручної корекції до зміненого хмарного SoC за відповідності виміряному заряду в межах одного відсоткового пункту; захист сесії, лічильника й давності збережено.",
+        "zh-cn": "手动电量校正后，若变化的云端电量与实测充电推算相差不超过一个百分点，则自动恢复车辆数据源；保留会话、计数器和旧数据保护。"
+      },
       "0.17.0-alpha.171": {
         "en": "Add live persistent manual vehicle SoC corrections protected against repeated cloud values; suspend after session or counter discontinuity.",
         "de": "Manuelle Fahrzeug-SoC-Korrektur ohne Neustart, persistent und gegen wiederholte Cloud-Werte geschuetzt; bei Sitzungs- oder Zaehlerunterbrechung aussetzen.",
@@ -81,19 +94,6 @@
         "ru": "Упорядочен обзор EMS: состояние, уведомления и устройства; сворачиваемые план, балансы и диагностика. Только отображение; управление и SQL без изменений.",
         "uk": "Упорядковано огляд EMS: стан, повідомлення та пристрої; згортані план, баланси й діагностика. Лише відображення; керування та SQL без змін.",
         "zh-cn": "重组 EMS 概览，显示简洁状态、当前提示和设备；计划、每日平衡和技术诊断可折叠。仅更改显示，控制与 SQL 不变。"
-      },
-      "0.17.0-alpha.165": {
-        "en": "Prepare a read-only staged battery strategy: buffer around the planned SoC, prioritize vehicle minima, bound optional vehicle support and estimate the night energy gap. Require fresh device SoC limits; no change to production allocation or hardware release.",
-        "de": "Lesende gestufte Batteriestrategie vorbereiten: um Plan-SoC puffern, Fahrzeug-Minima priorisieren, optionale Fahrzeugunterstützung begrenzen und Nachtenergielücke schätzen. Frische Gerätegrenzen erforderlich; keine Änderung produktiver Zuteilung oder Hardwarefreigabe.",
-        "es": "Prepara una estrategia de batería de solo lectura con objetivos escalonados, prioridad de mínimos de vehículos y estimación de déficit nocturno. Exige límites recientes del dispositivo; sin cambiar la asignación productiva ni activar hardware.",
-        "fr": "Prépare une stratégie de batterie en lecture seule : objectifs progressifs, priorité aux minima des véhicules et estimation du déficit nocturne. Limites récentes exigées ; aucune modification de régulation ni activation matérielle.",
-        "it": "Prepara una strategia batteria in sola lettura con obiettivi graduali, priorità ai minimi dei veicoli e stima del deficit notturno. Richiede limiti recenti del dispositivo; nessuna modifica al controllo o attivazione hardware.",
-        "nl": "Bereidt een alleen-lezen batterijstrategie voor met getrapte doelen, prioriteit voor voertuigminima en een raming van het nachtelijke energietekort. Actuele apparaatgrenzen vereist; geen wijziging van productieregeling of hardwarevrijgave.",
-        "pl": "Przygotowuje strategię baterii tylko do odczytu: cele etapowe, priorytet minimów pojazdów i szacowanie nocnego deficytu energii. Wymaga aktualnych limitów urządzenia; bez zmian regulacji i aktywacji sprzętu.",
-        "pt": "Prepara uma estratégia de bateria só de leitura: metas graduais, prioridade aos mínimos dos veículos e estimativa do défice noturno. Exige limites recentes do dispositivo; sem alterar a regulação nem ativar equipamento.",
-        "ru": "Подготовлена стратегия аккумулятора только для чтения: ступенчатые цели, приоритет минимумов автомобилей и оценка ночного дефицита. Нужны свежие ограничения устройства; без изменения управления и включения оборудования.",
-        "uk": "Підготовлено стратегію батареї лише для читання: поетапні цілі, пріоритет мінімумів автомобілів та оцінка нічного дефіциту. Потрібні свіжі межі пристрою; без зміни керування й активації обладнання.",
-        "zh-cn": "准备只读分阶段电池策略：在计划电量附近缓冲，优先满足车辆最低电量，限制车辆供能并估计夜间能源缺口。需要最新设备限制；不更改生产调节或启用硬件。"
       }
     },
     "titleLang": {
