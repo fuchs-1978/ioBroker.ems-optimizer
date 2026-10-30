@@ -19,6 +19,11 @@ function compile(source, filename, properties = {}) {
     module.filename = filename;
     module.paths = Module._nodeModulePaths(path.dirname(filename));
     Object.assign(module, properties);
+    // Current phase fixtures carry an injected reader. The historical phase
+    // arithmetic never calls it; resolve the fixture dependency independently
+    // of the production tree being compared (no controller substitution).
+    source = source.replaceAll("require('../lib/grid-measurement')",
+        `require(${JSON.stringify(path.join(root, 'lib/grid-measurement'))})`);
     module._compile(source, filename);
     return module.exports;
 }

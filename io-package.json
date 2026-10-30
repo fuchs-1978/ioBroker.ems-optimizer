@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.169",
+    "version": "0.17.0-alpha.170",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.170": {
+        "en": "Reject older foreign source timestamps and superseded asynchronous reads. Validate grid import/export time coherence, retain bounded conservative no-write continuity, and expose bounded input diagnostics without refreshing old samples.",
+        "de": "Ältere fremde Zeitstempel und überholte asynchrone Lesungen verwerfen. Zeitbezug von Netzbezug/Einspeisung prüfen, begrenzte konservative Fortsetzung ohne neue Befehle erhalten und Eingangsdiagnosen anzeigen; alte Werte nicht auffrischen.",
+        "es": "Rechaza tiempos antiguos y lecturas asíncronas superadas. Valida coherencia temporal de importación/exportación, mantiene continuidad conservadora limitada sin comandos y diagnósticos acotados sin renovar datos antiguos.",
+        "fr": "Rejette les anciens horodatages et lectures asynchrones dépassées. Vérifie la cohérence import/export, maintient une continuité prudente bornée sans commande et des diagnostics limités sans rajeunir les données.",
+        "it": "Rifiuta timestamp vecchi e letture asincrone superate. Verifica la coerenza importazione/esportazione, mantiene continuità prudente limitata senza comandi e diagnostica limitata senza aggiornare dati vecchi.",
+        "nl": "Weigert oudere brontijden en ingehaalde asynchrone lezingen. Controleert samenhang van netafname en teruglevering, behoudt begrensd conservatief vasthouden zonder opdrachten en beperkte diagnostiek zonder oude waarden te vernieuwen.",
+        "pl": "Odrzuca starsze czasy źródłowe i nieaktualne odczyty asynchroniczne. Sprawdza spójność importu/eksportu, zachowuje ograniczone ostrożne podtrzymanie bez poleceń i diagnostykę bez odświeżania starych danych.",
+        "pt": "Rejeita tempos antigos e leituras assíncronas ultrapassadas. Verifica coerência de importação/exportação, mantém continuidade conservadora limitada sem comandos e diagnóstico limitado sem renovar dados antigos.",
+        "ru": "Отклоняет старые метки источников и устаревшие асинхронные чтения. Проверяет согласованность импорта/экспорта, сохраняет ограниченное безопасное удержание без команд и диагностику без искусственного обновления старых данных.",
+        "uk": "Відхиляє старі позначки джерел і застарілі асинхронні читання. Перевіряє узгодженість імпорту/експорту, зберігає обмежене безпечне утримання без команд і діагностику без штучного оновлення старих даних.",
+        "zh-cn": "拒绝较旧的外部源时间戳和已被事件取代的异步读取。检查电网输入与输出的时间一致性，在限时保守保持期间不发送新命令，提供有限诊断且不人为刷新旧数据。"
+      },
       "0.17.0-alpha.169": {
         "en": "Keep established charging through a missing follow-up current ACK only with fresh independent grid protection and conservative worst-case power reservations. No new commands; starts, phase changes and unsafe or unknown conditions retain stop protection.",
         "de": "Laufende Ladung bei fehlendem Folge-Strom-ACK nur mit frischem unabhängigen Netzschutz und konservativer Leistungsreserve halten. Keine neuen Befehle; Starts, Phasenwechsel sowie unsichere oder unbekannte Bedingungen bleiben geschützt.",
@@ -81,19 +94,6 @@
         "ru": "Добавлены достижимость целей к отъезду, конфликты настроек, ограниченный анализ переходов, качество регулирования, эмпирические интервалы и автономное сравнение версий. Взвешенные по давности профили включаются отдельно; совместимые настройки и неизвестные данные сохранены.",
         "uk": "Додано досяжність цілей до від’їзду, конфлікти налаштувань, обмежений аналіз переходів, якість регулювання, емпіричні інтервали й автономне порівняння версій. Зважені за давністю профілі вмикаються окремо; сумісні налаштування й невідомі дані збережено.",
         "zh-cn": "增加只读出发目标可行性、配置冲突、有界转换分析、调节质量、经验预测区间和离线版本比较。近期加权负载曲线需主动选择；保留兼容默认设置和未知状态。"
-      },
-      "0.17.0-alpha.163": {
-        "en": "Add standard CI, shared ESLint checks, adapter-owned runtime timers, a complete responsive Admin audit and a committed dependency lockfile with npm ci. Preserve bounded shutdown deadlines; no npm or Latest publication.",
-        "de": "Standard-CI, gemeinsame ESLint-Prüfung, adaptereigene Laufzeit-Timer, vollständige responsive Admin-Prüfung und feste Abhängigkeiten mit npm ci ergänzen. Begrenzte Abschlussfristen erhalten; keine npm- oder Latest-Veröffentlichung.",
-        "es": "Añade CI estándar, ESLint compartido, temporizadores del adaptador, revisión adaptable de Admin y dependencias fijadas con npm ci. Mantiene los plazos de cierre; sin publicar en npm ni Latest.",
-        "fr": "Ajoute la CI standard, ESLint partagé, les temporisateurs de l’adaptateur, le contrôle responsive Admin et les dépendances verrouillées avec npm ci. Délais de fermeture conservés ; aucune publication npm ou Latest.",
-        "it": "Aggiunge CI standard, ESLint condiviso, timer gestiti dall’adattatore, verifica responsive di Admin e dipendenze bloccate con npm ci. Conserva i limiti di chiusura; nessuna pubblicazione npm o Latest.",
-        "nl": "Voegt standaard-CI, gedeelde ESLint-controles, adaptertimers, volledige responsieve Admin-controle en vastgelegde afhankelijkheden met npm ci toe. Afsluittermijnen blijven behouden; geen npm- of Latest-publicatie.",
-        "pl": "Dodaje standardowe CI, wspólny ESLint, timery adaptera, pełną kontrolę responsywności Admin i ustalone zależności przez npm ci. Zachowuje limity zamykania; bez publikacji w npm i Latest.",
-        "pt": "Adiciona CI padrão, ESLint partilhado, temporizadores do adaptador, verificação responsiva completa do Admin e dependências fixadas com npm ci. Mantém os prazos de encerramento; sem publicação npm ou Latest.",
-        "ru": "Добавлены стандартная CI, общие проверки ESLint, таймеры адаптера, полная проверка адаптивности Admin и фиксация зависимостей с npm ci. Сохранены сроки завершения; без публикации в npm и Latest.",
-        "uk": "Додано стандартну CI, спільні перевірки ESLint, таймери адаптера, повну перевірку адаптивності Admin і фіксацію залежностей з npm ci. Збережено строки завершення; без публікації в npm і Latest.",
-        "zh-cn": "增加标准 CI、共享 ESLint 检查、适配器管理的运行计时器、完整的 Admin 响应式检查，以及使用 npm ci 的依赖锁定文件。保留有限关闭期限；不发布到 npm 或 Latest。"
       }
     },
     "titleLang": {
@@ -737,7 +737,8 @@
     "wallboxResponseSettleTimeoutS": 45,
     "wallboxResponseCurrentToleranceA": 1.5,
     "sourcePowerHistoryEnabled": true,
-    "historyProfileMethod": "median"
+    "historyProfileMethod": "median",
+    "gridPairTimestampMode": "publication"
   },
   "objects": [],
   "instanceObjects": [

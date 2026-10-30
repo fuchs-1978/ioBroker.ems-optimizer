@@ -12,7 +12,7 @@ function engine(parallel = true) {
     const put = (id, val, extra = {}) => states.set(id, {val, ack: true, q: 0, ts: now, ...extra});
     const nativeConfig = {wallboxParallelChargingEnabled: parallel,
         wb0AllowOutputId: 'raw.allow0', wb1AllowOutputId: 'raw.allow1', wb2AllowOutputId: 'raw.allow2'};
-    const context = vm.createContext({nativeConfig, Date: Clock,
+    const context = vm.createContext({gridMeasurement: new (require('../lib/grid-measurement').GridMeasurement)(), nativeConfig, Date: Clock,
         clamp: (value, low, high) => Math.max(low, Math.min(high, value)),
         getState: id => states.get(id), existsState: id => states.has(id),
         setState: put, createState: () => {}, log: () => {}});
@@ -78,6 +78,7 @@ test('parallel pending phase increments use configured 240 V while legacy reserv
 
 test('queued DHW guard proposes only a finite smaller positive target and rechecks every constraint', () => {
     const h=engine();
+    h.put('DP_GRID_IMPORT', 0); h.put('DP_GRID_EXPORT', 0);
     h.run(`currentConsumptionLimit=()=>({valid:true,budgetW:null});
         dhwHouseConnectionProtectionReason=()=>'';
         evaluateDhwSimulation=()=>({release:true,temperaturePowerLimitW:9000});

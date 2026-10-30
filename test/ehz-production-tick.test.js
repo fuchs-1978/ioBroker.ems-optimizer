@@ -50,8 +50,8 @@ async function fixture(holdS = 15) {
     own('Control.Targets.MyPV_DHW_W', 9000);
     own('Config.DHWCommissioningMaxPower_W', 9000);
     own('Config.DHWSettleTimeout_s', holdS);
-    const fresh = () => {
-        for (const key of ['o1', 'o2', 'o3', 'h1', 'h2', 'h3', 'gridIn']) put(key, 0);
+    const fresh = (omit = []) => {
+        for (const key of ['o1', 'o2', 'o3', 'h1', 'h2', 'h3', 'gridIn']) if (!omit.includes(key)) put(key, 0);
         for (const key of ['t1', 't2', 't3', 't4', 'outlet']) put(key, 50);
         put('connection', true);put('gridOut', 6100);
         own('System.LastUpdate', now);own('Control.LastUpdate', now);
@@ -86,7 +86,7 @@ async function fixture(holdS = 15) {
     };
     const record = () => JSON.parse(a.getCachedState('ems.0.Devices.MyPV_DHW.OutputReservationState_JSON').val);
     const reserve = () => a.getCachedState('ems.0.Devices.MyPV_DHW.OutputReservedPower_W').val;
-    const advance = (ms = 5000) => {now += ms;fresh();};
+    const advance = (ms = 5000, omit = []) => {now += ms;fresh(omit);};
     const stop = async () => {
         await tick();await complete();
         assert.equal(writes[0], 3000, 'real productive guard accepted the initial heating command');
@@ -161,7 +161,7 @@ for (const fault of ['delayed positive effect', 'NULL actual', 'bad phase qualit
         const heldTs = h.a.getCachedState('o3').ts;
         if (fault === 'mapping changed') h.a.runEngine("CFG.dp.myPvDhwOutputW=['new1','new2','new3']");
         for (let i = 0; i < 5; i++) {
-            h.advance(fault === 'large sample gap' ? 31000 : 5000);
+            h.advance(fault === 'large sample gap' ? 31000 : 5000, fault === 'standing phase timestamp' ? ['o3'] : []);
             if (fault === 'delayed positive effect') h.put('o1', 1000);
             if (fault === 'NULL actual') h.put('o1', null);
             if (fault === 'bad phase quality') h.put('o2', 0, {q: 64});

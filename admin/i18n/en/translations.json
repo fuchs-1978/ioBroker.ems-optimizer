@@ -588,5 +588,9 @@
   "Devices at a glance": "Devices at a glance",
   "Planning and battery preview": "Planning and battery preview",
   "Daily balances": "Daily balances",
-  "Technical diagnostics": "Technical diagnostics"
+  "Technical diagnostics": "Technical diagnostics",
+  "Grid timestamp contract": "Grid timestamp contract",
+  "Grid timestamp contract help": "Use shared receipt time only when both grid states carry the same telegram receipt timestamp, for example the SMA test adapter. Otherwise publication times permit at most 5 seconds skew; this does not prove a common telegram. Neither mode refreshes old samples.",
+  "Publication times (maximum 5 s skew)": "Publication times (maximum 5 s skew)",
+  "Shared telegram receipt time (exact match)": "Shared telegram receipt time (exact match)"
 }

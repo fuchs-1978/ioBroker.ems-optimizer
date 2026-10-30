@@ -2726,7 +2726,8 @@ test('SMA total import and export remain usable through 30 seconds then trigger 
     for (const id of ['import', 'export']) for (const ageMs of [16000, 29999, 30000, 30001, 31000]) {
         let now = 1000000; const h = setup({now: () => now});
         await h.start(); h.writes.length = 0;
-        h.put(id, id === 'export' ? 8000 : 0, {ts: now - ageMs});
+        h.put('import', 0, {ts: now - ageMs});
+        h.put('export', 8000, {ts: now - ageMs});
         await h.output.tick();
         const stopped = h.writes.some(x => x.id === 'allow' && x.val === 0);
         assert.equal(stopped, ageMs > 30000, `${id}: ${ageMs}`);
@@ -4099,4 +4100,43 @@ test('unacknowledged reduction retains old confirmed current reservation', async
     assert.equal(d.pending.amps, 6);
     assert.ok(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val >= 2530);
     assert.deepEqual(h.writes, []);
+});
+
+for (const unsafe of [false, true]) test(`split grid receipt keeps established charger without commands, unsafe=${unsafe}`, async () => {
+    const h = await telemetryBridgeFixture();
+    h.config.gridPairTimestampMode = 'shared-receipt';
+    h.refresh(); await h.output.tick();
+    const oldExport = {...h.states.get('export')};
+    h.advance(3200); h.states.set('export', oldExport);
+    if (unsafe) h.put('h1', 100);
+    await h.output.tick();
+    if (unsafe) assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+    else {
+        assert.deepEqual(h.writes, []);
+        assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val, /Netzquellen zeitversetzt/);
+        h.advance(1000); h.refresh(); await h.output.tick();
+        assert.equal(h.output.devices[0].fault, '');
+        assert.deepEqual(h.writes, []);
+    }
+});
+
+test('wallbox initialization subscribes before reading and preserves a newer in-flight event', async () => {
+    const h = setup();
+    const {InputStateCache} = require('../lib/input-state-cache');
+    h.adapter.inputStates = new InputStateCache(h.states, new Map());
+    h.adapter.acceptInputState = (...args) => h.adapter.inputStates.accept(...args);
+    const subscribed = new Set();
+    h.adapter.subscribeForeignStatesAsync = async id => subscribed.add(id);
+    h.adapter.getForeignStateAsync = async id => {
+        assert.ok(subscribed.has(id));
+        const before = h.states.get(id);
+        if (id === 'feedback') {
+            h.adapter.acceptInputState(id, {...before, val: 7, ts: Math.max(Date.now(), before.ts + 1)});
+            return {...before, val: 6, ts: Date.now() - 1000};
+        }
+        return before;
+    };
+    await h.output.initialize();
+    assert.equal(h.states.get('feedback').val, 7);
+    assert.equal(h.adapter.inputStates.report().rejected, 1);
 });

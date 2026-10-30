@@ -1351,6 +1351,28 @@
           "md": 6,
           "lg": 6,
           "xl": 6
+        },
+        "gridPairTimestampMode": {
+          "type": "select",
+          "label": "Grid timestamp contract",
+          "help": "Grid timestamp contract help",
+          "default": "publication",
+          "options": [
+            {
+              "value": "publication",
+              "label": "Publication times (maximum 5 s skew)"
+            },
+            {
+              "value": "shared-receipt",
+              "label": "Shared telegram receipt time (exact match)"
+            }
+          ],
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         }
       }
     },

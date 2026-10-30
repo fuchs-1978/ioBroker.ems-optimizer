@@ -588,5 +588,9 @@
   "Devices at a glance": "Appareils en bref",
   "Planning and battery preview": "Plan et aperçu de la batterie",
   "Daily balances": "Bilans quotidiens",
-  "Technical diagnostics": "Diagnostic technique"
+  "Technical diagnostics": "Diagnostic technique",
+  "Grid timestamp contract": "Contrat temporel du réseau",
+  "Grid timestamp contract help": "Réception commune seulement si les deux valeurs portent le même horodatage du télégramme, comme l’adaptateur SMA de test. Publication autorise au plus 5 secondes de décalage sans prouver un télégramme commun. Les anciennes mesures ne sont pas rajeunies.",
+  "Publication times (maximum 5 s skew)": "Publication (décalage maximal 5 s)",
+  "Shared telegram receipt time (exact match)": "Réception commune du télégramme (égalité exacte)"
 }

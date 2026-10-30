@@ -53,7 +53,7 @@ function engine(config = {}) {
     const nativeConfig = {heatPumpPowerId: 'wp', heatPumpPowerUnit: 'kW', heatPumpPowerScope: 'total',
         heatPumpPowerMaxAgeS: 30, par14aLimitW: 4200, ...config};
     const put = (id, val, extra = {}) => states.set(id, sample(val, extra));
-    const context = vm.createContext({Date: Clock, nativeConfig, gridConstraints, heatPumpTelemetryParser,
+    const context = vm.createContext({gridMeasurement: new (require('../lib/grid-measurement').GridMeasurement)(), Date: Clock, nativeConfig, gridConstraints, heatPumpTelemetryParser,
         SMA_GRID_MAX_AGE_MS, getState: id => states.get(id), existsState: id => states.has(id),
         setState: put, log: () => {}});
     for (const name of ['core', 'realtime', 'observer']) vm.runInContext(

@@ -588,5 +588,9 @@
   "Devices at a glance": "Urządzenia w skrócie",
   "Planning and battery preview": "Plan i podgląd baterii",
   "Daily balances": "Bilanse dzienne",
-  "Technical diagnostics": "Diagnostyka techniczna"
+  "Technical diagnostics": "Diagnostyka techniczna",
+  "Grid timestamp contract": "Zasady czasu pomiarów sieci",
+  "Grid timestamp contract help": "Wspólny czas odbioru tylko gdy obie wartości mają ten sam czas telegramu, np. w testowym adapterze SMA. Publikacja dopuszcza do 5 sekund różnicy bez dowodu wspólnego telegramu. Stare pomiary nie są odświeżane.",
+  "Publication times (maximum 5 s skew)": "Czasy publikacji (różnica do 5 s)",
+  "Shared telegram receipt time (exact match)": "Wspólny odbiór telegramu (dokładna zgodność)"
 }

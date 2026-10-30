@@ -184,7 +184,7 @@ test('productive diagnostics never call an armed controller SIMULATION', async (
 
 test('startup copies measured thermal hysteresis without changing live latches', async () => {
     const h = await fixture({heating: true, wallbox: false, surplusW: 9000});
-    const live = vm.createContext({});
+    const live = vm.createContext({gridMeasurement: new (require('../lib/grid-measurement').GridMeasurement)(), });
     vm.runInContext('let dhwTemperatureLock = true; const heatingOutput = {temperatureLock: true};', live);
     h.adapter.engineContext = live;
     h.put('hk.temp', 49); // target50, resume48: retain the established lock

@@ -1219,3 +1219,40 @@ for (const change of ['unchanged sources', 'bad original NVP quality', 'fresh ge
         assert.equal(writes.at(-1).value, 0);
     });
 }
+
+test('subscribed event wins against delayed preload response even with the same ts', async () => {
+    const a = adapter(), id = 'meter.export', ts = Date.now();
+    a.readMapping = () => ({DP_GRID_EXPORT: id});
+    const subscribed = new Set();
+    a.subscribeForeignStatesAsync = async pattern => subscribed.add(pattern);
+    a.getForeignStatesAsync = async pattern => {
+        assert.ok(subscribed.has(pattern), 'subscribe before reading');
+        if (pattern !== id) return {};
+        a.onStateChange(id, {val: 200, ts, ack: true, q: 0});
+        return {[id]: {val: 100, ts, ack: true, q: 0}};
+    };
+    await a.preloadStates();
+    assert.equal(a.getCachedState(id).val, 200);
+    assert.equal(a.getCachedStateReceipt(id).via, 'stateChange');
+});
+test('rejected foreign event does not reach heater proof, listeners or recording', () => {
+    const a = adapter(), id = 'meter.import', ts = Date.now(), calls = [];
+    a.heaterWriteProof.observe = () => calls.push('proof');
+    a.runShadow = () => {calls.push('shadow'); return false;};
+    a.runDebug = () => {calls.push('debug'); return false;};
+    a.listeners.push({ids: new Set([id]), change: 'any', callback: () => calls.push('listener')});
+    a.onStateChange(id, {val: 100, ts, ack: true}); calls.length = 0;
+    a.onStateChange(id, {val: 200, ts: ts - 1000, ack: true});
+    assert.equal(a.getCachedState(id).val, 100); assert.deepEqual(calls, []);
+    a.onStateChange(id, {val: 200, ts, ack: true}); assert.ok(calls.includes('listener'));
+});
+
+test('bad or missing source timestamps never produce a fresh grid pair after cache admission', () => {
+    for (const ts of [undefined, null, 0, NaN, '123', Date.now() + 10000]) {
+        const a = adapter(), now = Date.now();
+        a.onStateChange('import', {val: 0, ack: true, ts});
+        a.onStateChange('export', {val: 9000, ack: true, ts: now});
+        const pair = a.gridMeasurement.read(id => a.getCachedState(id), 'import', 'export', now);
+        assert.equal(pair.valid, false);
+    }
+});

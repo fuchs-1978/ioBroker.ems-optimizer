@@ -588,5 +588,9 @@
   "Devices at a glance": "Apparaten in één oogopslag",
   "Planning and battery preview": "Planning en batterijvoorbeeld",
   "Daily balances": "Dagbalansen",
-  "Technical diagnostics": "Technische diagnose"
+  "Technical diagnostics": "Technische diagnose",
+  "Grid timestamp contract": "Tijdstempelafspraak voor netmetingen",
+  "Grid timestamp contract help": "Gebruik gezamenlijke ontvangsttijd alleen als beide waarden hetzelfde telegramtijdstempel hebben, zoals de SMA-testadapter. Publicatietijden staan maximaal 5 seconden verschil toe en bewijzen geen gezamenlijk telegram. Oude metingen worden niet vernieuwd.",
+  "Publication times (maximum 5 s skew)": "Publicatietijden (maximaal 5 s verschil)",
+  "Shared telegram receipt time (exact match)": "Gezamenlijke telegramontvangst (exact gelijk)"
 }

@@ -52,7 +52,7 @@ export default [
             historySourceEnabled: 'readonly', historyQueryAllowed: 'readonly',
             readHeaterWriteProof: 'readonly', readHeaterWriteStatus: 'readonly',
             vehicleSocEstimator: 'readonly', wallboxAllocationPolicy: 'readonly', gridConstraints: 'readonly',
-            gridOperatorRuntime: 'readonly', batteryTemperatureReserve: 'readonly', sunEnergyHeads: 'readonly',
+            gridMeasurement: 'readonly', gridOperatorRuntime: 'readonly', batteryTemperatureReserve: 'readonly', sunEnergyHeads: 'readonly',
             heatPumpTelemetryParser: 'readonly', SMA_GRID_MAX_AGE_MS: 'readonly'
             , getSourceUnit: 'readonly', getHeaterWriteOnlyZeroStatus: 'readonly', getActualState: 'readonly',
             historyRetryAllowed: 'readonly', shadowElectricalResponseValid: 'readonly', normalizeWallboxPowerKW: 'readonly'

@@ -236,6 +236,10 @@ async function worker(tree, fixed) {
             getState: key => states.get(key), existsState: key => states.has(key)});
         const observed = JSON.parse(JSON.stringify(vm.runInContext(
             '({id:CFG.dp.gridImport,measurement:realtimeGridMeasurement()})', context)));
+        // Compare the historical public decision fields. alpha.170 adds
+        // separately tested source-time/hold diagnostics, not a new grid value.
+        const {valid, gridW, invalid} = observed.measurement;
+        observed.measurement = {valid, gridW, invalid};
         const changed = id.includes('$');
         if (!changed || fixed) {
             assert.equal(observed.id, id);
