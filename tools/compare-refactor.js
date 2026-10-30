@@ -58,6 +58,30 @@ async function worker(tree) {
             assert.equal(pinned.split(anchor).length, 2);
             pinned = pinned.replace(anchor, anchor + "\n        configDef(`${r}.Vehicles.Wallbox${wb}.MobilityReserve_pct`, 0, 'number', 'level', '%', `Mobilitaetsreserve Wallbox ${wb}; 0 deaktiviert; aktuell Strategie-Vorschau, keine produktive Sofortladefreigabe`);");
         }
+        // alpha.171 adds five initially inactive SoC command/diagnostic slots
+        // per vehicle. Define exactly the same slots in the immutable fixture;
+        // keep every event and checkpoint in the comparison, including their
+        // initial values. Manual-correction behavior is tested separately.
+        if (String(filename).endsWith('/core.js') && !pinned.includes('SoCCorrection_pct')) {
+            const anchor = "        stateDef(`${r}.Vehicles.Wallbox${wb}.SocEstimateLedger_JSON`, '', 'string', 'json', '', 'Persistente SoC-Schaetzbasis');";
+            assert.equal(pinned.split(anchor).length, 2);
+            pinned = pinned.replace(anchor, [
+                "        configDef(`${r}.Vehicles.Wallbox${wb}.SoCCorrection_pct`, -1, 'number', 'level', '%', 'SoC einmalig korrigieren (0-100); -1 hebt Korrektur auf');",
+                "        stateDef(`${r}.Vehicles.Wallbox${wb}.SoCWarning`, false, 'boolean', 'indicator.alarm', '', 'Fahrzeug-SoC auf Plausibilitaet pruefen');",
+                "        stateDef(`${r}.Vehicles.Wallbox${wb}.SoCWarningText`, '', 'string', 'text', '', 'Hinweis zur manuellen SoC-Pruefung');",
+                "        stateDef(`${r}.Vehicles.Wallbox${wb}.SoCCorrectionStatus`, '', 'string', 'text', '', 'Ergebnis der manuellen SoC-Korrektur');",
+                "        stateDef(`${r}.Vehicles.Wallbox${wb}.SoCCorrectionActive`, false, 'boolean', 'indicator', '', 'Manuelle SoC-Basis gespeichert; Status auf Gueltigkeit pruefen');",
+                anchor
+            ].join('\n'));
+        }
+        // The startup-order fixture records bootstrap source text without
+        // executing it. Align the new command subscriptions there too; no
+        // correction commands are injected into historical control scenarios.
+        if (String(filename).endsWith('/bootstrap.js') && !pinned.includes('SoCCorrection_pct')) {
+            pinned += "\n[0, 1, 2].forEach(wb => {\n"
+                + "    on({id: `${CFG.root}.Vehicles.Wallbox${wb}.SoCCorrection_pct`, change: 'any'},\n"
+                + "        ({state}) => applyVehicleSocCorrection(wb, state));\n});\n";
+        }
         // alpha.155 represents an unknown initial vehicle SoC as null. Align
         // only the object default; observed reports and all control writes
         // still come from the respective production tree.

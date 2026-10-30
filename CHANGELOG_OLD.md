@@ -2529,3 +2529,7 @@ Node.js 22/24/26 pruefen, Mindestversionen von adapter-core/testing aktualisiere
 ### 0.17.0-alpha.150
 
 Load SQL learning history incrementally in daily chunks; resume completed chunks and retry background failures without overlapping unresolved queries.
+
+### 0.17.0-alpha.164
+
+Add read-only departure feasibility, configuration conflicts, bounded transition/response analysis, regulation metrics, empirical forecast bands and a general offline version replay. Offer recent-weighted load profiles as an opt-in; retain compatible defaults and explicit unknowns.

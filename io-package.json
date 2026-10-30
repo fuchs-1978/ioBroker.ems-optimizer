@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.170",
+    "version": "0.17.0-alpha.171",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.171": {
+        "en": "Add live persistent manual vehicle SoC corrections protected against repeated cloud values; suspend after session or counter discontinuity.",
+        "de": "Manuelle Fahrzeug-SoC-Korrektur ohne Neustart, persistent und gegen wiederholte Cloud-Werte geschuetzt; bei Sitzungs- oder Zaehlerunterbrechung aussetzen.",
+        "es": "Corrección manual persistente del SoC sin reinicio, protegida contra valores antiguos de la nube; advertencia de discrepancias y suspensión si se interrumpe la sesión o el contador.",
+        "fr": "Correction manuelle persistante du SoC sans redémarrage, protégée des anciennes valeurs cloud ; alerte de divergence et suspension en cas de rupture de session ou de compteur.",
+        "it": "Correzione manuale persistente del SoC senza riavvio, protetta dai vecchi dati cloud; avviso di discrepanza e sospensione dopo interruzioni di sessione o contatore.",
+        "nl": "Blijvende handmatige SoC-correctie zonder herstart, beschermd tegen oude cloudwaarden; waarschuwing bij afwijkingen en opschorting bij sessie- of telleronderbreking.",
+        "pl": "Trwała ręczna korekta SoC bez restartu, chroniona przed starymi danymi chmurowymi; ostrzeżenie o rozbieżności i zawieszenie po przerwaniu sesji lub licznika.",
+        "pt": "Correção manual persistente de SoC sem reinício, protegida contra dados antigos da nuvem; aviso de divergência e suspensão após interrupção da sessão ou contador.",
+        "ru": "Постоянная ручная коррекция SoC без перезапуска с защитой от старых облачных данных; предупреждение о расхождении и приостановка при разрыве сессии или счётчика.",
+        "uk": "Збережена ручна корекція SoC без перезапуску із захистом від старих хмарних даних; попередження про розбіжність і призупинення при розриві сесії чи лічильника.",
+        "zh-cn": "新增无需重启的持久化手动车辆电量校正，防止旧云端数据覆盖；差异警告，并在会话或电量计数中断后暂停估算。"
+      },
       "0.17.0-alpha.170": {
         "en": "Reject older foreign source timestamps and superseded asynchronous reads. Validate grid import/export time coherence, retain bounded conservative no-write continuity, and expose bounded input diagnostics without refreshing old samples.",
         "de": "Ältere fremde Zeitstempel und überholte asynchrone Lesungen verwerfen. Zeitbezug von Netzbezug/Einspeisung prüfen, begrenzte konservative Fortsetzung ohne neue Befehle erhalten und Eingangsdiagnosen anzeigen; alte Werte nicht auffrischen.",
@@ -81,19 +94,6 @@
         "ru": "Подготовлена стратегия аккумулятора только для чтения: ступенчатые цели, приоритет минимумов автомобилей и оценка ночного дефицита. Нужны свежие ограничения устройства; без изменения управления и включения оборудования.",
         "uk": "Підготовлено стратегію батареї лише для читання: поетапні цілі, пріоритет мінімумів автомобілів та оцінка нічного дефіциту. Потрібні свіжі межі пристрою; без зміни керування й активації обладнання.",
         "zh-cn": "准备只读分阶段电池策略：在计划电量附近缓冲，优先满足车辆最低电量，限制车辆供能并估计夜间能源缺口。需要最新设备限制；不更改生产调节或启用硬件。"
-      },
-      "0.17.0-alpha.164": {
-        "en": "Add read-only departure feasibility, configuration conflicts, bounded transition/response analysis, regulation metrics, empirical forecast bands and a general offline version replay. Offer recent-weighted load profiles as an opt-in; retain compatible defaults and explicit unknowns.",
-        "de": "Lesende Abfahrts-Machbarkeit, Konfigurationskonflikte, begrenzte Übergangs-/Reaktionsauswertung, Regelgüte, empirische Prognosebereiche und allgemeinen Offline-Versionsvergleich ergänzen. Aktuell gewichtete Lastprofile optional; kompatible Vorgaben und Unbekannt-Zustände erhalten.",
-        "es": "Añade viabilidad de salida, conflictos de configuración, análisis acotado de transiciones, métricas de regulación, bandas empíricas de previsión y comparación de versiones sin conexión. Perfiles recientes ponderados opcionales; mantiene valores compatibles y datos desconocidos.",
-        "fr": "Ajoute faisabilité au départ, conflits de configuration, analyse bornée des transitions, qualité de régulation, intervalles empiriques et comparaison hors ligne. Profils récents pondérés facultatifs ; valeurs compatibles et inconnues conservées.",
-        "it": "Aggiunge fattibilità alla partenza, conflitti di configurazione, analisi limitata delle transizioni, qualità della regolazione, intervalli empirici e confronto offline. Profili recenti ponderati opzionali; conserva impostazioni compatibili e dati sconosciuti.",
-        "nl": "Voegt vertrekhaalbaarheid, configuratieconflicten, begrensde overgangsanalyse, regelkwaliteit, empirische prognosebanden en offline versievergelijking toe. Recent gewogen profielen zijn optioneel; compatibele standaard en onbekende waarden blijven behouden.",
-        "pl": "Dodaje ocenę celów odjazdu, konflikty konfiguracji, ograniczoną analizę przejść, jakość regulacji, empiryczne przedziały prognozy i porównanie wersji offline. Opcjonalne profile ważone aktualnością; zachowuje zgodne ustawienia i nieznane dane.",
-        "pt": "Adiciona viabilidade de partida, conflitos de configuração, análise limitada de transições, qualidade de regulação, intervalos empíricos e comparação offline. Perfis recentes ponderados opcionais; mantém predefinições compatíveis e dados desconhecidos.",
-        "ru": "Добавлены достижимость целей к отъезду, конфликты настроек, ограниченный анализ переходов, качество регулирования, эмпирические интервалы и автономное сравнение версий. Взвешенные по давности профили включаются отдельно; совместимые настройки и неизвестные данные сохранены.",
-        "uk": "Додано досяжність цілей до від’їзду, конфлікти налаштувань, обмежений аналіз переходів, якість регулювання, емпіричні інтервали й автономне порівняння версій. Зважені за давністю профілі вмикаються окремо; сумісні налаштування й невідомі дані збережено.",
-        "zh-cn": "增加只读出发目标可行性、配置冲突、有界转换分析、调节质量、经验预测区间和离线版本比较。近期加权负载曲线需主动选择；保留兼容默认设置和未知状态。"
       }
     },
     "titleLang": {
