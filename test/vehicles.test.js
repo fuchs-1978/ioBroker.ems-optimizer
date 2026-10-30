@@ -1586,3 +1586,20 @@ test('confirmed unplug clears correction, acknowledges -1 and does not reapply i
     assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.SoCCorrection_pct').val, -1);
     assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.SoC_pct').val, 65);
 });
+
+test('priority calculations carrying an older cycle time preserve the newer manual SoC ledger', () => {
+    let now = 1800000000000;
+    const h = engine({wb0SocEstimationEnabled: true, wb0CapacityKWh: 32.3,
+        wb0SocEfficiencyPct: 90}, class extends Date { static now() { return now; } });
+    h.run("requestForecastRebuild = () => {}; CFG.dp.wallboxSocMeasuredAt[0] = ''");
+    h.put('DP_WB0_SOC', 65); h.put('DP_WB0_SOC_ENERGY', 10); h.put('DP_WB0_TARGET', 100);
+    h.run('updateVehicles()');
+    h.run(`applyVehicleSocCorrection(0, {val:94, ack:false, ts:${now}, q:0})`);
+    const cycleAt = now;
+    now += 2; h.run('updateVehicles()');
+    const before = h.states.get('ems.0.Vehicles.Wallbox0.SocEstimateLedger_JSON').val;
+    const r = h.run(`vehicleSocSample(0, ${cycleAt})`);
+    assert.equal(r.value, 94); assert.equal(r.manual, true);
+    assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.SocEstimateLedger_JSON').val, before);
+    assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.SoCCorrectionActive').val, true);
+});
