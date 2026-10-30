@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.175",
+    "version": "0.17.0-alpha.176",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.176": {
+        "en": "Add an opt-in day-ahead Median/Lasso comparison using cleaned load, calendar lags and SQL outside temperature. Persist forecasts before delivery and score paired measurements; production planning is unchanged.",
+        "de": "Optionaler Folgetagsvergleich Median/Lasso mit bereinigter Last, Kalenderrueckblicken und SQL-Aussentemperatur. Prognosen vorab speichern und mit denselben Messwerten bewerten; produktive Planung bleibt unveraendert.",
+        "es": "Comparación opcional Mediana/Lasso para el día siguiente con carga depurada, retardos y temperatura SQL. Guarda previsiones por adelantado y evalúa mediciones emparejadas; planificación sin cambios.",
+        "fr": "Comparaison optionnelle Médiane/Lasso pour le lendemain avec charge corrigée, retards calendaires et température SQL. Prévisions enregistrées à l’avance et mesures appariées ; planification inchangée.",
+        "it": "Confronto opzionale Mediana/Lasso per domani con carico depurato, ritardi e temperatura SQL. Salva previsioni in anticipo e valuta misure abbinate; pianificazione invariata.",
+        "nl": "Optionele Mediaan/Lasso-vergelijking voor morgen met opgeschoonde last, kalendervertragingen en SQL-buitentemperatuur. Vooraf opgeslagen prognoses en gepaarde metingen; planning ongewijzigd.",
+        "pl": "Opcjonalne porównanie Mediana/Lasso na następny dzień z oczyszczoną mocą, opóźnieniami i temperaturą SQL. Zapis prognoz z wyprzedzeniem i ocena par pomiarów; planowanie bez zmian.",
+        "pt": "Comparação opcional Mediana/Lasso para amanhã com carga corrigida, atrasos e temperatura SQL. Previsões guardadas antecipadamente e medições emparelhadas; planeamento inalterado.",
+        "ru": "Добавлено сравнение Медиана/Lasso на завтра с очищенной нагрузкой, календарными лагами и температурой SQL. Прогнозы сохраняются заранее и оцениваются по общим измерениям; планирование без изменений.",
+        "uk": "Додано порівняння Медіана/Lasso на завтра з очищеним навантаженням, календарними лагами й температурою SQL. Прогнози зберігаються заздалегідь і оцінюються за спільними вимірюваннями; планування без змін.",
+        "zh-cn": "新增可选的次日中位数/Lasso比较，使用清理后的负载、日历滞后和SQL室外温度。提前保存预测并按配对实测数据评估，生产调度不变。"
+      },
       "0.17.0-alpha.175": {
         "en": "Recover fast wallbox handoff qualification after a brief source outage only for the same witnessed charging episode with fresh stable electrical evidence. Preserve OFF, quiet-load and budget checks.",
         "de": "Schnelle Wallbox-Uebergabe nach kurzer Quellenstoerung fuer dieselbe beobachtete Ladung mit frischen stabilen Messwerten wieder freigeben. Ausschalt-, Lastfreiheits- und Budgetpruefungen bleiben erhalten.",
@@ -81,19 +94,6 @@
         "ru": "Отклоняет старые метки источников и устаревшие асинхронные чтения. Проверяет согласованность импорта/экспорта, сохраняет ограниченное безопасное удержание без команд и диагностику без искусственного обновления старых данных.",
         "uk": "Відхиляє старі позначки джерел і застарілі асинхронні читання. Перевіряє узгодженість імпорту/експорту, зберігає обмежене безпечне утримання без команд і діагностику без штучного оновлення старих даних.",
         "zh-cn": "拒绝较旧的外部源时间戳和已被事件取代的异步读取。检查电网输入与输出的时间一致性，在限时保守保持期间不发送新命令，提供有限诊断且不人为刷新旧数据。"
-      },
-      "0.17.0-alpha.169": {
-        "en": "Keep established charging through a missing follow-up current ACK only with fresh independent grid protection and conservative worst-case power reservations. No new commands; starts, phase changes and unsafe or unknown conditions retain stop protection.",
-        "de": "Laufende Ladung bei fehlendem Folge-Strom-ACK nur mit frischem unabhängigen Netzschutz und konservativer Leistungsreserve halten. Keine neuen Befehle; Starts, Phasenwechsel sowie unsichere oder unbekannte Bedingungen bleiben geschützt.",
-        "es": "Mantiene una carga establecida sin ACK de un cambio de corriente solo con protección de red independiente y actual y reserva conservadora. Sin nuevos comandos; se mantienen las protecciones de arranque, fases y condiciones inseguras.",
-        "fr": "Maintient une charge établie sans ACK du changement de courant uniquement avec protection réseau indépendante et récente et réserve prudente. Aucune nouvelle commande ; protections de démarrage, phases et conditions dangereuses conservées.",
-        "it": "Mantiene la ricarica avviata senza ACK del nuovo limite solo con protezione di rete indipendente aggiornata e riserva prudente. Nessun nuovo comando; restano le protezioni di avvio, fasi e condizioni non sicure.",
-        "nl": "Behoudt lopend laden zonder ACK van een stroomwijziging alleen met actuele onafhankelijke netbeveiliging en conservatieve reserve. Geen nieuwe opdrachten; start-, fase- en veiligheidsbeveiligingen blijven.",
-        "pl": "Utrzymuje trwające ładowanie bez ACK zmiany prądu tylko przy aktualnej niezależnej ochronie sieci i ostrożnej rezerwie mocy. Bez nowych poleceń; zabezpieczenia startu, faz i niebezpiecznych warunków pozostają.",
-        "pt": "Mantém a carga estabelecida sem ACK da alteração de corrente apenas com proteção de rede independente atual e reserva conservadora. Sem novos comandos; mantém proteções de arranque, fases e condições inseguras.",
-        "ru": "Сохраняет текущую зарядку без ACK изменения тока только при свежей независимой защите сети и консервативном резерве мощности. Без новых команд; защиты запуска, переключения фаз и опасных условий сохранены.",
-        "uk": "Зберігає поточне заряджання без ACK зміни струму лише за свіжого незалежного захисту мережі та консервативного резерву потужності. Без нових команд; захист запуску, фаз і небезпечних умов збережено.",
-        "zh-cn": "仅在独立电网保护数据新鲜且保留最坏情况功率裕量时，在后续电流命令缺少确认的情况下保持现有充电。不发送新命令；保留启动、相位切换和不安全或未知条件下的停机保护。"
       }
     },
     "titleLang": {
@@ -738,7 +738,9 @@
     "wallboxResponseCurrentToleranceA": 1.5,
     "sourcePowerHistoryEnabled": true,
     "historyProfileMethod": "median",
-    "gridPairTimestampMode": "publication"
+    "gridPairTimestampMode": "publication",
+    "loadComparisonEnabled": false,
+    "loadComparisonTemperature": true
   },
   "objects": [],
   "instanceObjects": [

@@ -592,5 +592,11 @@
   "Grid timestamp contract": "Tijdstempelafspraak voor netmetingen",
   "Grid timestamp contract help": "Gebruik gezamenlijke ontvangsttijd alleen als beide waarden hetzelfde telegramtijdstempel hebben, zoals de SMA-testadapter. Publicatietijden staan maximaal 5 seconden verschil toe en bewijzen geen gezamenlijk telegram. Oude metingen worden niet vernieuwd.",
   "Publication times (maximum 5 s skew)": "Publicatietijden (maximaal 5 s verschil)",
-  "Shared telegram receipt time (exact match)": "Gezamenlijke telegramontvangst (exact gelijk)"
+  "Shared telegram receipt time (exact match)": "Gezamenlijke telegramontvangst (exact gelijk)",
+  "Enable Median / Lasso forecast comparison": "Prognosevergelijking Mediaan / Lasso inschakelen",
+  "Observation only: issue tomorrow once, retain predictions across restarts and compare with cleaned SQL baseload. Production planning keeps its selected profile. Training needs at least 28 usable days after lag alignment; results follow completed days. No brightness feature yet.": "Alleen observatie: slaat eenmaal een prognose voor morgen op, behoudt die na herstart en vergelijkt met de opgeschoonde SQL-basislast. Planning behoudt het gekozen profiel. Minstens 28 bruikbare dagen na vertragingstoewijzing nodig. Resultaten na volledige dagen. Nog geen helderheidskenmerk.",
+  "Include outside temperature in Lasso comparison": "Buitentemperatuur opnemen in Lasso-vergelijking",
+  "Uses the configured outside temperature source in SQL for training and fresh Open-Meteo forecasts for tomorrow. Missing history or forecast slots prevent a complete comparison; no fabricated temperatures. Adds one historical source only while comparison is enabled.": "Leert met de ingestelde SQL-buitentemperatuur en actuele Open-Meteo-prognoses voor morgen. Ontbrekende gegevens verhinderen een volledige vergelijking. Alleen bij actieve vergelijking één extra historische bron.",
+  "Median / Lasso comparison status": "Status vergelijking Mediaan / Lasso",
+  "Median / Lasso measured comparison": "Gemeten vergelijking Mediaan / Lasso"
 }

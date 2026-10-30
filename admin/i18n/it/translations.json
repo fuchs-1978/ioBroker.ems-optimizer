@@ -592,5 +592,11 @@
   "Grid timestamp contract": "Contratto temporale della rete",
   "Grid timestamp contract help": "Ricezione comune solo se entrambi i valori hanno lo stesso timestamp del telegramma, come nell’adattatore SMA di prova. La pubblicazione ammette al massimo 5 secondi di scarto senza provare un telegramma comune. I dati vecchi non diventano nuovi.",
   "Publication times (maximum 5 s skew)": "Pubblicazione (scarto massimo 5 s)",
-  "Shared telegram receipt time (exact match)": "Ricezione comune del telegramma (uguaglianza esatta)"
+  "Shared telegram receipt time (exact match)": "Ricezione comune del telegramma (uguaglianza esatta)",
+  "Enable Median / Lasso forecast comparison": "Attiva confronto previsioni Mediana / Lasso",
+  "Observation only: issue tomorrow once, retain predictions across restarts and compare with cleaned SQL baseload. Production planning keeps its selected profile. Training needs at least 28 usable days after lag alignment; results follow completed days. No brightness feature yet.": "Solo osservazione: salva una previsione per domani anche dopo riavvii e la confronta con il carico base SQL depurato. La pianificazione mantiene il profilo scelto. Servono almeno 28 giorni utilizzabili con ritardi. Risultati dopo giorni completi. Senza luminosità.",
+  "Include outside temperature in Lasso comparison": "Includi temperatura esterna nel confronto Lasso",
+  "Uses the configured outside temperature source in SQL for training and fresh Open-Meteo forecasts for tomorrow. Missing history or forecast slots prevent a complete comparison; no fabricated temperatures. Adds one historical source only while comparison is enabled.": "Apprende dalla temperatura esterna configurata in SQL e usa previsioni Open-Meteo recenti per domani. I dati mancanti impediscono un confronto completo. Aggiunge una fonte storica solo con il confronto attivo.",
+  "Median / Lasso comparison status": "Stato confronto Mediana / Lasso",
+  "Median / Lasso measured comparison": "Confronto misurato Mediana / Lasso"
 }

@@ -1031,6 +1031,7 @@ class EmsOptimizer extends utils.Adapter {
                 return adapter.foreignWriteQueues.has(id) && status.status !== 'blocked'
                     ? {...status, status: 'pending', reason: 'output-queue-pending'} : status;
             },
+            loadComparisonAllowed() { return !adapter.unloading; },
             async historySourceEnabled(id, instance) {
                 const object = await adapter.getForeignObjectAsync(id);
                 return object?.type === 'state' && object.common?.custom?.[instance]?.enabled === true;

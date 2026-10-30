@@ -74,6 +74,27 @@ async function worker(tree) {
                 anchor
             ].join('\n'));
         }
+        // alpha.176 adds seven passive comparison objects. Give the immutable
+        // fixture their exact disabled defaults; all production and diagnostic
+        // events still remain in the ordered trace. Enabled behavior has its
+        // own comparison tests and cannot feed the production plan.
+        if (String(filename).endsWith('/core.js') && !pinned.includes('Forecast.LoadComparison.Ready')) {
+            const anchor = "    stateDef(`${r}.Forecast.PV_48h_JSON`";
+            assert.equal(pinned.split(anchor).length, 2);
+            const current = readSource(path.join(root, 'lib/engine/core.js'), 'utf8');
+            const start = current.indexOf('    stateDef(`${r}.Forecast.LoadComparison.Ready`');
+            const end = current.indexOf(anchor, start);
+            assert.ok(start >= 0 && end > start);
+            pinned = pinned.replace(anchor, current.slice(start, end) + anchor);
+        }
+        if (String(filename).endsWith('/bootstrap.js') && !pinned.includes('Forecast.LoadComparison.Ready')) {
+            const current = readSource(path.join(root, 'lib/engine/bootstrap.js'), 'utf8');
+            const start = current.indexOf('// Comparison readiness');
+            const end = current.indexOf('// Rebuild all vehicle', start);
+            assert.ok(start >= 0 && end > start);
+            const insert = pinned.indexOf('\n\n') + 2;
+            pinned = pinned.slice(0, insert) + current.slice(start, end) + pinned.slice(insert);
+        }
         // The startup-order fixture records bootstrap source text without
         // executing it. Align the new command subscriptions there too; no
         // correction commands are injected into historical control scenarios.

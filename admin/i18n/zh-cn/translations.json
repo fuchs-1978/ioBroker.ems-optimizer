@@ -592,5 +592,11 @@
   "Grid timestamp contract": "电网时间戳约定",
   "Grid timestamp contract help": "仅当两个电网值携带相同的电报接收时间戳时，才使用共同接收时间，例如 SMA 测试适配器。发布时间允许最多 5 秒偏差，但不能证明来自同一电报。不会人为刷新旧测量值。",
   "Publication times (maximum 5 s skew)": "发布时间（最大偏差 5 秒）",
-  "Shared telegram receipt time (exact match)": "共同电报接收时间（完全匹配）"
+  "Shared telegram receipt time (exact match)": "共同电报接收时间（完全匹配）",
+  "Enable Median / Lasso forecast comparison": "启用中位数 / Lasso 预测比较",
+  "Observation only: issue tomorrow once, retain predictions across restarts and compare with cleaned SQL baseload. Production planning keeps its selected profile. Training needs at least 28 usable days after lag alignment; results follow completed days. No brightness feature yet.": "仅供观察：保存一次明日预测，重启后保留，并与清理后的 SQL 基础负载比较。调度仍使用所选曲线。滞后对齐后至少需要28个可用日，完整日结束后评估。尚无亮度特征。",
+  "Include outside temperature in Lasso comparison": "在 Lasso 比较中包含室外温度",
+  "Uses the configured outside temperature source in SQL for training and fresh Open-Meteo forecasts for tomorrow. Missing history or forecast slots prevent a complete comparison; no fabricated temperatures. Adds one historical source only while comparison is enabled.": "使用已配置的 SQL 室外温度训练，并使用最新 Open-Meteo 明日预报。缺失数据会阻止完整比较，不虚构温度。仅启用比较时增加一个历史数据源。",
+  "Median / Lasso comparison status": "中位数 / Lasso 比较状态",
+  "Median / Lasso measured comparison": "中位数 / Lasso 实测比较"
 }

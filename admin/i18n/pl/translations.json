@@ -592,5 +592,11 @@
   "Grid timestamp contract": "Zasady czasu pomiarów sieci",
   "Grid timestamp contract help": "Wspólny czas odbioru tylko gdy obie wartości mają ten sam czas telegramu, np. w testowym adapterze SMA. Publikacja dopuszcza do 5 sekund różnicy bez dowodu wspólnego telegramu. Stare pomiary nie są odświeżane.",
   "Publication times (maximum 5 s skew)": "Czasy publikacji (różnica do 5 s)",
-  "Shared telegram receipt time (exact match)": "Wspólny odbiór telegramu (dokładna zgodność)"
+  "Shared telegram receipt time (exact match)": "Wspólny odbiór telegramu (dokładna zgodność)",
+  "Enable Median / Lasso forecast comparison": "Włącz porównanie prognoz Mediana / Lasso",
+  "Observation only: issue tomorrow once, retain predictions across restarts and compare with cleaned SQL baseload. Production planning keeps its selected profile. Training needs at least 28 usable days after lag alignment; results follow completed days. No brightness feature yet.": "Tylko obserwacja: zapisuje prognozę na jutro, zachowuje ją po restarcie i porównuje z oczyszczonym obciążeniem bazowym SQL. Planowanie zachowuje wybrany profil. Wymagane 28 użytecznych dni po dopasowaniu opóźnień. Wyniki po pełnych dniach. Bez jasności.",
+  "Include outside temperature in Lasso comparison": "Uwzględnij temperaturę zewnętrzną w porównaniu Lasso",
+  "Uses the configured outside temperature source in SQL for training and fresh Open-Meteo forecasts for tomorrow. Missing history or forecast slots prevent a complete comparison; no fabricated temperatures. Adds one historical source only while comparison is enabled.": "Uczy się z temperatury zewnętrznej zapisanej w SQL i używa aktualnych prognoz Open-Meteo na jutro. Braki danych uniemożliwiają pełne porównanie. Jedno dodatkowe źródło historii tylko przy aktywnym porównaniu.",
+  "Median / Lasso comparison status": "Stan porównania Mediana / Lasso",
+  "Median / Lasso measured comparison": "Porównanie z pomiarami Mediana / Lasso"
 }

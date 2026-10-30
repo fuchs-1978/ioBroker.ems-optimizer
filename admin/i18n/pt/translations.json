@@ -592,5 +592,11 @@
   "Grid timestamp contract": "Contrato temporal da rede",
   "Grid timestamp contract help": "Receção comum apenas quando ambos os valores têm a mesma hora do telegrama, como no adaptador SMA de teste. Publicação permite até 5 segundos de diferença sem provar um telegrama comum. Não renova medições antigas.",
   "Publication times (maximum 5 s skew)": "Publicação (diferença máxima 5 s)",
-  "Shared telegram receipt time (exact match)": "Receção comum do telegrama (igualdade exata)"
+  "Shared telegram receipt time (exact match)": "Receção comum do telegrama (igualdade exata)",
+  "Enable Median / Lasso forecast comparison": "Ativar comparação de previsões Mediana / Lasso",
+  "Observation only: issue tomorrow once, retain predictions across restarts and compare with cleaned SQL baseload. Production planning keeps its selected profile. Training needs at least 28 usable days after lag alignment; results follow completed days. No brightness feature yet.": "Apenas observação: guarda uma previsão para amanhã, preserva após reinício e compara com a carga base SQL corrigida. O planeamento mantém o perfil escolhido. Exige 28 dias utilizáveis após alinhamento dos atrasos. Resultados após dias completos. Sem luminosidade.",
+  "Include outside temperature in Lasso comparison": "Incluir temperatura exterior na comparação Lasso",
+  "Uses the configured outside temperature source in SQL for training and fresh Open-Meteo forecasts for tomorrow. Missing history or forecast slots prevent a complete comparison; no fabricated temperatures. Adds one historical source only while comparison is enabled.": "Aprende com a temperatura exterior configurada em SQL e utiliza previsões Open-Meteo recentes para amanhã. Dados ausentes impedem uma comparação completa. Uma fonte histórica adicional apenas com o comparador ativo.",
+  "Median / Lasso comparison status": "Estado da comparação Mediana / Lasso",
+  "Median / Lasso measured comparison": "Comparação medida Mediana / Lasso"
 }

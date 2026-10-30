@@ -592,5 +592,11 @@
   "Grid timestamp contract": "Grid timestamp contract",
   "Grid timestamp contract help": "Use shared receipt time only when both grid states carry the same telegram receipt timestamp, for example the SMA test adapter. Otherwise publication times permit at most 5 seconds skew; this does not prove a common telegram. Neither mode refreshes old samples.",
   "Publication times (maximum 5 s skew)": "Publication times (maximum 5 s skew)",
-  "Shared telegram receipt time (exact match)": "Shared telegram receipt time (exact match)"
+  "Shared telegram receipt time (exact match)": "Shared telegram receipt time (exact match)",
+  "Enable Median / Lasso forecast comparison": "Enable Median / Lasso forecast comparison",
+  "Observation only: issue tomorrow once, retain predictions across restarts and compare with cleaned SQL baseload. Production planning keeps its selected profile. Training needs at least 28 usable days after lag alignment; results follow completed days. No brightness feature yet.": "Observation only: issue tomorrow once, retain predictions across restarts and compare with cleaned SQL baseload. Production planning keeps its selected profile. Training needs at least 28 usable days after lag alignment; results follow completed days. No brightness feature yet.",
+  "Include outside temperature in Lasso comparison": "Include outside temperature in Lasso comparison",
+  "Uses the configured outside temperature source in SQL for training and fresh Open-Meteo forecasts for tomorrow. Missing history or forecast slots prevent a complete comparison; no fabricated temperatures. Adds one historical source only while comparison is enabled.": "Uses the configured outside temperature source in SQL for training and fresh Open-Meteo forecasts for tomorrow. Missing history or forecast slots prevent a complete comparison; no fabricated temperatures. Adds one historical source only while comparison is enabled.",
+  "Median / Lasso comparison status": "Median / Lasso comparison status",
+  "Median / Lasso measured comparison": "Median / Lasso measured comparison"
 }

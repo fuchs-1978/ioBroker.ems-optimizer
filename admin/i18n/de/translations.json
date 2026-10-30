@@ -592,5 +592,11 @@
   "Grid timestamp contract": "Zeitstempelvertrag der Netzquelle",
   "Grid timestamp contract help": "Gemeinsame Empfangszeit nur verwenden, wenn beide Netzwerte denselben Telegramm-Empfangszeitstempel tragen, etwa beim SMA-Testadapter. Sonst sind Veröffentlichungszeiten mit höchstens 5 Sekunden Versatz erlaubt; das beweist kein gemeinsames Telegramm. Alte Messwerte werden nicht aufgefrischt.",
   "Publication times (maximum 5 s skew)": "Veröffentlichungszeiten (höchstens 5 s Versatz)",
-  "Shared telegram receipt time (exact match)": "Gemeinsame Telegramm-Empfangszeit (exakt gleich)"
+  "Shared telegram receipt time (exact match)": "Gemeinsame Telegramm-Empfangszeit (exakt gleich)",
+  "Enable Median / Lasso forecast comparison": "Prognosevergleich Median / Lasso aktivieren",
+  "Observation only: issue tomorrow once, retain predictions across restarts and compare with cleaned SQL baseload. Production planning keeps its selected profile. Training needs at least 28 usable days after lag alignment; results follow completed days. No brightness feature yet.": "Nur Beobachtung: Morgenprognose einmalig speichern, bei Neustart erhalten und mit bereinigter SQL-Grundlast vergleichen. Die Planung behaelt ihr gewaehltes Profil. Mindestens 28 nutzbare Tage nach Zuordnung der Rueckblicke erforderlich; Ergebnisse nach abgeschlossenen Tagen. Noch kein Helligkeitsmerkmal.",
+  "Include outside temperature in Lasso comparison": "Aussentemperatur im Lasso-Vergleich beruecksichtigen",
+  "Uses the configured outside temperature source in SQL for training and fresh Open-Meteo forecasts for tomorrow. Missing history or forecast slots prevent a complete comparison; no fabricated temperatures. Adds one historical source only while comparison is enabled.": "Lernt mit der konfigurierten SQL-Aussentemperatur und verwendet frische Open-Meteo-Prognosen fuer morgen. Fehlende Historie oder Prognoseintervalle verhindern einen vollstaendigen Vergleich; keine erfundenen Temperaturen. Eine zusaetzliche Historienquelle nur bei aktiviertem Vergleich.",
+  "Median / Lasso comparison status": "Status Prognosevergleich Median / Lasso",
+  "Median / Lasso measured comparison": "Messvergleich Median / Lasso"
 }
