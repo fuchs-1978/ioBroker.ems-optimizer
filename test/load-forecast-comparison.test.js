@@ -177,3 +177,36 @@ test('unrecorded temperature disables only the diagnostic comparison with an exp
     assert.match(h.states.get('ems.0.Forecast.LoadComparison.Status'), /nicht in SQL aktiviert/);
     assert.ok(h.writes.every(id => id.startsWith('ems.0.Forecast.LoadComparison.')));
 });
+
+
+test('SQL midpoint averages align with load bucket starts and synthetic boundary anchors are ignored', async () => {
+    const observed = comparison.temperatureRows([
+        {ts: 1793142000000, val: 11.73, i: true},
+        {ts: 1793142450000, val: 11.66},
+        {ts: 1793143350000, val: 11.57}
+    ], 1793143800000);
+    assert.equal(observed.get(1793142000000), 11.66);
+    assert.equal(observed.get(1793142900000), 11.57);
+    const f = fixture();
+    const sql = f.temperatures.map(row => ({ts: row.ts + SLOT / 2, val: row.val}));
+    // Reproduce SQL's first interpolated point, which can differ from the
+    // average in the same quarter-hour. It must not conflict with that average.
+    for (let ts = start; ts < now - 12 * 3600000; ts += DAY) sql.push({ts, val: -30, i: true});
+    const model = await comparison.train(f.rows, now, dayType, sql);
+    const aligned = await trained();
+    assert.equal(model.ready, true, model.reason);
+    assert.equal(model.diagnostics.samples, aligned.diagnostics.samples);
+    assert.deepEqual(model.diagnostics.coefficients, aligned.diagnostics.coefficients);
+    assert.deepEqual(comparison.issue(model, now, () => 8), comparison.issue(aligned, now, () => 8));
+});
+test('temperature interval completion uses bucket end and preserves gaps, conflicts and malformed times', () => {
+    const ts = Math.floor(now / SLOT) * SLOT;
+    const rows = [{ts: ts + SLOT / 2, val: 10}, {ts: ts + SLOT, val: 20, i: true}];
+    assert.equal(comparison.temperatureRows(rows, ts + SLOT - 1).size, 0);
+    assert.equal(comparison.temperatureRows(rows, ts + SLOT).get(ts), 10);
+    assert.equal(comparison.temperatureRows(rows, ts + SLOT).size, 1);
+    const conflicting = [...rows, {ts, val: 11}, {ts: ts - SLOT + 1000, val: 9}, {ts: ts - 2 * SLOT, val: null}];
+    assert.equal(comparison.temperatureRows(conflicting, ts + SLOT).size, 0);
+    const equal = [...rows, {ts, val: 10}];
+    assert.equal(comparison.temperatureRows(equal, ts + SLOT).get(ts), 10);
+});

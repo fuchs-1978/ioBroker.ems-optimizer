@@ -7,7 +7,7 @@
 
 Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Combines PV and grid measurements, load history, weather forecasts and electricity prices in a rolling 48-hour plan.
 
-**Current version: 0.17.0-alpha.176.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
+**Current version: 0.17.0-alpha.177.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
 
 [Deutsche Bedienungsanleitung](README.de.md) · [Release history](CHANGELOG_OLD.md) · [Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
@@ -113,6 +113,10 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 
 ## Changelog
 
+### 0.17.0-alpha.177 (2026-10-30)
+
+- (fuchs-1978) Align SQL temperature interval-center averages with cleaned load quarter-hours for Lasso training; ignore synthetic boundary anchors and preserve unknown/conflict guards. [Details](docs/release-0.17.0-alpha.177.md).
+
 ### 0.17.0-alpha.176 (2026-10-30)
 
 - (fuchs-1978) Add an opt-in day-ahead Median/Lasso comparison with cleaned load, calendar lags and SQL outside temperature. Persist forecasts before delivery and evaluate paired actuals; production planning is unchanged. [Setup and limits](docs/release-0.17.0-alpha.176.md).
@@ -128,10 +132,6 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 ### 0.17.0-alpha.173 (2026-10-30)
 
 - (fuchs-1978) Preserve manual SoC across older cycle timestamps and fail closed on invalid manual evidence. [Details](docs/release-0.17.0-alpha.173.md).
-
-### 0.17.0-alpha.172 (2026-10-30)
-
-- (fuchs-1978) Automatically release manual SoC corrections when a changed cloud report matches the time-aligned charging estimate within one percentage point. [Details](docs/release-0.17.0-alpha.172.md).
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 

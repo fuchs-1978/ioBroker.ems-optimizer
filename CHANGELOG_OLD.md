@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.172 (2026-10-30)
+
+- (fuchs-1978) Automatically release manual SoC corrections when a changed cloud report matches the time-aligned charging estimate within one percentage point. [Details](docs/release-0.17.0-alpha.172.md).
+
 ## 0.17.0-alpha.171 (2026-10-30)
 
 - (fuchs-1978) Add persistent manual SoC correction commands for each vehicle; protect against cloud republishing and qualify energy/session continuity. [Usage](docs/release-0.17.0-alpha.171.md).
