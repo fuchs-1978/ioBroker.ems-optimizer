@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.176",
+    "version": "0.17.0-alpha.177",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.177": {
+        "en": "Align SQL temperature interval-center averages with load quarter-hours in the Lasso comparison. Ignore synthetic boundary anchors and retain gap, conflict and completed-interval checks.",
+        "de": "SQL-Temperaturmittelwerte aus der Intervallmitte den Last-Viertelstunden im Lasso-Vergleich zuordnen. Synthetische Randpunkte ignorieren; Luecken-, Konflikt- und Intervallabschlusspruefungen erhalten.",
+        "es": "Alinea promedios SQL de temperatura del centro del intervalo con cuartos de hora de carga en Lasso. Ignora anclas sintéticas y conserva controles de huecos, conflictos e intervalos completos.",
+        "fr": "Aligne les moyennes SQL de température au centre des intervalles avec les quarts d’heure de charge Lasso. Ignore les points synthétiques ; contrôles des lacunes, conflits et intervalles complets conservés.",
+        "it": "Allinea le medie SQL di temperatura al centro degli intervalli ai quarti d’ora del carico Lasso. Ignora punti sintetici e conserva controlli su lacune, conflitti e intervalli completi.",
+        "nl": "Lijnt SQL-temperatuurgemiddelden op intervalmiddens uit met lastkwartieren in Lasso. Negeert synthetische grenspunten; controles op gaten, conflicten en volledige intervallen blijven.",
+        "pl": "Dopasowuje średnie temperatury SQL ze środka przedziału do kwadransów obciążenia Lasso. Pomija syntetyczne punkty graniczne i zachowuje kontrole luk, konfliktów oraz pełnych przedziałów.",
+        "pt": "Alinha médias SQL de temperatura no centro dos intervalos com quartos de hora de carga Lasso. Ignora pontos sintéticos e mantém verificações de lacunas, conflitos e intervalos completos.",
+        "ru": "Средние температуры SQL из середины интервала сопоставляются с четвертями часа нагрузки Lasso. Синтетические граничные точки исключены; проверки пропусков, конфликтов и завершения интервала сохранены.",
+        "uk": "Середні температури SQL із середини інтервалу зіставляються з чвертями години навантаження Lasso. Синтетичні граничні точки виключено; перевірки пропусків, конфліктів і завершення інтервалу збережено.",
+        "zh-cn": "将SQL区间中点温度平均值对齐到Lasso负载的15分钟区间起点。忽略合成边界点，保留缺失、冲突和完整区间检查。"
+      },
       "0.17.0-alpha.176": {
         "en": "Add an opt-in day-ahead Median/Lasso comparison using cleaned load, calendar lags and SQL outside temperature. Persist forecasts before delivery and score paired measurements; production planning is unchanged.",
         "de": "Optionaler Folgetagsvergleich Median/Lasso mit bereinigter Last, Kalenderrueckblicken und SQL-Aussentemperatur. Prognosen vorab speichern und mit denselben Messwerten bewerten; produktive Planung bleibt unveraendert.",
@@ -81,19 +94,6 @@
         "ru": "Постоянная ручная коррекция SoC без перезапуска с защитой от старых облачных данных; предупреждение о расхождении и приостановка при разрыве сессии или счётчика.",
         "uk": "Збережена ручна корекція SoC без перезапуску із захистом від старих хмарних даних; попередження про розбіжність і призупинення при розриві сесії чи лічильника.",
         "zh-cn": "新增无需重启的持久化手动车辆电量校正，防止旧云端数据覆盖；差异警告，并在会话或电量计数中断后暂停估算。"
-      },
-      "0.17.0-alpha.170": {
-        "en": "Reject older foreign source timestamps and superseded asynchronous reads. Validate grid import/export time coherence, retain bounded conservative no-write continuity, and expose bounded input diagnostics without refreshing old samples.",
-        "de": "Ältere fremde Zeitstempel und überholte asynchrone Lesungen verwerfen. Zeitbezug von Netzbezug/Einspeisung prüfen, begrenzte konservative Fortsetzung ohne neue Befehle erhalten und Eingangsdiagnosen anzeigen; alte Werte nicht auffrischen.",
-        "es": "Rechaza tiempos antiguos y lecturas asíncronas superadas. Valida coherencia temporal de importación/exportación, mantiene continuidad conservadora limitada sin comandos y diagnósticos acotados sin renovar datos antiguos.",
-        "fr": "Rejette les anciens horodatages et lectures asynchrones dépassées. Vérifie la cohérence import/export, maintient une continuité prudente bornée sans commande et des diagnostics limités sans rajeunir les données.",
-        "it": "Rifiuta timestamp vecchi e letture asincrone superate. Verifica la coerenza importazione/esportazione, mantiene continuità prudente limitata senza comandi e diagnostica limitata senza aggiornare dati vecchi.",
-        "nl": "Weigert oudere brontijden en ingehaalde asynchrone lezingen. Controleert samenhang van netafname en teruglevering, behoudt begrensd conservatief vasthouden zonder opdrachten en beperkte diagnostiek zonder oude waarden te vernieuwen.",
-        "pl": "Odrzuca starsze czasy źródłowe i nieaktualne odczyty asynchroniczne. Sprawdza spójność importu/eksportu, zachowuje ograniczone ostrożne podtrzymanie bez poleceń i diagnostykę bez odświeżania starych danych.",
-        "pt": "Rejeita tempos antigos e leituras assíncronas ultrapassadas. Verifica coerência de importação/exportação, mantém continuidade conservadora limitada sem comandos e diagnóstico limitado sem renovar dados antigos.",
-        "ru": "Отклоняет старые метки источников и устаревшие асинхронные чтения. Проверяет согласованность импорта/экспорта, сохраняет ограниченное безопасное удержание без команд и диагностику без искусственного обновления старых данных.",
-        "uk": "Відхиляє старі позначки джерел і застарілі асинхронні читання. Перевіряє узгодженість імпорту/експорту, зберігає обмежене безпечне утримання без команд і діагностику без штучного оновлення старих даних.",
-        "zh-cn": "拒绝较旧的外部源时间戳和已被事件取代的异步读取。检查电网输入与输出的时间一致性，在限时保守保持期间不发送新命令，提供有限诊断且不人为刷新旧数据。"
       }
     },
     "titleLang": {
