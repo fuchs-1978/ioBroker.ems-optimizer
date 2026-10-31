@@ -98,3 +98,15 @@ test('stop during a pending SQL request prevents all follow-up metadata writes a
     const initializing = h.manager.initialize(); await started; h.manager.stop(); await initializing;
     assert.equal(h.report(), null); assert.equal(h.writes.length, 0); assert.equal(h.timers.size, 0);
 });
+
+test('failed status publication cannot repeat uncertain metadata updates', async () => {
+    const h = fixture();
+    // Resolve requests as errors without relying on backend completion.
+    h.adapter.compatSendTo = (instance, command, message, callback) => {
+        h.calls.push({command}); callback({error: 'unknown completion'});
+    };
+    h.adapter.setCompatState = async () => {throw new Error('status unavailable');};
+    await assert.rejects(h.manager.initialize(), /status unavailable/);
+    const count = h.calls.length;
+    await h.manager.tick(); assert.equal(h.calls.length, count); h.manager.stop();
+});
