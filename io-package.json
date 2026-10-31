@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.178",
+    "version": "0.17.0-alpha.179",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.179": {
+        "en": "Compare fixed 50/50 Median/Lasso and Median shape with Lasso daily energy. Store new ensemble forecasts before delivery; preserve old predictions and unknowns. Production control is unchanged.",
+        "de": "Feste 50/50-Mischung und Median-Verlauf mit Lasso-Tagesenergie vergleichen. Neue Kombiprognosen vorab speichern; alte Prognosen und Luecken erhalten. Produktive Regelung unveraendert.",
+        "es": "Compara mezcla fija 50/50 y perfil de mediana con energía diaria Lasso. Guarda nuevas previsiones por adelantado; conserva las anteriores y los valores desconocidos. Control sin cambios.",
+        "fr": "Compare le mélange fixe 50/50 et le profil médian avec énergie quotidienne Lasso. Enregistre les nouvelles prévisions à l’avance ; conserve les anciennes et les inconnues. Commande inchangée.",
+        "it": "Confronta miscela fissa 50/50 e profilo mediano con energia giornaliera Lasso. Salva nuove previsioni in anticipo; conserva precedenti e valori sconosciuti. Controllo invariato.",
+        "nl": "Vergelijkt vaste 50/50-mix en mediaanprofiel met Lasso-dagenergie. Slaat nieuwe prognoses vooraf op; behoudt oude prognoses en onbekende waarden. Regeling ongewijzigd.",
+        "pl": "Porównuje stałą mieszankę 50/50 i profil mediany z dzienną energią Lasso. Zapisuje nowe prognozy z wyprzedzeniem; zachowuje stare i braki. Sterowanie bez zmian.",
+        "pt": "Compara mistura fixa 50/50 e perfil mediano com energia diária Lasso. Guarda novas previsões antecipadamente; preserva as anteriores e valores desconhecidos. Controlo inalterado.",
+        "ru": "Сравнивает смесь 50/50 и профиль медианы с суточной энергией Lasso. Новые прогнозы сохраняются заранее; старые прогнозы и пропуски сохранены. Управление не изменено.",
+        "uk": "Порівнює суміш 50/50 і профіль медіани з добовою енергією Lasso. Нові прогнози зберігаються заздалегідь; попередні прогнози й пропуски збережено. Керування незмінне.",
+        "zh-cn": "比较固定50/50混合及以Lasso日能量缩放的中位数曲线。提前保存新组合预测，保留旧预测和缺失值。生产控制不变。"
+      },
       "0.17.0-alpha.178": {
         "en": "Archive available Meteo forecast vintages and current estimates with capture/target/source times and original units for 90 days in SQL while load comparison is enabled. Missing fields remain unknown; control is unchanged.",
         "de": "Bei aktiviertem Lastvergleich verfuegbare Meteo-Prognosestaende und aktuelle Schaetzungen mit Erfassungs-, Ziel- und Quellzeit sowie Originaleinheiten 90 Tage in SQL archivieren. Fehlende Werte bleiben unbekannt; Regelung unveraendert.",
@@ -81,19 +94,6 @@
         "ru": "Сохраняет ручной SoC, если старое время цикла читает новую оценку. Некорректная ручная база блокирует зарядку вместо возврата к устаревшему облачному SoC.",
         "uk": "Зберігає ручний SoC, якщо старий час циклу читає новішу оцінку. Некоректна ручна база блокує заряджання замість повернення до застарілого хмарного SoC.",
         "zh-cn": "当较早的控制周期时间读取较新的已保存估算时保留手动电量；无效的手动依据会阻止充电，而不会恢复旧云端电量。"
-      },
-      "0.17.0-alpha.172": {
-        "en": "Automatically return from manual SoC correction to a changed cloud value matching measured charging within one percentage point; preserve session, counter and stale-report guards.",
-        "de": "Manuelle SoC-Korrektur automatisch aufheben, wenn ein geaenderter Cloud-Wert innerhalb eines Prozentpunkts zur gemessenen Ladefortschreibung passt; Sitzungs-, Zaehler- und Altersschutz erhalten.",
-        "es": "Retorno automático desde la corrección manual a un SoC nuevo de la nube que coincide con la carga medida dentro de un punto porcentual; conserva las protecciones de sesión, contador y antigüedad.",
-        "fr": "Retour automatique après correction manuelle vers un SoC cloud modifié conforme à la charge mesurée à un point de pourcentage près ; protections de session, compteur et ancienneté conservées.",
-        "it": "Ritorno automatico dalla correzione manuale a un SoC cloud cambiato coerente con la carica misurata entro un punto percentuale; restano le protezioni di sessione, contatore e dati vecchi.",
-        "nl": "Automatisch terug van handmatige correctie naar een gewijzigde cloud-SoC die binnen één procentpunt bij gemeten laden past; sessie-, teller- en ouderdomsbeveiliging blijven behouden.",
-        "pl": "Automatyczny powrót z korekty ręcznej do zmienionego SoC chmury zgodnego z pomiarem ładowania w granicy jednego punktu procentowego; zachowane zabezpieczenia sesji, licznika i wieku danych.",
-        "pt": "Retorno automático da correção manual a um SoC alterado da nuvem compatível com a carga medida dentro de um ponto percentual; mantém proteções de sessão, contador e idade dos dados.",
-        "ru": "Автоматический возврат от ручной коррекции к изменившемуся облачному SoC при согласовании с измеренным зарядом в пределах одного процентного пункта; защиты сессии, счётчика и давности сохранены.",
-        "uk": "Автоматичне повернення від ручної корекції до зміненого хмарного SoC за відповідності виміряному заряду в межах одного відсоткового пункту; захист сесії, лічильника й давності збережено.",
-        "zh-cn": "手动电量校正后，若变化的云端电量与实测充电推算相差不超过一个百分点，则自动恢复车辆数据源；保留会话、计数器和旧数据保护。"
       }
     },
     "titleLang": {
