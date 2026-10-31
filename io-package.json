@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.180",
+    "version": "0.17.0-alpha.181",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.181": {
+        "en": "Keep DST-day measurements for calendar lags. Average both recorded fall-back occurrences; missing intervals stay unknown. Preserve issued forecasts and production control.",
+        "de": "Zeitumstellungstage fuer Kalenderrueckblicke nutzen. Beide gemessenen Vorkommen der doppelten Stunde mitteln; fehlende Intervalle bleiben unbekannt. Ausgegebene Prognosen und produktive Regelung erhalten.",
+        "es": "Keep DST-day measurements for calendar lags. Average both recorded fall-back occurrences; missing intervals stay unknown. Preserve issued forecasts and production control.",
+        "fr": "Keep DST-day measurements for calendar lags. Average both recorded fall-back occurrences; missing intervals stay unknown. Preserve issued forecasts and production control.",
+        "it": "Keep DST-day measurements for calendar lags. Average both recorded fall-back occurrences; missing intervals stay unknown. Preserve issued forecasts and production control.",
+        "nl": "Keep DST-day measurements for calendar lags. Average both recorded fall-back occurrences; missing intervals stay unknown. Preserve issued forecasts and production control.",
+        "pl": "Keep DST-day measurements for calendar lags. Average both recorded fall-back occurrences; missing intervals stay unknown. Preserve issued forecasts and production control.",
+        "pt": "Keep DST-day measurements for calendar lags. Average both recorded fall-back occurrences; missing intervals stay unknown. Preserve issued forecasts and production control.",
+        "ru": "Keep DST-day measurements for calendar lags. Average both recorded fall-back occurrences; missing intervals stay unknown. Preserve issued forecasts and production control.",
+        "uk": "Keep DST-day measurements for calendar lags. Average both recorded fall-back occurrences; missing intervals stay unknown. Preserve issued forecasts and production control.",
+        "zh-cn": "Keep DST-day measurements for calendar lags. Average both recorded fall-back occurrences; missing intervals stay unknown. Preserve issued forecasts and production control."
+      },
       "0.17.0-alpha.180": {
         "en": "Extend retention of configured, already enabled room actual/setpoint SQL histories without duplicate samples. Preserve other recording settings and longer retention. No Lasso or control change.",
         "de": "Aufbewahrung zugeordneter, bereits aktiver Raum-Ist-/Soll-SQL-Historien ohne Datenkopien verlaengern. Andere Aufzeichnungseinstellungen und laengere Fristen erhalten. Lasso und Regelung unveraendert.",
@@ -81,19 +94,6 @@
         "ru": "Восстанавливает быструю передачу после краткого сбоя только для той же наблюдавшейся зарядки при свежих стабильных измерениях. Проверки отключения, остаточной нагрузки и бюджета сохранены.",
         "uk": "Відновлює швидку передачу після короткого збою лише для того самого спостереженого заряджання за свіжих стабільних вимірювань. Перевірки вимкнення, залишкового навантаження й бюджету збережено.",
         "zh-cn": "短暂数据中断后，仅在同一已观测充电会话得到新鲜稳定电气测量确认时恢复快速切换资格；保留停机、剩余负载和功率预算检查。"
-      },
-      "0.17.0-alpha.174": {
-        "en": "Hold the cumulative AC energy high-water mark for downward jitter up to 1 Wh. Preserve SoC without counting rebounds twice; larger resets, stale readings and power spikes remain blocked.",
-        "de": "Bei Rueckwaertsschwankungen bis 1 Wh den hoechsten kumulierten AC-Energiestand halten. SoC bleibt erhalten, ohne Rueckspruenge doppelt zu zaehlen; groessere Resets, alte Werte und Leistungsspruenge bleiben gesperrt.",
-        "es": "Mantiene el máximo acumulado de energía ante oscilaciones negativas de hasta 1 Wh, sin contar rebotes dos veces; conserva protecciones contra reinicios mayores, datos viejos y saltos de potencia.",
-        "fr": "Conserve le maximum cumulé face aux fluctuations négatives jusqu’à 1 Wh, sans compter deux fois le rebond ; maintient les protections contre remises à zéro, données anciennes et sauts de puissance.",
-        "it": "Mantiene il massimo di energia cumulata per oscillazioni negative fino a 1 Wh, senza contare due volte il rimbalzo; restano le protezioni per reset maggiori, dati vecchi e salti di potenza.",
-        "nl": "Behoudt het hoogste cumulatieve energieniveau bij neerwaartse schommelingen tot 1 Wh zonder terugveren dubbel te tellen; grotere resets, oude data en vermogenssprongen blijven geblokkeerd.",
-        "pl": "Zachowuje maksimum energii skumulowanej przy spadkach do 1 Wh bez podwójnego zliczania odbicia; większe resety, stare dane i skoki mocy pozostają blokowane.",
-        "pt": "Mantém o máximo de energia acumulada para oscilações negativas até 1 Wh sem contar o retorno duas vezes; continuam bloqueados reinícios maiores, dados antigos e saltos de potência.",
-        "ru": "Удерживает максимум накопленной энергии при колебаниях вниз до 1 Вт·ч без двойного учёта возврата; большие сбросы, старые данные и скачки мощности блокируются.",
-        "uk": "Утримує максимум накопиченої енергії при коливаннях униз до 1 Вт·год без подвійного обліку повернення; більші скидання, старі дані й стрибки потужності блокуються.",
-        "zh-cn": "累计电量向下波动不超过1瓦时时保持已记录的最高值，不重复累计回升量；仍阻止较大复位、旧数据和功率突变。"
       }
     },
     "titleLang": {
