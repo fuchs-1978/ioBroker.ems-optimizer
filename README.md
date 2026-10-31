@@ -7,7 +7,7 @@
 
 Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Combines PV and grid measurements, load history, weather forecasts and electricity prices in a rolling 48-hour plan.
 
-**Current version: 0.17.0-alpha.181.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
+**Current version: 0.17.0-alpha.182.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
 
 [Deutsche Bedienungsanleitung](README.de.md) · [Release history](CHANGELOG_OLD.md) · [Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
@@ -113,6 +113,10 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 
 ## Changelog
 
+### 0.17.0-alpha.182 (2026-10-31)
+
+- (fuchs-1978) Estimate missing spring clock-hour Lasso lags from both measured neighboring hours, with explicit estimate markers. Never fill measured gaps or actuals. [Policy](docs/release-0.17.0-alpha.182.md).
+
 ### 0.17.0-alpha.181 (2026-10-31)
 
 - (fuchs-1978) Retain DST-day measurements for calendar lags; average both recorded fall-back intervals without filling gaps. [Policy and limits](docs/release-0.17.0-alpha.181.md).
@@ -136,10 +140,6 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 ### 0.17.0-alpha.176 (2026-10-30)
 
 - (fuchs-1978) Add an opt-in day-ahead Median/Lasso comparison with cleaned load, calendar lags and SQL outside temperature. Persist forecasts before delivery and evaluate paired actuals; production planning is unchanged. [Setup and limits](docs/release-0.17.0-alpha.176.md).
-
-### 0.17.0-alpha.175 (2026-10-30)
-
-- (fuchs-1978) Recover fast wallbox handoff after a brief source outage using bounded same-session proof and fresh stable electrical measurements. Preserve donor OFF, quiet-load and budget guards. [Details](docs/release-0.17.0-alpha.175.md).
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 

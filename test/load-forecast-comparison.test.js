@@ -292,7 +292,7 @@ test('November 1 uses all 96 October 25 weekly lags and averages both fall-back 
     values.delete(new Date(2026, 9, 25, 12).getTime());
     assert.equal(comparison.features(uniqueTarget, values, dayType), null);
 });
-test('spring calendar-clock lag never normalizes a nonexistent 02:15 to 03:15', () => {
+test('spring missing lag requires both neighboring measured hours, never only normalized 03:15', () => {
     const target = new Date(2026, 3, 5, 2, 15).getTime();
     const values = new Map([
         [new Date(2026, 3, 3, 2, 15).getTime(), 1000],
@@ -303,4 +303,42 @@ test('spring calendar-clock lag never normalizes a nonexistent 02:15 to 03:15', 
     values.set(new Date(2026, 3, 3, 12).getTime(), 1000);
     values.set(new Date(2026, 2, 29, 12).getTime(), 2000);
     assert.equal(comparison.features(noon, values, dayType)[1], 2000);
+});
+
+test('spring estimates only four nonexistent clock quarters, marks lag days and leaves actual gaps unknown', async () => {
+    const end = new Date(2026, 3, 4, 12).getTime(), begin = new Date(2026, 0, 5).getTime();
+    const rows = [];
+    for (let ts = begin; ts + SLOT <= end; ts += SLOT) rows.push({ts, val: 1000});
+    const values = comparison.cleanRows(rows, end);
+    for (const minute of [0, 15, 30, 45]) {
+        const before = new Date(2026, 2, 29, 1, minute).getTime();
+        const after = new Date(2026, 2, 29, 3, minute).getTime();
+        values.set(before, 800); values.set(after, 1600);
+        for (const [day, lag, index] of [[31, 2, 0], [36, 7, 1]]) {
+            const target = new Date(2026, 2, day, 2, minute).getTime(), estimated = [];
+            assert.equal(comparison.features(target, values, dayType, null, false, estimated)[index], 1200);
+            assert.deepEqual(estimated, [lag]);
+        }
+    }
+    const target = new Date(2026, 3, 5, 2, 15).getTime();
+    const before = new Date(2026, 2, 29, 1, 15).getTime(), after = new Date(2026, 2, 29, 3, 15).getTime();
+    values.delete(before);
+    assert.equal(comparison.features(target, values, dayType), null);
+    values.set(before, 800); values.delete(after);
+    assert.equal(comparison.features(target, values, dayType), null);
+    values.set(after, 1600);
+    values.delete(new Date(2026, 3, 3, 2, 15).getTime());
+    assert.equal(comparison.features(target, values, dayType), null); // ordinary missing SQL row
+    const model = await comparison.train(rows, end, dayType, [], false);
+    assert.equal(model.ready, true, model.reason);
+    assert.equal(model.diagnostics.estimatedLagSamples, 4);
+    assert.equal(model.diagnostics.estimatedLagValues, 4);
+    const entry = comparison.issue(model, end);
+    assert.equal(entry.slots.filter(row => row.estimatedLagDays.length).length, 4);
+    assert.deepEqual(entry.slots.find(row => row.timestamp === target).estimatedLagDays, [7]);
+    assert.ok(entry.slots.every(row => Number.isFinite(row.lassoW)));
+    assert.deepEqual(comparison.restore(JSON.stringify({schema: 1, signature: 'same', entries: [entry]}), 'same', end), [entry]);
+    const actual = entry.slots.filter(row => row.timestamp !== target).map(row => ({ts: row.timestamp, val: 1000}));
+    assert.equal(comparison.score([entry], actual, entry.end).days[0].pairedSlots, 95);
+    assert.equal(comparison.score([entry], actual, entry.end).days[0].actualKWh, null);
 });

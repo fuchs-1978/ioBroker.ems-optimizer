@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.181",
+    "version": "0.17.0-alpha.182",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.182": {
+        "en": "Estimate only nonexistent spring clock-hour Lasso lags from both measured neighboring hours. Mark estimated lag days and training counts; never fill measured gaps or actuals.",
+        "de": "Nur nicht existente Fruehlingsstunden im Lasso-Rueckblick aus beiden gemessenen Nachbarstunden schaetzen. Geschaetzte Lags und Trainingsanzahlen kennzeichnen; Messluecken und Ist-Werte nicht auffuellen.",
+        "es": "Estimate only nonexistent spring clock-hour Lasso lags from both measured neighboring hours. Mark estimated lag days and training counts; never fill measured gaps or actuals.",
+        "fr": "Estimate only nonexistent spring clock-hour Lasso lags from both measured neighboring hours. Mark estimated lag days and training counts; never fill measured gaps or actuals.",
+        "it": "Estimate only nonexistent spring clock-hour Lasso lags from both measured neighboring hours. Mark estimated lag days and training counts; never fill measured gaps or actuals.",
+        "nl": "Estimate only nonexistent spring clock-hour Lasso lags from both measured neighboring hours. Mark estimated lag days and training counts; never fill measured gaps or actuals.",
+        "pl": "Estimate only nonexistent spring clock-hour Lasso lags from both measured neighboring hours. Mark estimated lag days and training counts; never fill measured gaps or actuals.",
+        "pt": "Estimate only nonexistent spring clock-hour Lasso lags from both measured neighboring hours. Mark estimated lag days and training counts; never fill measured gaps or actuals.",
+        "ru": "Estimate only nonexistent spring clock-hour Lasso lags from both measured neighboring hours. Mark estimated lag days and training counts; never fill measured gaps or actuals.",
+        "uk": "Estimate only nonexistent spring clock-hour Lasso lags from both measured neighboring hours. Mark estimated lag days and training counts; never fill measured gaps or actuals.",
+        "zh-cn": "Estimate only nonexistent spring clock-hour Lasso lags from both measured neighboring hours. Mark estimated lag days and training counts; never fill measured gaps or actuals."
+      },
       "0.17.0-alpha.181": {
         "en": "Keep DST-day measurements for calendar lags. Average both recorded fall-back occurrences; missing intervals stay unknown. Preserve issued forecasts and production control.",
         "de": "Zeitumstellungstage fuer Kalenderrueckblicke nutzen. Beide gemessenen Vorkommen der doppelten Stunde mitteln; fehlende Intervalle bleiben unbekannt. Ausgegebene Prognosen und produktive Regelung erhalten.",
@@ -81,19 +94,6 @@
         "ru": "Добавлено сравнение Медиана/Lasso на завтра с очищенной нагрузкой, календарными лагами и температурой SQL. Прогнозы сохраняются заранее и оцениваются по общим измерениям; планирование без изменений.",
         "uk": "Додано порівняння Медіана/Lasso на завтра з очищеним навантаженням, календарними лагами й температурою SQL. Прогнози зберігаються заздалегідь і оцінюються за спільними вимірюваннями; планування без змін.",
         "zh-cn": "新增可选的次日中位数/Lasso比较，使用清理后的负载、日历滞后和SQL室外温度。提前保存预测并按配对实测数据评估，生产调度不变。"
-      },
-      "0.17.0-alpha.175": {
-        "en": "Recover fast wallbox handoff qualification after a brief source outage only for the same witnessed charging episode with fresh stable electrical evidence. Preserve OFF, quiet-load and budget checks.",
-        "de": "Schnelle Wallbox-Uebergabe nach kurzer Quellenstoerung fuer dieselbe beobachtete Ladung mit frischen stabilen Messwerten wieder freigeben. Ausschalt-, Lastfreiheits- und Budgetpruefungen bleiben erhalten.",
-        "es": "Recupera la transferencia rápida tras una breve interrupción solo para la misma carga observada con mediciones eléctricas nuevas y estables. Conserva comprobaciones de apagado, carga residual y presupuesto.",
-        "fr": "Rétablit le transfert rapide après une brève coupure uniquement pour la même charge observée avec des mesures électriques fraîches et stables. Conserve les contrôles d’arrêt, de charge résiduelle et de budget.",
-        "it": "Ripristina il passaggio rapido dopo una breve interruzione solo per la stessa carica osservata con misure elettriche fresche e stabili. Restano i controlli di arresto, carico residuo e budget.",
-        "nl": "Herstelt snelle overdracht na een korte bronstoring alleen voor dezelfde waargenomen laadsessie met verse stabiele elektrische metingen. Uit-, restlast- en budgetcontroles blijven behouden.",
-        "pl": "Przywraca szybkie przekazanie po krótkiej przerwie tylko dla tej samej obserwowanej sesji z nowymi stabilnymi pomiarami. Zachowuje kontrole wyłączenia, pozostałego obciążenia i budżetu.",
-        "pt": "Recupera a transferência rápida após uma breve falha apenas para a mesma carga observada com medições elétricas recentes e estáveis. Mantém verificações de paragem, carga residual e orçamento.",
-        "ru": "Восстанавливает быструю передачу после краткого сбоя только для той же наблюдавшейся зарядки при свежих стабильных измерениях. Проверки отключения, остаточной нагрузки и бюджета сохранены.",
-        "uk": "Відновлює швидку передачу після короткого збою лише для того самого спостереженого заряджання за свіжих стабільних вимірювань. Перевірки вимкнення, залишкового навантаження й бюджету збережено.",
-        "zh-cn": "短暂数据中断后，仅在同一已观测充电会话得到新鲜稳定电气测量确认时恢复快速切换资格；保留停机、剩余负载和功率预算检查。"
       }
     },
     "titleLang": {
