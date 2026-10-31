@@ -96,10 +96,10 @@ test('paired scoring uses only complete measured slots and reports daily energy 
     entry.slots[0].lassoW = null;
     assert.equal(comparison.score([entry], actual, entry.end + SLOT).days[0].pairedSlots, 95);
 });
-test('DST transition days remain unknown rather than shifting calendar lags or inventing 96 slots', () => {
+test('DST target days remain unknown while their real measurements remain available as lags', () => {
     const spring = new Date(2026, 2, 29, 12).getTime(), fall = new Date(2026, 9, 25, 12).getTime();
     for (const ts of [spring, fall]) {
-        assert.equal(comparison.cleanRows([{ts, val: 100}], ts + SLOT).size, 0);
+        assert.equal(comparison.cleanRows([{ts, val: 100}], ts + SLOT).size, 1);
         assert.equal(comparison.features(ts, new Map(), dayType, 10, true), null);
     }
 });
@@ -263,4 +263,44 @@ test('temperature interval completion uses bucket end and preserves gaps, confli
     assert.equal(comparison.temperatureRows(conflicting, ts + SLOT).size, 0);
     const equal = [...rows, {ts, val: 10}];
     assert.equal(comparison.temperatureRows(equal, ts + SLOT).get(ts), 10);
+});
+
+test('November 1 uses all 96 October 25 weekly lags and averages both fall-back occurrences', async () => {
+    const end = new Date(2026, 9, 31, 12).getTime(), begin = new Date(2026, 8, 1).getTime();
+    const rows = [];
+    for (let ts = begin; ts + SLOT <= end; ts += SLOT) rows.push({ts, val: 1000});
+    const first = new Date('2026-10-25T02:15:00+02:00').getTime();
+    const second = new Date('2026-10-25T02:15:00+01:00').getTime();
+    rows.find(row => row.ts === first).val = 1200;
+    rows.find(row => row.ts === second).val = 1800;
+    const values = comparison.cleanRows(rows, end);
+    const target = new Date(2026, 10, 1, 2, 15).getTime();
+    assert.equal(comparison.features(target, values, dayType)[1], 1500);
+    const model = await comparison.train(rows, end, dayType, [], false);
+    assert.equal(model.ready, true, model.reason);
+    const forecast = comparison.issue(model, end);
+    assert.equal(forecast.slots.length, 96);
+    assert.ok(forecast.slots.every(row => Number.isFinite(row.lassoW) && Number.isFinite(row.medianW)));
+    values.delete(second);
+    assert.equal(comparison.features(target, values, dayType), null);
+    // The first occurrence alone must not disguise a missing repeated interval.
+    values.set(second, 1800); values.delete(first);
+    assert.equal(comparison.features(target, values, dayType), null);
+    const conflicted = comparison.cleanRows([...rows, {ts: first, val: 9999}], end);
+    assert.equal(comparison.features(target, conflicted, dayType), null);
+    const uniqueTarget = new Date(2026, 10, 1, 12).getTime();
+    values.delete(new Date(2026, 9, 25, 12).getTime());
+    assert.equal(comparison.features(uniqueTarget, values, dayType), null);
+});
+test('spring calendar-clock lag never normalizes a nonexistent 02:15 to 03:15', () => {
+    const target = new Date(2026, 3, 5, 2, 15).getTime();
+    const values = new Map([
+        [new Date(2026, 3, 3, 2, 15).getTime(), 1000],
+        [new Date(2026, 2, 29, 3, 15).getTime(), 2000]
+    ]);
+    assert.equal(comparison.features(target, values, dayType), null);
+    const noon = new Date(2026, 3, 5, 12).getTime();
+    values.set(new Date(2026, 3, 3, 12).getTime(), 1000);
+    values.set(new Date(2026, 2, 29, 12).getTime(), 2000);
+    assert.equal(comparison.features(noon, values, dayType)[1], 2000);
 });

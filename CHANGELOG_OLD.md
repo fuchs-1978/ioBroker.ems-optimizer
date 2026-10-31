@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.174 (2026-10-30)
+
+- (fuchs-1978) Preserve vehicle SoC across cumulative AC counter rounding dips up to 1 Wh using a fixed high-water mark; never count rebounds twice. [Details](docs/release-0.17.0-alpha.174.md).
+
 ## 0.17.0-alpha.173 (2026-10-30)
 
 - (fuchs-1978) Preserve manual SoC across older cycle timestamps and fail closed on invalid manual evidence. [Details](docs/release-0.17.0-alpha.173.md).
