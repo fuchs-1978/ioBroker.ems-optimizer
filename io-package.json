@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.179",
+    "version": "0.17.0-alpha.180",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.180": {
+        "en": "Extend retention of configured, already enabled room actual/setpoint SQL histories without duplicate samples. Preserve other recording settings and longer retention. No Lasso or control change.",
+        "de": "Aufbewahrung zugeordneter, bereits aktiver Raum-Ist-/Soll-SQL-Historien ohne Datenkopien verlaengern. Andere Aufzeichnungseinstellungen und laengere Fristen erhalten. Lasso und Regelung unveraendert.",
+        "es": "Amplía la retención SQL de temperaturas y consignas ya registradas sin duplicar datos. Conserva otras opciones y plazos mayores. Lasso y control sin cambios.",
+        "fr": "Prolonge la conservation SQL des températures et consignes déjà enregistrées sans doublons. Préserve les autres réglages et durées supérieures. Lasso et commande inchangés.",
+        "it": "Estende la conservazione SQL di temperature e setpoint già registrati senza duplicati. Conserva altre impostazioni e durate maggiori. Lasso e controllo invariati.",
+        "nl": "Verlengt SQL-bewaring van reeds geregistreerde kamerwaarden en setpoints zonder kopieën. Behoudt andere instellingen en langere termijnen. Lasso en regeling ongewijzigd.",
+        "pl": "Wydłuża retencję SQL już rejestrowanych temperatur i nastaw bez duplikatów. Zachowuje inne ustawienia i dłuższe okresy. Lasso i sterowanie bez zmian.",
+        "pt": "Prolonga a retenção SQL de temperaturas e referências já registadas sem duplicação. Preserva outras opções e prazos maiores. Lasso e controlo inalterados.",
+        "ru": "Продлевает хранение уже записываемых температур и уставок SQL без копий. Сохраняет прочие настройки и более длинные сроки. Lasso и управление без изменений.",
+        "uk": "Подовжує зберігання вже записуваних температур і уставок SQL без копій. Зберігає інші налаштування й довші строки. Lasso та керування незмінні.",
+        "zh-cn": "延长已启用的室温及设定值SQL历史保留期，不复制数据。保留其他记录设置及更长保留期。Lasso和控制不变。"
+      },
       "0.17.0-alpha.179": {
         "en": "Compare fixed 50/50 Median/Lasso and Median shape with Lasso daily energy. Store new ensemble forecasts before delivery; preserve old predictions and unknowns. Production control is unchanged.",
         "de": "Feste 50/50-Mischung und Median-Verlauf mit Lasso-Tagesenergie vergleichen. Neue Kombiprognosen vorab speichern; alte Prognosen und Luecken erhalten. Produktive Regelung unveraendert.",
@@ -81,19 +94,6 @@
         "ru": "Удерживает максимум накопленной энергии при колебаниях вниз до 1 Вт·ч без двойного учёта возврата; большие сбросы, старые данные и скачки мощности блокируются.",
         "uk": "Утримує максимум накопиченої енергії при коливаннях униз до 1 Вт·год без подвійного обліку повернення; більші скидання, старі дані й стрибки потужності блокуються.",
         "zh-cn": "累计电量向下波动不超过1瓦时时保持已记录的最高值，不重复累计回升量；仍阻止较大复位、旧数据和功率突变。"
-      },
-      "0.17.0-alpha.173": {
-        "en": "Preserve manual SoC when an older cycle clock reads a newer persisted estimate. Invalid manual evidence blocks charging instead of silently restoring stale cloud SoC.",
-        "de": "Manuellen SoC erhalten, wenn eine aeltere Zykluszeit eine neuere gespeicherte Schaetzung liest. Ungueltige manuelle Basis sperrt statt unbemerkt alten Cloud-SoC zu uebernehmen.",
-        "es": "Conserva el SoC manual cuando un ciclo antiguo lee una estimación nueva. Una base manual inválida bloquea la carga en lugar de recuperar datos obsoletos de la nube.",
-        "fr": "Conserve le SoC manuel lorsqu’un ancien cycle lit une estimation plus récente. Une base manuelle invalide bloque la charge au lieu de rétablir un ancien SoC cloud.",
-        "it": "Mantiene il SoC manuale quando un ciclo precedente legge una stima più recente. Una base manuale non valida blocca la carica invece di ripristinare dati cloud vecchi.",
-        "nl": "Behoudt handmatige SoC als een oudere cyclustijd een nieuwere schatting leest. Een ongeldige handmatige basis blokkeert laden in plaats van oude cloud-SoC te herstellen.",
-        "pl": "Zachowuje ręczny SoC, gdy starszy czas cyklu odczytuje nowsze oszacowanie. Nieprawidłowa ręczna podstawa blokuje ładowanie zamiast przywracać stary SoC chmury.",
-        "pt": "Preserva o SoC manual quando um ciclo antigo lê uma estimativa mais recente. Uma base manual inválida bloqueia a carga em vez de restaurar dados antigos da nuvem.",
-        "ru": "Сохраняет ручной SoC, если старое время цикла читает новую оценку. Некорректная ручная база блокирует зарядку вместо возврата к устаревшему облачному SoC.",
-        "uk": "Зберігає ручний SoC, якщо старий час циклу читає новішу оцінку. Некоректна ручна база блокує заряджання замість повернення до застарілого хмарного SoC.",
-        "zh-cn": "当较早的控制周期时间读取较新的已保存估算时保留手动电量；无效的手动依据会阻止充电，而不会恢复旧云端电量。"
       }
     },
     "titleLang": {
@@ -741,7 +741,10 @@
     "gridPairTimestampMode": "publication",
     "loadComparisonEnabled": false,
     "loadComparisonTemperature": true,
-    "weatherArchiveEnabled": true
+    "weatherArchiveEnabled": true,
+    "roomHistoryEnabled": true,
+    "roomHistoryRetentionDays": 90,
+    "roomHistoryRooms": []
   },
   "objects": [],
   "instanceObjects": [

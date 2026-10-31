@@ -17,6 +17,7 @@ const ShadowController = require("./lib/shadow-controller");
 const ShadowHistory = require("./lib/shadow-history");
 const {SourcePowerHistory} = require("./lib/source-power-history");
 const {WeatherForecastHistory} = require("./lib/weather-forecast-history");
+const {RoomTemperatureHistory} = require("./lib/room-temperature-history");
 const {createEngineContext} = require("./lib/engine-loader");
 const gridConstraints = require("./lib/grid-constraints");
 const {buildNativeMapping, houseConnectionSettings, FIELD_TO_MAPPING,
@@ -80,6 +81,7 @@ class EmsOptimizer extends utils.Adapter {
         this.shadowHistory = new ShadowHistory(this);
         this.sourcePowerHistory = new SourcePowerHistory(this);
         this.weatherForecastHistory = new WeatherForecastHistory(this);
+        this.roomTemperatureHistory = new RoomTemperatureHistory(this);
         this.marketPrices = new MarketPrices(this, {onUpdate: () => {
             if (this.engineContext && !this.unloading)
                 this.runEngine('requestForecastRebuild();');
@@ -158,6 +160,7 @@ class EmsOptimizer extends utils.Adapter {
         // Optional source-history metadata setup never delays actuator startup.
         this.sourcePowerHistoryInitialization = this.sourcePowerHistory.initialize().catch(error => this.warnDebug(error));
         this.weatherForecastHistoryInitialization = this.weatherForecastHistory.initialize().catch(error => this.warnDebug(error));
+        this.roomTemperatureHistoryInitialization = this.roomTemperatureHistory.initialize().catch(error => this.warnDebug(error));
         await this.persistBatteryCadenceMigration();
         await this.persistGridTargetMigration();
     }
@@ -1121,6 +1124,7 @@ class EmsOptimizer extends utils.Adapter {
         catch (error) { this.warnDebug(error); }
         this.sourcePowerHistory?.stop();
         this.weatherForecastHistory?.stop();
+        this.roomTemperatureHistory?.stop();
         // Passive checkpoint starts independently of actuator stop queues.
         this.dailySummaryStop = this.dailySummary?.stop().catch(error => this.warnDebug(error));
         this.wallboxOutput.stopping = true;
@@ -1210,6 +1214,3 @@ class EmsOptimizer extends utils.Adapter {
 
 if (require.main !== module) module.exports = options => new EmsOptimizer(options);
 else new EmsOptimizer();
-
-
-

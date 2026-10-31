@@ -9,6 +9,21 @@ const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 const tabs = admin.items;
 const allFields = Object.assign({}, ...Object.values(tabs).map(tab => tab.items || {}));
 
+test('room histories expose configurable original sources and bounded retention without installation defaults', () => {
+    assert.equal(ioPackage.native.roomHistoryEnabled, true);
+    assert.equal(ioPackage.native.roomHistoryRetentionDays, 90);
+    assert.deepEqual(ioPackage.native.roomHistoryRooms, []);
+    assert.equal(allFields.roomHistoryRetentionDays.min, 14);
+    assert.equal(allFields.roomHistoryRetentionDays.max, 365);
+    assert.deepEqual(allFields.roomHistoryRooms.items.map(item => item.attr), ['name', 'heatingType', 'actualId', 'setpointId']);
+    const keys = ['roomHistoryEnabled', 'roomHistoryRetentionDays', 'roomHistoryRooms', '_roomHistoryStatus']
+        .map(key => allFields[key].label);
+    for (const lang of ['en', 'de', 'es', 'fr', 'it', 'nl', 'pl', 'pt', 'ru', 'uk', 'zh-cn']) {
+        const texts = JSON.parse(fs.readFileSync(`admin/i18n/${lang}/translations.json`, 'utf8'));
+        for (const key of keys) assert.ok(texts[key], `${lang}: ${key}`);
+    }
+});
+
 test('AP2 admin exposes the shared source and house-connection fields', () => {
     for (const field of ['houseConnectionFuseA', 'houseConnectionReserveA', 'pvPowerId',
         'gridImportId', 'gridExportId', 'outsideTemperatureId', 'historyInstance', 'historyDays',
@@ -75,7 +90,7 @@ test('update defaults never arm a productive output', () => {
 });
 
 test('package manifests publish the same alpha version', () => {
-    assert.equal(packageJson.version, '0.17.0-alpha.179');
+    assert.equal(packageJson.version, '0.17.0-alpha.180');
     assert.equal(ioPackage.common.version, packageJson.version);
     const core = fs.readFileSync('lib/engine/core.js', 'utf8');
     const bootstrap = fs.readFileSync('lib/engine/bootstrap.js', 'utf8');

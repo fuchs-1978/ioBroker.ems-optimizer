@@ -601,5 +601,16 @@
   "Median / Lasso measured comparison": "Messvergleich Median / Lasso",
   "Archive Meteo forecasts for later learning": "Meteo-Prognosen fuer spaeteres Lernen archivieren",
   "While the load comparison is enabled, archive available weather hours with capture time, target time, source timestamps and original units in SQL for 90 days. Current provider values are estimates, not local measurements. Missing radiation stays unknown. Existing SQL settings of other sources are unchanged.": "Bei aktiviertem Lastvergleich Wetterstunden mit Erfassungszeit, Zielzeit, Quellzeitstempeln und Originaleinheiten fuer 90 Tage in SQL speichern. Aktuelle Anbieterwerte sind Schaetzungen, keine lokalen Messungen. Fehlende Strahlung bleibt unbekannt. SQL-Einstellungen anderer Quellen bleiben erhalten.",
-  "Weather archive status": "Status Wetterarchiv"
+  "Weather archive status": "Status Wetterarchiv",
+  "Preserve existing room temperature histories": "Bestehende Raumtemperaturhistorien erhalten",
+  "Minimum room history retention (days)": "Mindestaufbewahrung Raumhistorie (Tage)",
+  "Room temperature sources": "Raumtemperaturquellen",
+  "Room name": "Raumname",
+  "Heating type": "Heizungsart",
+  "Water-based heating": "Wassergeführte Heizung",
+  "Electric heating": "Elektrische Heizung",
+  "Unknown heating type": "Heizungsart unbekannt",
+  "Actual room temperature source": "Quelle Raum-Isttemperatur",
+  "Effective room setpoint source": "Quelle wirksame Raum-Solltemperatur",
+  "Room history status": "Status Raumhistorie"
 }

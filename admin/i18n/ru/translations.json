@@ -601,5 +601,16 @@
   "Median / Lasso measured comparison": "Сравнение с измерениями Медиана / Lasso",
   "Archive Meteo forecasts for later learning": "Архивировать прогнозы Meteo для будущего обучения",
   "While the load comparison is enabled, archive available weather hours with capture time, target time, source timestamps and original units in SQL for 90 days. Current provider values are estimates, not local measurements. Missing radiation stays unknown. Existing SQL settings of other sources are unchanged.": "При активном сравнении сохраняет погодные часы с временем захвата, целевым временем, метками источников и исходными единицами в SQL на 90 дней. Текущие данные — оценки, не местные измерения. Отсутствующее излучение неизвестно. Другие источники SQL без изменений.",
-  "Weather archive status": "Состояние погодного архива"
+  "Weather archive status": "Состояние погодного архива",
+  "Preserve existing room temperature histories": "Сохранять существующие истории температур",
+  "Minimum room history retention (days)": "Минимальный срок хранения комнат (дни)",
+  "Room temperature sources": "Источники комнатных температур",
+  "Room name": "Название комнаты",
+  "Heating type": "Тип отопления",
+  "Water-based heating": "Водяное отопление",
+  "Electric heating": "Электрическое отопление",
+  "Unknown heating type": "Тип отопления неизвестен",
+  "Actual room temperature source": "Источник фактической температуры",
+  "Effective room setpoint source": "Источник действующей уставки",
+  "Room history status": "Состояние истории комнат"
 }

@@ -16,6 +16,7 @@ const npm = (args, cwd) => execFileSync('npm', args, {cwd, encoding: 'utf8',
 try {
     const packed = JSON.parse(npm(['pack', '--json', '--pack-destination', directory], root))[0];
     assert.ok(packed.files.some(file => file.path === 'lib/wallbox-allocation.js'));
+    assert.ok(packed.files.some(file => file.path === 'lib/room-temperature-history.js'));
     assert.ok(packed.files.some(file => file.path === 'lib/wallbox-source-diagnostics.js'));
     assert.ok(packed.files.some(file => file.path === 'lib/operator-diagnostics.js'));
     assert.ok(packed.files.some(file => file.path === 'lib/grid-operator-accounting.js'));
@@ -27,6 +28,7 @@ try {
         path.join(directory, packed.filename)], directory);
     const installed = path.join(directory, 'node_modules', 'iobroker.ems-optimizer');
     const localRequire = createRequire(path.join(installed, 'package.json'));
+    assert.equal(typeof localRequire('./lib/room-temperature-history').RoomTemperatureHistory, 'function');
     assert.equal(localRequire('./package.json').version, packed.version);
     assert.equal(localRequire('./io-package.json').common.version, packed.version);
     for (const language of ['en', 'de', 'es', 'fr', 'it', 'nl', 'pl', 'pt', 'ru', 'uk', 'zh-cn']) {
