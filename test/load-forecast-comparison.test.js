@@ -103,6 +103,60 @@ test('DST transition days remain unknown rather than shifting calendar lags or i
         assert.equal(comparison.features(ts, new Map(), dayType, 10, true), null);
     }
 });
+test('ensembles are fixed before delivery: blend is 50/50 and hybrid preserves Lasso energy and Median shape', async () => {
+    const entry = comparison.issue(await trained(), now, () => 8);
+    assert.equal(entry.ensembleVersion, 1);
+    const sum = field => entry.slots.reduce((total, row) => total + row[field], 0);
+    assert.ok(Math.abs(sum('hybridW') - sum('lassoW')) < 1e-6);
+    const scale = sum('lassoW') / sum('medianW');
+    for (const row of entry.slots) {
+        assert.equal(row.blendW, (row.medianW + row.lassoW) / 2);
+        assert.equal(row.hybridW, row.medianW * scale);
+    }
+    const saved = JSON.stringify({schema: 1, signature: 'same', entries: [entry]});
+    assert.deepEqual(comparison.restore(saved, 'same', now), [entry]);
+    const actual = entry.slots.map(row => ({ts: row.timestamp, val: row.hybridW}));
+    const day = comparison.score([entry], actual, entry.end).days[0];
+    assert.equal(day.hybrid.maeW, 0);
+    assert.equal(day.hybrid.pairedSlots, 96);
+    assert.ok(Math.abs(day.hybrid.energyBiasKWh) < 1e-8);
+    const gap = comparison.score([entry], actual.slice(1), entry.end).days[0];
+    for (const key of ['median', 'lasso', 'blend', 'hybrid']) {
+        assert.equal(gap[key].pairedSlots, 95);
+        assert.equal(gap[key].energyBiasKWh, null);
+    }
+});
+test('legacy forecasts remain unchanged and never receive a retrospective ensemble score', async () => {
+    const entry = comparison.issue(await trained(), now, () => 8);
+    delete entry.ensembleVersion;
+    entry.slots = entry.slots.map(({timestamp, medianW, lassoW}) => ({timestamp, medianW, lassoW}));
+    const saved = JSON.stringify(entry);
+    const actual = entry.slots.map(row => ({ts: row.timestamp, val: 1000}));
+    const day = comparison.score([entry], actual, entry.end).days[0];
+    assert.equal(JSON.stringify(entry), saved);
+    assert.equal(day.median.pairedSlots, 96);
+    for (const key of ['blend', 'hybrid']) {
+        assert.equal(day[key].pairedSlots, 0);
+        assert.equal(day[key].maeW, null);
+        assert.equal(day[key].energyBiasKWh, null);
+    }
+});
+test('ensemble gaps, zero Median totals and extreme hybrid scaling are not filled or clipped', async () => {
+    const base = await trained();
+    const missing = comparison.issue(base, now, () => null);
+    assert.ok(missing.slots.every(row => row.blendW === null && row.hybridW === null));
+    const zero = comparison.issue({...base, medianAt: () => 0}, now, () => 8);
+    assert.ok(zero.slots.every(row => row.blendW === row.lassoW / 2 && row.hybridW === null));
+    const extreme = comparison.issue({...base, medianAt: ts => ts % DAY === 0 ? 100000 : 0,
+        model: {...base.model, weights: base.model.weights.map(() => 0), yMean: 100000}}, now, () => 8);
+    assert.ok(extreme.slots.every(row => row.hybridW === null));
+    assert.ok(extreme.slots.every(row => Number.isFinite(row.blendW)));
+});
+test('corrupt ensemble forecasts are rejected on restore', async () => {
+    const entry = comparison.issue(await trained(), now, () => 8);
+    entry.slots[0].blendW = -1;
+    assert.equal(comparison.restore(JSON.stringify({schema: 1, signature: 'same', entries: [entry]}), 'same', now).length, 0);
+});
 test('training cancellation is bounded and cannot leave a solver running after unload', async () => {
     const rows = Array.from({length: 100}, (_, i) => ({x: Array(comparison.FEATURES.length).fill(i % 2), y: i * 10}));
     let allowed = true;
