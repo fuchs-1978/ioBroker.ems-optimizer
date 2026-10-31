@@ -601,5 +601,16 @@
   "Median / Lasso measured comparison": "Gemeten vergelijking Mediaan / Lasso",
   "Archive Meteo forecasts for later learning": "Meteo-prognoses voor later leren archiveren",
   "While the load comparison is enabled, archive available weather hours with capture time, target time, source timestamps and original units in SQL for 90 days. Current provider values are estimates, not local measurements. Missing radiation stays unknown. Existing SQL settings of other sources are unchanged.": "Archiveert bij actieve vergelijking weeruren met vastlegtijd, doeltijd, brontijden en oorspronkelijke eenheden 90 dagen in SQL. Actuele providerwaarden zijn schattingen, geen lokale metingen. Ontbrekende straling blijft onbekend. Andere SQL-bronnen blijven ongewijzigd.",
-  "Weather archive status": "Status weerarchief"
+  "Weather archive status": "Status weerarchief",
+  "Preserve existing room temperature histories": "Bestaande kamertemperatuurhistorie behouden",
+  "Minimum room history retention (days)": "Minimale kamerhistorie (dagen)",
+  "Room temperature sources": "Kamertemperatuurbronnen",
+  "Room name": "Kamernaam",
+  "Heating type": "Verwarmingstype",
+  "Water-based heating": "Watergedragen verwarming",
+  "Electric heating": "Elektrische verwarming",
+  "Unknown heating type": "Onbekend verwarmingstype",
+  "Actual room temperature source": "Bron werkelijke kamertemperatuur",
+  "Effective room setpoint source": "Bron effectieve gewenste temperatuur",
+  "Room history status": "Status kamerhistorie"
 }

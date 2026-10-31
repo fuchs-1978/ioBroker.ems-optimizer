@@ -601,5 +601,16 @@
   "Median / Lasso measured comparison": "Median / Lasso measured comparison",
   "Archive Meteo forecasts for later learning": "Archive Meteo forecasts for later learning",
   "While the load comparison is enabled, archive available weather hours with capture time, target time, source timestamps and original units in SQL for 90 days. Current provider values are estimates, not local measurements. Missing radiation stays unknown. Existing SQL settings of other sources are unchanged.": "While the load comparison is enabled, archive available weather hours with capture time, target time, source timestamps and original units in SQL for 90 days. Current provider values are estimates, not local measurements. Missing radiation stays unknown. Existing SQL settings of other sources are unchanged.",
-  "Weather archive status": "Weather archive status"
+  "Weather archive status": "Weather archive status",
+  "Preserve existing room temperature histories": "Preserve existing room temperature histories",
+  "Minimum room history retention (days)": "Minimum room history retention (days)",
+  "Room temperature sources": "Room temperature sources",
+  "Room name": "Room name",
+  "Heating type": "Heating type",
+  "Water-based heating": "Water-based heating",
+  "Electric heating": "Electric heating",
+  "Unknown heating type": "Unknown heating type",
+  "Actual room temperature source": "Actual room temperature source",
+  "Effective room setpoint source": "Effective room setpoint source",
+  "Room history status": "Room history status"
 }

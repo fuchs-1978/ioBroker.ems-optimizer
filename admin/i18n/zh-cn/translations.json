@@ -601,5 +601,16 @@
   "Median / Lasso measured comparison": "中位数 / Lasso 实测比较",
   "Archive Meteo forecasts for later learning": "归档 Meteo 预报以供后续学习",
   "While the load comparison is enabled, archive available weather hours with capture time, target time, source timestamps and original units in SQL for 90 days. Current provider values are estimates, not local measurements. Missing radiation stays unknown. Existing SQL settings of other sources are unchanged.": "负载比较启用时，将天气小时数据及采集时间、目标时间、源时间戳和原始单位归档到SQL并保留90天。供应商当前数据是估算，非本地实测。缺失辐射保持未知，不更改其他SQL数据源设置。",
-  "Weather archive status": "天气归档状态"
+  "Weather archive status": "天气归档状态",
+  "Preserve existing room temperature histories": "保留现有室温历史",
+  "Minimum room history retention (days)": "室温历史最短保留期（天）",
+  "Room temperature sources": "室温数据源",
+  "Room name": "房间名称",
+  "Heating type": "供暖类型",
+  "Water-based heating": "水暖",
+  "Electric heating": "电暖",
+  "Unknown heating type": "供暖类型未知",
+  "Actual room temperature source": "实际室温数据源",
+  "Effective room setpoint source": "有效室温设定值数据源",
+  "Room history status": "室温历史状态"
 }

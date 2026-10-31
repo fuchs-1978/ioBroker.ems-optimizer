@@ -1601,6 +1601,100 @@
           "lg": 12,
           "xl": 12,
           "newLine": true
+        },
+        "roomHistoryEnabled": {
+          "type": "checkbox",
+          "label": "Preserve existing room temperature histories",
+          "default": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "newLine": true
+        },
+        "roomHistoryRetentionDays": {
+          "type": "number",
+          "label": "Minimum room history retention (days)",
+          "default": 90,
+          "min": 14,
+          "max": 365,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "newLine": true
+        },
+        "roomHistoryRooms": {
+          "type": "table",
+          "label": "Room temperature sources",
+          "default": [],
+          "clone": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "newLine": true,
+          "items": [
+            {
+              "type": "text",
+              "attr": "name",
+              "title": "Room name",
+              "default": "",
+              "width": "15%"
+            },
+            {
+              "type": "select",
+              "attr": "heatingType",
+              "title": "Heating type",
+              "default": "unknown",
+              "width": "15%",
+              "options": [
+                {
+                  "value": "hydronic",
+                  "label": "Water-based heating"
+                },
+                {
+                  "value": "electric",
+                  "label": "Electric heating"
+                },
+                {
+                  "value": "unknown",
+                  "label": "Unknown heating type"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "attr": "actualId",
+              "title": "Actual room temperature source",
+              "default": "",
+              "width": "35%"
+            },
+            {
+              "type": "text",
+              "attr": "setpointId",
+              "title": "Effective room setpoint source",
+              "default": "",
+              "width": "35%"
+            }
+          ]
+        },
+        "_roomHistoryStatus": {
+          "type": "state",
+          "oid": "Debug.RoomHistory.Status",
+          "label": "Room history status",
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "newLine": true
         }
       }
     },
