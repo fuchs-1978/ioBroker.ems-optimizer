@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.175 (2026-10-30)
+
+- (fuchs-1978) Recover fast wallbox handoff after a brief source outage using bounded same-session proof and fresh stable electrical measurements. Preserve donor OFF, quiet-load and budget guards. [Details](docs/release-0.17.0-alpha.175.md).
+
 ## 0.17.0-alpha.174 (2026-10-30)
 
 - (fuchs-1978) Preserve vehicle SoC across cumulative AC counter rounding dips up to 1 Wh using a fixed high-water mark; never count rebounds twice. [Details](docs/release-0.17.0-alpha.174.md).
