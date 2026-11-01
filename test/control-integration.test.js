@@ -1260,6 +1260,39 @@ test('unavailable external battery charging cannot be reclaimed and its discharg
     assert.equal(h.value('Control.AvailablePVPower_W'), 0);
 });
 
+test('legacy productive heater cannot consume a verified external battery discharge as PV', async () => {
+    const h = await plant({battery: false, heating: false, wallbox: false, initialSurplusW: 2000});
+    await h.advance(90);
+    assert.ok(h.physical().heaterW >= 1800, h.diagnostic());
+    // Replacing real PV by the same battery discharge leaves the raw NVP in
+    // its old deadband. That must not preserve the existing heating budget.
+    h.setSurplus(0);
+    h.setBatteryPower(-2000);
+    await h.advance(30);
+    assert.equal(h.run('batteryMeasuredPowerW()'), -2000);
+    assert.equal(h.value('Control.Targets.MyPV_DHW_W'), 0, h.diagnostic());
+    assert.equal(h.physical().heaterW, 0, h.diagnostic());
+    assert.equal(h.physical().batteryW, -2000, 'the EMS does not command an external battery');
+    h.setSurplus(2000);
+    await h.advance(30);
+    assert.ok(h.physical().heaterW >= 1800 && h.physical().heaterW <= 2000,
+        'only the real PV portion may heat, not PV plus discharge: ' + h.diagnostic());
+});
+
+test('legacy battery telemetry neither reclaims external charging nor blocks operation when optional evidence is invalid', async () => {
+    const h = await plant({battery: false, heating: false, wallbox: false, initialSurplusW: 4000});
+    h.setBatteryPower(2000);
+    await h.advance(90);
+    assert.ok(h.physical().heaterW >= 1800 && h.physical().heaterW <= 2000, h.diagnostic());
+    const expectedTarget = h.value('Control.Targets.MyPV_DHW_W');
+    h.put(h.config.batteryAcPowerId, 9000, {ack: false});
+    h.run('lastSlowUpdate = 0; realtimeControl()');
+    assert.equal(h.run('batteryMeasuredPowerW()'), null);
+    assert.equal(h.value('Control.Valid'), true, 'optional battery telemetry is no new dependency');
+    assert.equal(h.value('Control.Targets.MyPV_DHW_W'), expectedTarget,
+        'unconfirmed battery power cannot create or withdraw a PV allowance');
+});
+
 test('shared LPC reservation rejects missing live peers and never credits a battery discharge', async () => {
     const h = await plant({battery: true, heating: true, wallbox: false, lpcLimitW: 4200});
     await h.advance(30);

@@ -7,7 +7,7 @@
 
 Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Combines PV and grid measurements, load history, weather forecasts and electricity prices in a rolling 48-hour plan.
 
-**Current version: 0.17.0-alpha.186.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
+**Current version: 0.17.0-alpha.187.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
 
 [Deutsche Bedienungsanleitung](README.de.md) · [Release history](CHANGELOG_OLD.md) · [Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
@@ -148,6 +148,10 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 
 ## Changelog
 
+### 0.17.0-alpha.187 (2026-11-01)
+
+- (fuchs-1978) Avoid overlapping identical heater refreshes during a bounded pending Modbus reset; retain fixed-one-phase charging minima without optional phase-mode feedback; exclude verified external battery discharge from legacy surplus budgets. [Details and limits](docs/release-0.17.0-alpha.187.md).
+
 ### 0.17.0-alpha.186 (2026-11-01)
 
 - (fuchs-1978) Preserve metered SoC progress across unchanged cloud publications; hold witnessed follow-up charging through link loss before the ACK deadline. Bound MariaDB recorder history statements and allow paced recovery after transient database activity. [Details and recovery](docs/release-0.17.0-alpha.186.md).
@@ -171,10 +175,6 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 ### 0.17.0-alpha.181 (2026-10-31)
 
 - (fuchs-1978) Retain DST-day measurements for calendar lags; average both recorded fall-back intervals without filling gaps. [Policy and limits](docs/release-0.17.0-alpha.181.md).
-
-### 0.17.0-alpha.180 (2026-10-31)
-
-- (fuchs-1978) Extend retention of mapped original room-temperature SQL histories without copying samples or changing other recording options. [Setup and limits](docs/release-0.17.0-alpha.180.md).
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 

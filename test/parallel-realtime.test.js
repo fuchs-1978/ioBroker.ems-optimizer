@@ -425,6 +425,53 @@ test('EQE minimum removal preserves the already reserved EQV asynchronous minimu
     }
 });
 
+function fixedOnePhaseMinimumFixture(stage) {
+    let h;
+    if (stage === 'running') {
+        h = engine({production: true}); h.exclude(0);
+        h.put('DP_WB1_SOC', 85); h.put('DP_WB1_MIN_SOC', 90);
+        h.put('DP_WB2_SOC', 90); h.put('DP_WB2_MIN_SOC', 90);
+        h.put('DP_WB1_TARGET', 100); h.put('DP_WB2_TARGET', 100);
+        h.owned(1, 6); h.owned(2, 6);
+    } else ({h} = pendingMinimumStartFixture(stage));
+    h.nativeConfig.wb1PhaseSwitchEnabled = false;
+    h.nativeConfig.wb1PhaseControlMode = 'fixed';
+    h.put('ems.0.Vehicles.Wallbox1.PhaseSwitchEnabled', false);
+    h.states.delete('DP_WB1_PHASE_MODE');
+    return h;
+}
+
+for (const stage of ['running', 'current', 'allow', 'vehicle_response']) {
+    test(`fixed 1P ${stage} minimum survives a finishing peer without an optional mode ACK`, () => {
+        const h = fixedOnePhaseMinimumFixture(stage);
+        const targets = h.update(0, 4200);
+        assert.deepEqual(targets.amps, [0, 6, 0]);
+        assert.deepEqual(targets.reserve, [0, 1380, 1380], 'each existing physical reservation remains accounted once');
+        assert.equal(targets.dhw, 0, 'authorized minimum grid power is not heater surplus');
+        const diagnostic = JSON.parse(h.states.get('ems.0.Control.Wallbox1.AllocationDiagnostics_JSON').val);
+        assert.equal(diagnostic[stage === 'running' ? 'runningMinimumW' : 'pendingMinimumStartW'], 1380);
+    });
+
+    test(`fixed 1P ${stage} minimum retains physical, source, phase and hard-budget gates`, () => {
+        for (const cause of ['switchable-no-mode', 'positive-L2', 'stale-L3', 'bad-quality-L2',
+            'unconfirmed-L2', 'phase-pending', 'phase-transition', 'wrong-output-topology', 'hard-cap']) {
+            const h = fixedOnePhaseMinimumFixture(stage);
+            if (cause === 'switchable-no-mode') h.put('ems.0.Vehicles.Wallbox1.PhaseSwitchEnabled', true);
+            if (cause === 'positive-L2') h.put('DP_WB1_L2_A', 2);
+            if (cause === 'stale-L3') h.put('DP_WB1_L3_A', 0, {ts: Date.now() - 31000});
+            if (cause === 'bad-quality-L2') h.put('DP_WB1_L2_A', 0, {q: 64});
+            if (cause === 'unconfirmed-L2') h.put('DP_WB1_L2_A', 0, {ack: false});
+            if (cause === 'phase-pending') h.put('ems.0.Devices.Wallbox1.PhaseSwitchPending', true);
+            if (cause === 'phase-transition') h.put('ems.0.Devices.Wallbox1.PhaseTransitionActive', true);
+            if (cause === 'wrong-output-topology') h.put('ems.0.Devices.Wallbox1.OutputPhases', 3);
+            const targets = h.update(0, cause === 'hard-cap' ? 2500 : 4200);
+            assert.equal(targets.amps[1], 0, cause);
+            assert.ok(targets.reserve[1] >= 1380, `${cause}: unknown or withheld own load stays reserved`);
+            assert.equal(targets.reserve[2], 1380, `${cause}: no premature release of finishing peer`);
+        }
+    });
+}
+
 test('ordinary Modbus command ACK waits do not cancel a reserved pending minimum start', () => {
     for (const stage of ['current', 'allow']) {
         const {h} = pendingMinimumStartFixture(stage);
@@ -488,7 +535,10 @@ test('only a current bounded own start proof retains an asynchronous minimum flo
         if (cause === 'bad-quality-error') h.put('raw.error1', 0, {q: 64});
         if (cause === 'phase-pending') h.put('ems.0.Devices.Wallbox1.PhaseSwitchPending', true);
         if (cause === 'phase-transition') h.put('ems.0.Devices.Wallbox1.PhaseTransitionActive', true);
-        if (cause === 'unconfirmed-phase') h.put('DP_WB1_PHASE_MODE', 1, {ack: false});
+        if (cause === 'unconfirmed-phase') {
+            h.put('ems.0.Vehicles.Wallbox1.PhaseSwitchEnabled', true);
+            h.put('DP_WB1_PHASE_MODE', 1, {ack: false});
+        }
         if (cause === 'bad-quality-allow') h.put('raw.allow1', 1, {q: 64});
         if (cause === 'stale-allow') h.put('raw.allow1', 1, {ts: Date.now() - 31000});
         if (cause === 'future-current') h.put('raw.amps1', 6, {ts: Date.now() + 2000});
