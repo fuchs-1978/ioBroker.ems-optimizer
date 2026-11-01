@@ -60,7 +60,8 @@ async function fixture(holdS = 15, heating = false) {
     const fresh = (omit = []) => {
         for (const key of ['o1', 'o2', 'o3', 'h1', 'h2', 'h3', 'gridIn']) if (!omit.includes(key)) put(key, 0);
         for (const key of ['t1', 't2', 't3', 't4', 'outlet']) put(key, 50);
-        put('connection', true);put('gridOut', 6100);put('cooling', false);put('hkTemp', 40);
+        put('connection', true);put('gridOut', 6100);
+        if (heating) {put('cooling', false);put('hkTemp', 40);}
         own('System.LastUpdate', now);own('Control.LastUpdate', now);
     };
     fresh();
