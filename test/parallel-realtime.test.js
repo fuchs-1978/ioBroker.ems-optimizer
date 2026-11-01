@@ -2129,3 +2129,45 @@ for (const cause of ['budget loss', 'source quality', 'vehicle release', 'contro
         else h.update(cause === 'budget loss' ? 1000 : 3352, 20000);
         assert.equal(h.run('wallboxStartPreparation[2]'), null);
     });
+
+function clearedError5Engine(change = () => {}) {
+    let now = Date.now(); class Clock extends Date {static now() {return now;}}
+    const h = engine({production: true, clock: Clock}); h.exclude(1); h.exclude(2);
+    h.put('ems.0.Config.WallboxStartDelay_s', 300);
+    now += 2000; for (const state of h.states.values()) state.ts = now;
+    const proof = {schema: 1, valid: true, at: now - 1000, until: now - 1000 + 15 * 60000,
+        phases: 1, sessionId: h.run('vehicleState(0).priceSessionId') || '', priceEnabled: false};
+    h.put('ems.0.Devices.Wallbox0.Error5Resume_JSON', JSON.stringify(proof));
+    change(h, proof, now);
+    return {h, proof, now};
+}
+
+test('cleared error 5 with a current-session output proof skips only the repeated start countdown', () => {
+    const {h} = clearedError5Engine();
+    const t = h.update(3000);
+    assert.ok(t.amps[0] >= 6);
+    const d = JSON.parse(h.states.get('ems.0.Control.Wallbox0.AllocationDiagnostics_JSON').val);
+    assert.equal(d.start.sequenceResume.reason, 'error5-cleared-resume');
+    assert.equal(d.start.startDelayRemainingS, 0);
+});
+
+for (const [cause, mutate, budget = 3000] of [
+    ['error still 5', h => h.put('raw.error0', 5)],
+    ['other error', h => h.put('raw.error0', 8)],
+    ['old session', (h, p, now) => {p.at = now - 100000; p.until = p.at + 900000; h.put('ems.0.Devices.Wallbox0.Error5Resume_JSON', JSON.stringify(p));}],
+    ['expired proof', (h, p) => {p.until = p.at; h.put('ems.0.Devices.Wallbox0.Error5Resume_JSON', JSON.stringify(p));}],
+    ['changed plug session', (h, p) => {p.sessionId = 'different'; h.put('ems.0.Devices.Wallbox0.Error5Resume_JSON', JSON.stringify(p));}],
+    ['unconfirmed OFF', h => h.put('raw.allow0', 0, {ack: false})],
+    ['still drawing', h => h.put('DP_WB0_POWER', 0.8)],
+    ['physical current', h => h.put('DP_WB0_L1_A', 4)],
+    ['phase transition', h => h.put('ems.0.Devices.Wallbox0.PhaseTransitionActive', true)],
+    ['budget deficit', () => {}, 1000],
+    ['invalid grid', h => h.put('DP_GRID_IMPORT', 0, {q: 64})],
+    ['unknown source', h => h.states.delete('DP_WB0_L2_A')]
+]) test('error-5 countdown shortcut rejects ' + cause, () => {
+    const {h} = clearedError5Engine(mutate);
+    h.update(budget);
+    const d = JSON.parse(h.states.get('ems.0.Control.Wallbox0.AllocationDiagnostics_JSON').val);
+    assert.notEqual(d.start?.sequenceResume?.eligible, true);
+    assert.equal(d.targetA, 0);
+});

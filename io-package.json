@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.184",
+    "version": "0.17.0-alpha.185",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.185": {
+        "en": "Fix false feedback faults while confirmed OFF waits for start budget. Resume a proven charging episode after cleared device error 5 without a repeated start delay, retaining fresh electrical, budget and safety checks.",
+        "de": "Falsche Rueckmeldesperre beim Warten auf Startbudget nach bestaetigtem AUS beheben. Nach geloeschtem Geraetefehler 5 eine nachgewiesene Ladung ohne erneute Startwartezeit fortsetzen; frische elektrische Werte, Budget und Schutzpruefungen bleiben erforderlich.",
+        "es": "Fix false feedback faults while confirmed OFF waits for start budget. Resume a proven charging episode after cleared device error 5 without a repeated start delay, retaining fresh electrical, budget and safety checks.",
+        "fr": "Fix false feedback faults while confirmed OFF waits for start budget. Resume a proven charging episode after cleared device error 5 without a repeated start delay, retaining fresh electrical, budget and safety checks.",
+        "it": "Fix false feedback faults while confirmed OFF waits for start budget. Resume a proven charging episode after cleared device error 5 without a repeated start delay, retaining fresh electrical, budget and safety checks.",
+        "nl": "Fix false feedback faults while confirmed OFF waits for start budget. Resume a proven charging episode after cleared device error 5 without a repeated start delay, retaining fresh electrical, budget and safety checks.",
+        "pl": "Fix false feedback faults while confirmed OFF waits for start budget. Resume a proven charging episode after cleared device error 5 without a repeated start delay, retaining fresh electrical, budget and safety checks.",
+        "pt": "Fix false feedback faults while confirmed OFF waits for start budget. Resume a proven charging episode after cleared device error 5 without a repeated start delay, retaining fresh electrical, budget and safety checks.",
+        "ru": "Fix false feedback faults while confirmed OFF waits for start budget. Resume a proven charging episode after cleared device error 5 without a repeated start delay, retaining fresh electrical, budget and safety checks.",
+        "uk": "Fix false feedback faults while confirmed OFF waits for start budget. Resume a proven charging episode after cleared device error 5 without a repeated start delay, retaining fresh electrical, budget and safety checks.",
+        "zh-cn": "Fix false feedback faults while confirmed OFF waits for start budget. Resume a proven charging episode after cleared device error 5 without a repeated start delay, retaining fresh electrical, budget and safety checks."
+      },
       "0.17.0-alpha.184": {
         "en": "Fix fixed-one-phase priority reclaim: do not require an unavailable phase-mode ACK to withdraw an optional follower for a blocked preferred start. Retain physical reservations, shared limits and phase checks for switchable cars.",
         "de": "Prioritaetsruecknahme bei fester Einphasigkeit korrigieren: kein nicht vorhandenes Phasenmodus-ACK verlangen. Optionale Folgeladung gezielt zuruecknehmen; reale Reservierungen, gemeinsame Grenzen und Phasenpruefung umschaltbarer Fahrzeuge erhalten.",
@@ -81,19 +94,6 @@
         "ru": "Сравнивает смесь 50/50 и профиль медианы с суточной энергией Lasso. Новые прогнозы сохраняются заранее; старые прогнозы и пропуски сохранены. Управление не изменено.",
         "uk": "Порівнює суміш 50/50 і профіль медіани з добовою енергією Lasso. Нові прогнози зберігаються заздалегідь; попередні прогнози й пропуски збережено. Керування незмінне.",
         "zh-cn": "比较固定50/50混合及以Lasso日能量缩放的中位数曲线。提前保存新组合预测，保留旧预测和缺失值。生产控制不变。"
-      },
-      "0.17.0-alpha.178": {
-        "en": "Archive available Meteo forecast vintages and current estimates with capture/target/source times and original units for 90 days in SQL while load comparison is enabled. Missing fields remain unknown; control is unchanged.",
-        "de": "Bei aktiviertem Lastvergleich verfuegbare Meteo-Prognosestaende und aktuelle Schaetzungen mit Erfassungs-, Ziel- und Quellzeit sowie Originaleinheiten 90 Tage in SQL archivieren. Fehlende Werte bleiben unbekannt; Regelung unveraendert.",
-        "es": "Archiva previsiones Meteo y estimaciones actuales con tiempos de captura, destino, origen y unidades durante 90 días en SQL al activar la comparación. Los valores ausentes siguen desconocidos; control sin cambios.",
-        "fr": "Archive les prévisions Meteo et estimations actuelles avec temps de capture, cible, source et unités pendant 90 jours dans SQL si la comparaison est active. Valeurs absentes inconnues ; contrôle inchangé.",
-        "it": "Archivia previsioni Meteo e stime attuali con tempi di acquisizione, destinazione, origine e unità per 90 giorni in SQL durante il confronto. Valori assenti sconosciuti; controllo invariato.",
-        "nl": "Archiveert bij actieve vergelijking Meteo-prognoses en actuele schattingen met vastleg-, doel- en brontijden en oorspronkelijke eenheden 90 dagen in SQL. Ontbrekende waarden blijven onbekend; regeling ongewijzigd.",
-        "pl": "Archiwizuje prognozy Meteo i bieżące szacunki z czasami pobrania, docelowymi, źródłowymi i jednostkami w SQL przez 90 dni przy aktywnym porównaniu. Braki pozostają nieznane; sterowanie bez zmian.",
-        "pt": "Arquiva previsões Meteo e estimativas atuais com tempos de captura, destino, origem e unidades durante 90 dias em SQL com a comparação ativa. Valores ausentes desconhecidos; controlo inalterado.",
-        "ru": "При активном сравнении прогнозы Meteo и текущие оценки архивируются в SQL на 90 дней с временами захвата, цели, источника и исходными единицами. Пропуски неизвестны; управление без изменений.",
-        "uk": "За активного порівняння прогнози Meteo й поточні оцінки архівуються в SQL на 90 днів із часом захоплення, цілі, джерела та вихідними одиницями. Пропуски невідомі; керування без змін.",
-        "zh-cn": "负载比较启用时，将Meteo预报版本和当前估算连同采集、目标及源时间戳和原始单位归档到SQL并保留90天。缺失值保持未知，控制逻辑不变。"
       }
     },
     "titleLang": {
