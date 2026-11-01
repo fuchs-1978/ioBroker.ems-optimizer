@@ -1,14 +1,18 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.170**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.186**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 
 [Sprachabdeckung und Prüfungen](docs/translations.md) · [English overview](README.md) · [Versionshinweise](CHANGELOG_OLD.md)
 
-Version .164 ergänzt Abfahrts-Machbarkeit, Konfigurationshinweise, Übergangs-/Reaktionsauswertung, Netzregelgüte und Prognosevorschau sowie einen allgemeinen Offline-Versionsvergleich. Das neuere Lastprofil ist optional; der bisherige Median bleibt Standard. [Details und Grenzen](docs/release-0.17.0-alpha.164.md).
+Aktueller Umfang: Median-/Lasso-/Kombinationsvergleich und Archivierung ausgewählter Wetter-/Raumquellen sind passiv. Die Batterie-/Fahrzeugstrategie bleibt eine Vorschau; Wärmeplanung und produktive LPC-Eigenstrombilanz sind noch offen. Zuständigkeiten und Restaufgaben stehen in der [aktuellen Roadmap #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36), Änderungen im [Changelog](README.md#changelog).
 
-Version .163 verbessert die Entwicklungsprüfung: Standard-CI, ESLint, adaptereigene Timer, vollständige Größenprüfung der Admin-Felder und reproduzierbare Installation der Abhängigkeiten. [Details](docs/release-0.17.0-alpha.163.md).
+## Installation und Aktualisierung
+
+Die Alpha-Version wird über GitHub installiert: **ioBroker Admin → Adapter → Installation aus eigener Quelle → GitHub**, Quelle `https://github.com/fuchs-1978/ioBroker.ems-optimizer`. Die genaue Bezeichnung hängt von der Admin-Version ab. Die npm-Auswahl liefert diesen GitHub-Stand nicht. `main` kann sich weiterentwickeln; für reproduzierbare Installation den geprüften Commit aus dem zugehörigen PR verwenden.
+
+Nach dem Update installierte Version und `System.Version` vergleichen. Meldet der laufende Prozess noch die alte Version, die EMS-Instanz neu starten. Bestehende Einstellungen und Gerätefreigaben danach prüfen; eine Installation ist keine neue Freigabe. Ein SQL-Neustart ist kein allgemeiner Installationsschritt, sondern nur bei einer entsprechend diagnostizierten verwaisten Recorder-Anfrage erforderlich; siehe [SQL-Wiederherstellung](#sql-wiederherstellung-und-historische-lücken).
 
 ## EMS-Übersicht: Erklärung, Datenqualität und Tagesrückblick
 
@@ -16,12 +20,15 @@ Der erste Admin-Reiter **EMS-Übersicht** zeigt oben den kompakten **Betriebszus
 
 ## Inhaltsverzeichnis
 
+- [Installation und Aktualisierung](#installation-und-aktualisierung)
 - [Betriebsarten und sichere Zuständigkeit](#betriebsarten-und-sichere-zuständigkeit)
 - [So liest man die Admin-Anleitung](#so-liest-man-die-admin-anleitung)
 - [Admin: Netzanschluss / §14a / EEBUS](#admin-netzanschluss--14a--eebus)
 - [Admin: Allgemein](#admin-allgemein)
 - [Admin: Messwerte](#admin-messwerte)
 - [Admin: Historie und Prognose](#admin-historie-und-prognose)
+- [Median-, Lasso- und Kombinationsvergleich](#median-lasso-und-kombinationen)
+- [Mobilitätsreserve und Abfahrtszeit](#mobilitätsreserve-und-vorhandene-abfahrtszeit)
 - [Admin: Preise und Tarife](#admin-preise-und-tarife)
 - [Admin: Wallboxen allgemein](#admin-wallboxen-allgemein)
 - [Admin: Wallbox 0, 1 und 2](#admin-wallbox-0-1-und-2)
@@ -175,6 +182,16 @@ Aktuelle Leistung ist die Echtzeitbasis, Energiezähler sind die Basis für bela
 | Bisherige verfügbare Hausanschlussleistung (optional)<br>`haFreePowerId` | leer | Optionaler bisheriger Datenpunkt für freie Anschlussleistung in W. Für Migration/Altintegration; ersetzt keine korrekt eingetragene physische Sicherung und phasenweise Messung. |
 | Hausanschluss-Kritisch-Signal (optional)<br>`haCriticalId` | leer | Optionales boolesches/numerisches Kritisch-Signal einer vorhandenen Hausanschlussüberwachung. Meldet Schutzbedarf, keine zusätzliche Leistung. Eine aktive Schutzmeldung darf nicht durch Priorität oder Pflichtladen ausgehebelt werden. |
 
+### Eingangsdaten und Zeitstempel seit alpha.170
+
+Fremde Ereignisse mit älterem gültigem `state.ts` können neuere Cachewerte nicht mehr ersetzen. Abonnements werden vor Initiallesungen eingerichtet; seit Lesebeginn eingetroffene Ereignisse haben Vorrang. Gleiche Zeitstempel erlauben legitime Wert-, ACK- und Qualitätsänderungen. Ein neuer Zeitstempel aktualisiert auch unveränderte Werte. Fehlende/ungültige oder mehr als eine Sekunde zukünftige Zeitstempel bleiben unverändert sichtbar und erzeugen keinen Aktualitätsnachweis; sie erhöhen die gültige Zeitmarke nicht. `lc` und EMS-Empfangszeit ersetzen keinen Messzeitpunkt. Lokale Bedienbefehle mit ACK=false bleiben gesondert von Messwerten behandelt.
+
+Unter den Netzquellen gibt es den **Zeitstempelvertrag der Netzquelle**. Standard **Veröffentlichungszeiten**: höchstens fünf Sekunden Versatz zwischen frischen Bezugs-/Einspeisewerten; das ist nur ein begrenztes Veröffentlichungsfenster, kein Nachweis desselben Telegramms. **Gemeinsame Telegramm-Empfangszeit** erfordert exakt gleiche Zeitstempel, passend zur SMA-Testversion mit gemeinsamem Empfangszeitstempel. Nur bei nachgewiesenem Quellenvertrag wählen; diese Installation ändert keine Einstellung automatisch. Quellen, die unveränderte Werte lange nicht aktualisieren, benötigen einen echten Quellen-Heartbeat innerhalb der bestehenden 30-Sekunden-Grenze; erneutes Lesen genügt nicht.
+
+Bei kurzem Versatz kann das letzte passende Paar innerhalb seiner ursprünglichen Altersgrenze konservativ gehalten werden: keine Einspeisegutschrift, Bezug mindestens wie vorher bzw. aktuell gemeldet, keine neuen Stellbefehle. Eine bereits belegte Ladung bleibt nur bei weiterhin gültigen unabhängigen Schutzbedingungen erhalten. Fehlerhafte, fehlende oder veraltete Messwerte bekommen diese Ausnahme nicht. Die bestehende Schutzreserve wird nicht reduziert. `Diagnostics.Snapshot_JSON.inputStates` zeigt begrenzte Verwerfungszähler und den letzten Fall; `.gridMeasurement` zeigt Vertrag, Versatz, Originalzeiten und einen eventuellen Halt. Debug-Meldungen sind global auf höchstens eine pro Minute begrenzt.
+
+Nicht verhindert werden fehlende Zwischenwerte oder Controller-/Transportverzögerungen. Veröffentlichungszeitstempel beweisen keine physische Gleichzeitigkeit; gleiche Zeitstempel allein erlauben keine sichere Unterscheidung vertauschter Änderungen.
+
 ## Admin: Historie und Prognose
 
 Die Historie lernt typische Lastprofile; der Fahrplan beschreibt erwartete künftige Viertelstunden. Längere gewünschte Lernhistorie erzeugt keine fehlenden Daten. Fehlende Wetter-/PV-Intervalle bleiben Lücken. Die PV-Flächen-/Baumzuordnung ist spezifisch: ein beliebiger Forecast-JSON-Wert ist nicht automatisch kompatibel.
@@ -198,6 +215,36 @@ Die Historie lernt typische Lastprofile; der Fahrplan beschreibt erwartete künf
 | Feiertag heute<br>`holidayTodayId` | leer | Boolesches/numerisches Feiertagssignal für genau den genannten Tag. Dient der Zuordnung typischer Tagesprofile. Kein Kalendertext oder Liste mehrerer Termine; optional, wenn keine solche Quelle vorhanden ist. |
 | Feiertag morgen<br>`holidayTomorrowId` | leer | Boolesches/numerisches Feiertagssignal für genau den genannten Tag. Dient der Zuordnung typischer Tagesprofile. Kein Kalendertext oder Liste mehrerer Termine; optional, wenn keine solche Quelle vorhanden ist. |
 | Feiertag übermorgen<br>`holidayAfterTomorrowId` | leer | Boolesches/numerisches Feiertagssignal für genau den genannten Tag. Dient der Zuordnung typischer Tagesprofile. Kein Kalendertext oder Liste mehrerer Termine; optional, wenn keine solche Quelle vorhanden ist. |
+
+### Median, Lasso und Kombinationen
+
+Im Reiter Historie/Prognose ist `loadComparisonEnabled` standardmäßig **aus**. Der Vergleich beeinflusst keine produktive Zuteilung. `loadComparisonTemperature` ist bei aktiviertem Vergleich standardmäßig an und nutzt historisierte Außentemperatur sowie die für morgen verfügbare Wetterprognose.
+
+| Variante | Berechnung |
+| --- | --- |
+| Median | Typischer Verbrauch je Viertelstunde und Wochentag/Feiertag. |
+| Lasso | Regularisiertes Modell aus bereinigtem Verbrauch derselben lokalen Viertelstunde vor 2/7 Kalendertagen, Tageszeit, Wochentag/Feiertag und optional Außentemperatur/Heizgrad. |
+| 50/50-Mischung | Je Viertelstunde der Mittelwert aus Median und Lasso. |
+| Lasso-Energie / Median-Verlauf | Alle Median-Viertelstunden mit `Lasso-Tagesenergie / Median-Tagesenergie` skalieren. Die Form bleibt Median, die Tagessumme entspricht Lasso. Keine nachträgliche Anpassung an den Istverbrauch. |
+
+Training erfolgt beim Start und beim täglichen Historienaufbau um 00:10 Uhr mit höchstens 84 Tagen. Vorab gespeicherte Prognosen bleiben bei Neustarts unverändert. Merkmale sind derzeit im Modellcode festgelegt; zusätzliche Raum-/Winddaten sind noch keine Lasso-Faktoren. Koeffizient 0 bedeutet, dass das aktuelle Modell diesem Merkmal keinen Beitrag zuordnet, nicht dass Wetter grundsätzlich bedeutungslos wäre.
+
+`Forecast.LoadComparison` enthält `Ready`, `Status`, `Result`, `Model_JSON`, `Forecast_JSON`, `Evaluation_JSON` und `Ledger_JSON`. Für einen regulären vollständigen Ist-Tag sind 96 gemeinsame gemessene Slots nötig. Bei Zwischenständen immer denselben Zeitraum, Schlusszeit und Anzahl/Abdeckung der abgeschlossenen Slots vergleichen. Energiemengen aus SQL-Viertelstundenmitteln sind Näherungen, keine abrechnungsfähigen Zählerdifferenzen. Ein kleiner Fehler der Tagessumme beweist keinen guten Viertelstundenverlauf; beide getrennt ausweisen. Aus einem einzelnen Tag noch keinen dauerhaften Sieger oder automatischen Produktivwechsel ableiten.
+
+Zeitumstellung: Für Kalender-Lags bleibt die eindeutige lokale Zeit nutzbar; doppelte Herbstintervalle benötigen beide Messungen und werden gemittelt. Nur die tatsächlich nicht existente Frühlingsstunde darf aus den beiden gemessenen Nachbarstunden als ausdrücklich markiertes Merkmal geschätzt werden. Gewöhnliche Messlücken und Istwerte werden nicht aufgefüllt. Die 92-/100-Slot-Umstellungstage selbst bleiben derzeit als Prognose-/Bewertungszieltage ausgeschlossen. [Vergleich und offene Validierung #284](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/284).
+
+### Wetterarchiv und vorhandene Raumhistorien
+
+| Admin-Einstellung | Vorgabe und Wirkung |
+| --- | --- |
+| `weatherArchiveEnabled` | An; wirksam nur mit aktiviertem Vergleich. Verfügbare Wetter-Prognosestände mit Erfassungs-, Ziel- und Quellzeiten im eigenen `Debug.WeatherArchive.Snapshot_JSON` für 90 Tage sammeln. |
+| `roomHistoryEnabled` | An; ohne zugeordnete Quellen keine Änderung. Bereits aktivierte originale Raum-Ist-/Sollhistorien erhalten, keine zweite Datenreihe anlegen. |
+| `roomHistoryRetentionDays` | Mindestens 90 Tage; einstellbar 14–365. Nur verlängern, keine längere/unbegrenzte Retention verkürzen. |
+| `roomHistoryRooms` | Leere Admin-Tabelle; pro Raum Name, Heizungsart, Quelle der Isttemperatur und wirksamen Solltemperatur eintragen. Quellen sind installationsspezifisch, nicht fest verdrahtet. |
+
+Für neue Zuordnungen die Admin-Tabelle verwenden. Die vorhandene optionale Laufzeitliste `Config.RoomHistory.Rooms_JSON` bleibt kompatibel: ein nichtleerer Text hat Vorrang vor der Tabelle, ein leerer Text verwendet die Tabelle; der Text `[]` deaktiviert die Zuordnung. Deshalb bei scheinbar wirkungsloser Admin-Tabelle zuerst die wirksame Herkunft prüfen. Bestehende Zuordnungen werden durch diese Anleitung nicht migriert. SQL muss für die Originalquellen bereits aktiviert sein; Filter, Abtastrate und andere Historieneinstellungen bleiben erhalten. Elektrisch beheizte Räume gesondert kennzeichnen.
+
+`Debug.WeatherArchive.Status` und `Debug.RoomHistory.Status`/`Status_JSON` zeigen Sammlung beziehungsweise Metadatenprüfung, keine Garantie vollständiger Datenbankzustellung. Anbieter-current ist eine Schätzung, keine lokale Messung; fehlende Strahlung bleibt unbekannt. Wind, Bewölkung, Feuchte, Niederschlag, Sonnenscheindauer und Raumtemperaturen dienen vorerst dem Datenaufbau. Keine automatische Wärme-/KONNEX-Steuerung. [Wetterarchiv](docs/release-0.17.0-alpha.178.md) · [Originale Raumhistorien](docs/release-0.17.0-alpha.180.md).
 
 ## Admin: Preise und Tarife
 
@@ -290,6 +337,10 @@ Gemeinsame Prioritäts-, Start-/Stopptimer-, Antwort- und Phasenregeln. 600 s si
 | Maximale Wartezeit auf externe Phasenbestätigung<br>`wallboxPhaseSwitchTimeoutS` | 180 s | Maximales Warten auf den extern ausgeführten und bestätigten Phasenwechsel. Fehlende Bestätigung bleibt ungeklärt; Frist ist keine künstliche elektrische Bestätigung. |
 | Toleranzzeit nach bestätigtem go-e-Phasenwechsel<br>`phaseSwitchTransitionS` | 90 s | Begrenzte Toleranz der erwarteten go-e-Umschaltpause nach bestätigtem Moduswechsel. Auto kann kurz stoppen und wieder anlaufen. Hebt unabhängige Fehler-/Strom-/Schutzprüfungen nicht auf. |
 
+Seit alpha.169 kann eine bereits laufende, eindeutig zugeordnete Ladung trotz fehlendem ACK einer Stromänderung gehalten werden. Voraussetzung sind frische unabhängige SMA-Netz- und Phasenmessungen sowie nachgewiesene Schutzreserven für den größeren alten oder möglicherweise übernommenen Strom. Die Anzeige meldet eine ACK-Warnung; weitere Befehle sind währenddessen gesperrt. Starts, Phasenwechsel, ausdrückliche Fehler und unklare Schutzdaten erhalten diese Ausnahme nicht. Ein verspätetes echtes ACK bleibt von der elektrischen Wirkung getrennt.
+
+Seit alpha.183/184 kann eine beobachtete Rückkehr des bevorzugten Fahrzeugs eine begrenzte Übergabe vorbereiten; feste Einphasigkeit benötigt keinen nicht vorhandenen Phasenmodus-ACK. Nach Fehler 5 kann seit alpha.185 eine zuvor gemessene Ladung nach frischem Fehlerstatus 0 und bestätigtem Stillstand ohne erneute allgemeine Startwartezeit fortgesetzt werden. Der einmalige Nachweis verfällt nach spätestens 15 Minuten, bei Abstecken, anderen Fehlern, Freigabeverlust oder Neustart. Das EMS quittiert Fehler 5 nicht selbst. Seit alpha.186 greift der vorhandene Haltepfad bei Verbindungsausfall auch während eines noch laufenden Folgestrom-ACKs. Keine neue Start-/Phasenfreigabe, keine fingierte Rückmeldung; unabhängige Schutz- und Reservierungsprüfungen bleiben Pflicht. [alpha.185](docs/release-0.17.0-alpha.185.md) · [alpha.186](docs/release-0.17.0-alpha.186.md).
+
 ## Admin: Wallbox 0, 1 und 2
 
 Die drei Fahrzeugreiter besitzen dieselben Feldtypen. In den Tabellen steht `wb0…`; im zweiten bzw. dritten Reiter heißen dieselben Felder `wb1…` bzw. `wb2…`. Jeder Reiter muss vollständig auf seine eigene Box zeigen. **WB0 = Mii/e-Up, WB1 = EQV, WB2 = EQE** sind die Bezeichnungen der aktuellen Oberfläche; die tatsächlichen Fahrzeugnamen können geändert werden. Ein Mii bleibt physisch einphasig, auch wenn ein generisches 3P-Feld sichtbar ist.
@@ -301,7 +352,7 @@ Die drei Fahrzeugreiter besitzen dieselben Feldtypen. In den Tabellen steht `wb0
 | Wallbox 0 vorhanden / in Planung berücksichtigen<br>`wb0Present` | EIN | Kennzeichnet vorhandenes Gerät für Planung und Diagnose. Nicht angeschlossene Fahrzeuge werden trotzdem anhand des Fahrzeugstatus separat erkannt; vorhanden bedeutet nicht ladebereit. |
 | Regelfreigabe Wallbox 0<br>`wb0ControlEnabled` | AUS | Gerätespezifische Teilnahme an der Regelung. Für reale Befehle sind zusätzlich Master, Alpha- und Ausgangsfreigabe nötig. |
 | Fahrzeugname<br>`wb0Name` | Vehicle 0 | Frei wählbarer Anzeigename des Fahrzeugs. Ändert nicht die Zuordnung WB0/WB1/WB2 zu den jeweiligen Objekt-IDs. |
-| SoC-Datenpunkt<br>`wb0SocId` | leer | Aktueller Fahrzeug-Ladezustand in %. Kein Reichweitenwert. Frischer echter SoC ist Grundlage für Mindest-/Zielentscheidungen; ohne SoC gilt der gesonderte Ohne-SoC-/Energievertrag, nicht automatisch 0 %. |
+| SoC-Datenpunkt<br>`wb0SocId` | leer | Aktueller Fahrzeug-Ladezustand in %. Kein Reichweitenwert. Ein gültiger echter SoC beziehungsweise die qualifizierte Ladefortschreibung ist Grundlage für Mindest-/Zielentscheidungen; ohne SoC gilt der gesonderte Ohne-SoC-/Energievertrag, nicht automatisch 0 %. |
 
 ### Optionale SoC-Schätzung aus Ladeenergie (alle drei Fahrzeuge)
 
@@ -316,7 +367,7 @@ Im jeweiligen Fahrzeugreiter kann **„SoC aus gemessener Ladeenergie schätzen�
 
 Berechnung: `Basis-SoC + AC-kWh seit Basis × Wirkungsgrad / nutzbare kWh × 100`. Gezählt wird nur Energie ab einem zeitlich zugeordneten Zählerstand, nicht erneut die Energie vor dem Fahrzeugbericht. Mindest-/Ziel-SoC und Abregelung verwenden den wirksamen Wert; der Ausgangstreiber berechnet ihn vor seinen Entscheidungen unabhängig aus den Quellen und der Basis erneut. Die Preisladung behält ihren eigenen echten SoC-/Energienachweis, damit Ladeenergie nicht doppelt abgezogen wird.
 
-Unter `Vehicles.WallboxN` stehen `ReportedSoC_pct`, `EstimatedSoC_pct`, `SocEstimateStatus` und die zusammengehörige persistente `SocEstimateLedger_JSON`. `SoC_pct` bleibt der wirksame Regelwert. Eine ungültige Schätzung liefert `EstimatedSoC_pct = null` und fällt auf einen gültigen gemeldeten SoC zurück; fehlt auch dieser, gelten die bisherigen Ohne-SoC-Schutzregeln. Die Originalquelle wird niemals überschrieben.
+Unter `Vehicles.WallboxN` stehen `ReportedSoC_pct`, `EstimatedSoC_pct`, `SocEstimateStatus` und die zusammengehörige persistente `SocEstimateLedger_JSON`. `SoC_pct` bleibt der wirksame Regelwert. Ohne aktive manuelle Korrektur liefert eine ungültige Schätzung `EstimatedSoC_pct = null` und fällt auf einen gültigen gemeldeten SoC zurück; fehlt auch dieser, gelten die bisherigen Ohne-SoC-Schutzregeln. Eine ungeprüfte oder suspendierte manuelle Basis wird dagegen nicht stillschweigend durch die alte Cloud-Meldung ersetzt. Die Originalquelle wird niemals überschrieben.
 
 Zählerwerte müssen bestätigt, plausibel und höchstens 60 Sekunden alt sein. Eine neue Basis benötigt einen Zählerwert höchstens 60 Sekunden nach dem Messzeitpunkt; bis dahin gilt der gemeldete SoC. Rücksprünge, unplausible Energiesprünge, beobachtetes Abstecken, geänderte Quellen/Parameter oder eine unklare Verbindung über einen Neustart verwerfen die Basis. Nach Reset ist eine neue zugeordnete Fahrzeugmeldung erforderlich. Ein zusammengehöriger persistierter Datensatz ermöglicht Neustarts ohne erneutes Aufaddieren; maximal 256 Zählerbeobachtungen helfen bei verspäteten Meldungen. Das Alter der Fahrzeugmeldung bleibt sichtbar. Seit alpha.168 darf eine Schätzbasis länger als zwei Stunden gelten, wenn eine gespeicherte Kette gültiger, monotoner Zählerbeobachtungen ohne Lücke über 60 Sekunden vorliegt. Der ursprüngliche SoC-/Energieanker bleibt unverändert; es wird keine Energie erneut addiert. Ohne diesen Kontinuitätsnachweis bleibt die bisherige Zwei-Stunden-Grenze wirksam. Eine bereits abgelaufene alte Basis wird nicht rückwirkend freigegeben: einmal eine neue, zeitlich zugeordnete Fahrzeugmeldung abwarten beziehungsweise die Fahrzeugdaten regulär aktualisieren lassen. Die Schätzung ersetzt keine Verbrauchsmessung beim Fahren.
 
@@ -422,6 +473,20 @@ Nach Wiederverbindung geht die Ladung mit frischen Rueckmeldungen in die normale
 | `LowSoc3MinA` | 0 | 25 | 25 |
 
 Diese Defaults beschreiben keine allgemeingültigen Mercedes-/Mii-Stromgrenzen. Akkukapazität, Leistungsgrenzen, tatsächliche Netzphase und Inbetriebnahmestrom je Fahrzeug prüfen.
+
+### Manuelle Fahrzeug-SoC-Korrektur ab alpha.171
+
+Ist der Cloud-SoC veraltet, kann unter `Vehicles.Wallbox0.SoCCorrection_pct` (Mii),
+`Vehicles.Wallbox1.SoCCorrection_pct` (EQV) bzw. `Vehicles.Wallbox2.SoCCorrection_pct` (EQE)
+ein gepruefter aktueller SoC mit `ack=false` geschrieben werden. Kein Neustart fuer die Korrektur.
+`-1` hebt den Schutz bewusst auf. Status und Grenzen: [Bedienhinweise](docs/release-0.17.0-alpha.171.md).
+
+
+Ab alpha.172 kann ein tatsaechlich geaenderter Cloud-SoC die manuelle Basis automatisch abloesen,
+wenn er zur zeitlich zugeordneten Ladefortschreibung innerhalb eines Prozentpunkts passt.
+Schutzbedingungen und Status: [automatische Rueckkehr](docs/release-0.17.0-alpha.172.md).
+
+Seit alpha.186 setzt eine unveränderte Cloud-Prozentmeldung mit neuem Veröffentlichungszeitstempel eine lückenlos gemessene Ladefortschreibung nicht mehr zurück. Geänderte Prozentwerte und konfigurierte echte Fahrzeug-Messzeitpunkte werden weiterhin zeitlich ausgerichtet ausgewertet. Manuelle Korrekturen bleiben nach ihrem eigenen Vertrag geschützt. Bereits früher verlorener Fortschritt wird nicht rückwirkend erfunden; bei Bedarf einen am Fahrzeug/in der App geprüften aktuellen SoC korrigieren. [Details](docs/release-0.17.0-alpha.186.md).
 
 ## Admin: Warmwasser-Heizstab
 
@@ -900,6 +965,14 @@ Support und Fehlermeldungen: [GitHub Issues](https://github.com/fuchs-1978/ioBro
 
 Die Batteriestrategie-Vorschau in .165 bereitet Zielhaltung und Feinregelung, begrenzte Fahrzeugunterstützung sowie nächtlichen Mindestbedarf vor. Sie schaltet keine Hardware frei und ändert keine produktive Ladeplanung. [Grenzen und Voraussetzungen](docs/release-0.17.0-alpha.165.md).
 
+### SQL-Wiederherstellung und historische Lücken
+
+`Debug.Shadow.RecordSQLRecoveryStatus` beschreibt eine unabhängig geprüfte Wiederherstellung einer verwaisten Recorder-Anfrage. Ein EMS-Neustart allein beweist deren Backend-Abschluss nicht. Verlangt der Status einen SQL-Prozesswechsel, den SQL-Adapter einmal gezielt neu starten und mindestens eine Minute stabile Verbindung sowie den laufenden Historienaufbau abwarten. Erst danach folgen die lesenden Berechtigungs-/Prozessprüfungen. Zusätzliche Neustarts ersetzen fehlende Nachweise nicht.
+
+Seit alpha.186 bekommt die eigentliche Recorder-Historienprüfung bei erkannter MariaDB ab 10.1 eine anfragebezogene Ausführungs-/Lock-Frist von zwei Sekunden. Andere Server behalten ihren Dialekt; keine globale Datenbankkonfiguration oder unbegrenzter Ersatzversuch. Die Transportwartezeit enthält weitere mögliche Queue-/Verbindungs-/Rücktransportanteile und ist keine isolierte DB-Laufzeit. Drei Wiederherstellungsversuche pro 15-Minuten-Fenster vermeiden eine dauerhafte Sackgasse durch vorübergehende andere DB-Arbeit. Unbekannte Abschlussnachweise bleiben gesperrt.
+
+`recovered` hebt nur die alte Anfragesperre auf. Erst unabhängige exakte Originaltreffer bestätigen SQL-Speicherung und ermöglichen Journalbereinigung. Ein inzwischen kleiner Puffer und frische Treffer heilen keine früheren Aufnahmeverluste oder ungeklärten langen SQL-Fristen. Diese bleiben als datierte Befunde in [#60](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/60) bestehen. Die Diagnoseaufzeichnung ist von der Aktorregelung getrennt. [Wiederherstellung und Grenzen alpha.186](docs/release-0.17.0-alpha.186.md).
+
 ## Mobilitätsreserve und vorhandene Abfahrtszeit
 
 Je Fahrzeug liegt im Objektbaum der beschreibbare State `ems-optimizer.0.Vehicles.Wallbox0.MobilityReserve_pct` (analog Wallbox1/Wallbox2). Vorgabe **0 % = aus**; bestehende Eingaben bleiben bei Neustart/Update erhalten. Gültig sind Zahlen von 0 bis 100; die Vorschau begrenzt das Reserve-Ziel zusätzlich auf den Fahrzeug-Mindest-SoC. Ungültige Werte bleiben unbekannt. Die Reserve ist ein Teil des Mindestbedarfs und wird nicht als zusätzliche Nachtenergie addiert.
@@ -907,28 +980,3 @@ Je Fahrzeug liegt im Objektbaum der beschreibbare State `ems-optimizer.0.Vehicle
 Die vorhandenen `Vehicles.WallboxN.DepartureTime`-States verwenden `HH:MM`; `DepartureTimestamp` ist der daraus berechnete nächste Termin. Zusätzlich muss die bestehende Abfahrts-/Fristfunktion für das Fahrzeug eingeschaltet sein. Eine leere Zeit ist keine feste Abfahrt. Es werden keine Zeiten automatisch gesetzt oder vorhandene Einstellungen überschrieben.
 
 **Stand alpha.167:** Reserve und Abfahrt sind für die neue Strategie lesend vorbereitet. Mindest-SoC als Bereitschaftsziel bis Abfahrt, günstige Ladefenster, notwendige teurere Zusatzfenster und Sofortladen ausschließlich für die Reserve beziehungsweise ausdrücklichen Nutzerwunsch sind noch produktiv in [#25](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/25) zu integrieren. Die bisherige Sofortladung unter Mindest-SoC wird durch diesen neuen State noch nicht ersetzt; ein Reservewert ist noch keine Stellfreigabe.
-
-Seit alpha.169 kann eine bereits laufende, eindeutig zugeordnete Ladung trotz fehlendem ACK einer Stromänderung gehalten werden. Voraussetzung sind frische unabhängige SMA-Netz- und Phasenmessungen sowie nachgewiesene Schutzreserven für den größeren alten oder möglicherweise übernommenen Strom. Die Anzeige meldet eine ACK-Warnung; weitere Befehle sind währenddessen gesperrt. Starts, Phasenwechsel, ausdrückliche Fehler und unklare Schutzdaten erhalten diese Ausnahme nicht. Ein verspätetes echtes ACK bleibt von der elektrischen Wirkung getrennt.
-
-### Eingangsdaten und Zeitstempel seit alpha.170
-
-Fremde Ereignisse mit älterem gültigem `state.ts` können neuere Cachewerte nicht mehr ersetzen. Abonnements werden vor Initiallesungen eingerichtet; seit Lesebeginn eingetroffene Ereignisse haben Vorrang. Gleiche Zeitstempel erlauben legitime Wert-, ACK- und Qualitätsänderungen. Ein neuer Zeitstempel aktualisiert auch unveränderte Werte. Fehlende/ungültige oder mehr als eine Sekunde zukünftige Zeitstempel bleiben unverändert sichtbar und erzeugen keinen Aktualitätsnachweis; sie erhöhen die gültige Zeitmarke nicht. `lc` und EMS-Empfangszeit ersetzen keinen Messzeitpunkt. Lokale Bedienbefehle mit ACK=false bleiben gesondert von Messwerten behandelt.
-
-Unter den Netzquellen gibt es den **Zeitstempelvertrag der Netzquelle**. Standard **Veröffentlichungszeiten**: höchstens fünf Sekunden Versatz zwischen frischen Bezugs-/Einspeisewerten; das ist nur ein begrenztes Veröffentlichungsfenster, kein Nachweis desselben Telegramms. **Gemeinsame Telegramm-Empfangszeit** erfordert exakt gleiche Zeitstempel, passend zur SMA-Testversion mit gemeinsamem Empfangszeitstempel. Nur bei nachgewiesenem Quellenvertrag wählen; diese Installation ändert keine Einstellung automatisch. Quellen, die unveränderte Werte lange nicht aktualisieren, benötigen einen echten Quellen-Heartbeat innerhalb der bestehenden 30-Sekunden-Grenze; erneutes Lesen genügt nicht.
-
-Bei kurzem Versatz kann das letzte passende Paar innerhalb seiner ursprünglichen Altersgrenze konservativ gehalten werden: keine Einspeisegutschrift, Bezug mindestens wie vorher bzw. aktuell gemeldet, keine neuen Stellbefehle. Eine bereits belegte Ladung bleibt nur bei weiterhin gültigen unabhängigen Schutzbedingungen erhalten. Fehlerhafte, fehlende oder veraltete Messwerte bekommen diese Ausnahme nicht. Die bestehende Schutzreserve wird nicht reduziert. `Diagnostics.Snapshot_JSON.inputStates` zeigt begrenzte Verwerfungszähler und den letzten Fall; `.gridMeasurement` zeigt Vertrag, Versatz, Originalzeiten und einen eventuellen Halt. Debug-Meldungen sind global auf höchstens eine pro Minute begrenzt.
-
-Nicht verhindert werden fehlende Zwischenwerte oder Controller-/Transportverzögerungen. Veröffentlichungszeitstempel beweisen keine physische Gleichzeitigkeit; gleiche Zeitstempel allein erlauben keine sichere Unterscheidung vertauschter Änderungen.
-
-
-### Manuelle Fahrzeug-SoC-Korrektur ab alpha.171
-
-Ist der Cloud-SoC veraltet, kann unter `Vehicles.Wallbox0.SoCCorrection_pct` (Mii),
-`Vehicles.Wallbox1.SoCCorrection_pct` (EQV) bzw. `Vehicles.Wallbox2.SoCCorrection_pct` (EQE)
-ein gepruefter aktueller SoC mit `ack=false` geschrieben werden. Kein Neustart fuer die Korrektur.
-`-1` hebt den Schutz bewusst auf. Status und Grenzen: [Bedienhinweise](docs/release-0.17.0-alpha.171.md).
-
-
-Ab alpha.172 kann ein tatsaechlich geaenderter Cloud-SoC die manuelle Basis automatisch abloesen,
-wenn er zur zeitlich zugeordneten Ladefortschreibung innerhalb eines Prozentpunkts passt.
-Schutzbedingungen und Status: [automatische Rueckkehr](docs/release-0.17.0-alpha.172.md).
