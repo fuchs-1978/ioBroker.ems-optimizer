@@ -1960,3 +1960,82 @@ for (const cause of ['bad OFF acknowledgement', 'donor still draws', 'hard budge
         }, 4600, cause === 'hard budget' ? 1000 : 4600);
         assert.equal(result.amps[2], 0);
     });
+
+function returningPriorityFixture() {
+    let at = Date.now(); class Clock extends Date {static now() {return at;}}
+    const h = engine({production: true, clock: Clock, wallboxPriority: 0});
+    h.exclude(1); h.put('DP_WB0_CAR', 1);
+    h.update(4600, 4600); // no retained running flags: witness the donor idle
+    const step = (mutate = () => {}, watts = 4600, hard = 4600) => {
+        at += 1000;
+        for (const state of h.states.values()) state.ts = at;
+        mutate(); return h.update(watts, hard);
+    };
+    step(() => h.owned(2, 20, 4600));
+    h.put('ems.0.Config.WallboxStartDelay_s', 300);
+    // The unchanged priority request has expired; continuous unplug evidence
+    // remains fresh while the other car actually charges.
+    for (let i = 0; i < 62; i++) {at += 4000; step();}
+    const diagnostic = () => JSON.parse(h.states.get('ems.0.Control.Wallbox0.AllocationDiagnostics_JSON').val);
+    const quiet = () => {
+        for (const [suffix, value] of [['OutputActive', false], ['OutputOwned', false],
+            ['OutputCommand_A', 0], ['OutputReservedPower_W', 0], ['OutputStopPowerPending', false]])
+            h.put('ems.0.Devices.Wallbox2.' + suffix, value);
+        h.put('raw.allow2', 0); h.put('raw.amps2', 0); h.put('DP_WB2_POWER', 0);
+        h.put('ems.0.Devices.Wallbox2.OutputStopConfirmedAt', at);
+        for (const p of [1, 2, 3]) h.put(`DP_WB2_L${p}_A`, 0);
+    };
+    const allocation = () => JSON.parse(h.states.get('ems.0.Control.ParallelWallboxAllocation_JSON').val);
+    return {...h, step, quiet, diagnostic, allocation, now: () => at, advance: ms => {at += ms;}};
+}
+
+test('returning preferred Mii prepares one handoff from running EQE without repeating 300 seconds', () => {
+    const h = returningPriorityFixture();
+    let t = h.step(() => h.put('DP_WB0_CAR', 3));
+    assert.equal(h.allocation().priorityHandoff?.trigger, 'replug');
+    assert.equal(t.amps[2], 0); assert.equal(t.amps[0], 0);
+    assert.equal(t.reserve[2], 4600, 'donor draw remains reserved until independent electrical stop');
+    t = h.step(() => {
+        h.put('raw.allow2', 0);
+        h.put('ems.0.Devices.Wallbox2.OutputActive', false);
+        h.put('ems.0.Devices.Wallbox2.OutputStopConfirmedAt', h.now());
+    });
+    assert.equal(t.amps[0], 0, 'OFF ACK alone never supplies electrical quiet');
+    t = h.step(h.quiet);
+    assert.ok(t.amps[0] >= 6, JSON.stringify(h.diagnostic()));
+    assert.equal(h.diagnostic().start.startDelayRemainingS, 0);
+    assert.equal(h.diagnostic().start.reason, 'prepared-vehicle-handoff');
+    assert.equal(h.states.get('ems.0.Config.WallboxStartDelay_s').val, 300);
+});
+
+for (const [name, mutate] of [
+    ['bad ACK', h => h.put('DP_WB0_CAR', 3, {ack: false})],
+    ['bad quality', h => h.put('DP_WB0_CAR', 3, {q: 64})],
+    ['stale timestamp', h => h.put('DP_WB0_CAR', 3, {ts: h.now() - 31000})],
+    ['reordered timestamp', h => h.put('DP_WB0_CAR', 3, {ts: h.now() - 2000})],
+    ['observation gap', h => {h.advance(10000); h.put('DP_WB0_CAR', 3);}],
+    ['withdrawn release', h => {h.put('DP_WB0_CAR', 3); h.put('DP_WB0_ALLOW', false);}],
+    ['mandatory donor', h => {h.put('DP_WB0_CAR', 3); h.put('DP_WB2_SOC', 10);}],
+    ['hard budget deficit', h => h.put('DP_WB0_CAR', 3)],
+    ['invalid grid', h => {h.put('DP_WB0_CAR', 3); h.put('DP_GRID_IMPORT', 0, {q: 64});}]
+]) test('returning priority shortcut rejects ' + name, () => {
+    const h = returningPriorityFixture();
+    h.step(() => mutate(h), 4600, name === 'hard budget deficit' ? 1000 : 4600);
+    assert.notEqual(h.allocation().priorityHandoff?.trigger, 'replug');
+    assert.equal(h.diagnostic().targetA, 0);
+});
+
+test('replug request cannot renew after expiry, control reset or unchanged connected publications', () => {
+    const h = returningPriorityFixture();
+    h.step(() => h.put('DP_WB0_CAR', 3));
+    assert.equal(h.allocation().priorityHandoff.trigger, 'replug');
+    h.advance(301000); h.step();
+    assert.equal(h.allocation().priorityHandoff, null);
+    const until = h.run('wallboxParallelPriorityRequest.until');
+    h.step(); h.step();
+    assert.equal(h.allocation().priorityHandoff, null);
+    assert.equal(h.run('wallboxParallelPriorityRequest.until'), until);
+    h.run('resetSlowTargets()');
+    h.step();
+    assert.notEqual(h.allocation().priorityHandoff?.trigger, 'replug', 'connected startup/reset is not a plug edge');
+});

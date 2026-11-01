@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.176 (2026-10-30)
+
+- (fuchs-1978) Add an opt-in day-ahead Median/Lasso comparison with cleaned load, calendar lags and SQL outside temperature. Persist forecasts before delivery and evaluate paired actuals; production planning is unchanged. [Setup and limits](docs/release-0.17.0-alpha.176.md).
+
 ## 0.17.0-alpha.175 (2026-10-30)
 
 - (fuchs-1978) Recover fast wallbox handoff after a brief source outage using bounded same-session proof and fresh stable electrical measurements. Preserve donor OFF, quiet-load and budget guards. [Details](docs/release-0.17.0-alpha.175.md).
