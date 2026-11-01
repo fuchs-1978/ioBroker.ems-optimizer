@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.177 (2026-10-30)
+
+- (fuchs-1978) Align SQL interval-center temperature averages with load bucket starts and ignore synthetic boundary anchors in the diagnostic load comparison. Existing forecasts and production control remain unchanged. [Details](docs/release-0.17.0-alpha.177.md).
+
 ## 0.17.0-alpha.176 (2026-10-30)
 
 - (fuchs-1978) Add an opt-in day-ahead Median/Lasso comparison with cleaned load, calendar lags and SQL outside temperature. Persist forecasts before delivery and evaluate paired actuals; production planning is unchanged. [Setup and limits](docs/release-0.17.0-alpha.176.md).

@@ -7,7 +7,7 @@
 
 Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Combines PV and grid measurements, load history, weather forecasts and electricity prices in a rolling 48-hour plan.
 
-**Current version: 0.17.0-alpha.183.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
+**Current version: 0.17.0-alpha.184.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
 
 [Deutsche Bedienungsanleitung](README.de.md) · [Release history](CHANGELOG_OLD.md) · [Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
@@ -113,6 +113,10 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 
 ## Changelog
 
+### 0.17.0-alpha.184 (2026-11-01)
+
+- (fuchs-1978) Fix optional-follower budget cycling when a preferred fixed-one-phase car waits for its start budget without phase-mode feedback. Preserve electrical reservations and safety limits. [Details](docs/release-0.17.0-alpha.184.md).
+
 ### 0.17.0-alpha.183 (2026-11-01)
 
 - (fuchs-1978) Allow a witnessed preferred-car replug to prepare one bounded handoff without repeating the start delay; retain electrical stop and budget proofs. [Policy](docs/release-0.17.0-alpha.183.md).
@@ -136,10 +140,6 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 ### 0.17.0-alpha.178 (2026-10-30)
 
 - (fuchs-1978) Archive available Meteo forecast vintages and current estimates in SQL for future load-learning comparisons, preserving capture/target/source times, units and unknowns. Production control is unchanged. [Setup](docs/release-0.17.0-alpha.178.md).
-
-### 0.17.0-alpha.177 (2026-10-30)
-
-- (fuchs-1978) Align SQL temperature interval-center averages with cleaned load quarter-hours for Lasso training; ignore synthetic boundary anchors and preserve unknown/conflict guards. [Details](docs/release-0.17.0-alpha.177.md).
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 
