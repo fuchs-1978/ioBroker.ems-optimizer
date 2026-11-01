@@ -2039,3 +2039,93 @@ test('replug request cannot renew after expiry, control reset or unchanged conne
     h.step();
     assert.notEqual(h.allocation().priorityHandoff?.trigger, 'replug', 'connected startup/reset is not a plug edge');
 });
+
+test('fixed 1P preferred Mii reclaims its blocked start without withholding all EQE budget on alternating ticks', () => {
+    let at = Date.now(); class Clock extends Date {static now() {return at;}}
+    const h = engine({production: true, clock: Clock, dhwControlEnabled: true,
+        wallboxPriority: 0, wb0PhaseSwitchEnabled: false, wb0PhaseControlMode: 'fixed'});
+    h.exclude(1); h.put('DP_DHW_PARALLEL_RELEASE', false);
+    h.put('ems.0.Vehicles.Wallbox0.PhaseSwitchEnabled', false);
+    h.states.delete('DP_WB0_PHASE_MODE');
+    h.put('ems.0.Config.WallboxStartDelay_s', 300);
+    h.put('ems.0.Config.WallboxStartReserve_W', 150);
+    h.owned(2, 16, 3150);
+    h.put('ems.0.Devices.MyPV_DHW.OutputReservedPower_W', 1600);
+    h.put('DP_DHW_OUTPUT1', 1600);
+    h.run('wallboxParallelPriorityRequest={index:0,pending:false,validObserved:true,until:Date.now()+300000};updateVehicles();');
+    const result = h.update(4942.4);
+    const d = JSON.parse(h.states.get('ems.0.Control.Wallbox0.AllocationDiagnostics_JSON').val);
+    const allocation = JSON.parse(h.states.get('ems.0.Control.ParallelWallboxAllocation_JSON').val);
+    assert.equal(d.reclaimPriorityStart, true, JSON.stringify({d,result}));
+    assert.equal(allocation.allocations.find(x => x.wb === 2).authorized, false,
+        'withdraw optional follower instead of a soft zero that holds 6 A and ramps up again');
+    assert.equal(result.amps[0], 0, 'still drawing donor and heater cannot finance the new start');
+    assert.equal(result.amps[2], 0);
+    assert.ok(result.reserve[2] >= 3680, 'physical donor reserve remains binding');
+    for (const budget of [5200, 4942.4, 5300, 4942.4]) {
+        at += 5000;
+        for (const state of h.states.values()) state.ts = at;
+        const next = h.update(budget);
+        const a = JSON.parse(h.states.get('ems.0.Control.ParallelWallboxAllocation_JSON').val);
+        assert.equal(a.allocations.find(x => x.wb === 2).authorized, false,
+            'do not revive a still drawing follower while its preferred-start reclaim is unfinished');
+        assert.equal(next.amps[2], 0);
+        assert.equal(next.amps[0], 0);
+    }
+
+    // Independent output evidence releases the old draw. The preferred car
+    // still needs its ordinary countdown; no electrical completion is invented.
+    h.put('ems.0.Devices.Wallbox2.OutputActive', false);
+    h.put('ems.0.Devices.Wallbox2.OutputOwned', false);
+    h.put('ems.0.Devices.Wallbox2.OutputCommand_A', 0);
+    h.put('ems.0.Devices.Wallbox2.OutputReservedPower_W', 0);
+    h.put('raw.allow2', 0); h.put('raw.amps2', 0); h.put('DP_WB2_POWER', 0);
+    for (const phase of [1, 2, 3]) h.put(`DP_WB2_L${phase}_A`, 0);
+    let started = false;
+    for (let tick = 0; tick < 65; tick++) {
+        at += 5000;
+        for (const state of h.states.values()) state.ts = at;
+        const next = h.update(4942.4);
+        if (next.amps[0] >= 6) {started = true; break;}
+        assert.equal(next.amps[2], 0);
+    }
+    assert.equal(started, true, 'ordinary qualified preferred start finishes instead of endlessly restarting');
+
+});
+
+for (const cause of ['unknown switchable topology', 'phase work', 'bad grid', 'hard deficit', 'mandatory EQE'])
+    test('fixed-topology priority reclaim retains ' + cause + ' guard', () => {
+        const {h, diagnostic} = blockedPriorityStart({phases: 1, budget: 3352, followerA: 9});
+        h.nativeConfig.wb2PhaseSwitchEnabled = false;
+        h.put('ems.0.Vehicles.Wallbox2.PhaseSwitchEnabled', false);
+        h.states.delete('raw.phase2'); h.states.delete('DP_WB2_PHASE_MODE');
+        if (cause === 'unknown switchable topology') {
+            h.nativeConfig.wb2PhaseSwitchEnabled = true;
+            h.put('ems.0.Vehicles.Wallbox2.PhaseSwitchEnabled', true);
+        }
+        if (cause === 'phase work') h.put('ems.0.Devices.Wallbox2.PhaseTransitionActive', true);
+        if (cause === 'bad grid') h.put('DP_GRID_IMPORT', 0, {q: 64});
+        if (cause === 'mandatory EQE') h.put('DP_WB1_SOC', 10);
+        const target = h.update(3352, cause === 'hard deficit' ? 1200 : 20000);
+        if (cause === 'mandatory EQE') {
+            assert.ok(target.amps[1] >= 6);
+            const allocation = JSON.parse(h.states.get('ems.0.Control.ParallelWallboxAllocation_JSON').val);
+            assert.equal(allocation.allocations.find(x => x.wb === 1).authorized, true);
+        } else assert.notEqual(diagnostic(2).reclaimPriorityStart, true);
+        assert.equal(target.amps[2], 0);
+    });
+
+for (const cause of ['budget loss', 'source quality', 'vehicle release', 'control reset'])
+    test('fixed preferred-start reclaim preparation clears on ' + cause, () => {
+        const {h} = blockedPriorityStart({phases: 1, budget: 3352, followerA: 9});
+        h.nativeConfig.wb2PhaseSwitchEnabled = false;
+        h.put('ems.0.Vehicles.Wallbox2.PhaseSwitchEnabled', false);
+        h.states.delete('raw.phase2'); h.states.delete('DP_WB2_PHASE_MODE');
+        h.update(3352, 20000);
+        assert.equal(h.run('wallboxStartPreparation[2]?.fixedReclaim'), true);
+        if (cause === 'source quality') h.put('DP_GRID_IMPORT', 0, {q: 64});
+        if (cause === 'vehicle release') h.put('DP_WB2_ALLOW', false);
+        if (cause === 'control reset') h.run('resetSlowTargets()');
+        else h.update(cause === 'budget loss' ? 1000 : 3352, 20000);
+        assert.equal(h.run('wallboxStartPreparation[2]'), null);
+    });

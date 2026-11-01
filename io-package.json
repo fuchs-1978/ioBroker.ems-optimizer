@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.183",
+    "version": "0.17.0-alpha.184",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.184": {
+        "en": "Fix fixed-one-phase priority reclaim: do not require an unavailable phase-mode ACK to withdraw an optional follower for a blocked preferred start. Retain physical reservations, shared limits and phase checks for switchable cars.",
+        "de": "Prioritaetsruecknahme bei fester Einphasigkeit korrigieren: kein nicht vorhandenes Phasenmodus-ACK verlangen. Optionale Folgeladung gezielt zuruecknehmen; reale Reservierungen, gemeinsame Grenzen und Phasenpruefung umschaltbarer Fahrzeuge erhalten.",
+        "es": "Fix fixed-one-phase priority reclaim: do not require an unavailable phase-mode ACK to withdraw an optional follower for a blocked preferred start. Retain physical reservations, shared limits and phase checks for switchable cars.",
+        "fr": "Fix fixed-one-phase priority reclaim: do not require an unavailable phase-mode ACK to withdraw an optional follower for a blocked preferred start. Retain physical reservations, shared limits and phase checks for switchable cars.",
+        "it": "Fix fixed-one-phase priority reclaim: do not require an unavailable phase-mode ACK to withdraw an optional follower for a blocked preferred start. Retain physical reservations, shared limits and phase checks for switchable cars.",
+        "nl": "Fix fixed-one-phase priority reclaim: do not require an unavailable phase-mode ACK to withdraw an optional follower for a blocked preferred start. Retain physical reservations, shared limits and phase checks for switchable cars.",
+        "pl": "Fix fixed-one-phase priority reclaim: do not require an unavailable phase-mode ACK to withdraw an optional follower for a blocked preferred start. Retain physical reservations, shared limits and phase checks for switchable cars.",
+        "pt": "Fix fixed-one-phase priority reclaim: do not require an unavailable phase-mode ACK to withdraw an optional follower for a blocked preferred start. Retain physical reservations, shared limits and phase checks for switchable cars.",
+        "ru": "Fix fixed-one-phase priority reclaim: do not require an unavailable phase-mode ACK to withdraw an optional follower for a blocked preferred start. Retain physical reservations, shared limits and phase checks for switchable cars.",
+        "uk": "Fix fixed-one-phase priority reclaim: do not require an unavailable phase-mode ACK to withdraw an optional follower for a blocked preferred start. Retain physical reservations, shared limits and phase checks for switchable cars.",
+        "zh-cn": "Fix fixed-one-phase priority reclaim: do not require an unavailable phase-mode ACK to withdraw an optional follower for a blocked preferred start. Retain physical reservations, shared limits and phase checks for switchable cars."
+      },
       "0.17.0-alpha.183": {
         "en": "A witnessed replug of the preferred car may prepare one bounded transfer from an optional running car. Preserve budget, real charging-episode, OFF/quiet and phase checks; never renew from repeated plugged values.",
         "de": "Beobachtetes Wiederanstecken des bevorzugten Fahrzeugs kann eine einmalige begrenzte Uebergabe vorbereiten. Budget, reale Ladeepisode, AUS/Ruhe und Phasenpruefung bleiben Pflicht; angesteckte Dauermeldungen erneuern nichts.",
@@ -81,19 +94,6 @@
         "ru": "При активном сравнении прогнозы Meteo и текущие оценки архивируются в SQL на 90 дней с временами захвата, цели, источника и исходными единицами. Пропуски неизвестны; управление без изменений.",
         "uk": "За активного порівняння прогнози Meteo й поточні оцінки архівуються в SQL на 90 днів із часом захоплення, цілі, джерела та вихідними одиницями. Пропуски невідомі; керування без змін.",
         "zh-cn": "负载比较启用时，将Meteo预报版本和当前估算连同采集、目标及源时间戳和原始单位归档到SQL并保留90天。缺失值保持未知，控制逻辑不变。"
-      },
-      "0.17.0-alpha.177": {
-        "en": "Align SQL temperature interval-center averages with load quarter-hours in the Lasso comparison. Ignore synthetic boundary anchors and retain gap, conflict and completed-interval checks.",
-        "de": "SQL-Temperaturmittelwerte aus der Intervallmitte den Last-Viertelstunden im Lasso-Vergleich zuordnen. Synthetische Randpunkte ignorieren; Luecken-, Konflikt- und Intervallabschlusspruefungen erhalten.",
-        "es": "Alinea promedios SQL de temperatura del centro del intervalo con cuartos de hora de carga en Lasso. Ignora anclas sintéticas y conserva controles de huecos, conflictos e intervalos completos.",
-        "fr": "Aligne les moyennes SQL de température au centre des intervalles avec les quarts d’heure de charge Lasso. Ignore les points synthétiques ; contrôles des lacunes, conflits et intervalles complets conservés.",
-        "it": "Allinea le medie SQL di temperatura al centro degli intervalli ai quarti d’ora del carico Lasso. Ignora punti sintetici e conserva controlli su lacune, conflitti e intervalli completi.",
-        "nl": "Lijnt SQL-temperatuurgemiddelden op intervalmiddens uit met lastkwartieren in Lasso. Negeert synthetische grenspunten; controles op gaten, conflicten en volledige intervallen blijven.",
-        "pl": "Dopasowuje średnie temperatury SQL ze środka przedziału do kwadransów obciążenia Lasso. Pomija syntetyczne punkty graniczne i zachowuje kontrole luk, konfliktów oraz pełnych przedziałów.",
-        "pt": "Alinha médias SQL de temperatura no centro dos intervalos com quartos de hora de carga Lasso. Ignora pontos sintéticos e mantém verificações de lacunas, conflitos e intervalos completos.",
-        "ru": "Средние температуры SQL из середины интервала сопоставляются с четвертями часа нагрузки Lasso. Синтетические граничные точки исключены; проверки пропусков, конфликтов и завершения интервала сохранены.",
-        "uk": "Середні температури SQL із середини інтервалу зіставляються з чвертями години навантаження Lasso. Синтетичні граничні точки виключено; перевірки пропусків, конфліктів і завершення інтервалу збережено.",
-        "zh-cn": "将SQL区间中点温度平均值对齐到Lasso负载的15分钟区间起点。忽略合成边界点，保留缺失、冲突和完整区间检查。"
       }
     },
     "titleLang": {
