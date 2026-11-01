@@ -157,3 +157,37 @@ for(const fault of ['transport error','foreign reset','invalid quality','metadat
         assert.equal(h.p.zeroProof(id,later),null);
     });
 }
+
+
+test('a transported identical pending command can be reused but stays unconfirmed until its actual reset', () => {
+    const h = harness();const token = h.p.begin(id, 0);h.p.observe(id, h.command);
+    assert.equal(h.p.pendingRefresh(id, 0, h.command), null, 'an incomplete transport cannot be reused');
+    h.p.transportCompleted(id, token);h.advance(5000);
+    const reused = h.p.pendingRefresh(id, 0, h.command);
+    assert.equal(reused.coalesced, true);
+    assert.equal(reused.transportCompletedAt, 1000);
+    assert.equal(h.p.sequence, token.sequence, 'reuse creates neither another command nor another receipt');
+    assert.equal(h.p.zeroStatus(id, h.command).status, 'pending');
+    const ack = {...h.ack, ts: h.now()};h.p.observe(id, ack);
+    assert.equal(h.p.pendingRefresh(id, 0, ack), null);
+    assert.equal(h.p.zeroStatus(id, ack).status, 'ready');
+});
+
+for (const fault of ['changed value', 'changed ACK', 'changed origin', 'changed timestamp', 'bad quality',
+    'metadata invalidated', 'ambiguous command', 'time reversal', 'timeout']) {
+    test(`pending refresh reuse does not hide uncertainty: ${fault}`, () => {
+        const h = harness();const token = h.p.begin(id, 3000);
+        const command = {...h.command, val: 3000};h.p.observe(id, command);h.p.transportCompleted(id, token);
+        let watts = 3000;
+        if (fault === 'changed value') watts = 0;
+        if (fault === 'changed ACK') command.ack = true;
+        if (fault === 'changed origin') command.from = 'system.adapter.javascript.0';
+        if (fault === 'changed timestamp') command.ts++;
+        if (fault === 'bad quality') command.q = 64;
+        if (fault === 'metadata invalidated') h.p.invalidate(id);
+        if (fault === 'ambiguous command') h.p.transportFailed(id, token);
+        if (fault === 'time reversal') h.advance(-1);
+        if (fault === 'timeout') h.advance(15001);
+        assert.equal(h.p.pendingRefresh(id, watts, command), null);
+    });
+}

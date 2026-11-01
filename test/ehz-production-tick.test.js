@@ -10,9 +10,10 @@ const {HeaterWriteProof} = require('../lib/heater-write-proof');
 // Load the real adapter and complete engine. Only ioBroker's database and
 // physical Modbus transport are replaced; output checks, queues, callbacks,
 // command observations and the VM receipt/status bridge all run unchanged.
-async function fixture(holdS = 15) {
+async function fixture(holdS = 15, heating = false) {
     let now = 2000000;
-    const id = 'modbus.4.holdingRegisters.1000_Power';
+    const id = `modbus.4.holdingRegisters.1000_${heating ? 'Heating' : 'Power'}`;
+    const device = heating ? 'MyPV_Heating' : 'MyPV_DHW';
     class Clock extends Date { static now() {return now;} }
     class Adapter {
         constructor() {
@@ -23,6 +24,10 @@ async function fixture(holdS = 15) {
                 dhwHaL1CurrentId: 'h1', dhwHaL2CurrentId: 'h2', dhwHaL3CurrentId: 'h3',
                 dhwTemp1Id: 't1', dhwTemp2Id: 't2', dhwTemp3Id: 't3', dhwTemp4Id: 't4',
                 dhwOutletTempId: 'outlet', gridImportId: 'gridIn', gridExportId: 'gridOut'};
+            if (heating) Object.assign(this.config, {heatingPresent: true, heatingControlEnabled: true,
+                heatingProductionArmed: true, heatingSetpointId: id, heatingConnectionId: 'connection',
+                heatingCoolingActiveId: 'cooling', heatingTempId: 'hkTemp',
+                heatingOutput1Id: 'o1', heatingOutput2Id: 'o2', heatingOutput3Id: 'o3'});
             this.log = Object.fromEntries(['warn', 'error', 'info', 'debug'].map(key => [key, () => {}]));
         }
         on() {}
@@ -47,13 +52,15 @@ async function fixture(holdS = 15) {
     for (const key of ['System.RealOutputsEnabled', 'System.DataValid', 'Control.Valid',
         'Devices.MyPV_DHW.Present', 'Devices.MyPV_DHW.ControlEnabled',
         'Devices.MyPV_DHW.DriverReady', 'Devices.MyPV_DHW.Release']) own(key, true);
-    own('Control.Targets.MyPV_DHW_W', 9000);
+    if (heating) for (const key of ['Present', 'ControlEnabled', 'DriverReady', 'Release'])
+        own(`Devices.MyPV_Heating.${key}`, true);
+    own(`Control.Targets.${device}_W`, heating ? 6000 : 9000);
     own('Config.DHWCommissioningMaxPower_W', 9000);
     own('Config.DHWSettleTimeout_s', holdS);
     const fresh = (omit = []) => {
         for (const key of ['o1', 'o2', 'o3', 'h1', 'h2', 'h3', 'gridIn']) if (!omit.includes(key)) put(key, 0);
         for (const key of ['t1', 't2', 't3', 't4', 'outlet']) put(key, 50);
-        put('connection', true);put('gridOut', 6100);
+        put('connection', true);put('gridOut', 6100);put('cooling', false);put('hkTemp', 40);
         own('System.LastUpdate', now);own('Control.LastUpdate', now);
     };
     fresh();
@@ -70,7 +77,7 @@ async function fixture(holdS = 15) {
         assert.ok(predicate(), 'queued actuator write reached the fake transport');
     };
     const tick = async (expectWrite = true) => {
-        a.runEngine('updateDhwProductionOutput()');
+        a.runEngine(heating ? 'updateHeatingProductionOutput()' : 'updateDhwProductionOutput()');
         await a.flushOwnWrites();
         if (expectWrite) await spinUntil(() => inflight.length > 0);
         else for (let i = 0; i < 5; i++) await Promise.resolve();
@@ -95,6 +102,7 @@ async function fixture(holdS = 15) {
         assert.equal(reserve(), 3000, 'an unseen positive rise remains reserved after the stop receipt');
     };
     return {a, id, writes, put, own, fresh, advance, tick, complete, stop, record, reserve,
+        reset: () => {now++;put(id, null, {from: 'system.adapter.modbus.4'});},
         refresh: () => a.runEngine("refreshHeaterReservation('MyPV_DHW', CFG.dp.myPvDhwOutputW, 3000)")};
 }
 
@@ -212,4 +220,63 @@ test('a new process cannot borrow its predecessor\'s partially collected electri
     h.advance();await h.tick();await h.complete();
     assert.equal(h.reserve(), 0);
     assert.ok(h.record().lastReleaseProof.firstSampleAt > before);
+});
+
+
+test('a delayed Modbus reset across productive refreshes does not create its own permanent overlap', async () => {
+    const h = await fixture();await h.stop();
+    h.advance();await h.tick();await h.complete({reset: false});
+    const sentAt = h.a.getCachedState('ems.0.Devices.MyPV_DHW.OutputLastWrite').val;
+    const sentCount = h.writes.length;
+    for (let i = 0; i < 2; i++) {
+        h.advance();
+        assert.equal(await h.tick(false), false, 'same command waits for its still-correlated reset');
+        assert.equal(h.writes.length, sentCount);
+        assert.equal(h.a.getCachedState('ems.0.Devices.MyPV_DHW.OutputLastWrite').val, sentAt,
+            'waiting for the existing receipt is not another physical write');
+        const status = h.a.heaterWriteProof.zeroStatus(h.id, h.a.getCachedState(h.id));
+        assert.equal(status.status, 'pending');
+        assert.equal(h.reserve(), 3000, 'transport reuse does not prove physical zero');
+    }
+    h.reset();h.refresh();
+    assert.equal(h.a.heaterWriteProof.zeroStatus(h.id, h.a.getCachedState(h.id)).status, 'ready');
+    assert.equal(h.reserve(), 3000, 'real reset alone still needs later independent phase measurements');
+    for (let i = 0; i < 5; i++) {h.advance();await h.tick();await h.complete();}
+    assert.equal(h.reserve(), 0);
+    assert.ok(h.record().lastReleaseProof.count >= 3);
+});
+
+test('an unchanged positive refresh waits for its reset, but a changed safe zero is never held', async () => {
+    const h = await fixture();await h.tick();await h.complete({reset: false});
+    h.advance();assert.equal(await h.tick(false), false);
+    assert.deepEqual(h.writes, [3000]);
+    h.own('Control.Targets.MyPV_DHW_W', 0);
+    await h.tick();await h.complete();
+    assert.deepEqual(h.writes, [3000, 0], 'a stop still interrupts an unconfirmed positive command immediately');
+    assert.equal(h.a.heaterWriteProof.zeroStatus(h.id, h.a.getCachedState(h.id)).reason, 'overlapping-write');
+    assert.equal(h.reserve(), 3000);
+});
+
+test('missing reset suppression is bounded and cannot suppress the heater watchdog indefinitely', async () => {
+    const h = await fixture();await h.stop();
+    h.advance();await h.tick();await h.complete({reset: false});
+    h.advance(15001);await h.tick();await h.complete();
+    assert.deepEqual(h.writes, [3000, 0, 0, 0]);
+    assert.equal(h.a.heaterWriteProof.zeroStatus(h.id, h.a.getCachedState(h.id)).reason, 'overlapping-write');
+    assert.equal(h.reserve(), 3000, 'timed-out ambiguity must remain conservative');
+});
+
+
+test('the shared heating-buffer output also holds an identical pending refresh without inventing a write time', async () => {
+    const h = await fixture(15, true);
+    await h.tick();await h.complete({reset: false});
+    assert.deepEqual(h.writes, [1000]);
+    const sentAt = h.a.getCachedState('ems.0.Devices.MyPV_Heating.OutputLastWrite').val;
+    h.advance();assert.equal(await h.tick(false), false);
+    assert.deepEqual(h.writes, [1000]);
+    assert.equal(h.a.getCachedState('ems.0.Devices.MyPV_Heating.OutputLastWrite').val, sentAt);
+    assert.match(h.a.getCachedState('ems.0.Devices.MyPV_Heating.OutputStatus').val, /Befehlsreset noch offen/);
+    h.reset();h.advance();await h.tick();await h.complete();
+    assert.deepEqual(h.writes, [1000, 1000], 'ordinary device refresh resumes after the real reset');
+    assert.notEqual(h.a.heaterWriteProof.zeroStatus(h.id, h.a.getCachedState(h.id)).status, 'blocked');
 });

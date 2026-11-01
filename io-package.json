@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.186",
+    "version": "0.17.0-alpha.187",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.187": {
+        "en": "Avoid overlapping identical heater refreshes during a bounded pending Modbus reset; retain fixed-one-phase charging minima without optional phase-mode feedback; exclude verified external battery discharge from legacy surplus budgets.",
+        "de": "Identische Heizstab-Auffrischungen bei kurz ausstehendem Modbus-Reset zusammenfassen. Feste Einphasen-Mindestladung ohne optionales Phasenmodus-ACK erhalten. Bestaetigte externe Speicherentladung im bisherigen Ueberschussbudget ausschliessen.",
+        "es": "Avoid overlapping identical heater refreshes during a bounded pending Modbus reset; retain fixed-one-phase charging minima without optional phase-mode feedback; exclude verified external battery discharge from legacy surplus budgets.",
+        "fr": "Avoid overlapping identical heater refreshes during a bounded pending Modbus reset; retain fixed-one-phase charging minima without optional phase-mode feedback; exclude verified external battery discharge from legacy surplus budgets.",
+        "it": "Avoid overlapping identical heater refreshes during a bounded pending Modbus reset; retain fixed-one-phase charging minima without optional phase-mode feedback; exclude verified external battery discharge from legacy surplus budgets.",
+        "nl": "Avoid overlapping identical heater refreshes during a bounded pending Modbus reset; retain fixed-one-phase charging minima without optional phase-mode feedback; exclude verified external battery discharge from legacy surplus budgets.",
+        "pl": "Avoid overlapping identical heater refreshes during a bounded pending Modbus reset; retain fixed-one-phase charging minima without optional phase-mode feedback; exclude verified external battery discharge from legacy surplus budgets.",
+        "pt": "Avoid overlapping identical heater refreshes during a bounded pending Modbus reset; retain fixed-one-phase charging minima without optional phase-mode feedback; exclude verified external battery discharge from legacy surplus budgets.",
+        "ru": "Avoid overlapping identical heater refreshes during a bounded pending Modbus reset; retain fixed-one-phase charging minima without optional phase-mode feedback; exclude verified external battery discharge from legacy surplus budgets.",
+        "uk": "Avoid overlapping identical heater refreshes during a bounded pending Modbus reset; retain fixed-one-phase charging minima without optional phase-mode feedback; exclude verified external battery discharge from legacy surplus budgets.",
+        "zh-cn": "Avoid overlapping identical heater refreshes during a bounded pending Modbus reset; retain fixed-one-phase charging minima without optional phase-mode feedback; exclude verified external battery discharge from legacy surplus budgets."
+      },
       "0.17.0-alpha.186": {
         "en": "Preserve metered SoC progress across unchanged cloud publications; hold witnessed follow-up charging through link loss before the ACK deadline. Bound MariaDB recorder history statements and allow paced recovery after transient database activity.",
         "de": "Gemessenen SoC-Fortschritt bei unveraenderten Cloud-Meldungen erhalten. Laufende Ladung bei Verbindungsausfall waehrend einer Strombestaetigung halten. MariaDB-Recorderabfragen begrenzen und Wiederherstellung nach voruebergehender Datenbanklast erneut pruefen.",
@@ -81,19 +94,6 @@
         "ru": "Keep DST-day measurements for calendar lags. Average both recorded fall-back occurrences; missing intervals stay unknown. Preserve issued forecasts and production control.",
         "uk": "Keep DST-day measurements for calendar lags. Average both recorded fall-back occurrences; missing intervals stay unknown. Preserve issued forecasts and production control.",
         "zh-cn": "Keep DST-day measurements for calendar lags. Average both recorded fall-back occurrences; missing intervals stay unknown. Preserve issued forecasts and production control."
-      },
-      "0.17.0-alpha.180": {
-        "en": "Extend retention of configured, already enabled room actual/setpoint SQL histories without duplicate samples. Preserve other recording settings and longer retention. No Lasso or control change.",
-        "de": "Aufbewahrung zugeordneter, bereits aktiver Raum-Ist-/Soll-SQL-Historien ohne Datenkopien verlaengern. Andere Aufzeichnungseinstellungen und laengere Fristen erhalten. Lasso und Regelung unveraendert.",
-        "es": "Amplía la retención SQL de temperaturas y consignas ya registradas sin duplicar datos. Conserva otras opciones y plazos mayores. Lasso y control sin cambios.",
-        "fr": "Prolonge la conservation SQL des températures et consignes déjà enregistrées sans doublons. Préserve les autres réglages et durées supérieures. Lasso et commande inchangés.",
-        "it": "Estende la conservazione SQL di temperature e setpoint già registrati senza duplicati. Conserva altre impostazioni e durate maggiori. Lasso e controllo invariati.",
-        "nl": "Verlengt SQL-bewaring van reeds geregistreerde kamerwaarden en setpoints zonder kopieën. Behoudt andere instellingen en langere termijnen. Lasso en regeling ongewijzigd.",
-        "pl": "Wydłuża retencję SQL już rejestrowanych temperatur i nastaw bez duplikatów. Zachowuje inne ustawienia i dłuższe okresy. Lasso i sterowanie bez zmian.",
-        "pt": "Prolonga a retenção SQL de temperaturas e referências já registadas sem duplicação. Preserva outras opções e prazos maiores. Lasso e controlo inalterados.",
-        "ru": "Продлевает хранение уже записываемых температур и уставок SQL без копий. Сохраняет прочие настройки и более длинные сроки. Lasso и управление без изменений.",
-        "uk": "Подовжує зберігання вже записуваних температур і уставок SQL без копій. Зберігає інші налаштування й довші строки. Lasso та керування незмінні.",
-        "zh-cn": "延长已启用的室温及设定值SQL历史保留期，不复制数据。保留其他记录设置及更长保留期。Lasso和控制不变。"
       }
     },
     "titleLang": {

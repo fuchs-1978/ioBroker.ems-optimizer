@@ -817,6 +817,18 @@ class EmsOptimizer extends utils.Adapter {
         if (nonzero && (this.unloading || this.config.globalWriteEnabled !== true
             || this.getCachedState(`${this.namespace}.System.RealOutputsEnabled`)?.val !== true))
             return false;
+        // A periodic identical heater refresh must not create two outstanding
+        // write-only commands merely because the Modbus reset trails the DB
+        // callback. Keep the original proof pending; no new command/receipt or
+        // transport event is manufactured. A changed value (especially zero),
+        // an ambiguous source or a >15-s delay still follows the normal path.
+        const refresh = !this.foreignWriteQueues.has(id)
+            ? this.heaterWriteProof.pendingRefresh(id, value, this.getCachedState(id)) : null;
+        if (refresh) {
+            void Promise.resolve().then(() => onComplete?.(null, refresh))
+                .catch(error => this.log.warn(`Output callback failed: ${error.message}`));
+            return refresh;
+        }
         const ownershipIds = head ? [`${this.namespace}.Devices.Battery.OutputOwned`,
             `${this.namespace}.Devices.Battery.HeadOwnership_JSON`,
             `${this.namespace}.Devices.Battery.Heads.${head.index}.OutputOwned`,

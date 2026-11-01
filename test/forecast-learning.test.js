@@ -27,7 +27,10 @@ test('load profile opts in explicitly, favors recent weeks and never fills absen
     const source = fs.readFileSync(require.resolve('../lib/engine/history'), 'utf8');
     const ctx = vm.createContext({nativeConfig: {}, numericValue: n => typeof n === 'number' && Number.isFinite(n) ? n : null});
     vm.runInContext(source, ctx);
-    const now = Date.now(), dates = [84, 77, 7].map(days => ({ts: now - days * 86400000, val: days < 10 ? 1000 : 100}));
+    // Keep all three source dates in the same local offset. Real calendar/DST
+    // behavior has its own tests; the wall clock made this weighting test
+    // fail after the autumn change when 24-hour subtraction moved a slot.
+    const now = Date.UTC(2026, 6, 15, 12), dates = [84, 77, 7].map(days => ({ts: now - days * 86400000, val: days < 10 ? 1000 : 100}));
     const old = vm.runInContext('profile', ctx)(dates, () => true);
     const recent = vm.runInContext('recentProfile', ctx)(dates, () => true, now);
     assert.ok(old.includes(100)); assert.ok(recent.includes(1000)); assert.equal(recent.filter(x => x === null).length, 95);
