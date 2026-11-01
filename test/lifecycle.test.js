@@ -170,11 +170,12 @@ test('independent SQL verification uses bounded database-only reads and observes
     assert.equal(calls.length, 1);
     assert.equal(calls[0].command, 'query');
     assert.match(calls[0].message, /name = 'ems\.0\.Debug\.Shadow\.DecisionRecord' AND type = 1/);
-    assert.match(calls[0].message, /^SELECT id, type .*LIMIT 2;/);
-    complete({result: [{id: 73, type: 1}]});
+    assert.match(calls[0].message, /^SELECT id, type, VERSION\(\) AS ems_server_version FROM .*LIMIT 2;/);
+    complete({result: [{id: 73, type: 1, ems_server_version: '10.11.14-MariaDB'}]});
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(done, false, 'metadata completion alone cannot prove original storage');
     assert.equal(calls.length, 2);
+    assert.match(calls[1].message, /^SET STATEMENT max_statement_time=2, lock_wait_timeout=2 FOR SELECT/);
     assert.match(calls[1].message, /WHERE id = 73 AND ts >= 1000 AND ts <= 3000 AND EXISTS/);
     assert.match(calls[1].message, /ORDER BY ts ASC LIMIT 32;/);
     assert.doesNotMatch(calls[1].message, /UNION|COUNT|JOIN|id = \(SELECT/);
