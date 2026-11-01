@@ -14,6 +14,8 @@ Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Comb
 ## Contents
 
 - [Features](#features)
+- [Current scope](#current-scope)
+- [Forecast comparison](#forecast-comparison)
 - [Requirements](#requirements)
 - [Installation and setup](#installation-and-setup)
 - [Configuration](#configuration)
@@ -31,9 +33,37 @@ Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Comb
 - Plan optional battery charging using forecasts, electricity prices and time-dependent grid charges.
 - Provide separate heating-buffer and battery outputs when explicitly configured and enabled.
 - Observe heat-pump telemetry and publish passive recommendations. Heat-pump, SG-Ready and KNX actuator commands are not implemented.
+- Compare day-ahead Median, Lasso and two fixed combinations without changing production planning.
+- Preserve selected existing room-temperature histories and archive available weather forecasts for later analysis.
 - Record bounded diagnostic episodes and daily summaries for targeted investigation instead of full-day SQL downloads.
 
-The new staged battery/vehicle strategy in alpha.165 is **a read-only preview**, not a production control policy. `Diagnostics.BatteryStrategy` does not authorize battery-to-vehicle discharge or change vehicle night-charging targets. See the [release notes](docs/release-0.17.0-alpha.165.md) and [remaining battery integration work](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/25).
+The staged battery/vehicle strategy is **a read-only preview**, not a production control policy. `Diagnostics.BatteryStrategy` does not authorize battery-to-vehicle discharge or change vehicle night-charging targets. See the [release notes](docs/release-0.17.0-alpha.165.md) and [remaining battery integration work](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/25).
+
+## Current scope
+
+| Available | Remaining work |
+| --- | --- |
+| Implemented alpha functions for wallbox allocation, priority handoff, heater coordination and qualified SoC interpolation | Natural device, phase, protection and recovery cases remain part of the [installation acceptance](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/7). |
+| Passive load-model comparison and 90-day weather/selected room-history retention | Multi-day forecast validation; room/wind/heat features are not yet in Lasso. |
+| Bounded recorder, exact SQL confirmation and qualified recovery | Long SQL transport delays and historical recording gaps remain under [recorder investigation](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/60). A healthy current queue does not repair past losses. |
+| Battery strategy preview and heat-pump telemetry | Productive [battery strategy](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/25), [heat planning](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/160) and [LPC group-net integration](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/166) remain separate work. |
+
+The [current roadmap](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) tracks these boundaries. Release notes describe software changes; issue-specific operating evidence describes their practical validation.
+
+## Forecast comparison
+
+Enable the optional comparison in **History & forecast**. Production keeps its selected load profile. The four candidates are:
+
+| Candidate | Calculation |
+| --- | --- |
+| Median | Typical quarter-hour load by weekday/holiday. |
+| Lasso | Regularized model using cleaned load 2/7 calendar days earlier, time of day, weekday/holiday and optionally outside temperature/heating degree. |
+| 50/50 blend | Arithmetic mean of the two predictions in each quarter-hour. |
+| Lasso energy / Median shape | Scale the whole Median curve by Lasso daily energy divided by Median daily energy. This is a day-ahead scaling, not an adjustment to later actual consumption. |
+
+Training runs on startup and with the daily history build at 00:10, using at most 84 days. Issued forecasts survive restart unchanged. `Forecast.LoadComparison.*` contains the model, forecast ledger and evaluation. Compare actuals and predictions over identical measured quarter-hours; a partial-day report must show its cutoff and slot coverage. SQL interval-average energy is an estimate, not a billing-meter difference. A complete regular day requires 96 paired slots; 92/100-slot DST target days are currently excluded. For calendar lags, both measured repeated-hour occurrences are averaged; only the missing spring clock hour may use the marked neighboring-hour estimate. Ordinary measured gaps stay unknown.
+
+Clean the household load according to the actual meter boundary: subtract flexible loads only if they are included in the house meters. Weather forecasts and selected original room-temperature histories can be retained for 90 days; their configuration status is not proof of complete SQL delivery. Additional archived weather and room values are not yet Lasso inputs. See [comparison issue](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/284), [comparison setup](docs/release-0.17.0-alpha.176.md), [combinations](docs/release-0.17.0-alpha.179.md) and the German guide.
 
 ## Requirements
 
@@ -44,7 +74,7 @@ The new staged battery/vehicle strategy in alpha.165 is **a read-only preview**,
 
 ## Installation and setup
 
-The adapter is currently distributed for alpha testing through GitHub; npm and ioBroker beta/latest or stable publication are deferred. In ioBroker Admin, use **Adapters → Install from custom source → GitHub** and enter `https://github.com/fuchs-1978/ioBroker.ems-optimizer`. The exact labels depend on the Admin version. A moving `main` branch can include changes newer than a tagged release. Review the release notes before updating. Installation alone does not enable or commission real outputs.
+The adapter is currently distributed for alpha testing through GitHub; npm and ioBroker beta/latest or stable publication are deferred. In ioBroker Admin, use **Adapters → Install from custom source → GitHub** and enter `https://github.com/fuchs-1978/ioBroker.ems-optimizer`. The exact labels depend on the Admin version. A moving `main` branch can include changes newer than a tagged release. Select **GitHub**, not npm, for this alpha source. After updating, verify `System.Version` against the installed version; restart the EMS instance if the old process is still running. Review the release notes before updating. Installation alone does not enable or commission real outputs.
 
 1. Map grid and generation measurements in the Admin configuration.
 2. Configure only the devices present at your installation, including their feedback, current limits and temperature or state-of-charge sources.
@@ -94,10 +124,15 @@ EMS Optimizer combines ioBroker states supplied by other adapters or scripts. A 
 | `Debug.DailySummary_JSON` | Compact passive energy and coverage estimates with bounded investigation episodes. |
 | `Debug.Shadow.DecisionRecord` | Recorded original samples and decision context for targeted historical analysis. |
 | `Debug.Shadow.RecordDeliveryStatus` | Recorder backlog, transport and independent persistence evidence. |
+| `Debug.Shadow.RecordSQLRecoveryStatus` | Qualified recovery of an unresolved SQL request; an EMS restart alone does not prove completion. |
+| `Forecast.LoadComparison.*` | Passive day-ahead comparison, model, immutable issued forecasts and paired actual evaluation. |
+| `Debug.WeatherArchive.*`, `Debug.RoomHistory.*` | Weather collection and retention of configured original room histories. |
 
 State names above are relative to the instance, for example `ems-optimizer.0.System.Version`.
 
 A current state does not prove historical coverage. Missing, stale, invalid or unacknowledged measurements remain unknown. A successful state write or history-cache response does not prove database persistence. The recorder uses bounded database-only SELECT queries for its independent persistence check; see the [recorder access contract](docs/issue123-recorder-access.md).
+
+For an existing orphan SQL request, follow the [alpha.186 recovery instructions](docs/release-0.17.0-alpha.186.md). A SQL-adapter restart can provide process-generation evidence, but successful read-only checks and exact original matches are still required. No automatic SQL restart, forced fence clearing or silent deletion of unconfirmed originals is performed.
 
 ## Development
 
