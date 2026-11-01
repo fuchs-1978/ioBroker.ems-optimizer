@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.179 (2026-10-31)
+
+- (fuchs-1978) Add passive fixed 50/50 and Lasso-energy/Median-shape ensemble forecasts, persisted before delivery and scored against the same measured slots. Existing predictions remain unchanged. [Details](docs/release-0.17.0-alpha.179.md).
+
 ## 0.17.0-alpha.178 (2026-10-30)
 
 - (fuchs-1978) Archive available Meteo forecast vintages and current estimates in SQL for future load-learning comparisons, preserving capture/target/source times, units and unknowns. Production control is unchanged. [Setup](docs/release-0.17.0-alpha.178.md).

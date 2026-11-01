@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.185",
+    "version": "0.17.0-alpha.186",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.186": {
+        "en": "Preserve metered SoC progress across unchanged cloud publications; hold witnessed follow-up charging through link loss before the ACK deadline. Bound MariaDB recorder history statements and allow paced recovery after transient database activity.",
+        "de": "Gemessenen SoC-Fortschritt bei unveraenderten Cloud-Meldungen erhalten. Laufende Ladung bei Verbindungsausfall waehrend einer Strombestaetigung halten. MariaDB-Recorderabfragen begrenzen und Wiederherstellung nach voruebergehender Datenbanklast erneut pruefen.",
+        "es": "Preserve metered SoC progress across unchanged cloud publications; hold witnessed follow-up charging through link loss before the ACK deadline. Bound MariaDB recorder history statements and allow paced recovery after transient database activity.",
+        "fr": "Preserve metered SoC progress across unchanged cloud publications; hold witnessed follow-up charging through link loss before the ACK deadline. Bound MariaDB recorder history statements and allow paced recovery after transient database activity.",
+        "it": "Preserve metered SoC progress across unchanged cloud publications; hold witnessed follow-up charging through link loss before the ACK deadline. Bound MariaDB recorder history statements and allow paced recovery after transient database activity.",
+        "nl": "Preserve metered SoC progress across unchanged cloud publications; hold witnessed follow-up charging through link loss before the ACK deadline. Bound MariaDB recorder history statements and allow paced recovery after transient database activity.",
+        "pl": "Preserve metered SoC progress across unchanged cloud publications; hold witnessed follow-up charging through link loss before the ACK deadline. Bound MariaDB recorder history statements and allow paced recovery after transient database activity.",
+        "pt": "Preserve metered SoC progress across unchanged cloud publications; hold witnessed follow-up charging through link loss before the ACK deadline. Bound MariaDB recorder history statements and allow paced recovery after transient database activity.",
+        "ru": "Preserve metered SoC progress across unchanged cloud publications; hold witnessed follow-up charging through link loss before the ACK deadline. Bound MariaDB recorder history statements and allow paced recovery after transient database activity.",
+        "uk": "Preserve metered SoC progress across unchanged cloud publications; hold witnessed follow-up charging through link loss before the ACK deadline. Bound MariaDB recorder history statements and allow paced recovery after transient database activity.",
+        "zh-cn": "Preserve metered SoC progress across unchanged cloud publications; hold witnessed follow-up charging through link loss before the ACK deadline. Bound MariaDB recorder history statements and allow paced recovery after transient database activity."
+      },
       "0.17.0-alpha.185": {
         "en": "Fix false feedback faults while confirmed OFF waits for start budget. Resume a proven charging episode after cleared device error 5 without a repeated start delay, retaining fresh electrical, budget and safety checks.",
         "de": "Falsche Rueckmeldesperre beim Warten auf Startbudget nach bestaetigtem AUS beheben. Nach geloeschtem Geraetefehler 5 eine nachgewiesene Ladung ohne erneute Startwartezeit fortsetzen; frische elektrische Werte, Budget und Schutzpruefungen bleiben erforderlich.",
@@ -81,19 +94,6 @@
         "ru": "Продлевает хранение уже записываемых температур и уставок SQL без копий. Сохраняет прочие настройки и более длинные сроки. Lasso и управление без изменений.",
         "uk": "Подовжує зберігання вже записуваних температур і уставок SQL без копій. Зберігає інші налаштування й довші строки. Lasso та керування незмінні.",
         "zh-cn": "延长已启用的室温及设定值SQL历史保留期，不复制数据。保留其他记录设置及更长保留期。Lasso和控制不变。"
-      },
-      "0.17.0-alpha.179": {
-        "en": "Compare fixed 50/50 Median/Lasso and Median shape with Lasso daily energy. Store new ensemble forecasts before delivery; preserve old predictions and unknowns. Production control is unchanged.",
-        "de": "Feste 50/50-Mischung und Median-Verlauf mit Lasso-Tagesenergie vergleichen. Neue Kombiprognosen vorab speichern; alte Prognosen und Luecken erhalten. Produktive Regelung unveraendert.",
-        "es": "Compara mezcla fija 50/50 y perfil de mediana con energía diaria Lasso. Guarda nuevas previsiones por adelantado; conserva las anteriores y los valores desconocidos. Control sin cambios.",
-        "fr": "Compare le mélange fixe 50/50 et le profil médian avec énergie quotidienne Lasso. Enregistre les nouvelles prévisions à l’avance ; conserve les anciennes et les inconnues. Commande inchangée.",
-        "it": "Confronta miscela fissa 50/50 e profilo mediano con energia giornaliera Lasso. Salva nuove previsioni in anticipo; conserva precedenti e valori sconosciuti. Controllo invariato.",
-        "nl": "Vergelijkt vaste 50/50-mix en mediaanprofiel met Lasso-dagenergie. Slaat nieuwe prognoses vooraf op; behoudt oude prognoses en onbekende waarden. Regeling ongewijzigd.",
-        "pl": "Porównuje stałą mieszankę 50/50 i profil mediany z dzienną energią Lasso. Zapisuje nowe prognozy z wyprzedzeniem; zachowuje stare i braki. Sterowanie bez zmian.",
-        "pt": "Compara mistura fixa 50/50 e perfil mediano com energia diária Lasso. Guarda novas previsões antecipadamente; preserva as anteriores e valores desconhecidos. Controlo inalterado.",
-        "ru": "Сравнивает смесь 50/50 и профиль медианы с суточной энергией Lasso. Новые прогнозы сохраняются заранее; старые прогнозы и пропуски сохранены. Управление не изменено.",
-        "uk": "Порівнює суміш 50/50 і профіль медіани з добовою енергією Lasso. Нові прогнози зберігаються заздалегідь; попередні прогнози й пропуски збережено. Керування незмінне.",
-        "zh-cn": "比较固定50/50混合及以Lasso日能量缩放的中位数曲线。提前保存新组合预测，保留旧预测和缺失值。生产控制不变。"
       }
     },
     "titleLang": {

@@ -12,7 +12,7 @@ function fixture(native = {dbtype: 'mysql', dbname: 'iobroker'}, custom = {}) {
             ? {native} : {common: {custom: {'sql.0': custom}}},
         sendTo: (instance, command, message, callback) => {
             calls.push({instance, command, message, callback});
-            callback({result: /SELECT (TOP 2 )?id, type FROM/.test(message) ? [{id: numeric, type: 1}] : [row]});
+            callback({result: /SELECT (TOP 2 )?id, type(?:, VERSION\(\) AS ems_server_version)? FROM/.test(message) ? [{id: numeric, type: 1}] : [row]});
         }};
     return {adapter, calls, native, custom};
 }
@@ -223,4 +223,25 @@ for (const delayedPhase of ['lookup', 'history']) test(`real delivery fence surv
     assert.equal(journal.health().sqlConfirmedRecords, delayedPhase === 'lookup' ? 0 : 1);
     assert.equal(delivery.health().sqlConfirmed, delayedPhase === 'lookup' ? 0 : 1);
     await delivery.stopAndDrain(); await journal.close();
+});
+
+test('MariaDB verification uses a statement-local two-second execution and lock limit without fallback', async () => {
+    const f = fixture(), send = f.adapter.sendTo;
+    f.adapter.sendTo = (instance, command, sql, callback) => send(instance, command, sql, response => {
+        if (/SELECT id, type/.test(sql)) response.result[0].ems_server_version = '10.11.14-MariaDB-0+deb12u2';
+        callback(response);
+    });
+    await readDecisionRecordDatabase(f.adapter, bounds);
+    assert.match(f.calls[1].message, /^SET STATEMENT max_statement_time=2, lock_wait_timeout=2 FOR SELECT/);
+    f.adapter.sendTo = (instance, command, sql, callback) => {f.calls.push({message: sql}); callback({error: 'Query execution was interrupted'});};
+    const result = await readDecisionRecordDatabase(f.adapter, bounds);
+    assert.equal(f.calls.length, 3, 'no unbounded fallback after server interruption');
+    assert.equal(result.backendCompletionObserved, true); assert.ok(result.error);
+});
+
+test('unknown and non-MariaDB servers never receive MariaDB syntax', () => {
+    const {boundedHistorySelect} = require('../lib/decision-record-sql');
+    for (const version of [undefined, null, '8.0.40', 'xMariaDB', '10.0.38-MariaDB']) {
+        assert.equal(boundedHistorySelect('SELECT 1;', version), 'SELECT 1;');
+    }
 });

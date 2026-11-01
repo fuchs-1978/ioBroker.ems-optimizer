@@ -79,3 +79,22 @@ test('a persistent recovery inspection survives restart and cannot be mistaken f
     await journal.completeVerification({kind: 'observed-backend-completion', verificationId: 'old', evidence: 'independent end proof'});
     assert.equal(journal.health().sqlVerificationPending, false); await journal.close();
 });
+
+test('transient busy database does not exhaust recovery forever; retries remain bounded after cooldown', async () => {
+    const h = fixture({active: true});
+    for (let n = 0; n < 3; n++) {await h.recovery.tick(); h.advance(60000);}
+    assert.equal(h.calls.length, 6); assert.equal(h.clears(), 0);
+    const status = await h.recovery.tick();
+    assert.match(status.reason, /cooling down/); assert.ok(status.retryAt);
+    h.advance(15 * 60000);
+    h.recovery.query = async sql => ({backendCompletionObserved: true,
+        result: sql === GRANTS ? [{grants: 'GRANT PROCESS ON *.* TO x'}] : []});
+    assert.equal((await h.recovery.tick()).state, 'recovered');
+    assert.equal(h.clears(), 1);
+});
+
+test('missing SQL restart proof gives a concrete action without querying or clearing anything', async () => {
+    const h = fixture({restarted: false}); const status = await h.recovery.tick();
+    assert.match(status.action, /SQL-Adapter einmal neu starten/);
+    assert.deepEqual(h.calls, []); assert.equal(h.clears(), 0);
+});
