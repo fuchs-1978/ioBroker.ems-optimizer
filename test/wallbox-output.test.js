@@ -4140,3 +4140,83 @@ test('wallbox initialization subscribes before reading and preserves a newer in-
     assert.equal(h.states.get('feedback').val, 7);
     assert.equal(h.adapter.inputStates.report().rejected, 1);
 });
+
+test('confirmed startup OFF can wait for budget beyond ACK deadline without a false device fault', async () => {
+    let now = Date.now(); const h = setup({now: () => now});
+    h.config.combinedProductionArmed = true; h.put('split', 1);
+    h.put('ems.0.Config.DHWParallelDistributionEnabled', true);
+    h.put('ems.0.Devices.MyPV_DHW.ControlEnabled', true);
+    h.put('ems.0.Control.Targets.MyPV_DHW_W', 0); h.put('ems.0.Actual.MyPV_DHW_W', 1000);
+    h.put('ems.0.Control.Targets.Wallbox0_W', 1380); h.put('export', 2000);
+    await h.output.initialize(); await h.output.tick(); h.ack('allow', 0);
+    now += 5000; h.refresh(); h.put('export', 594); await h.output.tick();
+    assert.equal(h.output.devices[0].pending.stage, 'budget');
+    now += 17000; h.refresh(); h.put('export', 594); await h.output.tick();
+    assert.equal(h.output.devices[0].fault, '');
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+    now += 1000; h.refresh(); h.put('export', 2000); await h.output.tick();
+    assert.deepEqual(h.writes.at(-1), {id: 'cmd', val: 6});
+    h.ack('feedback', 6); now += 1000; h.refresh(); await h.output.tick();
+    assert.deepEqual(h.writes.at(-1), {id: 'allow', val: 1});
+});
+
+for (const cause of ['missing OFF ACK', 'device error', 'house protection', 'expired budget wait'])
+    test('startup budget wait retains ' + cause + ' protection', async () => {
+        let now = Date.now(); const h = setup({now: () => now});
+        h.config.combinedProductionArmed = true; h.put('split', 1);
+        h.put('ems.0.Config.DHWParallelDistributionEnabled', true);
+        h.put('ems.0.Devices.MyPV_DHW.ControlEnabled', true);
+        h.put('ems.0.Control.Targets.MyPV_DHW_W', 0); h.put('ems.0.Actual.MyPV_DHW_W', 1000);
+        h.put('ems.0.Control.Targets.Wallbox0_W', 1380); h.put('export', 2000);
+        await h.output.initialize(); await h.output.tick();
+        if (cause !== 'missing OFF ACK') h.ack('allow', 0);
+        now += 5000; h.refresh(); h.put('export', 594); await h.output.tick();
+        if (cause !== 'missing OFF ACK') assert.equal(h.output.devices[0].pending.stage, 'budget');
+        if (cause === 'device error') h.put('error', 8);
+        if (cause === 'house protection') h.put('critical', true);
+        now += cause === 'expired budget wait' ? 301000 : 22000;
+        h.refresh(); await h.output.tick();
+        assert.ok(!h.writes.some(w => w.id === 'allow' && w.val === 1));
+        if (cause === 'missing OFF ACK') assert.match(h.output.devices[0].fault, /Rueckmeldung/);
+    });
+
+async function error5ResumeFixture() {
+    let now = Date.now(); const h = setup({now: () => now});
+    h.put('ems.0.Control.Targets.Wallbox0_W', 1380);
+    await h.start();
+    now += 1000; h.refresh(); h.put('power', 1.3); h.put('i1', 5.9); await h.output.tick();
+    now += 1000; h.refresh(); h.put('error', 5); await h.output.tick();
+    const proof = () => JSON.parse(h.states.get('ems.0.Devices.Wallbox0.Error5Resume_JSON').val);
+    return {...h, proof, advance: ms => {now += ms;}, now: () => now};
+}
+
+test('error 5 captures one bounded current-session resume proof only after measured charging', async () => {
+    const h = await error5ResumeFixture();
+    assert.equal(h.proof().valid, true);
+    const original = h.proof();
+    h.advance(1000); h.refresh(); h.ack('allow', 0); h.put('power', 0); h.put('i1', 0);
+    await h.output.tick();
+    assert.deepEqual(h.proof(), original, 'repeated fault observations do not renew the deadline');
+    h.advance(1000); h.refresh(); h.put('error', 0); await h.output.tick();
+    assert.equal(h.output.devices[0].fault, '');
+    assert.ok(h.proof().valid, 'clearing error alone is no automatic ON command');
+});
+
+for (const cause of ['unplug', 'other error', 'master off', 'expired', 'restart'])
+    test('error-5 continuation proof is revoked by ' + cause, async () => {
+        const h = await error5ResumeFixture();
+        assert.equal(h.proof().valid, true);
+        h.advance(cause === 'expired' ? 901000 : 1000); h.refresh();
+        if (cause === 'unplug') h.put('car', 1);
+        if (cause === 'other error') h.put('error', 8);
+        if (cause === 'master off') h.config.globalWriteEnabled = false;
+        if (cause === 'restart') await h.output.initialize();
+        else await h.output.tick();
+        assert.notEqual(h.proof().valid, true);
+    });
+
+test('cold error-5 observation cannot manufacture a prior charging episode', async () => {
+    const h = setup(); h.put('error', 5);
+    await h.output.initialize(); await h.output.tick();
+    assert.notEqual(JSON.parse(h.states.get('ems.0.Devices.Wallbox0.Error5Resume_JSON').val).valid, true);
+});
