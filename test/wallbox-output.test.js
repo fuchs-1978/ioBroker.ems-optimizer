@@ -4220,3 +4220,17 @@ test('cold error-5 observation cannot manufacture a prior charging episode', asy
     await h.output.initialize(); await h.output.tick();
     assert.notEqual(JSON.parse(h.states.get('ems.0.Devices.Wallbox0.Error5Resume_JSON').val).valid, true);
 });
+
+for (const phases of [1, 3]) test(`offline during follow-up ACK deadline holds witnessed charge without OFF, ${phases}P`, async () => {
+    const h = await unacknowledgedStep(phases);
+    const d = h.output.devices[0], sentAt = d.response.at;
+    h.advance(1000); h.put('connection', false); await h.output.tick();
+    assert.equal(d.fault, ''); assert.equal(d.response.at, sentAt);
+    assert.equal(d.response.ackAt, 0); assert.equal(d.pending.amps, 11);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, true);
+    assert.ok(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val >= 11 * 230 * phases);
+    assert.deepEqual(h.writes, []);
+    h.put('critical', true); await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, false);
+    assert.ok(h.writes.some(w => w.id === 'allow' && w.val === 0));
+});

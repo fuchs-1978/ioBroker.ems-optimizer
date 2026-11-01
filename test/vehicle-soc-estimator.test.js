@@ -496,3 +496,28 @@ test('counter rounding hold never refreshes stale or invalid readings or admits 
     const h = correctedHarness();
     assert.equal(h.run({now:T+1000,counter:state(20,T+1000)}).valid,false);
 });
+
+test('repeated 69-percent publications preserve all continuously measured Mii charge across polls and restart', () => {
+    const h = harness({reported: state(69), capacityKWh: 32.3}); h.run();
+    let r;
+    for (let n = 1; n <= 360; n++) {
+        const at = T + n * 30000;
+        r = h.run({now: at, counter: state(10 + n * 0.02, at),
+            reported: state(69, at), car: state(2, at)});
+        assert.ok(Math.abs(r.value - (69 + n * 0.02 * 90 / 32.3)) < 1e-8);
+        if (n % 30 === 0) assert.equal(estimateSoc(h.input()).value, r.value);
+    }
+    assert.equal(r.ledger.basis.at, T);
+    assert.ok(r.socWarning);
+    const changed = h.run({now: T + 10830000, reported: state(91, T + 10830000),
+        counter: state(17.2, T + 10830000)});
+    assert.equal(changed.value, 91);
+});
+
+test('an unchanged percentage with a genuinely newer source measurement can correct the estimate', () => {
+    const h = harness({reported: state(69), measurementTimeConfigured: true, measurementTime: state(T)});
+    h.run(); h.run({now: T + 30000, counter: state(10.5, T + 30000)});
+    const at = T + 60000;
+    assert.equal(h.run({now: at, counter: state(11, at), reported: state(69, at),
+        measurementTime: state(at, at)}).value, 69);
+});

@@ -7,7 +7,7 @@
 
 Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Combines PV and grid measurements, load history, weather forecasts and electricity prices in a rolling 48-hour plan.
 
-**Current version: 0.17.0-alpha.185.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
+**Current version: 0.17.0-alpha.186.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
 
 [Deutsche Bedienungsanleitung](README.de.md) · [Release history](CHANGELOG_OLD.md) · [Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
@@ -113,6 +113,10 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 
 ## Changelog
 
+### 0.17.0-alpha.186 (2026-11-01)
+
+- (fuchs-1978) Preserve metered SoC progress across unchanged cloud publications; hold witnessed follow-up charging through link loss before the ACK deadline. Bound MariaDB recorder history statements and allow paced recovery after transient database activity. [Details and recovery](docs/release-0.17.0-alpha.186.md).
+
 ### 0.17.0-alpha.185 (2026-11-01)
 
 - (fuchs-1978) Fix false feedback faults while confirmed OFF waits for start budget. Resume a proven charging episode after cleared device error 5 without a repeated start delay, retaining fresh electrical, budget and safety checks. [Details](docs/release-0.17.0-alpha.185.md).
@@ -136,10 +140,6 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 ### 0.17.0-alpha.180 (2026-10-31)
 
 - (fuchs-1978) Extend retention of mapped original room-temperature SQL histories without copying samples or changing other recording options. [Setup and limits](docs/release-0.17.0-alpha.180.md).
-
-### 0.17.0-alpha.179 (2026-10-31)
-
-- (fuchs-1978) Add passive fixed 50/50 and Lasso-energy/Median-shape ensemble forecasts, persisted before delivery and scored against the same measured slots. Existing predictions remain unchanged. [Details](docs/release-0.17.0-alpha.179.md).
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 
