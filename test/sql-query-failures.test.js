@@ -133,3 +133,57 @@ test('late metadata after capacity eviction cannot resurrect an old error or exc
     const bad = f.report(); bad.failures[0].phase = 'unrecognised';
     assert.equal(new Failures(JSON.stringify(bad)).report().checkpointStatus, 'invalid');
 });
+
+test('late actual host-block callback adds only a canonical code to the retained restart checkpoint', async () => {
+    let finish;
+    const h = fixture({readHistory: () => new Promise(resolve => {finish = resolve;})});
+    await h.delivery.readWindow(h.task(0));
+    assert.equal(h.delivery.backendBlocked, true);
+    h.advance(500);
+    finish({error: 'SQL datapoint lookup failed', sqlErrorCode: 'ER_HOST_IS_BLOCKED', backendCompletionObserved: true});
+    await Promise.allSettled([...h.delivery.backendOperations]);
+    const saved = JSON.stringify(h.delivery.queryFailures.report());
+    const restored = new Failures(saved);
+    assert.equal(restored.report().checkpointStatus, 'restored');
+    assert.equal(restored.report().failures[0].reason, 'deadline');
+    assert.equal(restored.report().failures[0].sqlErrorCode, 'ER_HOST_IS_BLOCKED');
+    assert.equal(restored.report().failures[0].lateOutcome, 'sql-response-error');
+    assert.equal(h.delivery.health().writer.backoff.reason, 'sql-host-blocked');
+    assert.equal(h.delivery.backendBlocked, false);
+    assert.equal(h.delivery.sqlConfirmed, 0);
+});
+
+test('a rejected connect syscall does not manufacture backend completion or release the fence', async () => {
+    const h = fixture({readHistory: async () => {throw Object.assign(new Error('private'),
+        {code: 'ETIMEDOUT', syscall: 'connect'});}});
+    await h.delivery.readWindow(h.task(0));
+    assert.equal(h.delivery.queryFailures.report().failures[0].sqlErrorCode, 'ETIMEDOUT');
+    assert.equal(h.delivery.backendBlocked, true);
+    assert.equal(h.delivery.health().writer.backoff.reason, 'sql-connect-timeout');
+    assert.doesNotMatch(JSON.stringify(h.delivery.queryFailures.report()), /private/);
+});
+
+test('unknown checkpoint error codes cannot become persisted raw payload', () => {
+    const f = new Failures();
+    f.capture({verificationId: 'decision-record:test', sqlErrorCode: 'private payload'},
+        'sql-response-error', 'response-validation', 1000);
+    assert.equal(f.report().failures[0].sqlErrorCode, undefined);
+    const saved = f.report(); saved.failures[0].sqlErrorCode = 'private payload';
+    assert.equal(new Failures(JSON.stringify(saved)).report().checkpointStatus, 'invalid');
+});
+
+test('late rejected connect syscall adds classification but cannot release an unresolved request', async () => {
+    let reject;
+    const h = fixture({readHistory: () => new Promise((resolve, fail) => {reject = fail;})});
+    await h.delivery.readWindow(h.task(0));
+    assert.equal(h.delivery.writeBackoff.degraded, false, 'the initial local read deadline does not stop the writer');
+    reject(Object.assign(new Error('private endpoint'), {code: 'ECONNREFUSED', syscall: 'connect'}));
+    await Promise.allSettled([...h.delivery.backendOperations]);
+    const failure = h.delivery.queryFailures.report().failures[0];
+    assert.equal(failure.reason, 'deadline');
+    assert.equal(failure.sqlErrorCode, 'ECONNREFUSED');
+    assert.equal(failure.backendCompletionObserved, false);
+    assert.equal(h.delivery.backendBlocked, true);
+    assert.equal(h.delivery.health().writer.backoff.reason, 'sql-connect-refused');
+    assert.doesNotMatch(JSON.stringify(failure), /private endpoint/);
+});

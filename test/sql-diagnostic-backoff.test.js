@@ -49,3 +49,53 @@ test('old persistence proofs cannot clear a write-error pause', () => {
     }
     assert.equal(b.proveStored(now), true);
 });
+
+for (const [error, expected] of [
+    ["sql.0 (16131) Host 'private-host' is blocked because of many connection errors; unblock with 'mysqladmin flush-hosts' (code: ER_HOST_IS_BLOCKED) (errno: 1129)", 'ER_HOST_IS_BLOCKED'],
+    [{code: 'ER_HOST_IS_BLOCKED', message: 'private SQL and password'}, 'ER_HOST_IS_BLOCKED'],
+    [{errno: 1129}, 'ER_HOST_IS_BLOCKED'],
+    ['(errno: 1129)', 'ER_HOST_IS_BLOCKED'],
+    ['Error: connect ETIMEDOUT', 'ETIMEDOUT'],
+    [Object.assign(new Error('private endpoint'), {code: 'ETIMEDOUT', syscall: 'connect'}), 'ETIMEDOUT'],
+    ['sql.0 (16131) connect ECONNREFUSED 10.0.0.1:3306', 'ECONNREFUSED']
+]) test(`connection failure is classified without retaining private payload: ${expected}, ${typeof error}`, () => {
+    const b = new Backoff({now: () => 100000});
+    assert.equal(b.observeError(error), true);
+    assert.equal(b.paused(), true);
+    assert.equal(b.health().errorCode, expected);
+    assert.equal(b.health().retryAt, 160000);
+    assert.doesNotMatch(JSON.stringify(b.health()), /private|password|10\.0\.0\.1|flush-hosts/);
+});
+
+test('a host block promotes an earlier connect timeout without extending a storm pause', () => {
+    let now = 100000; const b = new Backoff({now: () => now});
+    b.observeError('connect ETIMEDOUT');
+    now += 10000;
+    b.observeError({code: 'ER_HOST_IS_BLOCKED'});
+    for (let n = 0; n < 1000; n++) b.observeError('connect ETIMEDOUT');
+    assert.equal(b.health().retryAt, 160000);
+    assert.equal(b.health().failures, 1);
+    assert.equal(b.health().reason, 'sql-host-blocked');
+    assert.equal(b.proveStored(100000), false);
+    now++;
+    assert.equal(b.proveStored(now), true);
+    assert.equal(b.health().errorCode, undefined);
+    assert.equal(b.health().message, undefined);
+});
+
+for (const error of ['ETIMEDOUT', 'query ETIMEDOUT', 'Query inactivity timeout',
+    'local query deadline; backend completion unknown; verification stopped',
+    'SELECT ER_HOST_IS_BLOCKED FROM records', "SELECT 'connect ETIMEDOUT'", {code: 'ETIMEDOUT'},
+    {code: 'ETIMEDOUT', syscall: 'query'}, {code: 'ECONNREFUSED', syscall: 'read'}, null])
+test(`a local/query deadline or data literal cannot trigger a connection pause: ${JSON.stringify(error)}`, () => {
+    const b = new Backoff(); assert.equal(b.observeError(error), false);
+    assert.equal(b.degraded, false);
+});
+
+test('connection errors obey the configured-instance, severity and freshness gates', () => {
+    const b = new Backoff({now: () => 100000});
+    const valid = {from: 'sql.0', severity: 'error', ts: 100000, message: 'connect ETIMEDOUT'};
+    for (const changed of [{from: 'sql.1'}, {severity: 'info'}, {ts: 69999}, {ts: 106000}])
+        assert.equal(b.observeLog({...valid, ...changed}, 'sql.0'), false);
+    assert.equal(b.observeLog(valid, 'sql.0'), true);
+});

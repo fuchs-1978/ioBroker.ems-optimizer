@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.189",
+    "version": "0.17.0-alpha.190",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.190": {
+        "en": "Recognize SQL host blocks and connect timeouts/refusals, pause recorder traffic with bounded retries, and retain canonical query failure codes and clear diagnostics. Keep pure read timeouts independent of publication and require exact storage proof for recovery.",
+        "de": "SQL-Hostsperren und Verbindungsaufbaufehler erkennen; Recorderverkehr begrenzt pausieren und gedrosselt wiederaufnehmen. Fehlerkategorien neustartfest erhalten und klar anzeigen. Reine Lese-Timeouts bleiben vom Schreiber entkoppelt; Erholung nur mit exaktem Speichernachweis.",
+        "es": "Recognize SQL host blocks and connect timeouts/refusals, pause recorder traffic with bounded retries, and retain canonical query failure codes and clear diagnostics. Keep pure read timeouts independent of publication and require exact storage proof for recovery.",
+        "fr": "Recognize SQL host blocks and connect timeouts/refusals, pause recorder traffic with bounded retries, and retain canonical query failure codes and clear diagnostics. Keep pure read timeouts independent of publication and require exact storage proof for recovery.",
+        "it": "Recognize SQL host blocks and connect timeouts/refusals, pause recorder traffic with bounded retries, and retain canonical query failure codes and clear diagnostics. Keep pure read timeouts independent of publication and require exact storage proof for recovery.",
+        "nl": "Recognize SQL host blocks and connect timeouts/refusals, pause recorder traffic with bounded retries, and retain canonical query failure codes and clear diagnostics. Keep pure read timeouts independent of publication and require exact storage proof for recovery.",
+        "pl": "Recognize SQL host blocks and connect timeouts/refusals, pause recorder traffic with bounded retries, and retain canonical query failure codes and clear diagnostics. Keep pure read timeouts independent of publication and require exact storage proof for recovery.",
+        "pt": "Recognize SQL host blocks and connect timeouts/refusals, pause recorder traffic with bounded retries, and retain canonical query failure codes and clear diagnostics. Keep pure read timeouts independent of publication and require exact storage proof for recovery.",
+        "ru": "Recognize SQL host blocks and connect timeouts/refusals, pause recorder traffic with bounded retries, and retain canonical query failure codes and clear diagnostics. Keep pure read timeouts independent of publication and require exact storage proof for recovery.",
+        "uk": "Recognize SQL host blocks and connect timeouts/refusals, pause recorder traffic with bounded retries, and retain canonical query failure codes and clear diagnostics. Keep pure read timeouts independent of publication and require exact storage proof for recovery.",
+        "zh-cn": "Recognize SQL host blocks and connect timeouts/refusals, pause recorder traffic with bounded retries, and retain canonical query failure codes and clear diagnostics. Keep pure read timeouts independent of publication and require exact storage proof for recovery."
+      },
       "0.17.0-alpha.189": {
         "en": "Transfer a witnessed running charge to the manually preferred vehicle without a repeated start delay or reserve; retain the bounded qualification through short PV dips while preserving confirmed stop, minimum power and safety gates.",
         "de": "Beobachtete laufende Ladung ohne erneute Startwartezeit oder Startreserve an das priorisierte Fahrzeug uebergeben. Startfreigabe bei kurzen PV-Dellen begrenzt erhalten; bestaetigter Stillstand, Mindestleistung und Schutzgrenzen bleiben erforderlich.",
@@ -81,19 +94,6 @@
         "ru": "Fix fixed-one-phase priority reclaim: do not require an unavailable phase-mode ACK to withdraw an optional follower for a blocked preferred start. Retain physical reservations, shared limits and phase checks for switchable cars.",
         "uk": "Fix fixed-one-phase priority reclaim: do not require an unavailable phase-mode ACK to withdraw an optional follower for a blocked preferred start. Retain physical reservations, shared limits and phase checks for switchable cars.",
         "zh-cn": "Fix fixed-one-phase priority reclaim: do not require an unavailable phase-mode ACK to withdraw an optional follower for a blocked preferred start. Retain physical reservations, shared limits and phase checks for switchable cars."
-      },
-      "0.17.0-alpha.183": {
-        "en": "A witnessed replug of the preferred car may prepare one bounded transfer from an optional running car. Preserve budget, real charging-episode, OFF/quiet and phase checks; never renew from repeated plugged values.",
-        "de": "Beobachtetes Wiederanstecken des bevorzugten Fahrzeugs kann eine einmalige begrenzte Uebergabe vorbereiten. Budget, reale Ladeepisode, AUS/Ruhe und Phasenpruefung bleiben Pflicht; angesteckte Dauermeldungen erneuern nichts.",
-        "es": "A witnessed replug of the preferred car may prepare one bounded transfer from an optional running car. Preserve budget, real charging-episode, OFF/quiet and phase checks; never renew from repeated plugged values.",
-        "fr": "A witnessed replug of the preferred car may prepare one bounded transfer from an optional running car. Preserve budget, real charging-episode, OFF/quiet and phase checks; never renew from repeated plugged values.",
-        "it": "A witnessed replug of the preferred car may prepare one bounded transfer from an optional running car. Preserve budget, real charging-episode, OFF/quiet and phase checks; never renew from repeated plugged values.",
-        "nl": "A witnessed replug of the preferred car may prepare one bounded transfer from an optional running car. Preserve budget, real charging-episode, OFF/quiet and phase checks; never renew from repeated plugged values.",
-        "pl": "A witnessed replug of the preferred car may prepare one bounded transfer from an optional running car. Preserve budget, real charging-episode, OFF/quiet and phase checks; never renew from repeated plugged values.",
-        "pt": "A witnessed replug of the preferred car may prepare one bounded transfer from an optional running car. Preserve budget, real charging-episode, OFF/quiet and phase checks; never renew from repeated plugged values.",
-        "ru": "A witnessed replug of the preferred car may prepare one bounded transfer from an optional running car. Preserve budget, real charging-episode, OFF/quiet and phase checks; never renew from repeated plugged values.",
-        "uk": "A witnessed replug of the preferred car may prepare one bounded transfer from an optional running car. Preserve budget, real charging-episode, OFF/quiet and phase checks; never renew from repeated plugged values.",
-        "zh-cn": "A witnessed replug of the preferred car may prepare one bounded transfer from an optional running car. Preserve budget, real charging-episode, OFF/quiet and phase checks; never renew from repeated plugged values."
       }
     },
     "titleLang": {

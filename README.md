@@ -7,7 +7,7 @@
 
 Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Combines PV and grid measurements, load history, weather forecasts and electricity prices in a rolling 48-hour plan.
 
-**Current version: 0.17.0-alpha.189.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
+**Current version: 0.17.0-alpha.190.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
 
 [Deutsche Bedienungsanleitung](README.de.md) · [Release history](CHANGELOG_OLD.md) · [Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
@@ -151,6 +151,10 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 
 ## Changelog
 
+### 0.17.0-alpha.190 (2026-11-02)
+
+- (fuchs-1978) Recognize SQL host blocks and connect timeouts/refusals, pause recorder traffic with bounded retries, and retain canonical query failure codes and clear diagnostics. Keep pure read timeouts independent of publication and require exact storage proof for recovery. [Recovery policy](docs/release-0.17.0-alpha.190.md).
+
 ### 0.17.0-alpha.189 (2026-11-02)
 
 - (fuchs-1978) Transfer a witnessed running charge to the manually preferred vehicle without a repeated start delay or reserve; retain the bounded qualification through short PV dips while preserving confirmed stop, minimum power and safety gates. [Policy and limits](docs/release-0.17.0-alpha.189.md).
@@ -174,10 +178,6 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 ### 0.17.0-alpha.184 (2026-11-01)
 
 - (fuchs-1978) Fix optional-follower budget cycling when a preferred fixed-one-phase car waits for its start budget without phase-mode feedback. Preserve electrical reservations and safety limits. [Details](docs/release-0.17.0-alpha.184.md).
-
-### 0.17.0-alpha.183 (2026-11-01)
-
-- (fuchs-1978) Allow a witnessed preferred-car replug to prepare one bounded handoff without repeating the start delay; retain electrical stop and budget proofs. [Policy](docs/release-0.17.0-alpha.183.md).
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 
