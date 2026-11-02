@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.187",
+    "version": "0.17.0-alpha.188",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.188": {
+        "en": "Separate bounded recorder publication from SQL verification timeouts with independent writer/reader diagnostics and backoffs. Retain unconfirmed local originals without age expiry; only exact SQL proof permits cleanup.",
+        "de": "Recorder-Schreiben und SQL-Lesepruefung mit eigener Diagnose und Fehlerbremse entkoppeln. Unbestaetigte lokale Originale ohne Altersloeschung erhalten; Bereinigung nur nach exaktem SQL-Nachweis.",
+        "es": "Separate bounded recorder publication from SQL verification timeouts with independent writer/reader diagnostics and backoffs. Retain unconfirmed local originals without age expiry; only exact SQL proof permits cleanup.",
+        "fr": "Separate bounded recorder publication from SQL verification timeouts with independent writer/reader diagnostics and backoffs. Retain unconfirmed local originals without age expiry; only exact SQL proof permits cleanup.",
+        "it": "Separate bounded recorder publication from SQL verification timeouts with independent writer/reader diagnostics and backoffs. Retain unconfirmed local originals without age expiry; only exact SQL proof permits cleanup.",
+        "nl": "Separate bounded recorder publication from SQL verification timeouts with independent writer/reader diagnostics and backoffs. Retain unconfirmed local originals without age expiry; only exact SQL proof permits cleanup.",
+        "pl": "Separate bounded recorder publication from SQL verification timeouts with independent writer/reader diagnostics and backoffs. Retain unconfirmed local originals without age expiry; only exact SQL proof permits cleanup.",
+        "pt": "Separate bounded recorder publication from SQL verification timeouts with independent writer/reader diagnostics and backoffs. Retain unconfirmed local originals without age expiry; only exact SQL proof permits cleanup.",
+        "ru": "Separate bounded recorder publication from SQL verification timeouts with independent writer/reader diagnostics and backoffs. Retain unconfirmed local originals without age expiry; only exact SQL proof permits cleanup.",
+        "uk": "Separate bounded recorder publication from SQL verification timeouts with independent writer/reader diagnostics and backoffs. Retain unconfirmed local originals without age expiry; only exact SQL proof permits cleanup.",
+        "zh-cn": "Separate bounded recorder publication from SQL verification timeouts with independent writer/reader diagnostics and backoffs. Retain unconfirmed local originals without age expiry; only exact SQL proof permits cleanup."
+      },
       "0.17.0-alpha.187": {
         "en": "Avoid overlapping identical heater refreshes during a bounded pending Modbus reset; retain fixed-one-phase charging minima without optional phase-mode feedback; exclude verified external battery discharge from legacy surplus budgets.",
         "de": "Identische Heizstab-Auffrischungen bei kurz ausstehendem Modbus-Reset zusammenfassen. Feste Einphasen-Mindestladung ohne optionales Phasenmodus-ACK erhalten. Bestaetigte externe Speicherentladung im bisherigen Ueberschussbudget ausschliessen.",
@@ -81,19 +94,6 @@
         "ru": "Estimate only nonexistent spring clock-hour Lasso lags from both measured neighboring hours. Mark estimated lag days and training counts; never fill measured gaps or actuals.",
         "uk": "Estimate only nonexistent spring clock-hour Lasso lags from both measured neighboring hours. Mark estimated lag days and training counts; never fill measured gaps or actuals.",
         "zh-cn": "Estimate only nonexistent spring clock-hour Lasso lags from both measured neighboring hours. Mark estimated lag days and training counts; never fill measured gaps or actuals."
-      },
-      "0.17.0-alpha.181": {
-        "en": "Keep DST-day measurements for calendar lags. Average both recorded fall-back occurrences; missing intervals stay unknown. Preserve issued forecasts and production control.",
-        "de": "Zeitumstellungstage fuer Kalenderrueckblicke nutzen. Beide gemessenen Vorkommen der doppelten Stunde mitteln; fehlende Intervalle bleiben unbekannt. Ausgegebene Prognosen und produktive Regelung erhalten.",
-        "es": "Keep DST-day measurements for calendar lags. Average both recorded fall-back occurrences; missing intervals stay unknown. Preserve issued forecasts and production control.",
-        "fr": "Keep DST-day measurements for calendar lags. Average both recorded fall-back occurrences; missing intervals stay unknown. Preserve issued forecasts and production control.",
-        "it": "Keep DST-day measurements for calendar lags. Average both recorded fall-back occurrences; missing intervals stay unknown. Preserve issued forecasts and production control.",
-        "nl": "Keep DST-day measurements for calendar lags. Average both recorded fall-back occurrences; missing intervals stay unknown. Preserve issued forecasts and production control.",
-        "pl": "Keep DST-day measurements for calendar lags. Average both recorded fall-back occurrences; missing intervals stay unknown. Preserve issued forecasts and production control.",
-        "pt": "Keep DST-day measurements for calendar lags. Average both recorded fall-back occurrences; missing intervals stay unknown. Preserve issued forecasts and production control.",
-        "ru": "Keep DST-day measurements for calendar lags. Average both recorded fall-back occurrences; missing intervals stay unknown. Preserve issued forecasts and production control.",
-        "uk": "Keep DST-day measurements for calendar lags. Average both recorded fall-back occurrences; missing intervals stay unknown. Preserve issued forecasts and production control.",
-        "zh-cn": "Keep DST-day measurements for calendar lags. Average both recorded fall-back occurrences; missing intervals stay unknown. Preserve issued forecasts and production control."
       }
     },
     "titleLang": {

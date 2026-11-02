@@ -580,7 +580,10 @@ async function worker(tree) {
     const delivery = deliveryFixture(16, {bundleOriginals: true});
     for (let n = 0; n < 4; n++) {
         await delivery.delivery.tick();
-        const health = delivery.delivery.health();
+        // alpha.188 adds per-lane diagnostic leaves. Compare every pre-existing
+        // health field and every ordered write/query/confirmation unchanged;
+        // lane timing/backoff separation has explicit stalled-path regressions.
+        const {writer, reader, ...health} = delivery.delivery.health();
         health.lastQuery = existingQuery(health.lastQuery);
         health.recentQueries = health.recentQueries.map(existingQuery);
         record({publications: delivery.publications, confirmations: delivery.confirmations,

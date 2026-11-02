@@ -44,14 +44,14 @@ test('independent SQL proof cannot delete an original pinned by an unfinished re
  await h.journal.tail;assert.equal(h.journal.health().records,0);
 });
 
-test('expiry defers a pinned group without advancing loss counters',async t=>{
- let now=1000;const h=await fixture(t,{now:()=>now,maxAgeMs:50});
- const reading=h.journal.readBatch({limit:1});await h.entered.promise;now=1100;
+test('age never removes a pinned or unpinned unconfirmed group',async t=>{
+ let now=1000;const h=await fixture(t,{now:()=>now});
+ const reading=h.journal.readBatch({limit:1});await h.entered.promise;now+=30*86400000;
  assert.deepEqual(await beforeRelease(h.journal.expireOldGroups(),'expiry blocked behind read'),[]);
  assert.equal(h.journal.health().expiredRecords,0);assert.ok(h.journal.entries.has(h.entry.id));
  h.gate.resolve();await reading;
- assert.deepEqual(await h.journal.expireOldGroups(),[h.entry.id]);
- assert.equal(h.journal.health().expiredUnconfirmedRecords,1);
+ assert.deepEqual(await h.journal.expireOldGroups(),[]);
+ assert.equal(h.journal.health().expiredUnconfirmedRecords,0);
 });
 
 test('close drains accepted read batches and their pin releases while durable writes progress',async t=>{

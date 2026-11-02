@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.181 (2026-10-31)
+
+- (fuchs-1978) Retain DST-day measurements for calendar lags; average both recorded fall-back intervals without filling gaps. [Policy and limits](docs/release-0.17.0-alpha.181.md).
+
 ## 0.17.0-alpha.180 (2026-10-31)
 
 - (fuchs-1978) Extend retention of mapped original room-temperature SQL histories without copying samples or changing other recording options. [Setup and limits](docs/release-0.17.0-alpha.180.md).

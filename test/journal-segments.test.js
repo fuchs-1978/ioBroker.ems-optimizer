@@ -155,13 +155,13 @@ test('segment capacity and conflicting identity reject atomically without deleti
     assert.deepEqual((await j.readBatch()).map(e => e.sha256), saved.map(e => e.sha256)); await j.close();
 });
 
-test('expiry of a closed segment chain records unknown SQL coverage before removing originals', async t => {
+test('old closed segment chains remain until SQL confirmation, including after restart', async t => {
     let at = 1000; const j = await journal(t, {now: () => at});
     await j.appendBatch(frames(4)); await j.append(frames(1, 'new')[0]); at += 86400000;
-    assert.equal((await j.expireOldGroups()).length, 4); assert.equal(j.health().expiredUnconfirmedRecords, 4);
-    assert.equal(j.health().sqlConfirmedRecords, 0); assert.equal(j.health().records, 1); await j.close();
+    assert.equal((await j.expireOldGroups()).length, 0); assert.equal(j.health().expiredUnconfirmedRecords, 0);
+    assert.equal(j.health().sqlConfirmedRecords, 0); assert.equal(j.health().records, 5); await j.close();
     const r = new Journal({directory: j.directory}); await r.initialize();
-    assert.equal(r.health().expiredUnconfirmedRecords, 4); assert.equal(r.health().records, 1); await r.close();
+    assert.equal(r.health().expiredUnconfirmedRecords, 0); assert.equal(r.health().records, 5); await r.close();
 });
 
 test('real recorder batching preserves large source contexts and commands through segment restart without raw queue loss', async t => {

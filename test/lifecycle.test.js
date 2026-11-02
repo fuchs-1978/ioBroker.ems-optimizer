@@ -117,6 +117,13 @@ test('recording integration uses private instance data and a matching published 
         assert.equal(a.decisionRecordDelivery.maxBatchBytes, 512 * 1024);
         assert.equal(a.decisionRecordDelivery.bundleOriginals, true);
         assert.equal(a.decisionRecordDelivery.maxQueriesPerTick, 1);
+        assert.equal(a.decisionRecordDelivery.backoff, a.sqlDiagnosticBackoff);
+        assert.equal(a.decisionRecordDelivery.writeBackoff, a.sqlWriteBackoff);
+        a.sqlDiagnosticBackoff.fail('sql-query-error');
+        assert.equal(a.sqlWriteBackoff.paused(), false, 'a reader failure cannot stop the production publisher');
+        a.sqlWriteBackoff.observeLog({from: 'sql.0', severity: 'error', ts: Date.now(),
+            message: 'Cannot insert (Errcode: 24)'}, 'sql.0');
+        assert.equal(a.sqlWriteBackoff.paused(), true, 'real SQL resource failures still slow publication');
         const payload = '{"recordSession":"integration","recordSequence":1}';
         const receipt = await a.decisionRecordDelivery.publish(payload);
         assert.equal(receipt.publishedAt, a.getCachedState('ems.0.Debug.Shadow.DecisionRecord').ts);
