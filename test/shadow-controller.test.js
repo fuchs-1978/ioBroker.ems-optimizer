@@ -1517,6 +1517,23 @@ test('SQL failure checkpoint publishes only changes at one Hz and is excluded fr
     assert.equal(JSON.parse(h.value('RecordSQLFailures_JSON')).failures.length, 1);
 });
 
+test('writer and reader diagnoses stay separate, unhistorized and visible at one Hz during reader backoff', async () => {
+    const h = await fixture();let writes = 1;
+    h.adapter.sqlDiagnosticBackoff = {degraded: true};
+    h.adapter.decisionRecordDelivery = {health: () => ({writer: {state: 'ready', completedWrites: writes},
+        reader: {state: 'blocked', activeRequests: 1}})};
+    h.shadow.beginScalarFrame();h.advance(1000);h.shadow.publishRecordHealth();await h.flush();
+    assert.equal(JSON.parse(h.value('RecordWriterStatus')).completedWrites, 1);
+    assert.equal(JSON.parse(h.value('RecordReaderStatus')).state, 'blocked');
+    assert.ok(!h.shadow.scalarFrame.has('RecordWriterStatus'));
+    for (const name of ['RecordWriterStatus', 'RecordReaderStatus'])
+        assert.ok(!h.shadow.historyIds.some(id => id.endsWith('.' + name)), 'new diagnostics cannot amplify SQL traffic');
+    writes++;h.advance(500);h.shadow.publishRecordHealth();await h.flush();
+    assert.equal(JSON.parse(h.value('RecordWriterStatus')).completedWrites, 1, 'large diagnostics remain rate-limited');
+    h.advance(500);h.shadow.publishRecordHealth();await h.flush();
+    assert.equal(JSON.parse(h.value('RecordWriterStatus')).completedWrites, 2, 'reader backoff does not hide writer progress for thirty seconds');
+});
+
 test('durable recorder drains bounded batches in order, keeps queue caps and resets encoding after failure', async () => {
     const saved = [], batches = [];
     let fail = false, ticks = 0;

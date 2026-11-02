@@ -6,7 +6,13 @@ Ein SQL-Wert kann zusätzlich ein Transportpaket `{schema:4,frameType:"transport
 
 Alle enthaltenen Originale teilen den SQL-Transportzeitstempel, behalten jedoch ihre jeweiligen Ereignis-/Quellenzeiten, Session/Sequenz, NULL, ACK/q, Verlustmarker und exakten Hash. Ein Paket ist keine simultane Entscheidung. Rohseitenzahl und Abfragelimit beziehen sich auf SQL-Werte, nicht auf die größere Zahl enthaltener Originale. `decodeDecisionRecords` und der sequenzielle Historienleser expandieren diese Werte vor Deduplizierung/Rekonstruktion; der einzelne `DecisionRecordDecoder.decode` erwartet weiterhin ein entpacktes Original.
 
-Das lokale Journal enthält weiterhin einzelne unveränderte Originalrecords; SQL-Bestätigung erfolgt pro Original, Bereinigung wie bisher pro vollständiger geschlossener Kette. Der normale Versand hat höchstens vier State-Schreibaufrufe pro fünf Sekunden und 512 KiB einschließlich Verpackung; Fehlerbetrieb bleibt ein Original je 30 Sekunden. `RecordDeliveryStatus` trennt Originalversuche und tatsächliche Transportaufrufe. Alte Einzelwerte und neue Pakete können im selben Auswertungszeitraum vorkommen.
+Das lokale Journal enthält weiterhin einzelne unveränderte Originalrecords; SQL-Bestätigung erfolgt pro Original, Bereinigung wie bisher pro vollständiger geschlossener Kette. Der normale Versand hat höchstens vier State-Schreibaufrufe pro fünf Sekunden und 512 KiB einschließlich Verpackung; Nach tatsächlichen Schreib-/Ressourcenfehlern gilt weiterhin ein Original je 30 Sekunden nach Ablauf der Fehlerpause. Ein reiner Lese-Timeout bremst seit alpha.188 nur den Leser. `RecordDeliveryStatus` trennt Originalversuche und tatsächliche Transportaufrufe. Alte Einzelwerte und neue Pakete können im selben Auswertungszeitraum vorkommen.
+
+## Getrennte Zustellung und Speichernachweis ab alpha.188
+
+Ein Schreiber veröffentlicht begrenzte neue Pakete; ein unabhängiger Leser prüft sie mit direkten SQL-Lesungen. Ein unbekannt abgeschlossener Leseauftrag bleibt die einzige offene Recorder-Prüfquery und behält seine dauerhafte Sperre. Er blockiert keine neuen Veröffentlichungen. Der Schreiber besitzt eine eigene Fehlerbremse; beobachtete SQL-Schreib-/Ressourcenfehler bremsen weiter beide Wege. Ein ioBroker-Schreibabschluss ist kein SQL-Commitnachweis.
+
+Unbestätigte Originale verfallen nicht mehr durch Alter. Nur unabhängige exakte SQL-Treffer erlauben ihre normale Bereinigung; Abhängigkeiten einer Checkpointgruppe bleiben erhalten. Die endliche Kapazität bleibt bestehen. Voller Speicher weist neue Aufzeichnungen sichtbar ab, ohne alte unbestätigte Originale zu löschen. Frühere Verlustzähler bleiben historische Nachweise. [Diagnose und Grenzen](release-0.17.0-alpha.188.md).
 
 ## Zweck und Grenzen
 

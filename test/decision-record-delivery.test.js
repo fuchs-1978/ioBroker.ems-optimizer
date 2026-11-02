@@ -50,6 +50,65 @@ function fixture(count = 1, options = {}) {
         now: () => clock, advance: ms => {clock += ms;}};
 }
 
+test('a timed-out reader leaves the bounded writer running and only exact late matches remove originals', async () => {
+    const Backoff = require('../lib/sql-diagnostic-backoff');
+    let finish, first = true;
+    const sql = [];
+    const h = fixture(4, {backoff: new Backoff({now: () => h.now()}), maxPublishPerTick: 1,
+        publish: async val => {h.publications.push(val);sql.push({ts: h.now(), val});return {publishedAt: h.now()};},
+        readHistory: request => {
+            h.queries.push(request);
+            if (first) {first = false;return new Promise(resolve => {finish = resolve;});}
+            return Promise.resolve({result: sql.filter(row => row.ts >= request.start && row.ts <= request.end),
+                backendCompletionObserved: true});
+        }});
+    await h.delivery.tick();
+    assert.equal(h.delivery.health().backendBlocked, true);
+    for (let n = 0; n < 3; n++) {h.advance(5000);await h.delivery.tick();}
+    assert.equal(h.publications.length, 4, 'a reader timeout cannot pause fresh bounded publications');
+    assert.equal(h.queries.length, 1, 'the unresolved read is never bypassed by another query');
+    assert.equal(h.stored.size, 4, 'successful publication is not SQL storage proof');
+    assert.equal(h.delivery.health().writer.state, 'ready');
+    assert.equal(h.delivery.health().reader.state, 'blocked');
+    finish({result: [sql[0]], backendCompletionObserved: true});
+    await Promise.allSettled([...h.delivery.backendOperations]);
+    assert.equal(h.confirmations.length, 1, 'late proof acknowledges only the matching original');
+    assert.equal(h.stored.size, 3);
+    h.advance(60001);
+    for (let n = 0; n < 5 && h.stored.size; n++) {await h.delivery.tick();h.advance(30000);}
+    assert.equal(h.stored.size, 0);
+    assert.equal(new Set(h.confirmations.map(x => x.id)).size, 4);
+    h.delivery.stop();
+});
+
+test('an unresolved publication has its own diagnostics and does not stop proof of older writes', async () => {
+    const sql = [];let finish, expose = false;
+    const h = fixture(3, {maxPublishPerTick: 1, publishTimeoutMs: 20,
+        publish: val => {
+            h.publications.push(val);
+            if (h.publications.length === 1) {sql.push({ts: h.now(), val});return Promise.resolve({publishedAt: h.now()});}
+            return new Promise(resolve => {finish = resolve;});
+        },
+        readHistory: async q => {h.queries.push(q);return {result: expose
+            ? sql.filter(row => row.ts >= q.start && row.ts <= q.end) : [], backendCompletionObserved: true};}});
+    await h.delivery.tick();h.advance(100);expose = true;
+    const blockedWrite = h.delivery.tick();
+    for (let n = 0; n < 20 && !finish; n++) await Promise.resolve();
+    assert.ok(finish);
+    await h.delivery.tick();
+    assert.equal(h.confirmations.length, 1, 'the reader can run while the writer awaits transport');
+    await blockedWrite;
+    const health = h.delivery.health();
+    assert.equal(health.writer.state, 'blocked');assert.equal(health.writer.timeouts, 1);
+    assert.equal(health.reader.state, 'ready');
+    assert.equal(health.writer.lastOperation.outcome, 'timeout');
+    assert.equal(h.stored.size, 2);
+    finish({publishedAt: h.now()});await new Promise(resolve => setImmediate(resolve));
+    assert.equal(h.delivery.health().writer.lastOperation.lateOutcome, 'complete');
+    assert.equal(h.stored.size, 2, 'a late publication callback is still no SQL proof');
+    h.delivery.stop();
+});
+
 test('bounded bundled transport drains a healthy backlog without increasing the write/query call budget', async () => {
     const sql = [], {unpackOriginals} = require('../lib/decision-record-transport');
     const h = fixture(64, {bundleOriginals: true, maxPublishPerTick: 16, maxWritesPerTick: 4,
@@ -343,6 +402,7 @@ test('unresolved publication deadline stops the batch until its original write r
     await h.delivery.tick({force: true}); assert.equal(calls, 1);
     finish({publishedAt: 100000}); await new Promise(resolve => setImmediate(resolve));
     assert.equal(h.delivery.health().publicationBlocked, false);
+    h.advance(60001); // A real publication timeout retains its own bounded retry pause.
     await h.delivery.tick({force: true}); assert.equal(calls, 2);
     await h.delivery.tick({force: true}); assert.equal(calls, 2);
     assert.equal(h.stored.size, 2, 'publication completion still does not prove SQL storage');
@@ -660,25 +720,16 @@ test('an observed completed SQL error narrows its next query without retrying in
     h.delivery.stop();
 });
 
-test('local expiry removes delivery tracking and replay references without SQL success or a fast maintenance loop', async () => {
+test('delivery never requests age deletion of unconfirmed tracked originals', async () => {
     const h = fixture(1, {readHistory: async () => ({result: [], backendCompletionObserved: true})});
-    await h.delivery.tick({force: true});
-    const id = h.entries[0].id;
-    h.delivery.replayIds.add(id);
-    h.delivery.replayGroups.set(id, {pending: new Set([id]), requests: 1});
+    await h.delivery.tick();
     let maintenance = 0;
-    h.journal.expireOldGroups = async () => {maintenance++; h.stored.delete(id); return [id];};
-    await h.delivery.tick({force: true});
-    assert.equal(h.delivery.entries.size, 0);
-    assert.equal(h.delivery.identities.size, 0);
-    assert.equal(h.delivery.replayIds.size, 0);
-    assert.equal(h.delivery.replayGroups.size, 0);
+    h.journal.expireOldGroups = async () => {maintenance++;return [h.entries[0].id];};
+    h.advance(2 * 86400000);await h.delivery.tick();
+    assert.equal(maintenance, 0);
+    assert.equal(h.delivery.entries.size, 1);
+    assert.equal(h.stored.size, 1);
     assert.equal(h.confirmations.length, 0);
-    assert.equal(h.delivery.health().sqlConfirmed, 0);
-    await h.delivery.tick({force: true});
-    assert.equal(maintenance, 1);
-    h.advance(60000); await h.delivery.tick({force: true});
-    assert.equal(maintenance, 2);
 });
 
 test('local expiry does not race an active verification or an unresolved publication', async () => {
@@ -713,10 +764,12 @@ test('SQL log pause suppresses writes before any history request; exact proof is
     const Backoff = require('../lib/sql-diagnostic-backoff');
     let clock = 100000;
     const backoff = new Backoff({now: () => clock});
+    const writeBackoff = new Backoff({now: () => clock});
     let h;
-    h = fixture(4, {now: () => clock, backoff, readHistory: async () =>
+    h = fixture(4, {now: () => clock, backoff, writeBackoff, readHistory: async () =>
         ({result: h.publications.map(val => ({ts: clock, val})), backendCompletionObserved: true})});
-    backoff.fail('sql-open-files-error-24');
+    const log = {from: 'sql.0', severity: 'error', ts: clock, message: 'Cannot insert (Errcode: 24)'};
+    backoff.observeLog(log, 'sql.0');writeBackoff.observeLog(log, 'sql.0');
     await h.delivery.tick({force: true});
     assert.equal(h.publications.length, 0); assert.equal(h.queries.length, 0);
     clock += 60000; h.advance(60000);
@@ -741,7 +794,7 @@ test('outage recovery resumes bounded backlog delivery only after a fresh exact 
         readHistory: async q => {
             active++; peakActive = Math.max(peakActive, active);
             try {
-                if (!healthy) return {error: 'controlled database outage', backendCompletionObserved: true};
+                if (!healthy) return {error: 'Cannot insert: controlled database outage', backendCompletionObserved: true};
                 return {result: sqlRows.filter(row => row.ts >= q.start && row.ts <= q.end),
                     backendCompletionObserved: true};
             } finally {active--;}
@@ -786,13 +839,14 @@ test('a completed empty history response does not prove database recovery or era
     backoff.fail(); clock += 60000;
     await h.delivery.tick({force: true});
     await h.delivery.tick({force: true});
-    assert.equal(h.publications.length, 1);
+    assert.equal(h.publications.length, 4);
+    assert.equal(h.delivery.writeBackoff.degraded, false);
     assert.equal(h.delivery.health().queryCount, 1);
     assert.equal(backoff.degraded, true); assert.equal(h.stored.size, 4);
 });
 
 
-test('cooldown cannot override unknown backend completion or resume publications behind its fence', async () => {
+test('cooldown cannot override an unknown reader completion while independent publications continue', async () => {
     const Backoff = require('../lib/sql-diagnostic-backoff');
     let clock = 100000;
     const backoff = new Backoff({now: () => clock});
@@ -801,7 +855,7 @@ test('cooldown cannot override unknown backend completion or resume publications
     await h.delivery.tick({force: true});
     assert.equal(h.delivery.health().backendBlocked, true);
     clock += 600000; await h.delivery.tick({force: true});
-    assert.equal(h.publications.length, 1);
+    assert.equal(h.publications.length, 2);
     assert.equal(h.delivery.health().queryCount, 1);
     assert.equal(h.stored.size, 8);
     assert.equal(backoff.degraded, true);
@@ -854,7 +908,7 @@ async function recoveryBacklog({visibilityDelayMs = 0, withholdFresh = false} = 
         const current = h.delivery.health();
         assert.ok(current.queryCount - previous.queryCount <= 1, 'existing one-query budget');
         assert.ok(current.transportWrites - previous.transportWrites <= 4, 'existing transport call budget');
-        if (previous.sqlBackoff.degraded) assert.ok(current.publicationAttempts - previous.publicationAttempts <= 1);
+        if (previous.writer.backoff.degraded) assert.ok(current.publicationAttempts - previous.publicationAttempts <= 1);
         clock += 30000;
     }
     const after = h.delivery.health(); h.delivery.stop();
@@ -938,8 +992,9 @@ test('multiple-bundle delivery preserves strict degraded single-original cadence
     const Backoff = require('../lib/sql-diagnostic-backoff');
     let clock = 100000;
     const backoff = new Backoff({now: () => clock}); backoff.fail('completed-error');
+    const writeBackoff = new Backoff({now: () => clock});writeBackoff.fail('publication-error');
     clock += 60000;
-    const h = multiBundleFixture(128, {now: () => clock, backoff,
+    const h = multiBundleFixture(128, {now: () => clock, backoff, writeBackoff,
         publish: async () => ({publishedAt: clock}),
         readHistory: async () => ({result: [], backendCompletionObserved: true})});
     await h.delivery.tick();

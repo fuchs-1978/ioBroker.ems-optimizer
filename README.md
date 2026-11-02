@@ -7,7 +7,7 @@
 
 Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Combines PV and grid measurements, load history, weather forecasts and electricity prices in a rolling 48-hour plan.
 
-**Current version: 0.17.0-alpha.187.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
+**Current version: 0.17.0-alpha.188.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
 
 [Deutsche Bedienungsanleitung](README.de.md) · [Release history](CHANGELOG_OLD.md) · [Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
@@ -123,7 +123,8 @@ EMS Optimizer combines ioBroker states supplied by other adapters or scripts. A 
 | `Devices.*` | Device feedback, output ownership, command response and fault diagnostics. |
 | `Debug.DailySummary_JSON` | Compact passive energy and coverage estimates with bounded investigation episodes. |
 | `Debug.Shadow.DecisionRecord` | Recorded original samples and decision context for targeted historical analysis. |
-| `Debug.Shadow.RecordDeliveryStatus` | Recorder backlog, transport and independent persistence evidence. |
+| `Debug.Shadow.RecordDeliveryStatus` | Recorder backlog, separate writer/reader timing and independent persistence evidence. |
+| `Debug.Shadow.RecordWriterStatus`, `RecordReaderStatus` | Independent publication and SQL-read diagnostics; excluded from automatic SQL history. |
 | `Debug.Shadow.RecordSQLRecoveryStatus` | Qualified recovery of an unresolved SQL request; an EMS restart alone does not prove completion. |
 | `Forecast.LoadComparison.*` | Passive day-ahead comparison, model, immutable issued forecasts and paired actual evaluation. |
 | `Debug.WeatherArchive.*`, `Debug.RoomHistory.*` | Weather collection and retention of configured original room histories. |
@@ -131,6 +132,8 @@ EMS Optimizer combines ioBroker states supplied by other adapters or scripts. A 
 State names above are relative to the instance, for example `ems-optimizer.0.System.Version`.
 
 A current state does not prove historical coverage. Missing, stale, invalid or unacknowledged measurements remain unknown. A successful state write or history-cache response does not prove database persistence. The recorder uses bounded database-only SELECT queries for its independent persistence check; see the [recorder access contract](docs/issue123-recorder-access.md).
+
+Since alpha.188, a stalled verification read cannot pause bounded new publications. Writer failures and observed SQL resource errors retain their own retry brake. Unconfirmed originals no longer expire after 24 hours; exact SQL proof is required for normal cleanup. Finite capacity still rejects new records visibly when full. Writer completion means handoff to the ioBroker state database, not an SQL commit. See [writer/reader diagnosis](docs/release-0.17.0-alpha.188.md).
 
 For an existing orphan SQL request, follow the [alpha.186 recovery instructions](docs/release-0.17.0-alpha.186.md). A SQL-adapter restart can provide process-generation evidence, but successful read-only checks and exact original matches are still required. No automatic SQL restart, forced fence clearing or silent deletion of unconfirmed originals is performed.
 
@@ -147,6 +150,10 @@ npm run test:equivalence
 Admin translation catalogs are stored in `admin/i18n/<language>/translations.json`. Keep their keys aligned with the English catalog and all visible Admin texts. Package metadata and every retained release message must cover the supported languages. See [translation coverage and checks](docs/translations.md).
 
 ## Changelog
+
+### 0.17.0-alpha.188 (2026-11-02)
+
+- (fuchs-1978) Separate bounded recorder publication from SQL verification timeouts with independent writer/reader diagnostics and backoffs. Retain unconfirmed local originals without age expiry; only exact SQL proof permits cleanup. [Diagnosis and limits](docs/release-0.17.0-alpha.188.md).
 
 ### 0.17.0-alpha.187 (2026-11-01)
 
@@ -171,10 +178,6 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 ### 0.17.0-alpha.182 (2026-10-31)
 
 - (fuchs-1978) Estimate missing spring clock-hour Lasso lags from both measured neighboring hours, with explicit estimate markers. Never fill measured gaps or actuals. [Policy](docs/release-0.17.0-alpha.182.md).
-
-### 0.17.0-alpha.181 (2026-10-31)
-
-- (fuchs-1978) Retain DST-day measurements for calendar lags; average both recorded fall-back intervals without filling gaps. [Policy and limits](docs/release-0.17.0-alpha.181.md).
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 

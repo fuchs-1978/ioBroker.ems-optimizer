@@ -91,9 +91,14 @@ class EmsOptimizer extends utils.Adapter {
         this.decisionRecordJournal = null;
         this.decisionRecordDelivery = null;
         this.sqlDiagnosticBackoff = new SqlDiagnosticBackoff();
+        this.sqlWriteBackoff = new SqlDiagnosticBackoff();
         this.debugInitialization = null;
         this.debugWarningAt = null;
-        this.on("log", entry => this.sqlDiagnosticBackoff.observeLog(entry, String(this.config.historyInstance || "").trim()));
+        this.on("log", entry => {
+            const instance = String(this.config.historyInstance || "").trim();
+            this.sqlDiagnosticBackoff.observeLog(entry, instance);
+            this.sqlWriteBackoff.observeLog(entry, instance);
+        });
         this.on("ready", this.onReady.bind(this));
         this.on("stateChange", this.onStateChange.bind(this));
         this.on("objectChange", id => this.outputMetadata.changed(id));
@@ -294,7 +299,8 @@ class EmsOptimizer extends utils.Adapter {
             }
             this.decisionRecordDelivery = new DecisionRecordDelivery({journal, publishIntervalMs: 5000,
                 queryFailures,
-                backoff: this.sqlDiagnosticBackoff, maxPublishPerTick: 16, maxWritesPerTick: 4,
+                backoff: this.sqlDiagnosticBackoff, writeBackoff: this.sqlWriteBackoff,
+                maxPublishPerTick: 16, maxWritesPerTick: 4,
                 maxOriginalsPerTick: 64, maxReadOriginalBytes: 2 * 1024 * 1024,
                 maxVerificationSpanMs: 10000,
                 bundleOriginals: true, maxQueriesPerTick: 1,
