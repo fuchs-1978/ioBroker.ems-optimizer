@@ -1,8 +1,8 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.188**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.189**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
 
-Alpha 188 entkoppelt die Recorder-Schreibübergabe von der SQL-Leseprüfung und erhält unbestätigte Originale ohne Alterslöschung. Die getrennten Statusobjekte zeigen Fortschritt und Wartezeiten beider Wege. [Änderungen, Diagnose und Grenzen](docs/release-0.17.0-alpha.188.md). Keine neue Admin-Einstellung erforderlich.
+Alpha 189 beschleunigt den manuellen Prioritätswechsel zwischen Fahrzeugen: Eine im laufenden EMS beobachtete Ladung überträgt ihre Startfreigabe ohne erneute Wartezeit oder Startreserve. Kurze Leistungsdellen pausieren die begrenzte Übergabe, statt den Countdown neu zu beginnen. Abschaltbestätigung, elektrische Ruhe, Mindestleistung und Schutzgrenzen bleiben erforderlich. [Ablauf und Grenzen](docs/release-0.17.0-alpha.189.md). Keine neue Admin-Einstellung erforderlich.
 
 EMS Optimizer verbindet aktuelle PV-/Netzmessungen, historische Lastprofile, Wetter-/PV-Prognosen und Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Der Echtzeitregler kann nach ausdrücklicher Freigabe bis zu drei Wallboxen, einen Warmwasser-Heizstab sowie getrennte vorbereitete Heizpuffer-/Speicherausgänge koordinieren. Die Wärmepumpe wird aktuell gemessen und erhält **passive Empfehlungen**; der Adapter sendet keine WP-/SG-Ready-/KNX-Stellbefehle. Die reale Wallbox-Phasenumschaltung übernimmt ein passend geprüftes externes Skript.
 

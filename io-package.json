@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.188",
+    "version": "0.17.0-alpha.189",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.189": {
+        "en": "Transfer a witnessed running charge to the manually preferred vehicle without a repeated start delay or reserve; retain the bounded qualification through short PV dips while preserving confirmed stop, minimum power and safety gates.",
+        "de": "Beobachtete laufende Ladung ohne erneute Startwartezeit oder Startreserve an das priorisierte Fahrzeug uebergeben. Startfreigabe bei kurzen PV-Dellen begrenzt erhalten; bestaetigter Stillstand, Mindestleistung und Schutzgrenzen bleiben erforderlich.",
+        "es": "Transfer a witnessed running charge to the manually preferred vehicle without a repeated start delay or reserve; retain the bounded qualification through short PV dips while preserving confirmed stop, minimum power and safety gates.",
+        "fr": "Transfer a witnessed running charge to the manually preferred vehicle without a repeated start delay or reserve; retain the bounded qualification through short PV dips while preserving confirmed stop, minimum power and safety gates.",
+        "it": "Transfer a witnessed running charge to the manually preferred vehicle without a repeated start delay or reserve; retain the bounded qualification through short PV dips while preserving confirmed stop, minimum power and safety gates.",
+        "nl": "Transfer a witnessed running charge to the manually preferred vehicle without a repeated start delay or reserve; retain the bounded qualification through short PV dips while preserving confirmed stop, minimum power and safety gates.",
+        "pl": "Transfer a witnessed running charge to the manually preferred vehicle without a repeated start delay or reserve; retain the bounded qualification through short PV dips while preserving confirmed stop, minimum power and safety gates.",
+        "pt": "Transfer a witnessed running charge to the manually preferred vehicle without a repeated start delay or reserve; retain the bounded qualification through short PV dips while preserving confirmed stop, minimum power and safety gates.",
+        "ru": "Transfer a witnessed running charge to the manually preferred vehicle without a repeated start delay or reserve; retain the bounded qualification through short PV dips while preserving confirmed stop, minimum power and safety gates.",
+        "uk": "Transfer a witnessed running charge to the manually preferred vehicle without a repeated start delay or reserve; retain the bounded qualification through short PV dips while preserving confirmed stop, minimum power and safety gates.",
+        "zh-cn": "Transfer a witnessed running charge to the manually preferred vehicle without a repeated start delay or reserve; retain the bounded qualification through short PV dips while preserving confirmed stop, minimum power and safety gates."
+      },
       "0.17.0-alpha.188": {
         "en": "Separate bounded recorder publication from SQL verification timeouts with independent writer/reader diagnostics and backoffs. Retain unconfirmed local originals without age expiry; only exact SQL proof permits cleanup.",
         "de": "Recorder-Schreiben und SQL-Lesepruefung mit eigener Diagnose und Fehlerbremse entkoppeln. Unbestaetigte lokale Originale ohne Altersloeschung erhalten; Bereinigung nur nach exaktem SQL-Nachweis.",
@@ -81,19 +94,6 @@
         "ru": "A witnessed replug of the preferred car may prepare one bounded transfer from an optional running car. Preserve budget, real charging-episode, OFF/quiet and phase checks; never renew from repeated plugged values.",
         "uk": "A witnessed replug of the preferred car may prepare one bounded transfer from an optional running car. Preserve budget, real charging-episode, OFF/quiet and phase checks; never renew from repeated plugged values.",
         "zh-cn": "A witnessed replug of the preferred car may prepare one bounded transfer from an optional running car. Preserve budget, real charging-episode, OFF/quiet and phase checks; never renew from repeated plugged values."
-      },
-      "0.17.0-alpha.182": {
-        "en": "Estimate only nonexistent spring clock-hour Lasso lags from both measured neighboring hours. Mark estimated lag days and training counts; never fill measured gaps or actuals.",
-        "de": "Nur nicht existente Fruehlingsstunden im Lasso-Rueckblick aus beiden gemessenen Nachbarstunden schaetzen. Geschaetzte Lags und Trainingsanzahlen kennzeichnen; Messluecken und Ist-Werte nicht auffuellen.",
-        "es": "Estimate only nonexistent spring clock-hour Lasso lags from both measured neighboring hours. Mark estimated lag days and training counts; never fill measured gaps or actuals.",
-        "fr": "Estimate only nonexistent spring clock-hour Lasso lags from both measured neighboring hours. Mark estimated lag days and training counts; never fill measured gaps or actuals.",
-        "it": "Estimate only nonexistent spring clock-hour Lasso lags from both measured neighboring hours. Mark estimated lag days and training counts; never fill measured gaps or actuals.",
-        "nl": "Estimate only nonexistent spring clock-hour Lasso lags from both measured neighboring hours. Mark estimated lag days and training counts; never fill measured gaps or actuals.",
-        "pl": "Estimate only nonexistent spring clock-hour Lasso lags from both measured neighboring hours. Mark estimated lag days and training counts; never fill measured gaps or actuals.",
-        "pt": "Estimate only nonexistent spring clock-hour Lasso lags from both measured neighboring hours. Mark estimated lag days and training counts; never fill measured gaps or actuals.",
-        "ru": "Estimate only nonexistent spring clock-hour Lasso lags from both measured neighboring hours. Mark estimated lag days and training counts; never fill measured gaps or actuals.",
-        "uk": "Estimate only nonexistent spring clock-hour Lasso lags from both measured neighboring hours. Mark estimated lag days and training counts; never fill measured gaps or actuals.",
-        "zh-cn": "Estimate only nonexistent spring clock-hour Lasso lags from both measured neighboring hours. Mark estimated lag days and training counts; never fill measured gaps or actuals."
       }
     },
     "titleLang": {
