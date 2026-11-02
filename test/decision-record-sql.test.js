@@ -18,6 +18,24 @@ function fixture(native = {dbtype: 'mysql', dbname: 'iobroker'}, custom = {}) {
 }
 const turn = () => new Promise(resolve => setImmediate(resolve));
 
+for (const error of ["Host 'private-host' is blocked because of many connection errors (errno: 1129)",
+    {code: 'ER_HOST_IS_BLOCKED', message: 'private password'},
+    Object.assign(new Error('private endpoint'), {code: 'ETIMEDOUT', syscall: 'connect'}),
+    'connect ECONNREFUSED private-host:3306', 'private unknown SQL text'])
+test(`metadata lookup retains only canonical connection failure metadata: ${typeof error}`, async () => {
+    const f = fixture();
+    f.adapter.sendTo = (instance, command, sql, callback) => {
+        f.calls.push(sql); callback({error});
+    };
+    const result = await readDecisionRecordDatabase(f.adapter, bounds);
+    assert.equal(f.calls.length, 1, 'a failed metadata lookup never dispatches a second SELECT');
+    assert.equal(result.backendCompletionObserved, true);
+    assert.equal(result.error, 'SQL datapoint lookup failed');
+    const expected = require('../lib/sql-diagnostic-backoff').classifyConnectionError(error)?.code;
+    assert.equal(result.sqlErrorCode, expected);
+    assert.doesNotMatch(JSON.stringify(result), /private|password/);
+});
+
 test('bounded dialects use a literal numeric ID and a separate exact metadata guard, never id=(subquery)', () => {
     for (const dbtype of ['mysql', 'postgresql', 'sqlite', 'mssql']) {
         const native = {dbtype, dbname: 'ems-test'}, sql = buildVerificationSelect(native, id, bounds, numeric);

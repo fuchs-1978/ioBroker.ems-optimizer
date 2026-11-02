@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.183 (2026-11-01)
+
+- (fuchs-1978) Allow a witnessed preferred-car replug to prepare one bounded handoff without repeating the start delay; retain electrical stop and budget proofs. [Policy](docs/release-0.17.0-alpha.183.md).
+
 ## 0.17.0-alpha.182 (2026-10-31)
 
 - (fuchs-1978) Estimate missing spring clock-hour Lasso lags from both measured neighboring hours, with explicit estimate markers. Never fill measured gaps or actuals. [Policy](docs/release-0.17.0-alpha.182.md).

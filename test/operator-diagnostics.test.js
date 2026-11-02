@@ -34,6 +34,21 @@ test('actual recovered SQL case: historical deadline and expired originals never
     assert.equal(q.externalHistory.status, 'nicht geprüft');
     assert.equal(q.externalHistory.coveredMs, null);
 });
+
+test('current SQL connection cause is canonical and disappears after exact-proof recovery', () => {
+    const h = healthy();
+    h.delivery.sqlBackoff = {degraded: true, paused: true, errorCode: 'ER_HOST_IS_BLOCKED',
+        message: 'private arbitrary text', retryAt: now + 60000};
+    const q = quality(h);
+    assert.equal(q.sql.status, 'blockiert');
+    assert.equal(q.sql.errorCode, 'ER_HOST_IS_BLOCKED');
+    assert.match(q.sql.reason, /Host gesperrt/);
+    assert.doesNotMatch(JSON.stringify(q), /private arbitrary/);
+    const report = buildReport(snapshot(), q, daily(), now);
+    assert.match(report.display.SQL, /Host gesperrt/);
+    h.delivery.sqlBackoff.degraded = false; h.delivery.sqlBackoff.paused = false;
+    assert.equal(quality(h).sql.reason, undefined, 'an old error code alone is no current incident');
+});
 test('a normal live request with its durable fence is not falsely classified as blocked', () => {
     const h = healthy(); h.delivery.persistentVerificationFence = true; h.delivery.activeSqlRequests = 1;
     assert.equal(quality(h).sql.status, 'frisch bestätigt');

@@ -780,6 +780,47 @@ test('SQL log pause suppresses writes before any history request; exact proof is
     assert.equal(h.stored.size, 3);
 });
 
+for (const message of ["Host 'io.lan' is blocked because of many connection errors (errno: 1129)", 'connect ETIMEDOUT'])
+test(`confirmed connection failure pauses both lanes and recovers only after paced exact proof: ${message}`, async () => {
+    const Backoff = require('../lib/sql-diagnostic-backoff');
+    let clock = 100000, h;
+    const backoff = new Backoff({now: () => clock}), writeBackoff = new Backoff({now: () => clock});
+    h = fixture(4, {now: () => clock, backoff, writeBackoff, readHistory: async request =>
+        ({result: h.publications.map(val => ({ts: clock, val})).filter(row => row.ts >= request.start && row.ts <= request.end),
+            backendCompletionObserved: true})});
+    const log = {from: 'sql.0', severity: 'error', ts: clock, message};
+    backoff.observeLog(log, 'sql.0'); writeBackoff.observeLog(log, 'sql.0');
+    for (let n = 0; n < 20; n++) await h.delivery.tick({force: true});
+    assert.equal(h.publications.length, 0); assert.equal(h.queries.length, 0);
+    assert.equal(h.stored.size, 4);
+    assert.equal(h.delivery.health().writer.state, 'paused');
+    assert.equal(h.delivery.health().reader.state, 'paused');
+    clock += 60000; h.advance(60000);
+    await h.delivery.tick({force: true});
+    assert.equal(h.publications.length, 1, 'recovery publishes at most one original, never a burst');
+    assert.equal(h.confirmations.length, 1);
+    assert.equal(h.stored.size, 3, 'only the exact independently matched original is removed');
+    assert.equal(backoff.degraded, false); assert.equal(writeBackoff.degraded, false);
+    h.delivery.stop();
+});
+
+test('a classified SQL callback pauses the writer while its completed fence can close normally', async () => {
+    const Backoff = require('../lib/sql-diagnostic-backoff');
+    let h; const backoff = new Backoff({now: () => h.now()});
+    h = fixture(3, {backoff, maxPublishPerTick: 1,
+        readHistory: async () => ({error: {code: 'ER_HOST_IS_BLOCKED', message: 'private credentials'},
+            backendCompletionObserved: true})});
+    await h.delivery.tick();
+    assert.equal(h.delivery.health().backendBlocked, false, 'an actual callback proves request completion, not storage');
+    assert.equal(h.delivery.health().writer.state, 'paused');
+    assert.equal(h.delivery.health().reader.state, 'paused');
+    assert.equal(h.delivery.queryFailures.report().failures[0].sqlErrorCode, 'ER_HOST_IS_BLOCKED');
+    assert.equal(h.confirmations.length, 0); assert.equal(h.stored.size, 3);
+    h.advance(5000); await h.delivery.tick({force: true});
+    assert.equal(h.publications.length, 1); assert.equal(h.delivery.health().queryCount, 1);
+    h.delivery.stop();
+});
+
 test('outage recovery resumes bounded backlog delivery only after a fresh exact storage proof', async () => {
     const Backoff = require('../lib/sql-diagnostic-backoff');
     let clock = 100000, healthy = false, active = 0, peakActive = 0, h;
