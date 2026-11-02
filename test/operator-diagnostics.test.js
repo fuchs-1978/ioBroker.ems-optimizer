@@ -272,4 +272,3 @@ test('persisted mobility setting accepts user commands but rejects invalid value
         {...s, val: null}, {...s, q: 64}, {...s, ts: now + 1}, {...s, ts: 0}])
         assert.equal(configuredPercent(bad, now), null);
 });
-
