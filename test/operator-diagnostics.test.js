@@ -182,6 +182,70 @@ test('stale operating summary never displays cached power or commands as current
     assert.match(r.display.Devices, /Mii: unbekannt/);
     assert.match(r.display.Devices, /Soll unbekannt/);
 });
+
+test('active vehicle SoC warning is visible beside the estimate and in the compact overview', () => {
+    const s = snapshot(), w = s.wallboxes[0];
+    w.SoC_pct = 55.9; w.SoCWarning = true;
+    w.SoCWarningText = 'Fahrzeug-SoC unplausibel niedrig gegenueber gemessener Ladeenergie.';
+    const r = buildReport(s, quality(healthy()), daily(), now);
+    assert.equal(r.live.vehicles[0].soc, 55.9);
+    assert.equal(r.live.vehicles[0].socWarning, true);
+    assert.equal(r.live.vehicles[0].socWarningText, w.SoCWarningText);
+    assert.match(r.display.Attention, /Mii: SoC unsicher.*unplausibel/);
+    assert.doesNotMatch(r.display.Attention, /Keine aktuellen Hinweise/);
+    assert.match(r.display.Overview, /SoC unsicher: Mii/);
+    assert.match(r.display.Devices, /SoC 55\.9 % \(unsicher\)/);
+    assert.match(r.display.Live, /SoC 55\.9 % \(unsicher\)/);
+    assert.equal(r.live.valid, true, 'a display warning does not change control validity');
+    assert.equal(w.SoCValid, true, 'the input snapshot is not modified');
+});
+
+test('all vehicle warnings are bounded, have a fallback and clear without retaining old text', () => {
+    const s = snapshot();
+    for (const w of s.wallboxes) {w.SoCWarning = true; w.SoCWarningText = 'x'.repeat(10000);}
+    s.wallboxes[1].SoCWarningText = '';
+    let r = buildReport(s, quality(healthy()), daily(), now);
+    assert.match(r.display.Overview, /SoC unsicher: Mii, EQV, EQE/);
+    assert.match(r.display.Attention, /EQV: SoC unsicher.*Fahrzeug.*App/);
+    assert.equal(r.live.vehicles[0].socWarningText.length, 350);
+    assert.ok(Buffer.byteLength(JSON.stringify(r)) < MAX_BYTES);
+    for (const w of s.wallboxes) w.SoCWarning = false;
+    r = buildReport(s, quality(healthy()), daily(), now);
+    assert.match(r.display.Attention, /Keine aktuellen Hinweise/);
+    assert.doesNotMatch(r.display.Devices + r.display.Overview + r.display.Live, /unsicher/);
+    assert.equal(r.live.vehicles[0].socWarningText, '');
+});
+
+test('publisher reads retained SoC warning states with ACK, quality and source-time checks', async () => {
+    const cache = new Map(), writes = new Map();
+    const id = 'ems.0.Vehicles.Wallbox0.SoCWarning';
+    const warning = {val: true, ack: true, q: 0, ts: now - 86400000};
+    cache.set(id, warning);
+    cache.set(id + 'Text', {...warning, val: 'Alte Cloud-Meldung; SoC pruefen'});
+    const a = {namespace: 'ems.0', config: {}, getCachedState: id => cache.get(id),
+        queueCompatState: async () => {}, setStateAsync: async (id, state) => writes.set(id, state.val),
+        warnDebug(e) {throw e;}};
+    const p = new OperatorDiagnostics(a); await p.initialize();
+    const publish = async () => {
+        p.publish(snapshot(), daily());
+        await Promise.all([...p.writer.entries.values()].map(e => e.promise));
+        return JSON.parse(writes.get('Diagnostics.Snapshot_JSON'));
+    };
+    let r = await publish();
+    assert.equal(r.live.vehicles[0].socWarning, true, 'latched warning remains meaningful without a recent value change');
+    assert.match(writes.get('Diagnostics.Attention'), /Mii: SoC unsicher.*Alte Cloud/);
+    for (const invalid of [{...warning, ack: false}, {...warning, q: 64}, {...warning, ts: now + 1},
+        {...warning, ts: 0}, {...warning, val: 'true'}]) {
+        cache.set(id, invalid); r = await publish();
+        assert.notEqual(r.live.vehicles[0].socWarning, true);
+        assert.doesNotMatch(writes.get('Diagnostics.Attention'), /SoC unsicher/);
+    }
+    cache.set(id, {...warning, val: false, ts: now}); r = await publish();
+    assert.equal(r.live.vehicles[0].socWarning, false);
+    assert.equal(r.live.vehicles[0].socWarningText, '');
+    assert.ok([...writes.keys()].every(id => id.startsWith('Diagnostics.')));
+    p.stop();
+});
 test('Admin overview preserves every original read-only detail under native collapsable panels', () => {
     const fs = require('node:fs'), path = require('node:path');
     const items = JSON.parse(fs.readFileSync(path.join(__dirname, '../admin/jsonConfig.json'))).items.diagnosticsTab.items;
@@ -208,3 +272,4 @@ test('persisted mobility setting accepts user commands but rejects invalid value
         {...s, val: null}, {...s, q: 64}, {...s, ts: now + 1}, {...s, ts: 0}])
         assert.equal(configuredPercent(bad, now), null);
 });
+
