@@ -813,6 +813,47 @@ function waitingEqvFixture() {
     return h;
 }
 
+test('EQE to EQV manual transfer preserves the witnessed start through 1270 W and uses 1380 W without another countdown', () => {
+    let now = Date.now(); class Clock extends Date {static now() {return now;}}
+    const h = engine({production: true, clock: Clock, wallboxPriority: 2});
+    h.exclude(0); h.put('DP_WB1_ALLOW', false);
+    const step = (watts, mutate = () => {}) => {
+        now += 1000;
+        for (const state of h.states.values()) state.ts = now;
+        mutate();
+        return h.update(watts, 10000);
+    };
+    h.update(3000, 10000);
+    step(3000, () => h.owned(2, 6));
+    assert.equal(h.run('wallboxVehicleHandoffObservation[2].qualified'), true);
+    h.put('ems.0.Config.WallboxStartDelay_s', 300);
+    h.put('ems.0.Config.WallboxStartReserve_W', 150);
+    h.nativeConfig.wallboxPriority = 1;
+    const beforeStop = step(1270, () => h.put('DP_WB1_ALLOW', true));
+    const allocation = () => JSON.parse(h.states.get('ems.0.Control.ParallelWallboxAllocation_JSON').val);
+    assert.equal(allocation().priorityHandoff.from, 2);
+    assert.equal(allocation().priorityHandoff.to, 1);
+    assert.equal(allocation().allocations.find(item => item.wb === 2).authorized, false);
+    assert.equal(beforeStop.amps[1], 0, 'do not double-spend the still running EQE reservation');
+    step(1270, () => {
+        const base = 'ems.0.Devices.Wallbox2';
+        h.put(`${base}.OutputActive`, false); h.put(`${base}.OutputOwned`, false);
+        h.put(`${base}.OutputCommand_A`, 0); h.put(`${base}.OutputReservedPower_W`, 0);
+        h.put('raw.allow2', 0); h.put('raw.amps2', 0); h.put('DP_WB2_POWER', 0);
+        for (const phase of [1, 2, 3]) h.put(`DP_WB2_L${phase}_A`, 0);
+    });
+    const diagnostic = () => JSON.parse(h.states.get('ems.0.Control.Wallbox1.AllocationDiagnostics_JSON').val);
+    assert.equal(diagnostic().start.reason, 'handoff-budget-pending');
+    assert.equal(diagnostic().start.vehicleHandoff.qualified, true);
+    assert.equal(diagnostic().start.startThresholdW, 1380);
+    const recovered = step(1380);
+    assert.equal(recovered.amps[1], 6, JSON.stringify(diagnostic()));
+    assert.equal(recovered.amps[2], 0);
+    assert.equal(diagnostic().start.reason, 'prepared-vehicle-handoff');
+    assert.equal(diagnostic().start.startDelayRemainingS, 0);
+    assert.equal(h.run('wallboxStartHistory[1].armedCount'), 0);
+});
+
 test('stopped EQV prepares 1P before the EQE reaches target without borrowing its live watts or qualifying an early start', () => {
     const h = waitingEqvFixture();
     const target = h.update(2608, 8000);

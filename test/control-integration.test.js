@@ -331,9 +331,24 @@ test('parallel priority handoff cannot mistake invalid donor phase-current zeros
         'the unresolved electrical stop retains its reservation despite power=0');
 });
 
-test('parallel priority handoff loses its start shortcut when the shared budget disappears', async () => {
+function priorityTransferOptions(groupNet) {
+    return groupNet ? {sourceQuality: 0, nativeConfig: {
+        par14aAccountingMode: 'groupNet', par14aGroupId: 'group',
+        par14aBoundaryId: 'site', par14aSiteScope: 'whole-site-ac',
+        par14aId: 'group.contact', par14aAccountingMaxAgeS: 30,
+        par14aAccountingMaxSkewMs: 0, par14aStorageCoverage: 'none', par14aStorageMeters: [],
+        par14aParticipants: [0, 2].map(wb => ({name: `ev${wb}`, kind: 'wallbox',
+            connectionPowerW: 7360, deviceId: `Wallbox${wb}`, powerId: `DP_WB${wb}_POWER`,
+            powerUnit: 'kW', powerScope: 'total-ac'}))
+    }} : {};
+}
+
+for (const groupNet of [false, true])
+test(`parallel priority handoff retains its witnessed start through a short PV dip, groupNet=${groupNet}`, async () => {
     const h = await plant({mii: true, startDelayS: 300, minimumRuntimeS: 600,
-        split: false, initialSurplusW: 3000, wallboxStopResponseDelayMs: 10000});
+        split: false, initialSurplusW: 3000, wallboxStopResponseDelayMs: 10000,
+        ...priorityTransferOptions(groupNet)});
+    if (groupNet) h.put('group.contact', false);
     h.config.wallboxParallelChargingEnabled = true;
     h.own('Config.WallboxParallelChargingEnabled', true);
     h.put('DP_WB_PRIORITY', 0);
@@ -346,15 +361,108 @@ test('parallel priority handoff loses its start shortcut when the shared budget 
     h.setSurplus(500);
     await h.advance(20);
     assert.equal(h.physical().allow, 0);
+    assert.equal(h.run('wallboxVehicleHandoff?.qualified'), true);
+    assert.equal(h.run('wallboxVehicleHandoff?.retainStartQualification'), true);
+    const deadline = h.run('wallboxVehicleHandoff.until');
+    assert.equal(JSON.parse(h.value('Control.Wallbox2.AllocationDiagnostics_JSON')).start.reason,
+        'handoff-budget-pending');
+    const restoredAt = h.now();
+    h.setSurplus(1500);
+    await h.advance(60);
+    const on = h.writes.find(row => row.id === 'goe.allow' && row.val === 1 && row.at > requestedAt);
+    assert.ok(on && on.at < restoredAt + 60000,
+        'restored minimum power resumes the same bounded transfer without another 300 seconds: ' + h.diagnostic());
+    assert.ok(on.at >= restoredAt, 'no recipient permission during the deficit');
+    assert.equal(h.run('wallboxVehicleHandoff.until'), deadline, 'budget recovery never extends the deadline');
+    assert.ok(h.trace.every(row => !(row.wbW > 20 && row.miiW > 20)));
+});
+
+for (const groupNet of [false, true])
+test(`witnessed manual priority stops donor during shortfall and resumes below cold reserve, groupNet=${groupNet}`, async () => {
+    const h = await plant({mii: true, startDelayS: 300, minimumRuntimeS: 600,
+        split: false, initialSurplusW: 3000, wallboxStopResponseDelayMs: 10000,
+        ...priorityTransferOptions(groupNet)});
+    if (groupNet) h.put('group.contact', false);
+    h.config.wallboxParallelChargingEnabled = true;
+    h.own('Config.WallboxParallelChargingEnabled', true);
+    h.own('Config.WallboxStartReserve_W', 150);
+    h.own('Config.WallboxStopDelay_s', 600);
+    h.put('DP_WB_PRIORITY', 0);
+    await h.advance(350);
+    assert.equal(h.physical().miiAllow, 1, h.diagnostic());
+    const requestedAt = h.now();
+    h.setSurplus(1270);
+    h.put('DP_WB_PRIORITY', 2);
+    await h.advance(22);
+    const off = h.writes.find(row => row.id === 'goe0.allow' && row.val === 0 && row.at > requestedAt);
+    assert.ok(off && off.at < requestedAt + 10000, 'priority, not the 600-second stop delay, withdraws the donor');
+    assert.equal(h.physical().miiPowerW, 0);
+    assert.equal(h.physical().allow, 0, 'the nominal 1380 W minimum still cannot be funded by 1270 W');
+    const restoredAt = h.now();
+    h.setSurplus(1500);
+    await h.advance(60);
+    const on = h.writes.find(row => row.id === 'goe.allow' && row.val === 1 && row.at > requestedAt);
+    assert.ok(on && on.at >= restoredAt && on.at < restoredAt + 60000,
+        h.diagnostic() + '\n' + h.value('Control.Wallbox2.AllocationDiagnostics_JSON')
+            + '\n' + JSON.stringify(h.run('wallboxVehicleHandoff')));
+    assert.equal(h.physical().amps, 6, 'inherit the start qualification, not the donor current');
+    assert.ok(h.trace.filter(row => row.at > requestedAt)
+        .every(row => !(row.wbW > 20 && row.miiW > 20) && !(row.physicalAllow && row.miiAllow)));
+});
+
+test('a manual handoff budget pause expires once and cannot waive a later cold start', async () => {
+    const h = await plant({mii: true, startDelayS: 300, minimumRuntimeS: 600,
+        split: false, initialSurplusW: 3000});
+    h.config.wallboxParallelChargingEnabled = true;
+    h.own('Config.WallboxParallelChargingEnabled', true);
+    h.put('DP_WB_PRIORITY', 0);
+    await h.advance(350);
+    h.setSurplus(500);
+    h.put('DP_WB_PRIORITY', 2);
+    await h.advance(20);
+    const deadline = h.run('wallboxVehicleHandoff.until');
+    await h.advance(Math.ceil((deadline - h.now()) / 1000) + 5);
+    assert.equal(h.run('wallboxVehicleHandoff.qualified'), false);
+    assert.equal(h.run('wallboxVehicleHandoff.until'), deadline);
     const restoredAt = h.now();
     h.setSurplus(3000);
+    for (const name of ['BatteryPower', 'Wallbox0', 'Wallbox1', 'Wallbox2', 'MyPV_DHW', 'MyPV_Heating'])
+        h.own(`Plan.${name}_48h_JSON`, JSON.stringify([{timestamp: restoredAt, valueW: 6000, phases: 1}]));
     await h.advance(100);
-    assert.ok(!h.writes.some(row => row.id === 'goe.allow' && row.val === 1 && row.at > requestedAt),
-        'restored sunlight cannot renew a revoked handoff token');
+    assert.equal(h.physical().allow, 0, 'expired transfer returns to ordinary qualification');
     await h.advance(250);
-    const on = h.writes.find(row => row.id === 'goe.allow' && row.val === 1 && row.at > requestedAt);
+    const on = h.writes.find(row => row.id === 'goe.allow' && row.val === 1 && row.at > restoredAt);
     assert.ok(on && on.at >= restoredAt + 300000, h.diagnostic());
-    assert.ok(h.trace.every(row => !(row.wbW > 20 && row.miiW > 20)));
+});
+
+for (const cause of ['hard limit', 'donor quality', 'recipient release', 'control reset', 'price basis'])
+test(`paused manual handoff cannot retain a start after ${cause}`, async () => {
+    const h = await plant({mii: true, startDelayS: 300, minimumRuntimeS: 600,
+        split: false, initialSurplusW: 3000, lpcLimitW: 4200});
+    h.config.wallboxParallelChargingEnabled = true;
+    h.own('Config.WallboxParallelChargingEnabled', true);
+    h.put('DP_WB_PRIORITY', 0);
+    await h.advance(350);
+    const requestedAt = h.now();
+    h.setSurplus(500);
+    h.put('DP_WB_PRIORITY', 2);
+    await h.advance(22);
+    assert.equal(h.run('wallboxVehicleHandoff?.qualified'), true);
+    if (cause === 'hard limit') h.put('lpc.limit', 1000);
+    if (cause === 'donor quality') h.setWallboxCurrentQuality(0, 64);
+    if (cause === 'recipient release') h.put('DP_WB2_ALLOW', false);
+    if (cause === 'control reset') h.run('resetSlowTargets()');
+    if (cause === 'price basis') h.own('Config.Wallbox2PriceChargingEnabled', true);
+    await h.advance(6);
+    assert.notEqual(h.run('wallboxVehicleHandoff?.qualified'), true, cause);
+    h.put('lpc.limit', 4200);
+    h.setWallboxCurrentQuality(0, 0);
+    h.put('DP_WB2_ALLOW', true);
+    h.own('Config.Wallbox2PriceChargingEnabled', false);
+    h.setSurplus(3000);
+    await h.advance(80);
+    assert.ok(!h.writes.some(row => row.id === 'goe.allow' && row.val === 1 && row.at > requestedAt),
+        cause + ' permanently revokes this transfer, including after recovery: ' + h.diagnostic());
 });
 
 test('parallel priority handoff cancels the old recipient when the manual choice changes during donor shutdown', async () => {
