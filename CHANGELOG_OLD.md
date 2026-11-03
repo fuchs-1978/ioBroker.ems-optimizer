@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.188 (2026-11-02)
+
+- (fuchs-1978) Separate bounded recorder publication from SQL verification timeouts with independent writer/reader diagnostics and backoffs. Retain unconfirmed local originals without age expiry; only exact SQL proof permits cleanup. [Diagnosis and limits](docs/release-0.17.0-alpha.188.md).
+
 ## 0.17.0-alpha.187 (2026-11-01)
 
 - (fuchs-1978) Avoid overlapping identical heater refreshes during a bounded pending Modbus reset; retain fixed-one-phase charging minima without optional phase-mode feedback; exclude verified external battery discharge from legacy surplus budgets. [Details and limits](docs/release-0.17.0-alpha.187.md).
