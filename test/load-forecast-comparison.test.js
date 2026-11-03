@@ -342,3 +342,93 @@ test('spring estimates only four nonexistent clock quarters, marks lag days and 
     assert.equal(comparison.score([entry], actual, entry.end).days[0].pairedSlots, 95);
     assert.equal(comparison.score([entry], actual, entry.end).days[0].actualKWh, null);
 });
+
+function scoredDay(start, offset = 100) {
+    const entry = {date: 'fixture', start, end: start + DAY, issuedAt: start - 3600000, ensembleVersion: 1,
+        slots: Array.from({length: 96}, (_, i) => ({timestamp: start + i * SLOT,
+            medianW: 1000 + offset, lassoW: 1000 - offset, blendW: 1000, hybridW: 1000 + offset / 2}))};
+    return {entry, rows: entry.slots.map(row => ({ts: row.timestamp, val: 1000}))};
+}
+test('7/14-day windows pool the same four-model slots and retain signed and absolute daily energy errors', () => {
+    const first = new Date(2026, 10, 1).getTime(), evaluationAt = first + 2 * DAY + 12 * 3600000;
+    const a = scoredDay(first, 100), b = scoredDay(first + DAY, -300);
+    const report = comparison.score([b.entry, a.entry], [...a.rows, ...b.rows], evaluationAt);
+    for (const w of report.windows) {
+        assert.equal(w.pairedSlots, 192); assert.equal(w.completeDays, 2);
+        assert.equal(w.provisional, true); assert.equal(w.to, first + 2 * DAY);
+        assert.equal(w.models.median.maeW, 200);
+        assert.equal(w.models.median.rmseW, Math.sqrt(50000));
+        assert.ok(Math.abs(w.models.median.energyBiasKWh + 4.8) < 1e-8);
+        assert.ok(Math.abs(w.models.median.meanAbsDailyEnergyBiasKWh - 4.8) < 1e-8);
+        assert.equal(w.models.blend.maeW, 0);
+        assert.equal(w.models.blend.energyDays, 2);
+    }
+    assert.deepEqual(report.windows.map(w => w.calendarDays), [7, 14]);
+    assert.match(comparison.windowText(report.windows[0]), /7 Kalendertage: vorlaeufig; 192\/672/);
+});
+test('missing hybrid or actual slots remove that interval from every model, never from just one', () => {
+    const ts = new Date(2026, 10, 1).getTime(), a = scoredDay(ts);
+    a.entry.slots[0].hybridW = null;
+    const w = comparison.score([a.entry], a.rows.slice(1, -1), ts + DAY).windows[0];
+    assert.equal(w.pairedSlots, 94); assert.equal(w.completeDays, 0);
+    for (const m of Object.values(w.models)) {
+        assert.equal(m.pairedSlots, 94); assert.equal(m.energyBiasKWh, null);
+        assert.equal(m.meanAbsDailyEnergyBiasKWh, null); assert.equal(m.energyDays, 0);
+    }
+});
+test('windows exclude legacy, future, ongoing and out-of-window days; duplicate days do not multiply results', () => {
+    const ts = new Date(2026, 10, 3).getTime(), entries = [], rows = [];
+    for (const daysAgo of [0, 1, 7, 8, 14, 15]) {
+        const a = scoredDay(new Date(2026, 10, 3 - daysAgo).getTime()); entries.push(a.entry); rows.push(...a.rows);
+    }
+    entries.push(entries[1]);
+    const saved = JSON.stringify(entries), report = comparison.score(entries, rows, ts + 12 * 3600000);
+    assert.equal(JSON.stringify(entries), saved);
+    assert.equal(report.windows[0].completeDays, 2);
+    assert.equal(report.windows[1].completeDays, 4);
+    delete entries[1].ensembleVersion;
+    assert.equal(comparison.score(entries, rows, ts + 12 * 3600000).windows[0].completeDays, 1);
+});
+test('a conflicting forecast duplicate or conflicting actual does not become a valid window observation', () => {
+    const ts = new Date(2026, 10, 1).getTime(), a = scoredDay(ts), b = structuredClone(a.entry);
+    b.slots[0].medianW++;
+    assert.equal(comparison.score([a.entry, b], a.rows, ts + DAY).windows[0].pairedSlots, 0);
+    const w = comparison.score([a.entry], [...a.rows, {ts, val: 2000}], ts + DAY).windows[0];
+    assert.equal(w.pairedSlots, 95); assert.equal(w.completeDays, 0);
+});
+test('complete calendar windows are marked complete only after all common days are available', () => {
+    const ts = new Date(2026, 10, 20).getTime(), entries = [], rows = [];
+    for (let i = 14; i > 0; i--) {
+        const a = scoredDay(ts - i * DAY); entries.push(a.entry); rows.push(...a.rows);
+    }
+    for (const w of comparison.score(entries, rows, ts + 23 * 3600000).windows) {
+        assert.equal(w.complete, true); assert.equal(w.provisional, false);
+        assert.equal(w.pairedSlots, w.calendarDays * 96);
+    }
+    const w = comparison.score(entries, [], ts).windows[0];
+    assert.equal(w.complete, false); assert.equal(w.models.median.maeW, null);
+    assert.match(comparison.windowText(w), /unbekannt/);
+});
+test('window boundaries and retained forecasts follow local days across both DST changes', () => {
+    for (const [month, day, windowHours] of [[3, 5, 7 * 24 - 1], [10, 1, 7 * 24 + 1]]) {
+        const ts = new Date(2026, month, day).getTime();
+        const w = comparison.score([], [], ts + 23 * 3600000).windows[0];
+        assert.equal((w.to - w.from) / 3600000, windowHours);
+        assert.equal(w.excludedDstDays, 1); assert.equal(w.expectedDays, 6);
+        const oldest = new Date(2026, month, day - 14).getTime(), a = scoredDay(oldest);
+        const raw = JSON.stringify({schema: 1, signature: 'same', entries: [a.entry]});
+        assert.equal(comparison.restore(raw, 'same', ts + 23.9 * 3600000).length, 1);
+    }
+});
+test('history rebuild publishes both calendar windows in the existing diagnostic states only', async () => {
+    const h = wrapper({loadComparisonEnabled: true, loadComparisonTemperature: false});
+    h.context.rows = fixture().rows;
+    h.context.at = now;
+    h.context.historicDayType = dayType;
+    await h.run('updateLoadComparisonHistory(rows, at)');
+    const evaluation = JSON.parse(h.states.get('ems.0.Forecast.LoadComparison.Evaluation_JSON'));
+    assert.deepEqual(evaluation.windows.map(w => w.calendarDays), [7, 14]);
+    assert.match(h.states.get('ems.0.Forecast.LoadComparison.Result'), /7 Kalendertage/);
+    assert.match(h.states.get('ems.0.Forecast.LoadComparison.Result'), /14 Kalendertage/);
+    assert.ok(h.writes.every(id => id.startsWith('ems.0.Forecast.LoadComparison.')));
+});
