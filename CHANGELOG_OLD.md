@@ -2,6 +2,14 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.185 (2026-11-01)
+
+- (fuchs-1978) Fix false feedback faults while confirmed OFF waits for start budget. Resume a proven charging episode after cleared device error 5 without a repeated start delay, retaining fresh electrical, budget and safety checks. [Details](docs/release-0.17.0-alpha.185.md).
+
+## 0.17.0-alpha.184 (2026-11-01)
+
+- (fuchs-1978) Fix optional-follower budget cycling when a preferred fixed-one-phase car waits for its start budget without phase-mode feedback. Preserve electrical reservations and safety limits. [Details](docs/release-0.17.0-alpha.184.md).
+
 ## 0.17.0-alpha.183 (2026-11-01)
 
 - (fuchs-1978) Allow a witnessed preferred-car replug to prepare one bounded handoff without repeating the start delay; retain electrical stop and budget proofs. [Policy](docs/release-0.17.0-alpha.183.md).

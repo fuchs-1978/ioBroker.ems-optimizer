@@ -1,6 +1,8 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.190**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.192**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+
+Alpha 192 fuehrt beobachtete Wallbox-Stopps bei zeitversetzten AUS-/Null-Nachweisen bis zu 120 Sekunden nach. Der passive Prognosevergleich zeigt gemeinsame 7-/14-Kalendertage-Fenster mit MAE, RMSE, Energieabweichung und Datenabdeckung. [Details und Grenzen](docs/release-0.17.0-alpha.192.md). Die Laderegelung bleibt unveraendert.
 
 Alpha 190 erkennt Datenbank-Hostsperren und Fehler beim Verbindungsaufbau. Der eigene Recorderverkehr erhält eine begrenzte Pause und gedrosselte Wiederaufnahme; Fehlerkategorien bleiben in der Abfragediagnose erhalten. Reine Lesehänger bleiben vom Schreiber entkoppelt. [Diagnose und Grenzen](docs/release-0.17.0-alpha.190.md). Keine neue Admin-Einstellung erforderlich. Die beschleunigte Fahrzeugübergabe aus Alpha 189 bleibt enthalten.
 

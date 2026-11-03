@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.191",
+    "version": "0.17.0-alpha.192",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.192": {
+        "en": "Follow observed wallbox stops across bounded delayed OFF and electrical confirmations. Add common-slot 7/14-calendar-day forecast errors and complete-day energy comparisons; charging control is unchanged.",
+        "de": "Beobachtete Wallbox-Stopps bei verzoegerten AUS- und elektrischen Bestaetigungen begrenzt nachverfolgen. Gemeinsame 7-/14-Kalendertage-Prognosefehler und Tagesenergievergleiche ergaenzen; Laderegelung unveraendert.",
+        "es": "Follow observed wallbox stops across bounded delayed OFF and electrical confirmations. Add common-slot 7/14-calendar-day forecast errors and complete-day energy comparisons; charging control is unchanged.",
+        "fr": "Follow observed wallbox stops across bounded delayed OFF and electrical confirmations. Add common-slot 7/14-calendar-day forecast errors and complete-day energy comparisons; charging control is unchanged.",
+        "it": "Follow observed wallbox stops across bounded delayed OFF and electrical confirmations. Add common-slot 7/14-calendar-day forecast errors and complete-day energy comparisons; charging control is unchanged.",
+        "nl": "Follow observed wallbox stops across bounded delayed OFF and electrical confirmations. Add common-slot 7/14-calendar-day forecast errors and complete-day energy comparisons; charging control is unchanged.",
+        "pl": "Follow observed wallbox stops across bounded delayed OFF and electrical confirmations. Add common-slot 7/14-calendar-day forecast errors and complete-day energy comparisons; charging control is unchanged.",
+        "pt": "Follow observed wallbox stops across bounded delayed OFF and electrical confirmations. Add common-slot 7/14-calendar-day forecast errors and complete-day energy comparisons; charging control is unchanged.",
+        "ru": "Follow observed wallbox stops across bounded delayed OFF and electrical confirmations. Add common-slot 7/14-calendar-day forecast errors and complete-day energy comparisons; charging control is unchanged.",
+        "uk": "Follow observed wallbox stops across bounded delayed OFF and electrical confirmations. Add common-slot 7/14-calendar-day forecast errors and complete-day energy comparisons; charging control is unchanged.",
+        "zh-cn": "Follow observed wallbox stops across bounded delayed OFF and electrical confirmations. Add common-slot 7/14-calendar-day forecast errors and complete-day energy comparisons; charging control is unchanged."
+      },
       "0.17.0-alpha.191": {
         "en": "Show active vehicle SoC plausibility warnings in the overview, attention, device and live diagnostics; mark affected SoC estimates as uncertain without changing charging control or the calculation.",
         "de": "Aktive Fahrzeug-SoC-Plausibilitaetswarnungen in Uebersicht, Hinweisen, Fahrzeug- und Live-Diagnose anzeigen. Betroffene SoC-Schaetzungen als unsicher kennzeichnen; Ladeberechnung und Steuerung bleiben unveraendert.",
@@ -81,19 +94,6 @@
         "ru": "Preserve metered SoC progress across unchanged cloud publications; hold witnessed follow-up charging through link loss before the ACK deadline. Bound MariaDB recorder history statements and allow paced recovery after transient database activity.",
         "uk": "Preserve metered SoC progress across unchanged cloud publications; hold witnessed follow-up charging through link loss before the ACK deadline. Bound MariaDB recorder history statements and allow paced recovery after transient database activity.",
         "zh-cn": "Preserve metered SoC progress across unchanged cloud publications; hold witnessed follow-up charging through link loss before the ACK deadline. Bound MariaDB recorder history statements and allow paced recovery after transient database activity."
-      },
-      "0.17.0-alpha.185": {
-        "en": "Fix false feedback faults while confirmed OFF waits for start budget. Resume a proven charging episode after cleared device error 5 without a repeated start delay, retaining fresh electrical, budget and safety checks.",
-        "de": "Falsche Rueckmeldesperre beim Warten auf Startbudget nach bestaetigtem AUS beheben. Nach geloeschtem Geraetefehler 5 eine nachgewiesene Ladung ohne erneute Startwartezeit fortsetzen; frische elektrische Werte, Budget und Schutzpruefungen bleiben erforderlich.",
-        "es": "Fix false feedback faults while confirmed OFF waits for start budget. Resume a proven charging episode after cleared device error 5 without a repeated start delay, retaining fresh electrical, budget and safety checks.",
-        "fr": "Fix false feedback faults while confirmed OFF waits for start budget. Resume a proven charging episode after cleared device error 5 without a repeated start delay, retaining fresh electrical, budget and safety checks.",
-        "it": "Fix false feedback faults while confirmed OFF waits for start budget. Resume a proven charging episode after cleared device error 5 without a repeated start delay, retaining fresh electrical, budget and safety checks.",
-        "nl": "Fix false feedback faults while confirmed OFF waits for start budget. Resume a proven charging episode after cleared device error 5 without a repeated start delay, retaining fresh electrical, budget and safety checks.",
-        "pl": "Fix false feedback faults while confirmed OFF waits for start budget. Resume a proven charging episode after cleared device error 5 without a repeated start delay, retaining fresh electrical, budget and safety checks.",
-        "pt": "Fix false feedback faults while confirmed OFF waits for start budget. Resume a proven charging episode after cleared device error 5 without a repeated start delay, retaining fresh electrical, budget and safety checks.",
-        "ru": "Fix false feedback faults while confirmed OFF waits for start budget. Resume a proven charging episode after cleared device error 5 without a repeated start delay, retaining fresh electrical, budget and safety checks.",
-        "uk": "Fix false feedback faults while confirmed OFF waits for start budget. Resume a proven charging episode after cleared device error 5 without a repeated start delay, retaining fresh electrical, budget and safety checks.",
-        "zh-cn": "Fix false feedback faults while confirmed OFF waits for start budget. Resume a proven charging episode after cleared device error 5 without a repeated start delay, retaining fresh electrical, budget and safety checks."
       }
     },
     "titleLang": {

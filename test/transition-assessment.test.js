@@ -69,3 +69,92 @@ test('handover can finish after the start edge but needs released reserve and an
         ResponseState: 'confirmed', actual_W: 1380, measurements: {allow: source(1, at + 6000), power: source(1.38, at + 9000)}}]});
     assert.equal(r.events.at(-1).kind, 'handover'); assert.equal(r.events.at(-1).status, 'observed-success');
 });
+
+const stopFrame = (ts, w = {}) => frame(ts, {OutputActive: false, LastStopAt: at + 1000,
+    SoCValid: true, SoC_pct: 80, TargetSoC_pct: 80, ...w});
+const stoppedMeasurements = ts => ({allow: source(0, ts), power: source(0, ts),
+    phaseCurrents: [0, 0, 0].map(x => source(x, ts))});
+function stopping() {
+    const a = new TransitionAssessment();
+    a.observe(frame(at, {OutputActive: true}));
+    a.observe(stopFrame(at + 5000));
+    return a;
+}
+test('stop ACK and electrical quiet can arrive in later frames and emit one attributed target stop', () => {
+    const a = stopping();
+    assert.equal(a.report().events.length, 0);
+    assert.equal(a.report().pendingStops.length, 1);
+    a.observe(stopFrame(at + 10000, {StopConfirmedAt: at + 8000,
+        measurements: {allow: source(0, at + 8000)}}));
+    const r = a.observe(stopFrame(at + 15000, {StopConfirmedAt: at + 8000,
+        measurements: stoppedMeasurements(at + 12000), actual_W: 0}));
+    assert.equal(r.events.length, 1);
+    assert.equal(r.events[0].kind, 'target-stop');
+    assert.equal(r.events[0].status, 'observed-success');
+    assert.equal(r.events[0].stopAt, at + 1000);
+    assert.equal(r.events[0].ackAt, at + 8000);
+    assert.equal(r.events[0].electricalObservedAt, at + 12000);
+    assert.equal(r.pendingStops.length, 0);
+    a.observe(stopFrame(at + 20000, {StopConfirmedAt: at + 8000,
+        measurements: stoppedMeasurements(at + 18000), actual_W: 0}));
+    assert.equal(a.report().events.length, 1);
+});
+test('an independently observed OFF witness survives freshness expiry within the fixed stop chain', () => {
+    const a = stopping();
+    a.observe(stopFrame(at + 10000, {StopConfirmedAt: at + 8000, measurements: {allow: source(0, at + 8000)}}));
+    a.observe(stopFrame(at + 20000, {StopConfirmedAt: at + 8000}));
+    const measurements = stoppedMeasurements(at + 22000);
+    measurements.allow = {...source(0, at + 8000), valid: false};
+    const r = a.observe(stopFrame(at + 25000, {StopConfirmedAt: at + 8000, measurements, actual_W: 0}));
+    assert.equal(r.events.at(-1).status, 'observed-success');
+});
+test('old, echo, faulty, future, missing and incomplete witnesses cannot prove a stop', () => {
+    const mutations = [m => {m.allow.ts = at;}, m => {m.allow.ack = false;}, m => {m.allow.q = 64;},
+        m => {m.allow.ts = at + 20000;}, m => {delete m.power;}, m => {m.power.valid = false;},
+        m => {m.phaseCurrents[2].val = 1;}, m => {m.phaseCurrents[0].ts = at;}, m => {m.phaseCurrents.pop();}];
+    for (const mutate of mutations) {
+        const a = stopping(), measurements = stoppedMeasurements(at + 8000); mutate(measurements);
+        a.observe(stopFrame(at + 10000, {StopConfirmedAt: at + 8000, actual_W: 0, measurements}));
+        assert.equal(a.report().events.some(e => e.status === 'observed-success'), false);
+        assert.equal(a.report().pendingStops.length, 1);
+    }
+});
+test('stop chains end as unknown on restart, missing actor, sampling gaps, supersession and fixed timeout', () => {
+    assert.equal(new TransitionAssessment().observe(stopFrame(at + 5000)).pendingStops.length, 0);
+    for (const next of [frame(at + 10000, {OutputActive: true}), {ts: at + 10000, wallboxes: []},
+        stopFrame(at + 10000, {LastStopAt: at + 9000}), stopFrame(at + 20000)]) {
+        const a = stopping(), r = a.observe(next);
+        assert.equal(r.pendingStops.length, 0);
+        assert.equal(r.events.some(e => e.status === 'observed-success'), false);
+        assert.equal(r.events.some(e => e.kind === 'target-stop' && e.status === 'unknown'), true);
+    }
+    const a = stopping();
+    for (let t = 10000; t <= 125000; t += 5000) a.observe(stopFrame(at + t));
+    assert.equal(a.report().pendingStops.length, 0);
+    assert.equal(a.report().events.at(-1).status, 'unknown');
+});
+test('a later ON witness or an output fault aborts a pending stop without inventing electrical success', () => {
+    for (const w of [{measurements: {allow: source(1, at + 14000)}}, {OutputFault: 'write failure'}]) {
+        const a = stopping();
+        a.observe(stopFrame(at + 10000, {StopConfirmedAt: at + 8000, measurements: {allow: source(0, at + 8000)}}));
+        const r = a.observe(stopFrame(at + 15000, w));
+        assert.equal(r.pendingStops.length, 0);
+        assert.equal(r.events.at(-1).status, 'unknown');
+    }
+});
+test('ordinary ON feedback before the first OFF witness keeps the asynchronous stop pending', () => {
+    const a = stopping();
+    a.observe(stopFrame(at + 10000, {measurements: {allow: source(1, at + 8000)}}));
+    assert.equal(a.report().pendingStops.length, 1);
+    const r = a.observe(stopFrame(at + 15000, {StopConfirmedAt: at + 12000,
+        actual_W: 0, measurements: stoppedMeasurements(at + 12000)}));
+    assert.equal(r.events.at(-1).status, 'observed-success');
+});
+test('same-interval non-target stops remain supported, without mutating any source frame', () => {
+    const a = new TransitionAssessment(); a.observe(frame(at, {OutputActive: true}));
+    const s = stopFrame(at + 5000, {SoC_pct: 70, StopConfirmedAt: at + 3000,
+        actual_W: 0, measurements: stoppedMeasurements(at + 3000)}), before = structuredClone(s);
+    const r = a.observe(s);
+    assert.deepEqual(s, before);
+    assert.equal(r.events.at(-1).kind, 'stop'); assert.equal(r.events.at(-1).status, 'observed-success');
+});
