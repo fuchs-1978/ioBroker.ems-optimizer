@@ -4,6 +4,47 @@ const assert = require('node:assert/strict');
 const {estimateSoc, correctSoc} = require('../lib/vehicle-soc-estimator');
 const T = 1800000000000;
 const state = (val, ts = T) => ({val, ts, ack: true, q: 0});
+
+test('a delayed changed lower cloud value cannot erase a continuous measured charge', () => {
+    const h = harness({reported: state(60), capacityKWh: 32.3}); h.run();
+    for (let n = 1; n <= 24; n++) {
+        const at = T + n * 30000;
+        h.run({now: at, counter: state(10 + n * .1, at)});
+    }
+    const before = h.run().value, at = T + 720001;
+    const pending = h.run({now: at, reported: state(65, at)});
+    assert.equal(pending.value, before, 'a publication before the next counter poll cannot roll back SoC');
+    const r = h.run({now: at + 1000, counter: state(12.4, at + 1000)});
+    assert.equal(r.value, before); assert.equal(r.reported, 65); assert.equal(r.socWarning, true);
+    assert.equal(r.ledger.basis.soc, 60);
+    assert.equal(estimateSoc(h.input()).value, before, 'restart preserves the original measured chain');
+});
+
+test('observed charge, wait and Finish transitions preserve the automatic SoC basis', () => {
+    const h = harness({reported: state(65), car: {...state(2), lc: T - 1}}); h.run();
+    for (const [n, car] of [3, 2, 4].entries()) {
+        const at = T + (n + 1) * 30000;
+        const r = h.run({now: at, car: {...state(car, at), lc: at}, counter: state(10 + (n + 1) * .1, at)});
+        assert.ok(Math.abs(r.value - (65 + (n + 1) * .18)) < 1e-9);
+        assert.ok(r.ledger.basis);
+    }
+});
+
+test('delayed-report protection never survives unplug or overrides a qualified vehicle measurement clock', () => {
+    for (const measured of [false, true]) {
+        const h = harness({reported: state(60), capacityKWh: 32.3}); h.run();
+        for (let n = 1; n <= 24; n++) {
+            const at = T + n * 30000;
+            h.run({now: at, counter: state(10 + n * .1, at)});
+        }
+        const at = T + 750000;
+        const r = h.run({now: at, reported: state(65, at), counter: state(12.4, at),
+            ...(measured ? {measurementTimeConfigured: true, measurementTime: state(at, at)}
+                : {car: {...state(1, at), lc: at}})});
+        assert.equal(r.value, 65);
+        if (!measured) assert.equal(r.ledger.basis, null);
+    }
+});
 function harness(extra = {}) {
     let input = {now: T, reported: state(40), counter: state(10), car: state(2),
         capacityKWh: 50, efficiencyPct: 90, signature: 'vehicle-0', ...extra};

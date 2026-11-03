@@ -2410,3 +2410,10 @@ for (const [label, value, phases] of [
     h.put(id, JSON.stringify(a));
     assert.equal(h.output.parallelAllocation(0).valid, false);
 });
+
+for (const value of [null, '16', 5, 16.5, 33]) test('uptake ceiling rejects malformed current '+value, () => {
+    const h = parallelSetup(1), id = 'ems.0.Control.ParallelWallboxAllocation_JSON';
+    const a = JSON.parse(h.states.get(id).val); a.allocations[0].uptakeLimitA = value;
+    h.put(id, JSON.stringify(a));
+    assert.equal(h.output.parallelAllocation(0).valid, false);
+});

@@ -1,6 +1,8 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.194**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.195**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+
+Alpha 195 verteilt PV-Leistung bei anhaltend begrenzter Fahrzeugaufnahme nach bestätigter Stromabsenkung an weitere Fahrzeuge. Die SoC-Fortschreibung bleibt bei verspäteten niedrigeren Cloud-Meldungen und beobachteten Lade-/Finish-Wechseln erhalten; widersprüchliche Werte bleiben als unsicher gekennzeichnet. [Details und Grenzen](docs/release-0.17.0-alpha.195.md).
 
 Alpha 194 erkennt eine frische Wallbox-Ladeende-Meldung nach zehn Sekunden bestätigter elektrischer Ruhe. Nach bestätigtem AUS kann das nächste Fahrzeug übernehmen; ein Hinweis bittet um Prüfung von SoC und Fahrzeug-Ladelimit. Der SoC wird dadurch nicht auf 100 % gesetzt. [Details und Grenzen](docs/release-0.17.0-alpha.194.md).
 

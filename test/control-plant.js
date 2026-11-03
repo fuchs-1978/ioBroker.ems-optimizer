@@ -28,6 +28,7 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
     const wbPower = () => physicalPowerAllow && wallboxAcceptsPower ? uptake(2, physicalA) * 230 * physicalPhases : 0;
     const miiPower = () => miiPowerAllow ? uptake(0, miiA) * 230 : 0;
     const wallboxStopAck = [true, true, true];
+    const wallboxCurrentAck = [true, true, true];
     const wallboxCurrentQuality = [0, 0, 0];
     let physicalStopResponseSequence = 0, miiStopResponseSequence = 0;
     let heatingW = 0, heatingCommandW = 0, batteryW = 0, batteryCommandW = 0;
@@ -115,6 +116,7 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         } else if (id === 'goe.cmd') {
             put(id, val, {ack: false});
             events.push({at: now + 4000, run: () => {
+                if (!wallboxCurrentAck[2]) return;
                 physicalA = val; put(id, val); put('goe.feedback', val);
             }});
         } else if (id === 'goe.allow') {
@@ -132,6 +134,7 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         } else if (id === 'goe0.cmd') {
             put(id, val, {ack: false});
             events.push({at: now + 4000, run: () => {
+                if (!wallboxCurrentAck[0]) return;
                 miiA = val; put(id, val); put('goe0.feedback', val);
             }});
         } else if (id === 'goe0.allow') {
@@ -399,6 +402,7 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         setBatteryPower: value => { batteryW = value; },
         setWallboxPowerAcceptance: enabled => { wallboxAcceptsPower = enabled; },
         setWallboxStopAck: (wb, enabled) => { wallboxStopAck[wb] = enabled; },
+        setWallboxCurrentAck: (wb, enabled) => { wallboxCurrentAck[wb] = enabled; },
         setWallboxCurrentQuality: (wb, quality) => { wallboxCurrentQuality[wb] = quality; },
         setIdleWallboxNoise: kw => { idleWallboxNoiseKW = kw; },
         setWallboxPhysical: (wb, {allow = 1, amps = 6} = {}) => {
