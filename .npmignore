@@ -22,6 +22,9 @@ secrets/
 # config.example.json: the engine reads its modules at runtime, Admin needs
 # its configuration/translations/icons, and the documented tools stay usable.
 
+# Historical issue snapshots are repository evidence, not runtime documentation.
+docs/issue-audit/
+
 # Historical release documentation.
 CHANGELOG_OLD.md
 

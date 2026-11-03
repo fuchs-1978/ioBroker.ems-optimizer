@@ -15,6 +15,7 @@ Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Comb
 
 - [Features](#features)
 - [Current scope](#current-scope)
+- [Vehicle SoC and handoff](#vehicle-soc-and-handoff)
 - [Forecast comparison](#forecast-comparison)
 - [Requirements](#requirements)
 - [Installation and setup](#installation-and-setup)
@@ -43,12 +44,18 @@ The staged battery/vehicle strategy is **a read-only preview**, not a production
 
 | Available | Remaining work |
 | --- | --- |
-| Implemented alpha functions for wallbox allocation, priority handoff, heater coordination and qualified SoC interpolation | Natural device, phase, protection and recovery cases remain part of the [installation acceptance](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/7). |
-| Passive load-model comparison and 90-day weather/selected room-history retention | Multi-day forecast validation; room/wind/heat features are not yet in Lasso. |
+| Wallbox allocation, qualified handoff, heater coordination and SoC session handling | Real Mii taper-budget transfer, fast current changes and remaining device/protection cases: [#7](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/7), [#8](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/8). Current-feedback provenance: [#216](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/216). |
+| Four passive day-ahead load candidates and common-slot 7/14-day evaluation; weather/room-history retention | Two complete comparison days are documented; longer validation and actual archive delivery remain [#284](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/284). Additional room/wind/heat features are not in Lasso. |
 | Bounded recorder, exact SQL confirmation and qualified recovery | Long SQL transport delays and historical recording gaps remain under [recorder investigation](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/60). A healthy current queue does not repair past losses. |
 | Battery strategy preview and heat-pump telemetry | Productive [battery strategy](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/25), [heat planning](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/160) and [LPC group-net integration](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/166) remain separate work. |
 
-The [current roadmap](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) tracks these boundaries. Release notes describe software changes; issue-specific operating evidence describes their practical validation.
+The [current roadmap](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) assigns each remaining task. Implemented transition/reaction features are closed as software work; their natural operating checks remain in #7. General Admin/runtime acceptance stays in [#26](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/26), the current checker report in [#316](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/316). [Archived issue evidence](docs/issue-audit/2026-11-03/README.md) preserves previous reports and requirements.
+
+## Vehicle SoC and handoff
+
+Confirmed unplug ends the calculated SoC session and clears the manual correction. The valid cloud/vehicle value then remains authoritative across reconnects and restarts until a new manual value is supplied. An old republished 100% must not hold a later correct 84% after a trip. In this mode `SocEstimateStatus` is `cloud-after-unplug` and `EstimatedSoC_pct` is null. A new `Vehicles.WallboxN.SoCCorrection_pct` value establishes a fresh energy anchor; only later measured charge is added. The foreign source is never overwritten. [Current SoC contract](README.de.md#fahrzeug-soc-und-sitzungswechsel).
+
+A qualified charger-Finish observation can end charging and hand off after independent OFF/electrical-quiet proof; it does not set SoC to 100%. Sustained limited vehicle uptake can release budget for another vehicle through a confirmed lower command and the existing reserve/start checks. Real Mii taper transfer remains a separate acceptance case from the successful EQV-unplug/EQE handoff. [Finish](docs/release-0.17.0-alpha.194.md) · [Taper budget](docs/release-0.17.0-alpha.195.md).
 
 ## Forecast comparison
 
@@ -83,7 +90,7 @@ The adapter is currently distributed for alpha testing through GitHub; npm and i
 
 There must be one responsible controller per actuator register. Measurement, protection, state-of-charge and required external phase/pump scripts may still be needed. When returning control to another controller, disable the external EMS phase follower as specified by its contract, withdraw the master release, verify OFF feedback and electrical standstill, then enable the replacement controller. `OutputOwned=false` alone is not a complete physical stop proof. Independent device protection remains necessary after a host failure.
 
-The [German Admin guide](README.de.md) documents every configuration tab, default values, device mappings and troubleshooting. Defaults are not recommendations for every installation; existing configuration may differ.
+The [German quick guide](README.de.md) explains operation; the [complete Admin reference](docs/admin-reference.de.md) retains every configuration tab, default value, device mapping and troubleshooting detail. Defaults are not recommendations for every installation; existing configuration may differ.
 
 ## Configuration
 
@@ -100,7 +107,7 @@ Open the instance settings in ioBroker Admin. Source fields require full existin
 | Battery | Actual device mappings, SoC and power limits, ownership and feedback. The new strategy preview remains separate from production control. |
 | Heat pump | Telemetry and passive recommendations; no heat-pump actuator commands. |
 
-Start with outputs disabled, check source validity and the plan, then commission each intended output separately. Missing devices should be disabled, not represented by artificial zero measurements. Detailed field descriptions, defaults and troubleshooting are in the [German Admin guide](README.de.md).
+Start with outputs disabled, check source validity and the plan, then commission each intended output separately. Missing devices should be disabled, not represented by artificial zero measurements. Detailed field descriptions, defaults and troubleshooting are in the [Admin reference](docs/admin-reference.de.md).
 
 ## Integrations
 
@@ -109,7 +116,7 @@ EMS Optimizer combines ioBroker states supplied by other adapters or scripts. A 
 - [go-e chargers](https://go-e.com/): mapped charger commands and independent feedback; physical phase switching follows the external script contract.
 - [SMA](https://www.sma.de/): mapped generation and grid measurements, including the configured protection sources.
 - [my-PV](https://www.my-pv.com/): mapped electric-heater power commands and feedback where supported by the configured device interface.
-- SunEnergy battery heads: see the [battery configuration and device-profile requirements](README.de.md#admin-batteriespeicher) and [strategy limits](docs/release-0.17.0-alpha.165.md).
+- SunEnergy battery heads: see the [battery configuration and device-profile requirements](docs/admin-reference.de.md#admin-batteriespeicher) and [strategy limits](docs/release-0.17.0-alpha.165.md).
 - [STIEBEL ELTRON](https://www.stiebel-eltron.com/): heat-pump telemetry supplied through the configured ioBroker interface; passive recommendations only.
 
 ## Diagnostics
@@ -129,7 +136,7 @@ EMS Optimizer combines ioBroker states supplied by other adapters or scripts. A 
 | `Forecast.LoadComparison.*` | Passive day-ahead comparison, model, immutable issued forecasts and paired actual evaluation. |
 | `Debug.WeatherArchive.*`, `Debug.RoomHistory.*` | Weather collection and retention of configured original room histories. |
 
-State names above are relative to the instance, for example `ems-optimizer.0.System.Version`.
+State names above are relative to the instance, for example `ems-optimizer.0.System.Version`. Transition status `superseded` means a new command replaced an incompletely observed response; pending evidence can complete within its original deadline. Neither status alone proves a device fault. External history coverage remains unverified until an actual report input exists ([#158](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/158)).
 
 A current state does not prove historical coverage. Missing, stale, invalid or unacknowledged measurements remain unknown. A successful state write or history-cache response does not prove database persistence. The recorder uses bounded database-only SELECT queries for its independent persistence check; see the [recorder access contract](docs/issue123-recorder-access.md).
 
@@ -147,7 +154,7 @@ npm run test:artifact
 npm run test:equivalence
 ```
 
-Admin translation catalogs are stored in `admin/i18n/<language>/translations.json`. Keep their keys aligned with the English catalog and all visible Admin texts. Package metadata and every retained release message must cover the supported languages. See [translation coverage and checks](docs/translations.md).
+Admin translation catalogs are stored in `admin/i18n/<language>/translations.json`. Keep their keys aligned with the English catalog and all visible Admin texts. Admin catalog coverage and release-message translation are separate: current news entries have eleven language keys but nine locales still use English fallback. That remaining work is tracked in [#316](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/316). See [translation coverage and checks](docs/translations.md).
 
 ## Changelog
 
