@@ -1,6 +1,6 @@
 # Translation coverage
 
-The Admin interface has complete catalogs for all 590 English keys in eleven
+The Admin interface has complete catalogs for all 614 English keys in eleven
 languages: English (`en`), German (`de`), Spanish (`es`), French (`fr`), Italian
 (`it`), Dutch (`nl`), Polish (`pl`), Portuguese (`pt`), Russian (`ru`), Ukrainian
 (`uk`) and Simplified Chinese (`zh-cn`). Field labels, choices, written-out units, tooltips and
@@ -24,9 +24,12 @@ critical commissioning/protection instructions. The complete commissioning,
 heating-buffer, forecast-reserve and SunEnergy safety paragraphs were explicitly edited.
 Models are development tools, not adapter dependencies or shipped assets.
 
-The manifest title, description and all seven retained version messages also
-cover all eleven languages. The product name remains EMS Optimizer in most
-locales.
+The manifest title and description cover all eleven languages. The seven current
+version messages (alpha.191–197) have all eleven language keys, but nine locales
+currently contain the English release-text fallback. These messages are not fully
+translated; the outstanding work is tracked in issue #316. Admin catalog key
+coverage and translated release notes are separate checks. The product name
+remains EMS Optimizer in most locales.
 
 `test/admin-i18n.test.js` checks exact key parity, non-empty values and manifest
 coverage for every retained news item. It also rejects copied English help
