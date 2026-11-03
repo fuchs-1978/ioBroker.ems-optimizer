@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.193",
+    "version": "0.17.0-alpha.194",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.194": {
+        "en": "Recognize charger Finish after ten seconds of confirmed electrical quiet, yield to the next vehicle after confirmed OFF, and show a possible-full-charge warning without changing SoC. Keep witnessed handoff and all electrical and budget guards.",
+        "de": "Wallbox-Ladeende nach zehn Sekunden bestaetigter elektrischer Ruhe erkennen, nach bestaetigtem AUS an das naechste Fahrzeug uebergeben und auf moeglicherweise volle Ladung hinweisen, ohne den SoC zu veraendern. Beobachtete Uebergabe und alle elektrischen sowie Budgetpruefungen bleiben erforderlich.",
+        "es": "Recognize charger Finish after ten seconds of confirmed electrical quiet, yield to the next vehicle after confirmed OFF, and show a possible-full-charge warning without changing SoC. Keep witnessed handoff and all electrical and budget guards.",
+        "fr": "Recognize charger Finish after ten seconds of confirmed electrical quiet, yield to the next vehicle after confirmed OFF, and show a possible-full-charge warning without changing SoC. Keep witnessed handoff and all electrical and budget guards.",
+        "it": "Recognize charger Finish after ten seconds of confirmed electrical quiet, yield to the next vehicle after confirmed OFF, and show a possible-full-charge warning without changing SoC. Keep witnessed handoff and all electrical and budget guards.",
+        "nl": "Recognize charger Finish after ten seconds of confirmed electrical quiet, yield to the next vehicle after confirmed OFF, and show a possible-full-charge warning without changing SoC. Keep witnessed handoff and all electrical and budget guards.",
+        "pl": "Recognize charger Finish after ten seconds of confirmed electrical quiet, yield to the next vehicle after confirmed OFF, and show a possible-full-charge warning without changing SoC. Keep witnessed handoff and all electrical and budget guards.",
+        "pt": "Recognize charger Finish after ten seconds of confirmed electrical quiet, yield to the next vehicle after confirmed OFF, and show a possible-full-charge warning without changing SoC. Keep witnessed handoff and all electrical and budget guards.",
+        "ru": "Recognize charger Finish after ten seconds of confirmed electrical quiet, yield to the next vehicle after confirmed OFF, and show a possible-full-charge warning without changing SoC. Keep witnessed handoff and all electrical and budget guards.",
+        "uk": "Recognize charger Finish after ten seconds of confirmed electrical quiet, yield to the next vehicle after confirmed OFF, and show a possible-full-charge warning without changing SoC. Keep witnessed handoff and all electrical and budget guards.",
+        "zh-cn": "Recognize charger Finish after ten seconds of confirmed electrical quiet, yield to the next vehicle after confirmed OFF, and show a possible-full-charge warning without changing SoC. Keep witnessed handoff and all electrical and budget guards."
+      },
       "0.17.0-alpha.193": {
         "en": "Allow one bounded measured PV ampere retry after sustained export can fund the step plus 50 W. Coordinate allocator and output using an expiring command-bound nomination; retain the two-attempt limit and all electrical and hard capacity checks.",
         "de": "Einen begrenzten gemessenen PV-Ampere-Nachregelversuch bei anhaltender Einspeisung fuer den Schritt plus 50 W zulassen. Zuteilung und Ausgang ueber kurz gueltigen befehlsgebundenen Nachweis koordinieren; zwei Versuche sowie elektrische und harte Grenzen beibehalten.",
@@ -81,19 +94,6 @@
         "ru": "Separate bounded recorder publication from SQL verification timeouts with independent writer/reader diagnostics and backoffs. Retain unconfirmed local originals without age expiry; only exact SQL proof permits cleanup.",
         "uk": "Separate bounded recorder publication from SQL verification timeouts with independent writer/reader diagnostics and backoffs. Retain unconfirmed local originals without age expiry; only exact SQL proof permits cleanup.",
         "zh-cn": "Separate bounded recorder publication from SQL verification timeouts with independent writer/reader diagnostics and backoffs. Retain unconfirmed local originals without age expiry; only exact SQL proof permits cleanup."
-      },
-      "0.17.0-alpha.187": {
-        "en": "Avoid overlapping identical heater refreshes during a bounded pending Modbus reset; retain fixed-one-phase charging minima without optional phase-mode feedback; exclude verified external battery discharge from legacy surplus budgets.",
-        "de": "Identische Heizstab-Auffrischungen bei kurz ausstehendem Modbus-Reset zusammenfassen. Feste Einphasen-Mindestladung ohne optionales Phasenmodus-ACK erhalten. Bestaetigte externe Speicherentladung im bisherigen Ueberschussbudget ausschliessen.",
-        "es": "Avoid overlapping identical heater refreshes during a bounded pending Modbus reset; retain fixed-one-phase charging minima without optional phase-mode feedback; exclude verified external battery discharge from legacy surplus budgets.",
-        "fr": "Avoid overlapping identical heater refreshes during a bounded pending Modbus reset; retain fixed-one-phase charging minima without optional phase-mode feedback; exclude verified external battery discharge from legacy surplus budgets.",
-        "it": "Avoid overlapping identical heater refreshes during a bounded pending Modbus reset; retain fixed-one-phase charging minima without optional phase-mode feedback; exclude verified external battery discharge from legacy surplus budgets.",
-        "nl": "Avoid overlapping identical heater refreshes during a bounded pending Modbus reset; retain fixed-one-phase charging minima without optional phase-mode feedback; exclude verified external battery discharge from legacy surplus budgets.",
-        "pl": "Avoid overlapping identical heater refreshes during a bounded pending Modbus reset; retain fixed-one-phase charging minima without optional phase-mode feedback; exclude verified external battery discharge from legacy surplus budgets.",
-        "pt": "Avoid overlapping identical heater refreshes during a bounded pending Modbus reset; retain fixed-one-phase charging minima without optional phase-mode feedback; exclude verified external battery discharge from legacy surplus budgets.",
-        "ru": "Avoid overlapping identical heater refreshes during a bounded pending Modbus reset; retain fixed-one-phase charging minima without optional phase-mode feedback; exclude verified external battery discharge from legacy surplus budgets.",
-        "uk": "Avoid overlapping identical heater refreshes during a bounded pending Modbus reset; retain fixed-one-phase charging minima without optional phase-mode feedback; exclude verified external battery discharge from legacy surplus budgets.",
-        "zh-cn": "Avoid overlapping identical heater refreshes during a bounded pending Modbus reset; retain fixed-one-phase charging minima without optional phase-mode feedback; exclude verified external battery discharge from legacy surplus budgets."
       }
     },
     "titleLang": {

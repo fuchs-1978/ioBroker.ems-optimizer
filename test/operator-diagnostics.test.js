@@ -200,6 +200,38 @@ test('active vehicle SoC warning is visible beside the estimate and in the compa
     assert.equal(w.SoCValid, true, 'the input snapshot is not modified');
 });
 
+test('charger-finish warning names every vehicle but never changes its SoC or claims certainty', () => {
+    const s = snapshot(); for (const w of s.wallboxes) w.ChargeFinished = true;
+    const before = structuredClone(s), r = buildReport(s, quality(healthy()), daily(), now);
+    for (const name of ['Mii', 'EQV', 'EQE']) assert.match(r.display.Attention, new RegExp(name + ': Ladeende gemeldet'));
+    assert.match(r.display.Attention, /möglicherweise voll geladen.*SoC und Fahrzeug-Ladelimit prüfen/);
+    assert.match(r.display.Overview, /Ladeende bitte prüfen: Mii, EQV, EQE/);
+    assert.equal(r.live.vehicles[0].soc, 75); assert.deepEqual(s, before);
+});
+test('retained finished pause is displayed until reset or a known target-reaching SoC', async () => {
+    const cache = new Map(), writes = new Map(), base = 'ems.0.Devices.Wallbox0.';
+    const put = (key, val, extra = {}) => cache.set(base + key, {val, ts: now - 3600000, ack: true, q: 0, ...extra});
+    put('NoDrawPaused', true);
+    put('NoDrawPause_JSON', JSON.stringify({schema: 1, kind: 'charger-finished', signature: 'test',
+        at: now - 3600000, retryAfter: now - 3600000 + 900000}));
+    const p = new OperatorDiagnostics({namespace: 'ems.0', config: {}, getCachedState: id => cache.get(id),
+        queueCompatState: async () => {}, setStateAsync: async (id, state) => writes.set(id, state.val),
+        warnDebug(e) {throw e;}});
+    await p.initialize();
+    const publish = async s => {p.publish(s, daily()); await Promise.all([...p.writer.entries.values()].map(e => e.promise));
+        return JSON.parse(writes.get('Diagnostics.Snapshot_JSON'));};
+    assert.equal((await publish(snapshot())).live.vehicles[0].chargeFinished, true);
+    const s = snapshot(); s.wallboxes[0].SoC_pct = 90;
+    assert.equal((await publish(s)).live.vehicles[0].chargeFinished, false);
+    for (const extra of [{ack: false}, {q: 64}, {ts: now + 1}]) {
+        put('NoDrawPaused', true, extra);
+        assert.equal((await publish(snapshot())).live.vehicles[0].chargeFinished, false);
+    }
+    put('NoDrawPaused', false);
+    assert.equal((await publish(snapshot())).live.vehicles[0].chargeFinished, false);
+    assert.ok([...writes.keys()].every(id => id.startsWith('Diagnostics.'))); p.stop();
+});
+
 test('all vehicle warnings are bounded, have a fallback and clear without retaining old text', () => {
     const s = snapshot();
     for (const w of s.wallboxes) {w.SoCWarning = true; w.SoCWarningText = 'x'.repeat(10000);}

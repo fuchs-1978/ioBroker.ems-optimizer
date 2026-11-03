@@ -7,7 +7,7 @@
 
 Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Combines PV and grid measurements, load history, weather forecasts and electricity prices in a rolling 48-hour plan.
 
-**Current version: 0.17.0-alpha.193.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
+**Current version: 0.17.0-alpha.194.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
 
 [Deutsche Bedienungsanleitung](README.de.md) · [Release history](CHANGELOG_OLD.md) · [Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
@@ -151,6 +151,10 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 
 ## Changelog
 
+### 0.17.0-alpha.194 (2026-11-03)
+
+- (fuchs-1978) Recognize charger Finish after ten seconds of confirmed electrical quiet, yield to the next vehicle after confirmed OFF, and show a possible-full-charge warning without changing SoC. Keep witnessed handoff and all electrical and budget guards. [Details and limits](docs/release-0.17.0-alpha.194.md).
+
 ### 0.17.0-alpha.193 (2026-11-03)
 
 - (fuchs-1978) Allow one bounded measured PV ampere retry after sustained export can fund the step plus 50 W. Coordinate allocator and output using an expiring command-bound nomination; retain the two-attempt limit and all electrical and hard capacity checks. [Details and limits](docs/release-0.17.0-alpha.193.md).
@@ -174,10 +178,6 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 ### 0.17.0-alpha.188 (2026-11-02)
 
 - (fuchs-1978) Separate bounded recorder publication from SQL verification timeouts with independent writer/reader diagnostics and backoffs. Retain unconfirmed local originals without age expiry; only exact SQL proof permits cleanup. [Diagnosis and limits](docs/release-0.17.0-alpha.188.md).
-
-### 0.17.0-alpha.187 (2026-11-01)
-
-- (fuchs-1978) Avoid overlapping identical heater refreshes during a bounded pending Modbus reset; retain fixed-one-phase charging minima without optional phase-mode feedback; exclude verified external battery discharge from legacy surplus budgets. [Details and limits](docs/release-0.17.0-alpha.187.md).
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 

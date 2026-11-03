@@ -3929,6 +3929,49 @@ async function noDrawHarness() {
     return h;
 }
 
+test('charger finish plus ten seconds of fresh quiet stops without inventing a full SoC', async () => {
+    const h = await noDrawHarness(); h.put('car', 4); const soc = {...h.states.get('soc')};
+    for (let i = 0; i < 5; i++) await h.step();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.NoDrawPaused').val, false);
+    await h.step();
+    const p = JSON.parse(h.states.get('ems.0.Devices.Wallbox0.NoDrawPause_JSON').val);
+    assert.equal(p.kind, 'charger-finished');
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val, /Ladeende/);
+    assert.deepEqual(h.writes.at(-1), {id: 'allow', val: 0});
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputOwned').val, true);
+    assert.ok(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val >= 1380);
+    assert.equal(h.states.get('soc').val, soc.val, 'charger finish is no 100-percent measurement');
+    h.ack('allow', 0); h.electricalOff(); await h.output.tick();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputOwned').val, false);
+    const restarted = new WallboxOutput(h.adapter, {now: h.now}); await restarted.initialize(); await restarted.tick();
+    assert.equal(restarted.devices[0].noDrawPause.kind, 'charger-finished');
+    await h.step(900000);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.NoDrawPaused').val, true, 'still-finished car is not periodically restarted');
+    h.put('car', 1); await h.step();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.NoDrawPaused').val, false);
+});
+test('short Finish status does not count toward the later confirmed Finish interval', async () => {
+    const h = await noDrawHarness(); h.put('car', 4);
+    for (let i = 0; i < 4; i++) await h.step();
+    h.put('car', 3); await h.step();
+    h.put('car', 4);
+    for (let i = 0; i < 5; i++) await h.step();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.NoDrawPaused').val, false);
+    await h.step();
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.NoDrawPaused').val, true);
+});
+for (const [name, change] of [
+    ['ordinary waiting', h => h.put('car', 3)],
+    ['real power', h => {h.put('power', 0.3); h.put('i1', 1.3);}],
+    ['phase transition', h => h.put('ems.0.Devices.Wallbox0.PhaseTransitionActive', true)],
+    ['bad current quality', h => h.put('i2', 0, {q: 64})],
+    ['stale finish report', h => h.put('car', 4, {ts: h.now() - 31000})]
+]) test('fast charger-finish qualification rejects ' + name, async () => {
+    const h = await noDrawHarness(); h.put('car', 4);
+    for (let i = 0; i < 8; i++) {change(h); await h.output.tick(); await h.step();}
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.NoDrawPaused').val, false);
+});
+
 test('15-minute no-draw stop retains watts until physical OFF/quiet, persists pause, retries without stealing a peer',async()=>{
     const h=await noDrawHarness();
     for(let i=0;i<449;i++)await h.step();

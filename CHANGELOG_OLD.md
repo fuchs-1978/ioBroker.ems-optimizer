@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.187 (2026-11-01)
+
+- (fuchs-1978) Avoid overlapping identical heater refreshes during a bounded pending Modbus reset; retain fixed-one-phase charging minima without optional phase-mode feedback; exclude verified external battery discharge from legacy surplus budgets. [Details and limits](docs/release-0.17.0-alpha.187.md).
+
 ## 0.17.0-alpha.186 (2026-11-01)
 
 - (fuchs-1978) Preserve metered SoC progress across unchanged cloud publications; hold witnessed follow-up charging through link loss before the ACK deadline. Bound MariaDB recorder history statements and allow paced recovery after transient database activity. [Details and recovery](docs/release-0.17.0-alpha.186.md).
