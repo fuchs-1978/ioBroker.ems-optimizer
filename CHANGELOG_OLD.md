@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.190 (2026-11-02)
+
+- (fuchs-1978) Recognize SQL host blocks and connect timeouts/refusals, pause recorder traffic with bounded retries, and retain canonical query failure codes and clear diagnostics. Keep pure read timeouts independent of publication and require exact storage proof for recovery. [Recovery policy](docs/release-0.17.0-alpha.190.md).
+
 ## 0.17.0-alpha.189 (2026-11-02)
 
 - (fuchs-1978) Transfer a witnessed running charge to the manually preferred vehicle without a repeated start delay or reserve; retain the bounded qualification through short PV dips while preserving confirmed stop, minimum power and safety gates. [Policy and limits](docs/release-0.17.0-alpha.189.md).

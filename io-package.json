@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.196",
+    "version": "0.17.0-alpha.197",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.197": {
+        "en": "Discard calculated SoC and manual correction on confirmed unplug; retain cloud authority across reconnects and restarts until a new manual basis is supplied. Recover old blocked-session ledgers without retaining a stale full-charge estimate.",
+        "de": "Berechneten SoC und manuelle Korrektur bei bestaetigtem Abstecken verwerfen; danach Cloud-Wert ueber Wiederanstecken und Neustarts bis zu einer neuen manuellen Basis verwenden. Alte gesperrte Sitzungsdaten ohne festgehaltene Vollladeschaetzung uebernehmen.",
+        "es": "Discard calculated SoC and manual correction on confirmed unplug; retain cloud authority across reconnects and restarts until a new manual basis is supplied. Recover old blocked-session ledgers without retaining a stale full-charge estimate.",
+        "fr": "Discard calculated SoC and manual correction on confirmed unplug; retain cloud authority across reconnects and restarts until a new manual basis is supplied. Recover old blocked-session ledgers without retaining a stale full-charge estimate.",
+        "it": "Discard calculated SoC and manual correction on confirmed unplug; retain cloud authority across reconnects and restarts until a new manual basis is supplied. Recover old blocked-session ledgers without retaining a stale full-charge estimate.",
+        "nl": "Discard calculated SoC and manual correction on confirmed unplug; retain cloud authority across reconnects and restarts until a new manual basis is supplied. Recover old blocked-session ledgers without retaining a stale full-charge estimate.",
+        "pl": "Discard calculated SoC and manual correction on confirmed unplug; retain cloud authority across reconnects and restarts until a new manual basis is supplied. Recover old blocked-session ledgers without retaining a stale full-charge estimate.",
+        "pt": "Discard calculated SoC and manual correction on confirmed unplug; retain cloud authority across reconnects and restarts until a new manual basis is supplied. Recover old blocked-session ledgers without retaining a stale full-charge estimate.",
+        "ru": "Discard calculated SoC and manual correction on confirmed unplug; retain cloud authority across reconnects and restarts until a new manual basis is supplied. Recover old blocked-session ledgers without retaining a stale full-charge estimate.",
+        "uk": "Discard calculated SoC and manual correction on confirmed unplug; retain cloud authority across reconnects and restarts until a new manual basis is supplied. Recover old blocked-session ledgers without retaining a stale full-charge estimate.",
+        "zh-cn": "Discard calculated SoC and manual correction on confirmed unplug; retain cloud authority across reconnects and restarts until a new manual basis is supplied. Recover old blocked-session ledgers without retaining a stale full-charge estimate."
+      },
       "0.17.0-alpha.196": {
         "en": "Attribute passive current-response diagnostics to the sent target instead of the previous ACK; distinguish superseded commands from pending evidence. Keep charging control and timing unchanged.",
         "de": "Passive Stromantwortdiagnose dem gesendeten Sollwert statt dem vorherigen ACK zuordnen; abgeloeste Befehle von offenen Nachweisen trennen. Laderegelung und Zeitgrenzen bleiben unveraendert.",
@@ -81,19 +94,6 @@
         "ru": "Show active vehicle SoC plausibility warnings in the overview, attention, device and live diagnostics; mark affected SoC estimates as uncertain without changing charging control or the calculation.",
         "uk": "Show active vehicle SoC plausibility warnings in the overview, attention, device and live diagnostics; mark affected SoC estimates as uncertain without changing charging control or the calculation.",
         "zh-cn": "Show active vehicle SoC plausibility warnings in the overview, attention, device and live diagnostics; mark affected SoC estimates as uncertain without changing charging control or the calculation."
-      },
-      "0.17.0-alpha.190": {
-        "en": "Recognize SQL host blocks and connect timeouts/refusals, pause recorder traffic with bounded retries, and retain canonical query failure codes and clear diagnostics. Keep pure read timeouts independent of publication and require exact storage proof for recovery.",
-        "de": "SQL-Hostsperren und Verbindungsaufbaufehler erkennen; Recorderverkehr begrenzt pausieren und gedrosselt wiederaufnehmen. Fehlerkategorien neustartfest erhalten und klar anzeigen. Reine Lese-Timeouts bleiben vom Schreiber entkoppelt; Erholung nur mit exaktem Speichernachweis.",
-        "es": "Recognize SQL host blocks and connect timeouts/refusals, pause recorder traffic with bounded retries, and retain canonical query failure codes and clear diagnostics. Keep pure read timeouts independent of publication and require exact storage proof for recovery.",
-        "fr": "Recognize SQL host blocks and connect timeouts/refusals, pause recorder traffic with bounded retries, and retain canonical query failure codes and clear diagnostics. Keep pure read timeouts independent of publication and require exact storage proof for recovery.",
-        "it": "Recognize SQL host blocks and connect timeouts/refusals, pause recorder traffic with bounded retries, and retain canonical query failure codes and clear diagnostics. Keep pure read timeouts independent of publication and require exact storage proof for recovery.",
-        "nl": "Recognize SQL host blocks and connect timeouts/refusals, pause recorder traffic with bounded retries, and retain canonical query failure codes and clear diagnostics. Keep pure read timeouts independent of publication and require exact storage proof for recovery.",
-        "pl": "Recognize SQL host blocks and connect timeouts/refusals, pause recorder traffic with bounded retries, and retain canonical query failure codes and clear diagnostics. Keep pure read timeouts independent of publication and require exact storage proof for recovery.",
-        "pt": "Recognize SQL host blocks and connect timeouts/refusals, pause recorder traffic with bounded retries, and retain canonical query failure codes and clear diagnostics. Keep pure read timeouts independent of publication and require exact storage proof for recovery.",
-        "ru": "Recognize SQL host blocks and connect timeouts/refusals, pause recorder traffic with bounded retries, and retain canonical query failure codes and clear diagnostics. Keep pure read timeouts independent of publication and require exact storage proof for recovery.",
-        "uk": "Recognize SQL host blocks and connect timeouts/refusals, pause recorder traffic with bounded retries, and retain canonical query failure codes and clear diagnostics. Keep pure read timeouts independent of publication and require exact storage proof for recovery.",
-        "zh-cn": "Recognize SQL host blocks and connect timeouts/refusals, pause recorder traffic with bounded retries, and retain canonical query failure codes and clear diagnostics. Keep pure read timeouts independent of publication and require exact storage proof for recovery."
       }
     },
     "titleLang": {
