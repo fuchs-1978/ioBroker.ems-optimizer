@@ -5,6 +5,60 @@ const {estimateSoc, correctSoc} = require('../lib/vehicle-soc-estimator');
 const T = 1800000000000;
 const state = (val, ts = T) => ({val, ts, ack: true, q: 0});
 
+test('Mii unplug, trip and delayed 84-percent cloud report discard the previous 100-percent charge', () => {
+    const h = harness({reported: state(99), counter: state(10)}); h.run();
+    const full = h.run({now: T + 60000, counter: state(10.6, T + 60000)});
+    assert.equal(full.value, 100);
+    const unplugged = h.run({now: T + 7201000, car: state(1, T + 7201000)});
+    assert.equal(unplugged.value, 99, 'even a stale report cannot retain the previous estimate after unplug');
+    assert.equal(unplugged.estimated, false); assert.equal(unplugged.ledger.lastEstimate, undefined);
+    h.run({now: T + 7202000, car: state(3, T + 7202000), counter: state(0, T + 7202000)});
+    h.run({now: T + 7203000, reported: state(100, T + 7203000), counter: state(0, T + 7203000)});
+    const arrived = h.run({now: T + 7210000, reported: state(84, T + 7210000), counter: state(0, T + 7210000)});
+    assert.equal(arrived.value, 84); assert.equal(arrived.estimated, false); assert.equal(arrived.socWarning, false);
+    assert.equal(arrived.reason, 'cloud-after-unplug'); assert.equal(arrived.ledger.basis, null);
+    assert.equal(estimateSoc(h.input()).value, 84, 'restart preserves cloud authority');
+    const charged = h.run({now: T + 7240000, counter: state(.1, T + 7240000), reported: state(84, T + 7240000)});
+    assert.equal(charged.value, 84, 'cloud remains authoritative until an operator supplies a new manual basis');
+    const correction = correctSoc({...h.input(), value: 85});
+    assert.equal(correction.ok, true);
+    const manual = h.run({ledgerText: JSON.stringify(correction.ledger), now: T + 7270000,
+        counter: state(.2, T + 7270000), reported: state(84, T + 7270000)});
+    assert.ok(Math.abs(manual.value - 85.18) < 1e-9); assert.equal(manual.manual, true);
+    const again = h.run({now: T + 7271000, car: state(1, T + 7271000)});
+    assert.equal(again.value, 84); assert.equal(again.ledger.manual, undefined); assert.equal(again.manualCleared, true);
+});
+
+test('legacy retained 100-percent basis across a blocked session boundary recovers to cloud on upgrade', () => {
+    const h = harness({reported: state(100), counter: state(0)}); const r = h.run();
+    const ledger = structuredClone(r.ledger); delete ledger.cloudAfterUnplug;
+    ledger.blockedAfter = T - 1000;
+    ledger.socWarning = {at: T, reported: 84, expected: 100};
+    const fixed = h.run({ledgerText: JSON.stringify(ledger), now: T + 1000,
+        reported: state(84, T + 1000), counter: state(0, T + 1000)});
+    assert.equal(fixed.value, 84); assert.equal(fixed.estimated, false); assert.equal(fixed.socWarning, false);
+    assert.equal(fixed.ledger.basis, null); assert.equal(fixed.ledger.lastEstimate, undefined);
+    assert.equal(fixed.ledger.cloudAfterUnplug, true);
+});
+
+test('cloud authority after unplug keeps bad cloud values invalid and does not require a charge counter', () => {
+    const h = harness({car: state(1)}); h.run();
+    const r = h.run({now: T + 1000, car: state(3, T + 1000), counter: null, reported: state(84, T + 1000)});
+    assert.equal(r.value, 84); assert.equal(r.valid, true); assert.equal(r.estimated, false);
+    for (const reported of [state(null, T + 1000), {...state(84, T + 1000), ack: false},
+        {...state(84, T + 1000), q: 64}, state(84, T + 5000)]) {
+        const invalid = h.run({reported}); assert.equal(invalid.valid, false); assert.equal(invalid.value, null);
+    }
+});
+
+test('legacy session migration does not override an active manual correction', () => {
+    const h = harness({reported: state(65)});
+    const c = correctSoc({...h.input(), value: 94});
+    c.ledger.blockedAfter = T - 1000;
+    const r = h.run({ledgerText: JSON.stringify(c.ledger), now: T + 1000, counter: state(10, T + 1000)});
+    assert.equal(r.value, 94); assert.equal(r.manual, true); assert.equal(r.ledger.cloudAfterUnplug, true);
+});
+
 test('a delayed changed lower cloud value cannot erase a continuous measured charge', () => {
     const h = harness({reported: state(60), capacityKWh: 32.3}); h.run();
     for (let n = 1; n <= 24; n++) {
@@ -275,7 +329,8 @@ test('long-session rounded reports preserve fractions and reset/disconnect never
     assert.equal(next.estimated, false);
     const other = continuousCharge();
     const unplugged = other.h.run({car: state(1, other.h.input().now)});
-    assert.equal(unplugged.ledger.basis, null); assert.equal(unplugged.value, other.r.value);
+    assert.equal(unplugged.ledger.basis, null); assert.equal(unplugged.value, other.h.input().reported.val);
+    assert.equal(unplugged.estimated, false);
 });
 test('SoC status separates live energy interpolation from a held estimate and preserves cloud age', () => {
     const {socStatus} = require('../lib/vehicle-soc-estimator');

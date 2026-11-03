@@ -1587,6 +1587,32 @@ test('confirmed unplug clears correction, acknowledges -1 and does not reapply i
     assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.SoC_pct').val, 65);
 });
 
+for (const wb of [0, 1, 2]) test(`unplugged trip returns WB${wb} target decisions from 100 to cloud 84 until a new manual basis`, () => {
+    let now = 1800000000000;
+    const h = engine({[`wb${wb}SocEstimationEnabled`]: true, [`wb${wb}CapacityKWh`]: 32.3,
+        [`wb${wb}SocEfficiencyPct`]: 90}, class extends Date { static now() { return now; } });
+    h.run(`requestForecastRebuild = () => {}; CFG.dp.wallboxSocMeasuredAt[${wb}] = ''`);
+    const root = `ems.0.Vehicles.Wallbox${wb}`;
+    h.put(`DP_WB${wb}_SOC`, 100); h.put(`DP_WB${wb}_SOC_ENERGY`, 10); h.put(`DP_WB${wb}_TARGET`, 90);
+    h.run('updateVehicles()'); assert.equal(h.states.get(root + '.Release').val, false);
+    now += 1000; h.put(`DP_WB${wb}_CAR`, 1); h.run('updateVehicles()');
+    now += 1000; h.put(`DP_WB${wb}_CAR`, 3); h.put(`DP_WB${wb}_SOC_ENERGY`, 0); h.run('updateVehicles()');
+    now += 1000; h.put(`DP_WB${wb}_SOC`, 100); h.run('updateVehicles()');
+    now += 1000; h.put(`DP_WB${wb}_SOC`, 84); h.run('updateVehicles()');
+    assert.equal(h.states.get(root + '.SoC_pct').val, 84);
+    assert.equal(h.states.get(root + '.EstimatedSoC_pct').val, null);
+    assert.equal(h.states.get(root + '.Release').val, true, '84% is below the 90% target');
+    assert.equal(h.states.get(root + '.SoCWarning').val, false);
+    assert.equal(h.states.get(root + '.SocEstimateStatus').val, 'cloud-after-unplug');
+    now += 30000; h.put(`DP_WB${wb}_SOC_ENERGY`, .1); h.run('updateVehicles()');
+    assert.equal(h.states.get(root + '.SoC_pct').val, 84);
+    h.run(`applyVehicleSocCorrection(${wb}, {val:85, ack:false, ts:${now}, q:0})`);
+    now += 30000; h.put(`DP_WB${wb}_SOC_ENERGY`, .2); h.run('updateVehicles()');
+    assert.ok(h.states.get(root + '.SoC_pct').val > 85);
+    assert.equal(h.states.get(root + '.SoCCorrectionActive').val, true);
+    assert.equal(h.states.get(`DP_WB${wb}_SOC`).val, 84, 'the source remains untouched');
+});
+
 test('priority calculations carrying an older cycle time preserve the newer manual SoC ledger', () => {
     let now = 1800000000000;
     const h = engine({wb0SocEstimationEnabled: true, wb0CapacityKWh: 32.3,
