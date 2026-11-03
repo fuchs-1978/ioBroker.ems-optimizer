@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.192",
+    "version": "0.17.0-alpha.193",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.193": {
+        "en": "Allow one bounded measured PV ampere retry after sustained export can fund the step plus 50 W. Coordinate allocator and output using an expiring command-bound nomination; retain the two-attempt limit and all electrical and hard capacity checks.",
+        "de": "Einen begrenzten gemessenen PV-Ampere-Nachregelversuch bei anhaltender Einspeisung fuer den Schritt plus 50 W zulassen. Zuteilung und Ausgang ueber kurz gueltigen befehlsgebundenen Nachweis koordinieren; zwei Versuche sowie elektrische und harte Grenzen beibehalten.",
+        "es": "Allow one bounded measured PV ampere retry after sustained export can fund the step plus 50 W. Coordinate allocator and output using an expiring command-bound nomination; retain the two-attempt limit and all electrical and hard capacity checks.",
+        "fr": "Allow one bounded measured PV ampere retry after sustained export can fund the step plus 50 W. Coordinate allocator and output using an expiring command-bound nomination; retain the two-attempt limit and all electrical and hard capacity checks.",
+        "it": "Allow one bounded measured PV ampere retry after sustained export can fund the step plus 50 W. Coordinate allocator and output using an expiring command-bound nomination; retain the two-attempt limit and all electrical and hard capacity checks.",
+        "nl": "Allow one bounded measured PV ampere retry after sustained export can fund the step plus 50 W. Coordinate allocator and output using an expiring command-bound nomination; retain the two-attempt limit and all electrical and hard capacity checks.",
+        "pl": "Allow one bounded measured PV ampere retry after sustained export can fund the step plus 50 W. Coordinate allocator and output using an expiring command-bound nomination; retain the two-attempt limit and all electrical and hard capacity checks.",
+        "pt": "Allow one bounded measured PV ampere retry after sustained export can fund the step plus 50 W. Coordinate allocator and output using an expiring command-bound nomination; retain the two-attempt limit and all electrical and hard capacity checks.",
+        "ru": "Allow one bounded measured PV ampere retry after sustained export can fund the step plus 50 W. Coordinate allocator and output using an expiring command-bound nomination; retain the two-attempt limit and all electrical and hard capacity checks.",
+        "uk": "Allow one bounded measured PV ampere retry after sustained export can fund the step plus 50 W. Coordinate allocator and output using an expiring command-bound nomination; retain the two-attempt limit and all electrical and hard capacity checks.",
+        "zh-cn": "Allow one bounded measured PV ampere retry after sustained export can fund the step plus 50 W. Coordinate allocator and output using an expiring command-bound nomination; retain the two-attempt limit and all electrical and hard capacity checks."
+      },
       "0.17.0-alpha.192": {
         "en": "Follow observed wallbox stops across bounded delayed OFF and electrical confirmations. Add common-slot 7/14-calendar-day forecast errors and complete-day energy comparisons; charging control is unchanged.",
         "de": "Beobachtete Wallbox-Stopps bei verzoegerten AUS- und elektrischen Bestaetigungen begrenzt nachverfolgen. Gemeinsame 7-/14-Kalendertage-Prognosefehler und Tagesenergievergleiche ergaenzen; Laderegelung unveraendert.",
@@ -81,19 +94,6 @@
         "ru": "Avoid overlapping identical heater refreshes during a bounded pending Modbus reset; retain fixed-one-phase charging minima without optional phase-mode feedback; exclude verified external battery discharge from legacy surplus budgets.",
         "uk": "Avoid overlapping identical heater refreshes during a bounded pending Modbus reset; retain fixed-one-phase charging minima without optional phase-mode feedback; exclude verified external battery discharge from legacy surplus budgets.",
         "zh-cn": "Avoid overlapping identical heater refreshes during a bounded pending Modbus reset; retain fixed-one-phase charging minima without optional phase-mode feedback; exclude verified external battery discharge from legacy surplus budgets."
-      },
-      "0.17.0-alpha.186": {
-        "en": "Preserve metered SoC progress across unchanged cloud publications; hold witnessed follow-up charging through link loss before the ACK deadline. Bound MariaDB recorder history statements and allow paced recovery after transient database activity.",
-        "de": "Gemessenen SoC-Fortschritt bei unveraenderten Cloud-Meldungen erhalten. Laufende Ladung bei Verbindungsausfall waehrend einer Strombestaetigung halten. MariaDB-Recorderabfragen begrenzen und Wiederherstellung nach voruebergehender Datenbanklast erneut pruefen.",
-        "es": "Preserve metered SoC progress across unchanged cloud publications; hold witnessed follow-up charging through link loss before the ACK deadline. Bound MariaDB recorder history statements and allow paced recovery after transient database activity.",
-        "fr": "Preserve metered SoC progress across unchanged cloud publications; hold witnessed follow-up charging through link loss before the ACK deadline. Bound MariaDB recorder history statements and allow paced recovery after transient database activity.",
-        "it": "Preserve metered SoC progress across unchanged cloud publications; hold witnessed follow-up charging through link loss before the ACK deadline. Bound MariaDB recorder history statements and allow paced recovery after transient database activity.",
-        "nl": "Preserve metered SoC progress across unchanged cloud publications; hold witnessed follow-up charging through link loss before the ACK deadline. Bound MariaDB recorder history statements and allow paced recovery after transient database activity.",
-        "pl": "Preserve metered SoC progress across unchanged cloud publications; hold witnessed follow-up charging through link loss before the ACK deadline. Bound MariaDB recorder history statements and allow paced recovery after transient database activity.",
-        "pt": "Preserve metered SoC progress across unchanged cloud publications; hold witnessed follow-up charging through link loss before the ACK deadline. Bound MariaDB recorder history statements and allow paced recovery after transient database activity.",
-        "ru": "Preserve metered SoC progress across unchanged cloud publications; hold witnessed follow-up charging through link loss before the ACK deadline. Bound MariaDB recorder history statements and allow paced recovery after transient database activity.",
-        "uk": "Preserve metered SoC progress across unchanged cloud publications; hold witnessed follow-up charging through link loss before the ACK deadline. Bound MariaDB recorder history statements and allow paced recovery after transient database activity.",
-        "zh-cn": "Preserve metered SoC progress across unchanged cloud publications; hold witnessed follow-up charging through link loss before the ACK deadline. Bound MariaDB recorder history statements and allow paced recovery after transient database activity."
       }
     },
     "titleLang": {

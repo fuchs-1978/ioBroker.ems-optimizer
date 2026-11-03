@@ -2243,7 +2243,7 @@ test('sustained export permits one 11 A probe before the 45 s response deadline'
 for (const [name, change] of [
     ['short observation', h => h.advance(6000)],
     ['export disappeared', h => {h.advance(10000); h.put('export', 0);}],
-    ['only 400 W export', h => {h.advance(10000); h.put('export', 400);}],
+    ['only 250 W export', h => {h.advance(10000); h.put('export', 250);}],
     ['stale electrical sample', h => {h.advance(10000); h.put('power', 1.75, {ts:1});}],
     ['hard current cap', h => {h.advance(10000); h.config.wb0CommissioningMaxA=10;}],
     ['withdrawn release', h => {h.advance(10000); h.put('ems.0.Vehicles.Wallbox0.Release', false);}],
@@ -2316,6 +2316,46 @@ for (const [name, change] of [
     h.advance(12000); h.grant([11]); h.put('export', 500);
     change(h); h.writes.length = 0; await h.output.tick();
     assert.ok(!h.writes.some(w => w.id === 'cmd' && w.val > 10));
+});
+
+async function miiPartialReply(exportW = 300) {
+    const h = parallelSetup(1); await h.startParallel(); h.advance(10000);
+    h.config.wallboxPVImportToleranceW = 100;
+    h.put('ems.0.Control.TargetGridPower_W', 0);
+    const grant = h.grant;
+    h.grant = (...args) => {grant(...args); const id = 'ems.0.Control.ParallelWallboxAllocation_JSON';
+        const a = JSON.parse(h.states.get(id).val); a.pvStepOwner = 0; a.pvStepToleranceW = 100;
+        a.heaterTargetW = 0; h.put(id, JSON.stringify(a));};
+    const d = h.output.devices[0]; d.lastA = 17; d.lastAt = 0; d.pending = null; d.response = null;
+    h.grant([18]); h.measure(0, 16.9); h.ack('feedback', 17); h.put('power', 3.8); h.put('export', exportW);
+    h.writes.length = 0; await h.output.tick(); assert.deepEqual(h.writes, [{id: 'cmd', val: 18}]);
+    h.advance(2000); h.grant([18]); h.measure(0, 16.9); h.ack('feedback', 18); h.put('power', 3.8);
+    await h.output.tick();
+    h.advance(2000); h.grant([18]); await h.output.tick();
+    h.writes.length = 0; return h;
+}
+test('Mii 18 A/16.9 A publishes a command-bound nomination at 300 W without claiming uptake', async () => {
+    const h = await miiPartialReply(); h.advance(10000); h.grant([18]); await h.output.tick();
+    const p = JSON.parse(h.states.get('ems.0.Devices.Wallbox0.ResponseProbe_JSON').val);
+    assert.equal(p.valid, true); assert.equal(p.amps, 18); assert.equal(p.nextA, 19);
+    assert.equal(p.remainingAttempts, 2); assert.equal(h.output.devices[0].response.amps, 18);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'vehicle_response');
+    assert.deepEqual(h.writes, [], 'nomination alone cannot bypass the central grant');
+    h.advance(2000); h.grant([19]); await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'cmd', val: 19}], JSON.stringify({
+        budget: JSON.parse(h.states.get('ems.0.Devices.Wallbox0.IncreaseBudget_JSON').val),
+        status: h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val, response: h.output.devices[0].response}));
+    assert.equal(h.output.devices[0].limitedProbeAttempts, 1);
+    assert.deepEqual(JSON.parse(h.states.get('ems.0.Devices.Wallbox0.ResponseProbe_JSON').val), {});
+});
+test('early Mii nomination is withdrawn when export or its retry budget disappears', async () => {
+    for (const change of [h => h.put('export', 250), h => {h.output.devices[0].limitedProbeAttempts = 2;}]) {
+        const h = await miiPartialReply(); h.advance(10000); h.grant([18]); await h.output.tick();
+        assert.equal(JSON.parse(h.states.get('ems.0.Devices.Wallbox0.ResponseProbe_JSON').val).valid, true);
+        h.advance(2000); h.grant([18]); change(h); await h.output.tick();
+        assert.deepEqual(JSON.parse(h.states.get('ems.0.Devices.Wallbox0.ResponseProbe_JSON').val), {});
+        assert.ok(!h.writes.some(w => w.id === 'cmd' && w.val > 18));
+    }
 });
 
 test('withdrawn optional priority donor stops despite its minimum runtime and retains physical reservation', async () => {

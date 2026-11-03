@@ -1490,6 +1490,36 @@ test('limited EQE 19 A/4100 W may request one measured 20 A step at 4510 W while
     assert.equal(t.amps[0],20);assert.ok(t.reserve[0]>=4600);
     assert.equal(JSON.parse(h.states.get('ems.0.Control.Wallbox0.AllocationDiagnostics_JSON').val).measuredPVStep,true);
 });
+
+function earlyMiiProbeEngine(change = () => {}) {
+    const h = engine({production: true, wallboxPVImportToleranceW: 100});
+    h.exclude(1); h.exclude(2); h.owned(0, 18, 3800);
+    const base = 'ems.0.Devices.Wallbox0', now = Date.now(), sent = now - 20000, ack = sent + 1000;
+    h.run('wallboxHandoffSessionStartedAt=Date.now()-120000');
+    for (const [key, value] of Object.entries({OutputLastWrite: sent, ResponseSentAt: sent,
+        ResponseAcknowledgedAt: ack, ResponseCommand_A: 18, ResponseState: 'vehicle_response', ResponsePending: true}))
+        h.put(`${base}.${key}`, value);
+    h.put(`${base}.ResponseProbe_JSON`, JSON.stringify({schema: 1, valid: true, commandAt: sent, ackAt: ack,
+        amps: 18, nextA: 19, phases: 1, qualifiedAt: ack + 10000, observedAt: now,
+        validUntil: now + 9000, remainingAttempts: 2}));
+    change(h, base, now); return h;
+}
+test('a fresh output qualification at Mii 18 A/3800 W nominates only 19 A before 45 seconds', () => {
+    const h = earlyMiiProbeEngine(), t = h.update(4100);
+    assert.equal(t.amps[0], 19); assert.ok(t.reserve[0] >= 4370);
+    assert.equal(h.update(7000).amps[0], 19, 'an early nomination never asks for multiple amperes');
+});
+for (const [name, change, hard] of [
+    ['missing proof', (h, b) => h.states.delete(`${b}.ResponseProbe_JSON`), Infinity],
+    ['stale proof', (h, b, n) => h.put(`${b}.ResponseProbe_JSON`, h.states.get(`${b}.ResponseProbe_JSON`).val, {ts: n - 11000}), Infinity],
+    ['unconfirmed proof', (h, b) => h.put(`${b}.ResponseProbe_JSON`, h.states.get(`${b}.ResponseProbe_JSON`).val, {ack: false}), Infinity],
+    ['wrong command', (h, b) => h.put(`${b}.ResponseCommand_A`, 17), Infinity],
+    ['pending topology', (h, b) => h.put(`${b}.PhaseTransitionActive`, true), Infinity],
+    ['full nominal hard reservation', () => {}, 4300]
+]) test('early allocator nomination rejects ' + name, () => {
+    const h = earlyMiiProbeEngine(change);
+    assert.ok(h.update(4100, hard).amps[0] <= 18);
+});
 for(const [name,change,hard,budget] of [
     ['hard watts',()=>{},4510,4510],
     ['too little measured budget',()=>{},Infinity,4200],

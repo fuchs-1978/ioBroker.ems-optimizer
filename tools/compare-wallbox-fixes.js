@@ -11,7 +11,7 @@ const vm = require('node:vm');
 const Module = require('node:module');
 const {createHash} = require('node:crypto');
 const {execFileSync} = require('node:child_process');
-const {historicalStateView} = require('./historical-state-view');
+const {historicalStateView, alignResponseProbeDefaults} = require('./historical-state-view');
 const BASE = '25fd38b4e5a3568a6d1aeefda5277c94397c7e91';
 const root = path.resolve(__dirname, '..');
 
@@ -34,6 +34,13 @@ function summary(name, trace, contract) {
 }
 
 async function worker(tree, fixed) {
+    const readSource = fs.readFileSync.bind(fs);
+    fs.readFileSync = (filename, options) => {
+        const data = readSource(filename, options);
+        if (!String(filename).endsWith('.js')) return data;
+        const aligned = alignResponseProbeDefaults(String(data), String(filename));
+        return typeof data === 'string' ? aligned : Buffer.from(aligned);
+    };
     const setup = fixture(tree);
     const results = [], unchanged = [];
     function harness(config = {}) {

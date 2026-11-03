@@ -10,7 +10,7 @@ const vm = require('node:vm');
 const Module = require('node:module');
 const {createHash} = require('node:crypto');
 const {execFileSync} = require('node:child_process');
-const {historicalStateView} = require('./historical-state-view');
+const {historicalStateView, alignResponseProbeDefaults} = require('./historical-state-view');
 const BASE = '9585b276c75c3ed79634204ba8318166e577dc44';
 const root = path.resolve(__dirname, '..');
 
@@ -45,10 +45,11 @@ async function worker(tree) {
     const admissionSource = path.join(tree, 'lib/engine/dhw-controller.js');
     const heaterOutputSource = path.join(tree, 'lib/engine/dhw-output.js');
     const recorderSource = path.join(tree, 'lib/debug-recorder.js');
+    const probeSources = new Set(['wallbox-output.js', 'diagnostic-source-contract.js'].map(name => path.join(tree, 'lib', name)));
     fs.readFileSync = (filename, options) => {
         const data = readSource(filename, options);
         if (!versionSources.has(String(filename)) && String(filename) !== admissionSource
-            && String(filename) !== recorderSource && String(filename) !== heaterOutputSource) return data;
+            && String(filename) !== recorderSource && String(filename) !== heaterOutputSource && !probeSources.has(String(filename))) return data;
         let pinned = String(data).replaceAll(adapterVersion, '0.17.0-alpha.96');
         // alpha.167 introduces three unused production configuration slots.
         // Give the historical fixture exactly the same zero-valued objects;
@@ -144,6 +145,7 @@ async function worker(tree) {
             reason = \`Ueberschuss \${Math.round(availableW)} W unter Schichtungsminimum \${minimumW} W; kein Heizstart\`;
         }`);
         }
+        pinned = alignResponseProbeDefaults(pinned, String(filename));
         return typeof data === 'string' ? pinned : Buffer.from(pinned);
     };
     // alpha.159 adds passive append phase metadata. Align ONLY these new
