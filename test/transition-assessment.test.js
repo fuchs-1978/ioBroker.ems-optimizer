@@ -5,6 +5,73 @@ const {TransitionAssessment, quantile} = require('../lib/transition-assessment')
 const at = 1800000000000;
 const source = (val, ts) => ({val, ts, valid: true, ack: true, q: 0});
 const frame = (ts, w = {}) => ({ts, wallboxes: [{wb: 0, ResponseSentAt: 0, OutputActive: false, PhaseTransitionActive: false, ...w}]});
+
+const currentFrame = (ts, w = {}) => frame(ts, {OutputActive: true, OutputCommand_A: 7,
+    ResponseCommand_A: 8, ResponsePreviousCommand_A: 7, ResponseSentAt: at + 1000, ...w});
+const confirmedCurrent = (ts, w = {}) => currentFrame(ts, {OutputCommand_A: 8, ResponseState: 'confirmed',
+    ResponsePending: false, ResponseAcknowledgedAt: at + 2000, ResponseConfirmedAt: at + 7000, actual_W: 1670,
+    measurements: {feedback: source(8, at + 2000), power: source(1.67, at + 8000)}, ...w});
+
+test('a newly sent 8 A command keeps its identity while the consumed ACK is still 7 A', () => {
+    const a = new TransitionAssessment(); a.observe(currentFrame(at, {ResponseSentAt: 0}));
+    a.observe(currentFrame(at + 5000, {ResponsePending: true, ResponseState: 'command_ack'}));
+    const r = a.observe(confirmedCurrent(at + 10000));
+    assert.equal(r.events.length, 1); assert.equal(r.events[0].status, 'observed-success');
+    assert.equal(r.events[0].commandA, 8); assert.equal(r.events[0].previousA, 7);
+    assert.equal(r.reactions[0].ackP50Ms, 1000); assert.equal(r.pendingCurrents.length, 0);
+});
+test('confirmed status can precede the consumed ACK and complete in a later sample without renewing its deadline', () => {
+    const a = new TransitionAssessment(); a.observe(currentFrame(at, {ResponseSentAt: 0}));
+    a.observe(currentFrame(at + 5000));
+    const r = a.observe(confirmedCurrent(at + 10000, {OutputCommand_A: 7}));
+    assert.equal(r.events.length, 0); assert.equal(r.pendingCurrents[0].until, at + 121000);
+    const complete = a.observe(confirmedCurrent(at + 15000));
+    assert.equal(complete.events[0].status, 'observed-success'); assert.equal(complete.pendingCurrents.length, 0);
+});
+test('genuine different-target replacement is superseded, and the replacement can earn its own response proof', () => {
+    const a = new TransitionAssessment(); a.observe(currentFrame(at, {ResponseSentAt: 0}));
+    a.observe(currentFrame(at + 5000));
+    a.observe(currentFrame(at + 10000, {ResponseSentAt: at + 6000, ResponseCommand_A: 6}));
+    const r = a.observe(confirmedCurrent(at + 15000, {ResponseSentAt: at + 6000, ResponseCommand_A: 6,
+        OutputCommand_A: 6, ResponseAcknowledgedAt: at + 7000, ResponseConfirmedAt: at + 12000,
+        actual_W: 1290, measurements: {feedback: source(6, at + 7000), power: source(1.29, at + 13000)}}));
+    assert.deepEqual(r.events.map(e => e.status), ['superseded', 'observed-success']);
+    assert.equal(r.events[0].commandA, 8); assert.equal(r.events[0].replacementA, 6);
+    assert.equal(r.events[0].commandGapMs, 5000); assert.equal(r.reactions[0].count, 1);
+});
+test('an unresolved repeated same-target command remains ambiguous despite confirmed status', () => {
+    const a = new TransitionAssessment(); a.observe(currentFrame(at, {ResponseSentAt: 0}));
+    a.observe(currentFrame(at + 5000));
+    a.observe(currentFrame(at + 10000, {ResponseSentAt: at + 6000}));
+    const r = a.observe(confirmedCurrent(at + 15000, {ResponseSentAt: at + 6000,
+        ResponseAcknowledgedAt: at + 7000, ResponseConfirmedAt: at + 12000,
+        measurements: {feedback: source(8, at + 7000), power: source(1.67, at + 13000)}}));
+    assert.deepEqual(r.events.map(e => e.status), ['superseded', 'unknown']); assert.equal(r.reactions.length, 0);
+});
+test('missing, echo, bad, future and pre-ACK sources never become a proven current response', () => {
+    for (const mutate of [w => {w.measurements.feedback.ack = false;}, w => {w.measurements.feedback.q = 64;},
+        w => {w.measurements.feedback.val = 7;}, w => {w.measurements.feedback.ts = at + 1500;},
+        w => {w.measurements.power.val = null;}, w => {w.measurements.power.val = true;},
+        w => {w.measurements.power.ts = at + 1500;}, (w, now) => {w.measurements.power.ts = now + 10000;}]) {
+        const a = new TransitionAssessment(); a.observe(currentFrame(at, {ResponseSentAt: 0}));
+        a.observe(currentFrame(at + 5000)); const s = confirmedCurrent(at + 10000); mutate(s.wallboxes[0], s.ts);
+        a.observe(s); assert.equal(a.report().pendingCurrents.length, 1);
+        for (let n = 15000; n <= 125000; n += 5000) {
+            const next = confirmedCurrent(at + n); mutate(next.wallboxes[0], next.ts); a.observe(next);
+        }
+        assert.equal(a.report().events.some(e => e.status === 'observed-success'), false);
+        assert.equal(a.report().pendingCurrents.length, 0); assert.equal(a.report().reactions.length, 0);
+    }
+});
+test('start/allow response and an invalid sent target never borrow an old current ACK', () => {
+    const a = new TransitionAssessment(); a.observe(currentFrame(at, {ResponseSentAt: 0, OutputActive: false}));
+    a.observe(confirmedCurrent(at + 5000, {ResponseConfirmedAt: at + 4000,
+        measurements: {feedback: source(8, at + 2000), power: source(1.67, at + 4000)}}));
+    assert.equal(a.report().events.length, 0); assert.equal(a.report().reactions.length, 0);
+    const b = new TransitionAssessment(); b.observe(currentFrame(at, {ResponseSentAt: 0}));
+    b.observe(currentFrame(at + 5000, {ResponseCommand_A: null}));
+    assert.equal(b.report().events[0].status, 'unknown'); assert.equal(b.report().pendingCurrents.length, 0);
+});
 test('current response needs independent fresh ACK and electrical source; no startup reconstruction', () => {
     const a = new TransitionAssessment();
     a.observe(frame(at)); a.observe(frame(at + 5000, {ResponseSentAt: at + 1000, OutputCommand_A: 6}));

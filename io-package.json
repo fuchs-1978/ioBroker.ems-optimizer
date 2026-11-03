@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.195",
+    "version": "0.17.0-alpha.196",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.196": {
+        "en": "Attribute passive current-response diagnostics to the sent target instead of the previous ACK; distinguish superseded commands from pending evidence. Keep charging control and timing unchanged.",
+        "de": "Passive Stromantwortdiagnose dem gesendeten Sollwert statt dem vorherigen ACK zuordnen; abgeloeste Befehle von offenen Nachweisen trennen. Laderegelung und Zeitgrenzen bleiben unveraendert.",
+        "es": "Attribute passive current-response diagnostics to the sent target instead of the previous ACK; distinguish superseded commands from pending evidence. Keep charging control and timing unchanged.",
+        "fr": "Attribute passive current-response diagnostics to the sent target instead of the previous ACK; distinguish superseded commands from pending evidence. Keep charging control and timing unchanged.",
+        "it": "Attribute passive current-response diagnostics to the sent target instead of the previous ACK; distinguish superseded commands from pending evidence. Keep charging control and timing unchanged.",
+        "nl": "Attribute passive current-response diagnostics to the sent target instead of the previous ACK; distinguish superseded commands from pending evidence. Keep charging control and timing unchanged.",
+        "pl": "Attribute passive current-response diagnostics to the sent target instead of the previous ACK; distinguish superseded commands from pending evidence. Keep charging control and timing unchanged.",
+        "pt": "Attribute passive current-response diagnostics to the sent target instead of the previous ACK; distinguish superseded commands from pending evidence. Keep charging control and timing unchanged.",
+        "ru": "Attribute passive current-response diagnostics to the sent target instead of the previous ACK; distinguish superseded commands from pending evidence. Keep charging control and timing unchanged.",
+        "uk": "Attribute passive current-response diagnostics to the sent target instead of the previous ACK; distinguish superseded commands from pending evidence. Keep charging control and timing unchanged.",
+        "zh-cn": "Attribute passive current-response diagnostics to the sent target instead of the previous ACK; distinguish superseded commands from pending evidence. Keep charging control and timing unchanged."
+      },
       "0.17.0-alpha.195": {
         "en": "Redistribute PV budget during sustained vehicle uptake limits using a confirmed lower current command, while retaining nominal reservations until ACK. Preserve measured SoC progress against delayed lower cloud reports and observed charge/Finish transitions.",
         "de": "PV-Budget bei anhaltend begrenzter Fahrzeugaufnahme nach bestaetigter Stromabsenkung weiterverteilen; nominale Reserven bleiben bis zum ACK gebunden. Gemessenen SoC-Fortschritt gegen verspaetete niedrigere Cloud-Werte und normale Lade-/Finish-Wechsel erhalten.",
@@ -81,19 +94,6 @@
         "ru": "Recognize SQL host blocks and connect timeouts/refusals, pause recorder traffic with bounded retries, and retain canonical query failure codes and clear diagnostics. Keep pure read timeouts independent of publication and require exact storage proof for recovery.",
         "uk": "Recognize SQL host blocks and connect timeouts/refusals, pause recorder traffic with bounded retries, and retain canonical query failure codes and clear diagnostics. Keep pure read timeouts independent of publication and require exact storage proof for recovery.",
         "zh-cn": "Recognize SQL host blocks and connect timeouts/refusals, pause recorder traffic with bounded retries, and retain canonical query failure codes and clear diagnostics. Keep pure read timeouts independent of publication and require exact storage proof for recovery."
-      },
-      "0.17.0-alpha.189": {
-        "en": "Transfer a witnessed running charge to the manually preferred vehicle without a repeated start delay or reserve; retain the bounded qualification through short PV dips while preserving confirmed stop, minimum power and safety gates.",
-        "de": "Beobachtete laufende Ladung ohne erneute Startwartezeit oder Startreserve an das priorisierte Fahrzeug uebergeben. Startfreigabe bei kurzen PV-Dellen begrenzt erhalten; bestaetigter Stillstand, Mindestleistung und Schutzgrenzen bleiben erforderlich.",
-        "es": "Transfer a witnessed running charge to the manually preferred vehicle without a repeated start delay or reserve; retain the bounded qualification through short PV dips while preserving confirmed stop, minimum power and safety gates.",
-        "fr": "Transfer a witnessed running charge to the manually preferred vehicle without a repeated start delay or reserve; retain the bounded qualification through short PV dips while preserving confirmed stop, minimum power and safety gates.",
-        "it": "Transfer a witnessed running charge to the manually preferred vehicle without a repeated start delay or reserve; retain the bounded qualification through short PV dips while preserving confirmed stop, minimum power and safety gates.",
-        "nl": "Transfer a witnessed running charge to the manually preferred vehicle without a repeated start delay or reserve; retain the bounded qualification through short PV dips while preserving confirmed stop, minimum power and safety gates.",
-        "pl": "Transfer a witnessed running charge to the manually preferred vehicle without a repeated start delay or reserve; retain the bounded qualification through short PV dips while preserving confirmed stop, minimum power and safety gates.",
-        "pt": "Transfer a witnessed running charge to the manually preferred vehicle without a repeated start delay or reserve; retain the bounded qualification through short PV dips while preserving confirmed stop, minimum power and safety gates.",
-        "ru": "Transfer a witnessed running charge to the manually preferred vehicle without a repeated start delay or reserve; retain the bounded qualification through short PV dips while preserving confirmed stop, minimum power and safety gates.",
-        "uk": "Transfer a witnessed running charge to the manually preferred vehicle without a repeated start delay or reserve; retain the bounded qualification through short PV dips while preserving confirmed stop, minimum power and safety gates.",
-        "zh-cn": "Transfer a witnessed running charge to the manually preferred vehicle without a repeated start delay or reserve; retain the bounded qualification through short PV dips while preserving confirmed stop, minimum power and safety gates."
       }
     },
     "titleLang": {

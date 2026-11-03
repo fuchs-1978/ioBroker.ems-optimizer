@@ -25,6 +25,27 @@ function daily() {
     const d = new DailySummary({setStateAsync: async () => {}, log: {warn() {}}});
     d.sample(snapshot(now - 5000)); d.sample(snapshot()); return d.report();
 }
+test('operator transitions read the sent current independently of the old consumed output ACK', async () => {
+    const cache = new Map(), writes = new Map();
+    const p = new OperatorDiagnostics({namespace: 'ems.0', config: {}, getCachedState: id => cache.get(id),
+        queueCompatState: async () => {}, setStateAsync: async (id, s) => writes.set(id, s.val), warnDebug(e) {throw e;}});
+    await p.initialize();
+    const put = (key, val) => cache.set('ems.0.Devices.Wallbox0.' + key, {val, ts: now + 1000, ack: true});
+    const s = snapshot(); Object.assign(s.wallboxes[0], {OutputActive: true, OutputCommand_A: 7, ResponseSentAt: 0});
+    p.publish(s, daily()); put('ResponseCommand_A', 8); put('ResponsePreviousCommand_A', 7);
+    const pending = snapshot(now + 5000); Object.assign(pending.wallboxes[0], {OutputActive: true,
+        OutputCommand_A: 7, ResponseSentAt: now + 1000, ResponsePending: true, ResponseState: 'command_ack'});
+    p.publish(pending, daily());
+    assert.equal(p.transitions.report().pendingCurrents[0].commandA, 8);
+    const done = snapshot(now + 10000); Object.assign(done.wallboxes[0], {OutputActive: true, OutputCommand_A: 8,
+        ResponseSentAt: now + 1000, ResponsePending: false, ResponseState: 'confirmed', ResponseAcknowledgedAt: now + 2000,
+        ResponseConfirmedAt: now + 7000, actual_W: 1670, measurements: {
+            feedback: {val: 8, valid: true, ack: true, ts: now + 2000},
+            power: {val: 1.67, valid: true, ack: true, ts: now + 8000}}});
+    p.publish(done, daily()); await Promise.all([...p.writer.entries.values()].map(e => e.promise));
+    assert.equal(p.transitions.report().events[0].status, 'observed-success');
+    assert.ok([...writes.keys()].every(id => id.startsWith('Diagnostics.'))); p.stop();
+});
 test('actual recovered SQL case: historical deadline and expired originals never become a current outage', () => {
     const q = quality(healthy());
     assert.equal(q.sql.status, 'frisch bestätigt');
