@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.186 (2026-11-01)
+
+- (fuchs-1978) Preserve metered SoC progress across unchanged cloud publications; hold witnessed follow-up charging through link loss before the ACK deadline. Bound MariaDB recorder history statements and allow paced recovery after transient database activity. [Details and recovery](docs/release-0.17.0-alpha.186.md).
+
 ## 0.17.0-alpha.185 (2026-11-01)
 
 - (fuchs-1978) Fix false feedback faults while confirmed OFF waits for start budget. Resume a proven charging episode after cleared device error 5 without a repeated start delay, retaining fresh electrical, budget and safety checks. [Details](docs/release-0.17.0-alpha.185.md).

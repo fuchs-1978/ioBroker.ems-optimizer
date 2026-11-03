@@ -1,6 +1,8 @@
 # ioBroker EMS Optimizer
 
-Aktuelle Adapterversion: **0.17.0-alpha.192**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+Aktuelle Adapterversion: **0.17.0-alpha.193**. Diese deutsche Bedienungsanleitung beschreibt die Admin-Oberfläche dieses Stands. Der Adapter ist noch im Alpha-Stadium; GitHub-Veröffentlichung und Softwaretests sind keine vollständige reale Betriebsabnahme.
+
+Alpha 193 ermoeglicht einen begrenzten frueheren +1-A-Nachregelversuch, wenn anhaltende Einspeisung den Phasenschritt plus 50 W traegt. Zuteilung und Ausgang werden gemeinsam koordiniert; Stromtoleranzen und Schutzgrenzen bleiben erhalten. [Details und Grenzen](docs/release-0.17.0-alpha.193.md).
 
 Alpha 192 fuehrt beobachtete Wallbox-Stopps bei zeitversetzten AUS-/Null-Nachweisen bis zu 120 Sekunden nach. Der passive Prognosevergleich zeigt gemeinsame 7-/14-Kalendertage-Fenster mit MAE, RMSE, Energieabweichung und Datenabdeckung. [Details und Grenzen](docs/release-0.17.0-alpha.192.md). Die Laderegelung bleibt unveraendert.
 

@@ -20,4 +20,25 @@ function historicalStateView(value) {
     }
     return value;
 }
-module.exports = {historicalStateView};
+// Supply only the new, empty probe slot/recorder annotation to immutable
+// fixtures. Do not omit writes or alter any admission/response arithmetic.
+function alignResponseProbeDefaults(source, filename) {
+    const replace = (anchor, replacement) => {
+        if (source.split(anchor).length !== 2) throw new Error(`Historical probe anchor changed: ${filename}`);
+        source = source.replace(anchor, replacement);
+    };
+    if (filename.endsWith('/wallbox-output.js') && !source.includes('ResponseProbe_JSON')) {
+        const anchor = 'ResponseAcknowledgedAt: 0, ResponseMeasuredCurrent_A: null, ResponseMeasuredPower_W: null});';
+        replace(anchor, 'ResponseAcknowledgedAt: 0, ResponseMeasuredCurrent_A: null, ResponseMeasuredPower_W: null,\n                ResponseProbe_JSON: \'{}\'});');
+    }
+    if (filename.endsWith('/debug-recorder.js') && !source.includes('responseProbe: allocationDetails')) {
+        const anchor = '                startReservation: allocationDetails(';
+        replace(anchor, '                responseProbe: allocationDetails(this.state(`${this.adapter.namespace}.Devices.Wallbox${wb}.ResponseProbe_JSON`)?.val),\n' + anchor);
+    }
+    if (filename.endsWith('/diagnostic-source-contract.js') && !source.includes('ResponseProbe_JSON')) {
+        const anchor = "                ? {edgeNormalization: 'stable-reason'} : undefined);";
+        replace(anchor, anchor + '\n        own(`Devices.Wallbox${wb}.ResponseProbe_JSON`, analog);');
+    }
+    return source;
+}
+module.exports = {historicalStateView, alignResponseProbeDefaults};

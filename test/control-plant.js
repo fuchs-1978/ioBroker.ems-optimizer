@@ -16,7 +16,7 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
     batteryDelayMs = 2000, heatingDelayMs = 4000, dhwDelayMs = 4000,
     batteryDcFactor = 1, batteryDcPvW = 0, wb2InitialPhaseMode = null,
     nativeConfig: configOverrides = {}, sourceQuality, phaseResponseDelayMs = null,
-    initialTime = Date.UTC(2026, 8, 21, 12)} = {}) {
+    initialTime = Date.UTC(2026, 8, 21, 12), wallboxUptakeA = (_wb, amps) => amps} = {}) {
     let now = initialTime, surplusW = 6000, idleWallboxNoiseKW = 0;
     let heaterW = 0, heaterCommandW = 0, physicalAllow = 0, physicalA = 6;
     let wallboxWriteDelayMs = 0;
@@ -24,6 +24,9 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
     let phaseDestination = physicalPhases, phaseSequence = 0;
     let physicalPowerAllow = 0, miiAllow = 0, miiPowerAllow = 0, miiA = 6;
     let wallboxAcceptsPower = true;
+    const uptake = (wb, amps) => wallboxUptakeA(wb, amps);
+    const wbPower = () => physicalPowerAllow && wallboxAcceptsPower ? uptake(2, physicalA) * 230 * physicalPhases : 0;
+    const miiPower = () => miiPowerAllow ? uptake(0, miiA) * 230 : 0;
     const wallboxStopAck = [true, true, true];
     const wallboxCurrentQuality = [0, 0, 0];
     let physicalStopResponseSequence = 0, miiStopResponseSequence = 0;
@@ -275,8 +278,8 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         await recorder.initialize();
     }
     const refresh = () => {
-        const wbW = physicalPowerAllow && wallboxAcceptsPower ? physicalA * 230 * physicalPhases : 0;
-        const miiW = miiPowerAllow ? miiA * 230 : 0;
+        const wbW = wbPower();
+        const miiW = miiPower();
         const gridW = heaterW + heatingW + batteryW + wbW + miiW - surplusW;
         for (const [id, state] of states) if (state.ack && !id.startsWith('ems.0.')) put(id, state.val);
         put('DP_GRID_IMPORT', Math.max(0, gridW)); put('DP_GRID_EXPORT', Math.max(0, -gridW));
@@ -289,10 +292,10 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
             const powerW = wb === 2 ? wbW : wb === 0 ? miiW : 0;
             put(`DP_WB${wb}_POWER`, powerW === 0 ? idleWallboxNoiseKW : powerW / 1000);
             const currentQuality = wallboxCurrentQuality[wb] ? {q: wallboxCurrentQuality[wb]} : {};
-            put(`DP_WB${wb}_L1_A`, wb === 2 && physicalPowerAllow && wallboxAcceptsPower ? physicalA : wb === 0 && miiPowerAllow ? miiA : 0,
+            put(`DP_WB${wb}_L1_A`, wb === 2 && physicalPowerAllow && wallboxAcceptsPower ? uptake(2, physicalA) : wb === 0 && miiPowerAllow ? uptake(0, miiA) : 0,
                 currentQuality);
-            put(`DP_WB${wb}_L2_A`, wb === 2 && physicalPowerAllow && wallboxAcceptsPower && physicalPhases === 3 ? physicalA : 0, currentQuality);
-            put(`DP_WB${wb}_L3_A`, wb === 2 && physicalPowerAllow && wallboxAcceptsPower && physicalPhases === 3 ? physicalA : 0, currentQuality);
+            put(`DP_WB${wb}_L2_A`, wb === 2 && physicalPowerAllow && wallboxAcceptsPower && physicalPhases === 3 ? uptake(2, physicalA) : 0, currentQuality);
+            put(`DP_WB${wb}_L3_A`, wb === 2 && physicalPowerAllow && wallboxAcceptsPower && physicalPhases === 3 ? uptake(2, physicalA) : 0, currentQuality);
         }
         const stagedPhases = (watts, stage) => watts <= stage ? [watts, 0, 0]
             : watts <= stage * 2 ? [watts - stage, stage, 0] : [watts - stage * 2, stage, stage];
@@ -347,10 +350,9 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
             vm.runInContext('updateDhwProductionOutput();updateHeatingProductionOutput()', ctx);
             recorder?.sample();
         }
-        trace.push({at: now, wbW: physicalPowerAllow && wallboxAcceptsPower ? physicalA * 230 * physicalPhases : 0,
-            miiW: miiPowerAllow ? miiA * 230 : 0, heaterW, heatingW, batteryW,
-            gridW: heaterW + heatingW + batteryW + (physicalPowerAllow && wallboxAcceptsPower ? physicalA * 230 * physicalPhases : 0)
-                + (miiPowerAllow ? miiA * 230 : 0) - surplusW,
+        trace.push({at: now, wbW: wbPower(),
+            miiW: miiPower(), heaterW, heatingW, batteryW,
+            gridW: heaterW + heatingW + batteryW + wbPower() + miiPower() - surplusW,
             fine: value('Control.FineRegulator'), physicalAllow, miiAllow,
             ...(phaseResponseDelayMs !== null ? {physicalPhases, requestedPhases: value('Control.Targets.Wallbox2_Phases')} : {}),
             selectedWallbox: value('Control.SelectedWallbox'),
@@ -410,7 +412,7 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         },
         advance: async seconds => { for (let second = 0; second < seconds; second++) await tick(); },
         physical: () => ({allow: physicalAllow, amps: physicalA, miiAllow, miiAmps: miiA,
-            wbPowerW: physicalPowerAllow && wallboxAcceptsPower ? physicalA * 230 * physicalPhases : 0, miiPowerW: miiPowerAllow ? miiA * 230 : 0,
+            wbPowerW: wbPower(), miiPowerW: miiPower(),
             heaterW, heatingW, batteryW}),
         diagnostic: () => JSON.stringify(trace.slice(-12), null, 2)};
 }
