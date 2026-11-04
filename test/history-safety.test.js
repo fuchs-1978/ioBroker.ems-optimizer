@@ -164,7 +164,7 @@ test('late metadata approval after the timeout cannot start a SQL request', asyn
 test('history refresh only reads the new tail and replaces overlap without duplicates', async () => {
     const calls = [];
     const run = engine({calls});
-    run(`pause=async()=>{}; getHistory=async(id,start,end)=>{
+    run(`pause=async()=>{}; getTimeWeightedHistory=async(id,start,end)=>{
         calls.push({start,end}); return [{ts:start,val:calls.length},{ts:end,val:999}];
     };`);
     await run("getHistoryChunked('pv', 0, 3*86400000)");
@@ -179,7 +179,7 @@ test('history refresh only reads the new tail and replaces overlap without dupli
 test('failed chunk resumes from completed work and unresolved SQL blocks a new build', async () => {
     const calls = [];
     const run = engine({calls, setState() {}, log() {}});
-    run(`pause=async()=>{}; getHistory=async(id,start,end)=>{
+    run(`pause=async()=>{}; getTimeWeightedHistory=async(id,start,end)=>{
         calls.push(start); if(calls.length===2) throw new Error('failed chunk');
         return [{ts:start,val:10}];
     };`);
@@ -204,7 +204,7 @@ test('background refresh failure preserves completed profiles and schedules pace
 test('empty historic days are re-read after SQL recovers, populated days stay cached', async () => {
     const calls = [];
     const run = engine({calls});
-    run(`pause=async()=>{}; let recovered=false; getHistory=async(id,start,end)=>{
+    run(`pause=async()=>{}; let recovered=false; getTimeWeightedHistory=async(id,start,end)=>{
         calls.push({start,end}); return !recovered && start===0 ? [] : [{ts:start,val:42}];
     };`);
     await run("getHistoryChunked('meter',0,3*86400000)");
@@ -221,12 +221,12 @@ test('empty historic days are re-read after SQL recovers, populated days stay ca
 
 test('boundary-only replies stay provisional and empty refreshes preserve recorded samples', async () => {
     const run = engine();
-    run(`pause=async()=>{}; getHistory=async(id,start,end)=>[{ts:end,val:42}];`);
+    run(`pause=async()=>{}; getTimeWeightedHistory=async(id,start,end)=>[{ts:end,val:42}];`);
     assert.equal((await run("getHistoryChunked('meter',0,86400000)")).length, 0);
-    assert.equal(run("historySourceCache.get(CFG.sqlInstance+':meter').empty.length"), 1);
-    run('getHistory=async(id,start)=>[{ts:start,val:42}]');
+    assert.equal(run("historySourceCache.get(CFG.sqlInstance+':meter:power').empty.length"), 1);
+    run('getTimeWeightedHistory=async(id,start)=>[{ts:start,val:42}]');
     await run("getHistoryChunked('meter',0,86400000)");
-    run('getHistory=async()=>[]');
+    run('getTimeWeightedHistory=async()=>[]');
     assert.equal((await run("getHistoryChunked('meter',0,86400000)"))[0].val, 42);
 });
 

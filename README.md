@@ -7,7 +7,7 @@
 
 Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Combines PV and grid measurements, load history, weather forecasts and electricity prices in a rolling 48-hour plan.
 
-**Current version: 0.17.0-alpha.199.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
+**Current version: 0.17.0-alpha.200.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
 
 [Deutsche Bedienungsanleitung](README.de.md) · [Release history](CHANGELOG_OLD.md) · [Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
@@ -74,7 +74,7 @@ Enable the optional comparison in **History & forecast**. Production keeps its s
 | 50/50 blend | Arithmetic mean of the two predictions in each quarter-hour. |
 | Lasso energy / Median shape | Scale the whole Median curve by Lasso daily energy divided by Median daily energy. This is a day-ahead scaling, not an adjustment to later actual consumption. |
 
-Training runs on startup and with the daily history build at 00:10, using at most 84 days. Issued forecasts survive restart unchanged. `Forecast.LoadComparison.*` contains the model, forecast ledger and evaluation. Compare actuals and predictions over identical measured quarter-hours; a partial-day report must show its cutoff and slot coverage. The evaluation also reports the last 7/14 completed local calendar days: all four models share the same measured slot intersection, MAE/RMSE pool the individual errors, and energy comparisons use only identical complete days. Coverage, provisional windows and excluded DST days remain explicit. SQL interval-average energy is an estimate, not a billing-meter difference. A complete regular day requires 96 paired slots; 92/100-slot DST target days are currently excluded. For calendar lags, both measured repeated-hour occurrences are averaged; only the missing spring clock hour may use the marked neighboring-hour estimate. Ordinary measured gaps stay unknown.
+Training runs on startup and with the daily history build at 00:10, using at most 84 days. Issued forecasts survive restart unchanged. `Forecast.LoadComparison.*` contains the model, forecast ledger and evaluation. Compare actuals and predictions over identical measured quarter-hours; a partial-day report must show its cutoff and slot coverage. The evaluation also reports the last 7/14 completed local calendar days: all four models share the same measured slot intersection, MAE/RMSE pool the individual errors, and energy comparisons use only identical complete days. Coverage, provisional windows and excluded DST days remain explicit. Power actuals and production/Lasso training use time-weighted raw SQL values on common quarter-hour boundaries. Unknown gaps stay missing. Derived energy remains an estimate, not a billing-meter difference. Legacy frozen forecasts retain their original training method; corrected actuals are used for evaluation. A complete regular day requires 96 paired slots; 92/100-slot DST target days are currently excluded. For calendar lags, both measured repeated-hour occurrences are averaged; only the missing spring clock hour may use the marked neighboring-hour estimate. Ordinary measured gaps stay unknown.
 
 Clean the household load according to the actual meter boundary: subtract flexible loads only if they are included in the house meters. Weather forecasts and selected original room-temperature histories can be retained for 90 days; their configuration status is not proof of complete SQL delivery. Additional archived weather and room values are not yet Lasso inputs. See [comparison issue](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/284), [comparison setup](docs/release-0.17.0-alpha.176.md), [combinations](docs/release-0.17.0-alpha.179.md) and the German guide.
 
@@ -164,6 +164,10 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 
 ## Changelog
 
+### 0.17.0-alpha.200 (2026-11-04)
+
+- (fuchs-1978) Build quarter-hour power histories from time-weighted raw values instead of sample-count means. Keep missing/invalid intervals unknown, bound dense SQL queries, and preserve issued forecasts while correcting training and actual evaluation. [Method and limits](docs/release-0.17.0-alpha.200.md).
+
 ### 0.17.0-alpha.199 (2026-11-04)
 
 - (fuchs-1978) Let the optional EHZ use the reserved countdown budget of additional waiting vehicles. Preserve physical heater reservations until measured reduction permits starting. Keep a running mandatory 3P charge when its electrical minimum is funded; apply the configured reserve only to stopped starts. [Details and limits](docs/release-0.17.0-alpha.199.md).
@@ -187,10 +191,6 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 ### 0.17.0-alpha.194 (2026-11-03)
 
 - (fuchs-1978) Recognize charger Finish after ten seconds of confirmed electrical quiet, yield to the next vehicle after confirmed OFF, and show a possible-full-charge warning without changing SoC. Keep witnessed handoff and all electrical and budget guards. [Details and limits](docs/release-0.17.0-alpha.194.md).
-
-### 0.17.0-alpha.193 (2026-11-03)
-
-- (fuchs-1978) Allow one bounded measured PV ampere retry after sustained export can fund the step plus 50 W. Coordinate allocator and output using an expiring command-bound nomination; retain the two-attempt limit and all electrical and hard capacity checks. [Details and limits](docs/release-0.17.0-alpha.193.md).
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 
