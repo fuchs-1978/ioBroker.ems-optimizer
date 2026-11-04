@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.194 (2026-11-03)
+
+- (fuchs-1978) Recognize charger Finish after ten seconds of confirmed electrical quiet, yield to the next vehicle after confirmed OFF, and show a possible-full-charge warning without changing SoC. Keep witnessed handoff and all electrical and budget guards. [Details and limits](docs/release-0.17.0-alpha.194.md).
+
 ## 0.17.0-alpha.193 (2026-11-03)
 
 - (fuchs-1978) Allow one bounded measured PV ampere retry after sustained export can fund the step plus 50 W. Coordinate allocator and output using an expiring command-bound nomination; retain the two-attempt limit and all electrical and hard capacity checks. [Details and limits](docs/release-0.17.0-alpha.193.md).

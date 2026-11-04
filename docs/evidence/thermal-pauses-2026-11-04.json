@@ -1,0 +1,79 @@
+{
+  "source": "ems-optimizer.0.Debug.Shadow.DecisionRecord",
+  "timezone": "Europe/Berlin",
+  "method": "bounded raw SQL retrieval; reconstructed production frames only; recovery times from read-only live state timestamps",
+  "events": [
+    {
+      "stopAt": 1793797946055,
+      "record": {
+        "sqlTs": 1793797948863,
+        "timestamp": 1793797946053,
+        "session": 1793797309816,
+        "sequence": 2495
+      },
+      "planValid": true,
+      "controlValid": true,
+      "gridW": 1923.7,
+      "pvW": 2265,
+      "vehicle": {
+        "currentA": 6,
+        "targetA": 0,
+        "actualW": 1300,
+        "budgetW": 648.0999999999999,
+        "stopDelayRemainingS": 0
+      },
+      "heater": {
+        "status": "Pflichtwaermebedarf; Bis 9 kW temperaturseitig verfuegbar; Produktivfreigabe EIN; Ausgangsstatus separat pruefen",
+        "middleLowerC": 39.5,
+        "targetW": 0,
+        "actualW": 1172
+      },
+      "timers": {
+        "WallboxStartDelay_s": 300,
+        "WallboxMinimumRunTime_s": 600,
+        "WallboxStopDelay_s": 600
+      },
+      "recovery": {
+        "heatEndedAt": 1793798313548,
+        "startArmedAt": 1793798314017,
+        "releasedAt": 1793798624171
+      }
+    },
+    {
+      "stopAt": 1793800596062,
+      "record": {
+        "sqlTs": 1793800597394,
+        "timestamp": 1793800596059,
+        "session": 1793797309816,
+        "sequence": 13469
+      },
+      "planValid": true,
+      "controlValid": true,
+      "gridW": -801.5,
+      "pvW": 1980,
+      "vehicle": {
+        "currentA": 6,
+        "targetA": 0,
+        "actualW": 1280,
+        "budgetW": 0,
+        "stopDelayRemainingS": 0
+      },
+      "heater": {
+        "status": "Pflichtwaermebedarf; Bis 9 kW temperaturseitig verfuegbar; Produktivfreigabe EIN; Ausgangsstatus separat pruefen",
+        "middleLowerC": 37.6,
+        "targetW": 0,
+        "actualW": 0
+      },
+      "timers": {
+        "WallboxStartDelay_s": 300,
+        "WallboxMinimumRunTime_s": 600,
+        "WallboxStopDelay_s": 600
+      },
+      "recovery": {
+        "heatEndedAt": 1793800643489,
+        "startArmedAt": 1793800644010,
+        "releasedAt": 1793800954119
+      }
+    }
+  ]
+}
