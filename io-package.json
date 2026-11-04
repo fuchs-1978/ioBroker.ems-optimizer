@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.198",
+    "version": "0.17.0-alpha.199",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.199": {
+        "en": "Let an enabled optional EHZ absorb the reserved start budget of additional waiting vehicles. Reclaim measured heater power before starting, preserving priorities, start delays, phase changes, price provenance and hard limits.",
+        "de": "Freigegebenen optionalen EHZ auch das vorgemerkte Startbudget weiterer wartender Fahrzeuge nutzen lassen. Heizleistung vor dem Start nachweislich zuruecknehmen; Prioritaeten, Startwartezeiten, Phasenwechsel, Preisfreigaben und Schutzgrenzen beibehalten.",
+        "es": "Let an enabled optional EHZ absorb the reserved start budget of additional waiting vehicles. Reclaim measured heater power before starting, preserving priorities, start delays, phase changes, price provenance and hard limits.",
+        "fr": "Let an enabled optional EHZ absorb the reserved start budget of additional waiting vehicles. Reclaim measured heater power before starting, preserving priorities, start delays, phase changes, price provenance and hard limits.",
+        "it": "Let an enabled optional EHZ absorb the reserved start budget of additional waiting vehicles. Reclaim measured heater power before starting, preserving priorities, start delays, phase changes, price provenance and hard limits.",
+        "nl": "Let an enabled optional EHZ absorb the reserved start budget of additional waiting vehicles. Reclaim measured heater power before starting, preserving priorities, start delays, phase changes, price provenance and hard limits.",
+        "pl": "Let an enabled optional EHZ absorb the reserved start budget of additional waiting vehicles. Reclaim measured heater power before starting, preserving priorities, start delays, phase changes, price provenance and hard limits.",
+        "pt": "Let an enabled optional EHZ absorb the reserved start budget of additional waiting vehicles. Reclaim measured heater power before starting, preserving priorities, start delays, phase changes, price provenance and hard limits.",
+        "ru": "Let an enabled optional EHZ absorb the reserved start budget of additional waiting vehicles. Reclaim measured heater power before starting, preserving priorities, start delays, phase changes, price provenance and hard limits.",
+        "uk": "Let an enabled optional EHZ absorb the reserved start budget of additional waiting vehicles. Reclaim measured heater power before starting, preserving priorities, start delays, phase changes, price provenance and hard limits.",
+        "zh-cn": "Let an enabled optional EHZ absorb the reserved start budget of additional waiting vehicles. Reclaim measured heater power before starting, preserving priorities, start delays, phase changes, price provenance and hard limits."
+      },
       "0.17.0-alpha.198": {
         "en": "Keep measured live distribution running without a valid forecast plan; retry provisional empty history days and rebuild incomplete profiles after SQL recovery. Preserve physical safeguards and deny forecast-based price permissions in fallback.",
         "de": "Istwertverteilung bei fehlendem Fahrplan fortsetzen; leere Historientage erneut laden und unvollstaendige Profile nach SQL-Erholung neu aufbauen. Elektrische Schutzgrenzen bleiben wirksam, Preisfahrplan-Freigaben bleiben im Ersatzbetrieb gesperrt.",
@@ -81,19 +94,6 @@
         "ru": "Allow one bounded measured PV ampere retry after sustained export can fund the step plus 50 W. Coordinate allocator and output using an expiring command-bound nomination; retain the two-attempt limit and all electrical and hard capacity checks.",
         "uk": "Allow one bounded measured PV ampere retry after sustained export can fund the step plus 50 W. Coordinate allocator and output using an expiring command-bound nomination; retain the two-attempt limit and all electrical and hard capacity checks.",
         "zh-cn": "Allow one bounded measured PV ampere retry after sustained export can fund the step plus 50 W. Coordinate allocator and output using an expiring command-bound nomination; retain the two-attempt limit and all electrical and hard capacity checks."
-      },
-      "0.17.0-alpha.192": {
-        "en": "Follow observed wallbox stops across bounded delayed OFF and electrical confirmations. Add common-slot 7/14-calendar-day forecast errors and complete-day energy comparisons; charging control is unchanged.",
-        "de": "Beobachtete Wallbox-Stopps bei verzoegerten AUS- und elektrischen Bestaetigungen begrenzt nachverfolgen. Gemeinsame 7-/14-Kalendertage-Prognosefehler und Tagesenergievergleiche ergaenzen; Laderegelung unveraendert.",
-        "es": "Follow observed wallbox stops across bounded delayed OFF and electrical confirmations. Add common-slot 7/14-calendar-day forecast errors and complete-day energy comparisons; charging control is unchanged.",
-        "fr": "Follow observed wallbox stops across bounded delayed OFF and electrical confirmations. Add common-slot 7/14-calendar-day forecast errors and complete-day energy comparisons; charging control is unchanged.",
-        "it": "Follow observed wallbox stops across bounded delayed OFF and electrical confirmations. Add common-slot 7/14-calendar-day forecast errors and complete-day energy comparisons; charging control is unchanged.",
-        "nl": "Follow observed wallbox stops across bounded delayed OFF and electrical confirmations. Add common-slot 7/14-calendar-day forecast errors and complete-day energy comparisons; charging control is unchanged.",
-        "pl": "Follow observed wallbox stops across bounded delayed OFF and electrical confirmations. Add common-slot 7/14-calendar-day forecast errors and complete-day energy comparisons; charging control is unchanged.",
-        "pt": "Follow observed wallbox stops across bounded delayed OFF and electrical confirmations. Add common-slot 7/14-calendar-day forecast errors and complete-day energy comparisons; charging control is unchanged.",
-        "ru": "Follow observed wallbox stops across bounded delayed OFF and electrical confirmations. Add common-slot 7/14-calendar-day forecast errors and complete-day energy comparisons; charging control is unchanged.",
-        "uk": "Follow observed wallbox stops across bounded delayed OFF and electrical confirmations. Add common-slot 7/14-calendar-day forecast errors and complete-day energy comparisons; charging control is unchanged.",
-        "zh-cn": "Follow observed wallbox stops across bounded delayed OFF and electrical confirmations. Add common-slot 7/14-calendar-day forecast errors and complete-day energy comparisons; charging control is unchanged."
       }
     },
     "titleLang": {
