@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.192 (2026-11-03)
+
+- (fuchs-1978) Follow observed wallbox stops across bounded delayed OFF and electrical confirmations. Add common-slot 7/14-calendar-day forecast errors and complete-day energy comparisons; charging control is unchanged. [Details and limits](docs/release-0.17.0-alpha.192.md).
+
 ## 0.17.0-alpha.191 (2026-11-02)
 
 - (fuchs-1978) Show active vehicle SoC plausibility warnings in the overview, attention, device and live diagnostics; mark affected SoC estimates as uncertain without changing charging control or the calculation. [Details and limits](docs/release-0.17.0-alpha.191.md).

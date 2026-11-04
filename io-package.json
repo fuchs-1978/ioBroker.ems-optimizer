@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.198",
+    "version": "0.17.0-alpha.199",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.199": {
+        "en": "Let the optional EHZ use additional waiting vehicles' start budgets until measured reduction permits starting. Keep a running 3P minimum when its electrical budget is sufficient; apply the configured start reserve only to stopped mandatory charging.",
+        "de": "Optionalen EHZ das Startbudget weiterer wartender Fahrzeuge bis zur nachgewiesenen Heizreduktion nutzen lassen. Laufende 3P-Mindestladung bei ausreichendem elektrischem Budget halten; konfigurierte Startreserve nur vor dem Start anrechnen.",
+        "es": "Let the optional EHZ use additional waiting vehicles' start budgets until measured reduction permits starting. Keep a running 3P minimum when its electrical budget is sufficient; apply the configured start reserve only to stopped mandatory charging.",
+        "fr": "Let the optional EHZ use additional waiting vehicles' start budgets until measured reduction permits starting. Keep a running 3P minimum when its electrical budget is sufficient; apply the configured start reserve only to stopped mandatory charging.",
+        "it": "Let the optional EHZ use additional waiting vehicles' start budgets until measured reduction permits starting. Keep a running 3P minimum when its electrical budget is sufficient; apply the configured start reserve only to stopped mandatory charging.",
+        "nl": "Let the optional EHZ use additional waiting vehicles' start budgets until measured reduction permits starting. Keep a running 3P minimum when its electrical budget is sufficient; apply the configured start reserve only to stopped mandatory charging.",
+        "pl": "Let the optional EHZ use additional waiting vehicles' start budgets until measured reduction permits starting. Keep a running 3P minimum when its electrical budget is sufficient; apply the configured start reserve only to stopped mandatory charging.",
+        "pt": "Let the optional EHZ use additional waiting vehicles' start budgets until measured reduction permits starting. Keep a running 3P minimum when its electrical budget is sufficient; apply the configured start reserve only to stopped mandatory charging.",
+        "ru": "Let the optional EHZ use additional waiting vehicles' start budgets until measured reduction permits starting. Keep a running 3P minimum when its electrical budget is sufficient; apply the configured start reserve only to stopped mandatory charging.",
+        "uk": "Let the optional EHZ use additional waiting vehicles' start budgets until measured reduction permits starting. Keep a running 3P minimum when its electrical budget is sufficient; apply the configured start reserve only to stopped mandatory charging.",
+        "zh-cn": "Let the optional EHZ use additional waiting vehicles' start budgets until measured reduction permits starting. Keep a running 3P minimum when its electrical budget is sufficient; apply the configured start reserve only to stopped mandatory charging."
+      },
       "0.17.0-alpha.198": {
         "en": "Keep measured live distribution running without a valid forecast plan; retry provisional empty history days and rebuild incomplete profiles after SQL recovery. Preserve physical safeguards and deny forecast-based price permissions in fallback.",
         "de": "Istwertverteilung bei fehlendem Fahrplan fortsetzen; leere Historientage erneut laden und unvollstaendige Profile nach SQL-Erholung neu aufbauen. Elektrische Schutzgrenzen bleiben wirksam, Preisfahrplan-Freigaben bleiben im Ersatzbetrieb gesperrt.",
@@ -81,19 +94,6 @@
         "ru": "Allow one bounded measured PV ampere retry after sustained export can fund the step plus 50 W. Coordinate allocator and output using an expiring command-bound nomination; retain the two-attempt limit and all electrical and hard capacity checks.",
         "uk": "Allow one bounded measured PV ampere retry after sustained export can fund the step plus 50 W. Coordinate allocator and output using an expiring command-bound nomination; retain the two-attempt limit and all electrical and hard capacity checks.",
         "zh-cn": "Allow one bounded measured PV ampere retry after sustained export can fund the step plus 50 W. Coordinate allocator and output using an expiring command-bound nomination; retain the two-attempt limit and all electrical and hard capacity checks."
-      },
-      "0.17.0-alpha.192": {
-        "en": "Follow observed wallbox stops across bounded delayed OFF and electrical confirmations. Add common-slot 7/14-calendar-day forecast errors and complete-day energy comparisons; charging control is unchanged.",
-        "de": "Beobachtete Wallbox-Stopps bei verzoegerten AUS- und elektrischen Bestaetigungen begrenzt nachverfolgen. Gemeinsame 7-/14-Kalendertage-Prognosefehler und Tagesenergievergleiche ergaenzen; Laderegelung unveraendert.",
-        "es": "Follow observed wallbox stops across bounded delayed OFF and electrical confirmations. Add common-slot 7/14-calendar-day forecast errors and complete-day energy comparisons; charging control is unchanged.",
-        "fr": "Follow observed wallbox stops across bounded delayed OFF and electrical confirmations. Add common-slot 7/14-calendar-day forecast errors and complete-day energy comparisons; charging control is unchanged.",
-        "it": "Follow observed wallbox stops across bounded delayed OFF and electrical confirmations. Add common-slot 7/14-calendar-day forecast errors and complete-day energy comparisons; charging control is unchanged.",
-        "nl": "Follow observed wallbox stops across bounded delayed OFF and electrical confirmations. Add common-slot 7/14-calendar-day forecast errors and complete-day energy comparisons; charging control is unchanged.",
-        "pl": "Follow observed wallbox stops across bounded delayed OFF and electrical confirmations. Add common-slot 7/14-calendar-day forecast errors and complete-day energy comparisons; charging control is unchanged.",
-        "pt": "Follow observed wallbox stops across bounded delayed OFF and electrical confirmations. Add common-slot 7/14-calendar-day forecast errors and complete-day energy comparisons; charging control is unchanged.",
-        "ru": "Follow observed wallbox stops across bounded delayed OFF and electrical confirmations. Add common-slot 7/14-calendar-day forecast errors and complete-day energy comparisons; charging control is unchanged.",
-        "uk": "Follow observed wallbox stops across bounded delayed OFF and electrical confirmations. Add common-slot 7/14-calendar-day forecast errors and complete-day energy comparisons; charging control is unchanged.",
-        "zh-cn": "Follow observed wallbox stops across bounded delayed OFF and electrical confirmations. Add common-slot 7/14-calendar-day forecast errors and complete-day energy comparisons; charging control is unchanged."
       }
     },
     "titleLang": {

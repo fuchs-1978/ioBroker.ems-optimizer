@@ -1,6 +1,6 @@
 # Adminreferenz – EMS Optimizer
 
-Feldreferenz für **0.17.0-alpha.198**. [Deutscher Einstieg und Bedienablauf](../README.de.md) · [English overview](../README.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36).
+Feldreferenz für **0.17.0-alpha.199**. [Deutscher Einstieg und Bedienablauf](../README.de.md) · [English overview](../README.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36).
 
 Die Tabellen dokumentieren die vorhandenen Admin-Einstellungen und Auslieferungswerte. Bestehende Anlagen können davon abweichen. Ein Feld oder eine Softwareprüfung belegt keine reale Inbetriebnahme.
 
@@ -806,6 +806,8 @@ Gemeinsamer Kühlzustand und ausdrückliche Erlaubnis für budgetiertes Günstig
 | Maximaler Strom-Gesamtpreis für Günstigpreisheizen<br>`thermalCheapPriceMaxCt` | 0 ct/kWh | Höchster zulässiger Strom-Gesamtpreis brutto ct/kWh für Günstigpreiswärme. Energie und Netzentgelt zusammen, nicht nur Börsenpreis. 0 ist keine sinnvoll positive Freigabeschwelle für gewöhnliches Netzheizen. |
 | Maximales gemeinsames Netzleistungsbudget für Günstigpreisheizen (0 = kein Netzheizen)<br>`thermalCheapGridMaxW` | 0 W | Gemeinsames maximal autorisiertes Netzleistungsbudget für Günstigpreiswärme in W; 0 = kein Netzheizen. Keine Grenze je Heizstab. Hausanschluss und Netzbetreiberlimit wirken zusätzlich. |
 | Günstigpreisheizen auch mit ausdrücklich konfiguriertem Festtarif erlauben<br>`thermalCheapFixedTariffAllowed` | AUS | Erlaubt diese Preiswärme ausdrücklich auch bei passend konfiguriertem Festtarif. Verhindert, dass ein unerwarteter Festpreis-Ersatz automatisch Netzheizen freigibt. |
+
+Ein optionaler, weiterhin freigegebener EHZ darf während der normalen Startwartezeit das vorgemerkte Mindestbudget jedes wartenden Fahrzeugs vorübergehend nutzen; seit alpha.199 gilt das auch für weitere Fahrzeuge hinter einem bereits ladenden Auto. Dessen physische Reserven und die Mindestansprüche anderer Fahrzeuge bleiben geschützt. Nur eine tatsächlich verfügbare Eigenversorgung qualifiziert den Starttimer. Nach Ablauf zieht das EMS das geliehene Heizbudget zurück; ein Nullsoll allein gibt keine Leistung frei. Erst bestätigte elektrische Reduktion erlaubt den Fahrzeugstart. Bei echter Budgetunterschreitung beginnt die Wartezeit neu. Preisfreigaben werden nicht in Heizbudget umgewandelt. Feste Aufteilung, Wärmebedarf und eine entzogene EHZ-Freigabe behalten ihre Regeln. `Control.WallboxN.AllocationDiagnostics_JSON` zeigt `heaterCountdownUseW` und gegebenenfalls `start.reclaimableHeaterW`/`await-heater-reduction`. Die 3P-Stabilitätsprüfung und die gesicherte Stromabsenkung vor dem Phasenwechsel bleiben bestehen. Seit alpha.199 löst die Startreserve bei einem bereits laufenden 3P-Mindestladeauftrag keinen vorzeitigen 1P-Rückwechsel mehr aus. Für ein gestopptes Fahrzeug gilt die konfigurierte Reserve statt fest codierter 300 W. Reicht das Budget tatsächlich nicht einmal für die elektrische 3P-Mindestleistung, bleibt der bestehende Mindestlade-Rückfall auf 1P erhalten.
 
 ## Admin: Echtzeitregelung
 
