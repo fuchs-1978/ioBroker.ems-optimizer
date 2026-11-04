@@ -564,6 +564,109 @@ function thermalFixture({temperatures = [35.9, 40.1, 48.1, 55.2], demand = 20, l
     return {...h, report};
 }
 
+test('thermal price rise: isolated PV at the tariff edge cannot postpone the evening bridge into HT', () => {
+    const h = thermalFixture({temperatures: [42.4, 42.4, 42.4, 42.4], demand: 25,
+        start: '2026-11-05T14:00:00Z'});
+    const slots = 25;
+    const price = Array.from({length: slots}, (_, i) => i < 6 || i >= 24 ? 30.04 : 32.86);
+    const pvW = Array.from({length: slots}, (_, i) => i <= 6 ? 2227 : 386);
+    const data = h.plan({slots, price, pvW, houseW: 882});
+    const a = balancedPlan(h, data), r = h.report();
+    assert.ok(a.slice(0, 6).some(p => p.dhwReason === 'price-preheat' && p.dhwW > 0),
+        'build only the necessary evening reserve before 16:30 Berlin');
+    near(a.slice(6, 24).reduce((sum, p) => sum + p.dhwGridW / 4000, 0), 0,
+        'no avoidable high-tariff heat purchase');
+    assert.ok(r.minimumProjectedUsableKWh >= 0.5 - 1e-7);
+    assert.equal(r.gridAuthorization, false, 'forecast never arms a live heater');
+    assert.ok(a.slice(0, 3).every(p => p.dhwGridW === 0), 'do not buy early while later cheap capacity suffices');
+});
+
+test('thermal price rise: sustained PV through HT avoids unnecessary anticipatory grid heat', () => {
+    const h = thermalFixture({temperatures: [45, 45, 45, 45], demand: 25});
+    const price = [30, 30, 40, 40, 40, 40, 30];
+    const data = h.plan({slots: price.length, price, pvW: 5000, houseW: 500});
+    const a = balancedPlan(h, data);
+    assert.ok(a.every(p => p.dhwGridW === 0));
+    near(h.report().unmetReserveKWh, 0, 'PV genuinely sustains the thermal reserve');
+});
+
+test('thermal price rise: earlier cheaper window is used instead of buying ahead of it', () => {
+    const h = thermalFixture({temperatures: [44, 44, 44, 44], demand: 25});
+    const price = [30, 20, 20, 40, 40, 40, 20];
+    const data = h.plan({slots: price.length, price, pvW: 0});
+    const a = balancedPlan(h, data);
+    assert.equal(a[0].dhwGridW, 0);
+    assert.ok(a.slice(1, 3).some(p => p.dhwGridW > 0));
+    assert.ok(a.slice(3, 6).every(p => p.dhwGridW === 0));
+});
+
+test('thermal price rise: unknown intervening price denies anticipatory purchases across the gap', () => {
+    const h = thermalFixture({temperatures: [44, 44, 44, 44], demand: 25});
+    const data = h.plan({slots: 6, price: [30, null, 40, 40, 40, 20], pvW: 1500});
+    const a = balancedPlan(h, data);
+    assert.notEqual(a[0].dhwReason, 'price-preheat');
+    assert.equal(a[1].dhwGridW, 0);
+});
+
+test('thermal price rise: small tank and heater cap retain a visible unavoidable deficit', () => {
+    const h = thermalFixture({temperatures: [40.5, 40.5, 40.5, 40.5], demand: 25});
+    h.put('ems.0.Config.DHWVolume_l', 50);
+    h.put('ems.0.Config.DHWTargetTemperature_C', 42);
+    h.put('ems.0.Config.DHWControllerMaxPower_W', 500);
+    const data = h.plan({slots: 20, price: [30, 30, ...Array(17).fill(40), 20], pvW: 0});
+    const a = balancedPlan(h, data);
+    assert.ok(a.every(p => p.dhwW <= 500));
+    assert.ok(h.report().unmetReserveKWh > 0);
+    assert.ok(h.report().slots.every(p => p.headroomKWh >= 0));
+});
+
+test('thermal price rise: recorded 5 November forecast moves the evening heater peak ahead of 16:30', t => {
+    const evidence = require('../docs/evidence/thermal-price-step-2026-11-05.json');
+    const h = thermalFixture({temperatures: evidence.temperaturesC, demand: evidence.demandKWhDay,
+        loss: evidence.lossKWhDay, reserve: evidence.reserveKWh,
+        start: new Date(evidence.observedPlanAt).toISOString(),
+        config: {wallboxParallelChargingEnabled: true, wb0PhaseControlMode: 'script'}});
+    for (const car of evidence.cars) vehicle(h, {wb: car.index, soc: car.socPct, minimum: car.minimumSocPct,
+        target: car.targetSocPct, capacityKWh: car.capacityKWh, maximumW: car.maximumPowerW,
+        maximum1pA: car.index === 2 ? 20 : 32, maximum3pA: car.index === 1 ? 16 : 32,
+        maximumPhases: car.maximumPhases, phaseSwitch: car.phaseSwitchEnabled});
+    h.put(h.run('CFG.dp.wallboxPriority'), 1);
+    h.put(h.run('CFG.dp.par14a'), false);
+    h.put(h.run('CFG.dp.lpcState'), 'unlimitedControlled');
+    h.put(h.run('CFG.dp.lpcLimit'), 4200);
+    const data = h.plan({slots: evidence.slots.length,
+        offsetMin: (evidence.startTimestamp - h.now) / 60000,
+        pvW: evidence.slots.map(x => x[0]), houseW: evidence.slots.map(x => x[1]),
+        price: evidence.slots.map(x => x[2])});
+    const a = balancedPlan(h, data);
+    const start = Date.parse('2026-11-05T16:30:00+01:00'), end = Date.parse('2026-11-05T21:00:00+01:00');
+    const ht = a.filter(p => p.timestamp >= start && p.timestamp < end);
+    near(ht.reduce((sum, p) => sum + p.dhwGridW / 4000, 0), 0, 'recorded HT peak removed');
+    assert.ok(a.some(p => p.timestamp < start && p.dhwReason === 'price-preheat'));
+    assert.ok(h.report().minimumProjectedUsableKWh >= evidence.reserveKWh - 1e-7);
+    assert.ok(a.every(p => p.dhwW <= evidence.heaterMaxW));
+    const repeat = JSON.stringify(a);
+    h.run(`buildDevicePlan(${JSON.stringify(data)})`);
+    assert.equal(JSON.stringify(h.series('Allocation')), repeat, 'same frozen inputs produce the same plan');
+    t.diagnostic(JSON.stringify({htGridHeatingKWh: ht.reduce((sum, p) => sum + p.dhwGridW / 4000, 0),
+        beforeStep: a.filter(p => p.timestamp >= start - 3600000 && p.timestamp < start)
+            .map(p => ({timestamp: p.timestamp, dhwW: p.dhwW, gridW: p.dhwGridW, reason: p.dhwReason}))}));
+});
+
+test('thermal price rise: remaining minute, not an elapsed quarter, bounds advance heating', () => {
+    const h = thermalFixture({temperatures: [42, 42, 42, 42], demand: 25,
+        start: '2026-11-05T15:29:00Z'});
+    const data = h.plan({slots: 20, offsetMin: -14, pvW: 0,
+        price: [30.04, ...Array(18).fill(32.86), 30.04]});
+    const a = balancedPlan(h, data);
+    assert.ok(a[0].dhwW <= 9000);
+    assert.ok(a[0].dhwGridW / 60000 <= 0.15 + 1e-7, 'only one minute available before the price step');
+    assert.ok(a.slice(1, 19).some(p => p.dhwGridW > 0), 'remaining unavoidable need stays in HT');
+    near(h.report().gridHeatingKWh,
+        a.reduce((sum, p, i) => sum + p.dhwGridW * (i === 0 ? 1 / 60 : .25) / 1000, 0),
+        'report and published powers share the remaining-slot energy basis');
+});
+
 test('stratified warm-water reserve waits for NT and forecasts tomorrow consumption and PV refill', () => {
     const h = thermalFixture();
     // Quiet tank sensors older than ten minutes are still valid under the

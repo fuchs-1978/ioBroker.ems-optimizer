@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.201",
+    "version": "0.17.0-alpha.202",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.202": {
+        "en": "Anticipate hot-water demand across a dearer price block and refill the necessary reserve in the latest feasible cheaper slots. Bound forecast purchases by useful PV, remaining slot time, heater power and storage capacity; retain live output permissions.",
+        "de": "Warmwasserbedarf ueber einen teureren Preisblock vorausschauen und die noetige Reserve rechtzeitig in den letzten nutzbaren guenstigeren Fenstern aufbauen. PV, Restzeit, Heizleistung und Speicherplatz begrenzen die Prognose; reale Ausgangsfreigaben bleiben bestehen.",
+        "es": "Prever la demanda de agua caliente durante un bloque de precios más altos y acumular la reserva necesaria en los últimos intervalos baratos viables. Respetar la energía fotovoltaica útil, el tiempo restante, la potencia y la capacidad del depósito, sin cambiar los permisos de las salidas reales.",
+        "fr": "Anticiper les besoins en eau chaude pendant une période plus chère et constituer la réserve nécessaire dans les derniers créneaux moins chers réalisables. Respecter le photovoltaïque utile, le temps restant, la puissance et la capacité du ballon, sans modifier les autorisations des sorties réelles.",
+        "it": "Prevedere il fabbisogno di acqua calda durante una fascia più cara e accumulare la riserva necessaria negli ultimi intervalli economici utili. Rispettare il fotovoltaico disponibile, il tempo residuo, la potenza e la capacità del serbatoio, mantenendo le autorizzazioni delle uscite reali.",
+        "nl": "Voorzie de warmwaterbehoefte tijdens een duurder prijsblok en bouw de benodigde reserve op in de laatst haalbare goedkopere intervallen. Houd rekening met bruikbare zonnestroom, resterende tijd, verwarmingsvermogen en opslagcapaciteit; behoud de bestaande toestemmingen voor fysieke uitgangen.",
+        "pl": "Przewiduj zapotrzebowanie na ciepłą wodę w droższym przedziale i uzupełniaj potrzebną rezerwę w ostatnich możliwych tańszych okresach. Uwzględniaj dostępną energię PV, pozostały czas, moc grzałki i pojemność zbiornika bez zmiany zezwoleń na rzeczywiste sterowanie.",
+        "pt": "Antecipar a necessidade de água quente durante um período mais caro e repor a reserva necessária nos últimos intervalos mais baratos viáveis. Respeitar a energia solar útil, o tempo restante, a potência e a capacidade do depósito, mantendo as autorizações das saídas reais.",
+        "ru": "Прогнозировать потребность в горячей воде на дорогой период и заранее создавать необходимый запас в последние доступные дешёвые интервалы. Учитывать полезную солнечную энергию, оставшееся время, мощность нагревателя и ёмкость бака, сохраняя разрешения реальных выходов.",
+        "uk": "Прогнозувати потребу в гарячій воді на дорожчий період і завчасно створювати необхідний запас в останні доступні дешевші інтервали. Враховувати корисну сонячну енергію, залишок часу, потужність нагрівача та місткість бака, зберігаючи дозволи реальних виходів.",
+        "zh-cn": "提前预测高价时段的热水需求，在最后可行的低价时段建立必要储热。规划受可用光伏、剩余时间、加热功率和储水容量限制，不改变实际输出的授权。"
+      },
       "0.17.0-alpha.201": {
         "en": "Keep a witnessed preferred 1P minimum alongside usable mandatory hot-water power; explicitly reduce current to release heat budget. Resume the same thermally interrupted charge after bounded fresh qualification, preserving physical reservations and all safety gates.",
         "de": "Bestaetigte bevorzugte 1P-Mindestladung neben nutzbarer Pflichtwaerme erhalten; Strom fuer das Heizbudget ausdruecklich absenken. Dasselbe waermebedingt unterbrochene Fahrzeug nach begrenzter frischer Pruefung wieder starten; reale Reserven und Schutzgrenzen bleiben erhalten.",
@@ -81,19 +94,6 @@
         "ru": "Attribute passive current-response diagnostics to the sent target instead of the previous ACK; distinguish superseded commands from pending evidence. Keep charging control and timing unchanged.",
         "uk": "Attribute passive current-response diagnostics to the sent target instead of the previous ACK; distinguish superseded commands from pending evidence. Keep charging control and timing unchanged.",
         "zh-cn": "Attribute passive current-response diagnostics to the sent target instead of the previous ACK; distinguish superseded commands from pending evidence. Keep charging control and timing unchanged."
-      },
-      "0.17.0-alpha.195": {
-        "en": "Redistribute PV budget during sustained vehicle uptake limits using a confirmed lower current command, while retaining nominal reservations until ACK. Preserve measured SoC progress against delayed lower cloud reports and observed charge/Finish transitions.",
-        "de": "PV-Budget bei anhaltend begrenzter Fahrzeugaufnahme nach bestaetigter Stromabsenkung weiterverteilen; nominale Reserven bleiben bis zum ACK gebunden. Gemessenen SoC-Fortschritt gegen verspaetete niedrigere Cloud-Werte und normale Lade-/Finish-Wechsel erhalten.",
-        "es": "Redistribute PV budget during sustained vehicle uptake limits using a confirmed lower current command, while retaining nominal reservations until ACK. Preserve measured SoC progress against delayed lower cloud reports and observed charge/Finish transitions.",
-        "fr": "Redistribute PV budget during sustained vehicle uptake limits using a confirmed lower current command, while retaining nominal reservations until ACK. Preserve measured SoC progress against delayed lower cloud reports and observed charge/Finish transitions.",
-        "it": "Redistribute PV budget during sustained vehicle uptake limits using a confirmed lower current command, while retaining nominal reservations until ACK. Preserve measured SoC progress against delayed lower cloud reports and observed charge/Finish transitions.",
-        "nl": "Redistribute PV budget during sustained vehicle uptake limits using a confirmed lower current command, while retaining nominal reservations until ACK. Preserve measured SoC progress against delayed lower cloud reports and observed charge/Finish transitions.",
-        "pl": "Redistribute PV budget during sustained vehicle uptake limits using a confirmed lower current command, while retaining nominal reservations until ACK. Preserve measured SoC progress against delayed lower cloud reports and observed charge/Finish transitions.",
-        "pt": "Redistribute PV budget during sustained vehicle uptake limits using a confirmed lower current command, while retaining nominal reservations until ACK. Preserve measured SoC progress against delayed lower cloud reports and observed charge/Finish transitions.",
-        "ru": "Redistribute PV budget during sustained vehicle uptake limits using a confirmed lower current command, while retaining nominal reservations until ACK. Preserve measured SoC progress against delayed lower cloud reports and observed charge/Finish transitions.",
-        "uk": "Redistribute PV budget during sustained vehicle uptake limits using a confirmed lower current command, while retaining nominal reservations until ACK. Preserve measured SoC progress against delayed lower cloud reports and observed charge/Finish transitions.",
-        "zh-cn": "Redistribute PV budget during sustained vehicle uptake limits using a confirmed lower current command, while retaining nominal reservations until ACK. Preserve measured SoC progress against delayed lower cloud reports and observed charge/Finish transitions."
       }
     },
     "titleLang": {
