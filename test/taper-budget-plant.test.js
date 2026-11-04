@@ -3,12 +3,13 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {plant} = require('./control-plant');
 
-test('sustained vehicle taper releases confirmed nominal capacity to a waiting car without a SoC correction', async () => {
+for (const withoutPlan of [false, true]) test(`sustained vehicle taper releases confirmed nominal capacity without a SoC correction; noPlan=${withoutPlan}`, async () => {
     let uptake = 32;
     const h = await plant({mii: true, startDelayS: 300, minimumRuntimeS: 600, split: false,
         initialSurplusW: 6000, nativeConfig: {wallboxParallelChargingEnabled: true,
             wb2MaxCurrent1pA: 32, wb2CommissioningMaxA: 32},
         wallboxUptakeA: (wb, amps) => wb === 2 ? Math.min(amps, uptake) : amps});
+    if (withoutPlan) h.own('Plan.Valid', false);
     h.put('DP_WB_PRIORITY', 2); await h.advance(460);
     assert.equal(h.physical().allow, 1); assert.ok(h.physical().wbPowerW > 4500);
     const at = h.now(); uptake = 14;

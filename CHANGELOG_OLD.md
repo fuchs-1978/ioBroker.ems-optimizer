@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.191 (2026-11-02)
+
+- (fuchs-1978) Show active vehicle SoC plausibility warnings in the overview, attention, device and live diagnostics; mark affected SoC estimates as uncertain without changing charging control or the calculation. [Details and limits](docs/release-0.17.0-alpha.191.md).
+
 ## 0.17.0-alpha.190 (2026-11-02)
 
 - (fuchs-1978) Recognize SQL host blocks and connect timeouts/refusals, pause recorder traffic with bounded retries, and retain canonical query failure codes and clear diagnostics. Keep pure read timeouts independent of publication and require exact storage proof for recovery. [Recovery policy](docs/release-0.17.0-alpha.190.md).

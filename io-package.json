@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.197",
+    "version": "0.17.0-alpha.198",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.198": {
+        "en": "Keep measured live distribution running without a valid forecast plan; retry provisional empty history days and rebuild incomplete profiles after SQL recovery. Preserve physical safeguards and deny forecast-based price permissions in fallback.",
+        "de": "Istwertverteilung bei fehlendem Fahrplan fortsetzen; leere Historientage erneut laden und unvollstaendige Profile nach SQL-Erholung neu aufbauen. Elektrische Schutzgrenzen bleiben wirksam, Preisfahrplan-Freigaben bleiben im Ersatzbetrieb gesperrt.",
+        "es": "Keep measured live distribution running without a valid forecast plan; retry provisional empty history days and rebuild incomplete profiles after SQL recovery. Preserve physical safeguards and deny forecast-based price permissions in fallback.",
+        "fr": "Keep measured live distribution running without a valid forecast plan; retry provisional empty history days and rebuild incomplete profiles after SQL recovery. Preserve physical safeguards and deny forecast-based price permissions in fallback.",
+        "it": "Keep measured live distribution running without a valid forecast plan; retry provisional empty history days and rebuild incomplete profiles after SQL recovery. Preserve physical safeguards and deny forecast-based price permissions in fallback.",
+        "nl": "Keep measured live distribution running without a valid forecast plan; retry provisional empty history days and rebuild incomplete profiles after SQL recovery. Preserve physical safeguards and deny forecast-based price permissions in fallback.",
+        "pl": "Keep measured live distribution running without a valid forecast plan; retry provisional empty history days and rebuild incomplete profiles after SQL recovery. Preserve physical safeguards and deny forecast-based price permissions in fallback.",
+        "pt": "Keep measured live distribution running without a valid forecast plan; retry provisional empty history days and rebuild incomplete profiles after SQL recovery. Preserve physical safeguards and deny forecast-based price permissions in fallback.",
+        "ru": "Keep measured live distribution running without a valid forecast plan; retry provisional empty history days and rebuild incomplete profiles after SQL recovery. Preserve physical safeguards and deny forecast-based price permissions in fallback.",
+        "uk": "Keep measured live distribution running without a valid forecast plan; retry provisional empty history days and rebuild incomplete profiles after SQL recovery. Preserve physical safeguards and deny forecast-based price permissions in fallback.",
+        "zh-cn": "Keep measured live distribution running without a valid forecast plan; retry provisional empty history days and rebuild incomplete profiles after SQL recovery. Preserve physical safeguards and deny forecast-based price permissions in fallback."
+      },
       "0.17.0-alpha.197": {
         "en": "Discard calculated SoC and manual correction on confirmed unplug; retain cloud authority across reconnects and restarts until a new manual basis is supplied. Recover old blocked-session ledgers without retaining a stale full-charge estimate.",
         "de": "Berechneten SoC und manuelle Korrektur bei bestaetigtem Abstecken verwerfen; danach Cloud-Wert ueber Wiederanstecken und Neustarts bis zu einer neuen manuellen Basis verwenden. Alte gesperrte Sitzungsdaten ohne festgehaltene Vollladeschaetzung uebernehmen.",
@@ -81,19 +94,6 @@
         "ru": "Follow observed wallbox stops across bounded delayed OFF and electrical confirmations. Add common-slot 7/14-calendar-day forecast errors and complete-day energy comparisons; charging control is unchanged.",
         "uk": "Follow observed wallbox stops across bounded delayed OFF and electrical confirmations. Add common-slot 7/14-calendar-day forecast errors and complete-day energy comparisons; charging control is unchanged.",
         "zh-cn": "Follow observed wallbox stops across bounded delayed OFF and electrical confirmations. Add common-slot 7/14-calendar-day forecast errors and complete-day energy comparisons; charging control is unchanged."
-      },
-      "0.17.0-alpha.191": {
-        "en": "Show active vehicle SoC plausibility warnings in the overview, attention, device and live diagnostics; mark affected SoC estimates as uncertain without changing charging control or the calculation.",
-        "de": "Aktive Fahrzeug-SoC-Plausibilitaetswarnungen in Uebersicht, Hinweisen, Fahrzeug- und Live-Diagnose anzeigen. Betroffene SoC-Schaetzungen als unsicher kennzeichnen; Ladeberechnung und Steuerung bleiben unveraendert.",
-        "es": "Show active vehicle SoC plausibility warnings in the overview, attention, device and live diagnostics; mark affected SoC estimates as uncertain without changing charging control or the calculation.",
-        "fr": "Show active vehicle SoC plausibility warnings in the overview, attention, device and live diagnostics; mark affected SoC estimates as uncertain without changing charging control or the calculation.",
-        "it": "Show active vehicle SoC plausibility warnings in the overview, attention, device and live diagnostics; mark affected SoC estimates as uncertain without changing charging control or the calculation.",
-        "nl": "Show active vehicle SoC plausibility warnings in the overview, attention, device and live diagnostics; mark affected SoC estimates as uncertain without changing charging control or the calculation.",
-        "pl": "Show active vehicle SoC plausibility warnings in the overview, attention, device and live diagnostics; mark affected SoC estimates as uncertain without changing charging control or the calculation.",
-        "pt": "Show active vehicle SoC plausibility warnings in the overview, attention, device and live diagnostics; mark affected SoC estimates as uncertain without changing charging control or the calculation.",
-        "ru": "Show active vehicle SoC plausibility warnings in the overview, attention, device and live diagnostics; mark affected SoC estimates as uncertain without changing charging control or the calculation.",
-        "uk": "Show active vehicle SoC plausibility warnings in the overview, attention, device and live diagnostics; mark affected SoC estimates as uncertain without changing charging control or the calculation.",
-        "zh-cn": "Show active vehicle SoC plausibility warnings in the overview, attention, device and live diagnostics; mark affected SoC estimates as uncertain without changing charging control or the calculation."
       }
     },
     "titleLang": {

@@ -4277,3 +4277,21 @@ for (const phases of [1, 3]) test(`offline during follow-up ACK deadline holds w
     assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, false);
     assert.ok(h.writes.some(w => w.id === 'allow' && w.val === 0));
 });
+
+test('restart handoff accepts only a fresh qualified live allocation without a plan', () => {
+    const h = setup(), since = Date.now();
+    h.put('ems.0.Control.RestartHandoffSince', since);
+    h.put('ems.0.Plan.Valid', false);
+    h.put('ems.0.System.LastUpdate', since);
+    h.put('ems.0.Control.LastUpdate', since);
+    h.put('ems.0.Control.Valid', true);
+    h.put('ems.0.Control.PlanFallbackActive', true);
+    assert.equal(h.output.restartDataFresh(), true);
+    for (const quality of [{ts: since - 1}, {ack: false}, {q: 64}, {ts: since + 60000}]) {
+        h.put('ems.0.Control.PlanFallbackActive', true, quality);
+        assert.equal(h.output.restartDataFresh(), false, JSON.stringify(quality));
+    }
+    h.put('ems.0.Control.PlanFallbackActive', true);
+    h.put('ems.0.Control.Valid', false);
+    assert.equal(h.output.restartDataFresh(), false);
+});

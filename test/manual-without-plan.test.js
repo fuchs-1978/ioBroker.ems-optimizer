@@ -34,5 +34,5 @@ for(const parallel of [false,true]) test(`manual minimum works with missing curr
  h.put('DP_WB0_AMIN',6);h.own('Plan.MyPV_DHW_48h_JSON','[]');
  await h.advance(60);assert.equal(h.physical().miiAllow,1,h.value('Devices.Wallbox0.OutputStatus'));
  assert.equal(h.value('Plan.Valid'),true);
- h.put('DP_WB0_AMIN',0);await h.advance(10);assert.equal(h.physical().miiAllow,0);
+ h.put('DP_WB0_AMIN',0);await h.advance(180);assert.equal(h.physical().miiAllow,0);
 });

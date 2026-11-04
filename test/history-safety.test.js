@@ -200,3 +200,59 @@ test('background refresh failure preserves completed profiles and schedules pace
     assert.equal(run('historyProfiles.pv[0]'), 123);
     assert.ok(run('historyRetryAt') > Date.now());
 });
+
+test('empty historic days are re-read after SQL recovers, populated days stay cached', async () => {
+    const calls = [];
+    const run = engine({calls});
+    run(`pause=async()=>{}; let recovered=false; getHistory=async(id,start,end)=>{
+        calls.push({start,end}); return !recovered && start===0 ? [] : [{ts:start,val:42}];
+    };`);
+    await run("getHistoryChunked('meter',0,3*86400000)");
+    assert.equal(calls.length, 3);
+    run('recovered=true');
+    const rows = await run("getHistoryChunked('meter',0,3*86400000)");
+    assert.equal(calls[3].start, 0, 'old empty day must be queried again');
+    assert.equal(calls[3].end, 86400000);
+    assert.equal(calls.length, 5, 'only empty day and provisional tail are re-read');
+    assert.equal(rows.find(row => row.ts === 0).val, 42);
+    await run("getHistoryChunked('meter',0,3*86400000)");
+    assert.equal(calls.length, 6, 'recovered day is no longer provisional');
+});
+
+test('boundary-only replies stay provisional and empty refreshes preserve recorded samples', async () => {
+    const run = engine();
+    run(`pause=async()=>{}; getHistory=async(id,start,end)=>[{ts:end,val:42}];`);
+    assert.equal((await run("getHistoryChunked('meter',0,86400000)")).length, 0);
+    assert.equal(run("historySourceCache.get(CFG.sqlInstance+':meter').empty.length"), 1);
+    run('getHistory=async(id,start)=>[{ts:start,val:42}]');
+    await run("getHistoryChunked('meter',0,86400000)");
+    run('getHistory=async()=>[]');
+    assert.equal((await run("getHistoryChunked('meter',0,86400000)"))[0].val, 42);
+});
+
+test('unready SQL is checked before loading; incomplete profiles retry after a bounded cooldown', async () => {
+    let now = 1000, ready = false, queries = 0;
+    class Clock extends Date {static now() {return now;}}
+    const run = engine({Date: Clock, historyBackendReady: async () => ready, count: () => queries++,
+        setState() {}, log() {}, getState: () => ({val: false}), buildForecast() {}});
+    run("CFG.dp.pvPower='pv'; CFG.dp.houseMetersW=['meter']; CFG.dp.wallboxesKW=[]; CFG.dp.myPvDhwHistoryW=''; CFG.dp.myPvHeatingHistoryW=''; pause=async()=>{}; getHistoryChunked=async()=>{count();return [];};");
+    await run('buildHistory()'); assert.equal(queries, 0);
+    ready = true;
+    for (let n = 0; n < 3; n++) {
+        now += 60000; run('retryStartupHistory()');
+        for (let j = 0; j < 30; j++) await Promise.resolve();
+    }
+    assert.equal(queries, 6); assert.equal(run('historyRetryAttempts'), 3);
+    now += 60000; run('retryStartupHistory()'); assert.equal(queries, 6);
+    now += 14 * 60000; run('retryStartupHistory()');
+    for (let j = 0; j < 30; j++) await Promise.resolve();
+    assert.equal(queries, 8); assert.equal(run('historyReady'), false);
+});
+
+test('incomplete refresh preserves a previously complete profile and schedules recovery', async () => {
+    const run = engine({setState() {}, log() {}, getState: () => ({val: false}), buildForecast() {}});
+    run("historyReady=true; historyProfiles.pv[0]=123; CFG.dp.houseMetersW=['meter']; pause=async()=>{}; getHistoryChunked=async()=>[];");
+    await run('buildHistory()');
+    assert.equal(run('historyReady'), true); assert.equal(run('historyProfiles.pv[0]'), 123);
+    assert.ok(run('historyRetryAt') > Date.now());
+});

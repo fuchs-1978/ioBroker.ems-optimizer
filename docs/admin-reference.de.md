@@ -1,6 +1,6 @@
 # Adminreferenz – EMS Optimizer
 
-Feldreferenz für **0.17.0-alpha.197**. [Deutscher Einstieg und Bedienablauf](../README.de.md) · [English overview](../README.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36).
+Feldreferenz für **0.17.0-alpha.198**. [Deutscher Einstieg und Bedienablauf](../README.de.md) · [English overview](../README.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36).
 
 Die Tabellen dokumentieren die vorhandenen Admin-Einstellungen und Auslieferungswerte. Bestehende Anlagen können davon abweichen. Ein Feld oder eine Softwareprüfung belegt keine reale Inbetriebnahme.
 
@@ -166,6 +166,10 @@ Nicht verhindert werden fehlende Zwischenwerte oder Controller-/Transportverzög
 ## Admin: Historie und Prognose
 
 Die Historie lernt typische Lastprofile; der Fahrplan beschreibt erwartete künftige Viertelstunden. Längere gewünschte Lernhistorie erzeugt keine fehlenden Daten. Fehlende Wetter-/PV-Intervalle bleiben Lücken. Die PV-Flächen-/Baumzuordnung ist spezifisch: ein beliebiger Forecast-JSON-Wert ist nicht automatisch kompatibel.
+
+Leere SQL-Tagesantworten bleiben vorläufig und werden erneut gelesen. Bereits gefüllte Tage bleiben im Prozesscache; der aktuelle Rand wird überlappend aktualisiert. Vor dem Aufbau prüft das EMS Adapterlauf und bei SQL die Verbindung. Unvollständige Profile oder bestätigte Fehler führen zu drei Wiederholungen im Minutenabstand, danach zu 15 Minuten Pause vor der nächsten Gruppe. Ein noch unbeantworteter SQL-Auftrag blockiert weitere Historienabrufe. Ein bereits vollständiges Profil bleibt bei unvollständiger Aktualisierung erhalten. Fehlende Daten werden nicht durch Nullen ersetzt.
+
+Die normale Istwertverteilung benötigt keinen gültigen Fahrplan. `Control.PlanFallbackActive` und `Control.PlanFallbackStatus` zeigen den Ersatzbetrieb bei ungültigem, veraltetem oder im aktuellen Pflichtslot unvollständigem Plan. `Control.PlanSlotTimestamp` bleibt dann 0. Preisfahrplan-Freigaben, günstiger Netzstrom für Wärme und geplanter PV-Boost bleiben aus; Mindest-SoC und manuelle Mindestladung behalten ihre normalen Regeln. Ungültige Istwerte oder Schutzbedingungen stoppen weiterhin. Auch die qualifizierte Neustartübernahme kann frische Istwert-Reglerdaten verwenden.
 
 ### Historienquellen
 
