@@ -55,7 +55,7 @@ The [current roadmap](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issue
 
 A missing, incomplete or stale plan no longer blocks allocation from valid current measurements. `Control.PlanFallbackActive` and `Control.PlanFallbackStatus` identify this mode; `Plan.Valid` remains unchanged. Vehicle priorities, minimum-SoC/manual rules, EHZ thermal release, confirmed handoff and electrical limits still apply. Forecast-based price charging, cheap-grid heating and scheduled PV boost are disabled until the real plan returns. Empty historic days are provisional and re-read with paced retries. [Recovery and limits](docs/release-0.17.0-alpha.198.md).
 
-An enabled optional EHZ may temporarily use the start budget of a waiting vehicle, including a lower-priority follower. Vehicle priority and the full start delay remain; the heater must physically release the required power before the car starts. Disabling the fixed WB/EHZ split does not disable residual heating. [Countdown buffer policy](docs/release-0.17.0-alpha.199.md).
+An enabled optional EHZ may temporarily use the start budget of a waiting vehicle, including a lower-priority follower. Vehicle priority and the full start delay remain; the heater must physically release the required power before the car starts. Disabling the fixed WB/EHZ split does not disable residual heating. A running mandatory 3P charge no longer reapplies a startup reserve and falls back prematurely to 1P. [Countdown buffer policy](docs/release-0.17.0-alpha.199.md).
 
 ## Vehicle SoC and handoff
 
@@ -166,7 +166,7 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 
 ### 0.17.0-alpha.199 (2026-11-04)
 
-- (fuchs-1978) Let the optional EHZ use the reserved countdown budget of additional waiting vehicles. Preserve physical heater reservations until measured reduction permits starting, along with priorities, phase-change safeguards and price provenance. [Details and limits](docs/release-0.17.0-alpha.199.md).
+- (fuchs-1978) Let the optional EHZ use the reserved countdown budget of additional waiting vehicles. Preserve physical heater reservations until measured reduction permits starting. Keep a running mandatory 3P charge when its electrical minimum is funded; apply the configured reserve only to stopped starts. [Details and limits](docs/release-0.17.0-alpha.199.md).
 
 ### 0.17.0-alpha.198 (2026-11-04)
 

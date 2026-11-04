@@ -1,0 +1,37 @@
+{
+  "source": "Bounded SQL DecisionRecord read, decoded with the repository codec; selected production fields only",
+  "sqlWindow": {
+    "from": "2026-11-04T10:23:20Z",
+    "to": "2026-11-04T10:24:40Z"
+  },
+  "recordSequence": 7635,
+  "recordTimestamp": 1793787870096,
+  "recordTimeUTC": "2026-11-04T10:24:30.096Z",
+  "adapterVersion": "0.17.0-alpha.198",
+  "shadowValid": false,
+  "productionDataValid": true,
+  "productionControlValid": true,
+  "wallbox": 1,
+  "reportedSoC_pct": 38,
+  "minimumSoC_pct": 40,
+  "mustCharge": true,
+  "confirmedPhases": 3,
+  "actualPowerW": 4050,
+  "gridW": -252.10000000000002,
+  "allocation": {
+    "timestamp": 1793787870014,
+    "phase": 1,
+    "reason": "parallel-minimum-one-phase",
+    "basis": "real-budget",
+    "remainingS": 0,
+    "valid": true,
+    "budgetW": 4302.1,
+    "holdRemainingS": 593,
+    "confirmedPhases": 3,
+    "authorizedGridW": 0
+  },
+  "configuredStartReserveW": 150,
+  "nominalMinimum3pW": 4140,
+  "previousHardCodedThresholdW": 4440,
+  "interpretation": "The outer valid flag belongs to the paused shadow model under productive master ON; the production frame and phase decision are valid. A running 3P charge was reduced to 1P despite enough budget for its electrical minimum, bypassing the remaining phase hold."
+}

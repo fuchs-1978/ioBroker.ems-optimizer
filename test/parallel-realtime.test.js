@@ -2292,3 +2292,42 @@ for (const [cause, mutate, budget = 3000] of [
     assert.notEqual(d.start?.sequenceResume?.eligible, true);
     assert.equal(d.targetA, 0);
 });
+
+function mandatoryThreePhase(reserveW, running) {
+    const h = engine({production: true, wb1PhaseControlMode: 'ems', wb1PhaseModeId: 'raw.phase1',
+        phaseSwitchMinHoldMin: 15});
+    h.exclude(0); h.exclude(2);
+    h.put('ems.0.Vehicles.Wallbox1.PhaseSwitchEnabled', true);
+    h.put('ems.0.Vehicles.Wallbox1.MaximumPhases', 3);
+    h.put('ems.0.Vehicles.Wallbox1.MaxCurrent1P_A', 32);
+    h.put('ems.0.Vehicles.Wallbox1.MaxCurrent3P_A', 16);
+    h.put('ems.0.Config.Wallbox1MaxPower_W', 11040);
+    h.put('ems.0.Config.WallboxStartReserve_W', reserveW);
+    h.put('DP_WB1_MIN_SOC', 60); h.put('raw.phase1', 2);
+    h.plans[1].phases = 3;
+    if (running) h.owned(1, 6, 4050, 3);
+    h.run('updateVehicles()');
+    return h;
+}
+
+for (const budgetW of [4140, 4250, 4302.1, 4400])
+test(`running mandatory 3P charge never reapplies a start reserve at ${budgetW} W`, () => {
+    const h = mandatoryThreePhase(150, true);
+    assert.equal(h.update(budgetW).phases[1], 3);
+    const phase = JSON.parse(h.states.get('ems.0.Control.Wallbox1.PhaseDecision_JSON').val);
+    assert.notEqual(phase.reason, 'parallel-minimum-one-phase');
+    assert.equal(h.states.get('raw.phase1').val, 2, 'no fabricated hardware command or ACK');
+});
+
+for (const [reserveW, expected] of [[0, 3], [150, 3], [350, 1]])
+test(`stopped mandatory 3P charge uses configured ${reserveW} W reserve at the observed 4302 W budget`, () => {
+    const h = mandatoryThreePhase(reserveW, false);
+    assert.equal(h.update(4302.1).phases[1], expected);
+});
+
+test('a genuine budget shortfall below the running 3P electrical minimum still requests 1P', () => {
+    const h = mandatoryThreePhase(150, true);
+    assert.equal(h.update(4000).phases[1], 1);
+    assert.equal(JSON.parse(h.states.get('ems.0.Control.Wallbox1.PhaseDecision_JSON').val).reason,
+        'parallel-minimum-one-phase');
+});

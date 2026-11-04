@@ -1,4 +1,4 @@
-# 0.17.0-alpha.199 — EHZ als Zwischenpuffer für weitere wartende Fahrzeuge
+# 0.17.0-alpha.199 — EHZ-Zwischenpuffer und korrekte 3P-Startreserve
 
 ## Problem und Änderung
 
@@ -6,7 +6,7 @@ Am 4. November lud der EQV einphasig an seiner Stromgrenze, während der EQE auf
 
 Der vorhandene Zwischenpuffer funktionierte nur für das erste bevorzugte, noch nicht ladende Fahrzeug. Die gleiche Regel gilt jetzt auch für weitere wartende Fahrzeuge im parallelen Allokator. Während ihrer normalen Startwartezeit darf ein optionaler freigegebener EHZ deren noch ungenutztes Startbudget nutzen. Die Vormerkung bleibt gegenüber weiteren Autos geschützt.
 
-Die tatsächliche Laufzeitänderung entfernt ausschließlich die Beschränkung auf den ersten Kandidaten aus der vorhandenen, geschützten Countdown-Regel. Es gibt keinen neuen Ausgang, keine geänderten Wartezeiten und keine automatische Freigabe eines ausgeschalteten EHZ.
+Die Countdown-Korrektur entfernt die Beschränkung auf den ersten Kandidaten aus der vorhandenen geschützten Regel. Es gibt keinen neuen Ausgang, keine geänderten Wartezeiten und keine automatische Freigabe eines ausgeschalteten EHZ.
 
 ## Budget und Übergabe
 
@@ -20,8 +20,16 @@ Die tatsächliche Laufzeitänderung entfernt ausschließlich die Beschränkung a
 
 `Control.WallboxN.AllocationDiagnostics_JSON` zeigt den geliehenen Anspruch als `heaterCountdownUseW`. Bei bereits belegtem Heizbudget erscheinen zusätzlich `start.reclaimableHeaterW`, das hypothetische `qualificationSafetyW` und gegebenenfalls `await-heater-reduction`. Diese Diagnose ersetzt keine physische Leistungsbestätigung.
 
+## Vorzeitiger Rückwechsel von 3P auf 1P
+
+Während der Prüfung wechselte der EQV um 11:24:30 Uhr erneut auf 1P. Ein begrenzter SQL-Abruf der DecisionRecords bestätigt die Produktionsentscheidung: `parallel-minimum-one-phase`, 4.302,1 W Budget, 3P noch bestätigt, SoC 38 % unter 40 % Mindestziel und noch 593 Sekunden Phasenhaltezeit. Das reicht für nominal 6 A × 3 × 230 V = 4.140 W. Der Sonderpfad hatte trotzdem feste 300 W Startreserve verlangt und sofort 1P angefordert. Die konfigurierte Reserve betrug 150 W. [Ausgewählte Diagnosefelder](evidence/phase-reserve-2026-11-04.json) bewahren diesen Nachweis ohne den vollständigen Quelldatenexport.
+
+Die Reserveprüfung unterscheidet jetzt laufende und gestoppte Mindestladung: Ein laufender 3P-Auftrag benötigt keine erneute Startreserve. Ein gestopptes Fahrzeug berücksichtigt den konfigurierten Wert statt fest codierter 300 W. Bei ausreichender elektrischer Mindestleistung greifen damit wieder die vorhandenen Phasenregeln. Bei echter Unterdeckung unterhalb der elektrischen 3P-Mindestleistung bleibt der bisherige 1P-Mindestlade-Rückfall erhalten. Harte Grenzen und tatsächliche Leistungsreservierungen werden nicht erweitert.
+
+Acht zusätzliche Regressionen prüfen vier laufende Grenzbudgets einschließlich des beobachteten 4.302,1-W-Falls, drei konfigurierte Reserven beim gestoppten Fahrzeug und einen echten Mangel unter 4.140 W. Sechs dieser Fälle scheitern vor der Reservekorrektur.
+
 ## Nachweis und Grenzen
 
 Die erweiterten Plant-Regressionen verwenden den echten Allokator und echte Ausgangszustandsmaschinen, eine neun Sekunden verzögerte Heizantwort und einen weiter ladenden bevorzugten Wagen. Sie prüfen das zweite wartende Fahrzeug mit/ohne gültigen Fahrplan und mit/ohne harte Gesamtgrenze, einen echten Budgetverlust, entzogene Fahrzeugfreigabe, einen nach Nullbefehl physisch weiter heizenden EHZ sowie die 1P/3P-Übergabe. Es werden keine Geräte beschrieben oder Anlagenparameter geändert.
 
-Zwölf gezielte Plant-Prüfungen sowie die Gesamtsuite, Paket-/Metadaten-, Admin-, Lint-, installierte Artefakt- und historischen Vergleichsprüfungen gehören zur Freigabe. Die natürliche Anlage muss den zusätzlichen Wartefall anschließend bestätigen. Kurze Einspeisung durch Mess-/Geräteverzögerungen, Mindestleistungen und reale Schutzgrenzen bleibt möglich; es gibt keine Zusage eines stets exakt verschwindenden Netzflusses.
+Zwölf gezielte Plant-Prüfungen und die zusätzlichen Phasengrenzfälle sowie die Gesamtsuite, Paket-/Metadaten-, Admin-, Lint-, installierte Artefakt- und historischen Vergleichsprüfungen gehören zur Freigabe. Die natürliche Anlage muss den zusätzlichen Wartefall anschließend bestätigen. Kurze Einspeisung durch Mess-/Geräteverzögerungen, Mindestleistungen und reale Schutzgrenzen bleibt möglich; es gibt keine Zusage eines stets exakt verschwindenden Netzflusses.
