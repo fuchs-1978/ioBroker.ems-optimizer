@@ -140,3 +140,13 @@ test('a newly checked restart adoption can qualify a real charge without trustin
     assert.ok(h.physical().miiPowerW>=1380,h.diagnostic());
     assert.ok(h.writes.some(w=>w.id==='goe0.allow'&&w.val===1&&w.at>=since+15000&&w.at<since+70000));
 });
+
+
+test('a private model cannot turn idealized output flags into a physical thermal qualification',async()=>{
+    const h=await plant({split:false,startDelayS:0,initialSurplusW:3200,
+        nativeConfig:{wallboxParallelChargingEnabled:true}});
+    h.run('globalThis.getActualState=getState');await h.advance(80);
+    assert.ok(h.physical().wbPowerW>=1380,h.diagnostic());
+    assert.equal(h.run('wallboxThermalResume[2].qualified'),false);
+    assert.equal(h.run('wallboxThermalResume[2].reason'),'physical-controller-required');
+});
