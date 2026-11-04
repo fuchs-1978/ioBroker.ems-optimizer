@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.195 (2026-11-03)
+
+- (fuchs-1978) Redistribute PV budget during sustained vehicle uptake limits using a confirmed lower current command, retaining nominal reservations until ACK. Preserve measured SoC progress against delayed lower cloud reports and observed charge/Finish transitions. [Details and limits](docs/release-0.17.0-alpha.195.md).
+
 ## 0.17.0-alpha.194 (2026-11-03)
 
 - (fuchs-1978) Recognize charger Finish after ten seconds of confirmed electrical quiet, yield to the next vehicle after confirmed OFF, and show a possible-full-charge warning without changing SoC. Keep witnessed handoff and all electrical and budget guards. [Details and limits](docs/release-0.17.0-alpha.194.md).
