@@ -49,7 +49,7 @@ export default [
             nativeConfig: 'readonly', getState: 'readonly', existsState: 'readonly', createState: 'readonly',
             setState: 'readonly', writeForeignState: 'readonly', updateWallboxProductionOutput: 'readonly',
             sendTo: 'readonly', schedule: 'readonly', on: 'readonly', log: 'readonly',
-            historySourceEnabled: 'readonly', historyQueryAllowed: 'readonly',
+            historyBackendReady: 'readonly', historySourceEnabled: 'readonly', historyQueryAllowed: 'readonly',
             readHeaterWriteProof: 'readonly', readHeaterWriteStatus: 'readonly',
             loadComparisonAllowed: 'readonly', loadForecastComparison: 'readonly', vehicleSocEstimator: 'readonly', wallboxAllocationPolicy: 'readonly', gridConstraints: 'readonly',
             gridMeasurement: 'readonly', gridOperatorRuntime: 'readonly', batteryTemperatureReserve: 'readonly', sunEnergyHeads: 'readonly',

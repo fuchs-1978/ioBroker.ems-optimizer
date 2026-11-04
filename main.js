@@ -1060,6 +1060,12 @@ class EmsOptimizer extends utils.Adapter {
                 const object = await adapter.getForeignObjectAsync(id);
                 return object?.type === 'state' && object.common?.custom?.[instance]?.enabled === true;
             },
+            async historyBackendReady(instance) {
+                const ids = [`system.adapter.${instance}.alive`];
+                if (/^sql\.\d+$/.test(instance)) ids.push(`${instance}.info.connection`);
+                const states = await Promise.all(ids.map(id => adapter.getForeignStateAsync(id)));
+                return states.every(state => state?.val === true && state.ack === true && !state.q);
+            },
             historyRetryAllowed() {
                 return !adapter.decisionRecordJournal?.health().sqlVerificationPending
                     && !adapter.sqlVerificationRecovery?.busy;

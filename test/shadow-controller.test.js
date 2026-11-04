@@ -328,12 +328,11 @@ test('slow-cycle selections and start timers remain isolated across 2-second tic
     assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.StartDelayRemaining_s').val, 999);
 });
 
-test('master enabled, stale data, missing current slot and disable invalidate and clear proposals', async () => {
+test('master enabled, stale source/plan data and disable invalidate and clear proposals', async () => {
     for (const alter of [
         h => { h.adapter.config.globalWriteEnabled = true; },
         h => h.own('System.LastUpdate', 1),
         h => h.own('Plan.LastUpdate', 1),
-        h => h.own('Plan.Wallbox0_48h_JSON', '[]'),
         h => h.shadow.handleCommand('ems.0.Debug.Shadow.Enabled', {val: false, ack: false})
     ]) {
         const h = await fixture(); await h.tick();
@@ -344,6 +343,15 @@ test('master enabled, stale data, missing current slot and disable invalidate an
         assert.equal(h.value('Targets.Wallbox0_A'), 0);
         assert.equal(h.value('Actuals.Grid_W'), null);
     }
+});
+
+test('shadow uses the real measured allocator when the current plan slot is missing', async () => {
+    const h = await fixture(); await h.tick();
+    h.own('Plan.Wallbox0_48h_JSON', '[]'); await h.tick();
+    assert.equal(h.value('Valid'), true);
+    assert.ok(h.value('Targets.MyPV_DHW_W') > 0);
+    assert.ok(h.writes.every(write => write.id.startsWith('ems.0.Debug.Shadow.')),
+        'preview still cannot issue actuator commands');
 });
 
 test('real ownership and pending power never become hypothetical acknowledgements', async () => {

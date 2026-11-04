@@ -6,7 +6,10 @@
 // SoC, error-5 continuation and 15-minute plant tests assert the new states
 // and changed contracts. Error-5 bookkeeping is absent from the old trace;
 // every pre-existing command, reservation and diagnostic remains compared.
-const newState = id => typeof id === 'string' && /^ems\.0\.(?:Vehicles\.Wallbox[012]\.(?:SoCStale|SoCAge_s|SoCReportedAt|SoCStatus)|Devices\.Wallbox[012]\.(?:Error5Resume_JSON|NoDrawPause_JSON|NoDrawPaused|NoDrawElapsed_s|NoDrawRemaining_s|NoDrawRetryAfter))$/.test(id);
+// alpha.198 adds two passive fallback diagnostics; their values and changed
+// no-plan allocation are asserted by live-without-plan.test.js. Keep every
+// pre-existing target, command, reserve and status in the historical comparison.
+const newState = id => typeof id === 'string' && /^ems\.0\.(?:Control\.PlanFallback(?:Active|Status)|Vehicles\.Wallbox[012]\.(?:SoCStale|SoCAge_s|SoCReportedAt|SoCStatus)|Devices\.Wallbox[012]\.(?:Error5Resume_JSON|NoDrawPause_JSON|NoDrawPaused|NoDrawElapsed_s|NoDrawRemaining_s|NoDrawRetryAfter))$/.test(id);
 const privateFields = new Set(['noDrawPauseLoaded', 'noDrawPause', 'noDrawObservation',
     'error5Resume', 'error5ResumeSourceValid', 'error5LastDrawAt', 'error5LastDrawPhases']);
 
