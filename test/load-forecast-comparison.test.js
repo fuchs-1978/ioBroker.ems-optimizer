@@ -432,3 +432,22 @@ test('history rebuild publishes both calendar windows in the existing diagnostic
     assert.match(h.states.get('ems.0.Forecast.LoadComparison.Result'), /14 Kalendertage/);
     assert.ok(h.writes.every(id => id.startsWith('ems.0.Forecast.LoadComparison.')));
 });
+
+test('time-weighted history migration retains legacy frozen forecasts and labels only newly issued entries', async () => {
+    const h = wrapper({loadComparisonEnabled: true}), model = await trained();
+    h.context.model = model; h.context.issueTime = now;
+    h.run('loadComparisonModel=model; loadComparisonSignature=loadComparisonContract();');
+    const entry = comparison.issue(model, now, () => 8);
+    h.states.set('ems.0.Forecast.LoadComparison.Ledger_JSON', JSON.stringify({schema: 1,
+        signature: h.run('loadComparisonContract()'), entries: [entry]}));
+    h.run('publishLoadComparison(issueTime)');
+    const restored = JSON.parse(h.states.get('ems.0.Forecast.LoadComparison.Ledger_JSON'));
+    assert.deepEqual(restored.entries, [entry]);
+    assert.equal(restored.entries[0].historyAggregation, undefined);
+    h.context.nearestWeather = () => ({temperatureC: 8});
+    h.states.delete('ems.0.Forecast.LoadComparison.Ledger_JSON');
+    h.run('publishLoadComparison(issueTime)');
+    const fresh = JSON.parse(h.states.get('ems.0.Forecast.LoadComparison.Ledger_JSON')).entries[0];
+    assert.equal(fresh.historyAggregation, 'time-weighted-hold-v1');
+    assert.deepEqual(fresh.slots, entry.slots);
+});

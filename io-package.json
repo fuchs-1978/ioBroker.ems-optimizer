@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.199",
+    "version": "0.17.0-alpha.200",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.200": {
+        "en": "Build quarter-hour power histories from time-weighted raw samples, not point-count means. Preserve unknown gaps and frozen forecasts; bound raw queries and retain cached history recovery.",
+        "de": "Viertelstunden-Leistung zeitgewichtet aus Rohwerten statt aus Messpunktmitteln berechnen. Datenluecken und ausgegebene Prognosen erhalten; Rohabfragen begrenzen und Historien-Erholung beibehalten.",
+        "es": "Build quarter-hour power histories from time-weighted raw samples, not point-count means. Preserve unknown gaps and frozen forecasts; bound raw queries and retain cached history recovery.",
+        "fr": "Build quarter-hour power histories from time-weighted raw samples, not point-count means. Preserve unknown gaps and frozen forecasts; bound raw queries and retain cached history recovery.",
+        "it": "Build quarter-hour power histories from time-weighted raw samples, not point-count means. Preserve unknown gaps and frozen forecasts; bound raw queries and retain cached history recovery.",
+        "nl": "Build quarter-hour power histories from time-weighted raw samples, not point-count means. Preserve unknown gaps and frozen forecasts; bound raw queries and retain cached history recovery.",
+        "pl": "Build quarter-hour power histories from time-weighted raw samples, not point-count means. Preserve unknown gaps and frozen forecasts; bound raw queries and retain cached history recovery.",
+        "pt": "Build quarter-hour power histories from time-weighted raw samples, not point-count means. Preserve unknown gaps and frozen forecasts; bound raw queries and retain cached history recovery.",
+        "ru": "Build quarter-hour power histories from time-weighted raw samples, not point-count means. Preserve unknown gaps and frozen forecasts; bound raw queries and retain cached history recovery.",
+        "uk": "Build quarter-hour power histories from time-weighted raw samples, not point-count means. Preserve unknown gaps and frozen forecasts; bound raw queries and retain cached history recovery.",
+        "zh-cn": "Build quarter-hour power histories from time-weighted raw samples, not point-count means. Preserve unknown gaps and frozen forecasts; bound raw queries and retain cached history recovery."
+      },
       "0.17.0-alpha.199": {
         "en": "Let the optional EHZ use additional waiting vehicles' start budgets until measured reduction permits starting. Keep a running 3P minimum when its electrical budget is sufficient; apply the configured start reserve only to stopped mandatory charging.",
         "de": "Optionalen EHZ das Startbudget weiterer wartender Fahrzeuge bis zur nachgewiesenen Heizreduktion nutzen lassen. Laufende 3P-Mindestladung bei ausreichendem elektrischem Budget halten; konfigurierte Startreserve nur vor dem Start anrechnen.",
@@ -81,19 +94,6 @@
         "ru": "Recognize charger Finish after ten seconds of confirmed electrical quiet, yield to the next vehicle after confirmed OFF, and show a possible-full-charge warning without changing SoC. Keep witnessed handoff and all electrical and budget guards.",
         "uk": "Recognize charger Finish after ten seconds of confirmed electrical quiet, yield to the next vehicle after confirmed OFF, and show a possible-full-charge warning without changing SoC. Keep witnessed handoff and all electrical and budget guards.",
         "zh-cn": "Recognize charger Finish after ten seconds of confirmed electrical quiet, yield to the next vehicle after confirmed OFF, and show a possible-full-charge warning without changing SoC. Keep witnessed handoff and all electrical and budget guards."
-      },
-      "0.17.0-alpha.193": {
-        "en": "Allow one bounded measured PV ampere retry after sustained export can fund the step plus 50 W. Coordinate allocator and output using an expiring command-bound nomination; retain the two-attempt limit and all electrical and hard capacity checks.",
-        "de": "Einen begrenzten gemessenen PV-Ampere-Nachregelversuch bei anhaltender Einspeisung fuer den Schritt plus 50 W zulassen. Zuteilung und Ausgang ueber kurz gueltigen befehlsgebundenen Nachweis koordinieren; zwei Versuche sowie elektrische und harte Grenzen beibehalten.",
-        "es": "Allow one bounded measured PV ampere retry after sustained export can fund the step plus 50 W. Coordinate allocator and output using an expiring command-bound nomination; retain the two-attempt limit and all electrical and hard capacity checks.",
-        "fr": "Allow one bounded measured PV ampere retry after sustained export can fund the step plus 50 W. Coordinate allocator and output using an expiring command-bound nomination; retain the two-attempt limit and all electrical and hard capacity checks.",
-        "it": "Allow one bounded measured PV ampere retry after sustained export can fund the step plus 50 W. Coordinate allocator and output using an expiring command-bound nomination; retain the two-attempt limit and all electrical and hard capacity checks.",
-        "nl": "Allow one bounded measured PV ampere retry after sustained export can fund the step plus 50 W. Coordinate allocator and output using an expiring command-bound nomination; retain the two-attempt limit and all electrical and hard capacity checks.",
-        "pl": "Allow one bounded measured PV ampere retry after sustained export can fund the step plus 50 W. Coordinate allocator and output using an expiring command-bound nomination; retain the two-attempt limit and all electrical and hard capacity checks.",
-        "pt": "Allow one bounded measured PV ampere retry after sustained export can fund the step plus 50 W. Coordinate allocator and output using an expiring command-bound nomination; retain the two-attempt limit and all electrical and hard capacity checks.",
-        "ru": "Allow one bounded measured PV ampere retry after sustained export can fund the step plus 50 W. Coordinate allocator and output using an expiring command-bound nomination; retain the two-attempt limit and all electrical and hard capacity checks.",
-        "uk": "Allow one bounded measured PV ampere retry after sustained export can fund the step plus 50 W. Coordinate allocator and output using an expiring command-bound nomination; retain the two-attempt limit and all electrical and hard capacity checks.",
-        "zh-cn": "Allow one bounded measured PV ampere retry after sustained export can fund the step plus 50 W. Coordinate allocator and output using an expiring command-bound nomination; retain the two-attempt limit and all electrical and hard capacity checks."
       }
     },
     "titleLang": {
