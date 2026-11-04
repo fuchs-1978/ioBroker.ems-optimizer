@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.200",
+    "version": "0.17.0-alpha.201",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.201": {
+        "en": "Keep a witnessed preferred 1P minimum alongside usable mandatory hot-water power; explicitly reduce current to release heat budget. Resume the same thermally interrupted charge after bounded fresh qualification, preserving physical reservations and all safety gates.",
+        "de": "Bestaetigte bevorzugte 1P-Mindestladung neben nutzbarer Pflichtwaerme erhalten; Strom fuer das Heizbudget ausdruecklich absenken. Dasselbe waermebedingt unterbrochene Fahrzeug nach begrenzter frischer Pruefung wieder starten; reale Reserven und Schutzgrenzen bleiben erhalten.",
+        "es": "Keep a witnessed preferred 1P minimum alongside usable mandatory hot-water power; explicitly reduce current to release heat budget. Resume the same thermally interrupted charge after bounded fresh qualification, preserving physical reservations and all safety gates.",
+        "fr": "Keep a witnessed preferred 1P minimum alongside usable mandatory hot-water power; explicitly reduce current to release heat budget. Resume the same thermally interrupted charge after bounded fresh qualification, preserving physical reservations and all safety gates.",
+        "it": "Keep a witnessed preferred 1P minimum alongside usable mandatory hot-water power; explicitly reduce current to release heat budget. Resume the same thermally interrupted charge after bounded fresh qualification, preserving physical reservations and all safety gates.",
+        "nl": "Keep a witnessed preferred 1P minimum alongside usable mandatory hot-water power; explicitly reduce current to release heat budget. Resume the same thermally interrupted charge after bounded fresh qualification, preserving physical reservations and all safety gates.",
+        "pl": "Keep a witnessed preferred 1P minimum alongside usable mandatory hot-water power; explicitly reduce current to release heat budget. Resume the same thermally interrupted charge after bounded fresh qualification, preserving physical reservations and all safety gates.",
+        "pt": "Keep a witnessed preferred 1P minimum alongside usable mandatory hot-water power; explicitly reduce current to release heat budget. Resume the same thermally interrupted charge after bounded fresh qualification, preserving physical reservations and all safety gates.",
+        "ru": "Keep a witnessed preferred 1P minimum alongside usable mandatory hot-water power; explicitly reduce current to release heat budget. Resume the same thermally interrupted charge after bounded fresh qualification, preserving physical reservations and all safety gates.",
+        "uk": "Keep a witnessed preferred 1P minimum alongside usable mandatory hot-water power; explicitly reduce current to release heat budget. Resume the same thermally interrupted charge after bounded fresh qualification, preserving physical reservations and all safety gates.",
+        "zh-cn": "Keep a witnessed preferred 1P minimum alongside usable mandatory hot-water power; explicitly reduce current to release heat budget. Resume the same thermally interrupted charge after bounded fresh qualification, preserving physical reservations and all safety gates."
+      },
       "0.17.0-alpha.200": {
         "en": "Build quarter-hour power histories from time-weighted raw samples, not point-count means. Preserve unknown gaps and frozen forecasts; bound raw queries and retain cached history recovery.",
         "de": "Viertelstunden-Leistung zeitgewichtet aus Rohwerten statt aus Messpunktmitteln berechnen. Datenluecken und ausgegebene Prognosen erhalten; Rohabfragen begrenzen und Historien-Erholung beibehalten.",
@@ -81,19 +94,6 @@
         "ru": "Redistribute PV budget during sustained vehicle uptake limits using a confirmed lower current command, while retaining nominal reservations until ACK. Preserve measured SoC progress against delayed lower cloud reports and observed charge/Finish transitions.",
         "uk": "Redistribute PV budget during sustained vehicle uptake limits using a confirmed lower current command, while retaining nominal reservations until ACK. Preserve measured SoC progress against delayed lower cloud reports and observed charge/Finish transitions.",
         "zh-cn": "Redistribute PV budget during sustained vehicle uptake limits using a confirmed lower current command, while retaining nominal reservations until ACK. Preserve measured SoC progress against delayed lower cloud reports and observed charge/Finish transitions."
-      },
-      "0.17.0-alpha.194": {
-        "en": "Recognize charger Finish after ten seconds of confirmed electrical quiet, yield to the next vehicle after confirmed OFF, and show a possible-full-charge warning without changing SoC. Keep witnessed handoff and all electrical and budget guards.",
-        "de": "Wallbox-Ladeende nach zehn Sekunden bestaetigter elektrischer Ruhe erkennen, nach bestaetigtem AUS an das naechste Fahrzeug uebergeben und auf moeglicherweise volle Ladung hinweisen, ohne den SoC zu veraendern. Beobachtete Uebergabe und alle elektrischen sowie Budgetpruefungen bleiben erforderlich.",
-        "es": "Recognize charger Finish after ten seconds of confirmed electrical quiet, yield to the next vehicle after confirmed OFF, and show a possible-full-charge warning without changing SoC. Keep witnessed handoff and all electrical and budget guards.",
-        "fr": "Recognize charger Finish after ten seconds of confirmed electrical quiet, yield to the next vehicle after confirmed OFF, and show a possible-full-charge warning without changing SoC. Keep witnessed handoff and all electrical and budget guards.",
-        "it": "Recognize charger Finish after ten seconds of confirmed electrical quiet, yield to the next vehicle after confirmed OFF, and show a possible-full-charge warning without changing SoC. Keep witnessed handoff and all electrical and budget guards.",
-        "nl": "Recognize charger Finish after ten seconds of confirmed electrical quiet, yield to the next vehicle after confirmed OFF, and show a possible-full-charge warning without changing SoC. Keep witnessed handoff and all electrical and budget guards.",
-        "pl": "Recognize charger Finish after ten seconds of confirmed electrical quiet, yield to the next vehicle after confirmed OFF, and show a possible-full-charge warning without changing SoC. Keep witnessed handoff and all electrical and budget guards.",
-        "pt": "Recognize charger Finish after ten seconds of confirmed electrical quiet, yield to the next vehicle after confirmed OFF, and show a possible-full-charge warning without changing SoC. Keep witnessed handoff and all electrical and budget guards.",
-        "ru": "Recognize charger Finish after ten seconds of confirmed electrical quiet, yield to the next vehicle after confirmed OFF, and show a possible-full-charge warning without changing SoC. Keep witnessed handoff and all electrical and budget guards.",
-        "uk": "Recognize charger Finish after ten seconds of confirmed electrical quiet, yield to the next vehicle after confirmed OFF, and show a possible-full-charge warning without changing SoC. Keep witnessed handoff and all electrical and budget guards.",
-        "zh-cn": "Recognize charger Finish after ten seconds of confirmed electrical quiet, yield to the next vehicle after confirmed OFF, and show a possible-full-charge warning without changing SoC. Keep witnessed handoff and all electrical and budget guards."
       }
     },
     "titleLang": {

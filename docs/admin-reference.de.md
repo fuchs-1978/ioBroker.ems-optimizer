@@ -1,6 +1,6 @@
 # Adminreferenz – EMS Optimizer
 
-Feldreferenz für **0.17.0-alpha.200**. [Deutscher Einstieg und Bedienablauf](../README.de.md) · [English overview](../README.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36).
+Feldreferenz für **0.17.0-alpha.201**. [Deutscher Einstieg und Bedienablauf](../README.de.md) · [English overview](../README.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36).
 
 Die Tabellen dokumentieren die vorhandenen Admin-Einstellungen und Auslieferungswerte. Bestehende Anlagen können davon abweichen. Ein Feld oder eine Softwareprüfung belegt keine reale Inbetriebnahme.
 
@@ -170,6 +170,14 @@ Die Historie lernt typische Lastprofile; der Fahrplan beschreibt erwartete künf
 Leere SQL-Tagesantworten bleiben vorläufig und werden erneut gelesen. Bereits gefüllte Tage bleiben im Prozesscache; der aktuelle Rand wird überlappend aktualisiert. Vor dem Aufbau prüft das EMS Adapterlauf und bei SQL die Verbindung. Unvollständige Profile oder bestätigte Fehler führen zu drei Wiederholungen im Minutenabstand, danach zu 15 Minuten Pause vor der nächsten Gruppe. Ein noch unbeantworteter SQL-Auftrag blockiert weitere Historienabrufe. Ein bereits vollständiges Profil bleibt bei unvollständiger Aktualisierung erhalten. Fehlende Daten werden nicht durch Nullen ersetzt.
 
 Die normale Istwertverteilung benötigt keinen gültigen Fahrplan. `Control.PlanFallbackActive` und `Control.PlanFallbackStatus` zeigen den Ersatzbetrieb bei ungültigem, veraltetem oder im aktuellen Pflichtslot unvollständigem Plan. `Control.PlanSlotTimestamp` bleibt dann 0. Preisfahrplan-Freigaben, günstiger Netzstrom für Wärme und geplanter PV-Boost bleiben aus; Mindest-SoC und manuelle Mindestladung behalten ihre normalen Regeln. Ungültige Istwerte oder Schutzbedingungen stoppen weiterhin. Auch die qualifizierte Neustartübernahme kann frische Istwert-Reglerdaten verwenden.
+
+### Laufende Fahrzeugladung und Pflichtwärme ab alpha.201
+
+Im parallelen Betrieb behält das bevorzugte, bereits elektrisch bestätigte einphasige Fahrzeug seinen Mindeststrom, wenn danach noch nutzbare EHZ-Pflichtwärme innerhalb aller gemeinsamen Grenzen möglich ist. Die obere mittlere Speichertemperatur und die Austrittstemperatur müssen mindestens den eingestellten Warmwasser-Mindestwert erreichen. Ein kalter oberer Speicher, zu wenig Leistung für beide Verbraucher, neue Fahrzeuge und die feste Aufteilung erhalten diese Ausnahme nicht. Ein ausdrücklicher Stromdeckel im gemeinsamen Auftrag setzt die Absenkung durch; alte reale Reserven werden erst nach bestätigter Reduktion frei.
+
+Nach einer belegten Wärmeunterbrechung kann dasselbe Fahrzeug ohne neue volle Startwartezeit fortsetzen. Der Nachweis gilt nur in diesem EMS-Prozess, maximal 15 Minuten ab dem tatsächlichen Stopp, und wird nicht verlängert. Nach Ende des Wärmevorrangs sind 15 Sekunden zusammenhängende frische Budgetprüfung einschließlich Startreserve nötig. Ausschalten, Freigabe-/Prioritätswechsel, Quellenfehler, Temperaturfehler, Zielerreichung, Phasen-/Preiswechsel oder zu wenig Wiederanlaufbudget verwerfen den Nachweis. Erneuter Wärmevorrang setzt die kurze Budgetprüfung zurück. AUS-Bestätigung, elektrische Ruhe und tatsächliche EHZ-/Peer-Reduktion bleiben zusätzlich erforderlich. Eine normale PV-Unterdeckung erhält keinen Wärme-Nachweis.
+
+`Control.WallboxN.AllocationDiagnostics_JSON` zeigt `thermalRunningMinimumW` und `start.thermalResume` einschließlich Restzeit/Grund. Die gemeinsame Zuteilung enthält nur bei einer nötigen Wärmeabsenkung `thermalCurrentCapA`. Die normale Startwartezeit bleibt eingestellt; es werden keine Live-Parameter geändert. [Details und Belege](release-0.17.0-alpha.201.md).
 
 ### Zeitgewichtete Leistungs-Historie ab alpha.200
 

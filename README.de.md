@@ -1,10 +1,12 @@
 # EMS Optimizer
 
-**Aktuelle Adapterversion: 0.17.0-alpha.200.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
+**Aktuelle Adapterversion: 0.17.0-alpha.201.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
 
 [English overview](README.md) · [Vollständige Admin-Feldreferenz](docs/admin-reference.de.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) · [Versionsänderungen](README.md#changelog)
 
 Die historischen Leistungswerte für Hauslast, PV und enthaltene flexible Verbraucher werden seit alpha.200 zeitgewichtet auf gemeinsame Viertelstunden gebracht. Dadurch verzerren häufig gespeicherte Heiz-/Ladespitzen das Lastprofil nicht mehr. Lange Datenlücken bleiben unbekannt; bereits ausgegebene Vergleichsprognosen bleiben erhalten. [Berechnung und Grenzen](docs/release-0.17.0-alpha.200.md).
+
+Seit alpha.201 kann der EHZ-Pflichtwärmebedarf neben der bereits bestätigten bevorzugten 1P-Mindestladung versorgt werden, wenn beide Verbraucher ins reale Budget passen und oben noch ausreichend warmes Wasser vorhanden ist. Eine nötige Wärmeunterbrechung darf dasselbe Fahrzeug mit begrenztem Nachweis und 15 Sekunden frischer Budgetprüfung fortsetzen. Neue Ladungen behalten ihre normale Wartezeit. [Wärmepriorität und Wiederanlauf](docs/release-0.17.0-alpha.201.md).
 
 ## Inhaltsverzeichnis
 

@@ -7,7 +7,7 @@
 
 Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Combines PV and grid measurements, load history, weather forecasts and electricity prices in a rolling 48-hour plan.
 
-**Current version: 0.17.0-alpha.200.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
+**Current version: 0.17.0-alpha.201.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
 
 [Deutsche Bedienungsanleitung](README.de.md) · [Release history](CHANGELOG_OLD.md) · [Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
@@ -56,6 +56,8 @@ The [current roadmap](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issue
 A missing, incomplete or stale plan no longer blocks allocation from valid current measurements. `Control.PlanFallbackActive` and `Control.PlanFallbackStatus` identify this mode; `Plan.Valid` remains unchanged. Vehicle priorities, minimum-SoC/manual rules, EHZ thermal release, confirmed handoff and electrical limits still apply. Forecast-based price charging, cheap-grid heating and scheduled PV boost are disabled until the real plan returns. Empty historic days are provisional and re-read with paced retries. [Recovery and limits](docs/release-0.17.0-alpha.198.md).
 
 An enabled optional EHZ may temporarily use the start budget of a waiting vehicle, including a lower-priority follower. Vehicle priority and the full start delay remain; the heater must physically release the required power before the car starts. Disabling the fixed WB/EHZ split does not disable residual heating. A running mandatory 3P charge no longer reapplies a startup reserve and falls back prematurely to 1P. [Countdown buffer policy](docs/release-0.17.0-alpha.199.md).
+
+Mandatory hot water can share PV with the preferred, already confirmed 1P charge at its minimum current when both loads fit and the upper-middle/outlet water remain at least at the configured minimum. The output explicitly reduces current before releasing heater budget. Otherwise heat keeps priority. A witnessed charge stopped for thermal priority may resume after 15 seconds of fresh budget qualification within a fixed 15-minute process-local window; current reserve, confirmed OFF, physical heater reduction and all electrical/source checks remain required. Ordinary starts retain their configured delay. [Thermal interruption policy](docs/release-0.17.0-alpha.201.md).
 
 ## Vehicle SoC and handoff
 
@@ -164,6 +166,10 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 
 ## Changelog
 
+### 0.17.0-alpha.201 (2026-11-04)
+
+- (fuchs-1978) Share usable mandatory hot-water power with a confirmed preferred 1P minimum; enforce explicit current reduction. Retain a bounded thermal-pause qualification for the same charge with 15 seconds of fresh budget evidence and all physical safety gates. [Policy and limits](docs/release-0.17.0-alpha.201.md).
+
 ### 0.17.0-alpha.200 (2026-11-04)
 
 - (fuchs-1978) Build quarter-hour power histories from time-weighted raw values instead of sample-count means. Keep missing/invalid intervals unknown, bound dense SQL queries, and preserve issued forecasts while correcting training and actual evaluation. [Method and limits](docs/release-0.17.0-alpha.200.md).
@@ -187,10 +193,6 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 ### 0.17.0-alpha.195 (2026-11-03)
 
 - (fuchs-1978) Redistribute PV budget during sustained vehicle uptake limits using a confirmed lower current command, while retaining nominal reservations until ACK. Preserve measured SoC progress against delayed lower cloud reports and observed charge/Finish transitions. [Details and limits](docs/release-0.17.0-alpha.195.md).
-
-### 0.17.0-alpha.194 (2026-11-03)
-
-- (fuchs-1978) Recognize charger Finish after ten seconds of confirmed electrical quiet, yield to the next vehicle after confirmed OFF, and show a possible-full-charge warning without changing SoC. Keep witnessed handoff and all electrical and budget guards. [Details and limits](docs/release-0.17.0-alpha.194.md).
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 
