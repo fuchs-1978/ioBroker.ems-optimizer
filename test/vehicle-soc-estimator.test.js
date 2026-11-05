@@ -18,8 +18,10 @@ test('Mii unplug, trip and delayed 84-percent cloud report discard the previous 
     assert.equal(arrived.value, 84); assert.equal(arrived.estimated, false); assert.equal(arrived.socWarning, false);
     assert.equal(arrived.reason, 'cloud-after-unplug'); assert.equal(arrived.ledger.basis, null);
     assert.equal(estimateSoc(h.input()).value, 84, 'restart preserves cloud authority');
-    const charged = h.run({now: T + 7240000, counter: state(.1, T + 7240000), reported: state(84, T + 7240000)});
-    assert.equal(charged.value, 84, 'cloud remains authoritative until an operator supplies a new manual basis');
+    const charged = h.run({now: T + 7240000, car: state(2, T + 7240000),
+        counter: state(.1, T + 7240000), reported: state(84, T + 7240000)});
+    assert.ok(Math.abs(charged.value - 84.18) < 1e-9, 'new charge uses 84% and only the new-session counter difference');
+    assert.equal(charged.estimated, true);
     const correction = correctSoc({...h.input(), value: 85});
     assert.equal(correction.ok, true);
     const manual = h.run({ledgerText: JSON.stringify(correction.ledger), now: T + 7270000,
@@ -27,6 +29,48 @@ test('Mii unplug, trip and delayed 84-percent cloud report discard the previous 
     assert.ok(Math.abs(manual.value - 85.18) < 1e-9); assert.equal(manual.manual, true);
     const again = h.run({now: T + 7271000, car: state(1, T + 7271000)});
     assert.equal(again.value, 84); assert.equal(again.ledger.manual, undefined); assert.equal(again.manualCleared, true);
+});
+
+test('Mii seeds 58% at reconnect, estimates the minimum before a late cloud update and checks both directions', () => {
+    const h = harness({capacityKWh: 32.3, car: state(1), reported: state(58), counter: state(12)});
+    h.run();
+    h.run({now: T + 1000, car: state(3, T + 1000), counter: state(0, T + 1000)});
+    const first = T + 1000;
+    const minutes = 346;
+    const energyKWh = 7.547;
+    let r, at, crossedAt = null;
+    for (let n = 1; n <= minutes; n++) {
+        at = first + n * 60000;
+        r = h.run({now: at, car: state(2, at), counter: state(n * energyKWh / minutes, at)});
+        if (r.value >= 70 && crossedAt === null) crossedAt = n * energyKWh / minutes;
+    }
+    assert.ok(crossedAt >= 4.30 && crossedAt <= 4.34, '70% is reached from the app seed at about 4.31 kWh');
+    assert.equal(Math.round(r.value), 79);
+    const projected = r.value;
+    for (const conflicting of [65, 75, 95]) {
+        at += 1000;
+        r = h.run({now: at, reported: state(conflicting, at), counter: state(energyKWh, at)});
+        assert.equal(r.value, projected, 'retain the measured estimate when a publication contradicts it');
+        assert.equal(r.reported, conflicting);
+        assert.equal(r.socWarning, true);
+    }
+    at += 1000;
+    r = h.run({now: at, reported: state(79, at), counter: state(energyKWh, at)});
+    assert.equal(r.value, projected, 'plausible rounded 79% preserves fractional progress');
+    assert.equal(r.socWarning, false);
+    assert.equal(estimateSoc(h.input()).value, projected, 'same sample and restart do not add energy twice');
+});
+
+test('an app change before the next counter poll only counts later energy', () => {
+    const h = harness({car: state(1), reported: state(58), counter: state(10)});
+    h.run();
+    h.run({now: T + 1000, car: state(3, T + 1000), counter: state(0, T + 1000)});
+    const changed = h.run({now: T + 30000, reported: state(59, T + 30000)});
+    assert.equal(changed.value, 59);
+    const firstPoll = h.run({now: T + 31000, car: state(2, T + 31000), counter: state(.1, T + 31000)});
+    assert.equal(firstPoll.value, 59, 'the interval before the new report may already be reflected');
+    const later = h.run({now: T + 61000, counter: state(.2, T + 61000)});
+    assert.ok(Math.abs(later.value - 59.18) < 1e-9);
 });
 
 test('legacy retained 100-percent basis across a blocked session boundary recovers to cloud on upgrade', () => {

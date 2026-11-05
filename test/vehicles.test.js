@@ -1587,7 +1587,7 @@ test('confirmed unplug clears correction, acknowledges -1 and does not reapply i
     assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.SoC_pct').val, 65);
 });
 
-for (const wb of [0, 1, 2]) test(`unplugged trip returns WB${wb} target decisions from 100 to cloud 84 until a new manual basis`, () => {
+for (const wb of [0, 1, 2]) test(`WB${wb} uses cloud 84 after the trip and resumes estimation when the new charge starts`, () => {
     let now = 1800000000000;
     const h = engine({[`wb${wb}SocEstimationEnabled`]: true, [`wb${wb}CapacityKWh`]: 32.3,
         [`wb${wb}SocEfficiencyPct`]: 90}, class extends Date { static now() { return now; } });
@@ -1598,19 +1598,36 @@ for (const wb of [0, 1, 2]) test(`unplugged trip returns WB${wb} target decision
     now += 1000; h.put(`DP_WB${wb}_CAR`, 1); h.run('updateVehicles()');
     now += 1000; h.put(`DP_WB${wb}_CAR`, 3); h.put(`DP_WB${wb}_SOC_ENERGY`, 0); h.run('updateVehicles()');
     now += 1000; h.put(`DP_WB${wb}_SOC`, 100); h.run('updateVehicles()');
-    now += 1000; h.put(`DP_WB${wb}_SOC`, 84); h.run('updateVehicles()');
+    now += 1000; h.put(`DP_WB${wb}_SOC`, 84); h.put(`DP_WB${wb}_SOC_ENERGY`, 0); h.run('updateVehicles()');
     assert.equal(h.states.get(root + '.SoC_pct').val, 84);
     assert.equal(h.states.get(root + '.EstimatedSoC_pct').val, null);
     assert.equal(h.states.get(root + '.Release').val, true, '84% is below the 90% target');
     assert.equal(h.states.get(root + '.SoCWarning').val, false);
     assert.equal(h.states.get(root + '.SocEstimateStatus').val, 'cloud-after-unplug');
-    now += 30000; h.put(`DP_WB${wb}_SOC_ENERGY`, .1); h.run('updateVehicles()');
-    assert.equal(h.states.get(root + '.SoC_pct').val, 84);
+    now += 30000; h.put(`DP_WB${wb}_CAR`, 2); h.put(`DP_WB${wb}_SOC_ENERGY`, .1); h.run('updateVehicles()');
+    assert.ok(h.states.get(root + '.SoC_pct').val > 84);
     h.run(`applyVehicleSocCorrection(${wb}, {val:85, ack:false, ts:${now}, q:0})`);
     now += 30000; h.put(`DP_WB${wb}_SOC_ENERGY`, .2); h.run('updateVehicles()');
     assert.ok(h.states.get(root + '.SoC_pct').val > 85);
     assert.equal(h.states.get(root + '.SoCCorrectionActive').val, true);
     assert.equal(h.states.get(`DP_WB${wb}_SOC`).val, 84, 'the source remains untouched');
+});
+
+test('Mii mandatory charging ends at the estimated 70% even while the app stays at 58%', () => {
+    let now = 1800000000000;
+    const h = engine({wb0SocEstimationEnabled: true, wb0CapacityKWh: 32.3,
+        wb0SocEfficiencyPct: 90}, class extends Date { static now() { return now; } });
+    h.run("requestForecastRebuild = () => {}; CFG.dp.wallboxSocMeasuredAt[0] = ''");
+    h.put('DP_WB0_MIN_SOC', 70); h.put('DP_WB0_TARGET', 90); h.put('DP_WB0_SOC', 58);
+    h.put('DP_WB0_CAR', 1); h.run('updateVehicles()');
+    now += 1000; h.put('DP_WB0_CAR', 3); h.put('DP_WB0_SOC_ENERGY', 0); h.run('updateVehicles()');
+    for (let n = 1; n <= 44; n++) {
+        now += 60000;
+        h.put('DP_WB0_CAR', 2); h.put('DP_WB0_SOC_ENERGY', n / 10); h.run('updateVehicles()');
+        assert.equal(h.run('vehicleState(0).mustCharge'), n < 44);
+    }
+    assert.ok(h.states.get('ems.0.Vehicles.Wallbox0.EstimatedSoC_pct').val >= 70);
+    assert.equal(h.states.get('DP_WB0_SOC').val, 58);
 });
 
 test('priority calculations carrying an older cycle time preserve the newer manual SoC ledger', () => {

@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.202",
+    "version": "0.17.0-alpha.203",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.203": {
+        "en": "Spread a necessary hot-water bridge at constant power across equally priced slots before a cheaper window when the reserve and heater limits allow it. Resume vehicle SoC estimation from the latest app reading and measured charge, and check subsequent readings for plausibility.",
+        "de": "Notwendige Warmwasserwärme vor einem günstigeren Fenster mit konstanter Leistung über gleich teure Intervalle verteilen, sofern Mindestreserve und Heizgrenzen dies zulassen. Fahrzeug-SoC ab dem letzten App-Wert mit gemessener Ladeenergie fortschreiben und spätere Meldungen auf Plausibilität prüfen.",
+        "es": "Repartir la calefacción necesaria del agua caliente a potencia constante entre intervalos del mismo precio antes de una franja más barata, respetando la reserva y los límites del calentador. Reanudar la estimación del SoC a partir de la última lectura de la aplicación y la carga medida, y comprobar la plausibilidad de las lecturas posteriores.",
+        "fr": "Répartir à puissance constante le chauffage nécessaire de l’eau chaude entre les créneaux au même prix avant une période moins chère, dans les limites de la réserve et du chauffage. Reprendre l’estimation du SoC à partir du dernier relevé de l’application et de la charge mesurée, puis vérifier la cohérence des relevés suivants.",
+        "it": "Distribuire a potenza costante il calore necessario per l’acqua calda negli intervalli con lo stesso prezzo prima di una fascia più economica, nel rispetto della riserva e dei limiti del riscaldatore. Riprendere la stima del SoC dall’ultima lettura dell’app e dall’energia di ricarica misurata, verificando la plausibilità delle letture successive.",
+        "nl": "Verdeel de nodige warmwaterverwarming met constant vermogen over intervallen met dezelfde prijs vóór een goedkoper venster, binnen de reserve en verwarmingsgrenzen. Hervat de SoC-schatting vanaf de laatste appwaarde en de gemeten laadenergie, en controleer latere waarden op plausibiliteit.",
+        "pl": "Rozkładaj niezbędne podgrzewanie wody ze stałą mocą na okresy o tej samej cenie przed tańszym oknem, zachowując rezerwę i ograniczenia grzałki. Wznawiaj szacowanie SoC od ostatniego odczytu z aplikacji i zmierzonej energii ładowania oraz sprawdzaj wiarygodność kolejnych odczytów.",
+        "pt": "Distribuir o aquecimento necessário da água a potência constante por intervalos com o mesmo preço antes de um período mais barato, respeitando a reserva e os limites do aquecedor. Retomar a estimativa do SoC a partir da última leitura da aplicação e da energia de carregamento medida, verificando a plausibilidade das leituras seguintes.",
+        "ru": "Распределять необходимый нагрев воды с постоянной мощностью по интервалам с одинаковой ценой перед более дешёвым периодом с учётом запаса тепла и ограничений нагревателя. Возобновлять оценку SoC по последнему показанию приложения и измеренной энергии зарядки, проверяя достоверность последующих показаний.",
+        "uk": "Розподіляти потрібний нагрів води зі сталою потужністю між інтервалами з однаковою ціною перед дешевшим періодом з урахуванням запасу тепла й обмежень нагрівача. Відновлювати оцінку SoC за останнім показом застосунку й виміряною енергією заряджання та перевіряти правдоподібність наступних показів.",
+        "zh-cn": "在更便宜的时段开始前，将必要的热水加热以恒定功率分配到相同电价的时段，同时满足储热下限和加热器限制。 根据应用中最近一次读数和实测充电量继续估算车辆荷电状态，并检查后续读数是否合理。"
+      },
       "0.17.0-alpha.202": {
         "en": "Anticipate hot-water demand across a dearer price block and refill the necessary reserve in the latest feasible cheaper slots. Bound forecast purchases by useful PV, remaining slot time, heater power and storage capacity; retain live output permissions.",
         "de": "Warmwasserbedarf ueber einen teureren Preisblock vorausschauen und die noetige Reserve rechtzeitig in den letzten nutzbaren guenstigeren Fenstern aufbauen. PV, Restzeit, Heizleistung und Speicherplatz begrenzen die Prognose; reale Ausgangsfreigaben bleiben bestehen.",
@@ -81,19 +94,6 @@
         "ru": "Discard calculated SoC and manual correction on confirmed unplug; retain cloud authority across reconnects and restarts until a new manual basis is supplied. Recover old blocked-session ledgers without retaining a stale full-charge estimate.",
         "uk": "Discard calculated SoC and manual correction on confirmed unplug; retain cloud authority across reconnects and restarts until a new manual basis is supplied. Recover old blocked-session ledgers without retaining a stale full-charge estimate.",
         "zh-cn": "Discard calculated SoC and manual correction on confirmed unplug; retain cloud authority across reconnects and restarts until a new manual basis is supplied. Recover old blocked-session ledgers without retaining a stale full-charge estimate."
-      },
-      "0.17.0-alpha.196": {
-        "en": "Attribute passive current-response diagnostics to the sent target instead of the previous ACK; distinguish superseded commands from pending evidence. Keep charging control and timing unchanged.",
-        "de": "Passive Stromantwortdiagnose dem gesendeten Sollwert statt dem vorherigen ACK zuordnen; abgeloeste Befehle von offenen Nachweisen trennen. Laderegelung und Zeitgrenzen bleiben unveraendert.",
-        "es": "Attribute passive current-response diagnostics to the sent target instead of the previous ACK; distinguish superseded commands from pending evidence. Keep charging control and timing unchanged.",
-        "fr": "Attribute passive current-response diagnostics to the sent target instead of the previous ACK; distinguish superseded commands from pending evidence. Keep charging control and timing unchanged.",
-        "it": "Attribute passive current-response diagnostics to the sent target instead of the previous ACK; distinguish superseded commands from pending evidence. Keep charging control and timing unchanged.",
-        "nl": "Attribute passive current-response diagnostics to the sent target instead of the previous ACK; distinguish superseded commands from pending evidence. Keep charging control and timing unchanged.",
-        "pl": "Attribute passive current-response diagnostics to the sent target instead of the previous ACK; distinguish superseded commands from pending evidence. Keep charging control and timing unchanged.",
-        "pt": "Attribute passive current-response diagnostics to the sent target instead of the previous ACK; distinguish superseded commands from pending evidence. Keep charging control and timing unchanged.",
-        "ru": "Attribute passive current-response diagnostics to the sent target instead of the previous ACK; distinguish superseded commands from pending evidence. Keep charging control and timing unchanged.",
-        "uk": "Attribute passive current-response diagnostics to the sent target instead of the previous ACK; distinguish superseded commands from pending evidence. Keep charging control and timing unchanged.",
-        "zh-cn": "Attribute passive current-response diagnostics to the sent target instead of the previous ACK; distinguish superseded commands from pending evidence. Keep charging control and timing unchanged."
       }
     },
     "titleLang": {
