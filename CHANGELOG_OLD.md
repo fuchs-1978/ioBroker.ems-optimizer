@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.198 (2026-11-04)
+
+- (fuchs-1978) Continue measured live vehicle/heater distribution when the plan is missing or stale, retaining all source and electrical protections. Re-read provisional empty history days and retry incomplete profiles after SQL recovery. Forecast-based price permissions remain disabled in fallback. [Details and limits](docs/release-0.17.0-alpha.198.md).
+
 ## 0.17.0-alpha.197 (2026-11-03)
 
 - (fuchs-1978) Discard calculated SoC and manual correction on confirmed unplug; retain cloud authority across reconnects and restarts until a new manual basis is supplied. Recover old blocked-session ledgers without retaining a stale full-charge estimate. [Details and limits](docs/release-0.17.0-alpha.197.md).
