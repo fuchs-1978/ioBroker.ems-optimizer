@@ -7,7 +7,7 @@
 
 Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Combines PV and grid measurements, load history, weather forecasts and electricity prices in a rolling 48-hour plan.
 
-**Current version: 0.17.0-alpha.202.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
+**Current version: 0.17.0-alpha.203.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
 
 [Deutsche Bedienungsanleitung](README.de.md) · [Release history](CHANGELOG_OLD.md) · [Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
@@ -165,6 +165,10 @@ npm run test:equivalence
 Admin translation catalogs are stored in `admin/i18n/<language>/translations.json`. Keep their keys aligned with the English catalog and all visible Admin texts. Admin catalog coverage and release-message translation are separate: current news entries have eleven language keys but nine locales still use English fallback. That remaining work is tracked in [#316](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/316). See [translation coverage and checks](docs/translations.md).
 
 ## Changelog
+
+### 0.17.0-alpha.203 (2026-11-05)
+
+- Spread necessary hot-water heating at constant power across a contiguous equal-price window ahead of a cheaper tariff. The forecast retains the minimum reserve, heater and storage limits, and priority for acute demand.
 
 ### 0.17.0-alpha.202 (2026-11-04)
 

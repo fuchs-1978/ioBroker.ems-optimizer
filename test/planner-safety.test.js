@@ -564,6 +564,20 @@ function thermalFixture({temperatures = [35.9, 40.1, 48.1, 55.2], demand = 20, l
     return {...h, report};
 }
 
+test('warm-water bridge spreads the 21–23 demand at one price and maintains the reserve', () => {
+    const minimumReserveC = 40 + 0.5 / (500 * 1.163 / 1000);
+    const h = thermalFixture({temperatures: Array(4).fill(minimumReserveC), demand: 25,
+        start: '2026-11-05T20:00:00Z'});
+    const houseW = [1211, 1153, 1067, 1001, 1008, 968, 903, 871, 821];
+    const data = h.plan({slots: 9, pvW: 0, houseW, price: [...Array(8).fill(30.04), 23.56]});
+    const a = balancedPlan(h, data).slice(0, 8);
+    for (const p of a) near(p.dhwGridW, 1125, 'even heater power before the cheaper slot');
+    near(a.reduce((sum, p) => sum + p.dhwGridW / 4000, 0), 2.25, 'same purchased heat');
+    near(Math.max(...a.map(p => p.gridW)), 2336, 'modeled grid peak in the two-hour window');
+    assert.ok(h.report().slots.slice(0, 8).every(p => p.usableKWh >= 0.5 - 1e-7));
+    assert.equal(h.report().gridAuthorization, false);
+});
+
 test('thermal price rise: isolated PV at the tariff edge cannot postpone the evening bridge into HT', () => {
     const h = thermalFixture({temperatures: [42.4, 42.4, 42.4, 42.4], demand: 25,
         start: '2026-11-05T14:00:00Z'});

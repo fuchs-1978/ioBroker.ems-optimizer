@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.196 (2026-11-03)
+
+- (fuchs-1978) Attribute passive current-response diagnostics to the sent target instead of the previous ACK. [Details and limits](docs/release-0.17.0-alpha.196.md).
+
 ## 0.17.0-alpha.195 (2026-11-03)
 
 - (fuchs-1978) Redistribute PV budget during sustained vehicle uptake limits using a confirmed lower current command, retaining nominal reservations until ACK. Preserve measured SoC progress against delayed lower cloud reports and observed charge/Finish transitions. [Details and limits](docs/release-0.17.0-alpha.195.md).
