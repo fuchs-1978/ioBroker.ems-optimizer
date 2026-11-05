@@ -66,8 +66,9 @@ test('Mii corrects a provisional pre-trip 70% to the first lower arrival report 
     h.run();
     h.run({now: T + 1000, car: state(1, T + 1000)});
     const start = T + 20 * 60000;
-    const unplugged = h.run({now: start - 1000, car: {...state(1, start - 1000), lc: T + 1000},
-        reported: {...state(70, start - 1000), lc: T}});
+    const midTrip = T + 5 * 60000;
+    const unplugged = h.run({now: midTrip, car: {...state(1, midTrip), lc: T + 1000},
+        reported: {...state(70, midTrip), lc: T}});
     assert.equal(unplugged.ledger.preTripSoc, 70, 'republication during the trip is still the pre-trip value');
     h.run({now: start, car: {...state(3, start), lc: start}, counter: state(0, start)});
     for (let n = 1; n <= 16; n++) {
