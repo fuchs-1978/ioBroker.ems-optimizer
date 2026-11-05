@@ -32,7 +32,7 @@ test('Mii unplug, trip and delayed 84-percent cloud report discard the previous 
 });
 
 test('Mii seeds 58% at reconnect, estimates the minimum before a late cloud update and checks both directions', () => {
-    const h = harness({capacityKWh: 32.3, car: state(1), reported: state(58), counter: state(12)});
+    const h = harness({capacityKWh: 32.3, car: state(1), reported: state(58, T - 1000), counter: state(12)});
     h.run();
     h.run({now: T + 1000, car: state(3, T + 1000), counter: state(0, T + 1000)});
     const first = T + 1000;
@@ -59,6 +59,51 @@ test('Mii seeds 58% at reconnect, estimates the minimum before a late cloud upda
     assert.equal(r.value, projected, 'plausible rounded 79% preserves fractional progress');
     assert.equal(r.socWarning, false);
     assert.equal(estimateSoc(h.input()).value, projected, 'same sample and restart do not add energy twice');
+});
+
+test('Mii corrects a provisional pre-trip 70% to the first lower arrival report while charging', () => {
+    const h = harness({capacityKWh: 32.3, reported: state(70), counter: state(12)});
+    h.run();
+    h.run({now: T + 1000, car: state(1, T + 1000)});
+    const start = T + 20 * 60000;
+    const unplugged = h.run({now: start - 1000, car: {...state(1, start - 1000), lc: T + 1000},
+        reported: {...state(70, start - 1000), lc: T}});
+    assert.equal(unplugged.ledger.preTripSoc, 70, 'republication during the trip is still the pre-trip value');
+    h.run({now: start, car: {...state(3, start), lc: start}, counter: state(0, start)});
+    for (let n = 1; n <= 16; n++) {
+        const at = start + n * 60000;
+        h.run({now: at, car: state(2, at), counter: state(n * .022, at)});
+    }
+    const pendingAt = start + 16 * 60000 + 1000;
+    const before = estimateSoc(h.input());
+    assert.equal(before.reason, 'energy-estimate-provisional-trip');
+    assert.ok(Math.abs(before.value - (70 + .352 * 90 / 32.3)) < 1e-9);
+    const pending = h.run({now: pendingAt, reported: state(60, pendingAt)});
+    assert.equal(pending.value, before.value);
+    assert.equal(h.run().socWarning, false, 'a repeated evaluation can await the aligned poll');
+    const alignedAt = pendingAt + 1000;
+    const aligned = h.run({now: alignedAt, counter: state(.353, alignedAt)});
+    assert.equal(aligned.value, 60);
+    assert.equal(aligned.ledger.preTripSoc, undefined);
+    assert.equal(aligned.socWarning, false);
+    const laterAt = alignedAt + 30000;
+    const later = h.run({now: laterAt, counter: state(.363, laterAt), reported: state(58, laterAt)});
+    assert.ok(Math.abs(later.value - (60 + .01 * 90 / 32.3)) < 1e-9);
+    assert.equal(later.socWarning, true, 'a second low app publication cannot reopen the exception');
+    assert.equal(estimateSoc(h.input()).value, later.value);
+});
+
+test('a post-trip report received before charging is already a confirmed basis', () => {
+    const h = harness({reported: state(70), car: state(2)});
+    h.run();
+    h.run({now: T + 1000, car: state(1, T + 1000)});
+    h.run({now: T + 30000, car: state(3, T + 30000), reported: state(60, T + 30000),
+        counter: state(0, T + 30000)});
+    const started = h.run({now: T + 60000, car: state(2, T + 60000), counter: state(.1, T + 60000)});
+    assert.equal(started.reason, 'energy-estimate');
+    const delayed = h.run({now: T + 90000, reported: state(53, T + 90000), counter: state(.2, T + 90000)});
+    assert.ok(Math.abs(delayed.value - 60.36) < 1e-9);
+    assert.equal(delayed.socWarning, true);
 });
 
 test('an app change before the next counter poll only counts later energy', () => {

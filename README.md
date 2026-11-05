@@ -7,7 +7,7 @@
 
 Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Combines PV and grid measurements, load history, weather forecasts and electricity prices in a rolling 48-hour plan.
 
-**Current version: 0.17.0-alpha.203.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
+**Current version: 0.17.0-alpha.204.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
 
 [Deutsche Bedienungsanleitung](README.de.md) · [Release history](CHANGELOG_OLD.md) · [Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
@@ -61,7 +61,7 @@ Mandatory hot water can share PV with the preferred, already confirmed 1P charge
 
 ## Vehicle SoC and handoff
 
-Confirmed unplug ends the calculated SoC session and clears the manual correction. The valid cloud/vehicle value applies while waiting for measured charge in the new session. During this wait, `SocEstimateStatus` is `cloud-after-unplug` and `EstimatedSoC_pct` is null. On the new charge, the estimator adds energy from a fresh counter anchor to the latest valid app value. It flags subsequent reports that disagree with continuous measured charge when their measurement time is unknown. An entry in `Vehicles.WallboxN.SoCCorrection_pct` can also establish a fresh anchor. [Current SoC contract](README.de.md#fahrzeug-soc-und-sitzungswechsel).
+Confirmed unplug ends the calculated SoC session and clears the manual correction. The valid cloud/vehicle value applies while waiting for measured charge in the new session. During this wait, `SocEstimateStatus` is `cloud-after-unplug` and `EstimatedSoC_pct` is null. On the new charge, the estimator adds energy from a fresh counter anchor to the latest valid app value. If that value predates the observed unplug, the estimate is provisional for up to 30 minutes of the new charge and can accept one lower app reading. An entry in `Vehicles.WallboxN.SoCCorrection_pct` can also establish a fresh anchor. [Current SoC contract](README.de.md#fahrzeug-soc-und-sitzungswechsel).
 
 A qualified charger-Finish observation can end charging and hand off after independent OFF/electrical-quiet proof; it does not set SoC to 100%. Sustained limited vehicle uptake can release budget for another vehicle through a confirmed lower command and the existing reserve/start checks. Real Mii taper transfer remains a separate acceptance case from the successful EQV-unplug/EQE handoff. [Finish](docs/release-0.17.0-alpha.194.md) · [Taper budget](docs/release-0.17.0-alpha.195.md).
 
@@ -166,6 +166,10 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 
 ## Changelog
 
+### 0.17.0-alpha.204 (2026-11-05)
+
+- Accept one early lower arrival report after an observed unplug when the current estimate still starts from the pre-trip value. Continue counting at the first aligned charge-counter sample. [Policy and limits](docs/release-0.17.0-alpha.204.md).
+
 ### 0.17.0-alpha.203 (2026-11-05)
 
 - Spread necessary hot-water heating at constant power across a contiguous equal-price window ahead of a cheaper tariff. The forecast retains the minimum reserve, heater and storage limits, and priority for acute demand.
@@ -190,10 +194,6 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 ### 0.17.0-alpha.198 (2026-11-04)
 
 - (fuchs-1978) Continue measured live vehicle/heater distribution when the plan is missing or stale, retaining all source and electrical protections. Re-read provisional empty history days and retry incomplete profiles after SQL recovery. Forecast-based price permissions remain disabled in fallback. [Details and limits](docs/release-0.17.0-alpha.198.md).
-
-### 0.17.0-alpha.197 (2026-11-03)
-
-- (fuchs-1978) Discard calculated SoC and manual correction on confirmed unplug; retain cloud authority across reconnects and restarts until a new manual basis is supplied. Recover old blocked-session ledgers without retaining a stale full-charge estimate. [Details and limits](docs/release-0.17.0-alpha.197.md).
 
 ### 0.17.0-alpha.196 (2026-11-03)
 

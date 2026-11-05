@@ -1630,6 +1630,33 @@ test('Mii mandatory charging ends at the estimated 70% even while the app stays 
     assert.equal(h.states.get('DP_WB0_SOC').val, 58);
 });
 
+test('Mii switches from provisional pre-trip 70% to mandatory charging after a delayed arrival report of 60%', () => {
+    let now = 1800000000000;
+    const h = engine({wb0SocEstimationEnabled: true, wb0CapacityKWh: 32.3,
+        wb0SocEfficiencyPct: 90}, class extends Date { static now() { return now; } });
+    h.run("requestForecastRebuild = () => {}; CFG.dp.wallboxSocMeasuredAt[0] = ''");
+    h.put('DP_WB0_MIN_SOC', 70); h.put('DP_WB0_TARGET', 90); h.put('DP_WB0_SOC', 70);
+    h.put('DP_WB0_SOC_ENERGY', 10); h.run('updateVehicles()');
+    now += 1000; h.put('DP_WB0_CAR', 1); h.run('updateVehicles()');
+    now += 1200000; h.put('DP_WB0_CAR', 3); h.put('DP_WB0_SOC_ENERGY', 0); h.run('updateVehicles()');
+    for (let n = 1; n <= 16; n++) {
+        now += 60000;
+        h.put('DP_WB0_CAR', 2); h.put('DP_WB0_SOC_ENERGY', n * .022); h.run('updateVehicles()');
+    }
+    assert.equal(h.run('vehicleState(0).mustCharge'), false);
+    now += 1000; h.put('DP_WB0_SOC', 60); h.put('DP_WB0_SOC_ENERGY', .353); h.run('updateVehicles()');
+    const root = 'ems.0.Vehicles.Wallbox0';
+    assert.equal(h.states.get(root + '.SoC_pct').val, 60);
+    assert.equal(h.run('vehicleState(0).mustCharge'), true);
+    for (let n = 1; n <= 36; n++) {
+        now += 60000;
+        h.put('DP_WB0_SOC_ENERGY', .353 + n / 10); h.run('updateVehicles()');
+        assert.equal(h.run('vehicleState(0).mustCharge'), n < 36);
+    }
+    assert.ok(h.states.get(root + '.EstimatedSoC_pct').val >= 70);
+    assert.equal(h.states.get('DP_WB0_SOC').val, 60);
+});
+
 test('priority calculations carrying an older cycle time preserve the newer manual SoC ledger', () => {
     let now = 1800000000000;
     const h = engine({wb0SocEstimationEnabled: true, wb0CapacityKWh: 32.3,
