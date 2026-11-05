@@ -7,7 +7,7 @@
 
 Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Combines PV and grid measurements, load history, weather forecasts and electricity prices in a rolling 48-hour plan.
 
-**Current GitHub build: 0.17.0-alpha.205.** Install the tested build from GitHub and commission each enabled device against its actual feedback and protection limits. [Alpha.205 release notes](docs/release-0.17.0-alpha.205.md)
+**Current GitHub build: 0.17.0-alpha.206.** Install the tested build from GitHub and commission each enabled device against its actual feedback and protection limits. [Alpha.206 release notes](docs/release-0.17.0-alpha.206.md)
 
 [Deutsche Bedienungsanleitung](README.de.md) · [Release history](CHANGELOG_OLD.md) · [Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
@@ -170,9 +170,13 @@ npm run test:artifact
 npm run test:equivalence
 ```
 
-Admin translation catalogs are stored in `admin/i18n/<language>/translations.json`. Keep their keys aligned with the English catalog and all visible Admin text. Release notices Alpha.202–.205 are translated into all eleven languages. Alpha.199–.201 still use English fallback for nine locales. [Translation coverage and checks](docs/translations.md) · [Checker follow-up #316](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/316)
+Admin translation catalogs are stored in `admin/i18n/<language>/translations.json`. Keep their keys aligned with the English catalog and all visible Admin text. Release notices Alpha.202–.206 are translated into all eleven languages. Alpha.200–.201 still use English fallback for nine locales. [Translation coverage and checks](docs/translations.md) · [Checker follow-up #316](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/316)
 
 ## Changelog
+
+### 0.17.0-alpha.206 (2026-11-05)
+
+- Spread forecast hot-water heating within the equal-price night block before a tariff rise when the thermal reserve and heater limits permit. [Scope and model assumptions](docs/release-0.17.0-alpha.206.md).
 
 ### 0.17.0-alpha.205 (2026-11-05)
 
