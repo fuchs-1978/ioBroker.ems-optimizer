@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.203",
+    "version": "0.17.0-alpha.204",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.204": {
+        "en": "Rebase a provisional pre-trip SoC once on an early lower app reading and continue from its aligned charge counter.",
+        "de": "Einen vorläufigen SoC von vor der Fahrt einmalig durch einen frühen niedrigeren App-Wert ersetzen und ab dem zugeordneten Ladezähler fortschreiben.",
+        "es": "Reajustar una vez el SoC provisional previo al viaje con una lectura inicial inferior y continuar desde el contador de carga asociado.",
+        "fr": "Recaler une fois le SoC provisoire d’avant trajet sur un premier relevé inférieur, puis reprendre le calcul avec le compteur de charge associé.",
+        "it": "Aggiornare una volta il SoC provvisorio precedente al viaggio con un primo valore più basso e proseguire dal contatore di ricarica associato.",
+        "nl": "Vervang de voorlopige SoC van vóór de rit eenmalig door een vroege lagere appwaarde en reken verder vanaf de bijbehorende laadteller.",
+        "pl": "Jednorazowo skoryguj wstępny SoC sprzed jazdy na podstawie niższego wczesnego odczytu i kontynuuj od powiązanego licznika ładowania.",
+        "pt": "Reajustar uma vez o SoC provisório anterior à viagem com uma leitura inicial mais baixa e continuar a partir do contador de carga associado.",
+        "ru": "Однократно заменить предварительный SoC до поездки ранним меньшим значением и продолжить расчёт от соответствующего показания счётчика.",
+        "uk": "Одноразово замінити попередній SoC до поїздки раннім нижчим показом і продовжити розрахунок від відповідного показу лічильника.",
+        "zh-cn": "用较早收到的更低读数一次性修正出发前的临时荷电状态，并从对应的充电计量值继续估算。"
+      },
       "0.17.0-alpha.203": {
         "en": "Spread a necessary hot-water bridge at constant power across equally priced slots before a cheaper window when the reserve and heater limits allow it. Resume vehicle SoC estimation from the latest app reading and measured charge, and check subsequent readings for plausibility.",
         "de": "Notwendige Warmwasserwärme vor einem günstigeren Fenster mit konstanter Leistung über gleich teure Intervalle verteilen, sofern Mindestreserve und Heizgrenzen dies zulassen. Fahrzeug-SoC ab dem letzten App-Wert mit gemessener Ladeenergie fortschreiben und spätere Meldungen auf Plausibilität prüfen.",
@@ -81,19 +94,6 @@
         "ru": "Keep measured live distribution running without a valid forecast plan; retry provisional empty history days and rebuild incomplete profiles after SQL recovery. Preserve physical safeguards and deny forecast-based price permissions in fallback.",
         "uk": "Keep measured live distribution running without a valid forecast plan; retry provisional empty history days and rebuild incomplete profiles after SQL recovery. Preserve physical safeguards and deny forecast-based price permissions in fallback.",
         "zh-cn": "Keep measured live distribution running without a valid forecast plan; retry provisional empty history days and rebuild incomplete profiles after SQL recovery. Preserve physical safeguards and deny forecast-based price permissions in fallback."
-      },
-      "0.17.0-alpha.197": {
-        "en": "Discard calculated SoC and manual correction on confirmed unplug; retain cloud authority across reconnects and restarts until a new manual basis is supplied. Recover old blocked-session ledgers without retaining a stale full-charge estimate.",
-        "de": "Berechneten SoC und manuelle Korrektur bei bestaetigtem Abstecken verwerfen; danach Cloud-Wert ueber Wiederanstecken und Neustarts bis zu einer neuen manuellen Basis verwenden. Alte gesperrte Sitzungsdaten ohne festgehaltene Vollladeschaetzung uebernehmen.",
-        "es": "Discard calculated SoC and manual correction on confirmed unplug; retain cloud authority across reconnects and restarts until a new manual basis is supplied. Recover old blocked-session ledgers without retaining a stale full-charge estimate.",
-        "fr": "Discard calculated SoC and manual correction on confirmed unplug; retain cloud authority across reconnects and restarts until a new manual basis is supplied. Recover old blocked-session ledgers without retaining a stale full-charge estimate.",
-        "it": "Discard calculated SoC and manual correction on confirmed unplug; retain cloud authority across reconnects and restarts until a new manual basis is supplied. Recover old blocked-session ledgers without retaining a stale full-charge estimate.",
-        "nl": "Discard calculated SoC and manual correction on confirmed unplug; retain cloud authority across reconnects and restarts until a new manual basis is supplied. Recover old blocked-session ledgers without retaining a stale full-charge estimate.",
-        "pl": "Discard calculated SoC and manual correction on confirmed unplug; retain cloud authority across reconnects and restarts until a new manual basis is supplied. Recover old blocked-session ledgers without retaining a stale full-charge estimate.",
-        "pt": "Discard calculated SoC and manual correction on confirmed unplug; retain cloud authority across reconnects and restarts until a new manual basis is supplied. Recover old blocked-session ledgers without retaining a stale full-charge estimate.",
-        "ru": "Discard calculated SoC and manual correction on confirmed unplug; retain cloud authority across reconnects and restarts until a new manual basis is supplied. Recover old blocked-session ledgers without retaining a stale full-charge estimate.",
-        "uk": "Discard calculated SoC and manual correction on confirmed unplug; retain cloud authority across reconnects and restarts until a new manual basis is supplied. Recover old blocked-session ledgers without retaining a stale full-charge estimate.",
-        "zh-cn": "Discard calculated SoC and manual correction on confirmed unplug; retain cloud authority across reconnects and restarts until a new manual basis is supplied. Recover old blocked-session ledgers without retaining a stale full-charge estimate."
       }
     },
     "titleLang": {

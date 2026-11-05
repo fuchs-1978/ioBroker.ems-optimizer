@@ -1,6 +1,6 @@
 # EMS Optimizer
 
-**Aktuelle Adapterversion: 0.17.0-alpha.203.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
+**Aktuelle Adapterversion: 0.17.0-alpha.204.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
 
 [English overview](README.md) · [Vollständige Admin-Feldreferenz](docs/admin-reference.de.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) · [Versionsänderungen](README.md#changelog)
 
@@ -60,12 +60,13 @@ Ein freigegebener EHZ kann während der Startwartezeit auch das vorgemerkte Budg
 | Bestätigtes Abstecken | Berechnete Basis, gehaltener Schätzwert, manuelle Korrektur und zugehörige Warnung werden verworfen. |
 | Danach, bis Ladeenergie in der neuen Sitzung erfasst wird | Gültiger Cloud-/Fahrzeugwert. `SocEstimateStatus = cloud-after-unplug` zeigt das Warten auf die neue Ladebasis an. |
 | Neue Ladung bei aktivierter SoC-Schätzung | Letzten gültigen App-Wert mit dem frischen Wallbox-Zähler verankern und anhand der neu gemessenen Energie fortschreiben. |
+| Ladebasis stammt von vor dem beobachteten Abstecken | `energy-estimate-provisional-trip` zeigt die vorläufige Schätzung. In den ersten 30 Minuten kann einmalig ein niedrigerer App-Wert mit passendem Zählerstand zur neuen Basis werden. |
 | Neue manuelle Eingabe | Geprüften SoC von 0 bis 100 mit `ack=false` nach `Vehicles.WallboxN.SoCCorrection_pct` schreiben. Ein frischer Energiezähler und ein angeschlossenes Fahrzeug sind erforderlich. Nur nachfolgende Energie wird addiert. |
 | Manuelle Eingabe zurücknehmen | `-1` schreiben. Status unter `SoCCorrectionActive` und `SoCCorrectionStatus` prüfen. |
 | Fehlende oder widersprüchliche Daten einer manuellen Basis | Fortschreibung kann suspendiert werden; keine stillschweigende Übernahme einer alten Cloud-Meldung. |
 | Ununterbrochene automatische Ladung ohne Sitzungsende | Vorhandene qualifizierte Fortschreibung bleibt erhalten; verspätete Cloud-Werte können eine Plausibilitätswarnung auslösen. |
 
-Nach einer Fahrt gilt bis zum neuen Ladebeginn der jeweils aktuelle Cloud-Wert. Sobald die Wallbox Ladeenergie erfasst, rechnet das EMS auf dieser Basis weiter. Bei durchgängiger Zählung lösen spätere App-Werte ohne Fahrzeugmesszeitpunkt eine Warnung aus, wenn sie um mehr als einen Prozentpunkt von der neuen Schätzung abweichen. Der geschätzte SoC bleibt dann wirksam. Die zuverlässige Bereitstellung des tatsächlichen Fahrzeugmesszeitpunkts ist in [#320](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/320) erfasst.
+Nach einer Fahrt gilt bis zum neuen Ladebeginn der jeweils aktuelle Cloud-Wert. Sobald die Wallbox Ladeenergie erfasst, rechnet das EMS auf dieser Basis weiter. Nach Ablauf der vorläufigen Phase oder Übernahme einer neuen Basis lösen abweichende spätere App-Werte ohne Fahrzeugmesszeitpunkt bei durchgängiger Zählung ab einem Unterschied von mehr als einem Prozentpunkt eine Warnung aus. Der geschätzte SoC bleibt dann wirksam. [Ausnahme und Nachweisgrenzen](docs/release-0.17.0-alpha.204.md) · [Fahrzeugmesszeitpunkt #320](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/320).
 
 `SoC_pct` ist der wirksame Regelwert, `ReportedSoC_pct` die gemeldete Quelle und `EstimatedSoC_pct` eine tatsächlich aktive Fortschreibung. Eine go-e-Finish-Meldung setzt den SoC nicht auf 100 %. [Vollständiger SoC-Vertrag](docs/admin-reference.de.md#optionale-soc-schätzung-aus-ladeenergie-alle-drei-fahrzeuge) · [Sitzungsende und Migration](docs/release-0.17.0-alpha.197.md).
 
