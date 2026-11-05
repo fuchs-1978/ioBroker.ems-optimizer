@@ -4,16 +4,14 @@
 
 [English overview](README.md) · [Vollständige Admin-Feldreferenz](docs/admin-reference.de.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) · [Versionsänderungen](README.md#changelog)
 
-Die historischen Leistungswerte für Hauslast, PV und enthaltene flexible Verbraucher werden seit alpha.200 zeitgewichtet auf gemeinsame Viertelstunden gebracht. Dadurch verzerren häufig gespeicherte Heiz-/Ladespitzen das Lastprofil nicht mehr. Lange Datenlücken bleiben unbekannt; bereits ausgegebene Vergleichsprognosen bleiben erhalten. [Berechnung und Grenzen](docs/release-0.17.0-alpha.200.md).
-
-Seit alpha.201 kann der EHZ-Pflichtwärmebedarf neben der bereits bestätigten bevorzugten 1P-Mindestladung versorgt werden, wenn beide Verbraucher ins reale Budget passen und oben noch ausreichend warmes Wasser vorhanden ist. Eine nötige Wärmeunterbrechung darf dasselbe Fahrzeug mit begrenztem Nachweis und 15 Sekunden frischer Budgetprüfung fortsetzen. Neue Ladungen behalten ihre normale Wartezeit. [Wärmepriorität und Wiederanlauf](docs/release-0.17.0-alpha.201.md).
-
-Seit alpha.202 baut die Wärmeprognose den benötigten Vorrat vor einem teureren Preisblock rechtzeitig auf. Eine einzelne sonnige Viertelstunde am Tarifwechsel verdeckt den späteren Wärmebedarf nicht mehr. Heizleistung, Speicherplatz, PV und verbleibende Zeit begrenzen die Vorziehung; ein Netz-Wärmevorschlag erteilt keine reale Heizfreigabe. [Preisvorschau und Grenzen](docs/release-0.17.0-alpha.202.md).
+Alpha.205 kann bei laufender einphasiger Ladung einen bestätigten Rücksprung um 1 A abfangen. Alpha.204 berücksichtigt einen frühen niedrigeren App-SoC nach einer Fahrt. [Stromkorrektur](docs/release-0.17.0-alpha.205.md) · [SoC nach der Fahrt](docs/release-0.17.0-alpha.204.md)
 
 ## Inhaltsverzeichnis
 
 - [Installation und Aktualisierung](#installation-und-aktualisierung)
 - [Betriebsarten und sichere Zuständigkeit](#betriebsarten-und-sichere-zuständigkeit)
+- [Istwertverteilung ohne Fahrplan](#istwertverteilung-ohne-fahrplan)
+- [Warmwasserplanung und Vorrang](#warmwasserplanung-und-vorrang)
 - [Fahrzeug-SoC und Sitzungswechsel](#fahrzeug-soc-und-sitzungswechsel)
 - [Start, Stopp, Übergabe und Phasenwechsel](#start-stopp-übergabe-und-phasenwechsel)
 - [EMS-Übersicht und Diagnose](#ems-übersicht-erklärung-datenqualität-und-tagesrückblick)
@@ -25,7 +23,7 @@ Seit alpha.202 baut die Wärmeprognose den benötigten Vorrat vor einem teureren
 
 Voraussetzungen: Node.js ab 22, js-controller ab 6.0.11 und Admin ab 7.8.23. Die CI prüft Node 22, 24 und 26 unter Ubuntu. Der Adapter befindet sich im Alpha-Test; Softwaretests ersetzen keine vollständige Anlagenabnahme.
 
-Die Alpha-Version wird über **ioBroker Admin → Adapter → Installation aus eigener Quelle → GitHub** installiert. Quelle: `https://github.com/fuchs-1978/ioBroker.ems-optimizer`. Die genaue Bezeichnung hängt von der Admin-Version ab. Für eine reproduzierbare Installation den geprüften Commit des zugehörigen PR verwenden. npm-/Latest-/Stable-Veröffentlichung ist zurückgestellt.
+Die Alpha-Version wird über **ioBroker Admin → Adapter → Installation aus eigener Quelle → GitHub** installiert. Als Quelle `https://github.com/fuchs-1978/ioBroker.ems-optimizer` eintragen und für eine reproduzierbare Installation den geprüften Stand auswählen. [Alpha.205 auf GitHub](https://github.com/fuchs-1978/ioBroker.ems-optimizer/tree/2db6dfb491231f524913220ad342edfb3539041a)
 
 1. Vorhandene Geräte und echte Quellen im Admin zuordnen; Einheiten und Messgrenzen prüfen.
 2. Ausgänge zunächst deaktiviert lassen und Quellen, Plan und Diagnosen prüfen.
@@ -53,6 +51,12 @@ Fehlt ein gültiger aktueller Fahrplan, verteilt das EMS verfügbare Leistung we
 
 Ein freigegebener EHZ kann während der Startwartezeit auch das vorgemerkte Budget weiterer wartender Fahrzeuge nutzen. Die Autos behalten Vorrang; vor deren Start muss die erforderliche Heizleistung nachweislich zurückgenommen sein. „Aufteilung AUS“ bedeutet keine feste gemeinsame Zuteilung und sperrt diese Restnutzung nicht. Eine entzogene EHZ-Freigabe wird dadurch nicht übergangen. Bei laufender 3P-Mindestladung wird keine neue Startreserve verlangt; gestoppte Fahrzeuge verwenden die konfigurierte Reserve. [Zwischenpuffer und Grenzen](docs/release-0.17.0-alpha.199.md).
 
+## Warmwasserplanung und Vorrang
+
+Der Fahrplan baut die nötige Warmwasserreserve vor einem teureren Preisblock in den letzten nutzbaren günstigeren Intervallen auf. PV, Heizleistung, Speicherplatz und Restzeit begrenzen die Vorziehung. Vor einem günstigeren Fenster kann der Planer die notwendige Überbrückungswärme gleichmäßig über gleich teure Viertelstunden verteilen. Voraussetzung sind ausreichende Mindestreserve und passende Heizgrenzen. Die tatsächliche Heizleistung benötigt eine eigene Freigabe. [Preisvorschau und Grenzen](docs/release-0.17.0-alpha.202.md) · [Änderungen in Alpha.203](README.md#0170-alpha203-2026-11-05)
+
+Der EHZ kann Pflichtwärme liefern, während das bevorzugte Fahrzeug seine bestätigte einphasige Mindestladung hält, wenn beide Lasten ins Budget passen und oben ausreichend warmes Wasser verfügbar ist. Nach einem bestätigten Wärmestopp kann dasselbe Fahrzeug bei frischem Budget und erfüllten Schutz- und Freigabebedingungen früher wieder anlaufen. [Wärmepriorität und Wiederanlauf](docs/release-0.17.0-alpha.201.md)
+
 ## Fahrzeug-SoC und Sitzungswechsel
 
 | Situation | Wirksame Quelle / Verhalten |
@@ -68,7 +72,7 @@ Ein freigegebener EHZ kann während der Startwartezeit auch das vorgemerkte Budg
 
 Nach einer Fahrt gilt bis zum neuen Ladebeginn der jeweils aktuelle Cloud-Wert. Sobald die Wallbox Ladeenergie erfasst, rechnet das EMS auf dieser Basis weiter. Nach Ablauf der vorläufigen Phase oder Übernahme einer neuen Basis lösen abweichende spätere App-Werte ohne Fahrzeugmesszeitpunkt bei durchgängiger Zählung ab einem Unterschied von mehr als einem Prozentpunkt eine Warnung aus. Der geschätzte SoC bleibt dann wirksam. [Ausnahme und Nachweisgrenzen](docs/release-0.17.0-alpha.204.md) · [Fahrzeugmesszeitpunkt #320](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/320).
 
-`SoC_pct` ist der wirksame Regelwert, `ReportedSoC_pct` die gemeldete Quelle und `EstimatedSoC_pct` eine tatsächlich aktive Fortschreibung. Eine go-e-Finish-Meldung setzt den SoC nicht auf 100 %. [Vollständiger SoC-Vertrag](docs/admin-reference.de.md#optionale-soc-schätzung-aus-ladeenergie-alle-drei-fahrzeuge) · [Sitzungsende und Migration](docs/release-0.17.0-alpha.197.md).
+`SoC_pct` ist der wirksame Regelwert, `ReportedSoC_pct` der gemeldete Wert und `EstimatedSoC_pct` die aktive Fortschreibung. [Vollständiger SoC-Vertrag](docs/admin-reference.de.md#optionale-soc-schätzung-aus-ladeenergie-alle-drei-fahrzeuge)
 
 ### Start, Stopp, Übergabe und Phasenwechsel
 
@@ -77,6 +81,8 @@ Eine beobachtete EMS-Ladung kann unter den vorgesehenen Bedingungen ihre Startqu
 Bei anhaltend begrenzter Aufnahme kann das EMS den Bedarf des weiterladenden Fahrzeugs begrenzen und seinen Befehl absenken. Das nächste Fahrzeug erhält Budget erst nach qualifizierter Freigabe der alten nominalen Reserve. Dieser Fall ist getrennt vom vollständigen Ladeende zu prüfen. [Budgetweitergabe](docs/release-0.17.0-alpha.195.md).
 
 Frisches go-e-Finish nach vorheriger eigener Ladung und zehn Sekunden bestätigter elektrischer Ruhe kann Ladeende und anschließende Übergabe auslösen. Der Hinweis bittet um Prüfung von SoC und Fahrzeuglimit. [Ladeende](docs/release-0.17.0-alpha.194.md) · [Reale Abnahmereste #7](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/7).
+
+Melden beide go-e-Stromdatenpunkte nach einem bestätigten 1‑A‑Schritt den vorherigen niedrigeren Strom, kann das EMS eine laufende einphasige Ladung einmalig übernehmen. Eine frische elektrische Messung muss dazu passen. Das EMS fordert höchstens diesen niedrigeren Wert an und senkt ihn bei kleinerem Budget weiter. Beide Rückmeldungen müssen den neuen Auftrag innerhalb der vorhandenen Frist bestätigen. Bei fehlender Bestätigung oder einer verletzten Schutzgrenze greift der Stopp. [Alpha.205 und Nachweisgrenzen](docs/release-0.17.0-alpha.205.md)
 
 ## EMS-Übersicht: Erklärung, Datenqualität und Tagesrückblick
 
@@ -106,7 +112,7 @@ Ein hängender Verifikationsleser sperrt weitere Prüfqueries, während begrenzt
 
 Der passive Vergleich stellt Median, Lasso, feste 50/50-Mischung und Lasso-Tagesenergie mit Median-Verlauf gegenüber. Prognosen werden vorab gespeichert und bei Neustart nicht rückwirkend ersetzt. Training startet beim Adapterstart und täglich um 00:10, mit höchstens 84 Tagen.
 
-Nur identische gültige Viertelstunden vergleichen: MAE/RMSE, vorzeichenbehafteten Energiefehler und Abdeckung gemeinsam lesen. Die 7-/14-Kalendertage-Fenster verwenden gleiche Slot-Schnittmengen; vollständige Energietage benötigen 96 gemeinsame Slots. 92-/100-Slot-Zieltage sind derzeit ausgeschlossen. Zwei bisher dokumentierte vollständige Vergleichstage begründen keinen allgemeinen Sieger. Die produktive Profilwahl bleibt eine separate Einstellung. [Felder und Messgrenzen](docs/admin-reference.de.md#median-lasso-und-kombinationen) · [Aktueller Vergleich #284](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/284).
+Die Istwerte werden aus zeitgewichteten Rohmessungen auf gemeinsamen Viertelstunden berechnet. Lücken bleiben unbekannt. MAE, RMSE und Energiefehler nur für dieselben gültigen Messpaare vergleichen. Die 7-/14‑Kalendertage-Fenster zeigen die Abdeckung. Eine Tagesenergie erfordert 96 gültige Paare. Tage mit 92 oder 100 Viertelstunden sind derzeit ausgeschlossen. Die produktive Profilwahl erfolgt separat. [Berechnung und Grenzen](docs/release-0.17.0-alpha.200.md) · [Aktueller Vergleich #284](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/284)
 
 ## So liest man die Admin-Anleitung
 
@@ -182,6 +188,6 @@ Zuerst reale Gerätefreigabe, gültige Quellen und gemeinsame Zuteilung prüfen,
 
 ## Offene Arbeiten
 
-Die [Roadmap #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) ordnet die verbleibenden Aufgaben zu: reale Mii-Budgetweitergabe/Regelruhe (#7), Stromquellenkonflikte (#216), SQL-Latenz (#60), Prognosevalidierung (#284), produktive Batterie-/Modul-3-Strategie (#25), LPC-Vertrag (#166) und Qualitätsrest (#26/#316). Wärme-/KONNEX-/Hydraulikerweiterungen (#160/#304/#306) bleiben bis zur passenden WP-Datenbasis zurückgestellt.
+Die [Roadmap #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) ordnet die offenen Nachweise und Integrationen. Für die aktuelle Version stehen insbesondere der Live-Nachweis der SoC-Fortschreibung nach einer Fahrt, die Wärmeplanung und ein realer Fall der 1‑A‑Wiederübernahme aus. [Betriebsabnahme #7](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/7) · [go-e-Rückmeldungen #216](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/216) · [SoC-Quellzeit #320](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/320)
 
 Abgeschlossene Tagesberichte bleiben datierte Belege. Die [Bereinigung vom 03.11.2026](docs/issue-audit/2026-11-03/README.md) dokumentiert Übergaben und erhält die ursprünglichen Issue-Texte. [Übersetzungsstand](docs/translations.md) · [Aktuelle Änderungen](README.md#changelog) · [Ältere Versionen](CHANGELOG_OLD.md).

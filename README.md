@@ -7,7 +7,7 @@
 
 Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Combines PV and grid measurements, load history, weather forecasts and electricity prices in a rolling 48-hour plan.
 
-**Current version: 0.17.0-alpha.205.** This adapter is in alpha testing. Passing software tests does not establish complete commissioning of a physical installation.
+**Current GitHub build: 0.17.0-alpha.205.** Install the tested build from GitHub and commission each enabled device against its actual feedback and protection limits. [Alpha.205 release notes](docs/release-0.17.0-alpha.205.md)
 
 [Deutsche Bedienungsanleitung](README.de.md) · [Release history](CHANGELOG_OLD.md) · [Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
@@ -15,6 +15,8 @@ Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Comb
 
 - [Features](#features)
 - [Current scope](#current-scope)
+- [Live distribution and plan recovery](#live-distribution-and-plan-recovery)
+- [Hot-water planning](#hot-water-planning)
 - [Vehicle SoC and handoff](#vehicle-soc-and-handoff)
 - [Forecast comparison](#forecast-comparison)
 - [Requirements](#requirements)
@@ -44,8 +46,8 @@ The staged battery/vehicle strategy is **a read-only preview**, not a production
 
 | Available | Remaining work |
 | --- | --- |
-| Wallbox allocation, qualified handoff, heater coordination and SoC session handling | Real Mii taper-budget transfer, fast current changes and remaining device/protection cases: [#7](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/7), [#8](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/8). Current-feedback provenance: [#216](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/216). |
-| Four passive day-ahead load candidates and common-slot 7/14-day evaluation; weather/room-history retention | Two complete comparison days are documented; longer validation and actual archive delivery remain [#284](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/284). Additional room/wind/heat features are not in Lasso. |
+| Wallbox allocation, qualified handoff, measured SoC estimation and bounded current recovery | Live evidence for SoC after a trip, Mii taper transfer, and phase/protection cases. The source of contradictory go-e reports and the live Alpha.205 recovery remain open. [Vehicle operation #7](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/7) · [Phase switching #8](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/8) · [go-e #216](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/216) |
+| Four passive day-ahead load candidates, common-slot 7/14-day evaluation and weather/room-history retention | Longer validation against time-weighted actuals and confirmation of archive delivery. [Forecast comparison #284](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/284) |
 | Bounded recorder, exact SQL confirmation and qualified recovery | Long SQL transport delays and historical recording gaps remain under [recorder investigation](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/60). A healthy current queue does not repair past losses. |
 | Battery strategy preview and heat-pump telemetry | Productive [battery strategy](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/25), [heat planning](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/160) and [LPC group-net integration](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/166) remain separate work. |
 
@@ -55,7 +57,11 @@ The [current roadmap](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issue
 
 A missing, incomplete or stale plan no longer blocks allocation from valid current measurements. `Control.PlanFallbackActive` and `Control.PlanFallbackStatus` identify this mode; `Plan.Valid` remains unchanged. Vehicle priorities, minimum-SoC/manual rules, EHZ thermal release, confirmed handoff and electrical limits still apply. Forecast-based price charging, cheap-grid heating and scheduled PV boost are disabled until the real plan returns. Empty historic days are provisional and re-read with paced retries. [Recovery and limits](docs/release-0.17.0-alpha.198.md).
 
-An enabled optional EHZ may temporarily use the start budget of a waiting vehicle, including a lower-priority follower. Vehicle priority and the full start delay remain; the heater must physically release the required power before the car starts. Disabling the fixed WB/EHZ split does not disable residual heating. A running mandatory 3P charge no longer reapplies a startup reserve and falls back prematurely to 1P. [Countdown buffer policy](docs/release-0.17.0-alpha.199.md).
+An enabled optional heater may temporarily use the start budget of a waiting vehicle, including a lower-priority follower. The heater must release the required power before the car starts. This works with the fixed wallbox/heater split switched off. An ongoing mandatory 3P charge uses its running minimum. The startup reserve applies to a stopped charger. [Countdown buffer policy](docs/release-0.17.0-alpha.199.md)
+
+## Hot-water planning
+
+The forecast builds the required hot-water reserve in the latest feasible cheaper slots before a price increase. It accounts for available PV, heater capacity, storage headroom and the remaining time. When the reserve and heater limits permit, it spreads the heat needed before a cheaper window at constant power across the equally priced slots. Actual heater output requires a separate live release. [Reserve planning and limits](docs/release-0.17.0-alpha.202.md)
 
 Mandatory hot water can share PV with the preferred, already confirmed 1P charge at its minimum current when both loads fit and the upper-middle/outlet water remain at least at the configured minimum. The output explicitly reduces current before releasing heater budget. Otherwise heat keeps priority. A witnessed charge stopped for thermal priority may resume after 15 seconds of fresh budget qualification within a fixed 15-minute process-local window; current reserve, confirmed OFF, physical heater reduction and all electrical/source checks remain required. Ordinary starts retain their configured delay. [Thermal interruption policy](docs/release-0.17.0-alpha.201.md).
 
@@ -64,6 +70,8 @@ Mandatory hot water can share PV with the preferred, already confirmed 1P charge
 Confirmed unplug ends the calculated SoC session and clears the manual correction. The valid cloud/vehicle value applies while waiting for measured charge in the new session. During this wait, `SocEstimateStatus` is `cloud-after-unplug` and `EstimatedSoC_pct` is null. On the new charge, the estimator adds energy from a fresh counter anchor to the latest valid app value. If that value predates the observed unplug, the estimate is provisional for up to 30 minutes of the new charge and can accept one lower app reading. An entry in `Vehicles.WallboxN.SoCCorrection_pct` can also establish a fresh anchor. [Current SoC contract](README.de.md#fahrzeug-soc-und-sitzungswechsel).
 
 A qualified charger-Finish observation can end charging and hand off after independent OFF/electrical-quiet proof; it does not set SoC to 100%. Sustained limited vehicle uptake can release budget for another vehicle through a confirmed lower command and the existing reserve/start checks. Real Mii taper transfer remains a separate acceptance case from the successful EQV-unplug/EQE handoff. [Finish](docs/release-0.17.0-alpha.194.md) · [Taper budget](docs/release-0.17.0-alpha.195.md).
+
+During an EMS-controlled single-phase charge, a confirmed 1 A increase can roll back to the previous lower current on both go-e channels. With a fresh matching electrical measurement, the EMS can recover once by commanding the lower current or a further reduction within the current budget. Both channels must acknowledge the new command within the existing deadline. The stop path applies if a protection check fails or acknowledgement is missing. [Alpha.205 recovery and limits](docs/release-0.17.0-alpha.205.md)
 
 ## Forecast comparison
 
@@ -89,7 +97,7 @@ Clean the household load according to the actual meter boundary: subtract flexib
 
 ## Installation and setup
 
-The adapter is currently distributed for alpha testing through GitHub; npm and ioBroker beta/latest or stable publication are deferred. In ioBroker Admin, use **Adapters → Install from custom source → GitHub** and enter `https://github.com/fuchs-1978/ioBroker.ems-optimizer`. The exact labels depend on the Admin version. A moving `main` branch can include changes newer than a tagged release. Select **GitHub**, not npm, for this alpha source. After updating, verify `System.Version` against the installed version; restart the EMS instance if the old process is still running. Review the release notes before updating. Installation alone does not enable or commission real outputs.
+In ioBroker Admin, open **Adapters → Install from custom source → GitHub** and enter `https://github.com/fuchs-1978/ioBroker.ems-optimizer`. Select the tested commit to reproduce Alpha.205. After updating, compare `System.Version` with the installed version. Restart the EMS instance if it still reports the previous version. [Tested Alpha.205 commit](https://github.com/fuchs-1978/ioBroker.ems-optimizer/tree/2db6dfb491231f524913220ad342edfb3539041a)
 
 1. Map grid and generation measurements in the Admin configuration.
 2. Configure only the devices present at your installation, including their feedback, current limits and temperature or state-of-charge sources.
@@ -162,7 +170,7 @@ npm run test:artifact
 npm run test:equivalence
 ```
 
-Admin translation catalogs are stored in `admin/i18n/<language>/translations.json`. Keep their keys aligned with the English catalog and all visible Admin texts. Admin catalog coverage and release-message translation are separate: current news entries have eleven language keys but nine locales still use English fallback. That remaining work is tracked in [#316](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/316). See [translation coverage and checks](docs/translations.md).
+Admin translation catalogs are stored in `admin/i18n/<language>/translations.json`. Keep their keys aligned with the English catalog and all visible Admin text. Release notices Alpha.202–.205 are translated into all eleven languages. Alpha.199–.201 still use English fallback for nine locales. [Translation coverage and checks](docs/translations.md) · [Checker follow-up #316](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/316)
 
 ## Changelog
 
