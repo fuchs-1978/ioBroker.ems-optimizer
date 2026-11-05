@@ -578,6 +578,34 @@ test('warm-water bridge spreads the 21–23 demand at one price and maintains th
     assert.equal(h.report().gridAuthorization, false);
 });
 
+test('warm-water bridge spreads equal-price night heat before a tariff rise and morning PV', () => {
+    const h = thermalFixture({temperatures: [34.1, 50.8, 50.8, 50.8], demand: 25,
+        start: '2026-11-05T22:00:00Z'});
+    const cheapSlots = 24, dearSlots = 15;
+    const firstPv = cheapSlots + dearSlots;
+    const price = [...Array(cheapSlots).fill(23.56), ...Array(dearSlots + 4).fill(30.04)];
+    const pvW = price.map((_, i) => i >= firstPv ? 3600 : 0);
+    const data = h.plan({slots: price.length, price, pvW, houseW: 800});
+    const a = balancedPlan(h, data), r = h.report();
+    const requiredKWh = firstPv * 25 / 24 / 4 + firstPv * 2 / 24 / 4 + r.reserveKWh
+        + r.initialColdLayerDeficitKWh - r.initialUsableAboveMinimumKWh;
+    for (const p of a.slice(0, cheapSlots)) near(p.dhwGridW, requiredKWh * 1000 / 6, 'same-price night heat');
+    near(a.slice(0, cheapSlots).reduce((sum, p) => sum + p.dhwGridW / 4000, 0), requiredKWh, 'same purchased heat');
+    assert.ok(a.slice(cheapSlots, firstPv).every(p => p.dhwGridW < 1e-6));
+    assert.ok(r.minimumProjectedUsableKWh >= r.reserveKWh - 1e-7);
+    assert.equal(r.gridAuthorization, false);
+});
+
+test('warm-water bridge does not spread when reserve would fall below minimum during cold-layer refill', () => {
+    const h = thermalFixture({temperatures: [32, 43, 43, 43], demand: 25});
+    const price = [...Array(24).fill(23.56), ...Array(19).fill(30.04)];
+    const pvW = price.map((_, i) => i >= 39 ? 3600 : 0);
+    const data = h.plan({slots: price.length, price, pvW, houseW: 800});
+    const a = balancedPlan(h, data), r = h.report();
+    assert.ok(a[0].dhwGridW > a[5].dhwGridW);
+    assert.ok(r.minimumProjectedUsableKWh >= r.reserveKWh - 1e-7);
+});
+
 test('thermal price rise: isolated PV at the tariff edge cannot postpone the evening bridge into HT', () => {
     const h = thermalFixture({temperatures: [42.4, 42.4, 42.4, 42.4], demand: 25,
         start: '2026-11-05T14:00:00Z'});

@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.205",
+    "version": "0.17.0-alpha.206",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.206": {
+        "en": "Spread planned night-time water heating across an equal-price block before a rise when the thermal reserve permits.",
+        "de": "Geplante Warmwasserwärme bei ausreichender Reserve über den gleich teuren Nachtblock vor dem Preisanstieg verteilen.",
+        "es": "Repartir el calentamiento nocturno previsto del agua durante el bloque de precio constante si la reserva lo permite.",
+        "fr": "Répartir le chauffage nocturne prévu de l’eau sur le créneau à prix constant avant la hausse si la réserve le permet.",
+        "it": "Distribuire il riscaldamento notturno previsto dell’acqua nella fascia a prezzo costante prima del rincaro, se la riserva lo consente.",
+        "nl": "Spreid geplande nachtelijke waterverwarming over het blok met dezelfde prijs vóór de stijging als de reserve het toelaat.",
+        "pl": "Rozłóż planowane nocne grzanie wody w bloku o stałej cenie przed podwyżką, jeśli pozwala na to rezerwa.",
+        "pt": "Distribuir o aquecimento noturno previsto da água pelo bloco de preço constante antes da subida se a reserva o permitir.",
+        "ru": "Распределять ночной нагрев воды по периоду с одинаковой ценой перед повышением тарифа при достаточном запасе.",
+        "uk": "Розподіляти запланований нічний нагрів води в межах періоду з однаковою ціною перед її зростанням за достатнього запасу.",
+        "zh-cn": "热水储备允许时，将夜间计划加热均匀分布在涨价前的同价时段。"
+      },
       "0.17.0-alpha.205": {
         "en": "Resume control once after an acknowledged 1 A increase rolls back to the measured lower current, subject to current limits and fresh acknowledgements.",
         "de": "Bei einem bestätigten Rücksprung um 1 A einmalig mit dem gemessenen niedrigeren Ladestrom weiterregeln, sofern Grenzen und neue Rückmeldungen passen.",
@@ -81,19 +94,6 @@
         "ru": "Build quarter-hour power histories from time-weighted raw samples, not point-count means. Preserve unknown gaps and frozen forecasts; bound raw queries and retain cached history recovery.",
         "uk": "Build quarter-hour power histories from time-weighted raw samples, not point-count means. Preserve unknown gaps and frozen forecasts; bound raw queries and retain cached history recovery.",
         "zh-cn": "Build quarter-hour power histories from time-weighted raw samples, not point-count means. Preserve unknown gaps and frozen forecasts; bound raw queries and retain cached history recovery."
-      },
-      "0.17.0-alpha.199": {
-        "en": "Let the optional EHZ use additional waiting vehicles' start budgets until measured reduction permits starting. Keep a running 3P minimum when its electrical budget is sufficient; apply the configured start reserve only to stopped mandatory charging.",
-        "de": "Optionalen EHZ das Startbudget weiterer wartender Fahrzeuge bis zur nachgewiesenen Heizreduktion nutzen lassen. Laufende 3P-Mindestladung bei ausreichendem elektrischem Budget halten; konfigurierte Startreserve nur vor dem Start anrechnen.",
-        "es": "Let the optional EHZ use additional waiting vehicles' start budgets until measured reduction permits starting. Keep a running 3P minimum when its electrical budget is sufficient; apply the configured start reserve only to stopped mandatory charging.",
-        "fr": "Let the optional EHZ use additional waiting vehicles' start budgets until measured reduction permits starting. Keep a running 3P minimum when its electrical budget is sufficient; apply the configured start reserve only to stopped mandatory charging.",
-        "it": "Let the optional EHZ use additional waiting vehicles' start budgets until measured reduction permits starting. Keep a running 3P minimum when its electrical budget is sufficient; apply the configured start reserve only to stopped mandatory charging.",
-        "nl": "Let the optional EHZ use additional waiting vehicles' start budgets until measured reduction permits starting. Keep a running 3P minimum when its electrical budget is sufficient; apply the configured start reserve only to stopped mandatory charging.",
-        "pl": "Let the optional EHZ use additional waiting vehicles' start budgets until measured reduction permits starting. Keep a running 3P minimum when its electrical budget is sufficient; apply the configured start reserve only to stopped mandatory charging.",
-        "pt": "Let the optional EHZ use additional waiting vehicles' start budgets until measured reduction permits starting. Keep a running 3P minimum when its electrical budget is sufficient; apply the configured start reserve only to stopped mandatory charging.",
-        "ru": "Let the optional EHZ use additional waiting vehicles' start budgets until measured reduction permits starting. Keep a running 3P minimum when its electrical budget is sufficient; apply the configured start reserve only to stopped mandatory charging.",
-        "uk": "Let the optional EHZ use additional waiting vehicles' start budgets until measured reduction permits starting. Keep a running 3P minimum when its electrical budget is sufficient; apply the configured start reserve only to stopped mandatory charging.",
-        "zh-cn": "Let the optional EHZ use additional waiting vehicles' start budgets until measured reduction permits starting. Keep a running 3P minimum when its electrical budget is sufficient; apply the configured start reserve only to stopped mandatory charging."
       }
     },
     "titleLang": {
