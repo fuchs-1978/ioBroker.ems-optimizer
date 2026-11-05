@@ -24,12 +24,11 @@ critical commissioning/protection instructions. The complete commissioning,
 heating-buffer, forecast-reserve and SunEnergy safety paragraphs were explicitly edited.
 Models are development tools, not adapter dependencies or shipped assets.
 
-The manifest title and description cover all eleven languages. The seven current
-version messages (alpha.191–197) have all eleven language keys, but nine locales
-currently contain the English release-text fallback. These messages are not fully
-translated; the outstanding work is tracked in issue #316. Admin catalog key
-coverage and translated release notes are separate checks. The product name
-remains EMS Optimizer in most locales.
+The manifest title and description cover all eleven languages. In Alpha.205,
+all four release notices Alpha.202–.205 are translated. The retained notices
+Alpha.199–.201 still use English fallback for nine locales. Admin catalog
+coverage and translated release notices are checked separately.
+[Checker follow-up #316](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/316)
 
 `test/admin-i18n.test.js` checks exact key parity, non-empty values and manifest
 coverage for every retained news item. It also rejects copied English help
@@ -40,5 +39,4 @@ The packed-artifact check verifies that all eleven catalogs are installed.
 When adding a setting, update every catalog in the same change. A complete key
 set alone is not sufficient: translate the explanatory text while preserving
 interface names, physical quantities and the meaning of permission and safety
-conditions. These checks address the translation findings in issue #197;
-unrelated repository-checker findings are tracked separately in that issue.
+conditions. [Current checker follow-up #316](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/316)
