@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.204",
+    "version": "0.17.0-alpha.205",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.205": {
+        "en": "Resume control once after an acknowledged 1 A increase rolls back to the measured lower current, subject to current limits and fresh acknowledgements.",
+        "de": "Bei einem bestätigten Rücksprung um 1 A einmalig mit dem gemessenen niedrigeren Ladestrom weiterregeln, sofern Grenzen und neue Rückmeldungen passen.",
+        "es": "Recuperar una vez el control tras retroceder 1 A al valor inferior medido, sujeto a los límites y a nuevas confirmaciones.",
+        "fr": "Reprendre une fois le contrôle après un recul confirmé de 1 A vers le courant inférieur mesuré, dans les limites et avec de nouvelles confirmations.",
+        "it": "Riprendere una volta il controllo dopo una riduzione confermata di 1 A verso la corrente inferiore misurata, rispettando i limiti e le nuove conferme.",
+        "nl": "Hervat de regeling eenmalig na een bevestigde terugval van 1 A naar de lagere gemeten stroom, binnen de grenzen en met nieuwe bevestigingen.",
+        "pl": "Jednorazowo odzyskaj sterowanie po potwierdzonym spadku o 1 A do niższego zmierzonego prądu, przy zachowaniu limitów i nowych potwierdzeń.",
+        "pt": "Retomar uma vez o controlo após um recuo confirmado de 1 A para a corrente medida inferior, respeitando os limites e novas confirmações.",
+        "ru": "Однократно восстановить управление после подтверждённого снижения тока на 1 А при соблюдении ограничений и наличии новых подтверждений.",
+        "uk": "Одноразово відновити керування після підтвердженого зниження струму на 1 А за дотримання обмежень і наявності нових підтверджень.",
+        "zh-cn": "经测量确认电流回退 1 A 时，在符合限值并收到新确认的前提下恢复一次控制。"
+      },
       "0.17.0-alpha.204": {
         "en": "Rebase a provisional pre-trip SoC once on an early lower app reading and continue from its aligned charge counter.",
         "de": "Einen vorläufigen SoC von vor der Fahrt einmalig durch einen frühen niedrigeren App-Wert ersetzen und ab dem zugeordneten Ladezähler fortschreiben.",
@@ -81,19 +94,6 @@
         "ru": "Let the optional EHZ use additional waiting vehicles' start budgets until measured reduction permits starting. Keep a running 3P minimum when its electrical budget is sufficient; apply the configured start reserve only to stopped mandatory charging.",
         "uk": "Let the optional EHZ use additional waiting vehicles' start budgets until measured reduction permits starting. Keep a running 3P minimum when its electrical budget is sufficient; apply the configured start reserve only to stopped mandatory charging.",
         "zh-cn": "Let the optional EHZ use additional waiting vehicles' start budgets until measured reduction permits starting. Keep a running 3P minimum when its electrical budget is sufficient; apply the configured start reserve only to stopped mandatory charging."
-      },
-      "0.17.0-alpha.198": {
-        "en": "Keep measured live distribution running without a valid forecast plan; retry provisional empty history days and rebuild incomplete profiles after SQL recovery. Preserve physical safeguards and deny forecast-based price permissions in fallback.",
-        "de": "Istwertverteilung bei fehlendem Fahrplan fortsetzen; leere Historientage erneut laden und unvollstaendige Profile nach SQL-Erholung neu aufbauen. Elektrische Schutzgrenzen bleiben wirksam, Preisfahrplan-Freigaben bleiben im Ersatzbetrieb gesperrt.",
-        "es": "Keep measured live distribution running without a valid forecast plan; retry provisional empty history days and rebuild incomplete profiles after SQL recovery. Preserve physical safeguards and deny forecast-based price permissions in fallback.",
-        "fr": "Keep measured live distribution running without a valid forecast plan; retry provisional empty history days and rebuild incomplete profiles after SQL recovery. Preserve physical safeguards and deny forecast-based price permissions in fallback.",
-        "it": "Keep measured live distribution running without a valid forecast plan; retry provisional empty history days and rebuild incomplete profiles after SQL recovery. Preserve physical safeguards and deny forecast-based price permissions in fallback.",
-        "nl": "Keep measured live distribution running without a valid forecast plan; retry provisional empty history days and rebuild incomplete profiles after SQL recovery. Preserve physical safeguards and deny forecast-based price permissions in fallback.",
-        "pl": "Keep measured live distribution running without a valid forecast plan; retry provisional empty history days and rebuild incomplete profiles after SQL recovery. Preserve physical safeguards and deny forecast-based price permissions in fallback.",
-        "pt": "Keep measured live distribution running without a valid forecast plan; retry provisional empty history days and rebuild incomplete profiles after SQL recovery. Preserve physical safeguards and deny forecast-based price permissions in fallback.",
-        "ru": "Keep measured live distribution running without a valid forecast plan; retry provisional empty history days and rebuild incomplete profiles after SQL recovery. Preserve physical safeguards and deny forecast-based price permissions in fallback.",
-        "uk": "Keep measured live distribution running without a valid forecast plan; retry provisional empty history days and rebuild incomplete profiles after SQL recovery. Preserve physical safeguards and deny forecast-based price permissions in fallback.",
-        "zh-cn": "Keep measured live distribution running without a valid forecast plan; retry provisional empty history days and rebuild incomplete profiles after SQL recovery. Preserve physical safeguards and deny forecast-based price permissions in fallback."
       }
     },
     "titleLang": {

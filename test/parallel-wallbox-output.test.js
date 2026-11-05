@@ -143,23 +143,25 @@ function parallelSetup(count = 2) {
     return h;
 }
 
-async function correctionCandidate(phases = 1) {
+async function correctionCandidate(phases = 1, expectedA = 10) {
     const h = parallelSetup(1);
     if (phases === 3) Object.assign(h.config, {wb0ProductionPhases: 3, wb0PhaseSwitchEnabled: true,
         wb0MaxCurrent3pA: 32, wb0MaxPowerW: 22080});
-    h.grant([10], {phases: [phases]});
+    if (expectedA > 10) h.config.wallboxMaxStepA = expectedA - 6;
+    h.grant([expectedA], {phases: [phases]});
     await h.output.initialize();
     await h.output.tick(); h.ack('allow', 0);
     await h.output.tick(); h.ack('feedback', 6);
     await h.output.tick(); h.ack('allow', 1); h.measure(0, 6, phases);
     await h.output.tick();
-    h.advance(6000); h.grant([10], {phases: [phases]}); h.measure(0, 6, phases);
+    h.advance(6000); h.grant([expectedA], {phases: [phases]}); h.measure(0, 6, phases);
     await h.output.tick();
-    h.advance(2000); h.grant([10], {phases: [phases]}); h.measure(0, 10, phases); h.ack('cmd', 10);
+    h.advance(2000); h.grant([expectedA], {phases: [phases]});
+    h.measure(0, expectedA, phases); h.ack('cmd', expectedA);
     await h.output.tick();
-    assert.equal(h.output.devices[0].lastA, 10, h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val);
-    h.advance(2000); h.grant([10], {phases: [phases]}); h.measure(0, 10, phases);
-    h.ack('cmd', 10); h.ack('feedback', 11); h.writes.length = 0;
+    assert.equal(h.output.devices[0].lastA, expectedA, h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val);
+    h.advance(2000); h.grant([expectedA], {phases: [phases]}); h.measure(0, expectedA, phases);
+    h.ack('cmd', expectedA); h.ack('feedback', expectedA + 1); h.writes.length = 0;
     return h;
 }
 
@@ -259,6 +261,78 @@ test('issue216: missing ACK stops at the original deadline; polls cannot prolong
     await h.output.tick();
     assert.equal(h.output.devices[0].currentCorrection.deadline, deadline);
     assert.deepEqual(h.writes, [{id: 'cmd', val: 10}, {id: 'allow', val: 0}]);
+});
+
+async function lowerRollbackCandidate() {
+    const h = await correctionCandidate(1, 18);
+    h.advance(6000); h.grant([19]); h.measure(0, 18);
+    await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'cmd', val: 19}]);
+    h.advance(5000); h.grant([19]); h.measure(0, 19); h.ack('cmd', 19);
+    await h.output.tick();
+    assert.equal(h.output.devices[0].lastA, 19);
+    h.advance(5000); h.measure(0, 18); h.ack('cmd', 18);
+    h.put('power', 4.11); h.put('i1', 17.7);
+    h.writes.length = 0;
+    return h;
+}
+
+for (const budgetA of [17, 18, 20]) test(`EQV 19/18 A rollback takes back control with budget ${budgetA} A`, async () => {
+    const h = await lowerRollbackCandidate();
+    const target = Math.min(18, budgetA);
+    h.grant([budgetA]);
+    await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'cmd', val: target}]);
+    const d = h.output.devices[0];
+    assert.equal(d.currentCorrection.lowerRollback, true);
+    assert.equal(d.lastA, 19, 'reserve the old current until the new independent ACK');
+    h.advance(2000); h.grant([budgetA]); h.measure(0, target);
+    await h.output.tick();
+    assert.equal(d.currentCorrection.result, 'pending', 'feedback alone cannot establish a new owned command');
+    h.ack('cmd', target); await h.output.tick();
+    assert.equal(d.lastA, target);
+    assert.equal(d.currentCorrection.result, 'confirmed');
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, true);
+    assert.deepEqual(h.writes, [{id: 'cmd', val: target}]);
+    h.advance(6000); h.grant([target + 1]); h.measure(0, target); h.ack('cmd', target);
+    await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'cmd', val: target}, {id: 'cmd', val: target + 1}],
+        'fresh budget and electrical evidence restore ordinary regulation');
+});
+
+for (const [reason, change] of [
+    ['unconfirmed 19 A', h => h.put('ems.0.Devices.Wallbox0.ResponseAcknowledgedAt', 0)],
+    ['late rollback', h => {h.advance(21000); h.grant([17]);}],
+    ['different actual current', h => h.put('i1', 19)],
+    ['old physical measurement', h => h.put('power', 4.11, {ts: h.output.now() - 1000})],
+    ['spent correction', h => {h.output.devices[0].currentCorrection = {result: 'confirmed'};}],
+    ['stale grid source', h => h.put('import', 0, {ts: 1})],
+    ['hard cap too low', h => h.grant([17], {hardBudgetW: 2300})]
+]) test(`EQV 19/18 A rollback falls back to OFF with ${reason}`, async () => {
+    const h = await lowerRollbackCandidate();
+    h.grant([17]); change(h);
+    await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+});
+
+test('EQV 19/18 A rollback stops if the new current is not independently confirmed', async () => {
+    const h = await lowerRollbackCandidate();
+    h.grant([18]); await h.output.tick();
+    h.advance(21000); h.grant([18]); h.measure(0, 18);
+    await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'cmd', val: 18}, {id: 'allow', val: 0}]);
+});
+
+test('EQV rollback rechecks the physical evidence after persisting the correction fence', async () => {
+    const h = await lowerRollbackCandidate();
+    h.grant([17]);
+    const original = h.adapter.setCompatState;
+    h.adapter.setCompatState = (id, value, ack) => {
+        original(id, value, ack);
+        if (id.endsWith('.CurrentCorrection_JSON')) h.put('i1', 19);
+    };
+    await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
 });
 
 test('issue216: refreshing the separate command ACK after the conflicting poll cannot replenish or block the one attempt', async () => {
