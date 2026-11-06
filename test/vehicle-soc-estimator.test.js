@@ -457,9 +457,40 @@ test('manual correction rejects invalid inputs and accepts zero and same-value c
         assert.equal(a.ok, true);
         assert.equal(correctSoc({...input, value, ledgerText: JSON.stringify(a.ledger)}).ok, true);
     }
-    for (const update of [{car: state(1)}, {counter: state(10, T - 61000)},
+    for (const update of [{car: undefined}, {counter: state(10, T - 61000)},
         {counter: {...state(10), ack: false}}])
         assert.equal(correctSoc({...input, value: 94, ...update}).ok, false);
+});
+
+test('a pending correction survives restart, expires before plug-in and can be cancelled', () => {
+    const h = harness({reported: state(49), car: state(1), counter: undefined});
+    const queued = correctSoc({...h.input(), value: 65});
+    assert.equal(queued.ok, true);
+    const ledgerText = JSON.stringify(queued.ledger);
+    const waiting = h.run({ledgerText, now: T + 1000});
+    assert.equal(waiting.value, 49);
+    assert.equal(waiting.manualCleared, false);
+    assert.equal(waiting.ledger.pendingManual.soc, 65);
+    const cancelled = correctSoc({...h.input(), value: -1});
+    assert.equal(cancelled.ledger.pendingManual, undefined);
+    const expired = h.run({now: T + 30 * 60000});
+    assert.equal(expired.ledger.pendingManual, undefined);
+    assert.equal(expired.manualCleared, true);
+    assert.match(expired.correctionStatus, /abgelaufen/);
+    const afterExpiry = h.run({now: T + 30 * 60000 + 1000, car: state(2, T + 30 * 60000 + 1000)});
+    assert.equal(afterExpiry.value, 49);
+});
+
+test('unplug while waiting for a counter discards the already used correction', () => {
+    const h = harness({reported: state(49), car: state(1), counter: undefined});
+    const queued = correctSoc({...h.input(), value: 65});
+    const connected = h.run({ledgerText: JSON.stringify(queued.ledger), now: T + 1000, car: state(2, T + 1000)});
+    assert.equal(connected.value, 65);
+    assert.equal(connected.ledger.manual, undefined);
+    h.run({now: T + 2000, car: state(1, T + 2000)});
+    const reconnected = h.run({now: T + 3000, car: state(2, T + 3000), counter: state(0, T + 3000)});
+    assert.equal(reconnected.value, 49);
+    assert.equal(reconnected.ledger.pendingManual, undefined);
 });
 
 test('confirmed disconnect clears the manual basis; reconnect starts with the vehicle source', () => {
