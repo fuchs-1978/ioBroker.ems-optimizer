@@ -606,6 +606,26 @@ test('warm-water bridge does not spread when reserve would fall below minimum du
     assert.ok(r.minimumProjectedUsableKWh >= r.reserveKWh - 1e-7);
 });
 
+test('warm-water bridge spreads the combined morning and tariff reserve with a small first-slot shortfall', () => {
+    const initialKWh = 0.70625;
+    const temperature = 40 + initialKWh / (500 * 1.163 / 1000);
+    const h = thermalFixture({temperatures: Array(4).fill(temperature), demand: 25,
+        start: '2026-11-07T22:00:00Z'});
+    const cheapSlots = 24, beforePv = 20, solarSlots = 4, afterPv = 24;
+    const price = [...Array(cheapSlots).fill(23.56), ...Array(beforePv + solarSlots + afterPv).fill(30.04)];
+    const pvW = price.map((_, i) => i >= cheapSlots + beforePv && i < cheapSlots + beforePv + solarSlots ? 2800 : 0);
+    const data = h.plan({slots: price.length, price, pvW, houseW: 800});
+    const a = balancedPlan(h, data), r = h.report();
+    const demandPerSlot = 27 / 96;
+    const reserveAtRise = r.reserveKWh + (beforePv + solarSlots + afterPv) * demandPerSlot - solarSlots * 0.5;
+    const heatKWh = reserveAtRise + cheapSlots * demandPerSlot - initialKWh;
+    for (const p of a.slice(0, cheapSlots)) near(p.dhwGridW, heatKWh * 1000 / 6, 'even heat through the whole block');
+    near(r.slots[cheapSlots - 1].usableKWh, reserveAtRise, 'full reserve at the price rise');
+    near(r.gridHeatingKWh, heatKWh, 'same heat without a later grid purchase');
+    assert.ok(r.minimumProjectedUsableKWh >= r.reserveKWh - 1e-7);
+    assert.equal(r.gridAuthorization, false);
+});
+
 test('thermal price rise: isolated PV at the tariff edge cannot postpone the evening bridge into HT', () => {
     const h = thermalFixture({temperatures: [42.4, 42.4, 42.4, 42.4], demand: 25,
         start: '2026-11-05T14:00:00Z'});
