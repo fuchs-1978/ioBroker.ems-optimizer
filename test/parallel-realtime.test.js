@@ -1670,6 +1670,34 @@ test('target completion during donor phase settling retains handoff until confir
     assert.equal(h.diagnostic(2).start.startDelayRemainingS, 0);
 });
 
+for (const unsafe of [false, true]) test(`running response fault transfers budget only after physical stop, unsafe=${unsafe}`, () => {
+    const h = completedParallelChargeFixture();
+    const base = 'ems.0.Devices.Wallbox1.';
+    const reason = 'Keine passende go-e-Rueckmeldung waehrend Ladung; Ausgang gesperrt bis Adapter-Neustart';
+    const stop = h.step(() => {
+        h.put(`${base}OutputFault`, reason);
+        h.put(`${base}LastStopReason`, reason);
+        h.put(`${base}LastStopAt`, h.now());
+        h.put(`${base}OutputActive`, false);
+        h.put(`${base}OutputReservedPower_W`, 4600);
+    });
+    assert.equal(stop.amps[2], 0);
+    assert.equal(h.acknowledgeStop().amps[2], 0);
+    const released = h.step(() => {
+        h.releaseQuiet();
+        h.put(`${base}StopConfirmedAt`, h.now());
+        if (unsafe) h.put('DP_WB1_L1_A', 4);
+    });
+    if (unsafe) {
+        assert.equal(released.amps[2], 0);
+        assert.notEqual(h.diagnostic(2).start.reason, 'prepared-vehicle-handoff');
+    } else {
+        assert.ok(released.amps[2] >= 6, JSON.stringify(h.diagnostic(2)));
+        assert.equal(h.diagnostic(2).start.reason, 'prepared-vehicle-handoff');
+        assert.equal(h.diagnostic(2).start.startDelayRemainingS, 0);
+    }
+});
+
 test('busy donor cannot manufacture a handoff without an observed charging episode', () => {
     const h = completedParallelChargeFixture({observeIdle: false});
     h.step(() => h.put('ems.0.Devices.Wallbox1.PhaseTransitionActive', true));
