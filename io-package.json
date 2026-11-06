@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.206",
+    "version": "0.17.0-alpha.207",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.207": {
+        "en": "Spread both hot-water reserve requirements across an equal-price night block when the thermal limits permit.",
+        "de": "Beide Warmwasser-Reservebedarfe bei geeigneten thermischen Grenzen über den gleich teuren Nachtblock verteilen.",
+        "es": "Repartir ambas reservas de agua caliente en el bloque nocturno de precio constante si los límites térmicos lo permiten.",
+        "fr": "Répartir les deux besoins de réserve d’eau chaude sur la plage nocturne à prix constant si les limites thermiques le permettent.",
+        "it": "Distribuire entrambe le riserve di acqua calda nella fascia notturna a prezzo costante, se i limiti termici lo consentono.",
+        "nl": "Spreid beide warmwaterreserves over het nachtelijke blok met dezelfde prijs als de thermische grenzen het toelaten.",
+        "pl": "Rozłóż oba zapotrzebowania na rezerwę ciepłej wody w nocnym bloku o stałej cenie, jeśli pozwalają na to ograniczenia cieplne.",
+        "pt": "Distribuir ambas as reservas de água quente pelo bloco noturno a preço constante, se os limites térmicos o permitirem.",
+        "ru": "Распределять оба требования к запасу горячей воды по ночному периоду с одинаковой ценой, если тепловые пределы это допускают.",
+        "uk": "Розподіляти обидві потреби в запасі гарячої води протягом нічного періоду з однаковою ціною, якщо теплові обмеження це дозволяють.",
+        "zh-cn": "热工限值允许时，将两项热水储备需求均匀分布在同价夜间时段。"
+      },
       "0.17.0-alpha.206": {
         "en": "Spread planned night-time water heating across an equal-price block before a rise when the thermal reserve permits.",
         "de": "Geplante Warmwasserwärme bei ausreichender Reserve über den gleich teuren Nachtblock vor dem Preisanstieg verteilen.",
@@ -81,19 +94,6 @@
         "ru": "Keep a witnessed preferred 1P minimum alongside usable mandatory hot-water power; explicitly reduce current to release heat budget. Resume the same thermally interrupted charge after bounded fresh qualification, preserving physical reservations and all safety gates.",
         "uk": "Keep a witnessed preferred 1P minimum alongside usable mandatory hot-water power; explicitly reduce current to release heat budget. Resume the same thermally interrupted charge after bounded fresh qualification, preserving physical reservations and all safety gates.",
         "zh-cn": "Keep a witnessed preferred 1P minimum alongside usable mandatory hot-water power; explicitly reduce current to release heat budget. Resume the same thermally interrupted charge after bounded fresh qualification, preserving physical reservations and all safety gates."
-      },
-      "0.17.0-alpha.200": {
-        "en": "Build quarter-hour power histories from time-weighted raw samples, not point-count means. Preserve unknown gaps and frozen forecasts; bound raw queries and retain cached history recovery.",
-        "de": "Viertelstunden-Leistung zeitgewichtet aus Rohwerten statt aus Messpunktmitteln berechnen. Datenluecken und ausgegebene Prognosen erhalten; Rohabfragen begrenzen und Historien-Erholung beibehalten.",
-        "es": "Build quarter-hour power histories from time-weighted raw samples, not point-count means. Preserve unknown gaps and frozen forecasts; bound raw queries and retain cached history recovery.",
-        "fr": "Build quarter-hour power histories from time-weighted raw samples, not point-count means. Preserve unknown gaps and frozen forecasts; bound raw queries and retain cached history recovery.",
-        "it": "Build quarter-hour power histories from time-weighted raw samples, not point-count means. Preserve unknown gaps and frozen forecasts; bound raw queries and retain cached history recovery.",
-        "nl": "Build quarter-hour power histories from time-weighted raw samples, not point-count means. Preserve unknown gaps and frozen forecasts; bound raw queries and retain cached history recovery.",
-        "pl": "Build quarter-hour power histories from time-weighted raw samples, not point-count means. Preserve unknown gaps and frozen forecasts; bound raw queries and retain cached history recovery.",
-        "pt": "Build quarter-hour power histories from time-weighted raw samples, not point-count means. Preserve unknown gaps and frozen forecasts; bound raw queries and retain cached history recovery.",
-        "ru": "Build quarter-hour power histories from time-weighted raw samples, not point-count means. Preserve unknown gaps and frozen forecasts; bound raw queries and retain cached history recovery.",
-        "uk": "Build quarter-hour power histories from time-weighted raw samples, not point-count means. Preserve unknown gaps and frozen forecasts; bound raw queries and retain cached history recovery.",
-        "zh-cn": "Build quarter-hour power histories from time-weighted raw samples, not point-count means. Preserve unknown gaps and frozen forecasts; bound raw queries and retain cached history recovery."
       }
     },
     "titleLang": {
