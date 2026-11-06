@@ -4145,6 +4145,79 @@ test('unacknowledged reduction retains old confirmed current reservation', async
     assert.deepEqual(h.writes, []);
 });
 
+test('a lower replacement retains the pending command witness and worst-case reserve', async () => {
+    const h = await unacknowledgedStep();
+    const d = h.output.devices[0], replaced = d.pending;
+    h.advance(2000);
+    d.pending = {stage: 'current', amps: 10, start: false, at: h.output.now()};
+    await h.output.send(d, 'command', 10, replaced);
+    h.writes.length = 0;
+    h.advance(21000);
+    h.ack('feedback', 11);
+    h.put('power', 2.45);
+    h.put('i1', 10.9);
+    await h.output.tick();
+    assert.equal(d.fault, '');
+    assert.equal(d.pending.amps, 10);
+    assert.ok(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val >= 2530);
+    assert.deepEqual(h.writes, []);
+    h.advance(1000);
+    for (const id of h.freeze.keys()) h.put(id, h.states.get(id).val);
+    h.ack('feedback', 10);
+    await h.output.tick();
+    assert.equal(d.pending, null);
+    assert.equal(d.lastA, 10);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.ResponseState').val, 'vehicle_response');
+    assert.deepEqual(h.writes, []);
+});
+
+test('fresh telemetry showing the old setting retries a running reduction once', async () => {
+    const h = await telemetryBridgeFixture();
+    const d = h.output.devices[0];
+    for (const amps of [13, 12]) {
+        h.advance(1000);
+        h.put('ems.0.Control.Targets.Wallbox0_W', amps * 230);
+        d.pending = {stage: 'current', amps, start: false, at: h.output.now()};
+        await h.output.send(d, 'command', amps);
+        const sentAt = d.response.at;
+        h.advance(1000);
+        for (const id of h.freeze.keys()) h.put(id, h.states.get(id).val);
+        h.ack('feedback', amps);
+        const electrical = amps === 12 ? {ts: sentAt} : {};
+        h.put('power', 2.88, electrical);
+        h.put('i1', 12.8, electrical);
+        await h.output.tick();
+        assert.equal(d.lastA, amps);
+        for (const id of h.freeze.keys()) h.freeze.set(id, {...h.states.get(id)});
+    }
+    h.advance(1000);
+    assert.equal(d.response.previousAmps, 13, JSON.stringify(d.response));
+    d.pending = {stage: 'current', amps: 10, start: false, at: h.output.now()};
+    await h.output.send(d, 'command', 10);
+    assert.ok(h.output.unacknowledgedCurrentProofs.get(d.pending)?.possibleAmps.includes(13),
+        JSON.stringify({response: d.response, status: h.states.get('ems.0.Devices.Wallbox0.ResponseState')}));
+    h.writes.length = 0;
+    const previousFeedback = () => {
+        for (const id of h.freeze.keys()) h.put(id, h.states.get(id).val);
+        h.ack('feedback', 13);
+        h.put('power', 2.88);
+        h.put('i1', 12.8);
+    };
+    h.advance(21000);
+    previousFeedback();
+    await h.output.tick();
+    assert.equal(d.fault, '');
+    assert.equal(d.pending.retried, true);
+    assert.equal(d.lastA, 12);
+    assert.ok(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val >= 2990);
+    assert.deepEqual(h.writes, [{id: 'cmd', val: 10}]);
+    h.advance(21000);
+    previousFeedback();
+    await h.output.tick();
+    assert.equal(d.fault, '');
+    assert.deepEqual(h.writes, [{id: 'cmd', val: 10}]);
+});
+
 for (const unsafe of [false, true]) test(`split grid receipt keeps established charger without commands, unsafe=${unsafe}`, async () => {
     const h = await telemetryBridgeFixture();
     h.config.gridPairTimestampMode = 'shared-receipt';

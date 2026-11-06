@@ -170,7 +170,8 @@ test(`simultaneous Mii and EQE telemetry age keeps reserves with safe SMA; failu
     assert.ok(!h.writes.some(w => ['goe.allow', 'goe0.allow', 'goe.cmd', 'goe0.cmd'].includes(w.id)));
 });
 
-for (const split of [false,true]) test(`real parallel allocator retains unacknowledged Mii step during telemetry outage, heater=${split}`,async()=>{
+for (const split of [false,true]) for (const offline of [false,true])
+    test(`real parallel allocator retains unacknowledged Mii step during telemetry outage, heater=${split}, offline=${offline}`,async()=>{
     const h=await plant({mii:true,wallbox:false,startDelayS:0,split,initialSurplusW:split?6000:3000,
         nativeConfig:{wallboxParallelChargingEnabled:true,wb0CommissioningMaxA:8}});
     await h.advance(90);
@@ -185,14 +186,21 @@ for (const split of [false,true]) test(`real parallel allocator retains unacknow
     await h.replayAt(at+1000,[['goe0.feedback',8],
         ['DP_WB0_POWER',1.76,{ts:at}],['DP_WB0_L1_A',7.9,{ts:at}]]);
     assert.equal(d.response.ackAt,0);
+    const connection = offline ? [['goe0.connection',false]] : [];
     await h.replayAt(at+2000,[['goe0.feedback',8],
-        ['DP_WB0_POWER',1.76,{ts:at}],['DP_WB0_L1_A',7.9,{ts:at}]]);
+        ['DP_WB0_POWER',1.76,{ts:at}],['DP_WB0_L1_A',7.9,{ts:at}],...connection]);
+    if (offline) {
+        const grant = JSON.parse(h.value('Control.ParallelWallboxAllocation_JSON')).allocations.find(x=>x.wb===0);
+        assert.equal(grant.authorized,false);
+        assert.equal(grant.telemetryHold,true);
+        assert.equal(h.value('Devices.Wallbox0.OutputActive'),true);
+    }
     const ids=['goe0.error','DP_WB0_CAR','goe0.allow','goe0.feedback','DP_WB0_POWER',
         ...[1,2,3].map(p=>`DP_WB0_L${p}_A`)];
     const frozen=ids.map(id=>[id,h.states.get(id).val,{...h.states.get(id)}]);
     h.writes.length=0;
     for(const offset of [33000,63000,603000]) {
-        await h.replayAt(at+offset,frozen);
+        await h.replayAt(at+offset,[...frozen,...connection]);
         assert.equal(h.value('Devices.Wallbox0.OutputActive'),true,h.value('Devices.Wallbox0.OutputStatus'));
         assert.match(h.value('Devices.Wallbox0.OutputStatus'),/ACK-WARNUNG/);
         assert.ok(h.value('Devices.Wallbox0.OutputReservedPower_W')>=amps*230);
