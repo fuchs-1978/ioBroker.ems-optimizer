@@ -1543,6 +1543,33 @@ test('manual correction updates target release live and never writes the foreign
     assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.SoC_pct').val, 65);
 });
 
+test('Mii keeps its release and warns through missing cloud SoC and an interrupted energy counter', () => {
+    let now = 1800000000000;
+    const h = engine({wb0SocEstimationEnabled: true, wb0CapacityKWh: 32.3,
+        wb0SocEfficiencyPct: 90}, class extends Date { static now() { return now; } });
+    const root = 'ems.0.Vehicles.Wallbox0';
+    h.run("requestForecastRebuild = () => {}; CFG.dp.wallboxSocMeasuredAt[0] = ''");
+    h.put('DP_WB0_SOC', 45); h.put('DP_WB0_SOC_ENERGY', 11.55); h.put('DP_WB0_TARGET', 90);
+    h.run(`applyVehicleSocCorrection(0, {val:81.1, ack:false, ts:${now}, q:0})`);
+    h.states.delete('DP_WB0_SOC');
+    h.states.delete('DP_WB0_SOC_ENERGY');
+    for (let i = 0; i < 3; i++) {
+        now += 30000;
+        h.run('updateVehicles()');
+        assert.equal(h.states.get(root + '.SoC_pct').val, 81.1);
+        assert.equal(h.run('vehicleState(0).release'), true);
+        assert.match(h.states.get(root + '.SoCWarningText').val, /Akkustand in der App pruefen/);
+    }
+    now += 30000;
+    h.put('DP_WB0_SOC_ENERGY', 11.65); h.run('updateVehicles()');
+    assert.equal(h.states.get(root + '.SoC_pct').val, 81.4);
+    assert.equal(h.run('vehicleState(0).release'), true);
+    assert.equal(h.states.get(root + '.SoCWarning').val, true, 'cloud SoC is still absent');
+    h.put('DP_WB0_SOC', 45); h.run('updateVehicles()');
+    assert.equal(h.states.get(root + '.SoC_pct').val, 81.4);
+    assert.equal(h.states.get(root + '.SoCWarning').val, false);
+});
+
 test('plausible changed vehicle SoC ends manual correction live and publishes recovery status', () => {
     let now = 1800000000000;
     const h = engine({wb0SocEstimationEnabled: true, wb0CapacityKWh: 32.3,

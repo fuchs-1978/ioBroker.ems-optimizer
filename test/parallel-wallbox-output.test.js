@@ -1473,6 +1473,28 @@ test('output independently stops at energy-estimated target with unchanged raw S
     }
 });
 
+test('output keeps charging with a qualified estimate through missing raw SoC, then honors the target', async () => {
+    const h = await measuredHoldOutput();
+    h.config.wb0SocEstimationEnabled = true;
+    h.config.wb0CapacityKWh = 50;
+    h.config.wb0SocEfficiencyPct = 90;
+    h.mapping.DP_WB0_SOC_ENERGY = 'chargedKWh';
+    const {correctSoc} = require('../lib/vehicle-soc-estimator');
+    const correction = correctSoc({value: 79.8, now: 1000000,
+        reported: {val: 45, ts: 1000000, ack: true}, car: {val: 2, ts: 1000000, ack: true},
+        counter: {val: 10, ts: 1000000, ack: true},
+        signature: JSON.stringify(['soc', 'chargedKWh', '', 50, 90])});
+    assert.equal(correction.ok, true);
+    h.put('ems.0.Vehicles.Wallbox0.SocEstimateLedger_JSON', JSON.stringify(correction.ledger));
+    h.states.delete('soc');
+    await h.output.tick();
+    assert.ok(!h.writes.some(w => w.id === 'allow' && w.val === 0));
+    h.put('chargedKWh', 10.2, {ts: 1010001});
+    await h.output.tick();
+    assert.ok(h.writes.some(w => w.id === 'allow' && w.val === 0));
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val, /Ziel-SoC/);
+});
+
 test('minimum-SoC output admits one 70 W import step with 100 W setting but not a 90 W new step', async () => {
     for(const exportW of [160,140]) {
         const h=await measuredHoldOutput();h.put('soc',10);

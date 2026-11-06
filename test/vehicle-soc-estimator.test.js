@@ -131,13 +131,17 @@ test('legacy retained 100-percent basis across a blocked session boundary recove
     assert.equal(fixed.ledger.cloudAfterUnplug, true);
 });
 
-test('cloud authority after unplug keeps bad cloud values invalid and does not require a charge counter', () => {
+test('cloud authority after unplug requires a qualified report before retaining SoC without a counter', () => {
     const h = harness({car: state(1)}); h.run();
-    const r = h.run({now: T + 1000, car: state(3, T + 1000), counter: null, reported: state(84, T + 1000)});
+    const missing = h.run({now: T + 1000, car: state(3, T + 1000), counter: null, reported: null});
+    assert.equal(missing.valid, false); assert.equal(missing.value, null);
+    const r = h.run({reported: state(84, T + 1000)});
     assert.equal(r.value, 84); assert.equal(r.valid, true); assert.equal(r.estimated, false);
     for (const reported of [state(null, T + 1000), {...state(84, T + 1000), ack: false},
         {...state(84, T + 1000), q: 64}, state(84, T + 5000)]) {
-        const invalid = h.run({reported}); assert.equal(invalid.valid, false); assert.equal(invalid.value, null);
+        const held = h.run({reported});
+        assert.equal(held.valid, true); assert.equal(held.value, 84);
+        assert.equal(held.reported, null); assert.equal(held.socWarning, true);
     }
 });
 
@@ -468,24 +472,28 @@ test('confirmed disconnect clears the manual basis; reconnect starts with the ve
     assert.equal(r.manual, undefined); assert.equal(r.value, 65);
 });
 
-test('invalid or unknown connection suspends manual correction without pretending an unplug', () => {
+test('invalid or unknown connection holds the manual SoC and warns without pretending an unplug', () => {
     for (const car of [undefined, {...state(1), ack: false}, {...state(1), q: 64}]) {
         const h = harness();
         const correction = correctSoc({...h.input(), value: 94});
         const r = h.run({ledgerText: JSON.stringify(correction.ledger), now: T + 1000, car});
-        assert.equal(r.manual, true); assert.equal(r.valid, false);
+        assert.equal(r.manual, true); assert.equal(r.valid, true); assert.equal(r.value, 94);
+        assert.match(r.socWarningText, /Akkustand in der App pruefen/);
         assert.notEqual(r.manualCleared, true); assert.equal(r.ledger.manual.soc, 94);
     }
 });
 
-test('counter reset, jump and long gap suspend manual estimation; normal charging transition does not', () => {
+test('counter reset, jump and long gap hold manual SoC without counting energy', () => {
     for (const update of [{now: T + 1000, counter: state(0, T + 1000)},
         {now: T + 1000, counter: state(20, T + 1000)},
         {now: T + 61000, counter: state(10.1, T + 61000)}]) {
         const h = harness();
         const correction = correctSoc({...h.input(), value: 94});
         const r = h.run({ledgerText: JSON.stringify(correction.ledger), ...update});
-        assert.equal(r.valid, false);
+        assert.equal(r.valid, true);
+        assert.equal(r.value, 94);
+        assert.equal(r.socWarning, true);
+        assert.equal(r.ledger.manual.lastKwh, 10);
     }
     const h = harness();
     const correction = correctSoc({...h.input(), value: 94});
@@ -589,8 +597,8 @@ test('bad reports, gaps, resets and suspended sessions cannot trigger plausible 
     }
     const h = correctedHarness();
     h.run({now: T + 10000, car: {...state(1, T + 10000), q: 64}});
-    const r = h.run({now: T + 30000, car: state(2, T + 30000),
-        counter: state(10, T + 30000), reported: state(94, T + 30000)});
+    const r = h.run({now: T + 70000, car: {...state(2, T + 70000), lc: T + 65000},
+        counter: state(10, T + 70000), reported: state(94, T + 70000)});
     assert.equal(r.valid, false); assert.equal(r.manual, true);
 });
 
@@ -666,9 +674,8 @@ test('counter rounding tolerance is bounded to the fixed high-water mark and can
     const h = correctedHarness();
     assert.equal(h.run({now: T + 30000, counter: state(9.9994, T + 30000)}).valid, true);
     const r = h.run({now: T + 60000, counter: state(9.9988, T + 60000)});
-    assert.equal(r.valid, false); assert.equal(r.reason, 'manual-suspended');
-    const reset = correctedHarness();
-    assert.equal(reset.run({now: T + 30000, counter: state(0, T + 30000)}).valid, false);
+    assert.equal(r.value, 94); assert.equal(r.reason, 'manual-held');
+    assert.equal(r.ledger.manual.lastKwh, 10);
 });
 
 test('counter rounding hold never refreshes stale or invalid readings or admits a power spike', () => {
@@ -676,11 +683,40 @@ test('counter rounding hold never refreshes stale or invalid readings or admits 
         {...state(9.9995), q:64}]) {
         const h = correctedHarness();
         const r = h.run({now: T + 30000, counter});
-        assert.equal(r.reason, 'manual-retained-energy-unavailable');
+        assert.equal(r.reason, 'manual-held');
         assert.equal(r.ledger.manual.lastTs, T);
     }
     const h = correctedHarness();
-    assert.equal(h.run({now:T+1000,counter:state(20,T+1000)}).valid,false);
+    assert.equal(h.run({now:T+1000,counter:state(20,T+1000)}).value, 94);
+});
+
+test('missing cloud input and a brief counter outage keep a measured SoC in the same session', () => {
+    const h = harness();
+    h.run();
+    const charged = h.run({now: T + 30000, counter: state(10.2, T + 30000)});
+    const held = h.run({now: T + 40000, reported: undefined, counter: undefined});
+    assert.equal(held.value, charged.value);
+    assert.equal(held.valid, true);
+    assert.equal(held.socWarning, true);
+    const next = h.run({now: T + 50000, counter: state(10.3, T + 50000)});
+    assert.ok(Math.abs(next.value - 40.54) < 1e-9);
+    assert.equal(next.reported, null);
+    assert.equal(next.socWarning, true);
+    assert.equal(estimateSoc(h.input()).value, next.value);
+    const unplugged = h.run({now: T + 60000, car: state(1, T + 60000)});
+    assert.equal(unplugged.valid, false);
+    assert.equal(unplugged.socWarning, false);
+});
+
+test('a qualified cloud report stays usable before a counter basis exists, until confirmed unplug', () => {
+    const h = harness({counter: undefined});
+    assert.equal(h.run().value, 40);
+    const held = h.run({now: T + 10000, reported: undefined});
+    assert.equal(held.valid, true);
+    assert.equal(held.value, 40);
+    assert.equal(held.socWarning, true);
+    assert.equal(h.run({car: state(1, T + 10000)}).valid, false);
+    assert.equal(h.run({car: state(2, T + 10000)}).valid, false);
 });
 
 test('repeated 69-percent publications preserve all continuously measured Mii charge across polls and restart', () => {
