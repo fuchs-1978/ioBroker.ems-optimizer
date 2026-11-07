@@ -56,6 +56,26 @@ test('missing temperature, missing lags and insufficient history stay unknown', 
     const short = await comparison.train(f.rows.slice(-96 * 15), now, dayType, f.temperatures);
     assert.equal(short.ready, false);
 });
+test('forecast uses marked estimates for active missing lags and skips missing zero-weight lags', async () => {
+    const base = await trained();
+    const forecast = {...base, values: new Map(base.values), estimatedValues: new Map(),
+        model: {...base.model, weights: base.model.weights.slice()}};
+    forecast.model.weights[0] = 20;
+    forecast.model.weights[1] = 0;
+    const firstSlot = comparison.issue(forecast, now, () => 8).slots[0];
+    const recentLag = firstSlot.timestamp - 2 * DAY, weeklyLag = firstSlot.timestamp - 7 * DAY;
+    const measured = forecast.values.get(recentLag);
+    forecast.values.delete(weeklyLag);
+    assert.deepEqual(comparison.issue(forecast, now, () => 8).slots[0], firstSlot);
+    forecast.values.delete(recentLag);
+    assert.equal(comparison.issue(forecast, now, () => 8).slots[0].lassoW, null);
+    forecast.estimatedValues.set(recentLag, measured);
+    const filled = comparison.issue(forecast, now, () => 8).slots[0];
+    assert.equal(filled.lassoW, firstSlot.lassoW);
+    assert.equal(filled.medianW, firstSlot.medianW);
+    assert.deepEqual(filled.estimatedLagDays, [2]);
+    assert.equal(forecast.values.has(recentLag), false);
+});
 test('disabled temperature path is explicit and allows calendar/load-only comparison', async () => {
     const model = await comparison.train(fixture().rows, now, dayType, [], false);
     assert.equal(model.ready, true, model.reason);
@@ -333,6 +353,7 @@ test('spring estimates only four nonexistent clock quarters, marks lag days and 
     assert.equal(model.ready, true, model.reason);
     assert.equal(model.diagnostics.estimatedLagSamples, 4);
     assert.equal(model.diagnostics.estimatedLagValues, 4);
+    model.model.weights[1] = 1; // Keep the weekly lag active in this constant-load fixture.
     const entry = comparison.issue(model, end);
     assert.equal(entry.slots.filter(row => row.estimatedLagDays.length).length, 4);
     assert.deepEqual(entry.slots.find(row => row.timestamp === target).estimatedLagDays, [7]);
