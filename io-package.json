@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.208",
+    "version": "0.17.0-alpha.209",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.209": {
+        "en": "Archive a separate Lasso comparison forecast when a single quarter-hour can be interpolated from its neighbors.",
+        "de": "Eine eigene Lasso-Vergleichsprognose speichern, wenn eine einzelne Viertelstunde aus ihren Nachbarn interpoliert werden kann.",
+        "es": "Guardar una previsión Lasso separada cuando se pueda interpolar un único intervalo de quince minutos a partir de sus vecinos.",
+        "fr": "Enregistrer une prévision Lasso séparée lorsqu’un seul quart d’heure peut être interpolé à partir de ses voisins.",
+        "it": "Salvare una previsione Lasso separata quando un singolo quarto d’ora può essere interpolato dai valori vicini.",
+        "nl": "Sla een aparte Lasso-vergelijkingsprognose op als één kwartier uit de naburige waarden kan worden geïnterpoleerd.",
+        "pl": "Zapisuj oddzielną prognozę Lasso, gdy jeden kwadrans można interpolować z sąsiednich wartości.",
+        "pt": "Guardar uma previsão Lasso separada quando um único quarto de hora puder ser interpolado a partir dos valores vizinhos.",
+        "ru": "Сохранять отдельный прогноз Lasso, когда один 15-минутный интервал можно интерполировать по соседним значениям.",
+        "uk": "Зберігати окремий прогноз Lasso, коли один 15-хвилинний інтервал можна інтерполювати за сусідніми значеннями.",
+        "zh-cn": "当单个 15 分钟时段可由相邻值插补时，保存单独的 Lasso 对比预测。"
+      },
       "0.17.0-alpha.208": {
         "en": "Use available 15-minute weather and PV forecasts for the next four hours and archive the detailed weather forecast.",
         "de": "Verfügbare Viertelstundenprognosen für Wetter und PV in den nächsten vier Stunden nutzen und die detaillierte Wetterprognose archivieren.",
@@ -81,19 +94,6 @@
         "ru": "Распределять необходимый нагрев воды с постоянной мощностью по интервалам с одинаковой ценой перед более дешёвым периодом с учётом запаса тепла и ограничений нагревателя. Возобновлять оценку SoC по последнему показанию приложения и измеренной энергии зарядки, проверяя достоверность последующих показаний.",
         "uk": "Розподіляти потрібний нагрів води зі сталою потужністю між інтервалами з однаковою ціною перед дешевшим періодом з урахуванням запасу тепла й обмежень нагрівача. Відновлювати оцінку SoC за останнім показом застосунку й виміряною енергією заряджання та перевіряти правдоподібність наступних показів.",
         "zh-cn": "在更便宜的时段开始前，将必要的热水加热以恒定功率分配到相同电价的时段，同时满足储热下限和加热器限制。 根据应用中最近一次读数和实测充电量继续估算车辆荷电状态，并检查后续读数是否合理。"
-      },
-      "0.17.0-alpha.202": {
-        "en": "Anticipate hot-water demand across a dearer price block and refill the necessary reserve in the latest feasible cheaper slots. Bound forecast purchases by useful PV, remaining slot time, heater power and storage capacity; retain live output permissions.",
-        "de": "Warmwasserbedarf ueber einen teureren Preisblock vorausschauen und die noetige Reserve rechtzeitig in den letzten nutzbaren guenstigeren Fenstern aufbauen. PV, Restzeit, Heizleistung und Speicherplatz begrenzen die Prognose; reale Ausgangsfreigaben bleiben bestehen.",
-        "es": "Prever la demanda de agua caliente durante un bloque de precios más altos y acumular la reserva necesaria en los últimos intervalos baratos viables. Respetar la energía fotovoltaica útil, el tiempo restante, la potencia y la capacidad del depósito, sin cambiar los permisos de las salidas reales.",
-        "fr": "Anticiper les besoins en eau chaude pendant une période plus chère et constituer la réserve nécessaire dans les derniers créneaux moins chers réalisables. Respecter le photovoltaïque utile, le temps restant, la puissance et la capacité du ballon, sans modifier les autorisations des sorties réelles.",
-        "it": "Prevedere il fabbisogno di acqua calda durante una fascia più cara e accumulare la riserva necessaria negli ultimi intervalli economici utili. Rispettare il fotovoltaico disponibile, il tempo residuo, la potenza e la capacità del serbatoio, mantenendo le autorizzazioni delle uscite reali.",
-        "nl": "Voorzie de warmwaterbehoefte tijdens een duurder prijsblok en bouw de benodigde reserve op in de laatst haalbare goedkopere intervallen. Houd rekening met bruikbare zonnestroom, resterende tijd, verwarmingsvermogen en opslagcapaciteit; behoud de bestaande toestemmingen voor fysieke uitgangen.",
-        "pl": "Przewiduj zapotrzebowanie na ciepłą wodę w droższym przedziale i uzupełniaj potrzebną rezerwę w ostatnich możliwych tańszych okresach. Uwzględniaj dostępną energię PV, pozostały czas, moc grzałki i pojemność zbiornika bez zmiany zezwoleń na rzeczywiste sterowanie.",
-        "pt": "Antecipar a necessidade de água quente durante um período mais caro e repor a reserva necessária nos últimos intervalos mais baratos viáveis. Respeitar a energia solar útil, o tempo restante, a potência e a capacidade do depósito, mantendo as autorizações das saídas reais.",
-        "ru": "Прогнозировать потребность в горячей воде на дорогой период и заранее создавать необходимый запас в последние доступные дешёвые интервалы. Учитывать полезную солнечную энергию, оставшееся время, мощность нагревателя и ёмкость бака, сохраняя разрешения реальных выходов.",
-        "uk": "Прогнозувати потребу в гарячій воді на дорожчий період і завчасно створювати необхідний запас в останні доступні дешевші інтервали. Враховувати корисну сонячну енергію, залишок часу, потужність нагрівача та місткість бака, зберігаючи дозволи реальних виходів.",
-        "zh-cn": "提前预测高价时段的热水需求，在最后可行的低价时段建立必要储热。规划受可用光伏、剩余时间、加热功率和储水容量限制，不改变实际输出的授权。"
       }
     },
     "titleLang": {

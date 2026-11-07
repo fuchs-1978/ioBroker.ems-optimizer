@@ -213,6 +213,76 @@ test('rebuild cannot revise a persisted day-ahead prediction, and contract chang
     assert.equal(h.states.get('ems.0.Forecast.LoadComparison.Ready'), false);
 });
 
+function isolatedForecast() {
+    const start = new Date(2026, 10, 8).getTime(), index = 33;
+    return {date: '2026-11-8', issuedAt: start - 3600000, start, end: start + DAY, slots: Array.from({length: 96}, (_, i) => ({
+        timestamp: start + i * SLOT, medianW: 798,
+        lassoW: i === index ? null : i === index - 1 ? 1107 : i === index + 1 ? 1153 : 1100
+    }))};
+}
+
+test('only one isolated output gap between exact neighbors can be interpolated', () => {
+    const {slots} = isolatedForecast();
+    assert.deepEqual(comparison.lassoInterpolation(slots), {timestamp: slots[33].timestamp, valueW: 1130});
+    assert.equal(slots[33].lassoW, null);
+    const copy = () => slots.map(row => ({...row}));
+    const multiple = copy(); multiple[55].lassoW = null;
+    const boundary = copy(); boundary[33].lassoW = 1130; boundary[0].lassoW = null;
+    const wrongTime = copy(); wrongTime[34].timestamp += SLOT;
+    const invalid = copy(); invalid[32].lassoW = -1;
+    const noMedian = copy(); noMedian[33].medianW = null;
+    for (const gap of [multiple, boundary, wrongTime, invalid, noMedian, slots.slice(1)]) {
+        assert.equal(comparison.lassoInterpolation(gap), null);
+    }
+});
+
+test('the interpolated forecast is restored and scored separately against identical measured slots', () => {
+    const entry = isolatedForecast();
+    const saved = {...entry, interpolation: comparison.lassoInterpolation(entry.slots)};
+    const bad = {...entry, interpolation: {...saved.interpolation, valueW: 1129}};
+    const raw = JSON.stringify({schema: 1, signature: 'same', entries: [], interpolations: [bad, saved, saved]});
+    assert.deepEqual(comparison.restore(raw, 'same', entry.issuedAt, 'interpolations'), [saved]);
+    assert.deepEqual(comparison.restore(raw, 'changed', entry.issuedAt, 'interpolations'), []);
+    const actual = entry.slots.map(row => ({ts: row.timestamp, val: 1130}));
+    const result = comparison.score([entry], actual, entry.end, [saved]);
+    assert.equal(result.days[0].lasso.pairedSlots, 95);
+    const day = result.lassoInterpolationDays[0];
+    assert.equal(day.lassoInterpolated.pairedSlots, 96);
+    assert.equal(day.median.pairedSlots, 96);
+    assert.equal(day.gap.actualW, 1130);
+    assert.equal(day.gap.medianW, 798);
+    assert.equal(day.gap.lassoInterpolatedW, 1130);
+    const gap = comparison.score([], actual.filter((_, i) => i !== 33), entry.end, [saved]).lassoInterpolationDays[0];
+    assert.equal(gap.lassoInterpolated.pairedSlots, 95);
+    assert.equal(gap.lassoInterpolated.energyBiasKWh, null);
+    assert.equal(gap.gap.actualW, null);
+    assert.equal(comparison.score([], actual, entry.end - SLOT, [saved]).lassoInterpolationDays.length, 0);
+});
+
+test('the engine freezes an interpolated variant without marking pure Lasso ready', () => {
+    const h = wrapper({loadComparisonEnabled: true}), entry = isolatedForecast();
+    h.context.loadForecastComparison = {...comparison, issue: () => entry};
+    h.context.model = {ready: true, diagnostics: {trainedAt: entry.issuedAt}};
+    h.context.issueTime = entry.issuedAt;
+    h.run('loadComparisonModel=model; loadComparisonSignature=loadComparisonContract(); publishLoadComparison(issueTime);');
+    const output = name => h.states.get(`ems.0.Forecast.LoadComparison.${name}`);
+    const first = JSON.parse(output('Forecast_JSON'));
+    assert.equal(output('Ready'), false);
+    assert.equal(first.issuedAt, null);
+    assert.equal(first.slots[33].lassoW, null);
+    assert.equal(first.lassoInterpolation.slots[33].valueW, 1130);
+    assert.equal(JSON.parse(output('Ledger_JSON')).entries.length, 0);
+    entry.slots[32].lassoW = 900;
+    h.run('publishLoadComparison(issueTime + SLOT);');
+    assert.deepEqual(JSON.parse(output('Forecast_JSON')).lassoInterpolation, first.lassoInterpolation);
+    entry.slots[33].lassoW = 1000;
+    h.run('publishLoadComparison(issueTime + 2 * SLOT);');
+    assert.equal(output('Ready'), true);
+    assert.equal(JSON.parse(output('Forecast_JSON')).slots[33].lassoW, 1000);
+    assert.deepEqual(JSON.parse(output('Forecast_JSON')).lassoInterpolation, first.lassoInterpolation);
+    assert.equal(JSON.parse(output('Ledger_JSON')).interpolations.length, 1);
+});
+
 test('an enabled ready comparison leaves every production forecast and planner input identical', async () => {
     const {createEngineContext} = require('../lib/engine-loader');
     const model = await trained();
