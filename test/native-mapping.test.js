@@ -3,6 +3,15 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {buildNativeMapping, houseConnectionSettings} = require('../lib/native-mapping');
 
+test('the weather quarter-hour branch follows the selected hourly location', () => {
+    const legacy = 'open-meteo-weather.0.first.weather.forecast.hourly.next_hours';
+    const explicit = 'open-meteo-weather.1.second.weather.forecast.hourly.next_hours';
+    const mapping = buildNativeMapping({weatherHourlyBaseId: explicit,
+        dataPointMapJson: JSON.stringify({DP_WEATHER_HOURLY_BASE: legacy})});
+    assert.equal(mapping.DP_WEATHER_QUARTER_HOUR_BASE, 'open-meteo-weather.1.second.weather.forecast.15min');
+    assert.equal(buildNativeMapping({weatherHourlyBaseId: 'custom.hourly'}).DP_WEATHER_QUARTER_HOUR_BASE, undefined);
+});
+
 test('explicit AP2 fields override legacy JSON while untouched keys survive migration', () => {
     const mapping = buildNativeMapping({
         dataPointMapJson: JSON.stringify({DP_PV_POWER: 'legacy.pv', DP_CUSTOM: 'keep.me',

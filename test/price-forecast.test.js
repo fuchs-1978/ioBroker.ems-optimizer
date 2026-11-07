@@ -48,21 +48,79 @@ function schedule(config = {}, clock) {
     return h;
 }
 
-function weatherFixture() {
+function weatherFixture(pvBase = 'pv') {
     const h = engine();
-    h.run("CFG.dp.weatherHourlyBase='wx'; CFG.dp.pvForecastBase='pv'; CFG.pvAreas=[{name:'Carport'},{name:'Roof'}]");
+    h.run(`CFG.dp.weatherHourlyBase='wx'; CFG.dp.pvForecastBase='${pvBase}'; CFG.pvAreas=[{name:'Carport'},{name:'Roof'}]`);
     for (let hour = 0; hour < 48; hour++) {
         const timestamp = h.now() + hour * 3600000;
         h.put(`wx.hour${hour}.date`, timestamp);
         h.put(`wx.hour${hour}.temperature_2m`, 10);
         h.put(`wx.hour${hour}.wind_speed_10m`, 5);
         for (const area of ['Carport', 'Roof']) {
-            h.put(`pv.${area}.hourly-forecast.hour${hour}.unix_time_stamp`, timestamp);
-            h.put(`pv.${area}.hourly-forecast.hour${hour}.global_tilted_irradiance`, 1000);
+            h.put(`${pvBase}.${area}.hourly-forecast.hour${hour}.unix_time_stamp`, timestamp);
+            h.put(`${pvBase}.${area}.hourly-forecast.hour${hour}.global_tilted_irradiance`, 1000);
         }
     }
     return h;
 }
+
+const meteoPv = 'open-meteo-weather.0.pv-forecast';
+function addQuarterForecast(h) {
+    h.run("CFG.dp.weatherQuarterHourBase='wx.15min'");
+    for (let i = 0; i <= 16; i++) {
+        h.put(`wx.15min.${i}.date`, h.now() + i * QUARTER);
+        h.put(`wx.15min.${i}.temperature_2m`, i);
+        h.put(`wx.15min.${i}.wind_speed_10m`, 11);
+        for (const [area, index] of [['Carport', i], ['Roof', i + 30]]) {
+            const id = `${meteoPv}.${area}.15-min-forecast.${index}`;
+            h.put(`${id}.unix_time_stamp`, h.now() + (i + 1) * QUARTER);
+            h.put(`${id}.global_tilted_irradiance`, i * 100);
+        }
+    }
+}
+
+function readBuiltForecast(h) {
+    h.run('buildForecast()');
+    const series = name => JSON.parse(h.states.get(`ems.0.Forecast.${name}_48h_JSON`).val);
+    return {pv: series('PV'), weather: series('Weather'), heat: series('HeatDemandIndex')};
+}
+
+test('the next four hours use exact weather and preceding-interval PV on the plan quarter-hour grid', () => {
+    const h = weatherFixture(meteoPv); addQuarterForecast(h);
+    const {pv, weather, heat} = readBuiltForecast(h);
+    assert.equal(pv.length, 192);
+    assert.deepEqual(pv.slice(0, 16).map(row => row.valueW), Array.from({length: 16}, (_, i) => i * 200));
+    assert.ok(pv.slice(0, 16).every(row => row.source === '15min'));
+    assert.equal(pv[16].valueW, 2000);
+    assert.equal(pv[16].source, 'hourly');
+    assert.equal(weather[15].temperatureC, 15);
+    assert.equal(weather[16].temperatureC, 10);
+    assert.equal(weather[15].temperatureSource, '15min');
+    assert.equal(weather[16].temperatureSource, 'hourly');
+    assert.equal(heat[0].value, 20.2);
+    assert.equal(h.states.get('ems.0.Forecast.PVNext2h_Wh').val, 1400);
+});
+
+test('quarter-hour fields fall back independently and partial or misdated PV never replaces the hourly total', () => {
+    const h = weatherFixture(meteoPv); addQuarterForecast(h);
+    const roof = `${meteoPv}.Roof.15-min-forecast`;
+    h.put(`${roof}.31.global_tilted_irradiance`, 1, {ts: h.now() - 120001});
+    h.put(`${roof}.32.unix_time_stamp`, h.now() - 86400000 + 3 * QUARTER);
+    h.put(`${roof}.33.global_tilted_irradiance`, -1);
+    h.put(`${roof}.35.unix_time_stamp`, h.now() + 5 * QUARTER); // duplicate of index 34
+    h.put('wx.15min.1.temperature_2m', 1, {q: 64});
+    h.put('wx.15min.2.wind_speed_10m', null);
+    h.put('wx.15min.3.date', h.now() + 2 * QUARTER); // duplicate weather time
+    const {pv, weather} = readBuiltForecast(h);
+    assert.ok(pv.slice(1, 6).every(row => row.valueW === 2000 && row.source === 'hourly'));
+    assert.equal(pv[6].valueW, 1200);
+    assert.equal(weather[1].temperatureC, 10);
+    assert.equal(weather[1].temperatureSource, 'hourly');
+    assert.equal(weather[1].windKmh, 11);
+    assert.equal(weather[2].windKmh, 5);
+    assert.equal(weather[3].temperatureC, 10);
+    assert.equal(weather[5].temperatureC, 5);
+});
 
 for (const [label, extra] of [
     ['unacknowledged', {ack: false}], ['missing ACK', {ack: undefined}], ['bad quality', {q: 128}],

@@ -3,6 +3,8 @@ const test = require('node:test'), assert = require('node:assert/strict');
 const {WeatherForecastHistory, buildSnapshot, FIELDS, SQL_OPTIONS} = require('../lib/weather-forecast-history');
 const HOUR = 3600000, now = Date.UTC(2026, 9, 30, 20, 10), base = 'meteo.0.site.weather.forecast.hourly.next_hours';
 const currentBase = 'meteo.0.site.weather.current';
+const quarterHourBase = 'meteo.0.site.weather.forecast.15min';
+const QUARTER_HOUR = HOUR / 4;
 function fixture(config = {}) {
     let at = now;
     const states = {}, objects = new Map(), cache = new Map(), calls = [], writes = [], timers = new Map(); let timerId = 0;
@@ -39,6 +41,22 @@ function fixture(config = {}) {
     return {adapter, archive, states, units, objects, calls, writes, timers, cache,
         setNow: value => {at = value;}, snapshot: () => JSON.parse(cache.get(archive.id)?.val || 'null')};
 }
+function addQuarterHours(h) {
+    const start = Math.floor(now / QUARTER_HOUR) * QUARTER_HOUR;
+    const fields = {temperature_2m: 4.7, wind_speed_10m: 10.3, relative_humidity_2m: 85,
+        precipitation: 0, sunshine_duration: 0.25, shortwave_radiation: 0};
+    for (let i = 0; i < 16; i++) {
+        const prefix = `${quarterHourBase}.${i}`;
+        const state = val => ({val, ts: now - 45000, ack: true, q: 0});
+        h.states[`${prefix}.date`] = state(start + i * QUARTER_HOUR);
+        h.states[`${prefix}.time`] = state('20:00');
+        for (const [field, value] of Object.entries(fields)) {
+            h.states[`${prefix}.${field}`] = state(value);
+            h.objects.set(`${prefix}.${field}`, {common: {unit: h.units[field].current}});
+        }
+    }
+    return start;
+}
 test('snapshot preserves source time, target hour, actual units and explicitly missing irradiation', () => {
     const h = fixture(), snapshot = buildSnapshot({base, currentBase, states: h.states, units: h.units, now});
     assert.equal(snapshot.hours.length, 48); assert.equal(snapshot.capturedAt, now);
@@ -66,8 +84,62 @@ test('archive enables and verifies SQL only for its own immutable JSON sample', 
     assert.equal(enables.length, 1); assert.equal(enables[0].message.id, 'ems.0.Debug.WeatherArchive.Snapshot_JSON');
     assert.deepEqual(enables[0].message.options, SQL_OPTIONS);
     assert.equal(h.snapshot().hours.length, 48);
+    assert.equal(h.snapshot().quarterHours, undefined);
     assert.ok(h.writes.every(x => x.id.startsWith('ems.0.Debug.WeatherArchive.')));
     assert.ok([...h.timers.values()].some(x => x.delay === 60000)); h.archive.stop(); assert.equal(h.timers.size, 0);
+});
+test('archives the provider quarter hours alongside overlapping hours and reports radiation separately', async () => {
+    const h = fixture(), start = addQuarterHours(h);
+    await h.archive.initialize();
+    const snapshot = h.snapshot();
+    assert.equal(snapshot.hours.length, 48);
+    assert.equal(snapshot.quarterHourProviderBase, quarterHourBase);
+    assert.deepEqual(snapshot.quarterHours.map(row => row.validAt), Array.from({length: 16}, (_, i) => start + i * QUARTER_HOUR));
+    assert.equal(snapshot.quarterHours[0].validAt, snapshot.hours[0].validAt);
+    assert.equal(snapshot.quarterHourUnits.shortwave_radiation.forecast, 'W/m²');
+    assert.equal(snapshot.quarterHours[0].values.shortwave_radiation.value, 0);
+    assert.equal(snapshot.hours[0].values.shortwave_radiation.value, null);
+    assert.equal(snapshot.quarterHours[0].values.cloud_cover.value, null);
+    assert.equal(snapshot.quarterHours[0].values.sunshine_duration.value, 0.25);
+    assert.equal(snapshot.latestSourceTs, now - 45000);
+    assert.match(h.writes.at(-1).val, /48\/48 Stunden mit Daten, 16\/16 Viertelstunden/);
+    assert.match(h.writes.at(-1).val, /Strahlung stundenweise nicht verfuegbar, viertelstuendlich verfuegbar/);
+    assert.equal(h.calls.filter(x => x.command === 'enableHistory').length, 1);
+    h.setNow(now + 60000); await h.archive.tick();
+    assert.equal(h.writes.filter(x => x.id === h.archive.id).length, 1);
+    assert.match(h.writes.at(-1).val, /unveraendert.*16\/16 Viertelstunden/);
+    h.archive.stop();
+});
+test('quarter-hour dates and cells are independently checked without borrowing hourly values', async () => {
+    const h = fixture(), start = addQuarterHours(h);
+    delete h.states[`${quarterHourBase}.0.date`];
+    h.states[`${quarterHourBase}.1.date`].val += 1;
+    h.states[`${quarterHourBase}.2.date`].ts = now - 7 * HOUR;
+    h.states[`${quarterHourBase}.3.date`].val = start + 4 * QUARTER_HOUR;
+    h.states[`${quarterHourBase}.5.shortwave_radiation`].ts = now - 7 * HOUR;
+    h.states[`${quarterHourBase}.5.wind_speed_10m`].q = 64;
+    h.states[`${quarterHourBase}.5.sunshine_duration`].val = 0.26;
+    await h.archive.initialize();
+    const snapshot = h.snapshot();
+    assert.equal(snapshot.hours.length, 48);
+    assert.equal(snapshot.quarterHours.length, 11);
+    assert.equal(snapshot.quarterHours[0].validAt, start + 5 * QUARTER_HOUR);
+    assert.equal(snapshot.quarterHours[0].values.temperature_2m.value, 4.7);
+    assert.equal(snapshot.quarterHours[0].values.shortwave_radiation.reason, 'source-missing-stale-or-invalid');
+    assert.equal(snapshot.quarterHours[0].values.wind_speed_10m.value, null);
+    assert.equal(snapshot.quarterHours[0].values.sunshine_duration.reason, 'value-invalid');
+    h.archive.stop();
+});
+test('an update confined to the quarter-hour source is archived after settling', async () => {
+    const h = fixture(); addQuarterHours(h); await h.archive.initialize();
+    const id = `${quarterHourBase}.0.shortwave_radiation`;
+    h.states[id] = {...h.states[id], val: 20, ts: now};
+    await h.archive.tick();
+    assert.match(h.writes.at(-1).val, /Abschluss/);
+    h.setNow(now + 60000); await h.archive.tick();
+    assert.equal(h.snapshot().quarterHours[0].values.shortwave_radiation.value, 20);
+    assert.equal(h.writes.filter(x => x.id === h.archive.id).length, 2);
+    h.archive.stop();
 });
 test('polls and restarts cannot republish the same old snapshot with a new capture time', async () => {
     const h = fixture(); await h.archive.initialize(); const first = h.cache.get(h.archive.id).val;
