@@ -273,10 +273,10 @@ test('the engine freezes an interpolated variant without marking pure Lasso read
     assert.equal(first.lassoInterpolation.slots[33].valueW, 1130);
     assert.equal(JSON.parse(output('Ledger_JSON')).entries.length, 0);
     entry.slots[32].lassoW = 900;
-    h.run('publishLoadComparison(issueTime + SLOT);');
+    h.run(`publishLoadComparison(issueTime + ${SLOT});`);
     assert.deepEqual(JSON.parse(output('Forecast_JSON')).lassoInterpolation, first.lassoInterpolation);
     entry.slots[33].lassoW = 1000;
-    h.run('publishLoadComparison(issueTime + 2 * SLOT);');
+    h.run(`publishLoadComparison(issueTime + ${2 * SLOT});`);
     assert.equal(output('Ready'), true);
     assert.equal(JSON.parse(output('Forecast_JSON')).slots[33].lassoW, 1000);
     assert.deepEqual(JSON.parse(output('Forecast_JSON')).lassoInterpolation, first.lassoInterpolation);
