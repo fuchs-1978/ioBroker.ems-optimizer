@@ -12,9 +12,9 @@ function harness(extra = {}) {
     vm.runInContext('pause=async()=>{}', context);
     return {context, run: source => vm.runInContext(source, context)};
 }
-function aggregate(rows, start = 0, end = STEP, maxGapMs = STEP) {
-    const h = harness({rows, start, end, maxGapMs});
-    return JSON.parse(JSON.stringify(h.run('timeWeightedPower(rows,start,end,maxGapMs)')));
+function aggregate(rows, start = 0, end = STEP, maxGapMs = STEP, estimateLags = false) {
+    const h = harness({rows, start, end, maxGapMs, estimateLags});
+    return JSON.parse(JSON.stringify(h.run('timeWeightedPower(rows,start,end,maxGapMs,estimateLags)')));
 }
 function heartbeats(start, end, val = 0, step = 60000) {
     return Array.from({length: Math.floor((end - start) / step) + 1}, (_, i) => ({ts: start + i * step, val}));
@@ -55,6 +55,40 @@ for (const marker of [{val: null}, {val: 0, q: 64}, {val: 200, q: 'bad'}, {val: 
 test('a real logger outage is not bridged even when the values before and after agree', () => {
     const rows = heartbeats(0, 2 * STEP, 200).filter(row => row.ts < 120000 || row.ts >= 360000);
     assert.deepEqual(aggregate(rows, 0, 2 * STEP, 95000), [{ts: STEP, val: 200}]);
+});
+test('short raw gaps interpolate only the unobserved duration and retain measured holds', () => {
+    const rows = [...heartbeats(0, 240000, 400), {ts: 300000, val: null}, ...heartbeats(312000, STEP, 800)];
+    assert.deepEqual(aggregate(rows, 0, STEP, 95000), []);
+    assert.deepEqual(aggregate(rows, 0, STEP, 95000, true), [{
+        ts: 0, val: (300000 * 400 + 12000 * 600 + 588000 * 800) / STEP,
+        estimatedGaps: [[300000, 312000]]
+    }]);
+    for (const resume of [330001, null]) {
+        const resumed = resume === null ? [] : heartbeats(resume, STEP, 800);
+        assert.deepEqual(aggregate([...rows.slice(0, 6), ...resumed], 0, STEP, 95000, true), []);
+    }
+});
+test('interpolated time is counted once across sources and capped at thirty seconds per lag', () => {
+    const meter = [{ts: 0, val: 1200, estimatedGaps: [[10000, 30000]]}];
+    const shared = [{ts: 0, val: 400, estimatedGaps: [[20000, 40000]]}];
+    const separate = [{ts: 0, val: 400, estimatedGaps: [[40000, 60000]]}];
+    const h = harness({meter, shared, separate});
+    const result = name => JSON.parse(JSON.stringify(h.run(`mergeSubmeterProfile([meter],[{series:${name},multiplier:1}])`)));
+    assert.deepEqual(result('shared'), {totalValues: [], baseloadValues: [], estimatedBaseloadValues: [{ts: 0, val: 800}]});
+    assert.deepEqual(result('separate'), {totalValues: [], baseloadValues: [], estimatedBaseloadValues: []});
+});
+test('Lasso uses a bounded chunk lookahead and never reads past the completed history', async () => {
+    const calls = [], rows = [...heartbeats(-60000, DAY - 60000, 400),
+        {ts: DAY - 10000, val: null}, ...heartbeats(DAY + 10000, DAY + STEP, 800)];
+    const h = harness({sendTo: (instance, command, {options}, callback) => {
+        calls.push(options);
+        callback({result: rows.filter(row => row.ts >= options.start && row.ts <= options.end)});
+    }});
+    const result = await h.run("getHistoryChunked('meter',0,86400000+900000,'power',true)");
+    assert.equal(calls[0].end, DAY + 30000);
+    assert.equal(calls[1].end, DAY + STEP);
+    assert.deepEqual(JSON.parse(JSON.stringify(result.slice(-2).map(row => row.estimatedGaps))),
+        [[[DAY - 10000, DAY]], [[DAY, DAY + 10000]]]);
 });
 test('future and synthetic boundary points cannot invent a missing first measurement', () => {
     assert.deepEqual(aggregate([{ts: 0, val: 200, i: true}, {ts: STEP, val: 200}]), []);
