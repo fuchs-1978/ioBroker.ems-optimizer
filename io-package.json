@@ -222,6 +222,7 @@
     "batteryPowerSign": 1,
     "batteryFineStepW": 100,
     "batteryFineReserveW": 200,
+    "batteryPvPriorityEnabled": false,
     "batteryDeadbandW": 50,
     "batteryCycleS": 1,
     "batteryFeedbackTimeoutS": 15,

@@ -282,6 +282,7 @@
   "Discharge for self-consumption": "Ontlading voor zelfverbruik",
   "Battery fine control and input checks": "Batterijfijncontrole en inputcontroles",
   "Maximum battery setpoint step": "Maximale batterijinstellingstap",
+  "Charge battery before PV wallboxes and buffer small EV power steps": "Laad de batterij vóór de auto's op PV-overschot en vang kleine vermogenssprongen op",
   "PV reserve for battery fine control before heater allocation": "PV-reserve voor de fijnbeheersing van de batterij vóór de toewijzing van de verwarmer",
   "Reserves up to this share of actual PV surplus for battery fine control. The effective reserve is capped by available PV, battery charge power and the shared grid-operator budget; without available PV there is no reserve. Existing planned battery charging can require a larger share. This is a power reserve in watts, not an additional SoC reserve or permission to charge from the grid.": "Behoudt tot dit aandeel van het werkelijke PV-overschot voor de fijne batterijcontrole. De effectieve reserve wordt beperkt door de beschikbare PV, de batterijladingskracht en het gedeelde elektriciteitsnet-operatorbegroting; zonder beschikbare PV is er geen reserve. De bestaande geplande opladen van de batterij kan een groter aandeel vereisen. Dit is een energiereserve in watten, geen extra SoC-reserve of toestemming om van het elektriciteitsnet te laden.",
   "Battery grid-control deadband": "Batterij-elektrische netcontrolesleepband",

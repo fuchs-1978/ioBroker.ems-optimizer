@@ -1276,6 +1276,51 @@ test('coordinated battery fine + two heaters + coarse WB converge through startu
     assert.ok(Math.abs(h.trace.at(-1).gridW + 100) <= 300, h.diagnostic());
 });
 
+test('battery PV priority reserves the available charge power before a wallbox start', async () => {
+    const h = await plant({battery: true, initialSurplusW: 3000, split: false, startDelayS: 0,
+        nativeConfig: {batteryPvPriorityEnabled: true, wallboxParallelChargingEnabled: true}});
+    h.own('Control.TargetGridPower_W', 0);
+    await h.advance(70);
+    assert.equal(h.value('Control.BatteryPVReserve_W'), 2400);
+    assert.equal(h.physical().batteryW, 2400, h.diagnostic());
+    assert.equal(h.physical().allow, 0, '600 W remaining PV cannot start the car');
+    h.setSurplus(4500);
+    await h.advance(90);
+    assert.equal(h.physical().batteryW, 2400, h.diagnostic());
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    assert.ok(h.physical().amps * 230 <= 2100, h.diagnostic());
+});
+
+test('battery buffers PV wallbox power within tolerance without covering a larger deficit or mandatory charge', async () => {
+    const h = await plant({battery: true, initialSurplusW: 1800, split: false, startDelayS: 0,
+        nativeConfig: {batteryPvPriorityEnabled: true, wallboxParallelChargingEnabled: true,
+            wallboxPVImportToleranceW: 100, batteryDeadbandW: 50, wb2CommissioningMaxA: 6}});
+    h.own('Control.TargetGridPower_W', 0);
+    h.config.dhwControlEnabled = false;
+    h.own('Devices.MyPV_DHW.ControlEnabled', false);
+    h.put(h.run('CFG.dp.batterySoc'), 95);
+    await h.advance(65);
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    assert.equal(h.physical().amps, 6, h.diagnostic());
+    h.setSurplus(1330);
+    await h.advance(20);
+    assert.equal(h.value('Control.BatteryWallboxBuffer_W'), 50, h.diagnostic());
+    assert.equal(h.physical().batteryW, -50, h.diagnostic());
+    assert.equal(h.trace.at(-1).gridW, 0, h.diagnostic());
+    h.setSurplus(1300);
+    await h.advance(20);
+    assert.equal(h.physical().batteryW, -80, h.diagnostic());
+    h.put('DP_WB2_SOC', 10);
+    await h.advance(15);
+    assert.equal(h.value('Control.BatteryWallboxBuffer_W'), 0);
+    assert.equal(h.physical().batteryW, 0, h.diagnostic());
+    h.put('DP_WB2_SOC', 50);
+    h.setSurplus(1200);
+    await h.advance(20);
+    assert.equal(h.value('Control.BatteryWallboxBuffer_W'), 0);
+    assert.equal(h.physical().batteryW, 0, h.diagnostic());
+});
+
 test('battery full, minimum SoC and off hand fine regulation back to EHZ without phantom allocation', async () => {
     const h = await plant({battery: true, heating: true, wallbox: false});
     await h.advance(90);

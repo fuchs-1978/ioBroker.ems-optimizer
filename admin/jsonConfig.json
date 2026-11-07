@@ -6948,6 +6948,17 @@
           "lg": 4,
           "xl": 4
         },
+        "batteryPvPriorityEnabled": {
+          "type": "checkbox",
+          "label": "Charge battery before PV wallboxes and buffer small EV power steps",
+          "default": false,
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
+        },
         "batteryFineReserveW": {
           "type": "number",
           "label": "PV reserve for battery fine control before heater allocation",
