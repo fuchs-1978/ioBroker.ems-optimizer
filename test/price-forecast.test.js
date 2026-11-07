@@ -233,7 +233,7 @@ test('unknown market data does not truncate the known network schedule or receiv
     assert.match(prices.status, /191\/192/);
     const chart = JSON.parse(h.run(`priceChartJson(${JSON.stringify(prices.total)})`));
     assert.equal(chart.length, 192);
-    assert.equal(chart[1].val, null);
+    assert.deepEqual(chart[1], {ts: prices.total[1].timestamp, val: null});
 });
 
 test('Berlin DST spring jump and both repeated autumn hours use the local tariff', () => {

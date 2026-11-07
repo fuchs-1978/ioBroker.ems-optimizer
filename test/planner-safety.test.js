@@ -104,7 +104,7 @@ function balancedPlan(h, data) {
     ];
     for (const [planName, chartName, key] of chartPairs) {
         const chart = JSON.parse(h.states.get(`ems.0.Chart.${chartName}_48h_json_chart`).val);
-        assert.deepEqual(chart, h.series(planName).map(slot => ({ts: String(slot.timestamp), val: slot[key]})),
+        assert.deepEqual(chart, h.series(planName).map(slot => ({ts: slot.timestamp, val: slot[key]})),
             `${chartName} chart matches its plan`);
     }
     allocations.forEach((slot, i) => {
@@ -293,7 +293,7 @@ test('production forecast uses baseload rather than historical total house deman
     balancedPlan(h, {pv, house, houseSource: 'Forecast.Baseload_48h_JSON'});
     for (const name of ['PV', 'HouseLoad', 'Baseload']) {
         const chart = JSON.parse(h.states.get(`ems.0.Chart.${name}_48h_json_chart`).val);
-        assert.deepEqual(chart, forecast(name).map(slot => ({ts: String(slot.timestamp), val: slot.valueW})));
+        assert.deepEqual(chart, forecast(name).map(slot => ({ts: slot.timestamp, val: slot.valueW})));
     }
 });
 
