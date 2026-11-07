@@ -282,6 +282,7 @@
   "Discharge for self-consumption": "Wyrzuty z tytułu samowydajności",
   "Battery fine control and input checks": "Kontrola i kontrole wejścia baterii",
   "Maximum battery setpoint step": "Maksymalny krok ustawienia baterii",
+  "Charge battery before PV wallboxes and buffer small EV power steps": "Ładuj akumulator przed pojazdami z nadwyżki fotowoltaicznej i wyrównuj małe skoki mocy",
   "PV reserve for battery fine control before heater allocation": "PV rezerwa na kontrolę opraw baterii przed przydziałem grzejnika",
   "Reserves up to this share of actual PV surplus for battery fine control. The effective reserve is capped by available PV, battery charge power and the shared grid-operator budget; without available PV there is no reserve. Existing planned battery charging can require a larger share. This is a power reserve in watts, not an additional SoC reserve or permission to charge from the grid.": "Występuje do tego poziomu rzeczywistego nadwyżki PV dla kontroli optymalnej baterii. Rezerwa skuteczna jest ograniczona do dostępnych PV, mocy ładowania akumulatora i budżetu wspólnego operatora sieci elektrycznej; bez dostępnych PV Nie ma rezerwy. Istniejące planowane ładowanie baterii może wymagać większego udziału. Jest to rezerwa mocy w wattach, a nie dodatkowa rezerwa SoC lub zezwolenie na ładowanie z sieci elektrycznej.",
   "Battery grid-control deadband": "W przypadku baterii, w przypadku elektryczności, zestaw sterujący",

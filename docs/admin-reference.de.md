@@ -743,6 +743,7 @@ Dies ist eine temperaturgestufte Mindestreserve. Eine umfassende Bedarfsplanung 
 | Feld / technischer Schlüssel | Auslieferung | Zweck und erwartete Eingabe |
 | --- | --- | --- |
 | Maximale Änderung des Speicher-Sollwerts<br>`batteryFineStepW` | 100 W | Maximaler Sollwertschritt der Speicher-Feinregelung in W. Muss zur Reaktionsgeschwindigkeit und Rückmeldefrist des Treibers passen. |
+| PV-Vorrang für den Speicher und Wallbox-Feinausgleich<br>`batteryPvPriorityEnabled` | AUS | In der Echtzeitregelung wird der Speicher vor der PV-Wallbox-Zuteilung bis zur verfügbaren Ladegrenze eingeplant. Eine bereits laufende reine PV-Ladung darf bei einem gemessenen kleinen Leistungsdefizit bis zur eingestellten `wallboxPVImportToleranceW` unterstützt werden. Pflicht- und Tarifladung erhalten keine solche Unterstützung. |
 | PV-Leistungsreserve für die Speicher-Feinregelung vor der Heizstabverteilung<br>`batteryFineReserveW` | 200 W | PV-Leistungsreserve in W für die Speicher-Feinregelung vor Heizstabverteilung. Keine zusätzliche Erzeugung; schützt nutzbaren Regelspielraum. |
 | Totband der Speicher-Netzregelung<br>`batteryDeadbandW` | 50 W | Totband der Speicher-Netzregelung in W gegen unnötige kleine Befehle. Eigenes Speicherfeld, nicht die allgemeine NVP-Toleranz. |
 | Regelzyklus des Speichers<br>`batteryCycleS` | 1 s | Regelzyklus des Speichers in s. Schnellerer Zyklus bewirkt keine schnellere physische Antwort als Treiber/Gerät; Antwortfristen bleiben erforderlich. |
