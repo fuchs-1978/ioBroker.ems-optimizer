@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.207",
+    "version": "0.17.0-alpha.208",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.208": {
+        "en": "Use available 15-minute weather and PV forecasts for the next four hours and archive the detailed weather forecast.",
+        "de": "Verfügbare Viertelstundenprognosen für Wetter und PV in den nächsten vier Stunden nutzen und die detaillierte Wetterprognose archivieren.",
+        "es": "Usar las previsiones disponibles de 15 minutos de tiempo y fotovoltaica para las próximas cuatro horas y archivar la previsión meteorológica detallada.",
+        "fr": "Utiliser les prévisions météo et photovoltaïques disponibles par quart d’heure pour les quatre prochaines heures et archiver la météo détaillée.",
+        "it": "Usare le previsioni meteo e fotovoltaiche disponibili ogni 15 minuti per le prossime quattro ore e archiviare le previsioni meteo dettagliate.",
+        "nl": "Gebruik beschikbare kwartierprognoses voor weer en zonnestroom voor de komende vier uur en archiveer de gedetailleerde weersverwachting.",
+        "pl": "Używaj dostępnych prognoz pogody i fotowoltaiki co 15 minut na następne cztery godziny i archiwizuj szczegółową prognozę pogody.",
+        "pt": "Usar as previsões disponíveis de 15 minutos de meteorologia e produção fotovoltaica nas próximas quatro horas e arquivar a previsão meteorológica detalhada.",
+        "ru": "Использовать доступные 15-минутные прогнозы погоды и солнечной генерации на ближайшие четыре часа и сохранять подробный прогноз погоды.",
+        "uk": "Використовувати доступні 15-хвилинні прогнози погоди та сонячної генерації на найближчі чотири години й архівувати детальний прогноз погоди.",
+        "zh-cn": "未来四小时使用可用的 15 分钟天气和光伏预测，并归档详细天气预测。"
+      },
       "0.17.0-alpha.207": {
         "en": "Spread both hot-water reserve requirements across an equal-price night block when the thermal limits permit.",
         "de": "Beide Warmwasser-Reservebedarfe bei geeigneten thermischen Grenzen über den gleich teuren Nachtblock verteilen.",
@@ -81,19 +94,6 @@
         "ru": "Прогнозировать потребность в горячей воде на дорогой период и заранее создавать необходимый запас в последние доступные дешёвые интервалы. Учитывать полезную солнечную энергию, оставшееся время, мощность нагревателя и ёмкость бака, сохраняя разрешения реальных выходов.",
         "uk": "Прогнозувати потребу в гарячій воді на дорожчий період і завчасно створювати необхідний запас в останні доступні дешевші інтервали. Враховувати корисну сонячну енергію, залишок часу, потужність нагрівача та місткість бака, зберігаючи дозволи реальних виходів.",
         "zh-cn": "提前预测高价时段的热水需求，在最后可行的低价时段建立必要储热。规划受可用光伏、剩余时间、加热功率和储水容量限制，不改变实际输出的授权。"
-      },
-      "0.17.0-alpha.201": {
-        "en": "Keep a witnessed preferred 1P minimum alongside usable mandatory hot-water power; explicitly reduce current to release heat budget. Resume the same thermally interrupted charge after bounded fresh qualification, preserving physical reservations and all safety gates.",
-        "de": "Bestaetigte bevorzugte 1P-Mindestladung neben nutzbarer Pflichtwaerme erhalten; Strom fuer das Heizbudget ausdruecklich absenken. Dasselbe waermebedingt unterbrochene Fahrzeug nach begrenzter frischer Pruefung wieder starten; reale Reserven und Schutzgrenzen bleiben erhalten.",
-        "es": "Keep a witnessed preferred 1P minimum alongside usable mandatory hot-water power; explicitly reduce current to release heat budget. Resume the same thermally interrupted charge after bounded fresh qualification, preserving physical reservations and all safety gates.",
-        "fr": "Keep a witnessed preferred 1P minimum alongside usable mandatory hot-water power; explicitly reduce current to release heat budget. Resume the same thermally interrupted charge after bounded fresh qualification, preserving physical reservations and all safety gates.",
-        "it": "Keep a witnessed preferred 1P minimum alongside usable mandatory hot-water power; explicitly reduce current to release heat budget. Resume the same thermally interrupted charge after bounded fresh qualification, preserving physical reservations and all safety gates.",
-        "nl": "Keep a witnessed preferred 1P minimum alongside usable mandatory hot-water power; explicitly reduce current to release heat budget. Resume the same thermally interrupted charge after bounded fresh qualification, preserving physical reservations and all safety gates.",
-        "pl": "Keep a witnessed preferred 1P minimum alongside usable mandatory hot-water power; explicitly reduce current to release heat budget. Resume the same thermally interrupted charge after bounded fresh qualification, preserving physical reservations and all safety gates.",
-        "pt": "Keep a witnessed preferred 1P minimum alongside usable mandatory hot-water power; explicitly reduce current to release heat budget. Resume the same thermally interrupted charge after bounded fresh qualification, preserving physical reservations and all safety gates.",
-        "ru": "Keep a witnessed preferred 1P minimum alongside usable mandatory hot-water power; explicitly reduce current to release heat budget. Resume the same thermally interrupted charge after bounded fresh qualification, preserving physical reservations and all safety gates.",
-        "uk": "Keep a witnessed preferred 1P minimum alongside usable mandatory hot-water power; explicitly reduce current to release heat budget. Resume the same thermally interrupted charge after bounded fresh qualification, preserving physical reservations and all safety gates.",
-        "zh-cn": "Keep a witnessed preferred 1P minimum alongside usable mandatory hot-water power; explicitly reduce current to release heat budget. Resume the same thermally interrupted charge after bounded fresh qualification, preserving physical reservations and all safety gates."
       }
     },
     "titleLang": {

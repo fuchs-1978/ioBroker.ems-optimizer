@@ -7,7 +7,7 @@
 
 Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Combines PV and grid measurements, load history, weather forecasts and electricity prices in a rolling 48-hour plan.
 
-**Current GitHub build: 0.17.0-alpha.207.** Install the tested build from GitHub and commission each enabled device against its actual feedback and protection limits. [Alpha.207 release notes](docs/release-0.17.0-alpha.207.md)
+**Current GitHub build: 0.17.0-alpha.208.** Install the tested build from GitHub and commission each enabled device against its actual feedback and protection limits. [Alpha.208 release notes](docs/release-0.17.0-alpha.208.md)
 
 [Deutsche Bedienungsanleitung](README.de.md) · [Release history](CHANGELOG_OLD.md) · [Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
@@ -170,9 +170,13 @@ npm run test:artifact
 npm run test:equivalence
 ```
 
-Admin translation catalogs are stored in `admin/i18n/<language>/translations.json`. Keep their keys aligned with the English catalog and all visible Admin text. Release notices Alpha.202–.207 are translated into all eleven languages. Alpha.201 uses English fallback for nine locales. [Translation coverage and checks](docs/translations.md) · [Checker follow-up #316](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/316)
+Admin translation catalogs are stored in `admin/i18n/<language>/translations.json`. Keep their keys aligned with the English catalog and all visible Admin text. Release notices in the package are translated into all eleven languages. [Translation coverage and checks](docs/translations.md) · [Checker follow-up #316](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/316)
 
 ## Changelog
+
+### 0.17.0-alpha.208 (2026-11-07)
+
+- Prefer valid Open-Meteo quarter-hour weather and PV values for the first four hours of the plan. Archive the available quarter-hour weather series alongside the hourly series. [Sources and coverage](docs/release-0.17.0-alpha.208.md).
 
 ### 0.17.0-alpha.207 (2026-11-06)
 
