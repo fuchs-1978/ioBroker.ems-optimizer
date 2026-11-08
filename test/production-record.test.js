@@ -87,6 +87,34 @@ test('quiet interval summary survives SQL codec with measured extrema and explic
     assert.match(summary.event.summary.validity, /freshness is not inferred/);
 });
 
+test('source batches and pre-event replay preserve UTF-8 byte boundaries and original samples', async t => {
+    const h = fixture(2000000); t.mock.method(Date, 'now', h.now);
+    h.shadow.productionRecord();
+    const routine = [];
+    for (const length of [12000, 5000, 5000, 5000]) {
+        const previous = h.states.get('power');
+        h.advance(10); h.put('power', 1.38, {comment: 'ä'.repeat(length)});
+        h.shadow.captureProduction('power', h.states.get('power'), previous);
+        routine.push({sampleSequence: h.shadow.diagnosticSampler.sequence, receivedAt: h.now(),
+            id: 'power', state: h.states.get('power')});
+    }
+    h.shadow.flushSourceBatch(true);
+    const pre = [12000, 5000, 5000, 5000].map(length => {
+        h.advance(10);
+        const state = {...h.states.get('power'), ts: h.now(), comment: 'ä'.repeat(length)};
+        return h.shadow.diagnosticSampler.observe('power', state, state, h.now()).sample;
+    });
+    h.shadow.recordEventWindow(pre[0].sampleSequence);
+    await h.flush();
+
+    const events = h.records().map(record => record.event).filter(Boolean);
+    const batches = events.filter(event => event.type === 'recording.sources');
+    assert.deepEqual(batches.map(event => event.samples), [routine.slice(0, 1), routine.slice(1)]);
+    const preEvents = events.filter(event => event.type === 'recording.pre_event');
+    assert.deepEqual(preEvents.map(event => event.samples), [pre.slice(1)]);
+    assert.ok([...batches, ...preEvents].every(event => !Object.hasOwn(event, 'sampleSizes')));
+});
+
 test('DHW unknown temperatures and full source diagnostics survive production delta replay', async () => {
     const h = fixture(5000000);
     const sources = [0, 1, 2, 3, 4].map(index => ({
