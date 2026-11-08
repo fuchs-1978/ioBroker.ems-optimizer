@@ -478,6 +478,46 @@ test('the next source notification uses changed mappings, device IDs and in-plac
         record.production.sourceContract.sources.some(source => source.id === record.event.id)));
 });
 
+test('indexed sources bypass the fallback while dynamic ACKs and battery observations keep their record paths', async t => {
+    const h = fixture(2000000); t.mock.method(Date, 'now', h.now);
+    const fallback = t.mock.method(h.shadow, 'fallbackSourceOptions');
+    const receive = (id, value) => {
+        const previous = h.states.get(id);
+        h.advance(10); h.put(id, value);
+        h.shadow.captureProduction(id, h.states.get(id), previous);
+    };
+    receive('power', 1.38);
+    assert.equal(fallback.mock.callCount(), 0);
+
+    const commandId = 'uncatalogued.command';
+    h.put(commandId, 6);
+    h.shadow.commandEvent('attempt', commandId, 6);
+    receive(commandId, 6);
+    assert.equal(fallback.mock.callCount(), 1);
+
+    const head = 'sunenergyxt500.0.heads.1';
+    const rawId = `${head}.info.rawResponse`;
+    h.adapter.config.batteryDispatchMode = 'sunenergy-heads';
+    h.adapter.config.diagnosticPumpSourcesJson = [rawId];
+    assert.ok(h.shadow.diagnosticSourceIndex().byId.has(rawId));
+    h.put(`${head}.info.online`, true);
+    receive(rawId, JSON.stringify({SC: 60, ON: 1, GS: -100, GP: -95, MM: 0, LM: 1,
+        SI: 20, SA: 95, MG: 2400, IS: 2400, PK: 2, LP: 0, privateField: 'omit-raw'}));
+    assert.equal(fallback.mock.callCount(), 1);
+    receive(`${head}.grid.GP`, -95);
+    assert.equal(fallback.mock.callCount(), 2);
+    await h.flush();
+
+    const events = h.records().map(record => record.event).filter(Boolean);
+    assert.ok(events.some(event => event.id === commandId && event.triggerReason === 'post-command-observation'));
+    const battery = events.filter(event => event.id === rawId);
+    assert.equal(battery.length, 1);
+    assert.equal(battery[0].type, 'battery.head-observation');
+    assert.equal(battery[0].actualInternal_W, 95);
+    assert.ok(!JSON.stringify(battery[0]).includes('omit-raw'));
+    assert.ok(events.some(event => event.type === 'source.update' && event.id === `${head}.grid.GP`));
+});
+
 test('unchanged source polls retain new timestamps, real ACK/q/NULL edges and every cyclic zero command completion', async t => {
     const h = fixture(2000000); t.mock.method(Date, 'now', h.now);
     h.shadow.productionRecord();
