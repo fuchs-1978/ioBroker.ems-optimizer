@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.213",
+    "version": "0.17.0-alpha.214",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.214": {
+        "en": "Reuse measured UTF-8 sample sizes when grouping recorder observations.",
+        "de": "Bereits ermittelte UTF-8-Bytezahlen beim Bündeln von Recorder-Messproben wiederverwenden.",
+        "es": "Reutilizar el tamaño UTF-8 de las muestras al agrupar las observaciones del registrador.",
+        "fr": "Réutiliser la taille UTF-8 des échantillons lors du regroupement des observations de l’enregistreur.",
+        "it": "Riutilizzare le dimensioni UTF-8 dei campioni durante il raggruppamento delle osservazioni del registratore.",
+        "nl": "Hergebruik de UTF-8-grootte van meetmonsters bij het bundelen van recorderwaarnemingen.",
+        "pl": "Używaj ponownie rozmiarów UTF-8 próbek podczas grupowania obserwacji rejestratora.",
+        "pt": "Reutilizar o tamanho UTF-8 das amostras ao agrupar observações do gravador.",
+        "ru": "Повторно использовать размеры образцов в UTF-8 при группировке наблюдений регистратора.",
+        "uk": "Повторно використовувати розміри зразків у UTF-8 під час групування спостережень реєстратора.",
+        "zh-cn": "打包记录器观测值时复用已测得的样本 UTF-8 字节数。"
+      },
       "0.17.0-alpha.213": {
         "en": "Reuse validated SQL quarter-hours across restarts, skip duplicate wallbox display writes, and cache decoded schedules.",
         "de": "Geprüfte SQL-Viertelstunden beim Neustart wiederverwenden, doppelte Wallbox-Anzeigeschreibvorgänge vermeiden und eingelesene Fahrpläne zwischenspeichern.",
@@ -81,19 +94,6 @@
         "ru": "Использовать доступные 15-минутные прогнозы погоды и солнечной генерации на ближайшие четыре часа и сохранять подробный прогноз погоды.",
         "uk": "Використовувати доступні 15-хвилинні прогнози погоди та сонячної генерації на найближчі чотири години й архівувати детальний прогноз погоди.",
         "zh-cn": "未来四小时使用可用的 15 分钟天气和光伏预测，并归档详细天气预测。"
-      },
-      "0.17.0-alpha.207": {
-        "en": "Spread both hot-water reserve requirements across an equal-price night block when the thermal limits permit.",
-        "de": "Beide Warmwasser-Reservebedarfe bei geeigneten thermischen Grenzen über den gleich teuren Nachtblock verteilen.",
-        "es": "Repartir ambas reservas de agua caliente en el bloque nocturno de precio constante si los límites térmicos lo permiten.",
-        "fr": "Répartir les deux besoins de réserve d’eau chaude sur la plage nocturne à prix constant si les limites thermiques le permettent.",
-        "it": "Distribuire entrambe le riserve di acqua calda nella fascia notturna a prezzo costante, se i limiti termici lo consentono.",
-        "nl": "Spreid beide warmwaterreserves over het nachtelijke blok met dezelfde prijs als de thermische grenzen het toelaten.",
-        "pl": "Rozłóż oba zapotrzebowania na rezerwę ciepłej wody w nocnym bloku o stałej cenie, jeśli pozwalają na to ograniczenia cieplne.",
-        "pt": "Distribuir ambas as reservas de água quente pelo bloco noturno a preço constante, se os limites térmicos o permitirem.",
-        "ru": "Распределять оба требования к запасу горячей воды по ночному периоду с одинаковой ценой, если тепловые пределы это допускают.",
-        "uk": "Розподіляти обидві потреби в запасі гарячої води протягом нічного періоду з однаковою ціною, якщо теплові обмеження це дозволяють.",
-        "zh-cn": "热工限值允许时，将两项热水储备需求均匀分布在同价夜间时段。"
       }
     },
     "titleLang": {
