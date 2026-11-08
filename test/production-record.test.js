@@ -447,6 +447,7 @@ test('the next source notification uses changed mappings, device IDs and in-plac
     config.diagnosticPumpSourcesJson = ['pump.old'];
     config.par14aAccountingMode = 'groupNet';
     config.par14aParticipants = [{powerId: 'meter.group', powerUnit: 'W'}];
+    config.par14aStorageMeters = [{powerId: 'meter.storage', powerUnit: 'W'}];
     const first = h.shadow.diagnosticSourceIndex();
     assert.equal(h.shadow.diagnosticSourceIndex(), first);
     assert.ok(first.byId.has('import') && first.byId.has('amps') && first.byId.has('pump.old'));
@@ -466,16 +467,40 @@ test('the next source notification uses changed mappings, device IDs and in-plac
     config.pvPowerId = 'pv.new';
     config.par14aParticipants[0].powerUnit = 'kW';
     receive('pv.new');
+    config.par14aStorageMeters[0].powerId = 'meter.storage.new';
+    receive('meter.storage.new');
     const current = h.shadow.diagnosticSourceIndex();
     assert.equal(current.byId.get('meter.group').powerScale, 1000);
-    assert.ok(['import', 'amps', 'pump.old', 'pv'].every(id => !current.byId.has(id)));
+    assert.ok(['import', 'amps', 'pump.old', 'pv', 'meter.storage'].every(id => !current.byId.has(id)));
     assert.ok(first.byId.has('import') && first.byId.has('pump.old'));
     await h.flush();
 
     const records = h.records().filter(record => record.event?.type === 'source.update');
-    assert.deepEqual(records.map(record => record.event.id), ['meter.new', 'amps.new', 'pump.new', 'pv.new']);
+    assert.deepEqual(records.map(record => record.event.id), ['meter.new', 'amps.new', 'pump.new', 'pv.new', 'meter.storage.new']);
     assert.ok(records.every(record =>
         record.production.sourceContract.sources.some(source => source.id === record.event.id)));
+});
+
+test('legacy fallback picks up remapped aliases and current device IDs with a frozen mapping', async () => {
+    const h = fixture(2000000);
+    let mapping = Object.freeze({...h.adapter.readMapping(), DP_HEATING_LEGACY: 'heat.old'});
+    h.adapter.readMapping = () => mapping;
+    const receive = id => {
+        const previous = h.states.get(id);
+        h.advance(10); h.put(id, 125);
+        h.shadow.captureProduction(id, h.states.get(id), previous);
+    };
+    receive('heat.old');
+    receive('untracked');
+    h.device.ids.legacy = 'device.new';
+    receive('device.new');
+    mapping = Object.freeze({...mapping, DP_HEATING_LEGACY: 'heat.new'});
+    receive('heat.old');
+    receive('heat.new');
+    await h.flush();
+    const samples = h.records().flatMap(record => record.event?.type === 'source.update' ? [record.event]
+        : record.event?.type === 'recording.sources' ? record.event.samples : []);
+    assert.deepEqual(samples.map(sample => sample.id), ['heat.old', 'device.new', 'heat.new']);
 });
 
 test('indexed sources bypass the fallback while dynamic ACKs and battery observations keep their record paths', async t => {
