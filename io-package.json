@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.217",
+    "version": "0.17.0-alpha.218",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.218": {
+        "en": "Reuse recorder data point mappings while their configuration is unchanged.",
+        "de": "Der Recorder verwendet unveränderte Datenpunktzuordnungen erneut.",
+        "es": "Reutilizar las asignaciones de puntos de datos del registrador mientras su configuración no cambie.",
+        "fr": "Réutiliser les associations de points de données de l’enregistreur tant que leur configuration reste identique.",
+        "it": "Riutilizzare le associazioni dei punti dati del registratore finché la configurazione rimane invariata.",
+        "nl": "Hergebruik de datapuntenkoppelingen van de recorder zolang hun configuratie gelijk blijft.",
+        "pl": "Używaj ponownie mapowania punktów danych rejestratora, dopóki ich konfiguracja się nie zmienia.",
+        "pt": "Reutilizar os mapeamentos de pontos de dados do gravador enquanto a configuração não mudar.",
+        "ru": "Повторно использовать сопоставления точек данных регистратора, пока их конфигурация не изменится.",
+        "uk": "Повторно використовувати зіставлення точок даних реєстратора, доки їхня конфігурація не зміниться.",
+        "zh-cn": "记录器在配置不变时复用数据点映射。"
+      },
       "0.17.0-alpha.217": {
         "en": "Use recorder sampling rules directly for indexed sources.",
         "de": "Der Recorder verwendet die Aufzeichnungsregeln indexierter Quellen direkt.",
@@ -81,19 +94,6 @@
         "ru": "Включить аварийный режим нагревателя · Независимый датчик температуры для аварийного режима · Температура запуска аварийного режима (0 = выкл.)",
         "uk": "Увімкнути аварійний режим нагрівача · Незалежний датчик температури для аварійного режиму · Температура запуску аварійного режиму (0 = вимк.)",
         "zh-cn": "启用电热棒应急模式 · 独立的应急温度传感器 · 应急启动温度（0 = 关闭）"
-      },
-      "0.17.0-alpha.211": {
-        "en": "If the manually preferred car is unplugged, choose a replacement by the gap to its target charge level and retain it until charging stops.",
-        "de": "Ist das manuell priorisierte Auto abgesteckt, nach Abstand zum Ziel-SoC ein Ersatzfahrzeug wählen und die Auswahl bis zum Ladestopp halten.",
-        "es": "Si el coche con prioridad manual está desconectado, elegir un sustituto por la diferencia hasta su carga objetivo y mantenerlo hasta que deje de cargar.",
-        "fr": "Si le véhicule prioritaire est débranché, choisir un remplaçant selon son écart à la charge cible et conserver ce choix jusqu’à l’arrêt de la charge.",
-        "it": "Se il veicolo con priorità manuale è scollegato, scegliere un sostituto in base alla distanza dalla carica obiettivo e mantenerlo fino al termine della carica.",
-        "nl": "Kies bij een losgekoppelde voorkeursauto een vervanger op basis van het verschil met de beoogde laadstatus en behoud deze tot de laadstop.",
-        "pl": "Gdy ręcznie wybrany pojazd jest odłączony, wybierz zastępczy według różnicy do docelowego poziomu naładowania i zachowaj wybór do zatrzymania ładowania.",
-        "pt": "Se o veículo com prioridade manual estiver desligado, escolher um substituto pela diferença até à carga pretendida e mantê-lo até à paragem do carregamento.",
-        "ru": "Если выбранный вручную автомобиль отключён, выбрать замену по разнице до целевого уровня заряда и сохранить выбор до остановки зарядки.",
-        "uk": "Якщо вибраний вручну автомобіль від’єднано, вибрати заміну за різницею до цільового рівня заряду та зберігати вибір до зупинки заряджання.",
-        "zh-cn": "手动优先车辆拔枪后，按当前电量与目标的差值选择替代车辆，并保持选择直至充电停止。"
       }
     },
     "titleLang": {

@@ -43,6 +43,10 @@ const {HeaterWriteProof} = require("./lib/heater-write-proof");
 const {adapterTimers} = require("./lib/adapter-timers");
 const shutdownTimers = require("node:timers");
 
+const RECORDER_MAPPING_FIELDS = ["dataPointMapJson", "energyPriceSource", "batteryDispatchMode", "batterySunEnergyInstance",
+    ...Object.keys(FIELD_TO_MAPPING),
+    ...[0, 1, 2].flatMap(wb => Object.keys(WALLBOX_FIELDS).map(field => `wb${wb}${field}`))];
+
 class EmsOptimizer extends utils.Adapter {
     constructor(options = {}) {
         super({...options, name: "ems-optimizer"});
@@ -409,11 +413,21 @@ class EmsOptimizer extends utils.Adapter {
             .map(suffix => `${baseId}.${suffix}`));
     }
 
-    readMapping() {
-        const mapping = buildNativeMapping(this.config,
+    readMapping({forRecorder = false} = {}) {
+        const {config, namespace} = this;
+        // The normal input is a string. Keep the existing conversion and
+        // diagnostics for unusual legacy inputs whose string value can mutate.
+        const reusable = forRecorder && typeof (config.dataPointMapJson || "") === "string";
+        const cached = reusable ? this.recorderMapping : null;
+        if (cached && cached.namespace === namespace
+            && RECORDER_MAPPING_FIELDS.every((field, index) => config[field] === cached.inputs[index]))
+            return cached.mapping;
+        const mapping = buildNativeMapping(config,
             message => this.log.error(`Invalid dataPointMapJson: ${message}`));
-        if (this.config.energyPriceSource === 'energy-charts')
-            mapping.DP_ENERGY_PRICE_SERIES = `${this.namespace}.Market.EnergyPrice_JSON`;
+        if (config.energyPriceSource === 'energy-charts')
+            mapping.DP_ENERGY_PRICE_SERIES = `${namespace}.Market.EnergyPrice_JSON`;
+        if (reusable) this.recorderMapping = {namespace, inputs: RECORDER_MAPPING_FIELDS.map(field => config[field]),
+            mapping: Object.freeze(mapping)};
         return mapping;
     }
 

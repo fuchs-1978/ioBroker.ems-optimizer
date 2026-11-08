@@ -28,6 +28,48 @@ function adapter(adapterCore = {}) {
     return instance;
 }
 
+test('recorder reuses its mapping and observes the first notification after in-place configuration changes', t => {
+    const a = adapter();
+    const config = a.config;
+    config.dataPointMapJson = '{"DP_PV_POWER":"pv.legacy","DP_ENERGY_PRICE_SERIES":"tariff.external"}';
+    config.wb2PowerId = 'wallbox.old';
+    const first = a.readMapping({forRecorder: true});
+    assert.equal(a.readMapping({forRecorder: true}), first);
+    assert.notEqual(a.readMapping(), first);
+    assert.equal(first.DP_PV_POWER, 'pv.legacy');
+
+    const shadow = a.shadowController;
+    shadow.initialized = true;
+    const mappingReads = t.mock.method(a, 'readMapping');
+    t.mock.method(shadow, 'productionRecord', () => {});
+    const received = [];
+    const observe = shadow.diagnosticSampler.observe.bind(shadow.diagnosticSampler);
+    t.mock.method(shadow.diagnosticSampler, 'observe', (id, ...args) => {
+        received.push(id);
+        return observe(id, ...args);
+    });
+    const receive = id => shadow.captureProduction(id, {val: 1, ack: true, q: 0, ts: Date.now()}, null);
+    receive('pv.legacy');
+    config.pvPowerId = 'pv.new';
+    receive('pv.new');
+    receive('pv.legacy');
+    config.dataPointMapJson = '{"DP_PV_POWER":"pv.legacy-new","DP_ENERGY_PRICE_SERIES":"tariff.external"}';
+    delete config.pvPowerId;
+    receive('pv.legacy-new');
+    config.wb2PowerId = 'wallbox.new';
+    receive('wallbox.new');
+    assert.deepEqual(received, ['pv.legacy', 'pv.new', 'pv.legacy-new', 'wallbox.new']);
+    assert.equal(mappingReads.mock.callCount(), 5);
+    assert.ok(mappingReads.mock.calls.every(call => call.arguments[0]?.forRecorder === true));
+
+    config.energyPriceSource = 'energy-charts';
+    assert.equal(a.readMapping({forRecorder: true}).DP_ENERGY_PRICE_SERIES, 'ems.0.Market.EnergyPrice_JSON');
+    config.batteryDispatchMode = 'sunenergy-heads';
+    config.batterySunEnergyInstance = 'sunenergyxt500.2';
+    assert.equal(a.readMapping({forRecorder: true}).DP_BATTERY_SOC, 'sunenergyxt500.2.total.soc');
+    assert.equal(first.DP_WB2_POWER, 'wallbox.old');
+});
+
 test('operator display initialization failure cannot disable existing daily sampling or create SQL requests', async () => {
     const a = adapter(), calls = [];
     a.operatorDiagnostics.initialize = async () => {throw new Error('display unavailable');};
