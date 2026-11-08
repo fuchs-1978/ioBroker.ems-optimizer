@@ -9,6 +9,8 @@ Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Comb
 
 **Current GitHub build: 0.17.0-alpha.219.** Install the tested build from GitHub and commission each enabled device against its actual feedback and protection limits.
 
+[Recorder changes and measurements for Alpha.219](docs/release-0.17.0-alpha.219.md)
+
 [Deutsche Bedienungsanleitung](README.de.md) · [Release history](CHANGELOG_OLD.md) · [Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
 ## Contents
@@ -56,6 +58,8 @@ The [current roadmap](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issue
 ## Live distribution and plan recovery
 
 A missing, incomplete or stale plan no longer blocks allocation from valid current measurements. `Control.PlanFallbackActive` and `Control.PlanFallbackStatus` identify this mode; `Plan.Valid` remains unchanged. Vehicle priorities, minimum-SoC/manual rules, EHZ thermal release, confirmed handoff and electrical limits still apply. Forecast-based price charging, cheap-grid heating and scheduled PV boost are disabled until the real plan returns. Empty historic days are provisional and re-read with paced retries. [Recovery and limits](docs/release-0.17.0-alpha.198.md).
+
+A restart can use validated cached SQL quarter-hours while SQL refreshes them in the background. Check `History.Building` for the refresh and `Plan.Valid` for the usable plan. [History cache and startup behavior](docs/release-0.17.0-alpha.213.md)
 
 An enabled optional heater may temporarily use the start budget of a waiting vehicle, including a lower-priority follower. The heater must release the required power before the car starts. This works with the fixed wallbox/heater split switched off. An ongoing mandatory 3P charge uses its running minimum. The startup reserve applies to a stopped charger. [Countdown buffer policy](docs/release-0.17.0-alpha.199.md)
 
@@ -176,7 +180,7 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 
 ### 0.17.0-alpha.219 (2026-11-08)
 
-- Compare recorder source settings directly and reuse mapped IDs for unindexed source lookup. Changed device IDs, meter units and command observations are picked up on the next notification.
+- Compare recorder source settings directly and reuse mapped IDs for unindexed source lookup. Changed device IDs, meter units and command observations are picked up on the next notification. [Verification and live measurements](docs/release-0.17.0-alpha.219.md)
 
 ### 0.17.0-alpha.218 (2026-11-08)
 
