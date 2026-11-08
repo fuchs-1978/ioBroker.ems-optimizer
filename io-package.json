@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.214",
+    "version": "0.17.0-alpha.215",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.215": {
+        "en": "Build full recorder snapshots only when a record is due, retaining immediate safety and command diagnostics.",
+        "de": "Vollständige Recorder-Snapshots erst bei fälliger Aufzeichnung erzeugen. Schutzwechsel und Befehle bleiben unmittelbar sichtbar.",
+        "es": "Generar instantáneas completas solo al registrar; los cambios de seguridad y los comandos siguen siendo inmediatos.",
+        "fr": "Créer les instantanés complets uniquement lors de l’enregistrement, avec diagnostic immédiat des protections et des commandes.",
+        "it": "Creare istantanee complete solo quando necessario, preservando la diagnostica immediata di protezioni e comandi.",
+        "nl": "Bouw volledige snapshots alleen bij registratie, met behoud van directe diagnostiek voor beveiligingen en opdrachten.",
+        "pl": "Twórz pełne migawki tylko przy zapisie, zachowując natychmiastową diagnostykę zabezpieczeń i poleceń.",
+        "pt": "Criar instantâneos completos apenas ao registar, mantendo o diagnóstico imediato de proteções e comandos.",
+        "ru": "Создавать полные снимки только при записи, сохраняя немедленную диагностику защит и команд.",
+        "uk": "Створювати повні знімки лише під час запису, зберігаючи негайну діагностику захисту й команд.",
+        "zh-cn": "仅在需要记录时生成完整快照，保留保护状态变化和命令的即时诊断。"
+      },
       "0.17.0-alpha.214": {
         "en": "Reuse measured UTF-8 sample sizes when grouping recorder observations.",
         "de": "Bereits ermittelte UTF-8-Bytezahlen beim Bündeln von Recorder-Messproben wiederverwenden.",
@@ -81,19 +94,6 @@
         "ru": "Сохранять отдельный прогноз Lasso, когда один 15-минутный интервал можно интерполировать по соседним значениям.",
         "uk": "Зберігати окремий прогноз Lasso, коли один 15-хвилинний інтервал можна інтерполювати за сусідніми значеннями.",
         "zh-cn": "当单个 15 分钟时段可由相邻值插补时，保存单独的 Lasso 对比预测。"
-      },
-      "0.17.0-alpha.208": {
-        "en": "Use available 15-minute weather and PV forecasts for the next four hours and archive the detailed weather forecast.",
-        "de": "Verfügbare Viertelstundenprognosen für Wetter und PV in den nächsten vier Stunden nutzen und die detaillierte Wetterprognose archivieren.",
-        "es": "Usar las previsiones disponibles de 15 minutos de tiempo y fotovoltaica para las próximas cuatro horas y archivar la previsión meteorológica detallada.",
-        "fr": "Utiliser les prévisions météo et photovoltaïques disponibles par quart d’heure pour les quatre prochaines heures et archiver la météo détaillée.",
-        "it": "Usare le previsioni meteo e fotovoltaiche disponibili ogni 15 minuti per le prossime quattro ore e archiviare le previsioni meteo dettagliate.",
-        "nl": "Gebruik beschikbare kwartierprognoses voor weer en zonnestroom voor de komende vier uur en archiveer de gedetailleerde weersverwachting.",
-        "pl": "Używaj dostępnych prognoz pogody i fotowoltaiki co 15 minut na następne cztery godziny i archiwizuj szczegółową prognozę pogody.",
-        "pt": "Usar as previsões disponíveis de 15 minutos de meteorologia e produção fotovoltaica nas próximas quatro horas e arquivar a previsão meteorológica detalhada.",
-        "ru": "Использовать доступные 15-минутные прогнозы погоды и солнечной генерации на ближайшие четыре часа и сохранять подробный прогноз погоды.",
-        "uk": "Використовувати доступні 15-хвилинні прогнози погоди та сонячної генерації на найближчі чотири години й архівувати детальний прогноз погоди.",
-        "zh-cn": "未来四小时使用可用的 15 分钟天气和光伏预测，并归档详细天气预测。"
       }
     },
     "titleLang": {

@@ -416,6 +416,31 @@ test('snapshot clock and derived ages do not create extra subsecond frames; time
         'phase snapshot and operative protection reject the same stale source');
 });
 
+test('quiet ticks avoid full snapshots while runtime stop edges and explicit events retain full frames', async t => {
+    const h = fixture(2000000); t.mock.method(Date, 'now', h.now);
+    const snapshot = t.mock.method(h.adapter.debugRecorder, 'snapshot');
+    h.own('Vehicles.Wallbox0.StartDelayRemaining_s', 5);
+    h.shadow.productionRecord();
+    assert.equal(snapshot.mock.callCount(), 1);
+
+    h.advance(100);
+    h.own('Vehicles.Wallbox0.StartDelayRemaining_s', 4);
+    h.shadow.productionRecord();
+    assert.equal(snapshot.mock.callCount(), 1);
+
+    h.advance(100);
+    h.device.stopRequest = {reason: 'budget-stop'};
+    h.shadow.productionRecord();
+    assert.equal(snapshot.mock.callCount(), 2);
+
+    h.advance(100);
+    h.shadow.productionRecord({type: 'decision'});
+    assert.equal(snapshot.mock.callCount(), 3);
+    await h.flush();
+    assert.deepEqual(h.records().map(record => record.production.wallboxes[0].stopPending), [false, true, true]);
+    assert.equal(h.records().at(-1).event.type, 'decision');
+});
+
 test('unchanged source polls retain new timestamps, real ACK/q/NULL edges and every cyclic zero command completion', async t => {
     const h = fixture(2000000); t.mock.method(Date, 'now', h.now);
     h.shadow.productionRecord();
