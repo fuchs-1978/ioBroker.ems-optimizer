@@ -1182,6 +1182,47 @@ test('scheduled lower-priority EV receives handoff from a still-released PV-only
     assert.equal(selected, 2);
 });
 
+for (const parallel of [false, true]) {
+    test(`unplugged manual priority retains the fallback through start and physical charge, parallel=${parallel}`, async () => {
+        const h = await plant({mii: true, startDelayS: 20, minimumRuntimeS: 10, split: false,
+            initialSurplusW: 2300, nativeConfig: {wallboxParallelChargingEnabled: parallel, wallboxStopDelayS: 5}});
+        h.own('Config.WallboxParallelChargingEnabled', parallel);
+        h.own('Config.WallboxStopDelay_s', 5);
+        h.config.dhwControlEnabled = false;
+        h.own('Devices.MyPV_DHW.ControlEnabled', false);
+        h.put('DP_WB_PRIORITY', 1);
+        h.put('DP_WB1_CAR', 1);
+        h.put('DP_WB0_SOC', 65);
+        h.put('DP_WB2_SOC', 50);
+        await h.advance(10);
+        assert.equal(h.value('Control.SelectedWallbox'), 2, h.diagnostic());
+        assert.ok(h.run('wallboxStartCandidateSince[2] > 0'), 'the winning car is qualifying its start');
+        h.put('DP_WB0_SOC', 50);
+        h.put('DP_WB2_SOC', 74);
+        await h.advance(70);
+        assert.equal(h.physical().allow, 1, h.diagnostic());
+        assert.equal(h.physical().miiAllow, 0, h.diagnostic());
+        assert.equal(h.value('Control.SelectedWallbox'), 2);
+
+        h.put('DP_WB0_SOC', 45);
+        h.put('DP_WB2_SOC', 76);
+        await h.advance(20);
+        assert.equal(h.physical().allow, 1, h.diagnostic());
+        assert.equal(h.physical().miiAllow, 0, h.diagnostic());
+
+        h.setSurplus(0);
+        await h.advance(60);
+        assert.equal(h.physical().allow, 0, h.diagnostic());
+        assert.equal(h.value('Devices.Wallbox2.OutputOwned'), false);
+        h.setSurplus(2300);
+        await h.advance(70);
+        assert.equal(h.physical().miiAllow, 1, h.diagnostic());
+        assert.equal(h.physical().allow, 0, h.diagnostic());
+        assert.equal(h.value('Control.SelectedWallbox'), 0);
+        assert.equal(h.states.get('DP_WB_PRIORITY').val, 1);
+    });
+}
+
 test('battery planned reserve protects bought energy until its discharge floor declines', async () => {
     const h = await plant({battery: true, wallbox: false, initialSurplusW: -1000});
     armPricePlans(h, {price: 35, floor: 55});

@@ -1,8 +1,10 @@
 # EMS Optimizer
 
-**Aktuelle Adapterversion: 0.17.0-alpha.210.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
+**Aktuelle Adapterversion: 0.17.0-alpha.211.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
 
 [English overview](README.md) · [Vollständige Admin-Feldreferenz](docs/admin-reference.de.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) · [Versionsänderungen](README.md#changelog)
+
+Alpha.211 wählt bei abgestecktem Wunschfahrzeug den Ersatz nach Abstand zum Ziel-SoC. [Auswahl und Ladestopp](docs/release-0.17.0-alpha.211.md)
 
 Alpha.210 korrigiert die Zeitstempel für Live-Updates der EMS-Diagramme in eCharts. [Details](docs/release-0.17.0-alpha.210.md)
 
