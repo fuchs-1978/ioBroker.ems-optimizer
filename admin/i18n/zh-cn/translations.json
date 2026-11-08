@@ -1,4 +1,8 @@
 {
+  "Enable heater emergency mode": "启用电热棒应急模式",
+  "Use heater only in emergency mode": "仅在应急模式使用电热棒",
+  "Independent emergency temperature sensor": "独立的应急温度传感器",
+  "Emergency start temperature (0 = off)": "应急启动温度（0 = 关闭）",
   "Optional pump sources for passive recording (JSON)": "被动录音的可选泵源(JSON)",
   "Enter a JSON array of up to 32 explicit state IDs for pump request, command and independent feedback, without wildcards. These sources are read for diagnostic recording only; they do not control the pump. The default empty list adds no source mapping. Missing or invalid sources remain unknown and cannot confirm a pump response or run-on.": "输入一个JSON阵列,其中包含最多32个明确状态的ID,用于泵请求,命令和独立反馈,没有通配符. 这些来源只用于诊断记录;它们不控制泵。 默认的空列表没有添加源映射 。 无法获取或无效的来源仍然未知,无法确认泵的反应或运行中。",
   "General": "常规",

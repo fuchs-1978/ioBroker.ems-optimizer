@@ -1,4 +1,8 @@
 {
+  "Enable heater emergency mode": "Ativar o modo de emergência da resistência",
+  "Use heater only in emergency mode": "Usar a resistência apenas em modo de emergência",
+  "Independent emergency temperature sensor": "Sensor de temperatura independente para emergências",
+  "Emergency start temperature (0 = off)": "Temperatura de arranque de emergência (0 = desligado)",
   "Optional pump sources for passive recording (JSON)": "Fontes de bomba opcionais para gravação passiva (JSON)",
   "Enter a JSON array of up to 32 explicit state IDs for pump request, command and independent feedback, without wildcards. These sources are read for diagnostic recording only; they do not control the pump. The default empty list adds no source mapping. Missing or invalid sources remain unknown and cannot confirm a pump response or run-on.": "Introduza uma matriz JSON com até 32 IDs de estado explícitos para solicitação de bomba, comando e feedback independente, sem wildcards. Estas fontes são leídas apenas para gravação de diagnóstico; não controlam a bomba. A lista vazia padrão não adiciona mapeamento de fonte. Fontes inexistentes ou inválidas permanecem desconhecidas e não podem confirmar a resposta da bomba ou a sua activação.",
   "General": "Geral",

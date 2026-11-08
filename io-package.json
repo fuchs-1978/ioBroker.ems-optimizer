@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.211",
+    "version": "0.17.0-alpha.212",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.212": {
+        "en": "Add independent emergency grid heating for both heating rods with configurable switches, sensors and temperature thresholds.",
+        "de": "Notbetrieb mit Netzstrom für beide Heizstäbe mit separaten Schaltern, Temperaturfühlern und Einschaltschwellen.",
+        "es": "Activar el modo de emergencia del calentador · Sensor de temperatura independiente para emergencias · Temperatura de arranque de emergencia (0 = desactivado)",
+        "fr": "Activer le mode de secours de la résistance · Sonde de température indépendante pour le secours · Température de démarrage du secours (0 = désactivé)",
+        "it": "Attiva la modalità di emergenza della resistenza · Sensore di temperatura indipendente per l’emergenza · Temperatura di avvio di emergenza (0 = disattivato)",
+        "nl": "Noodbedrijf voor het verwarmingselement inschakelen · Onafhankelijke temperatuursensor voor noodbedrijf · Starttemperatuur noodbedrijf (0 = uit)",
+        "pl": "Włącz tryb awaryjny grzałki · Niezależny czujnik temperatury trybu awaryjnego · Temperatura włączenia trybu awaryjnego (0 = wył.)",
+        "pt": "Ativar o modo de emergência da resistência · Sensor de temperatura independente para emergências · Temperatura de arranque de emergência (0 = desligado)",
+        "ru": "Включить аварийный режим нагревателя · Независимый датчик температуры для аварийного режима · Температура запуска аварийного режима (0 = выкл.)",
+        "uk": "Увімкнути аварійний режим нагрівача · Незалежний датчик температури для аварійного режиму · Температура запуску аварійного режиму (0 = вимк.)",
+        "zh-cn": "启用电热棒应急模式 · 独立的应急温度传感器 · 应急启动温度（0 = 关闭）"
+      },
       "0.17.0-alpha.211": {
         "en": "If the manually preferred car is unplugged, choose a replacement by the gap to its target charge level and retain it until charging stops.",
         "de": "Ist das manuell priorisierte Auto abgesteckt, nach Abstand zum Ziel-SoC ein Ersatzfahrzeug wählen und die Auswahl bis zum Ladestopp halten.",
@@ -81,19 +94,6 @@
         "ru": "Распределять ночной нагрев воды по периоду с одинаковой ценой перед повышением тарифа при достаточном запасе.",
         "uk": "Розподіляти запланований нічний нагрів води в межах періоду з однаковою ціною перед її зростанням за достатнього запасу.",
         "zh-cn": "热水储备允许时，将夜间计划加热均匀分布在涨价前的同价时段。"
-      },
-      "0.17.0-alpha.205": {
-        "en": "Resume control once after an acknowledged 1 A increase rolls back to the measured lower current, subject to current limits and fresh acknowledgements.",
-        "de": "Bei einem bestätigten Rücksprung um 1 A einmalig mit dem gemessenen niedrigeren Ladestrom weiterregeln, sofern Grenzen und neue Rückmeldungen passen.",
-        "es": "Recuperar una vez el control tras retroceder 1 A al valor inferior medido, sujeto a los límites y a nuevas confirmaciones.",
-        "fr": "Reprendre une fois le contrôle après un recul confirmé de 1 A vers le courant inférieur mesuré, dans les limites et avec de nouvelles confirmations.",
-        "it": "Riprendere una volta il controllo dopo una riduzione confermata di 1 A verso la corrente inferiore misurata, rispettando i limiti e le nuove conferme.",
-        "nl": "Hervat de regeling eenmalig na een bevestigde terugval van 1 A naar de lagere gemeten stroom, binnen de grenzen en met nieuwe bevestigingen.",
-        "pl": "Jednorazowo odzyskaj sterowanie po potwierdzonym spadku o 1 A do niższego zmierzonego prądu, przy zachowaniu limitów i nowych potwierdzeń.",
-        "pt": "Retomar uma vez o controlo após um recuo confirmado de 1 A para a corrente medida inferior, respeitando os limites e novas confirmações.",
-        "ru": "Однократно восстановить управление после подтверждённого снижения тока на 1 А при соблюдении ограничений и наличии новых подтверждений.",
-        "uk": "Одноразово відновити керування після підтвердженого зниження струму на 1 А за дотримання обмежень і наявності нових підтверджень.",
-        "zh-cn": "经测量确认电流回退 1 A 时，在符合限值并收到新确认的前提下恢复一次控制。"
       }
     },
     "titleLang": {
@@ -253,6 +253,10 @@
     "batterySelfConsumption": true,
     "dhwPresent": true,
     "dhwControlEnabled": false,
+    "dhwEmergencyEnabled": false,
+    "dhwEmergencyOnly": false,
+    "dhwEmergencySensorId": "",
+    "dhwEmergencyStartC": 0,
     "dhwSetpointId": "",
     "dhwActualMirrorId": "",
     "dhwOutput1Id": "",
@@ -369,6 +373,10 @@
     "dhwSettleTimeoutS": 15,
     "heatingPresent": false,
     "heatingControlEnabled": false,
+    "heatingEmergencyEnabled": false,
+    "heatingEmergencyOnly": false,
+    "heatingEmergencySensorId": "",
+    "heatingEmergencyStartC": 0,
     "heatingProductionArmed": false,
     "heatingInhibit": false,
     "heatingSetpointId": "",

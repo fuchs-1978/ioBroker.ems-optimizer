@@ -1,4 +1,8 @@
 {
+  "Enable heater emergency mode": "Activar el modo de emergencia del calentador",
+  "Use heater only in emergency mode": "Usar el calentador solo en modo de emergencia",
+  "Independent emergency temperature sensor": "Sensor de temperatura independiente para emergencias",
+  "Emergency start temperature (0 = off)": "Temperatura de arranque de emergencia (0 = desactivado)",
   "Optional pump sources for passive recording (JSON)": "Fuentes de bomba opcionales para la grabación pasiva (JSON)",
   "Enter a JSON array of up to 32 explicit state IDs for pump request, command and independent feedback, without wildcards. These sources are read for diagnostic recording only; they do not control the pump. The default empty list adds no source mapping. Missing or invalid sources remain unknown and cannot confirm a pump response or run-on.": "Introduzca una matriz JSON de hasta 32 ID de estado explícitos para la solicitud de bomba, el comando y la retroalimentación independiente, sin tarjetas salvajes. Estas fuentes se leen únicamente para el registro diagnóstico; no controlan la bomba. La lista vacía predeterminada no agrega mapas de origen. Las fuentes no disponibles o inválidas permanecen desconocidas y no pueden confirmar la respuesta de la bomba ni su activación.",
   "General": "General",

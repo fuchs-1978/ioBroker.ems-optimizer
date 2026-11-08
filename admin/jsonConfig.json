@@ -5120,6 +5120,52 @@
           "lg": 4,
           "xl": 4
         },
+        "dhwEmergencyEnabled": {
+          "type": "checkbox",
+          "label": "Enable heater emergency mode",
+          "default": false,
+          "newLine": true,
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "dhwEmergencyOnly": {
+          "type": "checkbox",
+          "label": "Use heater only in emergency mode",
+          "default": false,
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "dhwEmergencySensorId": {
+          "type": "objectId",
+          "label": "Independent emergency temperature sensor",
+          "default": "",
+          "filterFunc": "obj.type === 'state' && !!obj.common && obj.common.type === 'number'",
+          "newLine": true,
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "dhwEmergencyStartC": {
+          "type": "number",
+          "label": "Emergency start temperature (0 = off)",
+          "default": 0,
+          "unit": "°C",
+          "min": 0,
+          "max": 90,
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
         "_dhwDataPointsHeader": {
           "type": "header",
           "text": "Device data points and feedback",
@@ -5737,6 +5783,52 @@
           "md": 4,
           "lg": 4,
           "xl": 4
+        },
+        "heatingEmergencyEnabled": {
+          "type": "checkbox",
+          "label": "Enable heater emergency mode",
+          "default": false,
+          "newLine": true,
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "heatingEmergencyOnly": {
+          "type": "checkbox",
+          "label": "Use heater only in emergency mode",
+          "default": false,
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "heatingEmergencySensorId": {
+          "type": "objectId",
+          "label": "Independent emergency temperature sensor",
+          "default": "",
+          "filterFunc": "obj.type === 'state' && !!obj.common && obj.common.type === 'number'",
+          "newLine": true,
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "heatingEmergencyStartC": {
+          "type": "number",
+          "label": "Emergency start temperature (0 = off)",
+          "default": 0,
+          "unit": "°C",
+          "min": 0,
+          "max": 90,
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
         },
         "_heatingOutputHelp": {
           "type": "staticText",

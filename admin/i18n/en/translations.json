@@ -1,4 +1,8 @@
 {
+  "Enable heater emergency mode": "Enable heater emergency mode",
+  "Use heater only in emergency mode": "Use heater only in emergency mode",
+  "Independent emergency temperature sensor": "Independent emergency temperature sensor",
+  "Emergency start temperature (0 = off)": "Emergency start temperature (0 = off)",
   "Optional pump sources for passive recording (JSON)": "Optional pump sources for passive recording (JSON)",
   "Enter a JSON array of up to 32 explicit state IDs for pump request, command and independent feedback, without wildcards. These sources are read for diagnostic recording only; they do not control the pump. The default empty list adds no source mapping. Missing or invalid sources remain unknown and cannot confirm a pump response or run-on.": "Enter a JSON array of up to 32 explicit state IDs for pump request, command and independent feedback, without wildcards. These sources are read for diagnostic recording only; they do not control the pump. The default empty list adds no source mapping. Missing or invalid sources remain unknown and cannot confirm a pump response or run-on.",
   "General": "General",

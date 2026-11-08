@@ -1,4 +1,8 @@
 {
+  "Enable heater emergency mode": "Включить аварийный режим нагревателя",
+  "Use heater only in emergency mode": "Использовать нагреватель только в аварийном режиме",
+  "Independent emergency temperature sensor": "Независимый датчик температуры для аварийного режима",
+  "Emergency start temperature (0 = off)": "Температура запуска аварийного режима (0 = выкл.)",
   "Optional pump sources for passive recording (JSON)": "Опциональные источники насоса для пассивной записи (JSON)",
   "Enter a JSON array of up to 32 explicit state IDs for pump request, command and independent feedback, without wildcards. These sources are read for diagnostic recording only; they do not control the pump. The default empty list adds no source mapping. Missing or invalid sources remain unknown and cannot confirm a pump response or run-on.": "Введите массив JSON с до 32 ясными идентификаторами состояния для запроса насоса, команды и независимой обратной связи без диких карт. Эти источники читаются только для диагностической записи; они не контролируют насос. По умолчанию пустой список не добавляет картинки источника. Недоступные или недействительные источники остаются неизвестными и не могут подтвердить реакцию на насос или запуск.",
   "General": "Общие",
