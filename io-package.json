@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.216",
+    "version": "0.17.0-alpha.217",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.217": {
+        "en": "Use recorder sampling rules directly for indexed sources.",
+        "de": "Der Recorder verwendet die Aufzeichnungsregeln indexierter Quellen direkt.",
+        "es": "Aplicar directamente las reglas de registro de las fuentes indexadas.",
+        "fr": "Appliquer directement les règles d’enregistrement des sources indexées.",
+        "it": "Usare direttamente le regole di registrazione per le sorgenti indicizzate.",
+        "nl": "Gebruik de opnameregels voor geïndexeerde bronnen rechtstreeks.",
+        "pl": "Stosuj bezpośrednio reguły zapisu dla zindeksowanych źródeł.",
+        "pt": "Aplicar diretamente as regras de registo para as fontes indexadas.",
+        "ru": "Применять правила записи индексированных источников напрямую.",
+        "uk": "Застосовувати правила запису індексованих джерел безпосередньо.",
+        "zh-cn": "直接使用已索引数据源的记录规则。"
+      },
       "0.17.0-alpha.216": {
         "en": "Reuse the recorder source index while mappings and source settings are unchanged.",
         "de": "Der Recorder verwendet den Quellenindex bei unveränderter Zuordnung erneut.",
@@ -81,19 +94,6 @@
         "ru": "Если выбранный вручную автомобиль отключён, выбрать замену по разнице до целевого уровня заряда и сохранить выбор до остановки зарядки.",
         "uk": "Якщо вибраний вручну автомобіль від’єднано, вибрати заміну за різницею до цільового рівня заряду та зберігати вибір до зупинки заряджання.",
         "zh-cn": "手动优先车辆拔枪后，按当前电量与目标的差值选择替代车辆，并保持选择直至充电停止。"
-      },
-      "0.17.0-alpha.210": {
-        "en": "Keep forecast and schedule lines visible in eCharts during live updates by using numeric timestamps.",
-        "de": "Prognose- und Fahrplanlinien bei Live-Updates in eCharts mit numerischen Zeitstempeln sichtbar halten.",
-        "es": "Mantener visibles las líneas de previsión y planificación en eCharts durante las actualizaciones en directo con marcas de tiempo numéricas.",
-        "fr": "Conserver les courbes de prévision et de planification dans eCharts lors des mises à jour en direct grâce à des horodatages numériques.",
-        "it": "Mantenere visibili le linee di previsione e pianificazione in eCharts durante gli aggiornamenti in tempo reale usando timestamp numerici.",
-        "nl": "Houd prognose- en planningslijnen in eCharts zichtbaar bij live updates met numerieke tijdstempels.",
-        "pl": "Zachowuj widoczność linii prognozy i harmonogramu w eCharts podczas aktualizacji na żywo dzięki liczbowym znacznikom czasu.",
-        "pt": "Manter visíveis as linhas de previsão e planeamento no eCharts durante atualizações em tempo real com marcas temporais numéricas.",
-        "ru": "Сохранять линии прогноза и плана в eCharts при обновлениях в реальном времени благодаря числовым меткам времени.",
-        "uk": "Зберігати видимість ліній прогнозу та плану в eCharts під час оновлень у реальному часі завдяки числовим позначкам часу.",
-        "zh-cn": "使用数字时间戳，使预测和计划曲线在 eCharts 实时更新时保持可见。"
       }
     },
     "titleLang": {
