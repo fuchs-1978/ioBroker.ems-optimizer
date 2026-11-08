@@ -265,7 +265,7 @@ test('a validated history snapshot builds a fresh plan before SQL and only refre
     let saved, snapshot, run, mode = 'warm';
     const forecasts = [], windows = [];
     run = engine({
-        Date: Clock, nativeConfig: {historyDays: 21},
+        Date: Clock, nativeConfig: {historyDays: 21, loadComparisonEnabled: true, outsideTemperatureId: 'outside'},
         getState: () => null, setState() {}, log() {},
         historySourceSettings: async () => ({enabled: true, changesRelogInterval: 60}),
         readHistoryCache: async () => snapshot, writeHistoryCache: async value => {saved = value;},
@@ -284,7 +284,8 @@ test('a validated history snapshot builds a fresh plan before SQL and only refre
         buildForecast=forecastReady; getTimeWeightedHistory=fetchRows;`);
     const contract = await run('historyCacheContract(historyQueries())');
     snapshot = {signature: contract.signature, builtAt, fullAt: builtAt,
-        entries: contract.sources.map(({key}) => [key, {start, end: builtAt, values: rows, empty: []}])};
+        entries: contract.sources.map(({key, aggregation}) => [key, {start, end: builtAt,
+            values: aggregation === 'average' ? [{ts: builtAt - step / 2, val: 10}] : rows, empty: []}])};
     const stale = {...snapshot, builtAt: builtAt - 48 * 3600000, fullAt: builtAt - 48 * 3600000};
     assert.equal(run(`restoreHistoryCache(${JSON.stringify(stale)}, ${JSON.stringify(contract)}, ${start}, ${now}, 2)`), false);
     assert.equal(run(`restoreHistoryCache(${JSON.stringify({...snapshot, signature: 'other'})},
@@ -296,6 +297,7 @@ test('a validated history snapshot builds a fresh plan before SQL and only refre
     assert.deepEqual(windows, [['pv', builtAt - 2 * step, now], ['house', builtAt - 2 * step, now]]);
     assert.equal(saved.builtAt, now);
     assert.equal(saved.fullAt, builtAt);
+    assert.equal(saved.entries.find(([key]) => key.includes(':outside:average'))[1].values[0].ts, builtAt - step / 2);
 
     mode = 'cold';
     windows.length = 0;
