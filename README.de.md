@@ -4,7 +4,7 @@
 
 [English overview](README.md) · [Vollständige Admin-Feldreferenz](docs/admin-reference.de.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) · [Versionsänderungen](README.md#changelog)
 
-Alpha.219 vergleicht Quelleneinstellungen direkt und verwendet die zugeordneten Datenpunkte bei der Ersatzsuche erneut. Geänderte Geräte-IDs, Zählereinheiten und Befehlsrückmeldungen werden ab der nächsten Meldung erfasst.
+Alpha.219 vergleicht Quelleneinstellungen direkt und verwendet die zugeordneten Datenpunkte bei der Ersatzsuche erneut. Geänderte Geräte-IDs, Zählereinheiten und Befehlsrückmeldungen werden ab der nächsten Meldung erfasst. [Recorder-Änderungen und Messwerte](docs/release-0.17.0-alpha.219.md)
 
 Alpha.218 verwendet die Datenpunktzuordnung im Recorder erneut. Geänderte Einstellungen greifen bei der nächsten Meldung.
 
