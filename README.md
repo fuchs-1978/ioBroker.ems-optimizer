@@ -7,7 +7,7 @@
 
 Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Combines PV and grid measurements, load history, weather forecasts and electricity prices in a rolling 48-hour plan.
 
-**Current GitHub build: 0.17.0-alpha.210.** Install the tested build from GitHub and commission each enabled device against its actual feedback and protection limits. [Alpha.210 release notes](docs/release-0.17.0-alpha.210.md)
+**Current GitHub build: 0.17.0-alpha.211.** Install the tested build from GitHub and commission each enabled device against its actual feedback and protection limits. [Alpha.211 release notes](docs/release-0.17.0-alpha.211.md)
 
 [Deutsche Bedienungsanleitung](README.de.md) · [Release history](CHANGELOG_OLD.md) · [Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
@@ -173,6 +173,10 @@ npm run test:equivalence
 Admin translation catalogs are stored in `admin/i18n/<language>/translations.json`. Keep their keys aligned with the English catalog and all visible Admin text. Release notices in the package are translated into all eleven languages. [Translation coverage and checks](docs/translations.md) · [Checker follow-up #316](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/316)
 
 ## Changelog
+
+### 0.17.0-alpha.211 (2026-11-08)
+
+- When the manually preferred vehicle is unplugged, rank replacement vehicles by the gap to their target charge level and keep the active choice until charging stops. [Release notes](docs/release-0.17.0-alpha.211.md).
 
 ### 0.17.0-alpha.210 (2026-11-08)
 
