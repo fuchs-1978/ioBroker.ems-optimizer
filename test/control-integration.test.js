@@ -2139,3 +2139,67 @@ test('parallel unplug transfers a witnessed EQE charge to Mii without a new 300s
     assert.ok(quiet&&on.at>=quiet.at,'real donor OFF and electrical quiet precede recipient ON');
     assert.ok(!h.trace.some(x=>x.wbW>0&&x.miiW>0),'no overlap');
 });
+
+test('heater emergency thresholds are independent and admit grid heating below the configured temperature', async () => {
+    const h = await plant({heating: true, wallbox: false, initialSurplusW: -600, nativeConfig: {
+        dhwEmergencyEnabled: true, dhwEmergencyOnly: true, dhwEmergencyStartC: 30, dhwEmergencySensorId: 'emergency.dhw',
+        heatingEmergencyEnabled: true, heatingEmergencyOnly: true, heatingEmergencyStartC: 30, heatingEmergencySensorId: 'emergency.heating'
+    }});
+    h.own('Devices.MyPV_DHW.DriverReady', true);
+    h.own('Plan.Valid', false);
+    h.own('System.DataValid', false); // e.g. PV telemetry missing at night
+    h.put('emergency.dhw', 30);
+    h.put('emergency.heating', 35);
+    await h.advance(15);
+    assert.equal(h.physical().heaterW, 0);
+    assert.equal(h.physical().heatingW, 0);
+
+    h.put('emergency.dhw', 29);
+    await h.advance(20);
+    assert.ok(h.physical().heaterW > 0, h.diagnostic());
+    assert.equal(h.physical().heatingW, 0);
+    assert.equal(h.value('Control.AllowHeaterGridImport'), true);
+    h.put('emergency.dhw', 31);
+    await h.advance(10);
+    assert.ok(h.physical().heaterW > 0, h.diagnostic());
+
+    h.put('emergency.dhw', 32);
+    h.put('emergency.heating', 29);
+    await h.advance(25);
+    assert.equal(h.physical().heaterW, 0, h.diagnostic());
+    assert.ok(h.physical().heatingW > 0, h.diagnostic());
+    h.put('hk.cooling', true);
+    await h.advance(15);
+    assert.equal(h.physical().heatingW, 0, h.diagnostic());
+    assert.equal(h.value('Control.AllowHeaterGridImport'), false);
+});
+
+test('heater emergency mode respects the off settings, fresh sensor proof and the shared consumption limit', async () => {
+    const h = await plant({heating: true, wallbox: false, initialSurplusW: -600, lpcLimitW: 4200,
+        nativeConfig: {
+            dhwEmergencyEnabled: true, dhwEmergencyOnly: true, dhwEmergencyStartC: 0, dhwEmergencySensorId: 'emergency.dhw',
+            heatingEmergencyEnabled: false, heatingEmergencyOnly: true, heatingEmergencyStartC: 30, heatingEmergencySensorId: 'emergency.heating'
+        }});
+    h.own('Devices.MyPV_DHW.DriverReady', true);
+    h.put('emergency.dhw', 29);
+    h.put('emergency.heating', 29);
+    await h.advance(15);
+    assert.equal(h.value('Control.AllowHeaterGridImport'), false);
+    assert.equal(h.physical().heaterW + h.physical().heatingW, 0);
+
+    h.config.dhwEmergencyStartC = 30;
+    h.config.heatingEmergencyEnabled = true;
+    await h.advance(40);
+    assert.equal(h.physical().heaterW, 4200, h.diagnostic());
+    assert.equal(h.physical().heatingW, 0, h.diagnostic());
+    h.put('emergency.dhw', 29, {ack: false});
+    assert.equal(h.run("checkQueuedElectricalOutput('MyPV_DHW', 1000).allowed"), false);
+    await h.advance(40);
+    assert.equal(h.physical().heaterW, 0, h.diagnostic());
+    assert.equal(h.physical().heatingW, 4200, h.diagnostic());
+    assert.ok(h.trace.every(row => row.heaterW + row.heatingW <= 4200));
+    h.put('DP_HA_CRITICAL', true);
+    await h.advance(15);
+    assert.equal(h.physical().heatingW, 0, h.diagnostic());
+    assert.equal(h.value('Control.AllowHeaterGridImport'), false);
+});

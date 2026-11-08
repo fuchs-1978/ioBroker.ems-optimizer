@@ -1,4 +1,8 @@
 {
+  "Enable heater emergency mode": "Noodbedrijf voor het verwarmingselement inschakelen",
+  "Use heater only in emergency mode": "Verwarmingselement alleen in noodbedrijf gebruiken",
+  "Independent emergency temperature sensor": "Onafhankelijke temperatuursensor voor noodbedrijf",
+  "Emergency start temperature (0 = off)": "Starttemperatuur noodbedrijf (0 = uit)",
   "Optional pump sources for passive recording (JSON)": "Optieve pompbronnen voor passieve opname (JSON)",
   "Enter a JSON array of up to 32 explicit state IDs for pump request, command and independent feedback, without wildcards. These sources are read for diagnostic recording only; they do not control the pump. The default empty list adds no source mapping. Missing or invalid sources remain unknown and cannot confirm a pump response or run-on.": "Voer een JSON-matrix van maximaal 32 expliciete staat-ID's in voor pompvraag, commando en onafhankelijke feedback, zonder wildcards. Deze bronnen worden alleen voor diagnostische opname gelezen; zij bepalen de pomp niet. De standaard lege lijst voegt geen bronkaart toe. Onbeschikbare of ongeldige bronnen blijven onbekend en kunnen geen reactie of start van de pomp bevestigen.",
   "General": "Algemeen",
