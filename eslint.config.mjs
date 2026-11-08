@@ -50,6 +50,7 @@ export default [
             setState: 'readonly', writeForeignState: 'readonly', updateWallboxProductionOutput: 'readonly',
             sendTo: 'readonly', schedule: 'readonly', on: 'readonly', log: 'readonly',
             historyBackendReady: 'readonly', historySourceEnabled: 'readonly', historySourceSettings: 'readonly', historyQueryAllowed: 'readonly',
+            readHistoryCache: 'readonly', writeHistoryCache: 'readonly', historyBackendRevision: 'readonly',
             readHeaterWriteProof: 'readonly', readHeaterWriteStatus: 'readonly',
             loadComparisonAllowed: 'readonly', loadForecastComparison: 'readonly', vehicleSocEstimator: 'readonly', wallboxAllocationPolicy: 'readonly', gridConstraints: 'readonly',
             gridMeasurement: 'readonly', gridOperatorRuntime: 'readonly', batteryTemperatureReserve: 'readonly', sunEnergyHeads: 'readonly',

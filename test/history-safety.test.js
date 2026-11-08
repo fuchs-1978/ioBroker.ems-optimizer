@@ -256,3 +256,52 @@ test('incomplete refresh preserves a previously complete profile and schedules r
     assert.equal(run('historyReady'), true); assert.equal(run('historyProfiles.pv[0]'), 123);
     assert.ok(run('historyRetryAt') > Date.now());
 });
+
+test('a validated history snapshot builds a fresh plan before SQL and only refreshes the recent tail', async () => {
+    const step = 900000, day = 96 * step, builtAt = Date.UTC(2026, 8, 21), now = builtAt + step;
+    const start = builtAt - 21 * day;
+    const rows = Array.from({length: 21 * 96}, (_, i) => ({ts: start + i * step, val: 1000}));
+    class Clock extends Date { static now() {return now;} }
+    let saved, snapshot, run, mode = 'warm';
+    const forecasts = [], windows = [];
+    run = engine({
+        Date: Clock, nativeConfig: {historyDays: 21},
+        getState: () => null, setState() {}, log() {},
+        historySourceSettings: async () => ({enabled: true, changesRelogInterval: 60}),
+        readHistoryCache: async () => snapshot, writeHistoryCache: async value => {saved = value;},
+        historyBackendReady: async () => {
+            assert.equal(run('historyReady'), mode === 'warm');
+            return true;
+        },
+        fetchRows: async (id, from, to) => {
+            windows.push([id, from, to]);
+            return [{ts: builtAt, val: 1200}].filter(row => row.ts >= from && row.ts < to);
+        },
+        forecastReady: () => forecasts.push(run('historyReady'))
+    });
+    run(`CFG.dp.pvPower='pv'; CFG.dp.houseMetersW=['house']; CFG.dp.wallboxesKW=[];
+        CFG.dp.myPvDhwHistoryW=''; CFG.dp.myPvHeatingHistoryW=''; pause=async()=>{};
+        buildForecast=forecastReady; getTimeWeightedHistory=fetchRows;`);
+    const contract = await run('historyCacheContract(historyQueries())');
+    snapshot = {signature: contract.signature, builtAt, fullAt: builtAt,
+        entries: contract.sources.map(({key}) => [key, {start, end: builtAt, values: rows, empty: []}])};
+    const stale = {...snapshot, builtAt: builtAt - 48 * 3600000, fullAt: builtAt - 48 * 3600000};
+    assert.equal(run(`restoreHistoryCache(${JSON.stringify(stale)}, ${JSON.stringify(contract)}, ${start}, ${now}, 2)`), false);
+    assert.equal(run(`restoreHistoryCache(${JSON.stringify({...snapshot, signature: 'other'})},
+        ${JSON.stringify(contract)}, ${start}, ${now}, 2)`), false);
+    assert.equal(run('historyReady'), false);
+    await run('buildHistory()');
+    await new Promise(resolve => setImmediate(resolve));
+    assert.deepEqual(forecasts, [true, true]);
+    assert.deepEqual(windows, [['pv', builtAt - 2 * step, now], ['house', builtAt - 2 * step, now]]);
+    assert.equal(saved.builtAt, now);
+    assert.equal(saved.fullAt, builtAt);
+
+    mode = 'cold';
+    windows.length = 0;
+    run('historyReady=false; historySourceCache.clear(); historyCacheStartup=true; historyCacheFullAt=0;');
+    snapshot.signature = 'changed source contract';
+    await run('buildHistory()');
+    assert.equal(windows.length, 42);
+    assert.equal(run('historyReady'), false);
+});

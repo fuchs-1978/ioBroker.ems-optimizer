@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.212",
+    "version": "0.17.0-alpha.213",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.213": {
+        "en": "Reuse validated SQL quarter-hours across restarts, skip duplicate wallbox display writes, and cache decoded schedules.",
+        "de": "Geprüfte SQL-Viertelstunden beim Neustart wiederverwenden, doppelte Wallbox-Anzeigeschreibvorgänge vermeiden und eingelesene Fahrpläne zwischenspeichern.",
+        "es": "Reutilizar los intervalos SQL validados tras reiniciar, omitir escrituras repetidas de la pantalla de carga y guardar los planes decodificados en caché.",
+        "fr": "Réutiliser les quarts d’heure SQL validés au redémarrage, éviter les écritures d’affichage redondantes des bornes et mettre en cache les plans décodés.",
+        "it": "Riutilizzare i quarti d’ora SQL verificati al riavvio, evitare scritture duplicate delle visualizzazioni delle wallbox e memorizzare in cache i piani decodificati.",
+        "nl": "Hergebruik gevalideerde SQL-kwartieren na een herstart, vermijd dubbele schrijfacties voor wallboxweergaven en cache ingelezen planningen.",
+        "pl": "Używaj ponownie zweryfikowanych danych kwadransowych SQL po restarcie, pomijaj powtórzone zapisy statusu stacji i przechowuj odczytane harmonogramy w pamięci podręcznej.",
+        "pt": "Reutilizar dados SQL validados de 15 minutos após reinícios, evitar escritas duplicadas do visor dos carregadores e guardar os planos descodificados em cache.",
+        "ru": "Повторно использовать проверенные 15-минутные данные SQL после перезапуска, пропускать повторные записи статуса зарядных станций и кешировать разобранные планы.",
+        "uk": "Повторно використовувати перевірені 15-хвилинні дані SQL після перезапуску, пропускати повторні записи стану зарядних станцій і кешувати розібрані плани.",
+        "zh-cn": "重启时复用已校验的 SQL 15 分钟数据，跳过充电盒界面的重复状态写入，并缓存解析后的计划。"
+      },
       "0.17.0-alpha.212": {
         "en": "Add independent emergency grid heating for both heating rods with configurable switches, sensors and temperature thresholds.",
         "de": "Notbetrieb mit Netzstrom für beide Heizstäbe mit separaten Schaltern, Temperaturfühlern und Einschaltschwellen.",
@@ -81,19 +94,6 @@
         "ru": "Распределять оба требования к запасу горячей воды по ночному периоду с одинаковой ценой, если тепловые пределы это допускают.",
         "uk": "Розподіляти обидві потреби в запасі гарячої води протягом нічного періоду з однаковою ціною, якщо теплові обмеження це дозволяють.",
         "zh-cn": "热工限值允许时，将两项热水储备需求均匀分布在同价夜间时段。"
-      },
-      "0.17.0-alpha.206": {
-        "en": "Spread planned night-time water heating across an equal-price block before a rise when the thermal reserve permits.",
-        "de": "Geplante Warmwasserwärme bei ausreichender Reserve über den gleich teuren Nachtblock vor dem Preisanstieg verteilen.",
-        "es": "Repartir el calentamiento nocturno previsto del agua durante el bloque de precio constante si la reserva lo permite.",
-        "fr": "Répartir le chauffage nocturne prévu de l’eau sur le créneau à prix constant avant la hausse si la réserve le permet.",
-        "it": "Distribuire il riscaldamento notturno previsto dell’acqua nella fascia a prezzo costante prima del rincaro, se la riserva lo consente.",
-        "nl": "Spreid geplande nachtelijke waterverwarming over het blok met dezelfde prijs vóór de stijging als de reserve het toelaat.",
-        "pl": "Rozłóż planowane nocne grzanie wody w bloku o stałej cenie przed podwyżką, jeśli pozwala na to rezerwa.",
-        "pt": "Distribuir o aquecimento noturno previsto da água pelo bloco de preço constante antes da subida se a reserva o permitir.",
-        "ru": "Распределять ночной нагрев воды по периоду с одинаковой ценой перед повышением тарифа при достаточном запасе.",
-        "uk": "Розподіляти запланований нічний нагрів води в межах періоду з однаковою ціною перед її зростанням за достатнього запасу.",
-        "zh-cn": "热水储备允许时，将夜间计划加热均匀分布在涨价前的同价时段。"
       }
     },
     "titleLang": {
