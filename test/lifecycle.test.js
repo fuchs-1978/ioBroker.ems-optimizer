@@ -1264,3 +1264,36 @@ test('bad or missing source timestamps never produce a fresh grid pair after cac
         assert.equal(pair.valid, false);
     }
 });
+
+test('wallbox display changes are persisted once while safety states keep their normal writes', async () => {
+    const a = adapter(), writes = [];
+    a.setStateAsync = async (id, state) => writes.push([id, state.val]);
+    const display = 'ems.0.Devices.Wallbox0.OutputStatus';
+    const phaseProof = 'ems.0.Devices.Wallbox0.PhaseSwitchRemaining_s';
+    const output = 'ems.0.Devices.Wallbox0.OutputActive';
+    const queued = a.setCompatState(display, 'idle');
+    assert.equal(a.setCompatState(display, 'idle'), queued);
+    await queued;
+    const original = a.getCachedState(display);
+    await a.setCompatState(display, 'idle');
+    assert.equal(a.getCachedState(display), original);
+    await a.setCompatState(display, 'charging');
+    for (const [id, value] of [[phaseProof, 0], [output, false]]) {
+        await a.setCompatState(id, value);
+        await a.setCompatState(id, value);
+    }
+    assert.deepEqual(writes, [['Devices.Wallbox0.OutputStatus', 'idle'],
+        ['Devices.Wallbox0.OutputStatus', 'charging'], ['Devices.Wallbox0.PhaseSwitchRemaining_s', 0],
+        ['Devices.Wallbox0.PhaseSwitchRemaining_s', 0], ['Devices.Wallbox0.OutputActive', false],
+        ['Devices.Wallbox0.OutputActive', false]]);
+});
+
+test('a failed wallbox display write can be retried with the same value', async () => {
+    const a = adapter(), id = 'ems.0.Devices.Wallbox0.OutputStatus';
+    a.setStateAsync = async () => {throw new Error('write failed');};
+    await assert.rejects(a.setCompatState(id, 'idle'), /write failed/);
+    let retried = false;
+    a.setStateAsync = async () => {retried = true;};
+    await a.setCompatState(id, 'idle');
+    assert.equal(retried, true);
+});

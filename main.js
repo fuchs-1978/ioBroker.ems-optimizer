@@ -12,7 +12,7 @@ const WallboxOutput = require("./lib/wallbox-output");
 const DebugRecorder = require("./lib/debug-recorder");
 const {DailySummary} = require("./lib/daily-summary");
 const {OperatorDiagnostics} = require("./lib/operator-diagnostics");
-const {LatestStateWriter, isDisplaySeries} = require("./lib/latest-state-writer");
+const {LatestStateWriter, isDisplaySeries, isWallboxDisplayStatus} = require("./lib/latest-state-writer");
 const ShadowController = require("./lib/shadow-controller");
 const ShadowHistory = require("./lib/shadow-history");
 const {SourcePowerHistory} = require("./lib/source-power-history");
@@ -30,6 +30,7 @@ const heatPumpTelemetryParser = require("./lib/heatpump-telemetry");
 const {normalizeWallboxPowerKW} = require("./lib/wallbox-measurement");
 const batteryTemperatureReserve = require("./lib/battery-temperature-reserve");
 const sunEnergyHeads = require("./lib/sunenergy-heads");
+const {readHistoryCache, writeHistoryCache} = require("./lib/history-cache");
 const {journalDirectory} = require("./lib/journal-location");
 const DecisionRecordJournal = require("./lib/decision-record-journal");
 const DecisionRecordDelivery = require("./lib/decision-record-delivery");
@@ -726,11 +727,14 @@ class EmsOptimizer extends utils.Adapter {
 
     setCompatState(id, value, ack = true) {
         const previous = this.stateCache.get(id);
+        const relative = this.ownRelative(id);
+        if (ack === true && previous?.ack === true && !previous.q && previous.val === value
+            && !this.failedOwnWrites.has(id) && isWallboxDisplayStatus(relative))
+            return this.pendingOwnWrites.get(id) || Promise.resolve();
         const now = Math.max(Date.now(), Number(previous?.ts || 0) + 1);
         const published = {val: value, ack: Boolean(ack), q: 0, ts: now,
             lc: previous?.val === value ? previous.lc ?? previous.ts ?? now : now};
         this.stateCache.set(id, published);
-        const relative = this.ownRelative(id);
         const ready = this.objectPromises.get(id) || Promise.resolve();
         const previousWrite = this.pendingOwnWrites.get(id) || Promise.resolve();
         const promise = isDisplaySeries(relative, ack)
@@ -1056,6 +1060,21 @@ class EmsOptimizer extends utils.Adapter {
                     ? {...status, status: 'pending', reason: 'output-queue-pending'} : status;
             },
             loadComparisonAllowed() { return !adapter.unloading; },
+            readHistoryCache() {
+                return readHistoryCache(utils.getAbsoluteInstanceDataDir(adapter));
+            },
+            writeHistoryCache(snapshot) {
+                const previous = adapter.historyCacheWrite || Promise.resolve();
+                adapter.historyCacheWrite = previous.catch(() => {}).then(() => {
+                    if (!adapter.unloading)
+                        return writeHistoryCache(utils.getAbsoluteInstanceDataDir(adapter), snapshot);
+                });
+                return adapter.historyCacheWrite;
+            },
+            async historyBackendRevision(instance) {
+                const object = await adapter.getForeignObjectAsync(`system.adapter.${instance}`);
+                return object?.ts ?? null;
+            },
             async historySourceEnabled(id, instance) {
                 const object = await adapter.getForeignObjectAsync(id);
                 return object?.type === 'state' && object.common?.custom?.[instance]?.enabled === true;

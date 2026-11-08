@@ -1700,3 +1700,22 @@ test('priority calculations carrying an older cycle time preserve the newer manu
     assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.SocEstimateLedger_JSON').val, before);
     assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.SoCCorrectionActive').val, true);
 });
+
+test('plan decoding reuses identical text but never retains invalid or replaced slots', () => {
+    const h = engine();
+    const id = 'ems.0.Plan.MyPV_DHW_48h_JSON';
+    const now = Date.now();
+    const series = JSON.stringify([{timestamp: now, valueW: 1000}]);
+    h.put(id, series);
+    const read = () => h.run(`parsePlanSeries('${id}')`);
+    const first = read();
+    h.put(id, series);
+    assert.equal(read(), first);
+    assert.equal(h.run(`currentPlanItem('MyPV_DHW', ${now + 900000})`), null);
+    h.put(id, '{broken');
+    assert.equal(read().length, 0);
+    h.put(id, JSON.stringify([{timestamp: now, valueW: 2000}]));
+    assert.equal(read()[0].valueW, 2000);
+    h.states.delete(id);
+    assert.equal(read().length, 0);
+});
