@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.215",
+    "version": "0.17.0-alpha.216",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.216": {
+        "en": "Reuse the recorder source index while mappings and source settings are unchanged.",
+        "de": "Der Recorder verwendet den Quellenindex bei unveränderter Zuordnung erneut.",
+        "es": "Reutilizar el índice de fuentes del registrador mientras su configuración no cambie.",
+        "fr": "Réutiliser l’index des sources du recorder tant que leur configuration reste identique.",
+        "it": "Riutilizzare l’indice delle sorgenti del registratore finché la configurazione non cambia.",
+        "nl": "Hergebruik de bronindex van de recorder zolang de configuratie gelijk blijft.",
+        "pl": "Używaj ponownie indeksu źródeł rejestratora, gdy konfiguracja się nie zmienia.",
+        "pt": "Reutilizar o índice de fontes do gravador enquanto a configuração não mudar.",
+        "ru": "Повторно использовать индекс источников регистратора при неизменной конфигурации.",
+        "uk": "Повторно використовувати індекс джерел реєстратора за незмінної конфігурації.",
+        "zh-cn": "在映射和源配置不变时复用记录器的源索引。"
+      },
       "0.17.0-alpha.215": {
         "en": "Build full recorder snapshots only when a record is due, retaining immediate safety and command diagnostics.",
         "de": "Vollständige Recorder-Snapshots erst bei fälliger Aufzeichnung erzeugen. Schutzwechsel und Befehle bleiben unmittelbar sichtbar.",
@@ -81,19 +94,6 @@
         "ru": "Сохранять линии прогноза и плана в eCharts при обновлениях в реальном времени благодаря числовым меткам времени.",
         "uk": "Зберігати видимість ліній прогнозу та плану в eCharts під час оновлень у реальному часі завдяки числовим позначкам часу.",
         "zh-cn": "使用数字时间戳，使预测和计划曲线在 eCharts 实时更新时保持可见。"
-      },
-      "0.17.0-alpha.209": {
-        "en": "Archive a separate Lasso comparison forecast when a single quarter-hour can be interpolated from its neighbors.",
-        "de": "Eine eigene Lasso-Vergleichsprognose speichern, wenn eine einzelne Viertelstunde aus ihren Nachbarn interpoliert werden kann.",
-        "es": "Guardar una previsión Lasso separada cuando se pueda interpolar un único intervalo de quince minutos a partir de sus vecinos.",
-        "fr": "Enregistrer une prévision Lasso séparée lorsqu’un seul quart d’heure peut être interpolé à partir de ses voisins.",
-        "it": "Salvare una previsione Lasso separata quando un singolo quarto d’ora può essere interpolato dai valori vicini.",
-        "nl": "Sla een aparte Lasso-vergelijkingsprognose op als één kwartier uit de naburige waarden kan worden geïnterpoleerd.",
-        "pl": "Zapisuj oddzielną prognozę Lasso, gdy jeden kwadrans można interpolować z sąsiednich wartości.",
-        "pt": "Guardar uma previsão Lasso separada quando um único quarto de hora puder ser interpolado a partir dos valores vizinhos.",
-        "ru": "Сохранять отдельный прогноз Lasso, когда один 15-минутный интервал можно интерполировать по соседним значениям.",
-        "uk": "Зберігати окремий прогноз Lasso, коли один 15-хвилинний інтервал можна інтерполювати за сусідніми значеннями.",
-        "zh-cn": "当单个 15 分钟时段可由相邻值插补时，保存单独的 Lasso 对比预测。"
       }
     },
     "titleLang": {

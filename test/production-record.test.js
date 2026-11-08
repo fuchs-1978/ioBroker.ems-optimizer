@@ -441,6 +441,43 @@ test('quiet ticks avoid full snapshots while runtime stop edges and explicit eve
     assert.equal(h.records().at(-1).event.type, 'decision');
 });
 
+test('the next source notification uses changed mappings, device IDs and in-place source configuration', async t => {
+    const h = fixture(2000000); t.mock.method(Date, 'now', h.now);
+    const config = h.adapter.config;
+    config.diagnosticPumpSourcesJson = ['pump.old'];
+    config.par14aAccountingMode = 'groupNet';
+    config.par14aParticipants = [{powerId: 'meter.group', powerUnit: 'W'}];
+    const first = h.shadow.diagnosticSourceIndex();
+    assert.equal(h.shadow.diagnosticSourceIndex(), first);
+    assert.ok(first.byId.has('import') && first.byId.has('amps') && first.byId.has('pump.old'));
+
+    const receive = id => {
+        h.advance(10); h.put(id, 1);
+        h.shadow.captureProduction(id, h.states.get(id), null);
+    };
+    h.adapter.readMapping().DP_GRID_IMPORT = 'meter.new';
+    receive('meter.new');
+    h.device.ids.feedback = 'amps.new';
+    receive('amps.new');
+    config.diagnosticPumpSourcesJson[0] = 'pump.new';
+    receive('pump.new');
+
+    // Native overrides can change independently of the injected mapping.
+    config.pvPowerId = 'pv.new';
+    config.par14aParticipants[0].powerUnit = 'kW';
+    receive('pv.new');
+    const current = h.shadow.diagnosticSourceIndex();
+    assert.equal(current.byId.get('meter.group').powerScale, 1000);
+    assert.ok(['import', 'amps', 'pump.old', 'pv'].every(id => !current.byId.has(id)));
+    assert.ok(first.byId.has('import') && first.byId.has('pump.old'));
+    await h.flush();
+
+    const records = h.records().filter(record => record.event?.type === 'source.update');
+    assert.deepEqual(records.map(record => record.event.id), ['meter.new', 'amps.new', 'pump.new', 'pv.new']);
+    assert.ok(records.every(record =>
+        record.production.sourceContract.sources.some(source => source.id === record.event.id)));
+});
+
 test('unchanged source polls retain new timestamps, real ACK/q/NULL edges and every cyclic zero command completion', async t => {
     const h = fixture(2000000); t.mock.method(Date, 'now', h.now);
     h.shadow.productionRecord();
