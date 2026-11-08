@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.218",
+    "version": "0.17.0-alpha.219",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.219": {
+        "en": "Compare recorder source settings directly and reuse the mapped IDs for fallback lookup.",
+        "de": "Der Recorder vergleicht Quelleneinstellungen direkt und verwendet die zugeordneten Datenpunkte bei der Ersatzsuche erneut.",
+        "es": "Comparar directamente la configuración de fuentes y reutilizar los identificadores asignados en la búsqueda alternativa.",
+        "fr": "Comparer directement les paramètres des sources et réutiliser les identifiants associés pour la recherche de secours.",
+        "it": "Confrontare direttamente le impostazioni delle sorgenti e riutilizzare gli identificativi associati nella ricerca alternativa.",
+        "nl": "Vergelijk broninstellingen rechtstreeks en hergebruik de gekoppelde ID’s bij de terugvalzoekactie.",
+        "pl": "Porównuj ustawienia źródeł bezpośrednio i używaj ponownie mapowanych identyfikatorów podczas wyszukiwania zastępczego.",
+        "pt": "Comparar diretamente as definições das fontes e reutilizar os identificadores mapeados na pesquisa alternativa.",
+        "ru": "Сравнивать настройки источников напрямую и повторно использовать сопоставленные идентификаторы при резервном поиске.",
+        "uk": "Порівнювати налаштування джерел безпосередньо й повторно використовувати зіставлені ідентифікатори під час резервного пошуку.",
+        "zh-cn": "直接比较记录器的数据源设置，并在备用查找时复用已映射的数据点标识。"
+      },
       "0.17.0-alpha.218": {
         "en": "Reuse recorder data point mappings while their configuration is unchanged.",
         "de": "Der Recorder verwendet unveränderte Datenpunktzuordnungen erneut.",
@@ -81,19 +94,6 @@
         "ru": "Повторно использовать проверенные 15-минутные данные SQL после перезапуска, пропускать повторные записи статуса зарядных станций и кешировать разобранные планы.",
         "uk": "Повторно використовувати перевірені 15-хвилинні дані SQL після перезапуску, пропускати повторні записи стану зарядних станцій і кешувати розібрані плани.",
         "zh-cn": "重启时复用已校验的 SQL 15 分钟数据，跳过充电盒界面的重复状态写入，并缓存解析后的计划。"
-      },
-      "0.17.0-alpha.212": {
-        "en": "Add independent emergency grid heating for both heating rods with configurable switches, sensors and temperature thresholds.",
-        "de": "Notbetrieb mit Netzstrom für beide Heizstäbe mit separaten Schaltern, Temperaturfühlern und Einschaltschwellen.",
-        "es": "Activar el modo de emergencia del calentador · Sensor de temperatura independiente para emergencias · Temperatura de arranque de emergencia (0 = desactivado)",
-        "fr": "Activer le mode de secours de la résistance · Sonde de température indépendante pour le secours · Température de démarrage du secours (0 = désactivé)",
-        "it": "Attiva la modalità di emergenza della resistenza · Sensore di temperatura indipendente per l’emergenza · Temperatura di avvio di emergenza (0 = disattivato)",
-        "nl": "Noodbedrijf voor het verwarmingselement inschakelen · Onafhankelijke temperatuursensor voor noodbedrijf · Starttemperatuur noodbedrijf (0 = uit)",
-        "pl": "Włącz tryb awaryjny grzałki · Niezależny czujnik temperatury trybu awaryjnego · Temperatura włączenia trybu awaryjnego (0 = wył.)",
-        "pt": "Ativar o modo de emergência da resistência · Sensor de temperatura independente para emergências · Temperatura de arranque de emergência (0 = desligado)",
-        "ru": "Включить аварийный режим нагревателя · Независимый датчик температуры для аварийного режима · Температура запуска аварийного режима (0 = выкл.)",
-        "uk": "Увімкнути аварійний режим нагрівача · Незалежний датчик температури для аварійного режиму · Температура запуску аварійного режиму (0 = вимк.)",
-        "zh-cn": "启用电热棒应急模式 · 独立的应急温度传感器 · 应急启动温度（0 = 关闭）"
       }
     },
     "titleLang": {
