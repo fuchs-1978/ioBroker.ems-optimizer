@@ -210,7 +210,7 @@ Die [vollständige Adminreferenz](docs/admin-reference.de.md) enthält alle bish
 
 ### Mobilitätsreserve und vorhandene Abfahrtszeit
 
-[Reserveobjekt und bestehende Fristen](docs/admin-reference.de.md#mobilitätsreserve-und-vorhandene-abfahrtszeit). Reserve/Abfahrt sind für die neue Strategie lesend vorbereitet; die produktive Umstellung bleibt #25. Ein Reservewert allein gibt keine Netzladung frei.
+[Reserveobjekt und bestehende Fristen](docs/admin-reference.de.md#mobilitätsreserve-und-vorhandene-abfahrtszeit). **Mindest-SoC bis zur Abfahrt einplanen** lässt sich je Fahrzeug aktivieren. Bei gültigem Preis- und Abfahrtsfahrplan lädt das Fahrzeug sofort bis zur Mobilitätsreserve und plant den restlichen Mindestbedarf bis zur Abfahrt ein. Die Voreinstellung lädt sofort bis zum Mindest-SoC.
 
 ## Typische Einrichtung und Fehlersuche
 
