@@ -4,7 +4,7 @@
 
 [English overview](README.md) · [Vollständige Admin-Feldreferenz](docs/admin-reference.de.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) · [Versionsänderungen](README.md#changelog)
 
-Alpha.220 ergänzt eine optionale Abstimmung von Speicher und Wallbox anhand des geplanten Speicher-Ziel-SoC. Bei ausreichender Speicherreserve sind bis zu 115 W einphasiger und 345 W dreiphasiger Feinausgleich möglich.
+Alpha.220 ergänzt eine optionale Abstimmung von Speicher und Wallbox anhand des geplanten Speicher-Ziel-SoC. Bei ausreichender Speicherreserve sind bis zu 115 W einphasiger und 345 W dreiphasiger Feinausgleich möglich. Bei Speichervorrang kann die Wallbox ab ausreichendem Überschuss mit Mindeststrom starten. Danach steigt zuerst die Speicherladung bis zur verfügbaren Ladegrenze.
 
 Alpha.219 vergleicht Quelleneinstellungen direkt und verwendet die zugeordneten Datenpunkte bei der Ersatzsuche erneut. Geänderte Geräte-IDs, Zählereinheiten und Befehlsrückmeldungen werden ab der nächsten Meldung erfasst. [Recorder-Änderungen und Messwerte](docs/release-0.17.0-alpha.219.md)
 

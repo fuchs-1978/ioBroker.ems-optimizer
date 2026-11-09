@@ -180,7 +180,7 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 
 ### 0.17.0-alpha.220 (2026-11-09)
 
-- Optional battery coordination uses the live SoC and the battery target in the current plan. Above the target, the battery can support half of the running wallbox's next current step, with separate limits for single- and three-phase charging.
+- Optional battery coordination uses the live SoC and the battery target in the current plan. Above the target, the battery can support half of the running wallbox's next current step, with separate limits for single- and three-phase charging. In the battery-first band, surplus above the battery charge ceiling can start the preferred wallbox at its minimum, while retaining at least half of that ceiling for storage. The battery then gets priority up to its full charge power before the wallbox increases its current.
 
 ### 0.17.0-alpha.219 (2026-11-08)
 
