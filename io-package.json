@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.220",
+    "version": "0.17.0-alpha.221",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.221": {
+        "en": "Remember manual vehicle SoC corrections for the next connection within 30 minutes.",
+        "de": "Manuelle Fahrzeug-SoC-Korrekturen für das nächste Anstecken innerhalb von 30 Minuten vormerken.",
+        "es": "Guardar la corrección manual de carga del vehículo para la próxima conexión en un plazo de 30 minutos.",
+        "fr": "Mémoriser la correction manuelle de charge du véhicule pour la prochaine connexion dans les 30 minutes.",
+        "it": "Memorizzare la correzione manuale della carica del veicolo per il prossimo collegamento entro 30 minuti.",
+        "nl": "Onthoud de handmatige laadniveaucorrectie voor de volgende aansluiting binnen 30 minuten.",
+        "pl": "Zapamiętuj ręczną korektę poziomu naładowania pojazdu do następnego podłączenia w ciągu 30 minut.",
+        "pt": "Guardar a correção manual da carga do veículo para a próxima ligação no prazo de 30 minutos.",
+        "ru": "Сохранять ручную корректировку заряда автомобиля до следующего подключения в течение 30 минут.",
+        "uk": "Зберігати ручне коригування заряду автомобіля до наступного підключення протягом 30 хвилин.",
+        "zh-cn": "将手动修正的车辆荷电状态保留至 30 分钟内的下一次插枪。"
+      },
       "0.17.0-alpha.220": {
         "en": "Coordinate wallbox current steps using the battery target state of charge.",
         "de": "Wallbox-Stromschritte nach dem Ziel-SoC des Speichers abstimmen.",
@@ -81,19 +94,6 @@
         "ru": "Создавать полные снимки только при записи, сохраняя немедленную диагностику защит и команд.",
         "uk": "Створювати повні знімки лише під час запису, зберігаючи негайну діагностику захисту й команд.",
         "zh-cn": "仅在需要记录时生成完整快照，保留保护状态变化和命令的即时诊断。"
-      },
-      "0.17.0-alpha.214": {
-        "en": "Reuse measured UTF-8 sample sizes when grouping recorder observations.",
-        "de": "Bereits ermittelte UTF-8-Bytezahlen beim Bündeln von Recorder-Messproben wiederverwenden.",
-        "es": "Reutilizar el tamaño UTF-8 de las muestras al agrupar las observaciones del registrador.",
-        "fr": "Réutiliser la taille UTF-8 des échantillons lors du regroupement des observations de l’enregistreur.",
-        "it": "Riutilizzare le dimensioni UTF-8 dei campioni durante il raggruppamento delle osservazioni del registratore.",
-        "nl": "Hergebruik de UTF-8-grootte van meetmonsters bij het bundelen van recorderwaarnemingen.",
-        "pl": "Używaj ponownie rozmiarów UTF-8 próbek podczas grupowania obserwacji rejestratora.",
-        "pt": "Reutilizar o tamanho UTF-8 das amostras ao agrupar observações do gravador.",
-        "ru": "Повторно использовать размеры образцов в UTF-8 при группировке наблюдений регистратора.",
-        "uk": "Повторно використовувати розміри зразків у UTF-8 під час групування спостережень реєстратора.",
-        "zh-cn": "打包记录器观测值时复用已测得的样本 UTF-8 字节数。"
       }
     },
     "titleLang": {

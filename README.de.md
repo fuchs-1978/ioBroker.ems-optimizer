@@ -1,8 +1,10 @@
 # EMS Optimizer
 
-**Aktuelle Adapterversion: 0.17.0-alpha.220.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
+**Aktuelle Adapterversion: 0.17.0-alpha.221.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
 
 [English overview](README.md) · [Vollständige Admin-Feldreferenz](docs/admin-reference.de.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) · [Versionsänderungen](README.md#changelog)
+
+Alpha.221 merkt eine manuelle Fahrzeug-SoC-Korrektur bis zu 30 Minuten für das nächste Anstecken vor. Der Wert gilt bereits für die erste Ladeentscheidung.
 
 Alpha.220 ergänzt eine optionale Abstimmung von Speicher und Wallbox anhand des geplanten Speicher-Ziel-SoC. Bei ausreichender Speicherreserve sind bis zu 115 W einphasiger und 345 W dreiphasiger Feinausgleich möglich. Bei Speichervorrang kann die Wallbox ab ausreichendem Überschuss mit Mindeststrom starten. Danach steigt zuerst die Speicherladung bis zur verfügbaren Ladegrenze.
 
@@ -95,7 +97,7 @@ Der EHZ kann Pflichtwärme liefern, während das bevorzugte Fahrzeug seine best�
 | Danach, bis Ladeenergie in der neuen Sitzung erfasst wird | Gültiger Cloud-/Fahrzeugwert. `SocEstimateStatus = cloud-after-unplug` zeigt das Warten auf die neue Ladebasis an. |
 | Neue Ladung bei aktivierter SoC-Schätzung | Letzten gültigen App-Wert mit dem frischen Wallbox-Zähler verankern und anhand der neu gemessenen Energie fortschreiben. |
 | Ladebasis stammt von vor dem beobachteten Abstecken | `energy-estimate-provisional-trip` zeigt die vorläufige Schätzung. In den ersten 30 Minuten kann einmalig ein niedrigerer App-Wert mit passendem Zählerstand zur neuen Basis werden. |
-| Neue manuelle Eingabe | Geprüften SoC von 0 bis 100 mit `ack=false` nach `Vehicles.WallboxN.SoCCorrection_pct` schreiben. Ein frischer Energiezähler und ein angeschlossenes Fahrzeug sind erforderlich. Nur nachfolgende Energie wird addiert. |
+| Neue manuelle Eingabe | Geprüften SoC von 0 bis 100 mit `ack=false` nach `Vehicles.WallboxN.SoCCorrection_pct` schreiben. Bei bestätigtem Abstecken wird er für das nächste Anstecken innerhalb von 30 Minuten vorgemerkt. Er gilt ab der ersten Ladeentscheidung. Die Fortschreibung beginnt mit dem frischen Energiezählerstand der neuen Sitzung. |
 | Manuelle Eingabe zurücknehmen | `-1` schreiben. Status unter `SoCCorrectionActive` und `SoCCorrectionStatus` prüfen. |
 | Fehlende oder widersprüchliche Daten einer manuellen Basis | Fortschreibung kann suspendiert werden; keine stillschweigende Übernahme einer alten Cloud-Meldung. |
 | Ununterbrochene automatische Ladung ohne Sitzungsende | Vorhandene qualifizierte Fortschreibung bleibt erhalten; verspätete Cloud-Werte können eine Plausibilitätswarnung auslösen. |

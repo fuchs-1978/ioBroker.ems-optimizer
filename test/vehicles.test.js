@@ -1543,6 +1543,42 @@ test('manual correction updates target release live and never writes the foreign
     assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.SoC_pct').val, 65);
 });
 
+test('Mii uses a pending 65% in the first realtime selection, before the new energy counter arrives', () => {
+    let now = 1800000000000;
+    const h = engine({wb0SocEstimationEnabled: true, wb0CapacityKWh: 32.3,
+        wb0SocEfficiencyPct: 90}, class extends Date { static now() { return now; } });
+    const root = 'ems.0.Vehicles.Wallbox0';
+    h.run("requestForecastRebuild = () => {}; CFG.dp.wallboxSocMeasuredAt[0] = ''");
+    h.put('DP_WB0_CAR', 1);
+    h.put('DP_WB0_SOC', 49);
+    h.put('DP_WB0_MIN_SOC', 50);
+    h.put('DP_WB0_TARGET', 90);
+    h.put('DP_WB0_SOC_ENERGY', 14);
+    h.run(`applyVehicleSocCorrection(0, {val:65, ack:false, ts:${now}, q:0})`);
+    assert.equal(h.states.get(root + '.SoCCorrection_pct').val, 65);
+    assert.equal(h.states.get(root + '.SoCCorrectionActive').val, false);
+    assert.match(h.states.get(root + '.SoCCorrectionStatus').val, /vorgemerkt/);
+    assert.equal(h.states.get(root + '.SoC_pct').val, 49);
+    now += 1000;
+    h.put('DP_WB0_CAR', 2);
+    const selected = h.run('selectRealtimeWallboxes([{}, {}, {}]).find(entry => entry.wb === 0).vehicle');
+    assert.equal(selected.socPct, 65);
+    assert.equal(selected.belowMinimum, false);
+    assert.equal(selected.mustCharge, false);
+    assert.equal(h.states.get(root + '.SoCCorrectionActive').val, true);
+    assert.match(h.states.get(root + '.SoCCorrectionStatus').val, /warte auf frischen/);
+    now += 5000;
+    h.put('DP_WB0_SOC_ENERGY', 0);
+    h.run('updateVehicles()');
+    assert.equal(h.states.get(root + '.SoC_pct').val, 65);
+    assert.match(h.states.get(root + '.SoCCorrectionStatus').val, /uebernommen/);
+    now += 30000;
+    h.put('DP_WB0_SOC_ENERGY', .1);
+    h.run('updateVehicles()');
+    assert.equal(h.states.get(root + '.SoC_pct').val, 65.3);
+    assert.equal(h.states.get('DP_WB0_SOC').val, 49);
+});
+
 test('Mii keeps its release and warns through missing cloud SoC and an interrupted energy counter', () => {
     let now = 1800000000000;
     const h = engine({wb0SocEstimationEnabled: true, wb0CapacityKWh: 32.3,
