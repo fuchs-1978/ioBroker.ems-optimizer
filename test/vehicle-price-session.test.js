@@ -218,6 +218,87 @@ test('real departure remains fixed after expiry, repeated forecasts and restart'
     assert.equal(departure.vehicle().priceSessionValid, false);
 });
 
+test('explicit readiness departure edits update the same price session before the observer tick', () => {
+    for (const newTime of ['05:30', '07:00']) {
+        const h = fixture({wb0DeadlineEnabled: true, wb0MinimumSocByDepartureEnabled: true, wb0MinSocPct: 50});
+        h.own('Vehicles.Wallbox0.MobilityReserve_pct', 30);
+        h.own('Vehicles.Wallbox0.DepartureTime', '06:00');
+        h.put('DP_WB0_SOC', 40);
+        h.update();
+        h.sample(30);
+        const before = h.update();
+        if (newTime === '05:30') {
+            const legacy = JSON.parse(h.value('PriceSessionLedger_JSON'));
+            delete legacy.departureTime;
+            h.own('Vehicles.Wallbox0.PriceSessionLedger_JSON', JSON.stringify(legacy));
+        }
+        h.own('Vehicles.Wallbox0.DepartureTime', newTime);
+        const edited = h.vehicle();
+        const after = h.update();
+        assert.notEqual(after.departureTimestamp, before.departureTimestamp);
+        assert.equal(edited.priceDeadlineTimestamp, after.departureTimestamp);
+        assert.equal(after.priceDeadlineTimestamp, after.departureTimestamp);
+        assert.equal(after.priceSessionId, before.priceSessionId);
+        assert.equal(after.priceChargedEnergyKWh, before.priceChargedEnergyKWh);
+        assert.equal(after.priceRemainingKWh, before.priceRemainingKWh);
+        assert.equal(after.priceSessionValid, true);
+        assert.equal(h.run('!!wallboxReadinessSettings(0, 50, vehicleState(0).departureTimestamp, vehicleState(0), Date.now())'), true);
+    }
+});
+
+test('readiness deadline edits preserve metering across a cleared time and keep the new deadline after rollover', () => {
+    const h = fixture({wb0DeadlineEnabled: true, wb0MinimumSocByDepartureEnabled: true});
+    h.own('Vehicles.Wallbox0.DepartureTime', '06:00');
+    h.put('DP_WB0_SOC', 40);
+    const first = h.update();
+    h.own('Vehicles.Wallbox0.DepartureTime', '');
+    h.sample(30);
+    const cleared = h.update();
+    assert.equal(cleared.priceDeadlineTimestamp, 0);
+    assert.equal(cleared.priceSessionValid, false);
+    assert.ok(cleared.priceChargedEnergyKWh > 0);
+    h.sample(30);
+    h.own('Vehicles.Wallbox0.DepartureTime', '07:00');
+    const rescheduled = h.update();
+    assert.equal(rescheduled.priceSessionId, first.priceSessionId);
+    assert.equal(rescheduled.priceDeadlineTimestamp, rescheduled.departureTimestamp);
+    assert.ok(rescheduled.priceChargedEnergyKWh > cleared.priceChargedEnergyKWh);
+    assert.ok(Math.abs(rescheduled.priceRemainingKWh - (first.priceRemainingKWh - 0.06)) < 1e-8);
+    h.sample(86400, 0);
+    h.put('DP_WB0_SOC', 40);
+    h.own('Vehicles.Wallbox0.DepartureTime', '7:00');
+    h.boot();
+    const expired = h.update();
+    assert.equal(expired.priceDeadlineTimestamp, rescheduled.priceDeadlineTimestamp);
+    assert.equal(expired.priceSessionId, first.priceSessionId);
+    assert.equal(expired.priceSessionValid, false);
+});
+
+test('readiness SoC keeps measured energy through unchanged app polls and excludes a telemetry gap', () => {
+    const h = fixture({wb0DeadlineEnabled: true, wb0MinimumSocByDepartureEnabled: true, wb0MinSocPct: 53});
+    h.own('Config.Wallbox0VehicleCapacity_kWh', 32.3);
+    h.own('Config.VehicleChargingEfficiency_pct', 90);
+    h.own('Vehicles.Wallbox0.DepartureTime', '06:00');
+    h.put('DP_WB0_SOC', 49);
+    h.update();
+    for (let i = 0; i < 48; i++) {
+        h.sample(30);
+        h.put('DP_WB0_SOC', 49);
+        h.update();
+    }
+    const reached = h.update();
+    assert.equal(reached.socPct, 49);
+    assert.ok(Math.abs(reached.priceChargedEnergyKWh - 1.44) < 1e-8);
+    assert.ok(Math.abs(reached.readinessSocPct - (49 + 1.44 * 0.9 / 32.3 * 100)) < 1e-8);
+    assert.equal(reached.belowMinimum, false);
+    h.boot();
+    assert.equal(h.update().readinessSocPct, reached.readinessSocPct);
+    h.sample(61, 0);
+    assert.equal(h.update().readinessSocPct, undefined);
+    h.put('DP_WB0_SOC', 51);
+    assert.equal(h.update().readinessSocPct, 51, 'a fresh changed app SoC establishes a new energy reference');
+});
+
 test('alpha.25 implicit deadline migrates after restart while retaining measured energy and the SoC anchor', () => {
     const h = fixture(); h.put('DP_WB0_SOC', 79); h.update(); h.sample(30); h.update();
     const legacy = JSON.parse(h.value('PriceSessionLedger_JSON'));

@@ -242,14 +242,14 @@ test('equal-price later NT window covers later demand without filling the batter
 });
 
 
-function wholePlan(h, price, pv, car) {
+function wholePlan(h, price, pv, ...cars) {
     for (const name of ['Battery', 'MyPV_DHW', 'MyPV_Heating']) h.put(`Devices.${name}.Present`, false);
     h.context.cars = [0, 1, 2].map(index => ({...vehicle(h, index, 1), connected: false,
         release: false, eligible: false, socValid: false, energyRequiredKWh: 0,
         minimumSocPct: 0, targetSocPct: 80, socPct: 40, capacityKWh: 50,
         baseMinCurrent1pA: 6, baseMaxCurrent1pA: 16, baseMinCurrent3pA: 6, baseMaxCurrent3pA: 16,
         legacyRelease: 1, deadlineEnabled: false,
-        manualMinimumCurrentA: 0, status: 'unavailable', ...index === car.index ? car : {}}));
+        manualMinimumCurrentA: 0, status: 'unavailable', ...cars.find(car => car.index === index)}));
     h.run('historyReady=true; updateVehicles=()=>{}; vehicleState=wb=>cars[wb]; localDateKey=d=>d.toISOString().slice(0,10)');
     const start = Math.floor(h.now / 900000) * 900000;
     h.context.planInput = {pv: price.map((_, i) => ({timestamp: start + i * 900000, valueW: pv[i] || 0})),
@@ -427,4 +427,60 @@ test('a nearby departure does not turn the immediate reserve into a full-target 
     assert.equal(plan[1].readinessPurchase, true);
     assert.ok(Math.abs(plan[1].plannedGridEnergyKWh - 32.3 * 0.01 / 0.9) < 1e-8);
     assert.ok(plan.slice(2).every(point => point.valueW === 0));
+});
+
+test('readiness buys only the minimum energy still missing after metered charging', () => {
+    for (const [readinessSocPct, expectedGapPct] of [[51, 2], [53.01, 0]]) {
+        const h = harness();
+        h.run("CFG.dp.par14a=''; CFG.dp.lpcState=''; CFG.dp.lpcLimit=''");
+        Object.assign(h.context.nativeConfig, {wb0MinimumSocByDepartureEnabled: true,
+            wb0DeadlineEnabled: true, wb0CommissioningMaxA: 16});
+        h.put('Config.Wallbox0PriceMax_ct_kWh', 5);
+        h.put('Vehicles.Wallbox0.MobilityReserve_pct', 30);
+        const departure = h.now + 3600000;
+        const capacityKWh = 32.3;
+        const meteredRemainingKWh = (80 - readinessSocPct) / 100 * capacityKWh / 0.9;
+        const car = {...vehicle(h, 0, meteredRemainingKWh), socPct: 49, readinessSocPct,
+            capacityKWh, minimumSocPct: 53, targetSocPct: 80, energyRequiredKWh: 0.31 * capacityKWh,
+            priceChargingEnabled: true, deadlineEnabled: true,
+            departureTimestamp: departure, priceDeadlineTimestamp: departure, release: true, connected: true};
+        const plan = wholePlan(h, [38, 10, 24, 40], [], car)[0];
+        const planned = plan.reduce((sum, point) => sum + point.plannedGridEnergyKWh, 0);
+        assert.ok(plan[0].readyBy);
+        assert.ok(Math.abs(planned - expectedGapPct / 100 * capacityKWh / 0.9) < 1e-8);
+        assert.ok(plan.every((point, index) => point.gridChargeW === 0
+            || index === 1 && point.readinessPurchase && point.priceDepartureAt === departure));
+    }
+});
+
+test('earlier departure gets the shared price windows before the more flexible car', () => {
+    for (const {prices, earlySlots, expectedEarly, expectedLate} of [
+        {prices: [35, 10, 15, 20], earlySlots: 2, expectedEarly: 1, expectedLate: 2},
+        {prices: [10, 20, 30, 40], earlySlots: 1, expectedEarly: 0, expectedLate: 1}
+    ]) {
+        const h = harness();
+        h.run("CFG.dp.par14a=''; CFG.dp.lpcState=''; CFG.dp.lpcLimit=''");
+        const cars = [0, 1].map(index => {
+            Object.assign(h.context.nativeConfig, {
+                [`wb${index}CommissioningMaxA`]: 16,
+                [`wb${index}MinimumSocByDepartureEnabled`]: true,
+                [`wb${index}DeadlineEnabled`]: true
+            });
+            h.put(`Vehicles.Wallbox${index}.MobilityReserve_pct`, 30);
+            const departure = h.now + (index === 0 ? prices.length : earlySlots) * 900000;
+            return {...vehicle(h, index, 0.92), release: true, connected: true,
+                belowMinimum: true, mustCharge: true, priceChargingEnabled: true,
+                socPct: 49, capacityKWh: 20.7, minimumSocPct: 53, targetSocPct: 53, energyRequiredKWh: 0.828,
+                deadlineEnabled: true, departureTimestamp: departure, priceDeadlineTimestamp: departure};
+        });
+        const plans = wholePlan(h, prices, [], ...cars);
+        for (const [wb, expected] of [[0, expectedLate], [1, expectedEarly]]) {
+            assert.ok(plans[wb][0].readyBy, 'a feasible earlier departure must not fall back to immediate charging');
+            const purchases = plans[wb].filter(point => point.gridChargeW > 0);
+            assert.equal(purchases.length, 1);
+            assert.equal(purchases[0], plans[wb][expected]);
+            assert.equal(purchases[0].readinessPurchase, true);
+            assert.ok(Math.abs(purchases[0].plannedGridEnergyKWh - 0.92) < 1e-8);
+        }
+    }
 });
