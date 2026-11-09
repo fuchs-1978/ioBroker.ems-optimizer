@@ -385,6 +385,7 @@
   "Low": "低水平",
   "Price-based vehicle charging": "基于价格的车辆电池充电",
   "Allow vehicle grid charging in selected low-price periods": "允许车辆电网电池在特定的低价期内充电",
+  "Plan minimum vehicle SoC by departure": "规划车辆在出发前达到最低荷电状态",
   "Maximum total gross price (0 = no cap)": "最高总总价格 (0 =没有上限)",
   "AC energy per plug-in session when SoC is missing": "AC 每次插电时的能量 SoC 是不可使用的",
   "With valid vehicle SoC, the existing target determines the energy needed. Without SoC, enter the AC energy to add per plug-in session (0 = no price-based grid charging without SoC). Measured charging reduces the remaining session energy; a restart does not reset it. Usable PV is planned first. Without departure time, usable PV over the next 48 h reduces grid demand; sufficient PV tomorrow avoids unnecessary charging tonight. An enabled departure is a fixed deadline. The price window (default 24 h) only limits the search for grid-charging blocks. The price cap is the full gross price including time-dependent grid fees; 0 means no additional cap. User permission, master, device and production releases remain required.": "在有效的车辆SoC下,现有目标决定了所需的能量. 没有SoC,输入每插电话的AC能量 (0 =没有基于价格的电网电池充电,没有SoC). 测量电池充电降低剩余的会议能量;重新启动不会重新设置. 可使用 PV 首先是计划. 没有出发时间,可使用 PV 在下一个 48 h减少电网需求;足够 PV 明天晚上就不会再充电. 允许出境的期限是固定的. 价格窗口 (默认24小时) 仅限制了搜索电网电池充电区块. 价格上限是包括时间依赖的电网费用的全部总价格;0意味着没有额外的上限. 仍然需要用户许可,主机,设备和生产许可.",

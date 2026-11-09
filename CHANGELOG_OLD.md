@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.215 (2026-11-08)
+
+- Build full recorder snapshots only for recorded frames.
+
 ## 0.17.0-alpha.214 (2026-11-08)
 
 - Reuse measured UTF-8 sample sizes in routine and pre-event recorder batches.

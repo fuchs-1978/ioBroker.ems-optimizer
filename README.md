@@ -7,7 +7,7 @@
 
 Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Combines PV and grid measurements, load history, weather forecasts and electricity prices in a rolling 48-hour plan.
 
-**Current GitHub build: 0.17.0-alpha.221.** Install the tested build from GitHub and commission each enabled device against its actual feedback and protection limits.
+**Current GitHub build: 0.17.0-alpha.222.** Install the tested build from GitHub and commission each enabled device against its actual feedback and protection limits.
 
 [Recorder changes and measurements for Alpha.219](docs/release-0.17.0-alpha.219.md)
 
@@ -177,6 +177,10 @@ npm run test:equivalence
 Admin translation catalogs are stored in `admin/i18n/<language>/translations.json`. Keep their keys aligned with the English catalog and all visible Admin text. Release notices in the package are translated into all eleven languages. [Translation coverage and checks](docs/translations.md) · [Checker follow-up #316](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/316)
 
 ## Changelog
+
+### 0.17.0-alpha.222 (2026-11-09)
+
+- Optional vehicle readiness planning keeps an immediate mobility reserve and schedules the minimum SoC by departure using total energy prices. Disabled by default for every vehicle. [Release notes](docs/release-0.17.0-alpha.222.md)
 
 ### 0.17.0-alpha.221 (2026-11-09)
 
