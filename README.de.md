@@ -4,43 +4,12 @@
 
 [English overview](README.md) · [Vollständige Admin-Feldreferenz](docs/admin-reference.de.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) · [Versionsänderungen](README.md#changelog)
 
-Alpha.223 verteilt die geplante Warmwasserladung vor einem Preisanstieg auch dann im gleich teuren Tarifblock, wenn bis zum Ende des Fahrplans kein weiteres Versorgungsfenster sichtbar ist. [Versionshinweise](docs/release-0.17.0-alpha.223.md)
+## Aktuelle Änderungen
 
-Alpha.222 kann je Fahrzeug den Mindest-SoC bis zur Abfahrt planen. Die Sofortladung bis zum Mindest-SoC bleibt die Vorgabe. [Versionshinweise](docs/release-0.17.0-alpha.222.md)
-
-Alpha.221 merkt eine manuelle Fahrzeug-SoC-Korrektur bis zu 30 Minuten für das nächste Anstecken vor. Der Wert gilt bereits für die erste Ladeentscheidung.
-
-Alpha.220 ergänzt eine optionale Abstimmung von Speicher und Wallbox anhand des geplanten Speicher-Ziel-SoC. Bei ausreichender Speicherreserve sind bis zu 115 W einphasiger und 345 W dreiphasiger Feinausgleich möglich. Bei Speichervorrang kann die Wallbox ab ausreichendem Überschuss mit Mindeststrom starten. Danach steigt zuerst die Speicherladung bis zur verfügbaren Ladegrenze.
-
-Alpha.219 vergleicht Quelleneinstellungen direkt und verwendet die zugeordneten Datenpunkte bei der Ersatzsuche erneut. Geänderte Geräte-IDs, Zählereinheiten und Befehlsrückmeldungen werden ab der nächsten Meldung erfasst. [Recorder-Änderungen und Messwerte](docs/release-0.17.0-alpha.219.md)
-
-Alpha.218 verwendet die Datenpunktzuordnung im Recorder erneut. Geänderte Einstellungen greifen bei der nächsten Meldung.
-
-Alpha.217 verwendet die Aufzeichnungsregeln indexierter Recorder-Quellen direkt. Für Meldungen ohne Indexeintrag bleibt die bisherige Quellensuche erhalten.
-
-Alpha.216 verwendet den Recorder-Quellenindex erneut und baut ihn bei einer geänderten Quellenzuordnung sofort neu auf.
-
-Alpha.215 erzeugt vollständige Recorder-Snapshots erst, wenn ein Datensatz ansteht. Befehle, Schutzwechsel und Rohmessungen werden nach den bisherigen Regeln erfasst.
-
-Alpha.214 verwendet die bereits gemessene UTF-8-Bytezahl bei regulären Recorder-Paketen und im Ereignisvorlauf erneut.
-
-Alpha.213 verkürzt den Start mit gespeicherten SQL-Viertelstunden und spart wiederholtes Einlesen und Schreiben im Regeltakt. [Funktionsweise und Grenzen](docs/release-0.17.0-alpha.213.md)
-
-Alpha.212 ergänzt einen getrennten Notbetrieb mit Netzstrom für beide Heizstäbe. [Einstellungen und Schutzgrenzen](docs/release-0.17.0-alpha.212.md)
-
-Alpha.211 wählt bei abgestecktem Wunschfahrzeug den Ersatz nach Abstand zum Ziel-SoC. [Auswahl und Ladestopp](docs/release-0.17.0-alpha.211.md)
-
-Alpha.210 korrigiert die Zeitstempel für Live-Updates der EMS-Diagramme in eCharts. [Details](docs/release-0.17.0-alpha.210.md)
-
-Alpha.209 ergänzt einen separaten Vergleich mit einer interpolierten Lasso-Viertelstunde. [Auswertung und Grenzen](docs/release-0.17.0-alpha.209.md)
-
-Alpha.208 verwendet verfügbare Open-Meteo-Viertelstunden für Wetter und PV in den ersten vier Stunden des Fahrplans und archiviert die detaillierte Wetterreihe. [Quellen und Abdeckung](docs/release-0.17.0-alpha.208.md)
-
-Alpha.207 glättet den gemeinsamen Wärmebedarf für die PV-Brücke und den teureren Preisblock. [Planung und Nachweisgrenzen](docs/release-0.17.0-alpha.207.md)
-
-Alpha.206 glättet geplante Warmwasserspitzen vor einem Tarifanstieg. [Planung und Nachweisgrenzen](docs/release-0.17.0-alpha.206.md)
-
-Alpha.205 kann bei laufender einphasiger Ladung einen bestätigten Rücksprung um 1 A abfangen. Alpha.204 berücksichtigt einen frühen niedrigeren App-SoC nach einer Fahrt. [Stromkorrektur](docs/release-0.17.0-alpha.205.md) · [SoC nach der Fahrt](docs/release-0.17.0-alpha.204.md)
+- **Alpha.223** verteilt die geplante Warmwasserladung vor einem Preisanstieg auch dann im gleich teuren Tarifblock, wenn bis zum Ende des Fahrplans kein weiteres Versorgungsfenster sichtbar ist. [Versionshinweise](docs/release-0.17.0-alpha.223.md)
+- **Alpha.222** ergänzt je Fahrzeug die optionale Planung des Mindest-SoC bis zur Abfahrt. Die Vorgabe bleibt die Sofortladung. [Mobilitätsreserve und Ladefenster](#mobilitätsreserve-und-vorhandene-abfahrtszeit)
+- **Alpha.221** merkt eine manuelle SoC-Korrektur bis zu 30 Minuten für das nächste Anstecken vor. Der Wert gilt ab der ersten Ladeentscheidung. [Versionshinweise](docs/release-0.17.0-alpha.221.md)
+- **Alpha.220** ergänzt die optionale PV-Abstimmung zwischen Speicher und Wallbox anhand des geplanten Speicher-Ziel-SoC. [Batteriespeicher](#admin-batteriespeicher)
 
 ## Inhaltsverzeichnis
 
@@ -49,6 +18,7 @@ Alpha.205 kann bei laufender einphasiger Ladung einen bestätigten Rücksprung u
 - [Istwertverteilung ohne Fahrplan](#istwertverteilung-ohne-fahrplan)
 - [Warmwasserplanung und Vorrang](#warmwasserplanung-und-vorrang)
 - [Fahrzeug-SoC und Sitzungswechsel](#fahrzeug-soc-und-sitzungswechsel)
+- [Mobilitätsreserve und Ladefenster](#mobilitätsreserve-und-vorhandene-abfahrtszeit)
 - [Start, Stopp, Übergabe und Phasenwechsel](#start-stopp-übergabe-und-phasenwechsel)
 - [EMS-Übersicht und Diagnose](#ems-übersicht-erklärung-datenqualität-und-tagesrückblick)
 - [Prognosevergleich](#median-lasso-und-kombinationen)
@@ -59,7 +29,7 @@ Alpha.205 kann bei laufender einphasiger Ladung einen bestätigten Rücksprung u
 
 Voraussetzungen: Node.js ab 22, js-controller ab 6.0.11 und Admin ab 7.8.23. Die CI prüft Node 22, 24 und 26 unter Ubuntu. Der Adapter befindet sich im Alpha-Test; Softwaretests ersetzen keine vollständige Anlagenabnahme.
 
-Die Alpha-Version wird über **ioBroker Admin → Adapter → Installation aus eigener Quelle → GitHub** installiert. Als Quelle `https://github.com/fuchs-1978/ioBroker.ems-optimizer` eintragen und für eine reproduzierbare Installation den geprüften Stand auswählen. [Alpha.205 auf GitHub](https://github.com/fuchs-1978/ioBroker.ems-optimizer/tree/2db6dfb491231f524913220ad342edfb3539041a)
+Die Alpha-Version wird über **ioBroker Admin → Adapter → Installation aus eigener Quelle → GitHub** installiert. Als Quelle `https://github.com/fuchs-1978/ioBroker.ems-optimizer` eintragen. Für eine reproduzierbare Installation den Commit des gewünschten geprüften Stands auswählen. [Prüfläufe für `main`](https://github.com/fuchs-1978/ioBroker.ems-optimizer/actions/workflows/test-and-release.yml?query=branch%3Amain)
 
 1. Vorhandene Geräte und echte Quellen im Admin zuordnen; Einheiten und Messgrenzen prüfen.
 2. Ausgänge zunächst deaktiviert lassen und Quellen, Plan und Diagnosen prüfen.
@@ -76,7 +46,8 @@ Die vollständigen Feldbeschreibungen und Auslieferungswerte stehen in der [Admi
 | Schattenbetrieb | Isolierte modellierte Wallboxantwort bei Master AUS. Kein vollständiges Anlagenmodell für Batterie, Wärme und Fahrzeug-SoC. |
 | Livebetrieb | Reale Befehle bei passender Master-, Geräte- und Ausgangsfreigabe sowie gültigen Quellen und Grenzen. |
 | Phasenführung | Ein passend konfiguriertes externes Skript schaltet den go-e-Modus. EMS-Ziel, Modus-ACK und elektrische Phasenlage sind getrennte Nachweise. |
-| Neue Batterie-/EV-Strategie | Lesende Vorschau; die neue Reserve-/Abfahrts-/Modul-3-Koordination ist noch nicht produktiv integriert. |
+| Fahrzeugladung zur Abfahrt | Optionale Planung des Mindest-SoC und sofortige Mobilitätsreserve je Fahrzeug. |
+| Batteriestrategie | Optionale PV-Abstimmung von Speicher und Wallbox im Regler. Die gemeinsame Reserve- und Nachtplanung ist als lesende Vorschau verfügbar. |
 | Wärmepumpe | Telemetrie und passive Empfehlungen. WP-, SG-Ready- und KNX-Stellbefehle sind nicht implementiert. |
 
 Pro Stellregister muss genau ein Regler zuständig sein. Mess-, Schutz-, Phasen- und notwendige Pumpenskripte bleiben nach ihrem jeweiligen Vertrag erforderlich. Bei Rückgabe den externen EMS-Phasenfolger passend deaktivieren, EMS-Freigabe entziehen, unabhängiges AUS und elektrische Ruhe prüfen und danach den Folgeregler aktivieren. `OutputOwned=false` allein beweist keine physische Abschaltung.
@@ -109,6 +80,12 @@ Der EHZ kann Pflichtwärme liefern, während das bevorzugte Fahrzeug seine best�
 Nach einer Fahrt gilt bis zum neuen Ladebeginn der jeweils aktuelle Cloud-Wert. Sobald die Wallbox Ladeenergie erfasst, rechnet das EMS auf dieser Basis weiter. Nach Ablauf der vorläufigen Phase oder Übernahme einer neuen Basis lösen abweichende spätere App-Werte ohne Fahrzeugmesszeitpunkt bei durchgängiger Zählung ab einem Unterschied von mehr als einem Prozentpunkt eine Warnung aus. Der geschätzte SoC bleibt dann wirksam. [Ausnahme und Nachweisgrenzen](docs/release-0.17.0-alpha.204.md) · [Fahrzeugmesszeitpunkt #320](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/320).
 
 `SoC_pct` ist der wirksame Regelwert, `ReportedSoC_pct` der gemeldete Wert und `EstimatedSoC_pct` die aktive Fortschreibung. [Vollständiger SoC-Vertrag](docs/admin-reference.de.md#optionale-soc-schätzung-aus-ladeenergie-alle-drei-fahrzeuge)
+
+### Mobilitätsreserve und vorhandene Abfahrtszeit
+
+Der Haken **Mindest-SoC bis zur Abfahrt einplanen** steht je Wallbox standardmäßig auf **Aus**. Bei Ladefreigabe gilt damit die Sofortladung bis zum Mindest-SoC. Für die Terminplanung braucht das EMS eine gültige Abfahrtszeit und Preisladesitzung, die Abfahrts- und Preis-Netzladefreigabe sowie eine Mobilitätsreserve größer 0 % und unter dem Mindest-SoC.
+
+Unterhalb der Mobilitätsreserve lädt das EMS sofort. Für den restlichen Mindestbedarf rechnet es die bis zur Abfahrt nutzbare PV an und wählt Viertelstunden nach dem niedrigsten Gesamtpreis inklusive Netzentgelt. Bei festem Energiepreis und zeitvariablem Netzentgelt nutzt es zuerst den Niedrigtarif, bei Bedarf den Standardtarif und zuletzt den Hochtarif. Die Preisobergrenze gilt für die freiwillige Netzladung bis zum Ziel-SoC. Bei fehlendem oder rechnerisch unzureichendem Plan greift die Sofortladung bis zum Mindest-SoC. [Admin-Referenz](docs/admin-reference.de.md#mobilitätsreserve-und-vorhandene-abfahrtszeit) · [Versionshinweise](docs/release-0.17.0-alpha.222.md)
 
 ### Start, Stopp, Übergabe und Phasenwechsel
 
@@ -192,7 +169,7 @@ Die [vollständige Adminreferenz](docs/admin-reference.de.md) enthält alle bish
 
 ### Admin: Batteriespeicher
 
-[SunEnergy-Kopfprofile, Gerätegrenzen, Temperaturreserve und bestehende Preisplanung](docs/admin-reference.de.md#admin-batteriespeicher). Die neue Batterie-/Fahrzeugstrategie bleibt Vorschau; produktive Integration [#25](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/25).
+Seit Alpha.220 kann die optionale PV-Abstimmung den geplanten Speicher-Ziel-SoC für die Aufteilung zwischen Speicher und Wallbox nutzen. Bei ausreichender Reserve kann der Speicher einen halben Wallbox-Stromschritt puffern, bis zu 115 W einphasig beziehungsweise 345 W dreiphasig. Bei Speichervorrang kann die Wallbox mit Mindeststrom starten, sobald der Überschuss ausreicht. Danach steigt die Speicherladung bis zur Ladegrenze, bevor die Wallbox den Strom weiter erhöht. Offen sind die gemeinsame Reserve- und Nachtplanung sowie die reale Speicherabnahme. [Admin-Referenz zum Speicher](docs/admin-reference.de.md#admin-batteriespeicher) · [Integration und Abnahme #25](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/25)
 
 ### Admin: Wärmepumpe
 
@@ -209,10 +186,6 @@ Die [vollständige Adminreferenz](docs/admin-reference.de.md) enthält alle bish
 ### Admin: Erweiterte Datenpunkte
 
 [Zusätzliche Quellen und konkrete Objektzuordnung](docs/admin-reference.de.md#admin-erweiterte-datenpunkte).
-
-### Mobilitätsreserve und vorhandene Abfahrtszeit
-
-[Reserveobjekt und bestehende Fristen](docs/admin-reference.de.md#mobilitätsreserve-und-vorhandene-abfahrtszeit). **Mindest-SoC bis zur Abfahrt einplanen** lässt sich je Fahrzeug aktivieren. Bei gültigem Preis- und Abfahrtsfahrplan lädt das Fahrzeug sofort bis zur Mobilitätsreserve und plant den restlichen Mindestbedarf bis zur Abfahrt ein. Die Voreinstellung lädt sofort bis zum Mindest-SoC.
 
 ## Typische Einrichtung und Fehlersuche
 

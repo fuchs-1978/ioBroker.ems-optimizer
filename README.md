@@ -9,8 +9,6 @@ Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Comb
 
 **Current GitHub build: 0.17.0-alpha.223.** Install the tested build from GitHub and commission each enabled device against its actual feedback and protection limits.
 
-[Recorder changes and measurements for Alpha.219](docs/release-0.17.0-alpha.219.md)
-
 [Deutsche Bedienungsanleitung](README.de.md) · [Release history](CHANGELOG_OLD.md) · [Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
 ## Contents
@@ -20,6 +18,7 @@ Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Comb
 - [Live distribution and plan recovery](#live-distribution-and-plan-recovery)
 - [Hot-water planning](#hot-water-planning)
 - [Vehicle SoC and handoff](#vehicle-soc-and-handoff)
+- [Minimum SoC by departure](#minimum-soc-by-departure)
 - [Forecast comparison](#forecast-comparison)
 - [Requirements](#requirements)
 - [Installation and setup](#installation-and-setup)
@@ -34,6 +33,7 @@ Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Comb
 ## Features
 
 - Coordinate up to three wallboxes, including vehicle priorities, minimum/target state of charge, manual minimum current and optional parallel charging.
+- Optionally plan a vehicle's minimum SoC by departure using PV and total electricity prices, with an immediate mobility reserve.
 - Allocate available PV power between charging and a domestic-hot-water heater, respecting grid, phase and device limits.
 - Plan optional battery charging using forecasts, electricity prices and time-dependent grid charges.
 - Provide separate heating-buffer and battery outputs when explicitly configured and enabled.
@@ -42,16 +42,17 @@ Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Comb
 - Preserve selected existing room-temperature histories and archive available weather forecasts for later analysis.
 - Record bounded diagnostic episodes and daily summaries for targeted investigation instead of full-day SQL downloads.
 
-The staged battery/vehicle strategy is **a read-only preview**, not a production control policy. `Diagnostics.BatteryStrategy` does not authorize battery-to-vehicle discharge or change vehicle night-charging targets. See the [release notes](docs/release-0.17.0-alpha.165.md) and [remaining battery integration work](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/25).
+`Diagnostics.BatteryStrategy` provides a read-only preview of the storage reserve, intermediate SoC target and combined overnight demand. The optional PV coordination in Alpha.220 uses the battery target in the current plan to share surplus and buffer wallbox current steps. [Strategy preview](docs/release-0.17.0-alpha.165.md) · [PV coordination in Alpha.220](#0170-alpha220-2026-11-09)
 
 ## Current scope
 
 | Available | Remaining work |
 | --- | --- |
 | Wallbox allocation, qualified handoff, measured SoC estimation and bounded current recovery | Live evidence for SoC after a trip, Mii taper transfer, and phase/protection cases. The source of contradictory go-e reports and the live Alpha.205 recovery remain open. [Vehicle operation #7](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/7) · [Phase switching #8](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/8) · [go-e #216](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/216) |
+| Optional minimum-SoC planning with an immediate mobility reserve | Verify reserve charging, tariff selection and fallback on site. [Integration and commissioning #25](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/25) |
 | Four passive day-ahead load candidates, common-slot 7/14-day evaluation and weather/room-history retention | Longer validation against time-weighted actuals and confirmation of archive delivery. [Forecast comparison #284](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/284) |
 | Bounded recorder, exact SQL confirmation and qualified recovery | Long SQL transport delays and historical recording gaps remain under [recorder investigation](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/60). A healthy current queue does not repair past losses. |
-| Battery strategy preview and heat-pump telemetry | Productive [battery strategy](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/25), [heat planning](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/160) and [LPC group-net integration](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/166) remain separate work. |
+| Battery strategy preview, optional PV coordination and heat-pump telemetry | Integrate the remaining storage reserve and overnight planning and commission the battery on site. Track heat planning and group-net control separately. [Battery #25](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/25) · [Heat planning #160](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/160) · [LPC group-net #166](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/166) |
 
 The [current roadmap](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) assigns each remaining task. Implemented transition/reaction features are closed as software work; their natural operating checks remain in #7. General Admin/runtime acceptance stays in [#26](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/26), the current checker report in [#316](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/316). [Archived issue evidence](docs/issue-audit/2026-11-03/README.md) preserves previous reports and requirements.
 
@@ -77,6 +78,12 @@ A qualified charger-Finish observation can end charging and hand off after indep
 
 During an EMS-controlled single-phase charge, a confirmed 1 A increase can roll back to the previous lower current on both go-e channels. With a fresh matching electrical measurement, the EMS can recover once by commanding the lower current or a further reduction within the current budget. Both channels must acknowledge the new command within the existing deadline. The stop path applies if a protection check fails or acknowledgement is missing. [Alpha.205 recovery and limits](docs/release-0.17.0-alpha.205.md)
 
+### Minimum SoC by departure
+
+**Plan minimum vehicle SoC by departure** is off by default for each wallbox. The default is to charge immediately to the minimum SoC when charging is authorized. To schedule that minimum by departure, enable both departure and price charging and provide a valid departure time, price-charging session and mobility reserve above 0% and below the minimum SoC.
+
+The EMS charges the mobility reserve immediately. It credits usable PV before departure and schedules the remaining minimum demand in the lowest-priced available 15-minute slots, including grid fees in the total price. With a fixed energy price and time-dependent grid fees, it uses the low tariff first, followed by the standard and high tariffs as needed. The configured price cap applies to optional grid charging up to the target SoC. If the schedule is missing or cannot cover the minimum by departure, immediate charging to the minimum applies. [Release notes](docs/release-0.17.0-alpha.222.md) · [Admin reference](docs/admin-reference.de.md#mobilitätsreserve-und-vorhandene-abfahrtszeit)
+
 ## Forecast comparison
 
 Enable the optional comparison in **History & forecast**. Production keeps its selected load profile. The four candidates are:
@@ -101,7 +108,7 @@ Clean the household load according to the actual meter boundary: subtract flexib
 
 ## Installation and setup
 
-In ioBroker Admin, open **Adapters → Install from custom source → GitHub** and enter `https://github.com/fuchs-1978/ioBroker.ems-optimizer`. Select the tested commit to reproduce Alpha.205. After updating, compare `System.Version` with the installed version. Restart the EMS instance if it still reports the previous version. [Tested Alpha.205 commit](https://github.com/fuchs-1978/ioBroker.ems-optimizer/tree/2db6dfb491231f524913220ad342edfb3539041a)
+In ioBroker Admin, open **Adapters → Install from custom source → GitHub** and enter `https://github.com/fuchs-1978/ioBroker.ems-optimizer`. Select the commit of the tested build you want to reproduce. After updating, compare `System.Version` with the installed version. Restart the EMS instance if it still reports the previous version. [CI runs for `main`](https://github.com/fuchs-1978/ioBroker.ems-optimizer/actions/workflows/test-and-release.yml?query=branch%3Amain)
 
 1. Map grid and generation measurements in the Admin configuration.
 2. Configure only the devices present at your installation, including their feedback, current limits and temperature or state-of-charge sources.
@@ -124,7 +131,7 @@ Open the instance settings in ioBroker Admin. Source fields require full existin
 | Prices and tariffs | Applicable energy prices and time-dependent grid charges, if price-based planning is used. |
 | Wallboxes | Each charger's command and feedback mapping, vehicle SoC, minimum/target SoC, priority and electrical limits. Phase switching additionally requires the external phase follower. |
 | Hot water and heating buffer | Available temperatures, permitted power, output mapping and explicit releases. EHZ means the electric heater. |
-| Battery | Actual device mappings, SoC and power limits, ownership and feedback. The new strategy preview remains separate from production control. |
+| Battery | Actual device mappings, SoC and power limits, ownership, feedback and optional PV coordination. |
 | Heat pump | Telemetry and passive recommendations; no heat-pump actuator commands. |
 
 Start with outputs disabled, check source validity and the plan, then commission each intended output separately. Missing devices should be disabled, not represented by artificial zero measurements. Detailed field descriptions, defaults and troubleshooting are in the [Admin reference](docs/admin-reference.de.md).
