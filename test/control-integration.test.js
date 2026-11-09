@@ -2298,3 +2298,57 @@ for (const phases of [1, 3]) {
         assert.equal(h.physical().batteryW, 2400, h.diagnostic());
     });
 }
+
+test('Mii readiness waits for price permission, stops at minimum, and falls back to immediate charging', async () => {
+    const h = await plant({mii: true, wallbox: false, split: false, startDelayS: 0, minimumRuntimeS: 0,
+        initialSurplusW: -350, nativeConfig: {wallboxParallelChargingEnabled: true,
+            wb0MinimumSocByDepartureEnabled: true, wb0DeadlineEnabled: true,
+            dhwControlEnabled: false}});
+    h.own('Devices.MyPV_DHW.ControlEnabled', false);
+    h.run("CFG.dp.dynamicEnergyPriceEnabled=''; CFG.dp.dynamicGridFeeEnabled=''");
+    h.own('Config.DynamicEnergyPriceEnabled', false);
+    h.own('Config.DynamicGridFeeEnabled', false);
+    h.own('Config.FixedEnergyComponent_ct_kWh', 30);
+    h.own('Config.FixedGridFee_ct_kWh', 0);
+    h.own('Config.Wallbox0PriceChargingEnabled', true);
+    h.own('Config.Wallbox0PriceMax_ct_kWh', 12);
+    h.own('Vehicles.Wallbox0.MobilityReserve_pct', 30);
+    h.own('Vehicles.Wallbox0.DepartureTime', '23:30');
+    h.put('DP_WB0_MIN_SOC', 70);
+    h.put('DP_WB0_SOC', 49);
+    h.run('updateVehicles()');
+    const sessionId = h.value('Vehicles.Wallbox0.PriceSessionId');
+    const departureAt = h.value('Vehicles.Wallbox0.DepartureTimestamp');
+    const timestamp = h.now() - 1000;
+    const readyBy = {reservePct: 30, minimumSocPct: 70, departureAt, sessionId, confirmBy: departureAt};
+    h.own('Plan.Wallbox0_48h_JSON', JSON.stringify([{timestamp, valueW: 0, phases: 1, readyBy}]));
+    await h.advance(28);
+    assert.equal(h.value('Vehicles.Wallbox0.MustCharge'), false, h.diagnostic());
+    assert.equal(h.trace.at(-1).miiW, 0, h.diagnostic());
+
+    h.put('DP_WB0_SOC', 25);
+    await h.advance(25);
+    assert.equal(h.value('Vehicles.Wallbox0.MustCharge'), true, h.diagnostic());
+    assert.equal(h.trace.at(-1).miiW, 1380, h.diagnostic());
+    h.put('DP_WB0_SOC', 49);
+    await h.advance(20);
+    assert.equal(h.value('Vehicles.Wallbox0.MustCharge'), false, h.diagnostic());
+    assert.equal(h.trace.at(-1).miiW, 0, h.diagnostic());
+
+    h.own('Config.FixedEnergyComponent_ct_kWh', 20);
+    h.own('Plan.Wallbox0_48h_JSON', JSON.stringify([{timestamp, valueW: 1380, phases: 1, readyBy,
+        readinessPurchase: true, priceOptimized: true, priceLimitCt: 20, gridChargeW: 1380, priceSessionId: sessionId,
+        priceChargeUntil: h.now() + 240000}]));
+    await h.advance(35);
+    assert.equal(h.trace.at(-1).miiW, 1380, h.diagnostic());
+
+    h.put('DP_WB0_SOC', 70);
+    await h.advance(20);
+    assert.equal(h.trace.at(-1).miiW, 0, h.diagnostic());
+
+    h.put('DP_WB0_SOC', 49);
+    h.own('Vehicles.Wallbox0.DepartureTime', '');
+    await h.advance(35);
+    assert.equal(h.value('Vehicles.Wallbox0.MustCharge'), true, h.diagnostic());
+    assert.equal(h.trace.at(-1).miiW, 1380, h.diagnostic());
+});

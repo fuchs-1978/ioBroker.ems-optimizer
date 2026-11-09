@@ -1,8 +1,10 @@
 # EMS Optimizer
 
-**Aktuelle Adapterversion: 0.17.0-alpha.221.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
+**Aktuelle Adapterversion: 0.17.0-alpha.222.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
 
 [English overview](README.md) · [Vollständige Admin-Feldreferenz](docs/admin-reference.de.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) · [Versionsänderungen](README.md#changelog)
+
+Alpha.222 kann je Fahrzeug den Mindest-SoC bis zur Abfahrt planen. Die Sofortladung bis zum Mindest-SoC bleibt die Vorgabe. [Versionshinweise](docs/release-0.17.0-alpha.222.md)
 
 Alpha.221 merkt eine manuelle Fahrzeug-SoC-Korrektur bis zu 30 Minuten für das nächste Anstecken vor. Der Wert gilt bereits für die erste Ladeentscheidung.
 
@@ -208,7 +210,7 @@ Die [vollständige Adminreferenz](docs/admin-reference.de.md) enthält alle bish
 
 ### Mobilitätsreserve und vorhandene Abfahrtszeit
 
-[Reserveobjekt und bestehende Fristen](docs/admin-reference.de.md#mobilitätsreserve-und-vorhandene-abfahrtszeit). Reserve/Abfahrt sind für die neue Strategie lesend vorbereitet; die produktive Umstellung bleibt #25. Ein Reservewert allein gibt keine Netzladung frei.
+[Reserveobjekt und bestehende Fristen](docs/admin-reference.de.md#mobilitätsreserve-und-vorhandene-abfahrtszeit). **Mindest-SoC bis zur Abfahrt einplanen** lässt sich je Fahrzeug aktivieren. Bei gültigem Preis- und Abfahrtsfahrplan lädt das Fahrzeug sofort bis zur Mobilitätsreserve und plant den restlichen Mindestbedarf bis zur Abfahrt ein. Die Voreinstellung lädt sofort bis zum Mindest-SoC.
 
 ## Typische Einrichtung und Fehlersuche
 

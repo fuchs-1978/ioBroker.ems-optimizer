@@ -3160,6 +3160,17 @@
           "lg": 12,
           "xl": 12
         },
+        "wb0MinimumSocByDepartureEnabled": {
+          "type": "checkbox",
+          "label": "Plan minimum vehicle SoC by departure",
+          "default": false,
+          "sm": 12,
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
+        },
         "wb0PriceMaxCt": {
           "type": "number",
           "label": "Maximum total gross price (0 = no cap)",
@@ -3966,6 +3977,17 @@
           "lg": 12,
           "xl": 12
         },
+        "wb1MinimumSocByDepartureEnabled": {
+          "type": "checkbox",
+          "label": "Plan minimum vehicle SoC by departure",
+          "default": false,
+          "sm": 12,
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
+        },
         "wb1PriceMaxCt": {
           "type": "number",
           "label": "Maximum total gross price (0 = no cap)",
@@ -4764,6 +4786,17 @@
         "wb2PriceChargingEnabled": {
           "type": "checkbox",
           "label": "Allow vehicle grid charging in selected low-price periods",
+          "default": false,
+          "sm": 12,
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
+        },
+        "wb2MinimumSocByDepartureEnabled": {
+          "type": "checkbox",
+          "label": "Plan minimum vehicle SoC by departure",
           "default": false,
           "sm": 12,
           "newLine": true,

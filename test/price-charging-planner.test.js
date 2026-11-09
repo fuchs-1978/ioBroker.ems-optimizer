@@ -253,7 +253,7 @@ function wholePlan(h, price, pv, car) {
     h.run('historyReady=true; updateVehicles=()=>{}; vehicleState=wb=>cars[wb]; localDateKey=d=>d.toISOString().slice(0,10)');
     const start = Math.floor(h.now / 900000) * 900000;
     h.context.planInput = {pv: price.map((_, i) => ({timestamp: start + i * 900000, valueW: pv[i] || 0})),
-        house: price.map(() => ({valueW: 0})), prices: {total: price.map(value_ct_kWh => ({value_ct_kWh}))}};
+        house: price.map(() => ({valueW: 0})), prices: {total: price.map((value_ct_kWh, i) => ({value_ct_kWh, timestamp: start + i * 900000}))}};
     h.run('buildDevicePlan(planInput)');
     return [0, 1, 2].map(wb => JSON.parse(h.run(`getState('ems.0.Plan.Wallbox${wb}_48h_JSON').val`)));
 }
@@ -362,4 +362,69 @@ test('replanning retains existing energy for expensive unmet demand instead of c
     assert.equal(result.slots[4].gridChargeW, 0);
     assert.ok(result.slots[4].valueW < 0 && result.slots[5].valueW < 0);
     assert.equal(result.report.gridKWh, 0, 'all expensive demand already covered by available initial storage');
+});
+
+test('readiness uses the cheap quarter first and buys only the missing energy in a dearer quarter', () => {
+    const h = harness();
+    h.context.nativeConfig.wb0CommissioningMaxA = 16;
+    h.run("CFG.dp.par14a=''; CFG.dp.lpcState=''; CFG.dp.lpcLimit=''");
+    h.put('Config.Wallbox0PriceMax_ct_kWh', 12);
+    const data = slots(h, [38, 10, 24, 40, 1, 1]);
+    const car = {...vehicle(h, 0, 9), socPct: 49, capacityKWh: 32.3, minimumSocPct: 53,
+        deadlineEnabled: true, departureTimestamp: h.now + 3600000, priceDeadlineTimestamp: h.now + 3600000,
+        readyBy: {reservePct: 30, minimumSocPct: 53, departureAt: h.now + 3600000, sessionId: 'session-0'}};
+    const result = evPlan(h, data, [car]);
+    const plan = result.plans[0];
+    assert.equal(plan[0].gridChargeW ?? 0, 0);
+    assert.equal(plan[1].priceLimitCt, 10);
+    assert.equal(plan[1].plannedGridEnergyKWh, 0.92);
+    assert.equal(plan[2].priceLimitCt, 24);
+    assert.equal(plan[2].readinessPurchase, true);
+    assert.ok(Math.abs(plan[2].plannedGridEnergyKWh - (32.3 * 0.04 / 0.9 - 0.92)) < 1e-8);
+    assert.ok(plan.slice(4).every(point => !point.readyBy && !point.gridChargeW));
+});
+
+test('whole planner preserves immediate minimum with opt-in off, invalid prices, or impossible readiness', () => {
+    for (const mode of ['off', 'missing', 'short', 'ready']) {
+        const h = harness();
+        h.run("CFG.dp.par14a=''; CFG.dp.lpcState=''; CFG.dp.lpcLimit=''");
+        h.context.nativeConfig.wb0MinimumSocByDepartureEnabled = mode !== 'off';
+        h.context.nativeConfig.wb0DeadlineEnabled = true;
+        h.context.nativeConfig.wb0CommissioningMaxA = mode === 'short' ? 6 : 16;
+        h.put('Vehicles.Wallbox0.MobilityReserve_pct', 30);
+        const departure = h.now + (mode === 'short' ? 900000 : 3600000);
+        const car = {...vehicle(h, 0, 10), socValid: true, priceChargingEnabled: true,
+            socPct: 49, capacityKWh: 32.3, minimumSocPct: 53, targetSocPct: 80, energyRequiredKWh: 10,
+            deadlineEnabled: true, departureTimestamp: departure, priceDeadlineTimestamp: departure,
+            release: true, connected: true, belowMinimum: true, mustCharge: true};
+        const plan = wholePlan(h, [38, 10, mode === 'missing' ? null : 24, 40], [], car)[0];
+        assert.equal(Boolean(plan[0].readyBy), mode === 'ready', mode);
+        if (mode === 'ready') {
+            assert.equal(plan[0].valueW, 0);
+            assert.equal(plan[1].readinessPurchase, true);
+        } else assert.ok(plan[0].valueW > 0 && !plan[0].priceOptimized, mode);
+    }
+});
+
+test('a nearby departure does not turn the immediate reserve into a full-target charge', () => {
+    const h = harness();
+    h.run("CFG.dp.par14a=''; CFG.dp.lpcState=''; CFG.dp.lpcLimit=''");
+    Object.assign(h.context.nativeConfig, {wb0MinimumSocByDepartureEnabled: true,
+        wb0DeadlineEnabled: true, wb0CommissioningMaxA: 16});
+    h.put('Config.Wallbox0PriceMax_ct_kWh', 5);
+    h.put('Vehicles.Wallbox0.MobilityReserve_pct', 30);
+    const departure = h.now + 3600000;
+    const energyRequiredKWh = 32.3 * (80 - 29.5) / 100;
+    const car = {...vehicle(h, 0, energyRequiredKWh / 0.9), socValid: true, priceChargingEnabled: true,
+        socPct: 29.5, capacityKWh: 32.3, minimumSocPct: 31, targetSocPct: 80, energyRequiredKWh,
+        deadlineEnabled: true, departureTimestamp: departure, priceDeadlineTimestamp: departure,
+        latestStartTimestamp: h.now - 3600000,
+        release: true, connected: true, belowMinimum: true, mustCharge: true};
+    const plan = wholePlan(h, [38, 10, 24, 40], [], car)[0];
+    const reserveKWh = 32.3 * 0.005 / 0.9;
+    assert.ok(Math.abs(plan[0].valueW / 4000 - reserveKWh) < 0.001);
+    assert.equal(plan[0].priceOptimized, false);
+    assert.equal(plan[1].readinessPurchase, true);
+    assert.ok(Math.abs(plan[1].plannedGridEnergyKWh - 32.3 * 0.01 / 0.9) < 1e-8);
+    assert.ok(plan.slice(2).every(point => point.valueW === 0));
 });
