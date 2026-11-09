@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.218 (2026-11-08)
+
+- Reuse recorder data point mappings while their configuration is unchanged.
+
 ## 0.17.0-alpha.217 (2026-11-08)
 
 - Apply recording rules directly to indexed sources and retain the fallback lookup for other notifications.

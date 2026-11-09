@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.224",
+    "version": "0.17.0-alpha.225",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.225": {
+        "en": "Keep the SQL startup cache usable when older empty intervals leave the rolling history window.",
+        "de": "SQL-Startcache auch beim Wegfallen älterer Datenlücken im rollierenden Historienfenster weiterverwenden.",
+        "es": "Conserva la caché de inicio SQL cuando salen del historial los intervalos antiguos sin datos.",
+        "fr": "Conserve le cache SQL de démarrage quand les anciens intervalles vides sortent de l’historique.",
+        "it": "Mantiene la cache di avvio SQL quando i vecchi intervalli vuoti escono dalla cronologia.",
+        "nl": "Behoud de SQL-opstartcache wanneer oude lege intervallen buiten het geschiedenisvenster vallen.",
+        "pl": "Zachowuje pamięć podręczną SQL przy wyjściu starych pustych przedziałów z okna historii.",
+        "pt": "Mantém a cache de arranque SQL quando os intervalos antigos sem dados saem do histórico.",
+        "ru": "Сохраняет пригодность стартового кэша SQL при выходе старых пустых интервалов из окна истории.",
+        "uk": "Зберігає придатність стартового кешу SQL, коли старі порожні інтервали виходять за межі історії.",
+        "zh-cn": "旧的空数据区间移出滚动历史窗口后，SQL 启动缓存仍可使用。"
+      },
       "0.17.0-alpha.224": {
         "en": "Count metered charging toward minimum SoC, apply departure edits and prioritize earlier departures.",
         "de": "Gemessene Ladeenergie auf den Mindest-SoC anrechnen, Abfahrtsänderungen übernehmen und frühere Abfahrten zuerst einplanen.",
@@ -81,19 +94,6 @@
         "ru": "Сравнивать настройки источников напрямую и повторно использовать сопоставленные идентификаторы при резервном поиске.",
         "uk": "Порівнювати налаштування джерел безпосередньо й повторно використовувати зіставлені ідентифікатори під час резервного пошуку.",
         "zh-cn": "直接比较记录器的数据源设置，并在备用查找时复用已映射的数据点标识。"
-      },
-      "0.17.0-alpha.218": {
-        "en": "Reuse recorder data point mappings while their configuration is unchanged.",
-        "de": "Der Recorder verwendet unveränderte Datenpunktzuordnungen erneut.",
-        "es": "Reutilizar las asignaciones de puntos de datos del registrador mientras su configuración no cambie.",
-        "fr": "Réutiliser les associations de points de données de l’enregistreur tant que leur configuration reste identique.",
-        "it": "Riutilizzare le associazioni dei punti dati del registratore finché la configurazione rimane invariata.",
-        "nl": "Hergebruik de datapuntenkoppelingen van de recorder zolang hun configuratie gelijk blijft.",
-        "pl": "Używaj ponownie mapowania punktów danych rejestratora, dopóki ich konfiguracja się nie zmienia.",
-        "pt": "Reutilizar os mapeamentos de pontos de dados do gravador enquanto a configuração não mudar.",
-        "ru": "Повторно использовать сопоставления точек данных регистратора, пока их конфигурация не изменится.",
-        "uk": "Повторно використовувати зіставлення точок даних реєстратора, доки їхня конфігурація не зміниться.",
-        "zh-cn": "记录器在配置不变时复用数据点映射。"
       }
     },
     "titleLang": {

@@ -307,3 +307,53 @@ test('a validated history snapshot builds a fresh plan before SQL and only refre
     assert.equal(windows.length, 42);
     assert.equal(run('historyReady'), false);
 });
+
+test('rolling startup history stays usable across restarts with an empty oldest day', async () => {
+    const step = 900000, day = 96 * step, builtAt = Date.UTC(2026, 8, 21);
+    const start = builtAt - 21 * day;
+    const rows = Array.from({length: 20 * 96 + 3}, (_, i) => ({ts: start + day + i * step, val: 1000}));
+    const windows = [], readyBeforeSql = [];
+    let now = builtAt + step, snapshot, saved, run;
+    class Clock extends Date {static now() {return now;}}
+    run = engine({Date: Clock, nativeConfig: {historyDays: 21}, getState: () => null, setState() {}, log() {},
+        historySourceSettings: async () => ({enabled: true, changesRelogInterval: 60}),
+        readHistoryCache: async () => snapshot, writeHistoryCache: async value => {saved = value;},
+        historyBackendReady: async () => {readyBeforeSql.push(run('historyReady')); return true;},
+        fetchRows: async (id, from, to) => {
+            windows.push([id, from, to]);
+            return rows.filter(row => row.ts >= from && row.ts < to);
+        }
+    });
+    run(`CFG.dp.pvPower='pv'; CFG.dp.houseMetersW=['house']; CFG.dp.wallboxesKW=[];
+        CFG.dp.myPvDhwHistoryW=''; CFG.dp.myPvHeatingHistoryW=''; pause=async()=>{};
+        buildForecast=()=>{}; getTimeWeightedHistory=fetchRows;`);
+    const contract = await run('historyCacheContract(historyQueries())');
+    snapshot = {signature: contract.signature, builtAt, fullAt: builtAt,
+        entries: contract.sources.map(({key}) =>
+            [key, {start, end: builtAt, values: rows.filter(row => row.ts < builtAt), empty: [[start, start + day]]}])};
+
+    for (let restart = 1; restart <= 3; restart++) {
+        if (restart === 3) {
+            // Reproduce the expired prefix written by versions before the fix.
+            snapshot = {...snapshot, entries: snapshot.entries.map(([key, item]) =>
+                [key, {...item, empty: [[start, item.start], ...item.empty]}])};
+        }
+        run('historyReady=false; historySourceCache.clear(); historyCacheStartup=true; historyCacheFullAt=0; historyCacheSignature=null;');
+        windows.length = 0;
+        await run('buildHistory()');
+        await new Promise(resolve => setImmediate(resolve));
+
+        const currentStart = start + restart * step;
+        assert.equal(readyBeforeSql.at(-1), true, `restart ${restart} must use the validated snapshot`);
+        assert.deepEqual(windows, [
+            ['pv', currentStart, start + day], ['pv', now - 3 * step, now],
+            ['house', currentStart, start + day], ['house', now - 3 * step, now]
+        ]);
+        for (const [, item] of saved.entries) {
+            assert.equal(item.start, currentStart);
+            assert.deepEqual(JSON.parse(JSON.stringify(item.empty)), [[currentStart, start + day]]);
+        }
+        snapshot = saved;
+        now += step;
+    }
+});
