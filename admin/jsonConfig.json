@@ -7051,6 +7051,17 @@
           "lg": 12,
           "xl": 12
         },
+        "batteryWallboxHalfStepEnabled": {
+          "type": "checkbox",
+          "label": "Coordinate wallbox current steps using the battery target state of charge",
+          "default": false,
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
+        },
         "batteryFineReserveW": {
           "type": "number",
           "label": "PV reserve for battery fine control before heater allocation",
