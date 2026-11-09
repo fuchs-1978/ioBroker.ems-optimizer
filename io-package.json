@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.222",
+    "version": "0.17.0-alpha.223",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.223": {
+        "en": "Spread forecast hot-water heating across an equal-price block even without a later supply window.",
+        "de": "Warmwasser im Fahrplan auch ohne späteres Versorgungsfenster gleichmäßig im Tarifblock vorwärmen.",
+        "es": "Distribuye el calentamiento previsto del agua en un bloque de precio fijo aunque no haya un suministro posterior.",
+        "fr": "Répartit le chauffage prévu de l’eau sur une plage au même prix, même sans créneau d’approvisionnement ultérieur.",
+        "it": "Distribuisce il riscaldamento previsto dell’acqua in una fascia a prezzo costante anche senza una finestra di approvvigionamento successiva.",
+        "nl": "Spreid geplande warmwaterverwarming over een gelijk geprijsd blok, ook zonder een later aanbodvenster.",
+        "pl": "Rozkłada planowane podgrzewanie wody na okres o jednakowej cenie, także bez późniejszego okna zasilania.",
+        "pt": "Distribui o aquecimento previsto da água por um bloco de preço constante mesmo sem um período posterior de abastecimento.",
+        "ru": "Распределяет нагрев воды по интервалу с одинаковой ценой даже без более позднего периода снабжения.",
+        "uk": "Розподіляє запланований нагрів води в межах періоду з однаковою ціною навіть без пізнішого вікна постачання.",
+        "zh-cn": "即使之后没有供能窗口，也会在同一电价时段内均匀安排预测的热水加热。"
+      },
       "0.17.0-alpha.222": {
         "en": "Optional minimum vehicle SoC by departure with an immediate mobility reserve.",
         "de": "Optional den Fahrzeug-Mindest-SoC bis zur Abfahrt planen und die Mobilitätsreserve sofort laden.",
@@ -81,19 +94,6 @@
         "ru": "Применять правила записи индексированных источников напрямую.",
         "uk": "Застосовувати правила запису індексованих джерел безпосередньо.",
         "zh-cn": "直接使用已索引数据源的记录规则。"
-      },
-      "0.17.0-alpha.216": {
-        "en": "Reuse the recorder source index while mappings and source settings are unchanged.",
-        "de": "Der Recorder verwendet den Quellenindex bei unveränderter Zuordnung erneut.",
-        "es": "Reutilizar el índice de fuentes del registrador mientras su configuración no cambie.",
-        "fr": "Réutiliser l’index des sources du recorder tant que leur configuration reste identique.",
-        "it": "Riutilizzare l’indice delle sorgenti del registratore finché la configurazione non cambia.",
-        "nl": "Hergebruik de bronindex van de recorder zolang de configuratie gelijk blijft.",
-        "pl": "Używaj ponownie indeksu źródeł rejestratora, gdy konfiguracja się nie zmienia.",
-        "pt": "Reutilizar o índice de fontes do gravador enquanto a configuração não mudar.",
-        "ru": "Повторно использовать индекс источников регистратора при неизменной конфигурации.",
-        "uk": "Повторно використовувати індекс джерел реєстратора за незмінної конфігурації.",
-        "zh-cn": "在映射和源配置不变时复用记录器的源索引。"
       }
     },
     "titleLang": {

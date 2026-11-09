@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.216 (2026-11-08)
+
+- Reuse the recorder source index across state notifications and rebuild it immediately when source assignments change.
+
 ## 0.17.0-alpha.215 (2026-11-08)
 
 - Build full recorder snapshots only for recorded frames.

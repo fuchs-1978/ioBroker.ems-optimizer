@@ -7,7 +7,7 @@
 
 Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Combines PV and grid measurements, load history, weather forecasts and electricity prices in a rolling 48-hour plan.
 
-**Current GitHub build: 0.17.0-alpha.222.** Install the tested build from GitHub and commission each enabled device against its actual feedback and protection limits.
+**Current GitHub build: 0.17.0-alpha.223.** Install the tested build from GitHub and commission each enabled device against its actual feedback and protection limits.
 
 [Recorder changes and measurements for Alpha.219](docs/release-0.17.0-alpha.219.md)
 
@@ -178,6 +178,10 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 
 ## Changelog
 
+### 0.17.0-alpha.223 (2026-11-09)
+
+- Spread forecast hot-water heating across an equal-price block before a tariff increase when no later supply window is visible. The forecast still checks the tank reserve, available capacity and heater power. [Release notes](docs/release-0.17.0-alpha.223.md)
+
 ### 0.17.0-alpha.222 (2026-11-09)
 
 - Optional vehicle readiness planning keeps an immediate mobility reserve and schedules the minimum SoC by departure using total energy prices. Disabled by default for every vehicle. [Release notes](docs/release-0.17.0-alpha.222.md)
@@ -201,10 +205,6 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 ### 0.17.0-alpha.217 (2026-11-08)
 
 - Apply indexed recorder sampling rules directly and retain the fallback for unindexed notifications.
-
-### 0.17.0-alpha.216 (2026-11-08)
-
-- Reuse the recorder source index across state notifications and rebuild it immediately when source assignments change.
 
 ### 0.17.0-alpha.215 (2026-11-08)
 

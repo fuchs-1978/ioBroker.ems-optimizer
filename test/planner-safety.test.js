@@ -624,6 +624,38 @@ test('warm-water bridge spreads equal-price night heat before a tariff rise and 
     assert.equal(r.gridAuthorization, false);
 });
 
+test('warm-water bridge spreads night heat before a tariff rise without a later supply window', () => {
+    const initialKWh = 0.6995;
+    const temperature = 40 + initialKWh / (500 * 1.163 / 1000);
+    const h = thermalFixture({temperatures: Array(4).fill(temperature), demand: 25,
+        start: '2026-11-10T22:00:00Z'});
+    const cheapSlots = 24, slots = 84;
+    const price = Array.from({length: slots}, (_, i) => i < cheapSlots ? 23.56 : 30.04);
+    const data = h.plan({slots, price, pvW: 0, houseW: 745});
+    const a = balancedPlan(h, data), r = h.report();
+    const requiredKWh = slots * 27 / 96 + r.reserveKWh - initialKWh;
+    for (const p of a.slice(0, cheapSlots)) near(p.dhwGridW, requiredKWh * 1000 / 6, 'even night heat');
+    near(r.gridHeatingKWh, requiredKWh, 'unchanged total purchased heat');
+    assert.equal(Math.max(...a.map(p => p.gridW)), 4649, 'published grid peak in whole watts');
+    near(r.slots[cheapSlots - 1].usableKWh, 17.375, 'reserve at the tariff rise');
+    near(r.slots.at(-1).usableKWh, r.reserveKWh, 'reserve at the end of the forecast');
+    assert.ok(a.slice(cheapSlots).every(p => p.dhwGridW < 1e-6), 'no heat bought at the higher price');
+    assert.ok(r.minimumProjectedUsableKWh >= r.reserveKWh - 1e-7);
+    assert.equal(r.gridAuthorization, false);
+});
+
+test('warm-water bridge keeps its existing dispatch when a price after the rise is unknown', () => {
+    const temperature = 40 + 0.6995 / (500 * 1.163 / 1000);
+    const h = thermalFixture({temperatures: Array(4).fill(temperature), demand: 25});
+    const price = [...Array(24).fill(23.56), ...Array(60).fill(30.04)];
+    price[25] = null;
+    const data = h.plan({slots: price.length, price, pvW: 0, houseW: 745});
+    const a = balancedPlan(h, data);
+    near(a[0].dhwGridW, 9000, 'retain the existing immediate dispatch');
+    assert.equal(a[25].priceValid, false);
+    near(a[25].dhwGridW, 0, 'no grid heat at an unknown price');
+});
+
 test('warm-water bridge does not spread when reserve would fall below minimum during cold-layer refill', () => {
     const h = thermalFixture({temperatures: [32, 43, 43, 43], demand: 25});
     const price = [...Array(24).fill(23.56), ...Array(19).fill(30.04)];
