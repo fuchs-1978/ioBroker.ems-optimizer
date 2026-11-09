@@ -7,7 +7,7 @@
 
 Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Combines PV and grid measurements, load history, weather forecasts and electricity prices in a rolling 48-hour plan.
 
-**Current GitHub build: 0.17.0-alpha.219.** Install the tested build from GitHub and commission each enabled device against its actual feedback and protection limits.
+**Current GitHub build: 0.17.0-alpha.220.** Install the tested build from GitHub and commission each enabled device against its actual feedback and protection limits.
 
 [Recorder changes and measurements for Alpha.219](docs/release-0.17.0-alpha.219.md)
 
@@ -177,6 +177,10 @@ npm run test:equivalence
 Admin translation catalogs are stored in `admin/i18n/<language>/translations.json`. Keep their keys aligned with the English catalog and all visible Admin text. Release notices in the package are translated into all eleven languages. [Translation coverage and checks](docs/translations.md) · [Checker follow-up #316](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/316)
 
 ## Changelog
+
+### 0.17.0-alpha.220 (2026-11-09)
+
+- Optional battery coordination uses the live SoC and the battery target in the current plan. Above the target, the battery can support half of the running wallbox's next current step, with separate limits for single- and three-phase charging.
 
 ### 0.17.0-alpha.219 (2026-11-08)
 

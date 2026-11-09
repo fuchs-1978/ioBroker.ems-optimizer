@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.219",
+    "version": "0.17.0-alpha.220",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.220": {
+        "en": "Coordinate wallbox current steps using the battery target state of charge.",
+        "de": "Wallbox-Stromschritte nach dem Ziel-SoC des Speichers abstimmen.",
+        "es": "Coordinar los pasos de corriente del cargador según la carga objetivo de la batería.",
+        "fr": "Coordonner les paliers de courant de la borne selon l’état de charge cible de la batterie.",
+        "it": "Coordinare gli incrementi di corrente della wallbox in base alla carica obiettivo della batteria.",
+        "nl": "Stem stroomstappen van de laadpaal af op het gewenste laadniveau van de batterij.",
+        "pl": "Koordynuj kroki prądu wallboxa według docelowego naładowania akumulatora.",
+        "pt": "Coordenar os passos de corrente da wallbox segundo a carga alvo da bateria.",
+        "ru": "Согласовывать шаги тока зарядной станции с целевым зарядом батареи.",
+        "uk": "Узгоджувати кроки струму зарядної станції з цільовим зарядом акумулятора.",
+        "zh-cn": "按电池目标荷电状态协调充电桩的电流步进."
+      },
       "0.17.0-alpha.219": {
         "en": "Compare recorder source settings directly and reuse the mapped IDs for fallback lookup.",
         "de": "Der Recorder vergleicht Quelleneinstellungen direkt und verwendet die zugeordneten Datenpunkte bei der Ersatzsuche erneut.",
@@ -81,19 +94,6 @@
         "ru": "Повторно использовать размеры образцов в UTF-8 при группировке наблюдений регистратора.",
         "uk": "Повторно використовувати розміри зразків у UTF-8 під час групування спостережень реєстратора.",
         "zh-cn": "打包记录器观测值时复用已测得的样本 UTF-8 字节数。"
-      },
-      "0.17.0-alpha.213": {
-        "en": "Reuse validated SQL quarter-hours across restarts, skip duplicate wallbox display writes, and cache decoded schedules.",
-        "de": "Geprüfte SQL-Viertelstunden beim Neustart wiederverwenden, doppelte Wallbox-Anzeigeschreibvorgänge vermeiden und eingelesene Fahrpläne zwischenspeichern.",
-        "es": "Reutilizar los intervalos SQL validados tras reiniciar, omitir escrituras repetidas de la pantalla de carga y guardar los planes decodificados en caché.",
-        "fr": "Réutiliser les quarts d’heure SQL validés au redémarrage, éviter les écritures d’affichage redondantes des bornes et mettre en cache les plans décodés.",
-        "it": "Riutilizzare i quarti d’ora SQL verificati al riavvio, evitare scritture duplicate delle visualizzazioni delle wallbox e memorizzare in cache i piani decodificati.",
-        "nl": "Hergebruik gevalideerde SQL-kwartieren na een herstart, vermijd dubbele schrijfacties voor wallboxweergaven en cache ingelezen planningen.",
-        "pl": "Używaj ponownie zweryfikowanych danych kwadransowych SQL po restarcie, pomijaj powtórzone zapisy statusu stacji i przechowuj odczytane harmonogramy w pamięci podręcznej.",
-        "pt": "Reutilizar dados SQL validados de 15 minutos após reinícios, evitar escritas duplicadas do visor dos carregadores e guardar os planos descodificados em cache.",
-        "ru": "Повторно использовать проверенные 15-минутные данные SQL после перезапуска, пропускать повторные записи статуса зарядных станций и кешировать разобранные планы.",
-        "uk": "Повторно використовувати перевірені 15-хвилинні дані SQL після перезапуску, пропускати повторні записи стану зарядних станцій і кешувати розібрані плани.",
-        "zh-cn": "重启时复用已校验的 SQL 15 分钟数据，跳过充电盒界面的重复状态写入，并缓存解析后的计划。"
       }
     },
     "titleLang": {
@@ -223,6 +223,7 @@
     "batteryFineStepW": 100,
     "batteryFineReserveW": 200,
     "batteryPvPriorityEnabled": false,
+    "batteryWallboxHalfStepEnabled": false,
     "batteryDeadbandW": 50,
     "batteryCycleS": 1,
     "batteryFeedbackTimeoutS": 15,

@@ -2203,3 +2203,43 @@ test('heater emergency mode respects the off settings, fresh sensor proof and th
     assert.equal(h.physical().heatingW, 0, h.diagnostic());
     assert.equal(h.value('Control.AllowHeaterGridImport'), false);
 });
+
+for (const phases of [1, 3]) {
+    test(`battery SoC and half-amp margin coordinate a running ${phases}P PV wallbox`, async () => {
+        const stepW = phases * 230;
+        const h = await plant({battery: true, split: false, startDelayS: 0, minimumRuntimeS: 0,
+            initialSurplusW: 8 * stepW + stepW / 2 - 30,
+            ...(phases === 3 ? {wb2InitialPhaseMode: 2, phaseResponseDelayMs: 6000} : {}),
+            nativeConfig: {batteryWallboxHalfStepEnabled: true, wallboxParallelChargingEnabled: true,
+                dhwControlEnabled: false, wb2MaxPowerW: 11040, wb2MaxCurrent3pA: 16}});
+        h.own('Devices.MyPV_DHW.ControlEnabled', false);
+        h.own('Control.TargetGridPower_W', 0);
+        h.own('Plan.BatteryTargetSoC_48h_JSON', JSON.stringify([{timestamp: h.now() - 1000, value_pct: 60}]));
+        h.put(h.run('CFG.dp.batterySoc'), 80);
+        await h.advance(130);
+        assert.equal(h.physical().allow, 1, h.diagnostic());
+        assert.equal(h.physical().amps, 8, h.diagnostic());
+        assert.ok(h.physical().batteryW > 0, h.diagnostic());
+
+        const surplus = 8 * stepW + stepW / 2 + 40;
+        h.setSurplus(surplus);
+        await h.advance(45);
+        assert.equal(h.physical().amps, 9, h.diagnostic());
+        assert.equal(h.physical().batteryW, -(9 * stepW - surplus), h.diagnostic());
+        assert.equal(h.trace.at(-1).gridW, 0, h.diagnostic());
+        assert.ok(h.trace.slice(-20).every(row => row.wbW === 9 * stepW), h.diagnostic());
+
+        h.setSurplus(8 * stepW + stepW / 2 + 5);
+        await h.advance(20);
+        assert.equal(h.physical().amps, 9, 'a running step stays admitted inside the hysteresis band');
+        h.setSurplus(8 * stepW + stepW / 2 - 20);
+        await h.advance(30);
+        assert.equal(h.physical().amps, 8, h.diagnostic());
+
+        h.put(h.run('CFG.dp.batterySoc'), 50);
+        await h.advance(160);
+        assert.equal(h.value('Control.BatteryWallboxBuffer_W'), 0);
+        const lowSocSurplus = 8 * stepW + stepW / 2 - 20;
+        assert.equal(h.physical().batteryW, Math.min(2400, lowSocSurplus), h.diagnostic());
+    });
+}
