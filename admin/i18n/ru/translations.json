@@ -1,4 +1,8 @@
 {
+  "Enable heater emergency mode": "Включить аварийный режим нагревателя",
+  "Use heater only in emergency mode": "Использовать нагреватель только в аварийном режиме",
+  "Independent emergency temperature sensor": "Независимый датчик температуры для аварийного режима",
+  "Emergency start temperature (0 = off)": "Температура запуска аварийного режима (0 = выкл.)",
   "Optional pump sources for passive recording (JSON)": "Опциональные источники насоса для пассивной записи (JSON)",
   "Enter a JSON array of up to 32 explicit state IDs for pump request, command and independent feedback, without wildcards. These sources are read for diagnostic recording only; they do not control the pump. The default empty list adds no source mapping. Missing or invalid sources remain unknown and cannot confirm a pump response or run-on.": "Введите массив JSON с до 32 ясными идентификаторами состояния для запроса насоса, команды и независимой обратной связи без диких карт. Эти источники читаются только для диагностической записи; они не контролируют насос. По умолчанию пустой список не добавляет картинки источника. Недоступные или недействительные источники остаются неизвестными и не могут подтвердить реакцию на насос или запуск.",
   "General": "Общие",
@@ -282,6 +286,8 @@
   "Discharge for self-consumption": "Разрешение на самопотребление",
   "Battery fine control and input checks": "Прекрасное управление аккумулятора и проверка ввода",
   "Maximum battery setpoint step": "Максимальная ступень установки батареи",
+  "Charge battery before PV wallboxes and buffer small EV power steps": "Заряжать накопитель раньше электромобилей при избытке солнечной энергии и сглаживать небольшие скачки мощности",
+  "Coordinate wallbox current steps using the battery target state of charge": "Согласовывать шаги тока зарядной станции с целевым зарядом батареи",
   "PV reserve for battery fine control before heater allocation": "PV резерва для контроля на батериях до распределения нагревателя",
   "Reserves up to this share of actual PV surplus for battery fine control. The effective reserve is capped by available PV, battery charge power and the shared grid-operator budget; without available PV there is no reserve. Existing planned battery charging can require a larger share. This is a power reserve in watts, not an additional SoC reserve or permission to charge from the grid.": "Ограничения до этой доли фактического PV избыток для контроля с батареей. Действующий резерв ограничен доступными PV, мощность зарядки батареи и бюджет общего оператора электрической сети; без доступных PV Нет никаких резервов. Существующая планируемая зарядка аккумулятора может потребовать большей доли. Это резерв энергии в ватах, а не дополнительный резерв SoC или разрешение на заряд из сети электроэнергии.",
   "Battery grid-control deadband": "Смертный пояс управления сетью электроэнергии батарей",

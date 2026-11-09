@@ -2,6 +2,14 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.214 (2026-11-08)
+
+- Reuse measured UTF-8 sample sizes in routine and pre-event recorder batches.
+
+## 0.17.0-alpha.213 (2026-11-08)
+
+- Reuse validated SQL quarter-hours across restarts, skip duplicate wallbox display writes, and cache decoded schedules. [Release notes](docs/release-0.17.0-alpha.213.md).
+
 ## 0.17.0-alpha.198 (2026-11-04)
 
 - (fuchs-1978) Continue measured live vehicle/heater distribution when the plan is missing or stale, retaining all source and electrical protections. Re-read provisional empty history days and retry incomplete profiles after SQL recovery. Forecast-based price permissions remain disabled in fallback. [Details and limits](docs/release-0.17.0-alpha.198.md).

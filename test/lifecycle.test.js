@@ -28,6 +28,48 @@ function adapter(adapterCore = {}) {
     return instance;
 }
 
+test('recorder reuses its mapping and observes the first notification after in-place configuration changes', t => {
+    const a = adapter();
+    const config = a.config;
+    config.dataPointMapJson = '{"DP_PV_POWER":"pv.legacy","DP_ENERGY_PRICE_SERIES":"tariff.external"}';
+    config.wb2PowerId = 'wallbox.old';
+    const first = a.readMapping({forRecorder: true});
+    assert.equal(a.readMapping({forRecorder: true}), first);
+    assert.notEqual(a.readMapping(), first);
+    assert.equal(first.DP_PV_POWER, 'pv.legacy');
+
+    const shadow = a.shadowController;
+    shadow.initialized = true;
+    const mappingReads = t.mock.method(a, 'readMapping');
+    t.mock.method(shadow, 'productionRecord', () => {});
+    const received = [];
+    const observe = shadow.diagnosticSampler.observe.bind(shadow.diagnosticSampler);
+    t.mock.method(shadow.diagnosticSampler, 'observe', (id, ...args) => {
+        received.push(id);
+        return observe(id, ...args);
+    });
+    const receive = id => shadow.captureProduction(id, {val: 1, ack: true, q: 0, ts: Date.now()}, null);
+    receive('pv.legacy');
+    config.pvPowerId = 'pv.new';
+    receive('pv.new');
+    receive('pv.legacy');
+    config.dataPointMapJson = '{"DP_PV_POWER":"pv.legacy-new","DP_ENERGY_PRICE_SERIES":"tariff.external"}';
+    delete config.pvPowerId;
+    receive('pv.legacy-new');
+    config.wb2PowerId = 'wallbox.new';
+    receive('wallbox.new');
+    assert.deepEqual(received, ['pv.legacy', 'pv.new', 'pv.legacy-new', 'wallbox.new']);
+    assert.equal(mappingReads.mock.callCount(), 5);
+    assert.ok(mappingReads.mock.calls.every(call => call.arguments[0]?.forRecorder === true));
+
+    config.energyPriceSource = 'energy-charts';
+    assert.equal(a.readMapping({forRecorder: true}).DP_ENERGY_PRICE_SERIES, 'ems.0.Market.EnergyPrice_JSON');
+    config.batteryDispatchMode = 'sunenergy-heads';
+    config.batterySunEnergyInstance = 'sunenergyxt500.2';
+    assert.equal(a.readMapping({forRecorder: true}).DP_BATTERY_SOC, 'sunenergyxt500.2.total.soc');
+    assert.equal(first.DP_WB2_POWER, 'wallbox.old');
+});
+
 test('operator display initialization failure cannot disable existing daily sampling or create SQL requests', async () => {
     const a = adapter(), calls = [];
     a.operatorDiagnostics.initialize = async () => {throw new Error('display unavailable');};
@@ -1263,4 +1305,37 @@ test('bad or missing source timestamps never produce a fresh grid pair after cac
         const pair = a.gridMeasurement.read(id => a.getCachedState(id), 'import', 'export', now);
         assert.equal(pair.valid, false);
     }
+});
+
+test('wallbox display changes are persisted once while safety states keep their normal writes', async () => {
+    const a = adapter(), writes = [];
+    a.setStateAsync = async (id, state) => writes.push([id, state.val]);
+    const display = 'ems.0.Devices.Wallbox0.OutputStatus';
+    const phaseProof = 'ems.0.Devices.Wallbox0.PhaseSwitchRemaining_s';
+    const output = 'ems.0.Devices.Wallbox0.OutputActive';
+    const queued = a.setCompatState(display, 'idle');
+    assert.equal(a.setCompatState(display, 'idle'), queued);
+    await queued;
+    const original = a.getCachedState(display);
+    await a.setCompatState(display, 'idle');
+    assert.equal(a.getCachedState(display), original);
+    await a.setCompatState(display, 'charging');
+    for (const [id, value] of [[phaseProof, 0], [output, false]]) {
+        await a.setCompatState(id, value);
+        await a.setCompatState(id, value);
+    }
+    assert.deepEqual(writes, [['Devices.Wallbox0.OutputStatus', 'idle'],
+        ['Devices.Wallbox0.OutputStatus', 'charging'], ['Devices.Wallbox0.PhaseSwitchRemaining_s', 0],
+        ['Devices.Wallbox0.PhaseSwitchRemaining_s', 0], ['Devices.Wallbox0.OutputActive', false],
+        ['Devices.Wallbox0.OutputActive', false]]);
+});
+
+test('a failed wallbox display write can be retried with the same value', async () => {
+    const a = adapter(), id = 'ems.0.Devices.Wallbox0.OutputStatus';
+    a.setStateAsync = async () => {throw new Error('write failed');};
+    await assert.rejects(a.setCompatState(id, 'idle'), /write failed/);
+    let retried = false;
+    a.setStateAsync = async () => {retried = true;};
+    await a.setCompatState(id, 'idle');
+    assert.equal(retried, true);
 });

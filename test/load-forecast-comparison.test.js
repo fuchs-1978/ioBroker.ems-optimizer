@@ -56,6 +56,26 @@ test('missing temperature, missing lags and insufficient history stay unknown', 
     const short = await comparison.train(f.rows.slice(-96 * 15), now, dayType, f.temperatures);
     assert.equal(short.ready, false);
 });
+test('forecast uses marked estimates for active missing lags and skips missing zero-weight lags', async () => {
+    const base = await trained();
+    const forecast = {...base, values: new Map(base.values), estimatedValues: new Map(),
+        model: {...base.model, weights: base.model.weights.slice()}};
+    forecast.model.weights[0] = 20;
+    forecast.model.weights[1] = 0;
+    const firstSlot = comparison.issue(forecast, now, () => 8).slots[0];
+    const recentLag = firstSlot.timestamp - 2 * DAY, weeklyLag = firstSlot.timestamp - 7 * DAY;
+    const measured = forecast.values.get(recentLag);
+    forecast.values.delete(weeklyLag);
+    assert.deepEqual(comparison.issue(forecast, now, () => 8).slots[0], firstSlot);
+    forecast.values.delete(recentLag);
+    assert.equal(comparison.issue(forecast, now, () => 8).slots[0].lassoW, null);
+    forecast.estimatedValues.set(recentLag, measured);
+    const filled = comparison.issue(forecast, now, () => 8).slots[0];
+    assert.equal(filled.lassoW, firstSlot.lassoW);
+    assert.equal(filled.medianW, firstSlot.medianW);
+    assert.deepEqual(filled.estimatedLagDays, [2]);
+    assert.equal(forecast.values.has(recentLag), false);
+});
 test('disabled temperature path is explicit and allows calendar/load-only comparison', async () => {
     const model = await comparison.train(fixture().rows, now, dayType, [], false);
     assert.equal(model.ready, true, model.reason);
@@ -191,6 +211,76 @@ test('rebuild cannot revise a persisted day-ahead prediction, and contract chang
     h.run("CFG.dp.houseMetersW=['changed']; publishLoadComparison(issueTime)");
     assert.equal(h.run('loadComparisonSignature === loadComparisonContract()'), false);
     assert.equal(h.states.get('ems.0.Forecast.LoadComparison.Ready'), false);
+});
+
+function isolatedForecast() {
+    const start = new Date(2026, 10, 8).getTime(), index = 33;
+    return {date: '2026-11-8', issuedAt: start - 3600000, start, end: start + DAY, slots: Array.from({length: 96}, (_, i) => ({
+        timestamp: start + i * SLOT, medianW: 798,
+        lassoW: i === index ? null : i === index - 1 ? 1107 : i === index + 1 ? 1153 : 1100
+    }))};
+}
+
+test('only one isolated output gap between exact neighbors can be interpolated', () => {
+    const {slots} = isolatedForecast();
+    assert.deepEqual(comparison.lassoInterpolation(slots), {timestamp: slots[33].timestamp, valueW: 1130});
+    assert.equal(slots[33].lassoW, null);
+    const copy = () => slots.map(row => ({...row}));
+    const multiple = copy(); multiple[55].lassoW = null;
+    const boundary = copy(); boundary[33].lassoW = 1130; boundary[0].lassoW = null;
+    const wrongTime = copy(); wrongTime[34].timestamp += SLOT;
+    const invalid = copy(); invalid[32].lassoW = -1;
+    const noMedian = copy(); noMedian[33].medianW = null;
+    for (const gap of [multiple, boundary, wrongTime, invalid, noMedian, slots.slice(1)]) {
+        assert.equal(comparison.lassoInterpolation(gap), null);
+    }
+});
+
+test('the interpolated forecast is restored and scored separately against identical measured slots', () => {
+    const entry = isolatedForecast();
+    const saved = {...entry, interpolation: comparison.lassoInterpolation(entry.slots)};
+    const bad = {...entry, interpolation: {...saved.interpolation, valueW: 1129}};
+    const raw = JSON.stringify({schema: 1, signature: 'same', entries: [], interpolations: [bad, saved, saved]});
+    assert.deepEqual(comparison.restore(raw, 'same', entry.issuedAt, 'interpolations'), [saved]);
+    assert.deepEqual(comparison.restore(raw, 'changed', entry.issuedAt, 'interpolations'), []);
+    const actual = entry.slots.map(row => ({ts: row.timestamp, val: 1130}));
+    const result = comparison.score([entry], actual, entry.end, [saved]);
+    assert.equal(result.days[0].lasso.pairedSlots, 95);
+    const day = result.lassoInterpolationDays[0];
+    assert.equal(day.lassoInterpolated.pairedSlots, 96);
+    assert.equal(day.median.pairedSlots, 96);
+    assert.equal(day.gap.actualW, 1130);
+    assert.equal(day.gap.medianW, 798);
+    assert.equal(day.gap.lassoInterpolatedW, 1130);
+    const gap = comparison.score([], actual.filter((_, i) => i !== 33), entry.end, [saved]).lassoInterpolationDays[0];
+    assert.equal(gap.lassoInterpolated.pairedSlots, 95);
+    assert.equal(gap.lassoInterpolated.energyBiasKWh, null);
+    assert.equal(gap.gap.actualW, null);
+    assert.equal(comparison.score([], actual, entry.end - SLOT, [saved]).lassoInterpolationDays.length, 0);
+});
+
+test('the engine freezes an interpolated variant without marking pure Lasso ready', () => {
+    const h = wrapper({loadComparisonEnabled: true}), entry = isolatedForecast();
+    h.context.loadForecastComparison = {...comparison, issue: () => entry};
+    h.context.model = {ready: true, diagnostics: {trainedAt: entry.issuedAt}};
+    h.context.issueTime = entry.issuedAt;
+    h.run('loadComparisonModel=model; loadComparisonSignature=loadComparisonContract(); publishLoadComparison(issueTime);');
+    const output = name => h.states.get(`ems.0.Forecast.LoadComparison.${name}`);
+    const first = JSON.parse(output('Forecast_JSON'));
+    assert.equal(output('Ready'), false);
+    assert.equal(first.issuedAt, null);
+    assert.equal(first.slots[33].lassoW, null);
+    assert.equal(first.lassoInterpolation.slots[33].valueW, 1130);
+    assert.equal(JSON.parse(output('Ledger_JSON')).entries.length, 0);
+    entry.slots[32].lassoW = 900;
+    h.run(`publishLoadComparison(issueTime + ${SLOT});`);
+    assert.deepEqual(JSON.parse(output('Forecast_JSON')).lassoInterpolation, first.lassoInterpolation);
+    entry.slots[33].lassoW = 1000;
+    h.run(`publishLoadComparison(issueTime + ${2 * SLOT});`);
+    assert.equal(output('Ready'), true);
+    assert.equal(JSON.parse(output('Forecast_JSON')).slots[33].lassoW, 1000);
+    assert.deepEqual(JSON.parse(output('Forecast_JSON')).lassoInterpolation, first.lassoInterpolation);
+    assert.equal(JSON.parse(output('Ledger_JSON')).interpolations.length, 1);
 });
 
 test('an enabled ready comparison leaves every production forecast and planner input identical', async () => {
@@ -333,6 +423,7 @@ test('spring estimates only four nonexistent clock quarters, marks lag days and 
     assert.equal(model.ready, true, model.reason);
     assert.equal(model.diagnostics.estimatedLagSamples, 4);
     assert.equal(model.diagnostics.estimatedLagValues, 4);
+    model.model.weights[1] = 1; // Keep the weekly lag active in this constant-load fixture.
     const entry = comparison.issue(model, end);
     assert.equal(entry.slots.filter(row => row.estimatedLagDays.length).length, 4);
     assert.deepEqual(entry.slots.find(row => row.timestamp === target).estimatedLagDays, [7]);

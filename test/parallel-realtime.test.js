@@ -1242,6 +1242,10 @@ test('one-amp PV step replaces 220 W export by predicted 10 W import with a shar
     assert.equal(lower.update(1950).amps[0], 8, 'zero disables the new allowance');
     lower.nativeConfig.wallboxPVImportToleranceW = -1;
     assert.equal(lower.update(1950).amps[0], 8, 'invalid config earns no allowance');
+    const buffered = measuredHoldEngine();
+    buffered.nativeConfig.wallboxPVImportToleranceW = 100;
+    assert.equal(buffered.update(1910).amps[0], 9,
+        '180 W of export plus 50 W of permitted shortfall funds the 230 W step');
 });
 
 test('shared PV tolerance has one owner and preserves hard budgets, peer reservations and cold-start gates', () => {

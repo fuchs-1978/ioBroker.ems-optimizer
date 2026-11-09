@@ -1,4 +1,8 @@
 {
+  "Enable heater emergency mode": "Notbetrieb für Heizstab aktivieren",
+  "Use heater only in emergency mode": "Heizstab nur im Notbetrieb einsetzen",
+  "Independent emergency temperature sensor": "Separater Temperaturfühler für den Notbetrieb",
+  "Emergency start temperature (0 = off)": "Einschalttemperatur Notbetrieb (0 = aus)",
   "Optional pump sources for passive recording (JSON)": "Optionale Pumpenquellen für passive Aufzeichnung (JSON)",
   "Enter a JSON array of up to 32 explicit state IDs for pump request, command and independent feedback, without wildcards. These sources are read for diagnostic recording only; they do not control the pump. The default empty list adds no source mapping. Missing or invalid sources remain unknown and cannot confirm a pump response or run-on.": "JSON-Liste mit höchstens 32 konkreten Datenpunkt-IDs für Pumpensoll, Befehl und unabhängige Rückmeldung ohne Platzhalter eingeben. Diese Quellen werden ausschließlich für die Diagnoseaufzeichnung gelesen; sie steuern keine Pumpe. Die leere Standardliste fügt keine Quellenzuordnung hinzu. Fehlende oder ungültige Quellen bleiben unbekannt und bestätigen weder eine Pumpenantwort noch einen Nachlauf.",
   "General": "Allgemein",
@@ -282,6 +286,8 @@
   "Discharge for self-consumption": "Für Eigenverbrauch entladen",
   "Battery fine control and input checks": "Speicher-Feinregelung und Eingangsprüfung",
   "Maximum battery setpoint step": "Maximale Änderung des Speicher-Sollwerts",
+  "Charge battery before PV wallboxes and buffer small EV power steps": "Speicher vor PV-Autoladung laden und kleine Wallbox-Leistungssprünge puffern",
+  "Coordinate wallbox current steps using the battery target state of charge": "Wallbox-Stromschritte nach dem Ziel-SoC des Speichers abstimmen",
   "PV reserve for battery fine control before heater allocation": "PV-Leistungsreserve für die Speicher-Feinregelung vor der Heizstabverteilung",
   "Reserves up to this share of actual PV surplus for battery fine control. The effective reserve is capped by available PV, battery charge power and the shared grid-operator budget; without available PV there is no reserve. Existing planned battery charging can require a larger share. This is a power reserve in watts, not an additional SoC reserve or permission to charge from the grid.": "Reserviert bis zu diesem Anteil des tatsächlichen PV-Überschusses für die Speicher-Feinregelung. Die effektive Reserve ist durch verfügbare PV, Speicherladeleistung und gemeinsames Netzbetreiberbudget begrenzt; ohne verfügbare PV gibt es keine Reserve. Bereits geplantes Speicherladen kann einen größeren Anteil erfordern. Dies ist eine Leistungsreserve in Watt, keine zusätzliche SoC-Reserve und keine Erlaubnis zum Netzladen.",
   "Battery grid-control deadband": "Totband der Speicher-Netzregelung",

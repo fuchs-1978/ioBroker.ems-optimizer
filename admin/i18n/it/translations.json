@@ -1,4 +1,8 @@
 {
+  "Enable heater emergency mode": "Attiva la modalità di emergenza della resistenza",
+  "Use heater only in emergency mode": "Usa la resistenza solo in modalità di emergenza",
+  "Independent emergency temperature sensor": "Sensore di temperatura indipendente per l’emergenza",
+  "Emergency start temperature (0 = off)": "Temperatura di avvio di emergenza (0 = disattivato)",
   "Optional pump sources for passive recording (JSON)": "Fonti di pompa opzionali per la registrazione passiva (JSON)",
   "Enter a JSON array of up to 32 explicit state IDs for pump request, command and independent feedback, without wildcards. These sources are read for diagnostic recording only; they do not control the pump. The default empty list adds no source mapping. Missing or invalid sources remain unknown and cannot confirm a pump response or run-on.": "Inserire un array JSON di fino a 32 ID di stato esplicito per la richiesta di pompa, il comando e il feedback indipendente, senza wildcard. Queste fonti sono lette solo per la registrazione diagnostica; non controllano la pompa. La lista vuota predefinita non aggiunge mappatura della fonte. Fonti non disponibili o invalide rimangono sconosciute e non possono confermare la risposta della pompa o l'avvio.",
   "General": "Generale",
@@ -282,6 +286,8 @@
   "Discharge for self-consumption": "Discarico per il consumo di auto",
   "Battery fine control and input checks": "Controllo delle batterie e controlli di ingresso",
   "Maximum battery setpoint step": "Passo di impostazione massima della batteria",
+  "Charge battery before PV wallboxes and buffer small EV power steps": "Caricare la batteria prima dei veicoli con surplus fotovoltaico e compensare i piccoli salti di potenza",
+  "Coordinate wallbox current steps using the battery target state of charge": "Coordinare gli incrementi di corrente della wallbox in base alla carica obiettivo della batteria",
   "PV reserve for battery fine control before heater allocation": "PV riserva per il controllo fine della batteria prima dell'assegnazione del riscaldatore",
   "Reserves up to this share of actual PV surplus for battery fine control. The effective reserve is capped by available PV, battery charge power and the shared grid-operator budget; without available PV there is no reserve. Existing planned battery charging can require a larger share. This is a power reserve in watts, not an additional SoC reserve or permission to charge from the grid.": "Riserve fino a questa quota di PV eccedenza per il controllo delle batterie. La riserva effettiva è limitata a: PV, potenza di ricarica della batteria e il bilancio condiviso dell'operatore della rete elettrica; PV Non c'è riserva. La ricarica della batteria prevista può richiedere una quota maggiore. Si tratta di una riserva di potenza in watt, non di una riserva di SoC aggiuntiva o di un permesso di ricarica dalla rete elettrica.",
   "Battery grid-control deadband": "Classe di controllo della rete elettrica delle batterie",

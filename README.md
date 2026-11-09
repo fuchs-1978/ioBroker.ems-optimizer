@@ -7,7 +7,9 @@
 
 Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Combines PV and grid measurements, load history, weather forecasts and electricity prices in a rolling 48-hour plan.
 
-**Current GitHub build: 0.17.0-alpha.207.** Install the tested build from GitHub and commission each enabled device against its actual feedback and protection limits. [Alpha.207 release notes](docs/release-0.17.0-alpha.207.md)
+**Current GitHub build: 0.17.0-alpha.221.** Install the tested build from GitHub and commission each enabled device against its actual feedback and protection limits.
+
+[Recorder changes and measurements for Alpha.219](docs/release-0.17.0-alpha.219.md)
 
 [Deutsche Bedienungsanleitung](README.de.md) · [Release history](CHANGELOG_OLD.md) · [Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
@@ -57,6 +59,8 @@ The [current roadmap](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issue
 
 A missing, incomplete or stale plan no longer blocks allocation from valid current measurements. `Control.PlanFallbackActive` and `Control.PlanFallbackStatus` identify this mode; `Plan.Valid` remains unchanged. Vehicle priorities, minimum-SoC/manual rules, EHZ thermal release, confirmed handoff and electrical limits still apply. Forecast-based price charging, cheap-grid heating and scheduled PV boost are disabled until the real plan returns. Empty historic days are provisional and re-read with paced retries. [Recovery and limits](docs/release-0.17.0-alpha.198.md).
 
+A restart can use validated cached SQL quarter-hours while SQL refreshes them in the background. Check `History.Building` for the refresh and `Plan.Valid` for the usable plan. [History cache and startup behavior](docs/release-0.17.0-alpha.213.md)
+
 An enabled optional heater may temporarily use the start budget of a waiting vehicle, including a lower-priority follower. The heater must release the required power before the car starts. This works with the fixed wallbox/heater split switched off. An ongoing mandatory 3P charge uses its running minimum. The startup reserve applies to a stopped charger. [Countdown buffer policy](docs/release-0.17.0-alpha.199.md)
 
 ## Hot-water planning
@@ -84,7 +88,7 @@ Enable the optional comparison in **History & forecast**. Production keeps its s
 | 50/50 blend | Arithmetic mean of the two predictions in each quarter-hour. |
 | Lasso energy / Median shape | Scale the whole Median curve by Lasso daily energy divided by Median daily energy. This is a day-ahead scaling, not an adjustment to later actual consumption. |
 
-Training runs on startup and with the daily history build at 00:10, using at most 84 days. Issued forecasts survive restart unchanged. `Forecast.LoadComparison.*` contains the model, forecast ledger and evaluation. Compare actuals and predictions over identical measured quarter-hours; a partial-day report must show its cutoff and slot coverage. The evaluation also reports the last 7/14 completed local calendar days: all four models share the same measured slot intersection, MAE/RMSE pool the individual errors, and energy comparisons use only identical complete days. Coverage, provisional windows and excluded DST days remain explicit. Power actuals and production/Lasso training use time-weighted raw SQL values on common quarter-hour boundaries. Unknown gaps stay missing. Derived energy remains an estimate, not a billing-meter difference. Legacy frozen forecasts retain their original training method; corrected actuals are used for evaluation. A complete regular day requires 96 paired slots; 92/100-slot DST target days are currently excluded. For calendar lags, both measured repeated-hour occurrences are averaged; only the missing spring clock hour may use the marked neighboring-hour estimate. Ordinary measured gaps stay unknown.
+Training runs on startup and with the daily history build at 00:10, using at most 84 days. Issued forecasts survive restart unchanged. `Forecast.LoadComparison.*` contains the model, forecast ledger and evaluation. Compare actuals and predictions over identical measured quarter-hours; a partial-day report must show its cutoff and slot coverage. The evaluation also reports the last 7/14 completed local calendar days: all four models share the same measured slot intersection, MAE/RMSE pool the individual errors, and energy comparisons use only identical complete days. Coverage, provisional windows and excluded DST days remain explicit. Power actuals and production/Lasso training use time-weighted raw SQL values on common quarter-hour boundaries. Unknown gaps stay missing. Derived energy remains an estimate, not a billing-meter difference. Legacy frozen forecasts retain their original training method; corrected actuals are used for evaluation. A complete regular day requires 96 paired slots; 92/100-slot DST target days are currently excluded. For calendar lags, both measured repeated-hour occurrences are averaged, and the missing spring clock hour may use a marked neighboring-hour estimate. At forecast issuance, Lasso can also use marked linear interpolation for bounded SQL gaps of up to 30 seconds per lag quarter-hour. Only lags with a nonzero fitted coefficient are required. Training targets, production profiles and actuals use measured coverage.
 
 Clean the household load according to the actual meter boundary: subtract flexible loads only if they are included in the house meters. Weather forecasts and selected original room-temperature histories can be retained for 90 days; their configuration status is not proof of complete SQL delivery. Additional archived weather and room values are not yet Lasso inputs. See [comparison issue](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/284), [comparison setup](docs/release-0.17.0-alpha.176.md), [combinations](docs/release-0.17.0-alpha.179.md) and the German guide.
 
@@ -170,9 +174,65 @@ npm run test:artifact
 npm run test:equivalence
 ```
 
-Admin translation catalogs are stored in `admin/i18n/<language>/translations.json`. Keep their keys aligned with the English catalog and all visible Admin text. Release notices Alpha.202–.207 are translated into all eleven languages. Alpha.201 uses English fallback for nine locales. [Translation coverage and checks](docs/translations.md) · [Checker follow-up #316](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/316)
+Admin translation catalogs are stored in `admin/i18n/<language>/translations.json`. Keep their keys aligned with the English catalog and all visible Admin text. Release notices in the package are translated into all eleven languages. [Translation coverage and checks](docs/translations.md) · [Checker follow-up #316](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/316)
 
 ## Changelog
+
+### 0.17.0-alpha.221 (2026-11-09)
+
+- Remember a manual vehicle SoC correction entered while unplugged for the next connection within 30 minutes. The value applies to the first charging decision. Energy tracking begins with the new session's first fresh meter reading. [Release notes](docs/release-0.17.0-alpha.221.md)
+
+### 0.17.0-alpha.220 (2026-11-09)
+
+- Optional battery coordination uses the live SoC and the battery target in the current plan. Above the target, the battery can support half of the running wallbox's next current step, with separate limits for single- and three-phase charging. In the battery-first band, surplus above the battery charge ceiling can start the preferred wallbox at its minimum, while retaining at least half of that ceiling for storage. The battery then gets priority up to its full charge power before the wallbox increases its current.
+
+### 0.17.0-alpha.219 (2026-11-08)
+
+- Compare recorder source settings directly and reuse mapped IDs for unindexed source lookup. Changed device IDs, meter units and command observations are picked up on the next notification. [Verification and live measurements](docs/release-0.17.0-alpha.219.md)
+
+### 0.17.0-alpha.218 (2026-11-08)
+
+- Reuse recorder data point mappings and pick up configuration changes on the next notification.
+
+### 0.17.0-alpha.217 (2026-11-08)
+
+- Apply indexed recorder sampling rules directly and retain the fallback for unindexed notifications.
+
+### 0.17.0-alpha.216 (2026-11-08)
+
+- Reuse the recorder source index across state notifications and rebuild it immediately when source assignments change.
+
+### 0.17.0-alpha.215 (2026-11-08)
+
+- Build full recorder snapshots only for recorded frames. Command and protection events and raw observations keep their existing capture rules.
+
+### 0.17.0-alpha.214 (2026-11-08)
+
+- Reuse measured UTF-8 sample sizes in routine and pre-event recorder batches. Samples, batch limits and electrical control logic are unchanged.
+
+### 0.17.0-alpha.213 (2026-11-08)
+
+- Restore validated SQL quarter-hours after a restart, avoid unchanged wallbox display writes, and reuse decoded schedules. [Release notes](docs/release-0.17.0-alpha.213.md).
+
+### 0.17.0-alpha.212 (2026-11-08)
+
+- Add independent emergency grid heating for both heating rods. [Release notes](docs/release-0.17.0-alpha.212.md).
+
+### 0.17.0-alpha.211 (2026-11-08)
+
+- When the manually preferred vehicle is unplugged, rank replacement vehicles by the gap to their target charge level and keep the active choice until charging stops. [Release notes](docs/release-0.17.0-alpha.211.md).
+
+### 0.17.0-alpha.210 (2026-11-08)
+
+- Publish numeric timestamps for eCharts forecast and schedule updates. [Release notes](docs/release-0.17.0-alpha.210.md).
+
+### 0.17.0-alpha.209 (2026-11-07)
+
+- Freeze a separate Lasso forecast when a single missing quarter-hour can be interpolated between its neighbors. [Scoring and limits](docs/release-0.17.0-alpha.209.md).
+
+### 0.17.0-alpha.208 (2026-11-07)
+
+- Prefer valid Open-Meteo quarter-hour weather and PV values for the first four hours of the plan. Archive the available quarter-hour weather series alongside the hourly series. [Sources and coverage](docs/release-0.17.0-alpha.208.md).
 
 ### 0.17.0-alpha.207 (2026-11-06)
 

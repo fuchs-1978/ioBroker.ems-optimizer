@@ -104,7 +104,7 @@ function balancedPlan(h, data) {
     ];
     for (const [planName, chartName, key] of chartPairs) {
         const chart = JSON.parse(h.states.get(`ems.0.Chart.${chartName}_48h_json_chart`).val);
-        assert.deepEqual(chart, h.series(planName).map(slot => ({ts: String(slot.timestamp), val: slot[key]})),
+        assert.deepEqual(chart, h.series(planName).map(slot => ({ts: slot.timestamp, val: slot[key]})),
             `${chartName} chart matches its plan`);
     }
     allocations.forEach((slot, i) => {
@@ -293,7 +293,7 @@ test('production forecast uses baseload rather than historical total house deman
     balancedPlan(h, {pv, house, houseSource: 'Forecast.Baseload_48h_JSON'});
     for (const name of ['PV', 'HouseLoad', 'Baseload']) {
         const chart = JSON.parse(h.states.get(`ems.0.Chart.${name}_48h_json_chart`).val);
-        assert.deepEqual(chart, forecast(name).map(slot => ({ts: String(slot.timestamp), val: slot.valueW})));
+        assert.deepEqual(chart, forecast(name).map(slot => ({ts: slot.timestamp, val: slot.valueW})));
     }
 });
 
@@ -401,6 +401,34 @@ test('issue #59: insufficient PV leaves lower priority demand unplanned instead 
     assert.equal(status[1].firstPlannedTimestamp, 0);
     balancedPlan(h, data);
 });
+
+for (const parallel of [false, true]) {
+    test(`unplugged manual preference uses SoC gap across PV starts, parallel=${parallel}`, () => {
+        const h = engine({wallboxPriority: 2, wallboxParallelChargingEnabled: parallel});
+        h.put('ems.0.Devices.MyPV_DHW.Present', false);
+        h.put(h.run('CFG.dp.par14a'), false);
+        h.put(h.run('CFG.dp.lpcState'), 'unlimitedControlled');
+        h.put(h.run('CFG.dp.lpcLimit'), 4200);
+        for (const [wb, target] of [[0, 60], [1, 65], [2, 80]]) {
+            vehicle(h, {wb, soc: 50, minimum: 20, target, capacityKWh: 10,
+                maximumW: 3680, maximum1pA: 16, maximumPhases: 1, phaseSwitch: false});
+        }
+        h.put('DP_WB2_CAR', 1);
+        const data = h.plan({pvW: [1750, 1750, 1750, 0, 1750], slots: 5});
+        const power = wb => h.series(`Wallbox${wb}`).map(slot => slot.valueW);
+        assert.deepEqual(power(0), [0, 0, 0, 0, 1610]);
+        assert.deepEqual(power(1), [1610, 1610, 1610, 0, 0]);
+        assert.deepEqual(power(2), [0, 0, 0, 0, 0]);
+        balancedPlan(h, data);
+        h.states.set('DP_WB2_CAR', {val: 1, ack: false, ts: h.now});
+        h.plan({pvW: 1750, slots: 1});
+        assert.deepEqual(power(0), [1610], 'unconfirmed unplug retains the legacy order');
+        h.put('DP_WB2_CAR', 2);
+        h.put('DP_WB2_SOC', 79);
+        h.plan({pvW: 1750, slots: 1});
+        assert.ok(power(2)[0] > 0, 'connected manual preference still wins with a smaller gap');
+    });
+}
 
 test('automatic forecast gives mandatory manual current precedence over flexible charging', () => {
     const h = engine({wallboxPriority: -1});

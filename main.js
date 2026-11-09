@@ -12,7 +12,7 @@ const WallboxOutput = require("./lib/wallbox-output");
 const DebugRecorder = require("./lib/debug-recorder");
 const {DailySummary} = require("./lib/daily-summary");
 const {OperatorDiagnostics} = require("./lib/operator-diagnostics");
-const {LatestStateWriter, isDisplaySeries} = require("./lib/latest-state-writer");
+const {LatestStateWriter, isDisplaySeries, isWallboxDisplayStatus} = require("./lib/latest-state-writer");
 const ShadowController = require("./lib/shadow-controller");
 const ShadowHistory = require("./lib/shadow-history");
 const {SourcePowerHistory} = require("./lib/source-power-history");
@@ -30,6 +30,7 @@ const heatPumpTelemetryParser = require("./lib/heatpump-telemetry");
 const {normalizeWallboxPowerKW} = require("./lib/wallbox-measurement");
 const batteryTemperatureReserve = require("./lib/battery-temperature-reserve");
 const sunEnergyHeads = require("./lib/sunenergy-heads");
+const {readHistoryCache, writeHistoryCache} = require("./lib/history-cache");
 const {journalDirectory} = require("./lib/journal-location");
 const DecisionRecordJournal = require("./lib/decision-record-journal");
 const DecisionRecordDelivery = require("./lib/decision-record-delivery");
@@ -41,6 +42,10 @@ const {buildDiagnosticSourceContract} = require("./lib/diagnostic-source-contrac
 const {HeaterWriteProof} = require("./lib/heater-write-proof");
 const {adapterTimers} = require("./lib/adapter-timers");
 const shutdownTimers = require("node:timers");
+
+const RECORDER_MAPPING_FIELDS = ["dataPointMapJson", "energyPriceSource", "batteryDispatchMode", "batterySunEnergyInstance",
+    ...Object.keys(FIELD_TO_MAPPING),
+    ...[0, 1, 2].flatMap(wb => Object.keys(WALLBOX_FIELDS).map(field => `wb${wb}${field}`))];
 
 class EmsOptimizer extends utils.Adapter {
     constructor(options = {}) {
@@ -408,11 +413,21 @@ class EmsOptimizer extends utils.Adapter {
             .map(suffix => `${baseId}.${suffix}`));
     }
 
-    readMapping() {
-        const mapping = buildNativeMapping(this.config,
+    readMapping({forRecorder = false} = {}) {
+        const {config, namespace} = this;
+        // The normal input is a string. Keep the existing conversion and
+        // diagnostics for unusual legacy inputs whose string value can mutate.
+        const reusable = forRecorder && typeof (config.dataPointMapJson || "") === "string";
+        const cached = reusable ? this.recorderMapping : null;
+        if (cached && cached.namespace === namespace
+            && RECORDER_MAPPING_FIELDS.every((field, index) => config[field] === cached.inputs[index]))
+            return cached.mapping;
+        const mapping = buildNativeMapping(config,
             message => this.log.error(`Invalid dataPointMapJson: ${message}`));
-        if (this.config.energyPriceSource === 'energy-charts')
-            mapping.DP_ENERGY_PRICE_SERIES = `${this.namespace}.Market.EnergyPrice_JSON`;
+        if (config.energyPriceSource === 'energy-charts')
+            mapping.DP_ENERGY_PRICE_SERIES = `${namespace}.Market.EnergyPrice_JSON`;
+        if (reusable) this.recorderMapping = {namespace, inputs: RECORDER_MAPPING_FIELDS.map(field => config[field]),
+            mapping: Object.freeze(mapping)};
         return mapping;
     }
 
@@ -726,11 +741,14 @@ class EmsOptimizer extends utils.Adapter {
 
     setCompatState(id, value, ack = true) {
         const previous = this.stateCache.get(id);
+        const relative = this.ownRelative(id);
+        if (ack === true && previous?.ack === true && !previous.q && previous.val === value
+            && !this.failedOwnWrites.has(id) && isWallboxDisplayStatus(relative))
+            return this.pendingOwnWrites.get(id) || Promise.resolve();
         const now = Math.max(Date.now(), Number(previous?.ts || 0) + 1);
         const published = {val: value, ack: Boolean(ack), q: 0, ts: now,
             lc: previous?.val === value ? previous.lc ?? previous.ts ?? now : now};
         this.stateCache.set(id, published);
-        const relative = this.ownRelative(id);
         const ready = this.objectPromises.get(id) || Promise.resolve();
         const previousWrite = this.pendingOwnWrites.get(id) || Promise.resolve();
         const promise = isDisplaySeries(relative, ack)
@@ -1056,6 +1074,21 @@ class EmsOptimizer extends utils.Adapter {
                     ? {...status, status: 'pending', reason: 'output-queue-pending'} : status;
             },
             loadComparisonAllowed() { return !adapter.unloading; },
+            readHistoryCache() {
+                return readHistoryCache(utils.getAbsoluteInstanceDataDir(adapter));
+            },
+            writeHistoryCache(snapshot) {
+                const previous = adapter.historyCacheWrite || Promise.resolve();
+                adapter.historyCacheWrite = previous.catch(() => {}).then(() => {
+                    if (!adapter.unloading)
+                        return writeHistoryCache(utils.getAbsoluteInstanceDataDir(adapter), snapshot);
+                });
+                return adapter.historyCacheWrite;
+            },
+            async historyBackendRevision(instance) {
+                const object = await adapter.getForeignObjectAsync(`system.adapter.${instance}`);
+                return object?.ts ?? null;
+            },
             async historySourceEnabled(id, instance) {
                 const object = await adapter.getForeignObjectAsync(id);
                 return object?.type === 'state' && object.common?.custom?.[instance]?.enabled === true;

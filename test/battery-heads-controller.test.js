@@ -79,6 +79,19 @@ test('one, two and three heads receive absolute GS with capacity-weighted SoC di
     assert.deepEqual(discharge.commands(), [50, 650]);
 });
 
+test('a qualified 50 W wallbox buffer passes the normal deadband in SunEnergy head mode', () => {
+    const h = harness(1, new Map(), {batteryPvPriorityEnabled: true, batteryDeadbandW: 50});
+    h.own('Control.Targets.Battery_W', -50);
+    h.tick();
+    assert.deepEqual(h.commands(), []);
+    h.own('Control.BatteryWallboxBuffer_W', 50);
+    h.tick();
+    assert.deepEqual(h.commands(), [50]);
+    assert.equal(h.run(`batteryHeadsQueuedCheck(${JSON.stringify(h.writes[0].id)},50).allowed`), true);
+    h.own('Control.BatteryWallboxBuffer_W', 0);
+    assert.equal(h.run(`batteryHeadsQueuedCheck(${JSON.stringify(h.writes[0].id)},50).allowed`), false);
+});
+
 test('transport acknowledgement requires a later per-head GS and GP response before the next increase', () => {
     const h = harness(2); h.tick(); h.advance(1100); h.fresh(); h.tick();
     assert.deepEqual(h.commands(), [-50, -50]);

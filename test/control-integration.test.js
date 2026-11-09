@@ -1182,6 +1182,47 @@ test('scheduled lower-priority EV receives handoff from a still-released PV-only
     assert.equal(selected, 2);
 });
 
+for (const parallel of [false, true]) {
+    test(`unplugged manual priority retains the fallback through start and physical charge, parallel=${parallel}`, async () => {
+        const h = await plant({mii: true, startDelayS: 20, minimumRuntimeS: 10, split: false,
+            initialSurplusW: 2300, nativeConfig: {wallboxParallelChargingEnabled: parallel, wallboxStopDelayS: 5}});
+        h.own('Config.WallboxParallelChargingEnabled', parallel);
+        h.own('Config.WallboxStopDelay_s', 5);
+        h.config.dhwControlEnabled = false;
+        h.own('Devices.MyPV_DHW.ControlEnabled', false);
+        h.put('DP_WB_PRIORITY', 1);
+        h.put('DP_WB1_CAR', 1);
+        h.put('DP_WB0_SOC', 65);
+        h.put('DP_WB2_SOC', 50);
+        await h.advance(10);
+        assert.equal(h.value('Control.SelectedWallbox'), 2, h.diagnostic());
+        assert.ok(h.run('wallboxStartCandidateSince[2] > 0'), 'the winning car is qualifying its start');
+        h.put('DP_WB0_SOC', 50);
+        h.put('DP_WB2_SOC', 74);
+        await h.advance(70);
+        assert.equal(h.physical().allow, 1, h.diagnostic());
+        assert.equal(h.physical().miiAllow, 0, h.diagnostic());
+        assert.equal(h.value('Control.SelectedWallbox'), 2);
+
+        h.put('DP_WB0_SOC', 45);
+        h.put('DP_WB2_SOC', 76);
+        await h.advance(20);
+        assert.equal(h.physical().allow, 1, h.diagnostic());
+        assert.equal(h.physical().miiAllow, 0, h.diagnostic());
+
+        h.setSurplus(0);
+        await h.advance(60);
+        assert.equal(h.physical().allow, 0, h.diagnostic());
+        assert.equal(h.value('Devices.Wallbox2.OutputOwned'), false);
+        h.setSurplus(2300);
+        await h.advance(70);
+        assert.equal(h.physical().miiAllow, 1, h.diagnostic());
+        assert.equal(h.physical().allow, 0, h.diagnostic());
+        assert.equal(h.value('Control.SelectedWallbox'), 0);
+        assert.equal(h.states.get('DP_WB_PRIORITY').val, 1);
+    });
+}
+
 test('battery planned reserve protects bought energy until its discharge floor declines', async () => {
     const h = await plant({battery: true, wallbox: false, initialSurplusW: -1000});
     armPricePlans(h, {price: 35, floor: 55});
@@ -1274,6 +1315,51 @@ test('coordinated battery fine + two heaters + coarse WB converge through startu
     assert.equal(h.physical().allow, 1, h.diagnostic());
     assert.ok(h.physical().heaterW > 0 && h.physical().heatingW > 0, h.diagnostic());
     assert.ok(Math.abs(h.trace.at(-1).gridW + 100) <= 300, h.diagnostic());
+});
+
+test('battery PV priority reserves the available charge power before a wallbox start', async () => {
+    const h = await plant({battery: true, initialSurplusW: 3000, split: false, startDelayS: 0,
+        nativeConfig: {batteryPvPriorityEnabled: true, wallboxParallelChargingEnabled: true}});
+    h.own('Control.TargetGridPower_W', 0);
+    await h.advance(70);
+    assert.equal(h.value('Control.BatteryPVReserve_W'), 2400);
+    assert.equal(h.physical().batteryW, 2400, h.diagnostic());
+    assert.equal(h.physical().allow, 0, '600 W remaining PV cannot start the car');
+    h.setSurplus(4500);
+    await h.advance(90);
+    assert.equal(h.physical().batteryW, 2400, h.diagnostic());
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    assert.ok(h.physical().amps * 230 <= 2100, h.diagnostic());
+});
+
+test('battery buffers PV wallbox power within tolerance without covering a larger deficit or mandatory charge', async () => {
+    const h = await plant({battery: true, initialSurplusW: 1800, split: false, startDelayS: 0,
+        nativeConfig: {batteryPvPriorityEnabled: true, wallboxParallelChargingEnabled: true,
+            wallboxPVImportToleranceW: 100, batteryDeadbandW: 50, wb2CommissioningMaxA: 6}});
+    h.own('Control.TargetGridPower_W', 0);
+    h.config.dhwControlEnabled = false;
+    h.own('Devices.MyPV_DHW.ControlEnabled', false);
+    h.put(h.run('CFG.dp.batterySoc'), 95);
+    await h.advance(65);
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    assert.equal(h.physical().amps, 6, h.diagnostic());
+    h.setSurplus(1330);
+    await h.advance(20);
+    assert.equal(h.value('Control.BatteryWallboxBuffer_W'), 50, h.diagnostic());
+    assert.equal(h.physical().batteryW, -50, h.diagnostic());
+    assert.equal(h.trace.at(-1).gridW, 0, h.diagnostic());
+    h.setSurplus(1300);
+    await h.advance(20);
+    assert.equal(h.physical().batteryW, -80, h.diagnostic());
+    h.put('DP_WB2_SOC', 10);
+    await h.advance(15);
+    assert.equal(h.value('Control.BatteryWallboxBuffer_W'), 0);
+    assert.equal(h.physical().batteryW, 0, h.diagnostic());
+    h.put('DP_WB2_SOC', 50);
+    h.setSurplus(1200);
+    await h.advance(20);
+    assert.equal(h.value('Control.BatteryWallboxBuffer_W'), 0);
+    assert.equal(h.physical().batteryW, 0, h.diagnostic());
 });
 
 test('battery full, minimum SoC and off hand fine regulation back to EHZ without phantom allocation', async () => {
@@ -2053,3 +2139,162 @@ test('parallel unplug transfers a witnessed EQE charge to Mii without a new 300s
     assert.ok(quiet&&on.at>=quiet.at,'real donor OFF and electrical quiet precede recipient ON');
     assert.ok(!h.trace.some(x=>x.wbW>0&&x.miiW>0),'no overlap');
 });
+
+test('heater emergency thresholds are independent and admit grid heating below the configured temperature', async () => {
+    const h = await plant({heating: true, wallbox: false, initialSurplusW: -600, nativeConfig: {
+        dhwEmergencyEnabled: true, dhwEmergencyOnly: true, dhwEmergencyStartC: 30, dhwEmergencySensorId: 'emergency.dhw',
+        heatingEmergencyEnabled: true, heatingEmergencyOnly: true, heatingEmergencyStartC: 30, heatingEmergencySensorId: 'emergency.heating'
+    }});
+    h.own('Devices.MyPV_DHW.DriverReady', true);
+    h.own('Plan.Valid', false);
+    h.own('System.DataValid', false); // e.g. PV telemetry missing at night
+    h.put('emergency.dhw', 30);
+    h.put('emergency.heating', 35);
+    await h.advance(15);
+    assert.equal(h.physical().heaterW, 0);
+    assert.equal(h.physical().heatingW, 0);
+
+    h.put('emergency.dhw', 29);
+    await h.advance(20);
+    assert.ok(h.physical().heaterW > 0, h.diagnostic());
+    assert.equal(h.physical().heatingW, 0);
+    assert.equal(h.value('Control.AllowHeaterGridImport'), true);
+    h.put('emergency.dhw', 31);
+    await h.advance(10);
+    assert.ok(h.physical().heaterW > 0, h.diagnostic());
+
+    h.put('emergency.dhw', 32);
+    h.put('emergency.heating', 29);
+    await h.advance(25);
+    assert.equal(h.physical().heaterW, 0, h.diagnostic());
+    assert.ok(h.physical().heatingW > 0, h.diagnostic());
+    h.put('hk.cooling', true);
+    await h.advance(15);
+    assert.equal(h.physical().heatingW, 0, h.diagnostic());
+    assert.equal(h.value('Control.AllowHeaterGridImport'), false);
+});
+
+test('heater emergency mode respects the off settings, fresh sensor proof and the shared consumption limit', async () => {
+    const h = await plant({heating: true, wallbox: false, initialSurplusW: -600, lpcLimitW: 4200,
+        nativeConfig: {
+            dhwEmergencyEnabled: true, dhwEmergencyOnly: true, dhwEmergencyStartC: 0, dhwEmergencySensorId: 'emergency.dhw',
+            heatingEmergencyEnabled: false, heatingEmergencyOnly: true, heatingEmergencyStartC: 30, heatingEmergencySensorId: 'emergency.heating'
+        }});
+    h.own('Devices.MyPV_DHW.DriverReady', true);
+    h.put('emergency.dhw', 29);
+    h.put('emergency.heating', 29);
+    await h.advance(15);
+    assert.equal(h.value('Control.AllowHeaterGridImport'), false);
+    assert.equal(h.physical().heaterW + h.physical().heatingW, 0);
+
+    h.config.dhwEmergencyStartC = 30;
+    h.config.heatingEmergencyEnabled = true;
+    await h.advance(40);
+    assert.equal(h.physical().heaterW, 4200, h.diagnostic());
+    assert.equal(h.physical().heatingW, 0, h.diagnostic());
+    h.put('emergency.dhw', 29, {ack: false});
+    assert.equal(h.run("checkQueuedElectricalOutput('MyPV_DHW', 1000).allowed"), false);
+    await h.advance(40);
+    assert.equal(h.physical().heaterW, 0, h.diagnostic());
+    assert.equal(h.physical().heatingW, 4200, h.diagnostic());
+    assert.ok(h.trace.every(row => row.heaterW + row.heatingW <= 4200));
+    h.put('DP_HA_CRITICAL', true);
+    await h.advance(15);
+    assert.equal(h.physical().heatingW, 0, h.diagnostic());
+    assert.equal(h.value('Control.AllowHeaterGridImport'), false);
+});
+
+for (const phases of [1, 3]) {
+    test(`battery SoC and half-amp margin coordinate a running ${phases}P PV wallbox`, async () => {
+        const stepW = phases * 230;
+        const h = await plant({battery: true, split: false, startDelayS: 0, minimumRuntimeS: 0,
+            initialSurplusW: 8 * stepW + stepW / 2 - 30,
+            ...(phases === 3 ? {wb2InitialPhaseMode: 2, phaseResponseDelayMs: 6000} : {}),
+            nativeConfig: {batteryWallboxHalfStepEnabled: true, wallboxParallelChargingEnabled: true,
+                dhwControlEnabled: false, wb2MaxPowerW: 11040, wb2MaxCurrent3pA: 16}});
+        h.own('Devices.MyPV_DHW.ControlEnabled', false);
+        h.own('Control.TargetGridPower_W', 0);
+        h.own('Plan.BatteryTargetSoC_48h_JSON', JSON.stringify([{timestamp: h.now() - 1000, value_pct: 60}]));
+        h.put(h.run('CFG.dp.batterySoc'), 80);
+        await h.advance(130);
+        assert.equal(h.physical().allow, 1, h.diagnostic());
+        assert.equal(h.physical().amps, 8, h.diagnostic());
+        assert.ok(h.physical().batteryW > 0, h.diagnostic());
+
+        const surplus = 8 * stepW + stepW / 2 + 40;
+        h.setSurplus(surplus);
+        await h.advance(45);
+        assert.equal(h.physical().amps, 9, h.diagnostic());
+        assert.equal(h.physical().batteryW, -(9 * stepW - surplus), h.diagnostic());
+        assert.equal(h.trace.at(-1).gridW, 0, h.diagnostic());
+        assert.ok(h.trace.slice(-20).every(row => row.wbW === 9 * stepW), h.diagnostic());
+
+        h.setSurplus(8 * stepW + stepW / 2 + 5);
+        await h.advance(20);
+        assert.equal(h.physical().amps, 9, 'a running step stays admitted inside the hysteresis band');
+        h.setSurplus(8 * stepW + stepW / 2 - 20);
+        await h.advance(30);
+        assert.equal(h.physical().amps, 8, h.diagnostic());
+
+        h.put(h.run('CFG.dp.batterySoc'), 19);
+        await h.advance(160);
+        assert.equal(h.value('Control.BatteryWallboxBuffer_W'), 0);
+        const lowSocSurplus = 8 * stepW + stepW / 2 - 20;
+        assert.equal(h.physical().batteryW, Math.min(2400, lowSocSurplus), h.diagnostic());
+    });
+}
+
+for (const phases of [1, 3]) {
+    test(`PV above battery capacity starts a ${phases}P wallbox at 6 A before filling the battery and raising current`, async () => {
+        const stepW = phases * 230, minimumW = 6 * stepW;
+        const startSurplusW = minimumW + 1620;
+        const h = await plant({battery: true, split: false, startDelayS: 15, minimumRuntimeS: 0, initialSurplusW: 2400,
+            ...(phases === 3 ? {wb2InitialPhaseMode: 2, phaseResponseDelayMs: 6000} : {}),
+            nativeConfig: {batteryWallboxHalfStepEnabled: true, wallboxParallelChargingEnabled: true,
+                dhwControlEnabled: false, wallboxStopDelayS: 10,
+                ...(phases === 3 ? {wb2PhaseControlMode: 'script', wb2MaxPowerW: 11040, wb2MaxCurrent3pA: 16} : {})}});
+        h.own('Devices.MyPV_DHW.ControlEnabled', false);
+        h.own('Control.TargetGridPower_W', 0);
+        const timestamp = h.now() - 1000;
+        const socId = h.run('CFG.dp.batterySoc');
+        h.own('Plan.BatteryTargetSoC_48h_JSON', JSON.stringify([{timestamp, value_pct: 70}]));
+        h.put(socId, 45);
+        await h.advance(80);
+        assert.equal(h.physical().allow, 0, h.diagnostic());
+        assert.equal(h.physical().batteryW, 2400, h.diagnostic());
+
+        h.setSurplus(minimumW + 1470);
+        await h.advance(35);
+        assert.equal(h.physical().allow, 0, 'the start requires the battery share, 6 A and the configured reserve');
+        assert.equal(h.physical().batteryW, 2400, h.diagnostic());
+
+        h.setSurplus(startSurplusW);
+        await h.advance(70);
+        assert.equal(h.physical().allow, 1, h.diagnostic());
+        assert.equal(h.physical().amps, 6, h.diagnostic());
+        assert.equal(h.physical().batteryW, 1620, h.diagnostic());
+
+        h.setSurplus(2400 + minimumW);
+        await h.advance(35);
+        assert.equal(h.physical().amps, 6, h.diagnostic());
+        assert.equal(h.physical().batteryW, 2400, h.diagnostic());
+
+        h.setSurplus(2400 + 7 * stepW);
+        await h.advance(40);
+        assert.equal(h.physical().amps, 7, h.diagnostic());
+        assert.equal(h.physical().batteryW, 2400, h.diagnostic());
+        assert.ok(h.trace.slice(-20).every(row => row.wbW === 7 * stepW && row.gridW === 0), h.diagnostic());
+
+        h.setSurplus(startSurplusW);
+        h.own('Plan.BatteryPower_48h_JSON', JSON.stringify([{timestamp, valueW: 2400}]));
+        await h.advance(60);
+        assert.equal(h.physical().allow, 0, 'full planned storage power keeps its priority');
+        assert.equal(h.physical().batteryW, 2400, h.diagnostic());
+
+        h.own('Plan.BatteryPower_48h_JSON', JSON.stringify([{timestamp, valueW: 0}]));
+        h.put(socId, 20);
+        await h.advance(40);
+        assert.equal(h.physical().allow, 0, 'the configured minimum SoC keeps full battery priority');
+        assert.equal(h.physical().batteryW, 2400, h.diagnostic());
+    });
+}

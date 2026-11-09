@@ -1,8 +1,36 @@
 # EMS Optimizer
 
-**Aktuelle Adapterversion: 0.17.0-alpha.207.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
+**Aktuelle Adapterversion: 0.17.0-alpha.221.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
 
 [English overview](README.md) · [Vollständige Admin-Feldreferenz](docs/admin-reference.de.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) · [Versionsänderungen](README.md#changelog)
+
+Alpha.221 merkt eine manuelle Fahrzeug-SoC-Korrektur bis zu 30 Minuten für das nächste Anstecken vor. Der Wert gilt bereits für die erste Ladeentscheidung.
+
+Alpha.220 ergänzt eine optionale Abstimmung von Speicher und Wallbox anhand des geplanten Speicher-Ziel-SoC. Bei ausreichender Speicherreserve sind bis zu 115 W einphasiger und 345 W dreiphasiger Feinausgleich möglich. Bei Speichervorrang kann die Wallbox ab ausreichendem Überschuss mit Mindeststrom starten. Danach steigt zuerst die Speicherladung bis zur verfügbaren Ladegrenze.
+
+Alpha.219 vergleicht Quelleneinstellungen direkt und verwendet die zugeordneten Datenpunkte bei der Ersatzsuche erneut. Geänderte Geräte-IDs, Zählereinheiten und Befehlsrückmeldungen werden ab der nächsten Meldung erfasst. [Recorder-Änderungen und Messwerte](docs/release-0.17.0-alpha.219.md)
+
+Alpha.218 verwendet die Datenpunktzuordnung im Recorder erneut. Geänderte Einstellungen greifen bei der nächsten Meldung.
+
+Alpha.217 verwendet die Aufzeichnungsregeln indexierter Recorder-Quellen direkt. Für Meldungen ohne Indexeintrag bleibt die bisherige Quellensuche erhalten.
+
+Alpha.216 verwendet den Recorder-Quellenindex erneut und baut ihn bei einer geänderten Quellenzuordnung sofort neu auf.
+
+Alpha.215 erzeugt vollständige Recorder-Snapshots erst, wenn ein Datensatz ansteht. Befehle, Schutzwechsel und Rohmessungen werden nach den bisherigen Regeln erfasst.
+
+Alpha.214 verwendet die bereits gemessene UTF-8-Bytezahl bei regulären Recorder-Paketen und im Ereignisvorlauf erneut.
+
+Alpha.213 verkürzt den Start mit gespeicherten SQL-Viertelstunden und spart wiederholtes Einlesen und Schreiben im Regeltakt. [Funktionsweise und Grenzen](docs/release-0.17.0-alpha.213.md)
+
+Alpha.212 ergänzt einen getrennten Notbetrieb mit Netzstrom für beide Heizstäbe. [Einstellungen und Schutzgrenzen](docs/release-0.17.0-alpha.212.md)
+
+Alpha.211 wählt bei abgestecktem Wunschfahrzeug den Ersatz nach Abstand zum Ziel-SoC. [Auswahl und Ladestopp](docs/release-0.17.0-alpha.211.md)
+
+Alpha.210 korrigiert die Zeitstempel für Live-Updates der EMS-Diagramme in eCharts. [Details](docs/release-0.17.0-alpha.210.md)
+
+Alpha.209 ergänzt einen separaten Vergleich mit einer interpolierten Lasso-Viertelstunde. [Auswertung und Grenzen](docs/release-0.17.0-alpha.209.md)
+
+Alpha.208 verwendet verfügbare Open-Meteo-Viertelstunden für Wetter und PV in den ersten vier Stunden des Fahrplans und archiviert die detaillierte Wetterreihe. [Quellen und Abdeckung](docs/release-0.17.0-alpha.208.md)
 
 Alpha.207 glättet den gemeinsamen Wärmebedarf für die PV-Brücke und den teureren Preisblock. [Planung und Nachweisgrenzen](docs/release-0.17.0-alpha.207.md)
 

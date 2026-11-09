@@ -87,6 +87,34 @@ test('quiet interval summary survives SQL codec with measured extrema and explic
     assert.match(summary.event.summary.validity, /freshness is not inferred/);
 });
 
+test('source batches and pre-event replay preserve UTF-8 byte boundaries and original samples', async t => {
+    const h = fixture(2000000); t.mock.method(Date, 'now', h.now);
+    h.shadow.productionRecord();
+    const routine = [];
+    for (const length of [12000, 5000, 5000, 5000]) {
+        const previous = h.states.get('power');
+        h.advance(10); h.put('power', 1.38, {comment: 'ä'.repeat(length)});
+        h.shadow.captureProduction('power', h.states.get('power'), previous);
+        routine.push({sampleSequence: h.shadow.diagnosticSampler.sequence, receivedAt: h.now(),
+            id: 'power', state: h.states.get('power')});
+    }
+    h.shadow.flushSourceBatch(true);
+    const pre = [12000, 5000, 5000, 5000].map(length => {
+        h.advance(10);
+        const state = {...h.states.get('power'), ts: h.now(), comment: 'ä'.repeat(length)};
+        return h.shadow.diagnosticSampler.observe('power', state, state, h.now()).sample;
+    });
+    h.shadow.recordEventWindow(pre[0].sampleSequence);
+    await h.flush();
+
+    const events = h.records().map(record => record.event).filter(Boolean);
+    const batches = events.filter(event => event.type === 'recording.sources');
+    assert.deepEqual(batches.map(event => event.samples), [routine.slice(0, 1), routine.slice(1)]);
+    const preEvents = events.filter(event => event.type === 'recording.pre_event');
+    assert.deepEqual(preEvents.map(event => event.samples), [pre.slice(1)]);
+    assert.ok([...batches, ...preEvents].every(event => !Object.hasOwn(event, 'sampleSizes')));
+});
+
 test('DHW unknown temperatures and full source diagnostics survive production delta replay', async () => {
     const h = fixture(5000000);
     const sources = [0, 1, 2, 3, 4].map(index => ({
@@ -386,6 +414,133 @@ test('snapshot clock and derived ages do not create extra subsecond frames; time
     assert.equal(h.records().at(-1).protectionFeedback.houseL1Import.valid, false);
     assert.equal(h.records().at(-1).production.measurements.haPhases[0].import.valid, false,
         'phase snapshot and operative protection reject the same stale source');
+});
+
+test('quiet ticks avoid full snapshots while runtime stop edges and explicit events retain full frames', async t => {
+    const h = fixture(2000000); t.mock.method(Date, 'now', h.now);
+    const snapshot = t.mock.method(h.adapter.debugRecorder, 'snapshot');
+    h.own('Vehicles.Wallbox0.StartDelayRemaining_s', 5);
+    h.shadow.productionRecord();
+    assert.equal(snapshot.mock.callCount(), 1);
+
+    h.advance(100);
+    h.own('Vehicles.Wallbox0.StartDelayRemaining_s', 4);
+    h.shadow.productionRecord();
+    assert.equal(snapshot.mock.callCount(), 1);
+
+    h.advance(100);
+    h.device.stopRequest = {reason: 'budget-stop'};
+    h.shadow.productionRecord();
+    assert.equal(snapshot.mock.callCount(), 2);
+
+    h.advance(100);
+    h.shadow.productionRecord({type: 'decision'});
+    assert.equal(snapshot.mock.callCount(), 3);
+    await h.flush();
+    assert.deepEqual(h.records().map(record => record.production.wallboxes[0].stopPending), [false, true, true]);
+    assert.equal(h.records().at(-1).event.type, 'decision');
+});
+
+test('the next source notification uses changed mappings, device IDs and in-place source configuration', async t => {
+    const h = fixture(2000000); t.mock.method(Date, 'now', h.now);
+    const config = h.adapter.config;
+    config.diagnosticPumpSourcesJson = ['pump.old'];
+    config.par14aAccountingMode = 'groupNet';
+    config.par14aParticipants = [{powerId: 'meter.group', powerUnit: 'W'}];
+    config.par14aStorageMeters = [{powerId: 'meter.storage', powerUnit: 'W'}];
+    const first = h.shadow.diagnosticSourceIndex();
+    assert.equal(h.shadow.diagnosticSourceIndex(), first);
+    assert.ok(first.byId.has('import') && first.byId.has('amps') && first.byId.has('pump.old'));
+
+    const receive = id => {
+        h.advance(10); h.put(id, 1);
+        h.shadow.captureProduction(id, h.states.get(id), null);
+    };
+    h.adapter.readMapping().DP_GRID_IMPORT = 'meter.new';
+    receive('meter.new');
+    h.device.ids.feedback = 'amps.new';
+    receive('amps.new');
+    config.diagnosticPumpSourcesJson[0] = 'pump.new';
+    receive('pump.new');
+
+    // Native overrides can change independently of the injected mapping.
+    config.pvPowerId = 'pv.new';
+    config.par14aParticipants[0].powerUnit = 'kW';
+    receive('pv.new');
+    config.par14aStorageMeters[0].powerId = 'meter.storage.new';
+    receive('meter.storage.new');
+    const current = h.shadow.diagnosticSourceIndex();
+    assert.equal(current.byId.get('meter.group').powerScale, 1000);
+    assert.ok(['import', 'amps', 'pump.old', 'pv', 'meter.storage'].every(id => !current.byId.has(id)));
+    assert.ok(first.byId.has('import') && first.byId.has('pump.old'));
+    await h.flush();
+
+    const records = h.records().filter(record => record.event?.type === 'source.update');
+    assert.deepEqual(records.map(record => record.event.id), ['meter.new', 'amps.new', 'pump.new', 'pv.new', 'meter.storage.new']);
+    assert.ok(records.every(record =>
+        record.production.sourceContract.sources.some(source => source.id === record.event.id)));
+});
+
+test('legacy fallback picks up remapped aliases and current device IDs with a frozen mapping', async () => {
+    const h = fixture(2000000);
+    let mapping = Object.freeze({...h.adapter.readMapping(), DP_HEATING_LEGACY: 'heat.old'});
+    h.adapter.readMapping = () => mapping;
+    const receive = id => {
+        const previous = h.states.get(id);
+        h.advance(10); h.put(id, 125);
+        h.shadow.captureProduction(id, h.states.get(id), previous);
+    };
+    receive('heat.old');
+    receive('untracked');
+    h.device.ids.legacy = 'device.new';
+    receive('device.new');
+    mapping = Object.freeze({...mapping, DP_HEATING_LEGACY: 'heat.new'});
+    receive('heat.old');
+    receive('heat.new');
+    await h.flush();
+    const samples = h.records().flatMap(record => record.event?.type === 'source.update' ? [record.event]
+        : record.event?.type === 'recording.sources' ? record.event.samples : []);
+    assert.deepEqual(samples.map(sample => sample.id), ['heat.old', 'device.new', 'heat.new']);
+});
+
+test('indexed sources bypass the fallback while dynamic ACKs and battery observations keep their record paths', async t => {
+    const h = fixture(2000000); t.mock.method(Date, 'now', h.now);
+    const fallback = t.mock.method(h.shadow, 'fallbackSourceOptions');
+    const receive = (id, value) => {
+        const previous = h.states.get(id);
+        h.advance(10); h.put(id, value);
+        h.shadow.captureProduction(id, h.states.get(id), previous);
+    };
+    receive('power', 1.38);
+    assert.equal(fallback.mock.callCount(), 0);
+
+    const commandId = 'uncatalogued.command';
+    h.put(commandId, 6);
+    h.shadow.commandEvent('attempt', commandId, 6);
+    receive(commandId, 6);
+    assert.equal(fallback.mock.callCount(), 1);
+
+    const head = 'sunenergyxt500.0.heads.1';
+    const rawId = `${head}.info.rawResponse`;
+    h.adapter.config.batteryDispatchMode = 'sunenergy-heads';
+    h.adapter.config.diagnosticPumpSourcesJson = [rawId];
+    assert.ok(h.shadow.diagnosticSourceIndex().byId.has(rawId));
+    h.put(`${head}.info.online`, true);
+    receive(rawId, JSON.stringify({SC: 60, ON: 1, GS: -100, GP: -95, MM: 0, LM: 1,
+        SI: 20, SA: 95, MG: 2400, IS: 2400, PK: 2, LP: 0, privateField: 'omit-raw'}));
+    assert.equal(fallback.mock.callCount(), 1);
+    receive(`${head}.grid.GP`, -95);
+    assert.equal(fallback.mock.callCount(), 2);
+    await h.flush();
+
+    const events = h.records().map(record => record.event).filter(Boolean);
+    assert.ok(events.some(event => event.id === commandId && event.triggerReason === 'post-command-observation'));
+    const battery = events.filter(event => event.id === rawId);
+    assert.equal(battery.length, 1);
+    assert.equal(battery[0].type, 'battery.head-observation');
+    assert.equal(battery[0].actualInternal_W, 95);
+    assert.ok(!JSON.stringify(battery[0]).includes('omit-raw'));
+    assert.ok(events.some(event => event.type === 'source.update' && event.id === `${head}.grid.GP`));
 });
 
 test('unchanged source polls retain new timestamps, real ACK/q/NULL edges and every cyclic zero command completion', async t => {

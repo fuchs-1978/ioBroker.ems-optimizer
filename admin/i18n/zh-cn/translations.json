@@ -1,4 +1,8 @@
 {
+  "Enable heater emergency mode": "启用电热棒应急模式",
+  "Use heater only in emergency mode": "仅在应急模式使用电热棒",
+  "Independent emergency temperature sensor": "独立的应急温度传感器",
+  "Emergency start temperature (0 = off)": "应急启动温度（0 = 关闭）",
   "Optional pump sources for passive recording (JSON)": "被动录音的可选泵源(JSON)",
   "Enter a JSON array of up to 32 explicit state IDs for pump request, command and independent feedback, without wildcards. These sources are read for diagnostic recording only; they do not control the pump. The default empty list adds no source mapping. Missing or invalid sources remain unknown and cannot confirm a pump response or run-on.": "输入一个JSON阵列,其中包含最多32个明确状态的ID,用于泵请求,命令和独立反馈,没有通配符. 这些来源只用于诊断记录;它们不控制泵。 默认的空列表没有添加源映射 。 无法获取或无效的来源仍然未知,无法确认泵的反应或运行中。",
   "General": "常规",
@@ -282,6 +286,8 @@
   "Discharge for self-consumption": "对自消费的放弃",
   "Battery fine control and input checks": "电池细节控制和输入检查",
   "Maximum battery setpoint step": "最大电池设置点步骤",
+  "Charge battery before PV wallboxes and buffer small EV power steps": "光伏余电优先为储能电池充电，并缓冲电动汽车充电功率的小幅波动",
+  "Coordinate wallbox current steps using the battery target state of charge": "按电池目标荷电状态协调充电桩的电流步进",
   "PV reserve for battery fine control before heater allocation": "PV 在加热器分配前储备电池细节控制",
   "Reserves up to this share of actual PV surplus for battery fine control. The effective reserve is capped by available PV, battery charge power and the shared grid-operator budget; without available PV there is no reserve. Existing planned battery charging can require a larger share. This is a power reserve in watts, not an additional SoC reserve or permission to charge from the grid.": "储备高达本份额的实际 PV 电池细节控制的余额. 实际储备上限为可用 PV电池充电能力和共享电网运营商预算; PV 没有储备. 现有计划的电池充电可能需要更大的份额. 这是一个瓦特的电力储备,而不是额外的SoC储备或允许从电网上充电.",
   "Battery grid-control deadband": "电池电力电网控制死带",
