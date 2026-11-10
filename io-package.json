@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.225",
+    "version": "0.17.0-alpha.226",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.226": {
+        "en": "Log the minimum-SoC stop as info and distinguish the stop request from its confirmation.",
+        "de": "Den Stopp am Mindest-SoC als Info protokollieren und Abschaltanforderung und Bestätigung getrennt melden.",
+        "es": "Registra como información la parada por carga mínima y distingue la solicitud de su confirmación.",
+        "fr": "Journalise l’arrêt au niveau de charge minimal comme information et distingue la demande de sa confirmation.",
+        "it": "Registra come informativo l’arresto alla carica minima e distingue la richiesta dalla conferma.",
+        "nl": "Log de stop bij het minimale laadniveau als informatie en onderscheid de aanvraag van de bevestiging.",
+        "pl": "Zapisuje zatrzymanie przy minimalnym naładowaniu jako informację i rozróżnia żądanie od potwierdzenia.",
+        "pt": "Regista como informação a paragem na carga mínima e distingue o pedido da confirmação.",
+        "ru": "Записывает остановку при минимальном заряде как информацию и различает запрос и подтверждение.",
+        "uk": "Записує зупинку при мінімальному заряді як інформацію та розрізняє запит і підтвердження.",
+        "zh-cn": "将达到最低荷电状态时的停止记录为信息，并区分停止请求和确认。"
+      },
       "0.17.0-alpha.225": {
         "en": "Keep the SQL startup cache usable when older empty intervals leave the rolling history window.",
         "de": "SQL-Startcache auch beim Wegfallen älterer Datenlücken im rollierenden Historienfenster weiterverwenden.",
@@ -81,19 +94,6 @@
         "ru": "Согласовывать шаги тока зарядной станции с целевым зарядом батареи.",
         "uk": "Узгоджувати кроки струму зарядної станції з цільовим зарядом акумулятора.",
         "zh-cn": "按电池目标荷电状态协调充电桩的电流步进."
-      },
-      "0.17.0-alpha.219": {
-        "en": "Compare recorder source settings directly and reuse the mapped IDs for fallback lookup.",
-        "de": "Der Recorder vergleicht Quelleneinstellungen direkt und verwendet die zugeordneten Datenpunkte bei der Ersatzsuche erneut.",
-        "es": "Comparar directamente la configuración de fuentes y reutilizar los identificadores asignados en la búsqueda alternativa.",
-        "fr": "Comparer directement les paramètres des sources et réutiliser les identifiants associés pour la recherche de secours.",
-        "it": "Confrontare direttamente le impostazioni delle sorgenti e riutilizzare gli identificativi associati nella ricerca alternativa.",
-        "nl": "Vergelijk broninstellingen rechtstreeks en hergebruik de gekoppelde ID’s bij de terugvalzoekactie.",
-        "pl": "Porównuj ustawienia źródeł bezpośrednio i używaj ponownie mapowanych identyfikatorów podczas wyszukiwania zastępczego.",
-        "pt": "Comparar diretamente as definições das fontes e reutilizar os identificadores mapeados na pesquisa alternativa.",
-        "ru": "Сравнивать настройки источников напрямую и повторно использовать сопоставленные идентификаторы при резервном поиске.",
-        "uk": "Порівнювати налаштування джерел безпосередньо й повторно використовувати зіставлені ідентифікатори під час резервного пошуку.",
-        "zh-cn": "直接比较记录器的数据源设置，并在备用查找时复用已映射的数据点标识。"
       }
     },
     "titleLang": {
