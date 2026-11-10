@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.219 (2026-11-08)
+
+- Compare recorder source settings directly and reuse mapped IDs for unindexed source lookup. [Verification and live measurements](docs/release-0.17.0-alpha.219.md)
+
 ## 0.17.0-alpha.218 (2026-11-08)
 
 - Reuse recorder data point mappings while their configuration is unchanged.

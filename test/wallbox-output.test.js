@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const WallboxOutput = require('../lib/wallbox-output');
 
 function setup({now: readNow = () => Date.now(), responseCurrentA = null, responseEvidence = null, sourceQuality, publicationOffsetMs = 1} = {}) {
-    const states = new Map(), writes = [];
+    const states = new Map(), writes = [], logs = [];
     let now = readNow();
     // A test publication follows the previous command within the logical
     // millisecond. Explicit old timestamps remain available for stale-input
@@ -30,7 +30,8 @@ function setup({now: readNow = () => Date.now(), responseCurrentA = null, respon
         getForeignStateAsync: async id => states.get(id), subscribeForeignStatesAsync: async () => {},
         getForeignObjectAsync: async () => ({type: 'state', common: {write: true, type: 'number'}}),
         queueCompatState: async (id, val) => { if (!states.has(id)) put(id, val); },
-        log: {error: () => {}}};
+        log: {info: message => logs.push({level: 'info', message}),
+            warn: message => logs.push({level: 'warn', message}), error: () => {}}};
     for (const key of ['System.RealOutputsEnabled', 'System.DataValid', 'Control.Valid', 'Control.Enabled',
         'Devices.Wallbox0.Present', 'Devices.Wallbox0.ControlEnabled', 'Vehicles.Wallbox0.SoCValid',
         'Vehicles.Wallbox0.Release']) put(`ems.0.${key}`, true);
@@ -93,7 +94,7 @@ function setup({now: readNow = () => Date.now(), responseCurrentA = null, respon
             [`power${wb}`]:0,[`i${wb}1`]:0,[`i${wb}2`]:0,[`i${wb}3`]:0,
             [`connection${wb}`]:true,[`error${wb}`]:0,[`allow${wb}`]:0,[`feedback${wb}`]:6})) put(id,val);
     };
-    return {adapter, config, mapping, states, writes, put, ack, electricalOff, refresh, start, output, enableWallbox};
+    return {adapter, config, mapping, states, writes, logs, put, ack, electricalOff, refresh, start, output, enableWallbox};
 }
 
 test('default/unarmed wallbox never writes, even with global release', async () => {
@@ -688,7 +689,10 @@ test('completed grid-backed minimum charge sends OFF immediately and still await
         await h.output.tick();
         assert.deepEqual(h.writes, [{id: 'allow', val: 0}],
             'completion must not wait for either the 600 s minimum runtime or the stop delay');
-        assert.match(h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val, /Mindest-SoC/);
+        const reason = h.states.get('ems.0.Devices.Wallbox0.LastStopReason').val;
+        assert.match(reason, /Mindest-SoC/);
+        const requested = {level: 'info', message: `Wallbox 0: Abschaltung angefordert – ${reason}`};
+        assert.deepEqual(h.logs, [requested]);
         assert.equal(h.states.get('ems.0.Devices.Wallbox0.StopDelayActive').val, false);
         assert.equal(h.states.get('ems.0.Devices.Wallbox0.StopDelayRemaining_s').val, 0);
         assert.equal(h.states.get('ems.0.Devices.Wallbox0.StopConfirmedAt').val, 0);
@@ -699,10 +703,14 @@ test('completed grid-backed minimum charge sends OFF immediately and still await
         assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputOwned').val, true,
             'the OFF transport ACK is not proof of electrical quiet');
         assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val, 1380);
+        assert.deepEqual(h.logs, [requested]);
         h.advance(1000); h.electricalOff(); h.put('import', 0); await h.output.tick();
         assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputOwned').val, false);
         assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputReservedPower_W').val, 0);
         assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+        await h.output.tick();
+        assert.deepEqual(h.logs, [requested,
+            {level: 'info', message: `Wallbox 0: Abschaltung bestätigt – ${reason}`}]);
     });
 });
 
@@ -3405,12 +3413,24 @@ for (const [name, change] of [
     let now = 1000000;
     const h = setup({now: () => now}); await h.start(); h.writes.length = 0;
     h.put('ems.0.System.RealOutputsEnabled', false); await h.output.tick();
+    assert.equal(h.logs[0]?.level, 'warn');
+    assert.match(h.logs[0].message, /Abschaltung angefordert/);
     now += 21000; h.refresh(); await h.output.tick();
     assert.match(h.output.devices[0].fault, /AUS-Rueckmeldung/);
+    const offWarnings = () => h.logs.filter(log => log.level === 'warn' && log.message.includes('AUS-Rückmeldung fehlt'));
+    assert.equal(offWarnings().length, 1);
+    if (name === 'normal late OFF') {
+        now += 21000; h.refresh(); await h.output.tick();
+        assert.equal(offWarnings().length, 1, 'OFF retries must not repeat the warning');
+    }
     if (name === 'electrical stop timeout') {
         change(h); await h.output.tick();
         now += 46000; h.refresh(); await h.output.tick();
         assert.match(h.output.devices[0].fault, /elektrische Abschaltung fehlt/);
+        await h.output.tick();
+        const electricalWarnings = h.logs.filter(log => log.level === 'warn'
+            && log.message.includes('elektrische Abschaltung bleibt unbestätigt'));
+        assert.equal(electricalWarnings.length, 1);
     }
     h.refresh(); h.ack('allow', 0); h.electricalOff();
     if (name !== 'electrical stop timeout') change(h);
