@@ -261,13 +261,22 @@ test('an external total group budget is reused without a second GZF uplift', asy
 });
 
 test('a larger group ceiling does not authorize discretionary grid uptake beyond mandatory low-PV floors', async () => {
-    const h = await groupedPlant({members: [0, 2], surplusW: 1000});
+    const h = await groupedPlant({members: [0, 2], surplusW: 1000, config: {wb0LowSocStepsEnabled: false}});
     await h.advance(100);
     assert.equal(snapshot(h).grossBudgetW, 5200);
     assert.equal(h.physical().miiPowerW, 1380, h.diagnostic());
     assert.equal(h.physical().wbPowerW, 1380, h.diagnostic());
     assert.ok(h.writes.filter(row => row.id === 'goe.cmd' || row.id === 'goe0.cmd')
         .every(row => row.val <= 6), 'a network ceiling is not a new price/import permission');
+});
+
+test('the Mii reaches its 10 A SoC step from the grid while EQE retains 6 A', async () => {
+    const h = await groupedPlant({members: [0, 2], surplusW: 0});
+    h.put('DP_WB0_SOC', 16);
+    await h.advance(100);
+    assert.equal(h.physical().miiPowerW, 2300, h.diagnostic());
+    assert.equal(h.physical().wbPowerW, 1380, h.diagnostic());
+    assert.ok(h.trace.every(row => row.miiW + row.wbW <= 4200), h.diagnostic());
 });
 
 const invalidSources = [

@@ -74,14 +74,19 @@ function balance(result, pvW, houseW = 0) {
     }
 }
 
-test('parallel forecast reserves three 6 A one-phase minimums even without PV; automatic low-SoC boosts do not multiply', () => {
+test('parallel forecast plans the Mii SoC step alongside both peer minimums without PV', () => {
     const h = fixture();
     for (const wb of [0, 1, 2]) car(h, wb, {soc: 5, priority: wb === 0});
     const r = h.plan();
-    assert.deepEqual(r.cars.map(points => points[0].valueW), [1380, 1380, 1380]);
-    assert.ok(r.cars.every(points => points[0].phases === 1 && points[0].currentA === 6));
-    assert.equal(r.grid[0].valueW, 4140);
+    assert.deepEqual(r.cars.map(points => points[0].valueW), [3680, 1380, 1380]);
+    assert.ok(r.cars.every(points => points[0].phases === 1));
+    assert.deepEqual(r.cars.map(points => points[0].currentA), [16, 6, 6]);
+    assert.equal(r.grid[0].valueW, 6440);
     balance(r, 0);
+    h.put(h.run('CFG.dp.lpcState'), 'limited');
+    const constrained = h.plan();
+    assert.deepEqual(constrained.cars.map(points => points[0].currentA), [6, 6, 6]);
+    balance(constrained, 0);
 });
 
 test('preferred Mii gets 32 A and remaining PV starts another vehicle above minimum with no heater need', () => {

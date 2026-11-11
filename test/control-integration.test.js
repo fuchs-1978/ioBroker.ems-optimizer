@@ -2334,7 +2334,7 @@ test('Mii readiness waits for price permission, stops at minimum, and falls back
     h.put('DP_WB0_SOC', 25);
     await h.advance(25);
     assert.equal(h.value('Vehicles.Wallbox0.MustCharge'), true, h.diagnostic());
-    assert.equal(h.trace.at(-1).miiW, 1380, h.diagnostic());
+    assert.equal(h.trace.at(-1).miiW, 2300, 'the Mii uses its 10 A step below the mobility reserve');
     h.put('DP_WB0_SOC', 49);
     await h.advance(20);
     assert.equal(h.value('Vehicles.Wallbox0.MustCharge'), false, h.diagnostic());

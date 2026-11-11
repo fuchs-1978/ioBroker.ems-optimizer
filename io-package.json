@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.226",
+    "version": "0.17.0-alpha.227",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.227": {
+        "en": "Use the single-phase Mii/e-Up SoC current steps during parallel charging after other minimum currents are secured.",
+        "de": "Die SoC-Stromstufen des einphasigen Mii/e-Up bei Parallelbetrieb nach den Mindestströmen der anderen Fahrzeuge zuteilen.",
+        "es": "Aplica los escalones de corriente del Mii/e-Up monofásico en carga paralela tras asegurar las corrientes mínimas de los demás vehículos.",
+        "fr": "Applique les paliers de courant du Mii/e-Up monophasé en charge parallèle après avoir assuré les courants minimaux des autres véhicules.",
+        "it": "Applica gli scaglioni di corrente della Mii/e-Up monofase in carica parallela dopo aver garantito la corrente minima agli altri veicoli.",
+        "nl": "Pas de laadstroomstappen voor de eenfasige Mii/e-Up bij parallel laden toe zodra de minimumstromen van de andere voertuigen zijn verzekerd.",
+        "pl": "Stosuje stopnie prądu jednofazowego Mii/e-Up przy ładowaniu równoległym po zapewnieniu minimalnych prądów pozostałych pojazdów.",
+        "pt": "Aplica os escalões de corrente do Mii/e-Up monofásico no carregamento paralelo após assegurar as correntes mínimas dos outros veículos.",
+        "ru": "Применяет ступени тока однофазного Mii/e-Up при параллельной зарядке после обеспечения минимального тока остальных автомобилей.",
+        "uk": "Застосовує ступені струму однофазного Mii/e-Up під час паралельного заряджання після забезпечення мінімального струму інших автомобілів.",
+        "zh-cn": "并行充电时，在保障其他车辆的最低电流后，按单相 Mii/e-Up 的荷电状态分配分档电流。"
+      },
       "0.17.0-alpha.226": {
         "en": "Log the minimum-SoC stop as info and distinguish the stop request from its confirmation.",
         "de": "Den Stopp am Mindest-SoC als Info protokollieren und Abschaltanforderung und Bestätigung getrennt melden.",
@@ -81,19 +94,6 @@
         "ru": "Сохранять ручную корректировку заряда автомобиля до следующего подключения в течение 30 минут.",
         "uk": "Зберігати ручне коригування заряду автомобіля до наступного підключення протягом 30 хвилин.",
         "zh-cn": "将手动修正的车辆荷电状态保留至 30 分钟内的下一次插枪。"
-      },
-      "0.17.0-alpha.220": {
-        "en": "Coordinate wallbox current steps using the battery target state of charge.",
-        "de": "Wallbox-Stromschritte nach dem Ziel-SoC des Speichers abstimmen.",
-        "es": "Coordinar los pasos de corriente del cargador según la carga objetivo de la batería.",
-        "fr": "Coordonner les paliers de courant de la borne selon l’état de charge cible de la batterie.",
-        "it": "Coordinare gli incrementi di corrente della wallbox in base alla carica obiettivo della batteria.",
-        "nl": "Stem stroomstappen van de laadpaal af op het gewenste laadniveau van de batterij.",
-        "pl": "Koordynuj kroki prądu wallboxa według docelowego naładowania akumulatora.",
-        "pt": "Coordenar os passos de corrente da wallbox segundo a carga alvo da bateria.",
-        "ru": "Согласовывать шаги тока зарядной станции с целевым зарядом батареи.",
-        "uk": "Узгоджувати кроки струму зарядної станції з цільовим зарядом акумулятора.",
-        "zh-cn": "按电池目标荷电状态协调充电桩的电流步进."
       }
     },
     "titleLang": {
