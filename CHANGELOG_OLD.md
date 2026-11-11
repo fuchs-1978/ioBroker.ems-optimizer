@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.220 (2026-11-09)
+
+- Coordinate wallbox current steps with the battery target SoC. Above target, the battery can support half a current step. In the battery-first band, surplus can start the preferred wallbox while reserving at least half the battery charge ceiling for storage.
+
 ## 0.17.0-alpha.219 (2026-11-08)
 
 - Compare recorder source settings directly and reuse mapped IDs for unindexed source lookup. [Verification and live measurements](docs/release-0.17.0-alpha.219.md)

@@ -104,11 +104,14 @@ function parallelSetup(count = 2) {
     h.config.wallboxParallelChargingEnabled = true;
     h.config.wb0PhaseControlMode = 'fixed';
     for (let wb = 1; wb < count; wb++) h.enableWallbox(wb);
-    h.grant = (amps = Array(count).fill(6), {hardBudgetW = null, budgetW = null, phases = Array(count).fill(1)} = {}) => {
+    h.grant = (amps = Array(count).fill(6), {
+        hardBudgetW = null, budgetW = null, phases = Array(count).fill(1), lowSocGridTargetA
+    } = {}) => {
         const voltage = h.output.parallelNominalVoltage();
         const allocations = amps.map((a, wb) => ({wb, authorized: a > 0, targetA: a,
             phases: phases[wb], reservedW: Math.round(a * phases[wb] * voltage),
-            minimumW: a > 0 ? Math.round(6 * voltage) : 0}));
+            minimumW: a > 0 ? Math.round(6 * voltage) : 0,
+            ...(wb === 0 && lowSocGridTargetA !== undefined ? {lowSocGridTargetA} : {})}));
         for (const entry of allocations) {
             h.put(`ems.0.Control.Targets.Wallbox${entry.wb}_W`, Math.round(entry.targetA * entry.phases * voltage));
             h.put(`ems.0.Control.Targets.Wallbox${entry.wb}_Phases`, entry.phases);
@@ -521,6 +524,22 @@ test('joint allocation reserves both car floors before allowing the first car to
     h.writes.length = 0; await h.output.tick();
     assert.deepEqual(h.writes, [{id: 'cmd', val: 10}]);
     assert.equal(h.states.get('ems.0.Devices.Wallbox1.OutputActive').val, true);
+});
+
+test('a parallel Mii grant uses grid power only up to the current SoC step', async () => {
+    for (const [soc, houseCurrent, expected] of [[16, 10, [{id: 'cmd', val: 10}]], [30.1, 10, []], [16, 49, []]]) {
+        const h = parallelSetup();
+        h.adapter.engineContext = {lowSocMinimumCurrent: (wb, currentSoc) => wb === 0 && currentSoc <= 30 ? 10 : 0};
+        h.put('ems.0.Vehicles.Wallbox0.MinimumSoC_pct', 75);
+        h.put('soc', 16); h.put('soc1', 10);
+        h.put('import', 2760); h.put('export', 0);
+        await h.startParallel();
+        h.advance(6000);
+        h.grant([12, 6], {hardBudgetW: 4200, lowSocGridTargetA: 10});
+        h.put('soc', soc); h.put('h1', houseCurrent); h.measure(0, 6); h.measure(1, 6);
+        h.writes.length = 0; await h.output.tick();
+        assert.deepEqual(h.writes, expected, h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val);
+    }
 });
 
 test('a peer reduction ACK does not free its previous power before new electrical feedback', async () => {

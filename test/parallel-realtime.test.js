@@ -182,7 +182,7 @@ test('manual Mii priority cannot starve EQV below its minimum SoC', () => {
 });
 
 test('issue123 mandatory running allocation uses measured response and preserves its mandatory floor', () => {
-    const h = engine({production: true}); h.exclude(1); h.exclude(2);
+    const h = engine({production: true, wb0LowSocStepsEnabled: false}); h.exclude(1); h.exclude(2);
     h.put('DP_WB0_SOC', 10); h.owned(0, 9, 1290);
     h.update(1657);
     let diagnostic = JSON.parse(h.states.get('ems.0.Control.Wallbox0.AllocationDiagnostics_JSON').val);
@@ -206,6 +206,20 @@ test('three below-minimum vehicles can import their 6 A floor without PV within 
         assert.deepEqual(targets.watts, [1380, 1380, 1380]);
         assert.equal(targets.dhw, 0, 'minimum-SoC grid import is not heater energy');
     }
+});
+
+test('Mii SoC step uses spare grid budget after the parallel minimums are running', () => {
+    const h = engine({production: true, wallboxPriority: 1}); h.exclude(2);
+    h.put('DP_WB0_SOC', 16); h.put('DP_WB0_MIN_SOC', 75);
+    h.put('DP_WB1_SOC', 40); h.put('DP_WB1_MIN_SOC', 75);
+    assert.deepEqual(h.update(0, 4200).amps, [6, 6, 0], 'both starts get their hardware minimum');
+    h.owned(0, 6); h.owned(1, 6);
+    assert.deepEqual(h.update(0, 3679).amps, [9, 6, 0], 'only whole amps fit the remaining cap');
+    assert.deepEqual(h.update(0, 4200).amps, [10, 6, 0]);
+    h.put('DP_WB0_SOC', 10);
+    assert.deepEqual(h.update(0, 6000).amps, [16, 6, 0]);
+    h.put('DP_WB0_SOC', 30.1);
+    assert.deepEqual(h.update(0, 6000).amps, [6, 6, 0], 'ordinary minimum charging continues above the step');
 });
 
 test('insufficient shared capacity admits an entire minimum, never a sub-six amp charger', () => {
@@ -617,13 +631,14 @@ test('coordinated battery keeps the 4.2 kW global cap separate from the 3.2 kW s
     assert.ok(targets.watts.reduce((sum, watts) => sum + watts, 0) + 1000 <= allocation.hardBudgetW);
 });
 
-test('parallel provenance never labels mandatory grid floors as available PV', () => {
+test('parallel provenance never labels mandatory grid floors or the Mii grid boost as available PV', () => {
     const h = engine({production: true}); h.exclude(2);
     h.put('DP_WB0_SOC', 10); h.put('DP_WB1_SOC', 10);
     h.owned(0, 6); h.owned(1, 6);
     let targets = h.update(0, 6000);
     let grant = JSON.parse(h.states.get('ems.0.Control.ParallelWallboxAllocation_JSON').val);
-    assert.deepEqual(targets.amps, [6, 6, 0]);
+    assert.deepEqual(targets.amps, [16, 6, 0]);
+    assert.equal(grant.allocations.find(entry => entry.wb === 0).lowSocGridTargetA, 16);
     assert.deepEqual(grant.allocations.map(entry => entry.pvBudgetW), [0, 0, 0],
         'the forced grid floors authorize charging, but are not PV continuation proof');
     targets = h.update(4140, 6000);
@@ -1295,6 +1310,7 @@ test('planner external binary budget uses the same 15-second quality gate as the
 test('mandatory charging holds a confirmed PV-funded current across the nominal ceiling', () => {
     for (const wb of [0, 1, 2]) {
         const h = measuredHoldEngine(wb);
+        h.nativeConfig.wb0LowSocStepsEnabled = false;
         h.nativeConfig.wallboxPVImportToleranceW = 0;
         h.put(`DP_WB${wb}_SOC`, 10);
         for (const budget of [1800, 1750, 1810, 1740]) {
@@ -1361,21 +1377,25 @@ test('active heater sharing also releases an unusable sub-900 W share to wallbox
 
 test('configured 100 W admits the 160 W export step during minimum-SoC charging and holds only to 100 W', () => {
     const h=measuredHoldEngine();h.nativeConfig.wallboxPVImportToleranceW=100;
+    h.nativeConfig.wb0LowSocStepsEnabled=false;
     h.put('DP_WB0_SOC',10);
     assert.equal(h.update(1890).amps[0],9, '1730 W uptake plus 160 W export can fund the next 230 W step with 70 W import');
     h.owned(0,9,1960);
     assert.equal(h.update(1870).amps[0],9, '90 W import retains the confirmed current');
     assert.ok(h.update(1850).amps[0]<=8, '110 W import cannot retain the discretionary step');
     const edge=measuredHoldEngine();edge.nativeConfig.wallboxPVImportToleranceW=100;edge.put('DP_WB0_SOC',10);
+    edge.nativeConfig.wb0LowSocStepsEnabled=false;
     assert.equal(edge.update(1880).amps[0],9, '80 W predicted import is the admission boundary');
     assert.equal(edge.update(1879).amps[0],8, '81 W may not arm the step');
 });
 
 test('mandatory grid floors cannot manufacture another PV import step and tolerance has one owner', () => {
     const scarce=measuredHoldEngine();scarce.nativeConfig.wallboxPVImportToleranceW=100;
+    scarce.nativeConfig.wb0LowSocStepsEnabled=false;
     scarce.put('DP_WB0_SOC',10);scarce.owned(0,6,1200);
     assert.equal(scarce.update(900).amps[0],6, 'authorized 1380 W floor is not real 1430 W next-step funding');
     const h=measuredHoldEngine();h.nativeConfig.wallboxPVImportToleranceW=100;
+    h.nativeConfig.wb0LowSocStepsEnabled=false;
     h.put('DP_WB0_SOC',10);h.put('ems.0.Devices.Wallbox1.Present',true);h.put('DP_WB1_SOC',10);
     h.owned(1,8,1730);h.put('ems.0.Devices.Wallbox1.ResponsePending',false);
     h.put('ems.0.Devices.Wallbox1.ResponseState','confirmed');
