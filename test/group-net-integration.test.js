@@ -63,6 +63,39 @@ const grossPhysical = h => {
 const increases = (writes, previousA) => writes.filter(row =>
     row.id === 'goe.cmd' && row.val > previousA || row.id === 'goe.allow' && row.val === 1);
 
+for (const mode of ['legacyGross', 'groupNet']) {
+    test(`Mii can use fresh surplus while an optional peer waits to stop, ${mode}`, async () => {
+        const h = await groupedPlant({mode, members: [0, 2], surplusW: 5200,
+            config: {wallboxPrioritySource: 'internal', wallboxStopDelayS: 600}});
+        h.put('network.contact', false);
+        h.put('DP_WB0_SOC', 34); h.put('DP_WB0_MIN_SOC', 60);
+        h.put('DP_WB2_SOC', 65);
+        h.own('Control.TargetGridPower_W', 0);
+        await h.advance(90);
+        assert.equal(h.physical().wbPowerW, 1380, h.diagnostic());
+        assert.ok(h.physical().miiAmps > 6, h.diagnostic());
+
+        h.setSurplus(2760);
+        await h.advance(35);
+        assert.equal(h.physical().miiAmps, 6, h.diagnostic());
+        assert.equal(h.value('Devices.Wallbox2.StopDelayActive'), true, h.diagnostic());
+        assert.equal(h.value('Control.Targets.Wallbox2_A'), 0);
+
+        const recoveryAt = h.now();
+        h.setSurplus(4060);
+        await h.advance(40);
+        const allocation = JSON.parse(h.value('Control.ParallelWallboxAllocation_JSON'));
+        if (mode === 'groupNet') assert.equal(allocation.accounting, 'explicit-group-net');
+        assert.equal(h.value('Devices.Wallbox2.StopDelayActive'), true);
+        assert.equal(h.physical().wbPowerW, 1380);
+        assert.equal(allocation.allocations.find(entry => entry.wb === 2).reservedW, 1380);
+        assert.equal(h.value('Control.Targets.Wallbox0_A'), 11);
+        assert.equal(h.physical().miiAmps, 11, h.diagnostic());
+        assert.equal(allocation.budgetW, 3910);
+        assert.ok(h.trace.filter(row => row.at > recoveryAt).every(row => row.gridW <= 0));
+    });
+}
+
 test('real allocator and output withdraw uplift on asynchronous 5-second wallbox readings', async () => {
     const h = await groupedPlant();
     await h.advance(100);

@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.227",
+    "version": "0.17.0-alpha.228",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.228": {
+        "en": "Use available PV surplus for parallel charging while accounting for a wallbox that is still running during its stop delay.",
+        "de": "PV-Überschuss im Parallelbetrieb nutzen und eine während der Abschaltverzögerung weiterladende Wallbox einrechnen.",
+        "es": "Usa el excedente fotovoltaico para la carga en paralelo teniendo en cuenta la estación que sigue cargando durante el retardo de parada.",
+        "fr": "Utilise le surplus photovoltaïque pour la charge en parallèle en tenant compte de la borne encore active pendant le délai d’arrêt.",
+        "it": "Usa il surplus fotovoltaico per la ricarica in parallelo tenendo conto della stazione ancora attiva durante il ritardo di arresto.",
+        "nl": "Gebruik PV-overschot voor parallel laden en houd rekening met een laadpunt dat tijdens de stopvertraging actief blijft.",
+        "pl": "Wykorzystuje nadwyżkę PV do równoległego ładowania, uwzględniając stację nadal pracującą podczas opóźnienia wyłączenia.",
+        "pt": "Utiliza o excedente fotovoltaico para o carregamento em paralelo, tendo em conta a estação que continua ativa durante o atraso de paragem.",
+        "ru": "Использует избыток солнечной энергии для параллельной зарядки с учётом станции, продолжающей работу во время задержки отключения.",
+        "uk": "Використовує надлишок сонячної енергії для паралельного заряджання з урахуванням станції, яка працює під час затримки вимкнення.",
+        "zh-cn": "并行充电时，将停机延时期间仍在充电的充电桩计入功率预算，以利用光伏余电。"
+      },
       "0.17.0-alpha.227": {
         "en": "Use the single-phase Mii/e-Up SoC current steps during parallel charging after other minimum currents are secured.",
         "de": "Die SoC-Stromstufen des einphasigen Mii/e-Up bei Parallelbetrieb nach den Mindestströmen der anderen Fahrzeuge zuteilen.",
@@ -81,19 +94,6 @@
         "ru": "Дополнительное планирование минимального заряда к отправлению с немедленной зарядкой резерва.",
         "uk": "Опційне планування мінімального заряду до від’їзду з негайним заряджанням резерву.",
         "zh-cn": "可选择规划出发前的最低荷电状态，并立即补足出行储备。"
-      },
-      "0.17.0-alpha.221": {
-        "en": "Remember manual vehicle SoC corrections for the next connection within 30 minutes.",
-        "de": "Manuelle Fahrzeug-SoC-Korrekturen für das nächste Anstecken innerhalb von 30 Minuten vormerken.",
-        "es": "Guardar la corrección manual de carga del vehículo para la próxima conexión en un plazo de 30 minutos.",
-        "fr": "Mémoriser la correction manuelle de charge du véhicule pour la prochaine connexion dans les 30 minutes.",
-        "it": "Memorizzare la correzione manuale della carica del veicolo per il prossimo collegamento entro 30 minuti.",
-        "nl": "Onthoud de handmatige laadniveaucorrectie voor de volgende aansluiting binnen 30 minuten.",
-        "pl": "Zapamiętuj ręczną korektę poziomu naładowania pojazdu do następnego podłączenia w ciągu 30 minut.",
-        "pt": "Guardar a correção manual da carga do veículo para a próxima ligação no prazo de 30 minutos.",
-        "ru": "Сохранять ручную корректировку заряда автомобиля до следующего подключения в течение 30 минут.",
-        "uk": "Зберігати ручне коригування заряду автомобіля до наступного підключення протягом 30 хвилин.",
-        "zh-cn": "将手动修正的车辆荷电状态保留至 30 分钟内的下一次插枪。"
       }
     },
     "titleLang": {
