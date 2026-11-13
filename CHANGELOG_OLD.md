@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.238 (2026-11-13)
+
+- Hold pending SunEnergy charge through short grid import in observation mode. [Release notes](docs/release-0.17.0-alpha.238.md)
+
 ## 0.17.0-alpha.237 (2026-11-13)
 
 - Add an optional SunEnergy feedback observation mode. [Release notes](docs/release-0.17.0-alpha.237.md)

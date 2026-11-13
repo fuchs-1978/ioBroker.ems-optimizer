@@ -625,6 +625,37 @@ test('a late charge echo still requires fresh zero after the stop before releasi
     assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 0);
 });
 
+test('a brief discharge target drop waits for GS and then returns the output without intervention', () => {
+    const h = harness(1);
+    h.grid.gridW = 0;
+    h.own('Config.BatteryFineStep_W', 600);
+    h.own('Control.Targets.Battery_W', -514);
+    h.tick(); h.complete();
+    h.advance(1000); h.fresh();
+    h.own('Control.Targets.Battery_W', 0); h.tick();
+    assert.deepEqual(h.commands(), [514]);
+    assert.equal(h.run('batteryHasUnconfirmedWriteOnRestart()'), true);
+    h.advance(1000); h.snapshot(1, {GS: 514, GP: 60}); h.fresh(); h.tick();
+    assert.deepEqual(h.commands(), [514, 0]); h.complete();
+    h.advance(1000); h.snapshot(1, {GS: 0, GP: 0}); h.fresh();
+    h.own('Control.Targets.Battery_W', 650); h.tick();
+    assert.deepEqual(h.commands(), [514, 0, -600]);
+});
+
+test('discharge echo waiting stops at export, a changed limit, or the deadline', () => {
+    for (const expire of [h => { h.grid.gridW = -300; }, h => h.own('Config.BatteryMaxDischarge_W', 300),
+        h => { h.advance(6000); h.fresh(); }]) {
+        const h = harness(1);
+        h.grid.gridW = 0;
+        h.own('Config.BatteryFineStep_W', 600);
+        h.own('Control.Targets.Battery_W', -514);
+        h.tick(); h.complete();
+        h.own('Control.Targets.Battery_W', 0);
+        expire(h); h.tick();
+        assert.deepEqual(h.commands(), [514, 0]);
+    }
+});
+
 test('late discharge echo permits automatic return after a fresh zero and then PV charging', () => {
     const h = harness(1);
     h.own('Config.BatteryFineStep_W', 600);

@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.244",
+    "version": "0.17.0-alpha.245",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.245": {
+        "en": "Wait briefly for SunEnergy discharge confirmation when the target drops or the adapter restarts.",
+        "de": "Bei fallendem Entladeziel und beim Neustart kurz auf die SunEnergy-Bestätigung warten.",
+        "es": "Espera brevemente la confirmación SunEnergy al reducir la descarga o reiniciar.",
+        "fr": "Attend brièvement la confirmation SunEnergy à la baisse de décharge ou au redémarrage.",
+        "it": "Attende brevemente la conferma SunEnergy al calo di scarica o al riavvio.",
+        "nl": "Wacht kort op SunEnergy-bevestiging bij dalende ontlading of herstart.",
+        "pl": "Krótko czeka na potwierdzenie SunEnergy przy spadku rozładowania lub restarcie.",
+        "pt": "Aguarda brevemente a confirmação SunEnergy ao reduzir a descarga ou reiniciar.",
+        "ru": "Кратко ожидает подтверждения SunEnergy при снижении разряда или перезапуске.",
+        "uk": "Коротко чекає на підтвердження SunEnergy при зниженні розряду або перезапуску.",
+        "zh-cn": "放电目标降低或适配器重启时短暂等待 SunEnergy 确认。"
+      },
       "0.17.0-alpha.244": {
         "en": "Automatically return a confirmed SunEnergy discharge command after fresh zero feedback.",
         "de": "Bestätigten SunEnergy-Entladeauftrag nach frischer Nullrückmeldung automatisch freigeben.",
@@ -81,19 +94,6 @@
         "ru": "Использует настроенный шаг зарядки SunEnergy после подтверждения и свежего замера экспорта.",
         "uk": "Використовує налаштований крок заряджання SunEnergy після підтвердження та свіжого вимірювання експорту.",
         "zh-cn": "观察模式下，在充电反馈得到确认且有新鲜并网输出测量时，按配置步长增加 SunEnergy 充电功率。"
-      },
-      "0.17.0-alpha.238": {
-        "en": "Keep the pending SunEnergy PV charge in observation mode when export falls, and log the grid reading.",
-        "de": "Offenen SunEnergy-PV-Ladeauftrag im Beobachtungsmodus bei sinkender Einspeisung halten und Netzleistung protokollieren.",
-        "es": "Mantiene la carga SunEnergy pendiente si cae la exportación y registra la potencia de red.",
-        "fr": "Maintient la charge SunEnergy en attente si l’injection baisse et journalise la puissance réseau.",
-        "it": "Mantiene la carica SunEnergy in attesa se cala l’immissione e registra la potenza di rete.",
-        "nl": "Behoudt de openstaande SunEnergy-laadopdracht bij dalende teruglevering en logt het netvermogen.",
-        "pl": "Utrzymuje oczekujące ładowanie SunEnergy przy spadku eksportu i zapisuje moc sieci.",
-        "pt": "Mantém o carregamento SunEnergy pendente quando a exportação cai e regista a potência da rede.",
-        "ru": "Сохраняет ожидающую зарядку SunEnergy при падении экспорта и записывает мощность сети.",
-        "uk": "Утримує незавершену команду заряджання SunEnergy при падінні експорту та записує потужність мережі.",
-        "zh-cn": "观察模式下，光伏余量下降时保留待确认的 SunEnergy 充电指令并记录电网功率。"
       }
     },
     "titleLang": {
