@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.248",
+    "version": "0.17.0-alpha.249",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.249": {
+        "en": "Reduce acknowledged SunEnergy discharge directly while buffering a wallbox.",
+        "de": "Bestätigten SunEnergy-Entladeauftrag beim Wallbox-Puffern direkt reduzieren.",
+        "es": "Reduce directamente la descarga confirmada de SunEnergy durante el apoyo a la estación de carga.",
+        "fr": "Réduit directement la décharge SunEnergy confirmée pendant le soutien à la borne.",
+        "it": "Riduce direttamente la scarica SunEnergy confermata durante il supporto alla wallbox.",
+        "nl": "Verlaagt een bevestigde SunEnergy-ontlading direct bij ondersteuning van de laadpaal.",
+        "pl": "Zmniejsza potwierdzone rozładowanie SunEnergy bezpośrednio podczas wspomagania ładowarki.",
+        "pt": "Reduz diretamente a descarga confirmada da SunEnergy durante o apoio ao carregador.",
+        "ru": "Снижает подтверждённую мощность разряда SunEnergy при поддержке зарядной станции.",
+        "uk": "Зменшує підтверджену потужність розряду SunEnergy під час підтримки зарядної станції.",
+        "zh-cn": "在为充电桩提供缓冲时直接降低已确认的 SunEnergy 放电功率。"
+      },
       "0.17.0-alpha.248": {
         "en": "Automatically release an old SunEnergy command after repeated fresh zero feedback.",
         "de": "SunEnergy-Altauftrag nach wiederholter frischer Nullrückmeldung automatisch freigeben.",
@@ -81,19 +94,6 @@
         "ru": "Корректирует мощность сети с точностью до ватта после подтверждения зарядки SunEnergy.",
         "uk": "Коригує мережеву потужність до вата після підтвердження заряджання SunEnergy.",
         "zh-cn": "确认 SunEnergy 充电反馈后，按瓦修正并网功率。"
-      },
-      "0.17.0-alpha.242": {
-        "en": "Allow brief SunEnergy feedback before a normal restart stops an in-flight charge.",
-        "de": "Bei regulärem Neustart vor dem Nullbefehl kurz auf die laufende SunEnergy-Rückmeldung warten.",
-        "es": "Espera brevemente la confirmación de SunEnergy antes de parar la carga al reiniciar.",
-        "fr": "Attend brièvement le retour SunEnergy avant l’arrêt de charge au redémarrage.",
-        "it": "Attende brevemente la conferma SunEnergy prima di arrestare la carica al riavvio.",
-        "nl": "Wacht kort op SunEnergy-terugmelding voor de laadstop bij herstart.",
-        "pl": "Krótko czeka na potwierdzenie SunEnergy przed zatrzymaniem ładowania przy restarcie.",
-        "pt": "Aguarda brevemente a confirmação SunEnergy antes de parar o carregamento ao reiniciar.",
-        "ru": "При перезапуске кратко ожидает отклика SunEnergy перед остановкой зарядки.",
-        "uk": "Перед зупинкою заряджання під час перезапуску коротко чекає відповіді SunEnergy.",
-        "zh-cn": "正常重启时在停止充电前短暂等待 SunEnergy 反馈。"
       }
     },
     "titleLang": {
