@@ -197,6 +197,8 @@ test('explicit manual return with both global releases off and fresh per-head ze
 test('SunEnergy recovery can return an unseen command with only the battery disabled', () => {
     for (const missing of [null, 'native disable', 'state disable', 'transport', 'fresh snapshot', 'zero GS', 'zero GP', 'valid ledger']) {
         const h = harness(1); h.own('Config.BatteryFineStep_W', 800); h.tick(); h.complete();
+        h.nativeConfig.batteryControlEnabled = false;
+        h.own('Devices.Battery.ControlEnabled', false);
         h.own('Control.Targets.Battery_W', 0); h.tick();
         if (missing !== 'transport') h.complete();
         h.nativeConfig.batteryControlEnabled = missing === 'native disable';
@@ -436,7 +438,9 @@ test('GP near an unseen higher command does not clear its debt when the same sna
 
 test('an unseen 600 W request followed by requested 500 W reduction creates only zero, never a second delayed nonzero request', () => {
     const h = harness(1); h.own('Config.BatteryFineStep_W', 600); h.own('Control.Targets.Battery_W', 600);
-    h.tick(); h.complete(); h.own('Control.Targets.Battery_W', 500); h.tick(); h.complete();
+    h.tick(); h.complete(); h.own('Control.Targets.Battery_W', 500); h.tick();
+    assert.deepEqual(h.commands(), [-600]);
+    h.advance(6000); h.fresh(); h.tick(); h.complete();
     assert.deepEqual(h.commands(), [-600, 0]);
     h.own('Control.Targets.Battery_W', 0); h.tick();
     h.advance(1100); h.snapshot(1, {GS: 0, GP: 0}); h.tick();
@@ -512,6 +516,65 @@ test('zero after an echoed charge releases the reserve only with post-write zero
     assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 0);
     h.own('Control.Targets.Battery_W', 350); h.tick();
     assert.equal(h.commands().at(-1), -350);
+});
+
+test('a PV dip during a dispatched 600 W start waits for the first GS echo and then recovers', () => {
+    for (const lowerTarget of [0, 176]) {
+        const h = harness(1);
+        h.own('Config.BatteryFineStep_W', 600);
+        h.own('Control.Targets.Battery_W', 998);
+        h.tick(); h.complete();
+        h.advance(2000); h.fresh();
+        h.own('Control.Targets.Battery_W', lowerTarget); h.tick();
+        assert.deepEqual(h.commands(), [-600]);
+        assert.match(h.value('Devices.Battery.OutputStatus'), /GS-Bestaetigung des Ladestarts/);
+        assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 600);
+        h.advance(3000); h.snapshot(1, {GS: -600, GP: -542}); h.fresh(); h.tick(); h.complete();
+        assert.deepEqual(h.commands(), [-600, lowerTarget === 0 ? 0 : -lowerTarget]);
+        assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 600);
+        h.advance(1000); h.snapshot(1, {GS: -lowerTarget, GP: -lowerTarget}); h.fresh(); h.tick();
+        assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), lowerTarget);
+        h.own('Control.Targets.Battery_W', 998); h.tick();
+        assert.equal(h.commands().at(-1), -(lowerTarget + 600));
+    }
+});
+
+test('start echo wait is bounded and does not mask a safety limit or reverse direction', () => {
+    const scenarios = [
+        h => { h.advance(6000); h.fresh(); },
+        h => { h.limit.budgetW = 500; },
+        h => { h.nativeConfig.batteryHead1MaxChargeW = 500; },
+        h => { h.snapshot(1, {SC: 100}); },
+        h => { h.own('Control.Targets.Battery_W', -100); },
+        h => { h.own('Control.BatteryPriceGridCharge_W', 100); },
+        h => { h.snapshot(1, {GP: -60}); }
+    ];
+    for (const change of scenarios) {
+        const h = harness(1);
+        h.own('Config.BatteryFineStep_W', 600);
+        h.tick(); h.complete();
+        h.advance(2000); h.fresh();
+        h.own('Control.Targets.Battery_W', 0);
+        change(h); h.tick();
+        assert.deepEqual(h.commands(), [-600, 0]);
+        assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 600);
+    }
+});
+
+test('a late charge echo still requires fresh zero after the stop before releasing its reserve', () => {
+    const h = harness(1);
+    h.own('Config.BatteryFineStep_W', 600);
+    h.tick(); h.complete();
+    h.advance(6000); h.fresh();
+    h.own('Control.Targets.Battery_W', 0); h.tick();
+    assert.deepEqual(h.commands(), [-600, 0]);
+    h.advance(1000); h.snapshot(1, {GS: -600, GP: -200}); h.fresh(); h.tick();
+    assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 600);
+    h.advance(1000); h.snapshot(1, {GS: 0, GP: 0}); h.fresh();
+    h.complete(); h.tick();
+    assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 600);
+    h.advance(1000); h.fresh(); h.tick();
+    assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 0);
 });
 
 test('a pending charge without a GS echo still stops when immediate reduction is needed', () => {
