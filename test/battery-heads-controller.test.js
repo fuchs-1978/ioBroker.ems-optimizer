@@ -335,21 +335,29 @@ test('an unseen 600 W request followed by requested 500 W reduction creates only
     assert.ok(!h.commands().includes(-500));
 });
 
-test('a 12 W PV target drop waits for the 1500 W command before reducing to 1488 W', () => {
-    const h = harness(1);
-    h.own('Config.BatteryFineStep_W', 1000);
-    h.own('Control.Targets.Battery_W', 1400); h.tick(); h.complete(); h.follow();
-    h.tick(); h.complete(); h.follow();
-    h.own('Config.BatteryFineStep_W', 100);
-    h.own('Control.Targets.Battery_W', 1500); h.tick(); h.complete();
-    h.advance(4000); h.snapshot(1, {GS: -1500, GP: -1324}); h.fresh();
-    h.own('Control.Targets.Battery_W', 1488); h.tick();
-    assert.deepEqual(h.commands(), [-1000, -1400, -1500]);
-    assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 1500);
-    assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), 1500);
-    assert.match(h.value('Devices.Battery.OutputStatus'), /Kleine PV-Sollwertsenkung/);
-    h.advance(1000); h.snapshot(1, {GS: -1500, GP: -1482}); h.fresh(); h.tick();
-    assert.deepEqual(h.commands(), [-1000, -1400, -1500, -1488]);
+test('PV target drops up to 200 W wait for feedback before writing a lower charge command', () => {
+    const cases = [
+        {command: 1500, previous: 1400, actual: 1324, target: 1488},
+        {command: 764, previous: 700, actual: 677, target: 714},
+        {command: 900, previous: 800, actual: 715, target: 700}
+    ];
+    for (const {command, previous, actual, target} of cases) {
+        const h = harness(1);
+        h.own('Config.BatteryFineStep_W', 1000);
+        h.own('Control.Targets.Battery_W', previous);
+        h.tick(); h.complete(); h.follow();
+        if (previous > 1000) { h.tick(); h.complete(); h.follow(); }
+        h.own('Config.BatteryFineStep_W', 100);
+        h.own('Control.Targets.Battery_W', command); h.tick(); h.complete();
+        h.advance(4000); h.snapshot(1, {GS: -command, GP: -actual}); h.fresh();
+        h.own('Control.Targets.Battery_W', target); h.tick();
+        assert.deepEqual(h.commands(), [-Math.min(previous, 1000), ...(previous > 1000 ? [-previous] : []), -command]);
+        assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), command);
+        assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), command);
+        assert.match(h.value('Devices.Battery.OutputStatus'), /PV-Sollwert gesunken/);
+        h.advance(1000); h.snapshot(1, {GS: -command, GP: -(command - 18)}); h.fresh(); h.tick();
+        assert.equal(h.commands().at(-1), -target);
+    }
 });
 
 test('a pending small target drop still stops on a hard limit, zero target, or missing feedback', () => {
@@ -362,6 +370,8 @@ test('a pending small target drop still stops on a hard limit, zero target, or m
         soc: h => h.snapshot(1, {SC: 100}),
         price: h => h.own('Control.BatteryPriceGridCharge_W', 100),
         actual: h => h.snapshot(1, {GS: -1500, GP: -1530}),
+        'actual above target with 200 W drop': h => { h.snapshot(1, {GS: -1500, GP: -1326}); h.own('Control.Targets.Battery_W', 1300); },
+        'over 200 W drop': h => { h.snapshot(1, {GS: -1500, GP: -1250}); h.own('Control.Targets.Battery_W', 1299); },
         'zero target': h => h.own('Control.Targets.Battery_W', 0),
         timeout: h => { h.advance(15000); h.fresh(); }
     };

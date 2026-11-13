@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.230",
+    "version": "0.17.0-alpha.231",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.231": {
+        "en": "Allow up to a 200 W drop in the PV charge target while a single SunEnergy head confirms a running charge command.",
+        "de": "Beim Laden eines einzelnen SunEnergy-Kopfs bis zu 200 W weniger PV-Sollleistung während der ausstehenden Rückmeldung zulassen.",
+        "es": "Admite una bajada de hasta 200 W en la consigna fotovoltaica mientras una unidad SunEnergy confirma la carga.",
+        "fr": "Autorise une baisse de consigne photovoltaïque de 200 W pendant la confirmation de charge d’une unité SunEnergy.",
+        "it": "Consente un calo fino a 200 W del setpoint fotovoltaico mentre una singola unità SunEnergy conferma la carica.",
+        "nl": "Staat een daling van het PV-laaddoel tot 200 W toe terwijl één SunEnergy-eenheid de laadopdracht bevestigt.",
+        "pl": "Dopuszcza spadek nastawy ładowania PV o maksymalnie 200 W w czasie potwierdzania polecenia przez jedną jednostkę SunEnergy.",
+        "pt": "Permite uma redução até 200 W na referência fotovoltaica enquanto uma unidade SunEnergy confirma o carregamento.",
+        "ru": "Допускает снижение заданной мощности заряда от ФЭМ до 200 Вт, пока один блок SunEnergy подтверждает команду.",
+        "uk": "Допускає зниження заданої потужності заряджання від ФЕМ до 200 Вт, поки один блок SunEnergy підтверджує команду.",
+        "zh-cn": "单台 SunEnergy 设备确认充电指令期间，允许光伏充电目标最多下降 200 W。"
+      },
       "0.17.0-alpha.230": {
         "en": "Avoid stopping a single SunEnergy head on a small PV target drop while charging feedback is pending.",
         "de": "Kleine PV-Sollwertsenkungen stoppen einen einzelnen SunEnergy-Kopf während der ausstehenden Laderückmeldung nicht sofort.",
@@ -81,19 +94,6 @@
         "ru": "Сохраняет пригодность стартового кэша SQL при выходе старых пустых интервалов из окна истории.",
         "uk": "Зберігає придатність стартового кешу SQL, коли старі порожні інтервали виходять за межі історії.",
         "zh-cn": "旧的空数据区间移出滚动历史窗口后，SQL 启动缓存仍可使用。"
-      },
-      "0.17.0-alpha.224": {
-        "en": "Count metered charging toward minimum SoC, apply departure edits and prioritize earlier departures.",
-        "de": "Gemessene Ladeenergie auf den Mindest-SoC anrechnen, Abfahrtsänderungen übernehmen und frühere Abfahrten zuerst einplanen.",
-        "es": "Cuenta la energía medida para la carga mínima, aplica los cambios de hora y prioriza las salidas más próximas.",
-        "fr": "Tient compte de l’énergie mesurée pour la charge minimale et recalcule les créneaux selon les départs modifiés.",
-        "it": "Conteggia l’energia misurata per la carica minima, applica le modifiche e dà priorità alle partenze più vicine.",
-        "nl": "Tel gemeten energie mee voor het minimale laadniveau, verwerk gewijzigde vertrektijden en plan vroege vertrekken eerst.",
-        "pl": "Uwzględnia zmierzoną energię w minimalnym ładowaniu, przyjmuje zmiany i planuje wcześniejsze odjazdy w pierwszej kolejności.",
-        "pt": "Conta a energia medida para a carga mínima, aplica alterações e dá prioridade às partidas mais próximas.",
-        "ru": "Учитывает измеренную энергию для минимального заряда, применяет изменения и планирует более ранние выезды в первую очередь.",
-        "uk": "Враховує виміряну енергію для мінімального заряду, приймає зміни й першочергово планує ранні виїзди.",
-        "zh-cn": "将实测电量计入最低荷电需求，应用出发时间变更并优先安排较早出发的车辆。"
       }
     },
     "titleLang": {
