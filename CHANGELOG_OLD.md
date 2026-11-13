@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.224 (2026-11-09)
+
+- Account for measured charging energy when tracking minimum SoC, update changed departure times and prioritize earlier departures. [Release notes](docs/release-0.17.0-alpha.224.md)
+
 ## 0.17.0-alpha.223 (2026-11-09)
 
 - Spread planned hot-water charging across the remaining slots at the same price before a price rise. [Release notes](docs/release-0.17.0-alpha.223.md)
