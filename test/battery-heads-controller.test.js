@@ -10,7 +10,8 @@ const {SMA_GRID_MAX_AGE_MS} = require('../lib/source-diagnostics');
 function harness(count = 3, persisted = new Map(), config = {}) {
     let now = 2000000;
     const states = new Map([...persisted].map(([id, state]) => [id, {...state}]));
-    const writes = [], pending = [];
+    const writes = [], pending = [], logs = [];
+    const grid = {valid: true, gridW: -1500};
     const put = (id, val, extra = {}) => states.set(id, {val, ts: now, ack: true, ...extra});
     const own = (suffix, value, extra) => put(`ems.0.${suffix}`, value, extra);
     const nativeConfig = {batteryDispatchMode: 'sunenergy-heads', batterySunEnergyInstance: 'sunenergyxt500.0',
@@ -37,6 +38,7 @@ function harness(count = 3, persisted = new Map(), config = {}) {
     const reservations = {valid: true, otherW: [0, 0, 0]};
     const ctx = vm.createContext({Math, Date: {now: () => now, parse: Date.parse}, nativeConfig,
         sunEnergyHeads, SMA_GRID_MAX_AGE_MS, CFG: {root: 'ems.0', dp: {myPvDhwHaCurrentA: ['ha1', 'ha2', 'ha3']}},
+        realtimeGridMeasurement: () => grid, log: (message, level) => logs.push({message, level}),
         getState: id => states.get(id), existsState: id => states.has(id),
         write: put, stateDef: (id, val) => { if (!states.has(id)) put(id, val); },
         configDef: (id, val) => { if (!states.has(id)) put(id, val); },
@@ -52,7 +54,7 @@ function harness(count = 3, persisted = new Map(), config = {}) {
         for (const id of ['ha1', 'ha2', 'ha3']) put(id, 0);
         for (let index = 1; index <= count; index++) snapshot(index);
     };
-    return {nativeConfig, states, writes, pending, put, own, snapshot, run, limit, loads, reservations,
+    return {nativeConfig, states, writes, pending, logs, grid, put, own, snapshot, run, limit, loads, reservations,
         tick: () => run('updateBatteryProductionOutput()'), advance: ms => { now += ms; }, fresh,
         complete: error => { for (const cb of pending.splice(0)) cb(error || null); },
         follow: () => { now += 1100; for (const w of writes) {
@@ -612,4 +614,49 @@ test('a reduced nonzero command is still immediate after the previous command ph
     h.tick(); h.complete(); h.follow(); h.tick(); h.own('Control.Targets.Battery_W', 500); h.tick();
     assert.deepEqual(h.commands(), [-600, -500]);
     assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), 500);
+});
+
+
+test('PV feedback observation warns and keeps the outstanding lower charge through a zero target', () => {
+    const h = harness(1);
+    h.own('Config.BatteryPvFeedbackObservationEnabled', true);
+    h.own('Config.BatteryFineStep_W', 600); h.tick(); h.complete(); h.follow(); h.tick(); h.complete();
+    h.advance(2000); h.snapshot(1, {GS: -1000, GP: -620}); h.fresh();
+    h.own('Control.Targets.Battery_W', 157); h.tick(); h.complete();
+    assert.deepEqual(h.commands(), [-600, -1000, -157]);
+    h.advance(650); h.fresh(); h.own('Control.Targets.Battery_W', 0); h.tick();
+    assert.deepEqual(h.commands(), [-600, -1000, -157]);
+    assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 1000);
+    assert.equal(h.logs.length, 1);
+    assert.equal(h.logs[0].level, 'warn');
+    assert.match(h.logs[0].message, /Auftrag 157 W.*GS -1000 W.*AC-Ladung 620 W.*PV-Ziel 0 W.*Netz -1500 W/);
+    h.tick(); assert.equal(h.logs.length, 1);
+    h.advance(2000); h.snapshot(1, {GS: -157, GP: -150}); h.fresh();
+    h.own('Control.Targets.Battery_W', 500); h.tick();
+    assert.deepEqual(h.commands(), [-600, -1000, -157, -500]);
+});
+
+test('PV feedback observation keeps waiting past the deadline and stops when disabled', () => {
+    const h = harness(1);
+    h.own('Config.BatteryPvFeedbackObservationEnabled', true);
+    h.own('Config.BatteryFineStep_W', 600); h.tick(); h.complete();
+    h.advance(16000); h.fresh(); h.tick();
+    assert.deepEqual(h.commands(), [-600]);
+    assert.match(h.logs[0].message, /Rueckmeldefrist/);
+    assert.equal(h.value('Devices.Battery.Fault'), '');
+    h.own('Config.BatteryPvFeedbackObservationEnabled', false); h.tick();
+    assert.deepEqual(h.commands(), [-600, 0]);
+});
+
+test('PV feedback observation respects meter availability, electrical caps and the battery release', () => {
+    for (const stop of [h => { h.grid.gridW = -100; }, h => { h.grid.valid = false; },
+        h => { h.limit.budgetW = 500; }, h => h.snapshot(1, {SC: 100}),
+        h => h.own('Devices.Battery.ControlEnabled', false)]) {
+        const h = harness(1);
+        h.own('Config.BatteryPvFeedbackObservationEnabled', true);
+        h.own('Config.BatteryFineStep_W', 600); h.tick(); h.complete();
+        h.advance(16000); h.fresh(); h.own('Control.Targets.Battery_W', 0); stop(h); h.tick();
+        assert.deepEqual(h.commands(), [-600, 0]);
+        assert.equal(h.logs.length, 0);
+    }
 });
