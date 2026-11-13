@@ -336,6 +336,24 @@ test('stable partial PV charging at timeout reduces the echoed command and retai
     assert.equal(h.commands().at(-1), -1270);
 });
 
+test('PV noise does not create a new outstanding write before a larger reduction', () => {
+    for (const hardLimit of [false, true]) {
+        const h = harness(1);
+        h.own('Config.BatteryFineStep_W', 1000);
+        h.own('Control.Targets.Battery_W', 1061);
+        h.tick(); h.complete(); h.follow(); h.tick(); h.complete(); h.follow();
+        h.own('Config.BatteryFineStep_W', 100);
+        h.own('Control.Targets.Battery_W', 1057);
+        if (hardLimit) h.limit.budgetW = 1057;
+        h.tick();
+        assert.deepEqual(h.commands(), hardLimit ? [-1000, -1061, -1057] : [-1000, -1061]);
+        if (hardLimit) continue;
+        h.advance(1000); h.fresh();
+        h.own('Control.Targets.Battery_W', 704); h.tick();
+        assert.deepEqual(h.commands(), [-1000, -1061, -704]);
+    }
+});
+
 test('a PV dip does not lower the confirmed charge ceiling or restart its probe timer', () => {
     const h = harness(1);
     h.own('Config.BatteryFineStep_W', 1000);
@@ -431,13 +449,13 @@ test('an unseen 600 W request followed by requested 500 W reduction creates only
     assert.ok(!h.commands().includes(-500));
 });
 
-test('PV target drops up to 200 W wait for feedback before writing a lower charge command', () => {
+test('PV target drops up to 200 W wait for feedback before evaluating a reduction', () => {
     const cases = [
-        {command: 1500, previous: 1400, actual: 1324, target: 1488},
+        {command: 1500, previous: 1400, actual: 1324, target: 1488, expected: 1500},
         {command: 764, previous: 700, actual: 677, target: 714},
         {command: 900, previous: 800, actual: 715, target: 700}
     ];
-    for (const {command, previous, actual, target} of cases) {
+    for (const {command, previous, actual, target, expected = target} of cases) {
         const h = harness(1);
         h.own('Config.BatteryFineStep_W', 1000);
         h.own('Control.Targets.Battery_W', previous);
@@ -452,7 +470,7 @@ test('PV target drops up to 200 W wait for feedback before writing a lower charg
         assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), command);
         assert.match(h.value('Devices.Battery.OutputStatus'), /PV-Sollwert gesunken/);
         h.advance(1000); h.snapshot(1, {GS: -command, GP: -(command - 18)}); h.fresh(); h.tick();
-        assert.equal(h.commands().at(-1), -target);
+        assert.equal(h.commands().at(-1), -expected);
     }
 });
 
