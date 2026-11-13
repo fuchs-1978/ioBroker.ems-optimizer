@@ -1150,6 +1150,10 @@ class EmsOptimizer extends utils.Adapter {
     }
 
     onStateChange(id, state) {
+        // A delayed foreign command still matters for ownership, even if a
+        // newer driver acknowledgement has already replaced it in the cache.
+        if (state?.ack === false && state.from !== `system.adapter.${this.namespace}` && SUN_SETPOINT.test(id))
+            this.engineContext?.observeForeignBatteryHeadGsWrite?.(id);
         const previous = this.stateCache.get(id);
         if (this.ownRelative(id) !== null && state && previous && state.ack === true
             && (Number(state.ts) < Number(previous.ts)

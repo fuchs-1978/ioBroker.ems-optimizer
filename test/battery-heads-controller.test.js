@@ -29,7 +29,8 @@ function harness(count = 3, persisted = new Map(), config = {}) {
         const body = {...(bodies.get(index) || {SC: 50, ON: 1, GS: 0, GP: 0, MM: 0, LM: 1,
             SI: 10, SA: 100, MG: 800, IS: 800, LP: 0, PK: 1}), ...delta};
         bodies.set(index, body);
-        put(`sunenergyxt500.0.heads.${index}.info.rawResponse`, JSON.stringify(body), extra);
+        put(`sunenergyxt500.0.heads.${index}.info.rawResponse`, JSON.stringify(body),
+            {from: 'system.adapter.sunenergyxt500.0', ...extra});
         put(`sunenergyxt500.0.heads.${index}.info.online`, true);
     };
     for (let index = 1; index <= count; index++) snapshot(index);
@@ -49,12 +50,13 @@ function harness(count = 3, persisted = new Map(), config = {}) {
     vm.runInContext(source, ctx);
     const run = code => vm.runInContext(code, ctx);
     run('createBatteryStates()');
+    const time = () => now;
     const fresh = () => {
         own('Control.LastUpdate', now);
         for (const id of ['ha1', 'ha2', 'ha3']) put(id, 0);
         for (let index = 1; index <= count; index++) snapshot(index);
     };
-    return {nativeConfig, states, writes, pending, logs, grid, put, own, snapshot, run, limit, loads, reservations,
+    return {nativeConfig, states, writes, pending, logs, grid, put, own, snapshot, run, limit, loads, reservations, time,
         tick: () => run('updateBatteryProductionOutput()'), advance: ms => { now += ms; }, fresh,
         complete: error => { for (const cb of pending.splice(0)) cb(error || null); },
         follow: () => { now += 1100; for (const w of writes) {
@@ -381,6 +383,116 @@ test('a settled head with an unexpected fresh GS echo faults instead of treating
     h.run('observeBatteryHeads()'); h.advance(1); h.snapshot(1, {GS: 2400, GP: 0}); h.tick();
     assert.deepEqual(h.commands().slice(-2), [0, 0]);
     assert.match(h.value('Devices.Battery.Fault'), /Reglerzustaendigkeit/);
+});
+
+const firstHeadGs = 'sunenergyxt500.0.heads.1.control.GS';
+const driverGs = {from: 'system.adapter.sunenergyxt500.0'};
+
+function reachGsConflict(h, {reportedGs = 100, sampleAt = 2001100} = {}) {
+    h.grid.gridW = 150;
+    h.own('Config.BatteryDeadband_W', 10);
+    h.own('Config.BatteryFineStep_W', 600);
+    h.own('Control.Targets.Battery_W', -100); h.tick(); h.complete();
+    h.advance(1100); h.fresh();
+    h.put(firstHeadGs, 100, driverGs);
+    h.snapshot(1, {GS: 100, GP: 100, timestamp: h.time()}); h.tick();
+    h.own('Control.Targets.Battery_W', -150); h.tick(); h.complete();
+    h.advance(1100); h.fresh();
+    h.put(firstHeadGs, 150, driverGs);
+    h.snapshot(1, {GS: 150, GP: 150, timestamp: h.time()}); h.tick();
+    h.advance(100); h.fresh();
+    h.put(firstHeadGs, reportedGs, driverGs);
+    h.snapshot(1, {GS: reportedGs, GP: 100, timestamp: sampleAt}); h.tick();
+    assert.deepEqual(h.commands(), [100, 150, 0]);
+    assert.match(h.value('Devices.Battery.Fault'), /Reglerzustaendigkeit/);
+}
+
+test('a delayed previously confirmed GS permits a single return and resumption only after three acquired zeros', () => {
+    const h = harness(1);
+    reachGsConflict(h);
+    // A raw zero published before the zero transport finishes earns no proof.
+    h.advance(100); h.fresh();
+    h.put(firstHeadGs, 0, driverGs);
+    h.snapshot(1, {GS: 0, GP: 0, timestamp: h.time()}); h.tick();
+    h.complete(); h.tick();
+    assert.equal(h.value('Devices.Battery.OutputOwned'), true);
+    h.advance(100); h.fresh();
+    h.put(firstHeadGs, 0, driverGs);
+    h.snapshot(1, {GS: 0, GP: 2, timestamp: h.time()}); h.tick();
+    assert.equal(h.value('Devices.Battery.OutputOwned'), true);
+    // The first exact stop sample returns ownership. Re-publishing the same
+    // device acquisition with a new ioBroker timestamp does not count twice.
+    h.advance(100); h.fresh(); h.snapshot(1, {GP: 0, timestamp: h.time()}); h.tick();
+    assert.equal(h.value('Devices.Battery.OutputOwned'), false);
+    h.advance(5000); h.fresh(); h.tick();
+    h.advance(5000); h.fresh(); h.snapshot(1, {timestamp: h.time()}); h.tick();
+    assert.match(h.value('Devices.Battery.Fault'), /Reglerzustaendigkeit/);
+    assert.deepEqual(h.commands(), [100, 150, 0]);
+    h.advance(5000); h.fresh(); h.snapshot(1, {timestamp: h.time()}); h.tick();
+    assert.equal(h.value('Devices.Battery.Fault'), '');
+    h.tick();
+    assert.deepEqual(h.commands(), [100, 150, 0, 150]);
+    h.complete(); h.advance(1100); h.fresh(); h.snapshot(1, {GS: 150, GP: 150, timestamp: h.time()}); h.tick();
+    h.grid.gridW = 8;
+    h.advance(1100); h.fresh(); h.tick();
+    assert.deepEqual(h.commands(), [100, 150, 0, 150]);
+});
+
+test('fresh unexpected GS and a foreign writer during recovery remain latched after exact zeros and restart', () => {
+    for (const scenario of ['different GS', 'new acquisition', 'acquisition after current command', 'foreign write', 'direct write before zero',
+        'no driver acknowledgement', 'restart during return']) {
+        let h = harness(1);
+        reachGsConflict(h, {reportedGs: scenario === 'different GS' ? 180 : 100,
+            sampleAt: {'new acquisition': 2002300, 'acquisition after current command': 2001600}[scenario]});
+        h.complete();
+        if (scenario === 'foreign write') {
+            h.put(firstHeadGs, 100, {ack: false, from: 'system.adapter.javascript.0'});
+            h.run(`observeForeignBatteryHeadGsWrite(${JSON.stringify(firstHeadGs)})`);
+        }
+        if (scenario === 'restart during return') {
+            h = harness(1, h.states);
+            h.own('Control.Targets.Battery_W', -150); h.tick(); h.complete();
+            assert.deepEqual(h.commands(), [0]);
+        }
+        if (scenario === 'direct write before zero') {
+            h.advance(100); h.fresh();
+            h.put(firstHeadGs, 200, driverGs);
+            h.snapshot(1, {GS: 200, GP: 200, timestamp: h.time()}); h.tick();
+        }
+        h.advance(2000); h.fresh();
+        h.put(firstHeadGs, 0, scenario === 'no driver acknowledgement' ? {from: 'system.adapter.javascript.0'} : driverGs);
+        for (let sample = 0; sample < 3; sample++) {
+            h.fresh(); h.snapshot(1, {GS: 0, GP: 0, timestamp: h.time()}); h.tick(); h.advance(6000);
+        }
+        assert.match(h.value('Devices.Battery.Fault'), /Reglerzustaendigkeit/, scenario);
+        assert.deepEqual(h.commands(), scenario === 'restart during return' ? [0] : [100, 150, 0], scenario);
+        const restarted = harness(1, h.states);
+        restarted.own('Control.Targets.Battery_W', -150); restarted.tick();
+        assert.deepEqual(restarted.commands(), [], scenario);
+        assert.match(restarted.value('Devices.Battery.Fault'), /Reglerzustaendigkeit/, scenario);
+        restarted.own('Devices.Battery.ResetFault', true);
+        restarted.tick();
+        assert.deepEqual(restarted.commands(), [150], scenario);
+    }
+});
+
+test('a delayed idle acquisition after the first discharge can use the confirmed standstill return', () => {
+    const h = harness(1);
+    h.snapshot(1, {timestamp: h.time()});
+    h.grid.gridW = 150; h.own('Config.BatteryFineStep_W', 600);
+    h.own('Control.Targets.Battery_W', -150); h.tick(); h.complete();
+    h.advance(2000); h.fresh();
+    h.put(firstHeadGs, 150, driverGs);
+    h.snapshot(1, {GS: 150, GP: 150, timestamp: h.time()}); h.tick();
+    h.advance(100); h.fresh();
+    h.put(firstHeadGs, 0, driverGs);
+    h.snapshot(1, {GS: 0, GP: 0, timestamp: h.time() - 2100}); h.tick(); h.complete();
+    assert.deepEqual(h.commands(), [150, 0]);
+    h.advance(2000); h.fresh(); h.put(firstHeadGs, 0, driverGs);
+    for (let sample = 0; sample < 3; sample++) {
+        h.fresh(); h.snapshot(1, {GS: 0, GP: 0, timestamp: h.time()}); h.tick(); h.advance(6000);
+    }
+    assert.deepEqual(h.commands(), [150, 0, 150]);
 });
 
 test('retained peer charge reservation blocks an increase and pending reduction goes directly to zero', () => {
@@ -1154,6 +1266,40 @@ test('PV feedback observation keeps waiting past the deadline and stops when dis
     assert.equal(h.value('Devices.Battery.Fault'), '');
     h.own('Config.BatteryPvFeedbackObservationEnabled', false); h.tick();
     assert.deepEqual(h.commands(), [-600, 0]);
+});
+
+test('an echoed 12 W idle charge yields to fresh 99 W export through one exact zero', () => {
+    for (const nextTargetW of [99, 0]) {
+        const h = harness(1);
+        h.own('Config.BatteryPvFeedbackObservationEnabled', true);
+        h.own('Config.BatteryFineStep_W', 600);
+        h.own('Config.BatteryDeadband_W', 10);
+        h.own('Control.TargetGridPower_W', 0);
+        h.grid.gridW = -12; h.own('Control.Targets.Battery_W', 12); h.tick(); h.complete();
+        h.advance(1000); h.fresh(); h.snapshot(1, {GS: -12, GP: 0}); h.tick();
+        h.grid.gridW = -99; h.own('Control.Targets.Battery_W', 99); h.tick();
+        assert.deepEqual(h.commands(), [-12], 'allow time for physical response');
+        h.advance(15000); h.fresh();
+        for (const grid of [{sourceTs: [2000000, 2000000]}, {gridW: -18}]) {
+            Object.assign(h.grid, grid); h.tick();
+            assert.deepEqual(h.commands(), [-12], 'no replacement on stale or small export');
+            delete h.grid.sourceTs; h.grid.gridW = -99;
+        }
+        h.tick();
+        assert.deepEqual(h.commands(), [-12, 0]);
+        h.complete();
+        const completedAt = h.time();
+        h.advance(100); h.fresh(); h.snapshot(1, {GS: 0, GP: 0, timestamp: completedAt - 1}); h.tick();
+        assert.deepEqual(h.commands(), [-12, 0], 'publication after transport cannot make a pre-write acquisition fresh');
+        h.advance(1100); h.fresh(); h.snapshot(1, {GS: 0, GP: -12}); h.tick();
+        assert.deepEqual(h.commands(), [-12, 0]);
+        assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 12);
+        h.advance(1100); h.fresh(); h.snapshot(1, {GP: 0, timestamp: h.time()});
+        h.grid.gridW = -nextTargetW;
+        h.own('Control.Targets.Battery_W', nextTargetW); h.tick();
+        assert.deepEqual(h.commands(), [-12, 0, ...(nextTargetW ? [-99] : [])]);
+        assert.equal(h.value('Devices.Battery.Fault'), '');
+    }
 });
 
 test('PV feedback observation respects meter availability, electrical caps and the battery release', () => {
