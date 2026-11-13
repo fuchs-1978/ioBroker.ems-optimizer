@@ -7095,6 +7095,17 @@
           "lg": 12,
           "xl": 12
         },
+        "bhkwWallboxCycleEnabled": {
+          "type": "checkbox",
+          "label": "Charge the Mii from CHP surplus and a 10-point battery SoC band at night",
+          "default": false,
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
+        },
         "batteryFineReserveW": {
           "type": "number",
           "label": "PV reserve for battery fine control before heater allocation",
