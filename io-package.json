@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.255",
+    "version": "0.17.0-alpha.256",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.256": {
+        "en": "Recalculate SunEnergy household discharge corrections when newer measurements arrive before dispatch.",
+        "de": "SunEnergy-Entladekorrektur für den Haushalt bei neueren Messwerten vor der Ausgabe neu berechnen.",
+        "es": "Recalcula la corrección de descarga doméstica de SunEnergy si llegan mediciones más recientes antes del envío.",
+        "fr": "Recalcule la correction de décharge SunEnergy pour le foyer si des mesures plus récentes arrivent avant l’envoi.",
+        "it": "Ricalcola la correzione della scarica domestica SunEnergy se arrivano misure più recenti prima dell’invio.",
+        "nl": "Herberekent de SunEnergy-ontlaadcorrectie voor het huishouden bij nieuwere metingen vóór verzending.",
+        "pl": "Ponownie oblicza korektę rozładowania SunEnergy na potrzeby domu, gdy przed wysłaniem pojawią się nowsze pomiary.",
+        "pt": "Recalcula a correção da descarga doméstica SunEnergy se chegarem medições mais recentes antes do envio.",
+        "ru": "Пересчитывает поправку разряда SunEnergy для дома при получении новых измерений до отправки команды.",
+        "uk": "Перераховує корекцію розряду SunEnergy для дому, якщо до надсилання надійшли нові вимірювання.",
+        "zh-cn": "发送指令前收到更新的测量值时，重新计算 SunEnergy 家庭放电修正。"
+      },
       "0.17.0-alpha.255": {
         "en": "Reduce acknowledged SunEnergy household discharge directly during brief grid export.",
         "de": "Bestätigte SunEnergy-Haushaltsentladung bei kurzer Einspeisung direkt reduzieren.",
@@ -81,19 +94,6 @@
         "ru": "Снижает подтверждённую мощность разряда SunEnergy и для бытовой нагрузки.",
         "uk": "Зменшує підтверджену потужність розряду SunEnergy також для побутового навантаження.",
         "zh-cn": "家庭用电时也可直接降低已确认的 SunEnergy 放电功率。"
-      },
-      "0.17.0-alpha.249": {
-        "en": "Reduce acknowledged SunEnergy discharge directly while buffering a wallbox.",
-        "de": "Bestätigten SunEnergy-Entladeauftrag beim Wallbox-Puffern direkt reduzieren.",
-        "es": "Reduce directamente la descarga confirmada de SunEnergy durante el apoyo a la estación de carga.",
-        "fr": "Réduit directement la décharge SunEnergy confirmée pendant le soutien à la borne.",
-        "it": "Riduce direttamente la scarica SunEnergy confermata durante il supporto alla wallbox.",
-        "nl": "Verlaagt een bevestigde SunEnergy-ontlading direct bij ondersteuning van de laadpaal.",
-        "pl": "Zmniejsza potwierdzone rozładowanie SunEnergy bezpośrednio podczas wspomagania ładowarki.",
-        "pt": "Reduz diretamente a descarga confirmada da SunEnergy durante o apoio ao carregador.",
-        "ru": "Снижает подтверждённую мощность разряда SunEnergy при поддержке зарядной станции.",
-        "uk": "Зменшує підтверджену потужність розряду SunEnergy під час підтримки зарядної станції.",
-        "zh-cn": "在为充电桩提供缓冲时直接降低已确认的 SunEnergy 放电功率。"
       }
     },
     "titleLang": {

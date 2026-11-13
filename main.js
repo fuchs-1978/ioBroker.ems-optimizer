@@ -946,7 +946,8 @@ class EmsOptimizer extends utils.Adapter {
                         throw new Error('Speicherkopf-Ausgabe ohne vollstaendige Reglerpruefung gesperrt');
                     const check = this.runEngine(`batteryHeadsQueuedCheck(${JSON.stringify(id)}, ${value})`);
                     if (!check?.allowed)
-                        throw new Error(check?.reason || 'Speicherkopf-/Gesamtgrenzen vor Ausgabe nicht bestaetigt');
+                        throw Object.assign(new Error(check?.reason || 'Speicherkopf-/Gesamtgrenzen vor Ausgabe nicht bestaetigt'),
+                            {code: check?.code});
                 } else if (this.engineContext && device === 'Battery') {
                     const state = this.runEngine('batteryRegulationState()');
                     if (!state.eligible || (value < 0 ? !state.canCharge : !state.canDischarge))
@@ -988,7 +989,9 @@ class EmsOptimizer extends utils.Adapter {
         this.foreignWriteQueues.set(id, promise);
         this.pendingForeignWrites.add(promise);
         void promise.then(() => onComplete?.(null, {value}), error => {
-            this.log.error(`Cannot write production output ${id}: ${error.message}`);
+            const replanDischarge = !dispatchStarted && error.code === 'BATTERY_DISCHARGE_REPLAN';
+            if (replanDischarge) this.log.debug(`Deferred production output ${id}: ${error.message}`);
+            else this.log.error(`Cannot write production output ${id}: ${error.message}`);
             onComplete?.(error, head && nonzero && !dispatchStarted ? {notDispatched: true} : undefined);
         }).catch(error => this.log.warn(`Output callback failed: ${error.message}`))
             .finally(() => {

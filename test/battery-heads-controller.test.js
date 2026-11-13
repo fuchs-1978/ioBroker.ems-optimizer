@@ -812,6 +812,37 @@ test('discharge echo waiting stops at export, a changed limit, or the deadline',
     }
 });
 
+test('brief export during a small household correction can wait for the pending GS echo', () => {
+    for (const scenario of ['brief export', 'large load drop', 'revoked release', 'lower limit', 'deadline']) {
+        const h = harness(1);
+        h.own('Config.BatteryDeadband_W', 10);
+        h.own('Config.BatteryFineStep_W', 600);
+        h.own('Control.Targets.Battery_W', -129);
+        h.grid.gridW = 129;
+        h.tick(); h.complete(); h.follow();
+        h.grid.gridW = 32;
+        h.own('Control.Targets.Battery_W', -161);
+        h.tick(); h.complete();
+
+        h.advance(scenario === 'deadline' ? 6000 : 1000);
+        h.fresh(); h.snapshot(1, {GS: 129, GP: 137});
+        h.grid.gridW = scenario === 'large load drop' ? -90 : -27.6;
+        h.own('Control.Targets.Battery_W', scenario === 'large load drop' ? -47 : -109);
+        if (scenario === 'revoked release') h.own('Config.BatterySelfConsumptionEnabled', false);
+        if (scenario === 'lower limit') h.own('Config.BatteryMaxDischarge_W', 150);
+        h.tick();
+        if (scenario !== 'brief export') {
+            assert.deepEqual(h.commands(), [129, 161, 0], scenario);
+            continue;
+        }
+        assert.deepEqual(h.commands(), [129, 161]);
+        h.advance(1000); h.fresh(); h.snapshot(1, {GS: 161, GP: 132});
+        h.grid.gridW = -23;
+        h.tick();
+        assert.deepEqual(h.commands(), [129, 161, 109]);
+    }
+});
+
 function pendingWallboxDischarge() {
     const h = harness(1, new Map(), {batteryPvPriorityEnabled: true, batteryDeadbandW: 50});
     h.own('Config.BatteryFineStep_W', 600);
