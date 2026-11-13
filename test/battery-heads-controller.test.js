@@ -765,8 +765,10 @@ test('a wallbox buffer reduces the echoed discharge while GP is still settling',
     assert.equal(h.run(check), false);
     h.grid.gridW = -26;
     h.own('Control.BatteryWallboxBuffer_W', 0);
+    h.own('Control.Targets.Battery_W', 0);
     assert.equal(h.run(check), false);
     h.own('Control.BatteryWallboxBuffer_W', 250);
+    h.own('Control.Targets.Battery_W', -250);
     h.snapshot(1, {GS: 400, GP: 276});
     assert.equal(h.run(check), false);
     h.snapshot(1, {GS: 458, GP: 276});
@@ -783,7 +785,6 @@ test('a wallbox buffer reduces the echoed discharge while GP is still settling',
 test('a wallbox buffer still stops for missing proof, export, zero, reversal or expired feedback', () => {
     for (const [reason, change] of Object.entries({
         'missing GS echo after grace': h => { h.advance(6000); h.fresh(); h.snapshot(1, {GS: 0, GP: 276}); },
-        'wallbox buffer unavailable': h => h.own('Control.BatteryWallboxBuffer_W', 0),
         'held grid sample': h => { h.grid.held = true; },
         export: h => { h.grid.gridW = -100; },
         'zero target': h => h.own('Control.Targets.Battery_W', 0),
@@ -795,6 +796,38 @@ test('a wallbox buffer still stops for missing proof, export, zero, reversal or 
         change(h); h.tick();
         assert.deepEqual(h.commands(), [458, 0], reason);
     }
+});
+
+test('household discharge follows 547 to 432 W after the GS echo while actual power is 369 W', () => {
+    const h = harness(1);
+    h.own('Config.BatteryFineStep_W', 600);
+    h.own('Control.BatteryWallboxBuffer_W', 0);
+    h.own('Control.Targets.Battery_W', -547);
+    h.grid.gridW = 471;
+    h.tick(); h.complete();
+    h.advance(1000); h.fresh();
+    h.snapshot(1, {GS: 547, GP: 369});
+    h.grid.gridW = 516;
+    h.own('Control.Targets.Battery_W', -592);
+    h.tick();
+    assert.deepEqual(h.commands(), [547]);
+
+    h.advance(1000); h.fresh();
+    h.grid.gridW = 63;
+    h.own('Control.Targets.Battery_W', -432);
+    h.tick();
+    assert.deepEqual(h.commands(), [547, 432]);
+    const check = `batteryHeadsQueuedCheck(${JSON.stringify(h.writes[1].id)},432).allowed`;
+    assert.equal(h.run(check), true);
+    h.own('Config.BatteryMaxDischarge_W', 400);
+    assert.equal(h.run(check), false);
+    h.own('Config.BatteryMaxDischarge_W', 2400);
+    h.complete(); h.advance(1000); h.fresh();
+    h.snapshot(1, {GS: 432, GP: 432});
+    h.grid.gridW = 0;
+    h.tick();
+    assert.deepEqual(h.commands(), [547, 432]);
+    assert.equal(h.value('Devices.Battery.Heads.1.ActuatorSettled'), true);
 });
 
 test('late discharge echo permits automatic return after a fresh zero and then PV charging', () => {
