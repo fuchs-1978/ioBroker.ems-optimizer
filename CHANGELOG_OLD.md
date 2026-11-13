@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.225 (2026-11-09)
+
+- Keep the validated SQL history cache usable as the rolling window moves beyond a previous data gap. [Release notes](docs/release-0.17.0-alpha.225.md)
+
 ## 0.17.0-alpha.224 (2026-11-09)
 
 - Account for measured charging energy when tracking minimum SoC, update changed departure times and prioritize earlier departures. [Release notes](docs/release-0.17.0-alpha.224.md)
