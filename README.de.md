@@ -1,11 +1,12 @@
 # EMS Optimizer
 
-**Aktuelle Adapterversion: 0.17.0-alpha.229.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
+**Aktuelle Adapterversion: 0.17.0-alpha.230.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
 
 [English overview](README.md) · [Vollständige Admin-Feldreferenz](docs/admin-reference.de.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) · [Versionsänderungen](README.md#changelog)
 
 ## Aktuelle Änderungen
 
+- **Alpha.230** wartet bei einem einzelnen SunEnergy-Kopf und einer kleinen PV-Sollwertsenkung innerhalb der Leistungstoleranz auf die ausstehende Laderückmeldung. [Versionshinweise](docs/release-0.17.0-alpha.230.md)
 - **Alpha.229** ermöglicht die Rückgabe eines blockierten SunEnergy-Speicherausgangs bei deaktivierter Speicher-Steuerfreigabe. Wallboxen und Heizstäbe können weiter geregelt werden. [Versionshinweise](docs/release-0.17.0-alpha.229.md)
 - **Alpha.228** berücksichtigt die Leistung einer nachlaufenden Wallbox im gemeinsamen Ladebudget. Bei ausreichendem PV-Überschuss kann ein anderes Fahrzeug schon während der Abschaltverzögerung hochregeln. [Versionshinweise](docs/release-0.17.0-alpha.228.md)
 - **Alpha.227** nutzt die SoC-Stromstufen des Mii/e-Up im Parallelbetrieb, sobald nach den Mindestströmen der anderen Fahrzeuge Netzreserve verfügbar ist. [Versionshinweise](docs/release-0.17.0-alpha.227.md)

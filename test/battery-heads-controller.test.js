@@ -41,7 +41,8 @@ function harness(count = 3, persisted = new Map(), config = {}) {
         write: put, stateDef: (id, val) => { if (!states.has(id)) put(id, val); },
         configDef: (id, val) => { if (!states.has(id)) put(id, val); },
         writeForeignState: (id, val, cb) => { writes.push({id, val, at: now}); pending.push(cb); return true; },
-        currentConsumptionLimit: () => limit, coordinatedConsumptionLoads: () => loads,
+        currentConsumptionLimit: () => limit, gridGroupDeviceLimit: () => ({valid: true, maximumW: limit.groupMaximumW ?? null}),
+        coordinatedConsumptionLoads: () => loads,
         coordinatedPhaseReservations: () => reservations});
     vm.runInContext(source, ctx);
     const run = code => vm.runInContext(code, ctx);
@@ -332,6 +333,51 @@ test('an unseen 600 W request followed by requested 500 W reduction creates only
     h.advance(1100); h.snapshot(1, {GS: 0, GP: 0}); h.tick();
     assert.equal(h.value('Devices.Battery.OutputOwned'), false);
     assert.ok(!h.commands().includes(-500));
+});
+
+test('a 12 W PV target drop waits for the 1500 W command before reducing to 1488 W', () => {
+    const h = harness(1);
+    h.own('Config.BatteryFineStep_W', 1000);
+    h.own('Control.Targets.Battery_W', 1400); h.tick(); h.complete(); h.follow();
+    h.tick(); h.complete(); h.follow();
+    h.own('Config.BatteryFineStep_W', 100);
+    h.own('Control.Targets.Battery_W', 1500); h.tick(); h.complete();
+    h.advance(4000); h.snapshot(1, {GS: -1500, GP: -1324}); h.fresh();
+    h.own('Control.Targets.Battery_W', 1488); h.tick();
+    assert.deepEqual(h.commands(), [-1000, -1400, -1500]);
+    assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 1500);
+    assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), 1500);
+    assert.match(h.value('Devices.Battery.OutputStatus'), /Kleine PV-Sollwertsenkung/);
+    h.advance(1000); h.snapshot(1, {GS: -1500, GP: -1482}); h.fresh(); h.tick();
+    assert.deepEqual(h.commands(), [-1000, -1400, -1500, -1488]);
+});
+
+test('a pending small target drop still stops on a hard limit, zero target, or missing feedback', () => {
+    const cases = {
+        house: h => h.put('ha3', 45.3),
+        operator: h => { h.limit.budgetW = 1488; },
+        group: h => { h.limit.groupNet = true; h.limit.groupMaximumW = 1488; },
+        configured: h => h.own('Config.BatteryMaxCharge_W', 1488),
+        head: h => { h.nativeConfig.batteryHead1MaxChargeW = 1488; },
+        soc: h => h.snapshot(1, {SC: 100}),
+        price: h => h.own('Control.BatteryPriceGridCharge_W', 100),
+        actual: h => h.snapshot(1, {GS: -1500, GP: -1530}),
+        'zero target': h => h.own('Control.Targets.Battery_W', 0),
+        timeout: h => { h.advance(15000); h.fresh(); }
+    };
+    for (const [reason, change] of Object.entries(cases)) {
+        const h = harness(1);
+        h.own('Config.BatteryFineStep_W', 1000);
+        h.own('Control.Targets.Battery_W', 1400); h.tick(); h.complete(); h.follow();
+        h.tick(); h.complete(); h.follow();
+        h.own('Config.BatteryFineStep_W', 100);
+        h.own('Control.Targets.Battery_W', 1500); h.tick(); h.complete();
+        h.advance(4000); h.snapshot(1, {GS: -1500, GP: -1324}); h.fresh();
+        h.own('Control.Targets.Battery_W', 1488);
+        change(h); h.tick();
+        assert.deepEqual(h.commands(), [-1000, -1400, -1500, 0], reason);
+        assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 1500, reason);
+    }
 });
 
 test('a reduced nonzero command is still immediate after the previous command physically settles', () => {

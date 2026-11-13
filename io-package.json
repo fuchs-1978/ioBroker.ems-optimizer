@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.229",
+    "version": "0.17.0-alpha.230",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.230": {
+        "en": "Avoid stopping a single SunEnergy head on a small PV target drop while charging feedback is pending.",
+        "de": "Kleine PV-Sollwertsenkungen stoppen einen einzelnen SunEnergy-Kopf während der ausstehenden Laderückmeldung nicht sofort.",
+        "es": "Una pequeña bajada de la consigna fotovoltaica espera la confirmación de carga de un único cabezal SunEnergy.",
+        "fr": "Une légère baisse de la consigne photovoltaïque attend le retour de charge d’une seule unité SunEnergy.",
+        "it": "Un lieve calo del setpoint fotovoltaico attende il riscontro di carica di una singola unità SunEnergy.",
+        "nl": "Bij een kleine daling van het PV-doel wacht één SunEnergy-kop op de laadterugmelding.",
+        "pl": "Przy małym spadku nastawy PV pojedyncza jednostka SunEnergy czeka na potwierdzenie ładowania.",
+        "pt": "Uma pequena redução na referência fotovoltaica aguarda a confirmação de carregamento de uma única unidade SunEnergy.",
+        "ru": "При небольшом снижении уставки ФЭМ одиночный блок SunEnergy ждёт подтверждения зарядки.",
+        "uk": "За невеликого зниження заданої потужності ФЕМ один блок SunEnergy очікує підтвердження заряджання.",
+        "zh-cn": "光伏充电目标小幅下降时，单台 SunEnergy 设备等待充电反馈。"
+      },
       "0.17.0-alpha.229": {
         "en": "Recover a SunEnergy battery output with battery control disabled while leaving other EMS devices enabled.",
         "de": "SunEnergy-Speicherausgang bei gesperrter Speichersteuerung zurückgeben, während andere EMS-Geräte freigegeben bleiben.",
@@ -81,19 +94,6 @@
         "ru": "Учитывает измеренную энергию для минимального заряда, применяет изменения и планирует более ранние выезды в первую очередь.",
         "uk": "Враховує виміряну енергію для мінімального заряду, приймає зміни й першочергово планує ранні виїзди.",
         "zh-cn": "将实测电量计入最低荷电需求，应用出发时间变更并优先安排较早出发的车辆。"
-      },
-      "0.17.0-alpha.223": {
-        "en": "Spread forecast hot-water heating across an equal-price block even without a later supply window.",
-        "de": "Warmwasser im Fahrplan auch ohne späteres Versorgungsfenster gleichmäßig im Tarifblock vorwärmen.",
-        "es": "Distribuye el calentamiento previsto del agua en un bloque de precio fijo aunque no haya un suministro posterior.",
-        "fr": "Répartit le chauffage prévu de l’eau sur une plage au même prix, même sans créneau d’approvisionnement ultérieur.",
-        "it": "Distribuisce il riscaldamento previsto dell’acqua in una fascia a prezzo costante anche senza una finestra di approvvigionamento successiva.",
-        "nl": "Spreid geplande warmwaterverwarming over een gelijk geprijsd blok, ook zonder een later aanbodvenster.",
-        "pl": "Rozkłada planowane podgrzewanie wody na okres o jednakowej cenie, także bez późniejszego okna zasilania.",
-        "pt": "Distribui o aquecimento previsto da água por um bloco de preço constante mesmo sem um período posterior de abastecimento.",
-        "ru": "Распределяет нагрев воды по интервалу с одинаковой ценой даже без более позднего периода снабжения.",
-        "uk": "Розподіляє запланований нагрів води в межах періоду з однаковою ціною навіть без пізнішого вікна постачання.",
-        "zh-cn": "即使之后没有供能窗口，也会在同一电价时段内均匀安排预测的热水加热。"
       }
     },
     "titleLang": {
