@@ -1,11 +1,12 @@
 # EMS Optimizer
 
-**Aktuelle Adapterversion: 0.17.0-alpha.245.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
+**Aktuelle Adapterversion: 0.17.0-alpha.246.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
 
 [English overview](README.md) · [Vollständige Admin-Feldreferenz](docs/admin-reference.de.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) · [Versionsänderungen](README.md#changelog)
 
 ## Aktuelle Änderungen
 
+- **Alpha.246** übernimmt bei einem regulären Neustart bestätigte SunEnergy-Lade- und Entladeaufträge. [Versionshinweise](docs/release-0.17.0-alpha.246.md)
 - **Alpha.245** wartet bei sinkendem Entladeziel oder Neustart kurz auf eine ausstehende SunEnergy-Bestätigung. [Versionshinweise](docs/release-0.17.0-alpha.245.md)
 - **Alpha.244** gibt bestätigte SunEnergy-Entladeaufträge nach frischer Nullrückmeldung automatisch frei. [Versionshinweise](docs/release-0.17.0-alpha.244.md)
 - **Alpha.243** korrigiert den SunEnergy-Ladeauftrag im Beobachtungsmodus anhand der gemessenen Abweichung am Netzanschlusspunkt. [Versionshinweise](docs/release-0.17.0-alpha.243.md)
