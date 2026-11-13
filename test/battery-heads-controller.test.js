@@ -196,6 +196,22 @@ test('restart automatically returns an observed SunEnergy charge and starts agai
     assert.equal(h.value('Devices.Battery.ConfirmPhysicalStop'), false);
 });
 
+test('restart returns a charge whose GS was confirmed while its AC power was still ramping', () => {
+    const before = harness(1);
+    before.own('Config.BatteryFineStep_W', 600); before.tick(); before.complete();
+    before.advance(2000); before.snapshot(1, {GS: -600, GP: -180}); before.fresh(); before.tick();
+    assert.equal(before.value('Devices.Battery.OutputUnobservedCommand_W'), 600);
+    assert.ok(JSON.parse(before.value('Devices.Battery.HeadOwnership_JSON')).heads[0].unobservedEchoAt > 0);
+    before.run("stopBatteryOutput('Adapter wird beendet')"); before.complete();
+    const h = harness(1, before.states);
+    h.advance(3000); h.fresh();
+    h.tick(); h.complete(); assert.deepEqual(h.commands(), [0]);
+    h.advance(1000); h.fresh(); h.tick();
+    assert.deepEqual(h.commands(), [0, -600]);
+    assert.equal(h.value('Devices.Battery.ConfirmPhysicalStop'), false);
+    assert.equal(h.value('Devices.Battery.Fault'), '');
+});
+
 test('restart keeps genuinely unseen charge reserved despite new zero telemetry', () => {
     const before = harness(1);
     before.own('Config.BatteryFineStep_W', 600); before.tick(); before.complete();
@@ -686,7 +702,9 @@ test('PV observation ramps past the learned ceiling only against fresh export af
     }
     h.grid.gridW = -390; h.tick();
     assert.equal(h.commands().at(-1), -1232, '842 W actual plus 390 W export');
-    h.complete(); h.advance(2000); h.snapshot(1, {GS: -1232, GP: -1230}); h.fresh();
+    h.complete(); h.advance(1000); h.fresh(); h.tick();
+    assert.deepEqual(h.commands(), [-1000, -850, -1232], 'keep the probe while feedback is pending');
+    h.advance(2000); h.snapshot(1, {GS: -1232, GP: -1230}); h.fresh();
     h.grid.gridW = -900; h.tick();
     assert.equal(h.commands().at(-1), -1830, 'next step is limited to 600 W above actual');
     h.complete(); h.advance(2000); h.snapshot(1, {GS: -1830, GP: -1820}); h.fresh();

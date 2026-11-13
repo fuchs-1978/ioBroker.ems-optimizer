@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.240",
+    "version": "0.17.0-alpha.241",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.241": {
+        "en": "Keep pending SunEnergy charging steps and retain setpoint confirmation across restarts.",
+        "de": "Offene SunEnergy-Ladeschritte halten und Sollwertbestätigung über Neustarts speichern.",
+        "es": "Mantiene los pasos de carga pendientes y conserva la confirmación al reiniciar.",
+        "fr": "Maintient les paliers de charge en attente et conserve leur confirmation au redémarrage.",
+        "it": "Mantiene i passi di carica in attesa e conserva la conferma al riavvio.",
+        "nl": "Behoudt openstaande laadstappen en de bevestiging bij herstart.",
+        "pl": "Utrzymuje oczekujące kroki ładowania i zachowuje potwierdzenie po restarcie.",
+        "pt": "Mantém os passos de carregamento pendentes e guarda a confirmação após reiniciar.",
+        "ru": "Сохраняет текущий шаг зарядки и подтверждение уставки после перезапуска.",
+        "uk": "Зберігає поточний крок заряджання та підтвердження після перезапуску.",
+        "zh-cn": "保持等待反馈的充电步进并在重启后保留设定值确认。"
+      },
       "0.17.0-alpha.240": {
         "en": "Resume SunEnergy control automatically after restart once the previous observed output is confirmed at zero.",
         "de": "SunEnergy-Regelung nach Neustart bei bestätigter Nullrückmeldung automatisch wieder aufnehmen.",
@@ -81,19 +94,6 @@
         "ru": "Снижает заряд от ФЭМ после подтверждения уставки SunEnergy и повышает его от измеренной мощности.",
         "uk": "Знижує заряджання від ФЕМ після підтвердження SunEnergy і підвищує його від виміряної потужності.",
         "zh-cn": "SunEnergy 确认设定值后可立即降低光伏充电，并从实测功率逐步提高。"
-      },
-      "0.17.0-alpha.234": {
-        "en": "Keep the learned SunEnergy charge ceiling when PV surplus temporarily falls.",
-        "de": "Gelernte SunEnergy-Ladegrenze bei vorübergehend geringerem PV-Überschuss behalten.",
-        "es": "Conserva el límite de carga aprendido cuando baja temporalmente el excedente fotovoltaico.",
-        "fr": "Conserve la limite de charge apprise lorsque le surplus photovoltaïque diminue temporairement.",
-        "it": "Mantiene il limite di carica appreso se il surplus fotovoltaico diminuisce temporaneamente.",
-        "nl": "Behoudt de geleerde laadgrens bij een tijdelijke daling van het PV-overschot.",
-        "pl": "Zachowuje ustalony limit ładowania przy chwilowym spadku nadwyżki PV.",
-        "pt": "Mantém o limite de carregamento aprendido quando o excedente fotovoltaico diminui temporariamente.",
-        "ru": "Сохраняет определённый предел зарядки при временном снижении избытка солнечной энергии.",
-        "uk": "Зберігає визначену межу заряджання при тимчасовому зменшенні надлишку сонячної енергії.",
-        "zh-cn": "光伏余量暂时下降时保留已识别的充电上限。"
       }
     },
     "titleLang": {
