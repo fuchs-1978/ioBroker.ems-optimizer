@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.249",
+    "version": "0.17.0-alpha.250",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.250": {
+        "en": "Reduce an acknowledged SunEnergy discharge while AC power is still settling, including household discharge.",
+        "de": "Bestätigten SunEnergy-Entladeauftrag auch bei der Haushaltsentladung direkt reduzieren.",
+        "es": "Reduce la descarga confirmada de SunEnergy también para el consumo del hogar.",
+        "fr": "Réduit la décharge SunEnergy confirmée également pour la consommation du foyer.",
+        "it": "Riduce la scarica SunEnergy confermata anche per i consumi domestici.",
+        "nl": "Verlaagt een bevestigde SunEnergy-ontlading ook bij huishoudelijk verbruik.",
+        "pl": "Zmniejsza potwierdzone rozładowanie SunEnergy także na potrzeby domu.",
+        "pt": "Reduz a descarga confirmada da SunEnergy também para o consumo doméstico.",
+        "ru": "Снижает подтверждённую мощность разряда SunEnergy и для бытовой нагрузки.",
+        "uk": "Зменшує підтверджену потужність розряду SunEnergy також для побутового навантаження.",
+        "zh-cn": "家庭用电时也可直接降低已确认的 SunEnergy 放电功率。"
+      },
       "0.17.0-alpha.249": {
         "en": "Reduce acknowledged SunEnergy discharge directly while buffering a wallbox.",
         "de": "Bestätigten SunEnergy-Entladeauftrag beim Wallbox-Puffern direkt reduzieren.",
@@ -81,19 +94,6 @@
         "ru": "Снимает подтверждённую команду разряда SunEnergy после нового нулевого показания.",
         "uk": "Знімає підтверджену команду розряджання SunEnergy після нового нульового показання.",
         "zh-cn": "收到新的归零反馈后，自动释放已确认的 SunEnergy 放电指令。"
-      },
-      "0.17.0-alpha.243": {
-        "en": "Correct measured grid power watt by watt after confirmed SunEnergy charging feedback.",
-        "de": "Netzleistung nach bestätigter SunEnergy-Laderückmeldung wattgenau korrigieren.",
-        "es": "Corrige la potencia de red vatio a vatio tras confirmar la carga SunEnergy.",
-        "fr": "Corrige la puissance réseau au watt près après confirmation de la charge SunEnergy.",
-        "it": "Corregge la potenza di rete al watt dopo la conferma della carica SunEnergy.",
-        "nl": "Corrigeert het netvermogen per watt na bevestigde SunEnergy-laadterugmelding.",
-        "pl": "Koryguje moc sieci co do wata po potwierdzeniu ładowania SunEnergy.",
-        "pt": "Corrige a potência da rede watt a watt após confirmação do carregamento SunEnergy.",
-        "ru": "Корректирует мощность сети с точностью до ватта после подтверждения зарядки SunEnergy.",
-        "uk": "Коригує мережеву потужність до вата після підтвердження заряджання SunEnergy.",
-        "zh-cn": "确认 SunEnergy 充电反馈后，按瓦修正并网功率。"
       }
     },
     "titleLang": {
