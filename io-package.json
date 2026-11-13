@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.234",
+    "version": "0.17.0-alpha.235",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.235": {
+        "en": "Reduce PV charging as soon as the SunEnergy setpoint is echoed and ramp up from measured power.",
+        "de": "PV-Ladung nach bestätigtem SunEnergy-Sollwert direkt reduzieren und anhand der Istleistung hochregeln.",
+        "es": "Reduce la carga solar tras confirmar la consigna SunEnergy y aumenta desde la potencia medida.",
+        "fr": "Réduit la charge solaire après confirmation de la consigne SunEnergy et repart de la puissance mesurée.",
+        "it": "Riduce la carica solare dopo la conferma SunEnergy e riparte dalla potenza misurata.",
+        "nl": "Verlaagt PV-lading na bevestiging door SunEnergy en verhoogt vanaf het gemeten vermogen.",
+        "pl": "Zmniejsza ładowanie PV po potwierdzeniu nastawy SunEnergy i zwiększa je od mocy zmierzonej.",
+        "pt": "Reduz o carregamento solar após confirmação SunEnergy e aumenta a partir da potência medida.",
+        "ru": "Снижает заряд от ФЭМ после подтверждения уставки SunEnergy и повышает его от измеренной мощности.",
+        "uk": "Знижує заряджання від ФЕМ після підтвердження SunEnergy і підвищує його від виміряної потужності.",
+        "zh-cn": "SunEnergy 确认设定值后可立即降低光伏充电，并从实测功率逐步提高。"
+      },
       "0.17.0-alpha.234": {
         "en": "Keep the learned SunEnergy charge ceiling when PV surplus temporarily falls.",
         "de": "Gelernte SunEnergy-Ladegrenze bei vorübergehend geringerem PV-Überschuss behalten.",
@@ -81,19 +94,6 @@
         "ru": "Позволяет освободить выход батареи SunEnergy при отключённом управлении батареей и включённых остальных устройствах EMS.",
         "uk": "Дає змогу звільнити вихід батареї SunEnergy за вимкненого керування батареєю та ввімкнених інших пристроїв EMS.",
         "zh-cn": "在禁用电池控制的情况下释放 SunEnergy 电池输出，同时保持其他 EMS 设备启用。"
-      },
-      "0.17.0-alpha.228": {
-        "en": "Use available PV surplus for parallel charging while accounting for a wallbox that is still running during its stop delay.",
-        "de": "PV-Überschuss im Parallelbetrieb nutzen und eine während der Abschaltverzögerung weiterladende Wallbox einrechnen.",
-        "es": "Usa el excedente fotovoltaico para la carga en paralelo teniendo en cuenta la estación que sigue cargando durante el retardo de parada.",
-        "fr": "Utilise le surplus photovoltaïque pour la charge en parallèle en tenant compte de la borne encore active pendant le délai d’arrêt.",
-        "it": "Usa il surplus fotovoltaico per la ricarica in parallelo tenendo conto della stazione ancora attiva durante il ritardo di arresto.",
-        "nl": "Gebruik PV-overschot voor parallel laden en houd rekening met een laadpunt dat tijdens de stopvertraging actief blijft.",
-        "pl": "Wykorzystuje nadwyżkę PV do równoległego ładowania, uwzględniając stację nadal pracującą podczas opóźnienia wyłączenia.",
-        "pt": "Utiliza o excedente fotovoltaico para o carregamento em paralelo, tendo em conta a estação que continua ativa durante o atraso de paragem.",
-        "ru": "Использует избыток солнечной энергии для параллельной зарядки с учётом станции, продолжающей работу во время задержки отключения.",
-        "uk": "Використовує надлишок сонячної енергії для паралельного заряджання з урахуванням станції, яка працює під час затримки вимкнення.",
-        "zh-cn": "并行充电时，将停机延时期间仍在充电的充电桩计入功率预算，以利用光伏余电。"
       }
     },
     "titleLang": {
