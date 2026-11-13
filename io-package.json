@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.239",
+    "version": "0.17.0-alpha.240",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.240": {
+        "en": "Resume SunEnergy control automatically after restart once the previous observed output is confirmed at zero.",
+        "de": "SunEnergy-Regelung nach Neustart bei bestätigter Nullrückmeldung automatisch wieder aufnehmen.",
+        "es": "Reanuda el control SunEnergy tras reiniciar y confirmar el cero.",
+        "fr": "Reprend automatiquement la régulation SunEnergy après le redémarrage et la confirmation du zéro.",
+        "it": "Riprende automaticamente il controllo SunEnergy dopo il riavvio e la conferma dello zero.",
+        "nl": "Hervat de SunEnergy-regeling na herstart en bevestiging van nul.",
+        "pl": "Wznawia sterowanie SunEnergy po restarcie i potwierdzeniu zera.",
+        "pt": "Retoma o controlo SunEnergy após reiniciar e confirmar zero.",
+        "ru": "Возобновляет управление SunEnergy после перезапуска и подтверждения нуля.",
+        "uk": "Відновлює керування SunEnergy після перезапуску й підтвердження нуля.",
+        "zh-cn": "重启后确认 SunEnergy 已归零时自动恢复控制。"
+      },
       "0.17.0-alpha.239": {
         "en": "Use the configured SunEnergy charging step after confirmed feedback and fresh grid export in observation mode.",
         "de": "Im SunEnergy-Beobachtungsmodus nach bestätigter Ladeleistung und bei frischer Einspeisung mit der eingestellten Schrittweite nachregeln.",
@@ -81,19 +94,6 @@
         "ru": "Сохраняет определённый предел зарядки при временном снижении избытка солнечной энергии.",
         "uk": "Зберігає визначену межу заряджання при тимчасовому зменшенні надлишку сонячної енергії.",
         "zh-cn": "光伏余量暂时下降时保留已识别的充电上限。"
-      },
-      "0.17.0-alpha.233": {
-        "en": "Release a canceled SunEnergy command after a fresh zero confirmation when it was never dispatched.",
-        "de": "Vor der Ausgabe verworfenen SunEnergy-Auftrag nach frischer Nullbestätigung freigeben.",
-        "es": "Libera una orden SunEnergy cancelada antes del envío tras confirmar cero.",
-        "fr": "Libère une commande SunEnergy annulée avant l’envoi après confirmation du zéro.",
-        "it": "Libera un comando SunEnergy annullato prima dell’invio dopo la conferma dello zero.",
-        "nl": "Geeft een vóór verzending geannuleerde SunEnergy-opdracht vrij na nulbevestiging.",
-        "pl": "Zwalnia anulowane przed wysłaniem polecenie SunEnergy po potwierdzeniu zera.",
-        "pt": "Liberta um comando SunEnergy cancelado antes do envio após confirmação de zero.",
-        "ru": "Снимает резерв отменённой до отправки команды SunEnergy после подтверждения нуля.",
-        "uk": "Знімає резерв скасованої до надсилання команди SunEnergy після підтвердження нуля.",
-        "zh-cn": "确认零功率后释放发送前已取消的 SunEnergy 指令。"
       }
     },
     "titleLang": {

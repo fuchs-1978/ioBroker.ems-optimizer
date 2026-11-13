@@ -177,6 +177,36 @@ test('restart or topology change returns all former IDs and never reuses their a
     assert.deepEqual(remap.commands(), [0, 0, 0]);
 });
 
+test('restart automatically returns an observed SunEnergy charge and starts again after fresh zero', () => {
+    const before = harness(1);
+    before.own('Config.BatteryFineStep_W', 600);
+    before.own('Control.Targets.Battery_W', 600);
+    before.tick(); before.complete(); before.follow(); before.tick();
+    assert.equal(before.value('Devices.Battery.OutputUnobservedCommand_W'), 0);
+    before.run("stopBatteryOutput('Adapter wird beendet')"); before.complete();
+    const h = harness(1, before.states);
+    h.own('Config.BatteryFineStep_W', 600);
+    h.tick(); assert.deepEqual(h.commands(), [0]);
+    h.advance(1000); h.fresh(); h.complete(); h.tick();
+    assert.deepEqual(h.commands(), [0], 'zero telemetry from before write completion is insufficient');
+    h.advance(1000); h.fresh(); h.tick();
+    assert.deepEqual(h.commands(), [0, -600]);
+    assert.equal(h.value('Devices.Battery.Fault'), '');
+    assert.equal(h.value('Devices.Battery.RegulationAvailable'), true);
+    assert.equal(h.value('Devices.Battery.ConfirmPhysicalStop'), false);
+});
+
+test('restart keeps genuinely unseen charge reserved despite new zero telemetry', () => {
+    const before = harness(1);
+    before.own('Config.BatteryFineStep_W', 600); before.tick(); before.complete();
+    before.run("stopBatteryOutput('Adapter wird beendet')"); before.complete();
+    const h = harness(1, before.states);
+    h.tick(); h.complete(); h.advance(1000); h.fresh(); h.tick();
+    assert.deepEqual(h.commands(), [0]);
+    assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 600);
+    assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), 600);
+});
+
 test('direction reversal waits for physically confirmed zero of every head', () => {
     const h = harness(2); h.tick(); h.complete(); h.follow(); h.own('Control.Targets.Battery_W', -1000); h.tick();
     assert.deepEqual(h.commands(), [-50, -50, 0, 0]); h.complete(); h.advance(1100); h.fresh();
