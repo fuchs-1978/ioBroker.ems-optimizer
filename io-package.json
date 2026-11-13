@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.241",
+    "version": "0.17.0-alpha.242",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.242": {
+        "en": "Allow brief SunEnergy feedback before a normal restart stops an in-flight charge.",
+        "de": "Bei regulärem Neustart vor dem Nullbefehl kurz auf die laufende SunEnergy-Rückmeldung warten.",
+        "es": "Espera brevemente la confirmación de SunEnergy antes de parar la carga al reiniciar.",
+        "fr": "Attend brièvement le retour SunEnergy avant l’arrêt de charge au redémarrage.",
+        "it": "Attende brevemente la conferma SunEnergy prima di arrestare la carica al riavvio.",
+        "nl": "Wacht kort op SunEnergy-terugmelding voor de laadstop bij herstart.",
+        "pl": "Krótko czeka na potwierdzenie SunEnergy przed zatrzymaniem ładowania przy restarcie.",
+        "pt": "Aguarda brevemente a confirmação SunEnergy antes de parar o carregamento ao reiniciar.",
+        "ru": "При перезапуске кратко ожидает отклика SunEnergy перед остановкой зарядки.",
+        "uk": "Перед зупинкою заряджання під час перезапуску коротко чекає відповіді SunEnergy.",
+        "zh-cn": "正常重启时在停止充电前短暂等待 SunEnergy 反馈。"
+      },
       "0.17.0-alpha.241": {
         "en": "Keep pending SunEnergy charging steps and retain setpoint confirmation across restarts.",
         "de": "Offene SunEnergy-Ladeschritte halten und Sollwertbestätigung über Neustarts speichern.",
@@ -81,19 +94,6 @@
         "ru": "Кратко ожидает подтверждения начала зарядки SunEnergy при снижении избытка солнечной энергии.",
         "uk": "Коротко очікує підтвердження початку заряджання SunEnergy при зменшенні надлишку сонячної енергії.",
         "zh-cn": "光伏余量下降时短暂等待 SunEnergy 确认启动充电。"
-      },
-      "0.17.0-alpha.235": {
-        "en": "Reduce PV charging as soon as the SunEnergy setpoint is echoed and ramp up from measured power.",
-        "de": "PV-Ladung nach bestätigtem SunEnergy-Sollwert direkt reduzieren und anhand der Istleistung hochregeln.",
-        "es": "Reduce la carga solar tras confirmar la consigna SunEnergy y aumenta desde la potencia medida.",
-        "fr": "Réduit la charge solaire après confirmation de la consigne SunEnergy et repart de la puissance mesurée.",
-        "it": "Riduce la carica solare dopo la conferma SunEnergy e riparte dalla potenza misurata.",
-        "nl": "Verlaagt PV-lading na bevestiging door SunEnergy en verhoogt vanaf het gemeten vermogen.",
-        "pl": "Zmniejsza ładowanie PV po potwierdzeniu nastawy SunEnergy i zwiększa je od mocy zmierzonej.",
-        "pt": "Reduz o carregamento solar após confirmação SunEnergy e aumenta a partir da potência medida.",
-        "ru": "Снижает заряд от ФЭМ после подтверждения уставки SunEnergy и повышает его от измеренной мощности.",
-        "uk": "Знижує заряджання від ФЕМ після підтвердження SunEnergy і підвищує його від виміряної потужності.",
-        "zh-cn": "SunEnergy 确认设定值后可立即降低光伏充电，并从实测功率逐步提高。"
       }
     },
     "titleLang": {

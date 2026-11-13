@@ -313,6 +313,27 @@ test('unload requests every independent actuator stop before waiting for journal
     assert.ok(steps.indexOf('finishRecording') < steps.indexOf('journal-close'));
 });
 
+test('normal SunEnergy restart waits for pending feedback while independent stops run', async () => {
+    for (const allowHandoff of [true, false]) {
+        const a = adapter();
+        Object.assign(a.config, {batteryDispatchMode: 'sunenergy-heads', batteryPresent: true,
+            batteryControlEnabled: true, batteryProductionArmed: true, globalWriteEnabled: true});
+        a.engineContext = {};
+        const steps = [];
+        let checks = 0;
+        a.runEngine = source => {
+            if (source.includes('batteryHasUnconfirmedWriteOnRestart')) return ++checks < 3;
+            steps.push(source.match(/stop\w+Output/)[0]);
+        };
+        a.getForeignObjectAsync = async () => ({common: {enabled: true}, native: {...a.config}});
+        a.wallboxOutput.waitForIdle = async () => {};
+        a.wallboxOutput.stopAll = async () => {};
+        await a.prepareUnload({allowHandoff});
+        assert.equal(checks, allowHandoff ? 3 : 0);
+        assert.equal(steps.indexOf('stopBatteryOutput'), allowHandoff ? 3 : 1);
+    }
+});
+
 test('recorded foreign write distinguishes attempt/transport from raw actuator ACK and keeps safety errors', async () => {
     const a = adapter(); const events = [];
     a.shadowController.commandEvent = (stage, id, value, token, error) => {
