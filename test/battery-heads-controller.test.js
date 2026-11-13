@@ -259,6 +259,48 @@ test('restart keeps genuinely unseen charge reserved despite new zero telemetry'
     assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), 600);
 });
 
+for (const target of [600, -514]) {
+    test(`fresh online zeros automatically clear a previously unseen ${target} W command after restart`, () => {
+        const before = harness(1);
+        before.own('Config.BatteryFineStep_W', 600);
+        before.own('Control.Targets.Battery_W', target);
+        before.tick(); before.complete();
+        before.run("stopBatteryOutput('Adapter wird beendet')"); before.complete();
+        const h = harness(1, before.states);
+        h.tick(); h.complete();
+        h.advance(1000); h.fresh(); h.tick();
+        h.advance(10000); h.tick();
+        assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), target, 'repeated cache read is no new sample');
+        h.fresh(); h.tick();
+        h.advance(1000); h.fresh(); h.put('sunenergyxt500.0.heads.1.info.online', false); h.tick();
+        assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), target, 'offline breaks the proof');
+        for (let sample = 0; sample < 3; sample++) {
+            h.advance(5000); h.fresh(); h.tick(); h.complete();
+            if (sample < 2) assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), target);
+        }
+        assert.equal(h.value('Devices.Battery.Fault'), '');
+        assert.deepEqual(h.commands(), [0, -600]);
+        assert.equal(h.value('Devices.Battery.ConfirmPhysicalStop'), false);
+    });
+}
+
+test('a late nonzero response restarts the zero verification window before any new command', () => {
+    const h = harness(1);
+    h.own('Control.Targets.Battery_W', -514);
+    h.tick(); h.complete();
+    h.own('Control.Targets.Battery_W', 0);
+    h.tick(); h.complete();
+    h.advance(1000); h.fresh(); h.tick();
+    h.advance(5000); h.fresh(); h.tick();
+    h.advance(5000); h.snapshot(1, {GS: 80, GP: 80}); h.fresh(); h.tick(); h.complete();
+    assert.deepEqual(h.commands(), [100, 0, 0]);
+    h.advance(5000); h.snapshot(1, {GS: 0, GP: 0}); h.fresh(); h.tick();
+    assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), -100);
+    h.advance(5000); h.fresh(); h.tick();
+    h.advance(5000); h.fresh(); h.own('Control.Targets.Battery_W', 650); h.tick();
+    assert.deepEqual(h.commands(), [100, 0, 0, -100]);
+});
+
 test('direction reversal waits for physically confirmed zero of every head', () => {
     const h = harness(2); h.tick(); h.complete(); h.follow(); h.own('Control.Targets.Battery_W', -1000); h.tick();
     assert.deepEqual(h.commands(), [-50, -50, 0, 0]); h.complete(); h.advance(1100); h.fresh();
@@ -702,11 +744,11 @@ test('late discharge echo permits automatic return after a fresh zero and then P
     h.advance(1000); h.fresh(); h.tick();
     assert.deepEqual(h.commands(), [514, 0]);
     assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), -514);
-    h.advance(1000); h.snapshot(1, {GS: 514, GP: 60}); h.fresh(); h.tick();
+    h.advance(1000); h.snapshot(1, {GS: 514, GP: 60}); h.fresh(); h.tick(); h.complete();
     h.advance(1000); h.snapshot(1, {GS: 0, GP: 0}); h.fresh();
     h.own('Control.Targets.Battery_W', 650);
     h.tick();
-    assert.deepEqual(h.commands(), [514, 0, -600]);
+    assert.deepEqual(h.commands(), [514, 0, 0, -600]);
     assert.equal(h.value('Devices.Battery.ConfirmPhysicalStop'), false);
 });
 

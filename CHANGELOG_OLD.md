@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.241 (2026-11-13)
+
+- Hold a charging step until feedback arrives and retain the SunEnergy confirmation across restart. [Release notes](docs/release-0.17.0-alpha.241.md)
+
 ## 0.17.0-alpha.240 (2026-11-13)
 
 - Resume SunEnergy regulation after a verified restart stop. [Release notes](docs/release-0.17.0-alpha.240.md)
