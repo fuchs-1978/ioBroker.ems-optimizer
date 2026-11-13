@@ -1178,6 +1178,41 @@ class EmsOptimizer extends utils.Adapter {
             this.log.error(`Cannot prepare safe unload: ${error.message}`)).finally(callback);
     }
 
+    async stopBatteryOnUnload(allowHandoff, instanceRead) {
+        try {
+            const hasPending = () => this.runEngine(
+                "typeof batteryHasUnconfirmedWriteOnRestart === 'function' && batteryHasUnconfirmedWriteOnRestart()") === true;
+            if (allowHandoff && this.config.batteryDispatchMode === 'sunenergy-heads' && hasPending()) {
+                // Only a normal restart with the same armed outputs may wait.
+                // A changed configuration or disabled instance needs zero now.
+                let timeout;
+                const instance = await Promise.race([instanceRead,
+                    new Promise(resolve => { timeout = shutdownTimers.setTimeout(resolve, 250); })])
+                    .finally(() => shutdownTimers.clearTimeout(timeout));
+                const next = instance?.native;
+                if (instance?.common?.enabled === true && next
+                    && ['globalWriteEnabled', 'batteryPresent', 'batteryControlEnabled', 'batteryProductionArmed']
+                        .every(key => this.config[key] === true && next[key] === true)
+                    && ['batteryDispatchMode', 'batterySunEnergyInstance', 'batteryHeadCount',
+                        'batteryHead1MaxChargeW', 'batteryHead2MaxChargeW', 'batteryHead3MaxChargeW',
+                        'batteryHead1MaxDischargeW', 'batteryHead2MaxDischargeW', 'batteryHead3MaxDischargeW']
+                        .every(key => this.config[key] === next[key])) {
+                    const deadline = Date.now() + 2500;
+                    while (Date.now() < deadline && hasPending())
+                        await new Promise(resolve => shutdownTimers.setTimeout(resolve, 100));
+                }
+            }
+        } catch (error) {
+            this.log.warn(`Cannot check battery restart feedback: ${error.message}`);
+        }
+        try {
+            this.runEngine("if (typeof stopBatteryOutput === 'function') stopBatteryOutput('Adapter wird beendet');");
+            await Promise.allSettled([...this.pendingForeignWrites]);
+        } catch (error) {
+            this.log.error(`Cannot stop stopBatteryOutput on unload: ${error.message}`);
+        }
+    }
+
     async prepareUnload({allowHandoff = true} = {}) {
         if (typeof this.requireLog === "function") this.requireLog(false);
         this.runShadow('beginShutdown');
@@ -1200,8 +1235,15 @@ class EmsOptimizer extends utils.Adapter {
         // Issue independent stops before waiting for any foreign channel.
         // Each actuator queue already orders its own final zero; a stalled
         // storage write must not defer a different heater's stop request.
+        const instanceRead = Promise.resolve().then(() => this.getForeignObjectAsync(`system.adapter.${this.namespace}`))
+            .catch(error => {
+                this.log.warn(`Cannot determine restart handoff: ${error.message}`);
+                return null;
+            });
+        let batteryStop;
         if (this.engineContext) {
-            for (const stop of ['stopDhwOutput', 'stopBatteryOutput', 'stopHeatingOutput', 'stopHeatPumpOutput']) {
+            batteryStop = this.stopBatteryOnUnload(allowHandoff, instanceRead);
+            for (const stop of ['stopDhwOutput', 'stopHeatingOutput', 'stopHeatPumpOutput']) {
                 try {
                     this.runEngine(`if (typeof ${stop} === 'function') ${stop}('Adapter wird beendet');`);
                 } catch (error) {
@@ -1212,12 +1254,7 @@ class EmsOptimizer extends utils.Adapter {
         if (this.outputInitialization) await this.outputInitialization.catch(error =>
             this.log.warn(`Output initialization interrupted: ${error.message}`));
         await this.wallboxOutput.waitForIdle();
-        let instanceObject = null;
-        try {
-            instanceObject = await this.getForeignObjectAsync(`system.adapter.${this.namespace}`);
-        } catch (error) {
-            this.log.warn(`Cannot determine restart handoff: ${error.message}`);
-        }
+        const instanceObject = await instanceRead;
         const preserveWallbox = allowHandoff && shouldPreserveWallboxOnUnload(this.config, instanceObject,
             this.wallboxOutput.hasActiveOwnedOutput(), this.wallboxOutput.devices
                 .filter(d => d.owned).map(d => d.wb));
@@ -1238,7 +1275,7 @@ class EmsOptimizer extends utils.Adapter {
             stops.push(this.wallboxOutput.stopAll());
             this.setCompatState(`${this.namespace}.Control.RestartHandoffActive`, false, true);
         }
-        stops.push(...this.pendingForeignWrites);
+        stops.push(batteryStop, ...this.pendingForeignWrites);
         const results = await Promise.allSettled(stops);
         for (const result of results) if (result.status === "rejected")
             this.log.error(`Cannot stop output on unload: ${result.reason}`);
