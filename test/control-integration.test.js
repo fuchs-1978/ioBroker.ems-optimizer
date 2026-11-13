@@ -1395,6 +1395,35 @@ test('SunEnergy bridges a 300 W PV dip without resetting the wallbox stop delay'
     assert.ok(h.physical().batteryW >= 0, h.diagnostic());
 });
 
+test('SunEnergy replenishes the minimum reserve at up to 1000 W without price permission', async () => {
+    const h = await plant({battery: true, batteryHeadType: 2, wallbox: false, initialSurplusW: 0,
+        split: false, lpcLimitW: 4200,
+        nativeConfig: {batteryDispatchMode: 'sunenergy-heads', dhwControlEnabled: false}});
+    h.own('Devices.MyPV_DHW.ControlEnabled', false);
+    h.own('Config.BatteryPriceChargingEnabled', false);
+    h.own('Config.BatteryFineStep_W', 600);
+    h.own('Control.TargetGridPower_W', 0);
+    const setSoc = soc => h.put(h.mapping.DP_BATTERY_SOC, soc);
+    setSoc(20); await h.advance(8);
+    assert.equal(h.physical().batteryW, 0);
+    setSoc(19); await h.advance(20);
+    assert.equal(h.value('Control.BatteryReserveGridCharge_W'), 1000);
+    assert.equal(h.value('Control.BatteryPriceGridCharge_W'), 0);
+    assert.equal(h.physical().batteryW, 1000, h.diagnostic());
+    h.put('lpc.limit', 600); await h.advance(10);
+    assert.equal(h.value('Control.BatteryReserveGridCharge_W'), 600);
+    assert.equal(h.physical().batteryW, 600, h.diagnostic());
+    h.put('lpc.limit', 4200);
+    setSoc(21); await h.advance(8);
+    assert.equal(h.physical().batteryW, 1000);
+    setSoc(22); await h.advance(15);
+    assert.equal(h.value('Devices.Battery.ReserveRecoveryActive'), false);
+    assert.equal(h.value('Control.BatteryReserveGridCharge_W'), 0);
+    assert.equal(h.physical().batteryW, 0, h.diagnostic());
+    setSoc(21); await h.advance(8);
+    assert.equal(h.physical().batteryW, 0);
+});
+
 test('night CHP surplus and battery start the Mii at 6 A, stop at 70%, and recharge before repeating', async () => {
     const h = await plant({battery: true, batteryHeadType: 2, mii: true, wallbox: false, initialSurplusW: 530,
         split: false, startDelayS: 5, minimumRuntimeS: 600, initialTime: Date.UTC(2026, 10, 13, 22),
