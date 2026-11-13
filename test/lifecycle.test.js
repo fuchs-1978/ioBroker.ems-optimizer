@@ -334,6 +334,27 @@ test('normal SunEnergy restart waits for pending feedback while independent stop
     }
 });
 
+test('SunEnergy unload persists a confirmed handoff only when the output stays armed', async () => {
+    for (const released of [true, false]) {
+        const a = adapter();
+        Object.assign(a.config, {batteryDispatchMode: 'sunenergy-heads', batteryPresent: true,
+            batteryControlEnabled: true, batteryProductionArmed: true, globalWriteEnabled: true});
+        a.engineContext = {};
+        const calls = [];
+        a.runEngine = source => {
+            calls.push(source);
+            return source.includes('prepareBatteryHeadsRestartHandoff');
+        };
+        a.getForeignObjectAsync = async () => ({common: {enabled: true},
+            native: {...a.config, batteryControlEnabled: released}});
+        a.wallboxOutput.waitForIdle = async () => {};
+        a.wallboxOutput.stopAll = async () => {};
+        await a.prepareUnload();
+        assert.equal(calls.some(s => s.includes('prepareBatteryHeadsRestartHandoff')), released);
+        assert.equal(calls.some(s => s.includes('stopBatteryOutput')), !released);
+    }
+});
+
 test('recorded foreign write distinguishes attempt/transport from raw actuator ACK and keeps safety errors', async () => {
     const a = adapter(); const events = [];
     a.shadowController.commandEvent = (stage, id, value, token, error) => {

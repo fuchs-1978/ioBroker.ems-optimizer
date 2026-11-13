@@ -196,6 +196,42 @@ test('restart automatically returns an observed SunEnergy charge and starts agai
     assert.equal(h.value('Devices.Battery.ConfirmPhysicalStop'), false);
 });
 
+for (const target of [600, -514]) {
+    test(`normal restart adopts a confirmed ${target} W SunEnergy output without writing zero`, () => {
+        const before = harness(1);
+        before.own('Control.Targets.Battery_W', target);
+        before.own('Config.BatteryFineStep_W', 600);
+        before.tick(); before.complete(); before.follow(); before.tick();
+        assert.equal(before.run('prepareBatteryHeadsRestartHandoff()'), true);
+        assert.deepEqual(before.commands(), [-target]);
+
+        const after = harness(1, before.states);
+        after.advance(2200);
+        after.own('Control.Targets.Battery_W', target);
+        after.snapshot(1, {GS: -target, GP: -target}); after.fresh();
+        after.tick();
+        assert.deepEqual(after.commands(), []);
+        assert.equal(after.value('Devices.Battery.OutputCommandInternal_W'), target);
+        assert.equal(after.value('Devices.Battery.Fault'), '');
+        assert.equal(after.value('Devices.Battery.RegulationAvailable'), true);
+        assert.equal(JSON.parse(after.value('Devices.Battery.HeadOwnership_JSON')).heads[0].handoffAt, undefined);
+    });
+}
+
+test('a stale or mismatched SunEnergy handoff returns through zero', () => {
+    for (const expired of [true, false]) {
+        const before = harness(1);
+        before.own('Control.Targets.Battery_W', 600); before.own('Config.BatteryFineStep_W', 600);
+        before.tick(); before.complete(); before.follow(); before.tick();
+        assert.equal(before.run('prepareBatteryHeadsRestartHandoff()'), true);
+        const after = harness(1, before.states);
+        after.advance(expired ? 32000 : 2200);
+        after.snapshot(1, {GS: expired ? -600 : -601, GP: -600}); after.fresh();
+        after.tick();
+        assert.deepEqual(after.commands(), [0]);
+    }
+});
+
 test('restart returns a charge whose GS was confirmed while its AC power was still ramping', () => {
     const before = harness(1);
     before.own('Config.BatteryFineStep_W', 600); before.tick(); before.complete();

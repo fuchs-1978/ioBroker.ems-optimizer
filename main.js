@@ -1182,7 +1182,7 @@ class EmsOptimizer extends utils.Adapter {
         try {
             const hasPending = () => this.runEngine(
                 "typeof batteryHasUnconfirmedWriteOnRestart === 'function' && batteryHasUnconfirmedWriteOnRestart()") === true;
-            if (allowHandoff && this.config.batteryDispatchMode === 'sunenergy-heads' && hasPending()) {
+            if (allowHandoff && this.config.batteryDispatchMode === 'sunenergy-heads') {
                 // Only a normal restart with the same armed outputs may wait.
                 // A changed configuration or disabled instance needs zero now.
                 let timeout;
@@ -1190,16 +1190,28 @@ class EmsOptimizer extends utils.Adapter {
                     new Promise(resolve => { timeout = shutdownTimers.setTimeout(resolve, 250); })])
                     .finally(() => shutdownTimers.clearTimeout(timeout));
                 const next = instance?.native;
-                if (instance?.common?.enabled === true && next
+                if (instance?.common?.enabled === true && next && next.controlEnabled !== false
                     && ['globalWriteEnabled', 'batteryPresent', 'batteryControlEnabled', 'batteryProductionArmed']
                         .every(key => this.config[key] === true && next[key] === true)
-                    && ['batteryDispatchMode', 'batterySunEnergyInstance', 'batteryHeadCount',
+                    && ['controlEnabled', 'dataPointMapJson', 'par14aAccountingMode',
+                        'batteryDispatchMode', 'batterySunEnergyInstance', 'batteryHeadCount',
                         'batteryHead1MaxChargeW', 'batteryHead2MaxChargeW', 'batteryHead3MaxChargeW',
                         'batteryHead1MaxDischargeW', 'batteryHead2MaxDischargeW', 'batteryHead3MaxDischargeW']
                         .every(key => this.config[key] === next[key])) {
-                    const deadline = Date.now() + 2500;
-                    while (Date.now() < deadline && hasPending())
-                        await new Promise(resolve => shutdownTimers.setTimeout(resolve, 100));
+                    if (hasPending()) {
+                        const deadline = Date.now() + 2500;
+                        do {
+                            await new Promise(resolve => shutdownTimers.setTimeout(resolve, 100));
+                        } while (Date.now() < deadline && hasPending());
+                    }
+                    const unchangedSafety = Object.keys({...this.config, ...next})
+                        .filter(key => /^(battery|houseConnection|par14a|grid|targetGrid|control)/.test(key))
+                        .every(key => this.config[key] === next[key]);
+                    if (unchangedSafety && this.runEngine("typeof prepareBatteryHeadsRestartHandoff === 'function' && prepareBatteryHeadsRestartHandoff()") === true) {
+                        await this.flushOwnWrites();
+                        this.log.info("Adapter restart/update: confirmed SunEnergy output remains active for takeover");
+                        return;
+                    }
                 }
             }
         } catch (error) {

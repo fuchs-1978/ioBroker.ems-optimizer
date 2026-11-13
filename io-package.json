@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.245",
+    "version": "0.17.0-alpha.246",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.246": {
+        "en": "Resume confirmed SunEnergy charging and discharging after a normal restart.",
+        "de": "Bestätigtes SunEnergy-Laden und -Entladen nach regulärem Neustart übernehmen.",
+        "es": "Retoma la carga y descarga SunEnergy confirmadas tras reiniciar.",
+        "fr": "Reprend la charge et la décharge SunEnergy confirmées après redémarrage.",
+        "it": "Riprende carica e scarica SunEnergy confermate dopo il riavvio.",
+        "nl": "Hervat bevestigd laden en ontladen van SunEnergy na herstart.",
+        "pl": "Wznawia potwierdzone ładowanie i rozładowanie SunEnergy po restarcie.",
+        "pt": "Retoma a carga e descarga SunEnergy confirmadas após reiniciar.",
+        "ru": "Возобновляет подтверждённый заряд и разряд SunEnergy после перезапуска.",
+        "uk": "Відновлює підтверджені заряджання й розряджання SunEnergy після перезапуску.",
+        "zh-cn": "正常重启后接管已确认的 SunEnergy 充放电。"
+      },
       "0.17.0-alpha.245": {
         "en": "Wait briefly for SunEnergy discharge confirmation when the target drops or the adapter restarts.",
         "de": "Bei fallendem Entladeziel und beim Neustart kurz auf die SunEnergy-Bestätigung warten.",
@@ -81,19 +94,6 @@
         "ru": "Возобновляет управление SunEnergy после перезапуска и подтверждения нуля.",
         "uk": "Відновлює керування SunEnergy після перезапуску й підтвердження нуля.",
         "zh-cn": "重启后确认 SunEnergy 已归零时自动恢复控制。"
-      },
-      "0.17.0-alpha.239": {
-        "en": "Use the configured SunEnergy charging step after confirmed feedback and fresh grid export in observation mode.",
-        "de": "Im SunEnergy-Beobachtungsmodus nach bestätigter Ladeleistung und bei frischer Einspeisung mit der eingestellten Schrittweite nachregeln.",
-        "es": "Usa el paso de carga SunEnergy configurado tras confirmar la respuesta y medir exportación.",
-        "fr": "Utilise le pas de charge SunEnergy configuré après confirmation et mesure de l’injection.",
-        "it": "Usa il passo di carica SunEnergy configurato dopo la conferma e una misura di immissione.",
-        "nl": "Gebruikt de ingestelde SunEnergy-laadstap na bevestiging en actuele teruglevering.",
-        "pl": "Używa ustawionego kroku ładowania SunEnergy po potwierdzeniu i pomiarze eksportu.",
-        "pt": "Utiliza o passo de carregamento SunEnergy configurado após confirmação e medição de exportação.",
-        "ru": "Использует настроенный шаг зарядки SunEnergy после подтверждения и свежего замера экспорта.",
-        "uk": "Використовує налаштований крок заряджання SunEnergy після підтвердження та свіжого вимірювання експорту.",
-        "zh-cn": "观察模式下，在充电反馈得到确认且有新鲜并网输出测量时，按配置步长增加 SunEnergy 充电功率。"
       }
     },
     "titleLang": {
