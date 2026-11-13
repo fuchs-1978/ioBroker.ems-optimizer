@@ -908,6 +908,90 @@ test('household discharge follows 547 to 432 W after the GS echo while actual po
     assert.equal(h.value('Devices.Battery.Heads.1.ActuatorSettled'), true);
 });
 
+test('an echoed household discharge is reduced during export when measured demand supports a lower output', () => {
+    const h = harness(1);
+    h.own('Config.BatteryDeadband_W', 10);
+    h.own('Config.BatteryFineStep_W', 600);
+    h.grid.gridW = 100;
+    h.own('Control.Targets.Battery_W', -125);
+    h.tick(); h.complete();
+    h.advance(2000); h.fresh(); h.snapshot(1, {GS: 125, GP: 80});
+    h.grid.gridW = -30.9;
+    h.own('Control.Targets.Battery_W', -54);
+    h.tick();
+    assert.deepEqual(h.commands(), [125, 49]);
+
+    const check = `batteryHeadsQueuedCheck(${JSON.stringify(h.writes[1].id)},49).allowed`;
+    assert.equal(h.run(check), true);
+    h.grid.gridW = -37;
+    assert.equal(h.run(check), false, 'a newer export measurement reduces the supported command');
+    h.grid.gridW = -30.9;
+    h.advance(1000); h.fresh();
+    h.grid.sourceTs = [2002000, 2002000];
+    assert.equal(h.run(check), false, 'a newer inverter response needs a matching meter sample');
+    delete h.grid.sourceTs;
+    assert.equal(h.run(check), true);
+    h.complete(); h.advance(1100); h.fresh(); h.snapshot(1, {GS: 49, GP: 49});
+    h.grid.gridW = 0;
+    h.own('Control.Targets.Battery_W', -49);
+    h.tick();
+    assert.deepEqual(h.commands(), [125, 49]);
+    assert.equal(h.value('Devices.Battery.Heads.1.ActuatorSettled'), true);
+});
+
+test('export with insufficient household demand or unproven measurements still stops pending discharge', () => {
+    for (const [reason, change] of Object.entries({
+        'demand below deadband': h => { h.grid.gridW = -71; },
+        'missing GS echo': h => { h.snapshot(1, {GS: 0, GP: 80}); },
+        'held meter pair': h => { h.grid.held = true; },
+        'pre-command meter pair': h => { h.grid.sourceTs = [1999999, 2002000]; },
+        'revoked discharge permission': h => { h.own('Config.BatterySelfConsumptionEnabled', false); },
+        'expired feedback': h => { h.advance(15000); h.fresh(); }
+    })) {
+        const h = harness(1);
+        h.own('Config.BatteryDeadband_W', 10);
+        h.own('Config.BatteryFineStep_W', 600);
+        h.grid.gridW = 100;
+        h.own('Control.Targets.Battery_W', -125);
+        h.tick(); h.complete();
+        h.advance(2000); h.fresh(); h.snapshot(1, {GS: 125, GP: 80});
+        h.grid.gridW = -31;
+        h.own('Control.Targets.Battery_W', -54);
+        change(h); h.tick();
+        assert.deepEqual(h.commands(), [125, 0], reason);
+    }
+});
+
+test('a household discharge waits briefly for a meter sample after the XT500 response', () => {
+    for (const outcome of ['valid meter sample', 'deadline', 'reduced limit']) {
+        const h = harness(1);
+        h.own('Config.BatteryDeadband_W', 10);
+        h.own('Config.BatteryFineStep_W', 600);
+        h.grid.gridW = 104;
+        h.own('Control.Targets.Battery_W', -104);
+        h.tick(); h.complete();
+
+        h.advance(2000); h.fresh(); h.snapshot(1, {GS: 104, GP: 66});
+        h.grid.gridW = -5;
+        h.grid.sourceTs = [2001900, 2001900];
+        h.own('Control.Targets.Battery_W', -61);
+        h.tick();
+        assert.deepEqual(h.commands(), [104], outcome);
+        assert.match(h.value('Devices.Battery.OutputStatus'), /Netzmessung nach/);
+
+        if (outcome === 'deadline') h.advance(4000);
+        if (outcome === 'reduced limit') h.own('Config.BatteryMaxDischarge_W', 80);
+        if (outcome === 'valid meter sample') {
+            h.advance(1000); h.fresh(); h.snapshot(1, {GS: 104, GP: 85});
+            h.grid.gridW = 19;
+            h.grid.sourceTs = [2002800, 2002800];
+            h.own('Control.Targets.Battery_W', -104);
+        }
+        h.tick();
+        assert.deepEqual(h.commands(), outcome === 'valid meter sample' ? [104] : [104, 0], outcome);
+    }
+});
+
 test('late discharge echo permits automatic return after a fresh zero and then PV charging', () => {
     const h = harness(1);
     h.own('Config.BatteryFineStep_W', 600);

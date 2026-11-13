@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.254",
+    "version": "0.17.0-alpha.255",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.255": {
+        "en": "Reduce acknowledged SunEnergy household discharge directly during brief grid export.",
+        "de": "Bestätigte SunEnergy-Haushaltsentladung bei kurzer Einspeisung direkt reduzieren.",
+        "es": "Reduce directamente la descarga confirmada de SunEnergy para el hogar durante una breve exportación a la red.",
+        "fr": "Réduit directement la décharge SunEnergy confirmée pour le foyer lors d’une brève injection réseau.",
+        "it": "Riduce direttamente la scarica SunEnergy confermata per l’abitazione durante una breve immissione in rete.",
+        "nl": "Verlaagt de bevestigde SunEnergy-ontlading voor het huishouden direct bij kortstondige teruglevering.",
+        "pl": "Bezpośrednio zmniejsza potwierdzone rozładowanie SunEnergy na potrzeby domu podczas krótkiego oddawania energii do sieci.",
+        "pt": "Reduz diretamente a descarga SunEnergy confirmada para a casa durante uma breve injeção na rede.",
+        "ru": "Снижает подтверждённую мощность разряда SunEnergy для дома при кратковременной отдаче в сеть.",
+        "uk": "Зменшує підтверджену потужність розряду SunEnergy для дому під час короткочасної віддачі в мережу.",
+        "zh-cn": "短暂向电网送电时，直接降低已确认的 SunEnergy 家庭放电功率。"
+      },
       "0.17.0-alpha.254": {
         "en": "Accept a small AC shortfall at the confirmed SunEnergy discharge ceiling.",
         "de": "Kleine AC-Minderleistung an der bestätigten SunEnergy-Entladegrenze akzeptieren.",
@@ -81,19 +94,6 @@
         "ru": "Снижает подтверждённую мощность разряда SunEnergy при поддержке зарядной станции.",
         "uk": "Зменшує підтверджену потужність розряду SunEnergy під час підтримки зарядної станції.",
         "zh-cn": "在为充电桩提供缓冲时直接降低已确认的 SunEnergy 放电功率。"
-      },
-      "0.17.0-alpha.248": {
-        "en": "Automatically release an old SunEnergy command after repeated fresh zero feedback.",
-        "de": "SunEnergy-Altauftrag nach wiederholter frischer Nullrückmeldung automatisch freigeben.",
-        "es": "Libera automáticamente la orden antigua tras varias lecturas nuevas de cero.",
-        "fr": "Libère automatiquement l’ancienne commande après plusieurs mesures récentes à zéro.",
-        "it": "Rilascia automaticamente il comando precedente dopo nuove letture a zero.",
-        "nl": "Geeft een oude opdracht automatisch vrij na meerdere nieuwe nulmetingen.",
-        "pl": "Automatycznie zwalnia stare polecenie po kolejnych świeżych odczytach zera.",
-        "pt": "Liberta automaticamente o comando antigo após novas leituras de zero.",
-        "ru": "Автоматически снимает старую команду после повторных новых показаний нуля.",
-        "uk": "Автоматично знімає стару команду після повторних свіжих нульових показань.",
-        "zh-cn": "收到多次新的零功率反馈后自动释放旧指令。"
       }
     },
     "titleLang": {
