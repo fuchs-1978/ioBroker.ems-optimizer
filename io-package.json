@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.253",
+    "version": "0.17.0-alpha.254",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.254": {
+        "en": "Accept a small AC shortfall at the confirmed SunEnergy discharge ceiling.",
+        "de": "Kleine AC-Minderleistung an der bestätigten SunEnergy-Entladegrenze akzeptieren.",
+        "es": "Admite un pequeño déficit de CA en el límite de descarga confirmado.",
+        "fr": "Accepte un léger déficit de puissance AC à la limite de décharge confirmée.",
+        "it": "Accetta un lieve calo di potenza AC al limite di scarica confermato.",
+        "nl": "Accepteert een klein AC-tekort bij de bevestigde ontlaadgrens.",
+        "pl": "Dopuszcza niewielki niedobór mocy AC przy potwierdzonym limicie rozładowania.",
+        "pt": "Aceita um pequeno défice de potência CA no limite de descarga confirmado.",
+        "ru": "Допускает небольшую недостачу мощности AC при подтверждённом пределе разряда.",
+        "uk": "Допускає невелике зниження потужності AC на підтвердженій межі розряду.",
+        "zh-cn": "允许在已确认的放电上限处出现少量交流功率不足。"
+      },
       "0.17.0-alpha.253": {
         "en": "Recharge the SunEnergy reserve at up to 1000 W after falling below minimum SoC.",
         "de": "SunEnergy unter Mindest-SoC mit bis zu 1000 W nachladen.",
@@ -81,19 +94,6 @@
         "ru": "Автоматически снимает старую команду после повторных новых показаний нуля.",
         "uk": "Автоматично знімає стару команду після повторних свіжих нульових показань.",
         "zh-cn": "收到多次新的零功率反馈后自动释放旧指令。"
-      },
-      "0.17.0-alpha.247": {
-        "en": "Bridge a PV shortfall during the wallbox stop delay with SunEnergy storage.",
-        "de": "PV-Fehlbetrag während der Wallbox-Ausschaltverzögerung mit dem SunEnergy-Speicher überbrücken.",
-        "es": "Cubre el déficit solar durante el retardo de parada con SunEnergy.",
-        "fr": "Compense le déficit solaire pendant le délai d’arrêt avec SunEnergy.",
-        "it": "Compensa il deficit solare durante il ritardo di arresto con SunEnergy.",
-        "nl": "Overbrugt PV-tekort tijdens de uitschakelvertraging met SunEnergy.",
-        "pl": "Pokrywa niedobór PV podczas opóźnienia wyłączenia z SunEnergy.",
-        "pt": "Compensa o défice solar durante o atraso de desligamento com SunEnergy.",
-        "ru": "Компенсирует дефицит ФЭМ во время задержки отключения с SunEnergy.",
-        "uk": "Компенсує дефіцит ФЕМ під час затримки вимкнення із SunEnergy.",
-        "zh-cn": "在充电桩停止延迟期间使用 SunEnergy 补足光伏缺口。"
       }
     },
     "titleLang": {

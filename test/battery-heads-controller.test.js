@@ -453,6 +453,53 @@ test('settled diagnostics remain true on later fresh matching polls and a lost e
     assert.match(h.value('Devices.Battery.Fault'), /Rueckmeldefrist/);
 });
 
+test('confirmed 2400 W discharge stays active through the recorded AC shortfall and is eligible for handoff', () => {
+    const h = harness(1, new Map(), {batteryHead1MaxDischargeW: 2400});
+    h.snapshot(1, {PK: 2, MG: 2400, IS: 2400});
+    h.own('Config.BatteryFineStep_W', 600);
+    h.own('Control.Targets.Battery_W', -2400);
+    h.grid.gridW = 2200;
+    for (let step = 0; step < 4; step++) {
+        h.tick(); h.complete();
+        if (step < 3) h.follow();
+    }
+    for (const watts of [2166, 2372, 2388, 2380, 2375, 2368, 2367, 2360, 2361]) {
+        h.advance(5000); h.fresh(); h.snapshot(1, {GS: 2400, GP: watts}); h.tick();
+    }
+    assert.deepEqual(h.commands(), [600, 1200, 1800, 2400]);
+    assert.equal(h.value('Devices.Battery.Fault'), '');
+    assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), 0);
+    assert.equal(h.value('Devices.Battery.Heads.1.ActuatorSettled'), true);
+    assert.equal(h.run('prepareBatteryHeadsRestartHandoff()'), true);
+    h.own('Control.Targets.Battery_W', -2300); h.tick();
+    assert.equal(h.commands().at(-1), 2300);
+});
+
+test('the discharge ceiling allowance excludes stale or wrong GS, large deficits and overshoot', () => {
+    for (const [name, target, gs, gp, stale] of [
+        ['below ceiling', 2200, 2200, 2160, false],
+        ['wrong GS', 2400, 2300, 2360, false],
+        ['large deficit', 2400, 2400, 2349, false],
+        ['wrong direction', 2400, 2400, -2360, false],
+        ['overshoot', 2400, 2400, 2440, false],
+        ['stale echo', 2400, 2400, 2360, true]
+    ]) {
+        const h = harness(1, new Map(), {batteryHead1MaxDischargeW: 2400});
+        h.snapshot(1, {PK: 2, MG: 2400, IS: 2400});
+        h.own('Config.BatteryFineStep_W', 1000);
+        h.own('Control.Targets.Battery_W', -target);
+        for (let step = 0; step < 3; step++) {
+            h.tick(); h.complete();
+            if (step < 2) h.follow();
+        }
+        h.advance(15000); h.fresh();
+        h.snapshot(1, {GS: gs, GP: gp}, stale ? {ts: h.writes.at(-1).at} : {});
+        h.tick();
+        assert.deepEqual(h.commands(), [1000, 2000, target, 0], name);
+        assert.match(h.value('Devices.Battery.Fault'), /Rueckmeldefrist/, name);
+    }
+});
+
 test('stable partial PV charging at timeout reduces the echoed command and retains its reserve until confirmed', () => {
     const h = harness(1);
     h.own('Config.BatteryFineStep_W', 1000);
