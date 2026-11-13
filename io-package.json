@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.246",
+    "version": "0.17.0-alpha.247",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.247": {
+        "en": "Bridge a PV shortfall during the wallbox stop delay with SunEnergy storage.",
+        "de": "PV-Fehlbetrag während der Wallbox-Ausschaltverzögerung mit dem SunEnergy-Speicher überbrücken.",
+        "es": "Cubre el déficit solar durante el retardo de parada con SunEnergy.",
+        "fr": "Compense le déficit solaire pendant le délai d’arrêt avec SunEnergy.",
+        "it": "Compensa il deficit solare durante il ritardo di arresto con SunEnergy.",
+        "nl": "Overbrugt PV-tekort tijdens de uitschakelvertraging met SunEnergy.",
+        "pl": "Pokrywa niedobór PV podczas opóźnienia wyłączenia z SunEnergy.",
+        "pt": "Compensa o défice solar durante o atraso de desligamento com SunEnergy.",
+        "ru": "Компенсирует дефицит ФЭМ во время задержки отключения с SunEnergy.",
+        "uk": "Компенсує дефіцит ФЕМ під час затримки вимкнення із SunEnergy.",
+        "zh-cn": "在充电桩停止延迟期间使用 SunEnergy 补足光伏缺口。"
+      },
       "0.17.0-alpha.246": {
         "en": "Resume confirmed SunEnergy charging and discharging after a normal restart.",
         "de": "Bestätigtes SunEnergy-Laden und -Entladen nach regulärem Neustart übernehmen.",
@@ -81,19 +94,6 @@
         "ru": "Сохраняет текущий шаг зарядки и подтверждение уставки после перезапуска.",
         "uk": "Зберігає поточний крок заряджання та підтвердження після перезапуску.",
         "zh-cn": "保持等待反馈的充电步进并在重启后保留设定值确认。"
-      },
-      "0.17.0-alpha.240": {
-        "en": "Resume SunEnergy control automatically after restart once the previous observed output is confirmed at zero.",
-        "de": "SunEnergy-Regelung nach Neustart bei bestätigter Nullrückmeldung automatisch wieder aufnehmen.",
-        "es": "Reanuda el control SunEnergy tras reiniciar y confirmar el cero.",
-        "fr": "Reprend automatiquement la régulation SunEnergy après le redémarrage et la confirmation du zéro.",
-        "it": "Riprende automaticamente il controllo SunEnergy dopo il riavvio e la conferma dello zero.",
-        "nl": "Hervat de SunEnergy-regeling na herstart en bevestiging van nul.",
-        "pl": "Wznawia sterowanie SunEnergy po restarcie i potwierdzeniu zera.",
-        "pt": "Retoma o controlo SunEnergy após reiniciar e confirmar zero.",
-        "ru": "Возобновляет управление SunEnergy после перезапуска и подтверждения нуля.",
-        "uk": "Відновлює керування SunEnergy після перезапуску й підтвердження нуля.",
-        "zh-cn": "重启后确认 SunEnergy 已归零时自动恢复控制。"
       }
     },
     "titleLang": {

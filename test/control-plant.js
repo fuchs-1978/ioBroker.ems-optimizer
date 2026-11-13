@@ -158,6 +158,7 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         substitute(fs.readFileSync(path.join(__dirname, '../lib/engine', `${name}.js`), 'utf8'));
     const ctx = createEngineContext('ems.0', mapping, {Date: Clock, console, nativeConfig: config,
         gridConstraints: require('../lib/grid-constraints'),
+        sunEnergyHeads: require('../lib/sunenergy-heads'),
         normalizeWallboxPowerKW: require('../lib/wallbox-measurement').normalizeWallboxPowerKW,
         getState: id => states.get(id), existsState: id => states.has(id),
         createState: (id, val) => { if (!states.has(id)) put(id, val); }, setState: put,
@@ -191,6 +192,7 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
     own('Devices.Battery.Present', battery); own('Devices.Battery.ControlEnabled', battery);
     own('Devices.Battery.DriverReady', battery); own('Config.BatteryFineReserve_W', 200);
     own('Devices.Battery.SingleHeadVerified', battery);
+    if (battery && config.batteryDispatchMode === 'sunenergy-heads') own('Devices.Battery.HeadsVerified', true);
     own('Config.BatteryMinSoC_pct', 20); own('Config.BatteryMaxSoC_pct', 95);
     own('Config.BatteryMaxCharge_W', 2400); own('Config.BatteryMaxDischarge_W', 2400);
     own('Config.BatterySelfConsumptionEnabled', true);
@@ -290,6 +292,13 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         own('Actual.MyPV_Heating_W', heatingW);
         put(vm.runInContext('CFG.dp.batteryPower', ctx), batteryW * batteryDcFactor + batteryDcPvW);
         put(config.batteryAcPowerId, -batteryW || 0);
+        if (battery && config.batteryDispatchMode === 'sunenergy-heads') {
+            const base = 'sunenergyxt500.0.heads.1';
+            put(`${base}.info.online`, batteryHeartbeat);
+            put(`${base}.info.rawResponse`, JSON.stringify({GS: -batteryW || 0, GP: -batteryW || 0,
+                SC: states.get(mapping.DP_BATTERY_SOC)?.val ?? 50, ON: 1, MM: 0, LM: 1,
+                SI: 20, SA: 80, MG: 2400, IS: 2400, LP: 0, PK: 1}));
+        }
         if (batteryHeartbeat) put(config.batteryHeartbeatId, now);
         for (const wb of [0, 1, 2]) {
             const powerW = wb === 2 ? wbW : wb === 0 ? miiW : 0;
