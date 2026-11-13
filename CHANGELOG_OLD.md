@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.236 (2026-11-13)
+
+- Wait briefly for the first SunEnergy charging confirmation after a PV dip. [Release notes](docs/release-0.17.0-alpha.236.md)
+
 ## 0.17.0-alpha.235 (2026-11-13)
 
 - Adjust confirmed SunEnergy charging requests while AC response catches up. [Release notes](docs/release-0.17.0-alpha.235.md)
