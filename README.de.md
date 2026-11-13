@@ -1,11 +1,12 @@
 # EMS Optimizer
 
-**Aktuelle Adapterversion: 0.17.0-alpha.253.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
+**Aktuelle Adapterversion: 0.17.0-alpha.254.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
 
 [English overview](README.md) · [Vollständige Admin-Feldreferenz](docs/admin-reference.de.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) · [Versionsänderungen](README.md#changelog)
 
 ## Aktuelle Änderungen
 
+- **Alpha.254** hält bestätigte SunEnergy-Entladeaufträge bei kleiner AC-Minderleistung an der Entladegrenze. [Versionshinweise](docs/release-0.17.0-alpha.254.md)
 - **Alpha.253** lädt SunEnergy bei unterschrittenem Mindest-SoC mit bis zu 1.000 W nach. [Versionshinweise](docs/release-0.17.0-alpha.253.md)
 - **Alpha.252** ergänzt optional die nächtliche Mii-Ladung mit BHKW-Überschuss und Speicherpuffer. [Versionshinweise](docs/release-0.17.0-alpha.252.md)
 - **Alpha.251** setzt einen SunEnergy-Richtungswechsel nach bestätigtem Nullbefehl und gemessenem Stillstand früher fort. [Versionshinweise](docs/release-0.17.0-alpha.251.md)
