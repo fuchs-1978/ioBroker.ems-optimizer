@@ -1362,6 +1362,39 @@ test('battery buffers PV wallbox power within tolerance without covering a large
     assert.equal(h.physical().batteryW, 0, h.diagnostic());
 });
 
+test('SunEnergy bridges a 300 W PV dip without resetting the wallbox stop delay', async () => {
+    const h = await plant({battery: true, initialSurplusW: 4500, split: false, startDelayS: 0, minimumRuntimeS: 0,
+        nativeConfig: {batteryDispatchMode: 'sunenergy-heads', batterySunEnergyInstance: 'sunenergyxt500.0',
+            batteryHeadCount: 1, batteryHead1MaxChargeW: 2400, batteryHead1MaxDischargeW: 2400,
+            batteryPvPriorityEnabled: true, batteryWallboxHalfStepEnabled: true,
+            wallboxParallelChargingEnabled: true, wallboxStopDelayS: 40,
+            dhwControlEnabled: false, wb2CommissioningMaxA: 6}});
+    h.own('Control.TargetGridPower_W', 0);
+    h.own('Devices.MyPV_DHW.ControlEnabled', false);
+    const timestamp = h.now() - 1000;
+    h.own('Plan.BatteryTargetSoC_48h_JSON', JSON.stringify([{timestamp, value_pct: 70}]));
+    await h.advance(80);
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    h.setSurplus(1080);
+    await h.advance(18);
+    assert.equal(h.physical().batteryW, -300, h.diagnostic());
+    assert.equal(h.trace.at(-1).gridW, 0, h.diagnostic());
+    assert.equal(h.value('Devices.Wallbox2.StopDelayActive'), true, h.diagnostic());
+    const remaining = h.value('Devices.Wallbox2.StopDelayRemaining_s');
+    await h.advance(8);
+    assert.ok(h.value('Devices.Wallbox2.StopDelayRemaining_s') < remaining, h.diagnostic());
+    h.setSurplus(4500);
+    await h.advance(10);
+    assert.equal(h.value('Devices.Wallbox2.StopDelayActive'), false, h.diagnostic());
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    await h.advance(30);
+    h.setSurplus(1080);
+    await h.advance(55);
+    assert.equal(h.physical().allow, 0, h.diagnostic());
+    assert.equal(h.value('Control.BatteryWallboxBuffer_W'), 0);
+    assert.ok(h.physical().batteryW >= 0, h.diagnostic());
+});
+
 test('battery full, minimum SoC and off hand fine regulation back to EHZ without phantom allocation', async () => {
     const h = await plant({battery: true, heating: true, wallbox: false});
     await h.advance(90);
