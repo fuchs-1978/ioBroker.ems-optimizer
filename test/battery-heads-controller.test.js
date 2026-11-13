@@ -315,8 +315,38 @@ test('stable partial PV charging at timeout reduces the echoed command and retai
     h.advance(5000); h.snapshot(1, {GS: -1170, GP: -1168}); h.fresh(); h.tick();
     assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 1170);
     assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), 0);
-    h.advance(5000); h.fresh(); h.tick();
+    h.advance(59000); h.fresh(); h.tick();
     assert.deepEqual(h.commands(), [-1000, -1270, -1370, -1170]);
+    h.advance(1000); h.fresh(); h.tick();
+    assert.equal(h.commands().at(-1), -1220);
+    h.complete();
+    h.advance(5000); h.snapshot(1, {GS: -1220, GP: -1170}); h.fresh(); h.tick();
+    h.advance(10000); h.fresh(); h.tick();
+    assert.deepEqual(h.commands().slice(-3), [-1170, -1220, -1170]);
+    assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 1220);
+    h.complete();
+    h.advance(5000); h.snapshot(1, {GS: -1170, GP: -1168}); h.fresh(); h.tick();
+    assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 1170);
+    h.advance(60000); h.fresh(); h.tick();
+    assert.equal(h.commands().at(-1), -1220);
+    h.complete();
+    h.advance(5000); h.snapshot(1, {GS: -1220, GP: -1212}); h.fresh(); h.tick();
+    assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 1220);
+    h.advance(60000); h.fresh(); h.tick();
+    assert.equal(h.commands().at(-1), -1270);
+});
+
+test('an already settled PV charge can also adapt to a sustained lower response', () => {
+    const h = harness(1);
+    h.own('Config.BatteryFineStep_W', 1000); h.tick(); h.complete(); h.follow(); h.tick();
+    h.advance(1000); h.snapshot(1, {GS: -1000, GP: -850}); h.fresh(); h.tick();
+    h.advance(15000); h.snapshot(1, {GS: -1000, GP: -840}); h.fresh(); h.tick();
+    assert.deepEqual(h.commands(), [-1000, -840]);
+    assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 1000);
+    h.advance(1); h.snapshot(1, {GS: -990, GP: -840});
+    const check = h.run('batteryHeadsQueuedCheck("sunenergyxt500.0.heads.1.control.GS", -840)');
+    assert.equal(check.allowed, false);
+    assert.match(check.reason, /Rueckmeldung/);
 });
 
 test('a partial charge without independent stable matching snapshots still stops and retains the reserve', () => {

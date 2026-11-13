@@ -187,7 +187,7 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 
 ### 0.17.0-alpha.232 (2026-11-13)
 
-- For a single SunEnergy head with an echoed PV charging setpoint and stable lower measured power, reduce the setpoint and hold the previous power reservation until the reduction is confirmed. [Release notes](docs/release-0.17.0-alpha.232.md)
+- For a single SunEnergy head with an echoed PV charging setpoint and stable lower measured power, reduce the setpoint and hold the previous power reservation until the reduction is confirmed. Probe again in steps of up to 50 W after 60 seconds when PV surplus allows. [Release notes](docs/release-0.17.0-alpha.232.md)
 
 ### 0.17.0-alpha.231 (2026-11-13)
 
