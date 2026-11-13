@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.238",
+    "version": "0.17.0-alpha.239",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.239": {
+        "en": "Use the configured SunEnergy charging step after confirmed feedback and fresh grid export in observation mode.",
+        "de": "Im SunEnergy-Beobachtungsmodus nach bestätigter Ladeleistung und bei frischer Einspeisung mit der eingestellten Schrittweite nachregeln.",
+        "es": "Usa el paso de carga SunEnergy configurado tras confirmar la respuesta y medir exportación.",
+        "fr": "Utilise le pas de charge SunEnergy configuré après confirmation et mesure de l’injection.",
+        "it": "Usa il passo di carica SunEnergy configurato dopo la conferma e una misura di immissione.",
+        "nl": "Gebruikt de ingestelde SunEnergy-laadstap na bevestiging en actuele teruglevering.",
+        "pl": "Używa ustawionego kroku ładowania SunEnergy po potwierdzeniu i pomiarze eksportu.",
+        "pt": "Utiliza o passo de carregamento SunEnergy configurado após confirmação e medição de exportação.",
+        "ru": "Использует настроенный шаг зарядки SunEnergy после подтверждения и свежего замера экспорта.",
+        "uk": "Використовує налаштований крок заряджання SunEnergy після підтвердження та свіжого вимірювання експорту.",
+        "zh-cn": "观察模式下，在充电反馈得到确认且有新鲜并网输出测量时，按配置步长增加 SunEnergy 充电功率。"
+      },
       "0.17.0-alpha.238": {
         "en": "Keep the pending SunEnergy PV charge in observation mode when export falls, and log the grid reading.",
         "de": "Offenen SunEnergy-PV-Ladeauftrag im Beobachtungsmodus bei sinkender Einspeisung halten und Netzleistung protokollieren.",
@@ -81,19 +94,6 @@
         "ru": "Снимает резерв отменённой до отправки команды SunEnergy после подтверждения нуля.",
         "uk": "Знімає резерв скасованої до надсилання команди SunEnergy після підтвердження нуля.",
         "zh-cn": "确认零功率后释放发送前已取消的 SunEnergy 指令。"
-      },
-      "0.17.0-alpha.232": {
-        "en": "Reduce a confirmed SunEnergy PV charge request when the head consistently draws less power.",
-        "de": "Bestätigten SunEnergy-PV-Ladeauftrag bei stabil niedrigerer Aufnahmeleistung reduzieren.",
-        "es": "Reduce la consigna de carga fotovoltaica cuando SunEnergy absorbe de forma estable menos potencia.",
-        "fr": "Réduit la consigne de charge photovoltaïque quand SunEnergy absorbe durablement moins de puissance.",
-        "it": "Riduce il setpoint di carica fotovoltaica quando SunEnergy assorbe stabilmente meno potenza.",
-        "nl": "Verlaagt het PV-laadcommando wanneer SunEnergy stabiel minder vermogen opneemt.",
-        "pl": "Obniża nastawę ładowania PV, gdy SunEnergy pobiera stabilnie mniej mocy.",
-        "pt": "Reduz a referência de carregamento fotovoltaico quando SunEnergy absorve de forma estável menos potência.",
-        "ru": "Снижает уставку зарядки от ФЭМ при стабильно меньшей потребляемой мощности SunEnergy.",
-        "uk": "Знижує уставку заряджання від ФЕМ за стабільно меншої потужності SunEnergy.",
-        "zh-cn": "当 SunEnergy 持续以较低功率充电时，降低光伏充电设定值。"
       }
     },
     "titleLang": {
