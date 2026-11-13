@@ -880,6 +880,7 @@ class EmsOptimizer extends utils.Adapter {
         const generation = (this.foreignWriteGeneration.get(id) || 0) + 1;
         this.foreignWriteGeneration.set(id, generation);
         const previousWrite = this.foreignWriteQueues.get(id) || Promise.resolve();
+        let dispatchStarted = false;
         const promise = previousWrite.catch(() => {}).then(async () => {
             if (nonzero && device) {
                 await Promise.all(ownershipWrites);
@@ -981,13 +982,14 @@ class EmsOptimizer extends utils.Adapter {
                         throw new Error(electrical?.reason || 'Elektrische Grenze vor Ausgabe nicht bestaetigt');
                 }
             }
+            dispatchStarted = true;
             return this.writeRecordedForeignState(id, value);
         });
         this.foreignWriteQueues.set(id, promise);
         this.pendingForeignWrites.add(promise);
         void promise.then(() => onComplete?.(null, {value}), error => {
             this.log.error(`Cannot write production output ${id}: ${error.message}`);
-            onComplete?.(error);
+            onComplete?.(error, head && nonzero && !dispatchStarted ? {notDispatched: true} : undefined);
         }).catch(error => this.log.warn(`Output callback failed: ${error.message}`))
             .finally(() => {
                 this.pendingForeignWrites.delete(promise);

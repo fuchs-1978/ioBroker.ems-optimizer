@@ -329,6 +329,54 @@ test('real controller/transport recheck an aggregate operator limit reduced duri
     controller.limit.budgetW = 100;
     persist();
     await f.drain();
-    assert.equal(f.writes.length, 0, 'neither an individually small head nor the old plan bypasses aggregate100W');
+    assert.deepEqual(f.writes.map(write => write.value), [0, 0, 0],
+        'neither an individually small head nor the old plan bypasses the aggregate limit');
     assert.equal(f.adapter.getCachedState(`${f.base}.OutputReservedCharge_W`).val, 600);
 });
+
+
+for (const dispatched of [false, true]) {
+    test(`zero releases only a proven unsent head command, dispatch started: ${dispatched}`, async () => {
+        const f = fixture(1);
+        const h = attachRealController(f);
+        const rawId = 'sunenergyxt500.0.heads.1.info.rawResponse';
+        const snapshot = f.adapter.getCachedState(rawId).val;
+        let finishWrite, finishZero;
+        let signalWrite, signalZero;
+        const writing = new Promise(resolve => { signalWrite = resolve; });
+        const zeroWriting = new Promise(resolve => { signalZero = resolve; });
+        f.adapter.setForeignStateAsync = async (id, value, ack) => {
+            f.writes.push({id, value, ack});
+            if (value < 0 && dispatched)
+                await new Promise((resolve, reject) => { finishWrite = reject; signalWrite(); });
+            if (value === 0)
+                await new Promise(resolve => { finishZero = resolve; signalZero(); });
+        };
+        h.own('Config.BatteryFineStep_W', 100);
+        h.tick();
+        if (dispatched) await writing;
+        h.advance(1000);
+        h.own('Control.Targets.Battery_W', 14);
+        h.own('Control.LastUpdate', 2001000);
+        h.tick();
+        if (dispatched) finishWrite(new Error('transport outcome unknown'));
+        await zeroWriting;
+        h.advance(1000);
+        h.put(rawId, snapshot);
+        finishZero();
+        await f.drain();
+        assert.deepEqual(f.writes.map(write => write.value), dispatched ? [-100, 0] : [0]);
+        const reserve = () => f.adapter.getCachedState(`${f.base}.OutputReservedCharge_W`).val;
+        h.tick();
+        assert.equal(reserve(), 100, 'snapshot during the zero write cannot confirm zero');
+        h.advance(1000);
+        h.put(rawId, snapshot);
+        h.tick();
+        assert.equal(reserve(), dispatched ? 100 : 0);
+        if (dispatched) return;
+        h.own('Control.Targets.Battery_W', 1000);
+        h.tick();
+        await f.drain();
+        assert.deepEqual(f.writes.map(write => write.value), [0, -100]);
+    });
+}

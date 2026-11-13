@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.232",
+    "version": "0.17.0-alpha.233",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.233": {
+        "en": "Release a canceled SunEnergy command after a fresh zero confirmation when it was never dispatched.",
+        "de": "Vor der Ausgabe verworfenen SunEnergy-Auftrag nach frischer Nullbestätigung freigeben.",
+        "es": "Libera una orden SunEnergy cancelada antes del envío tras confirmar cero.",
+        "fr": "Libère une commande SunEnergy annulée avant l’envoi après confirmation du zéro.",
+        "it": "Libera un comando SunEnergy annullato prima dell’invio dopo la conferma dello zero.",
+        "nl": "Geeft een vóór verzending geannuleerde SunEnergy-opdracht vrij na nulbevestiging.",
+        "pl": "Zwalnia anulowane przed wysłaniem polecenie SunEnergy po potwierdzeniu zera.",
+        "pt": "Liberta um comando SunEnergy cancelado antes do envio após confirmação de zero.",
+        "ru": "Снимает резерв отменённой до отправки команды SunEnergy после подтверждения нуля.",
+        "uk": "Знімає резерв скасованої до надсилання команди SunEnergy після підтвердження нуля.",
+        "zh-cn": "确认零功率后释放发送前已取消的 SunEnergy 指令。"
+      },
       "0.17.0-alpha.232": {
         "en": "Reduce a confirmed SunEnergy PV charge request when the head consistently draws less power.",
         "de": "Bestätigten SunEnergy-PV-Ladeauftrag bei stabil niedrigerer Aufnahmeleistung reduzieren.",
@@ -81,19 +94,6 @@
         "ru": "Применяет ступени тока однофазного Mii/e-Up при параллельной зарядке после обеспечения минимального тока остальных автомобилей.",
         "uk": "Застосовує ступені струму однофазного Mii/e-Up під час паралельного заряджання після забезпечення мінімального струму інших автомобілів.",
         "zh-cn": "并行充电时，在保障其他车辆的最低电流后，按单相 Mii/e-Up 的荷电状态分配分档电流。"
-      },
-      "0.17.0-alpha.226": {
-        "en": "Log the minimum-SoC stop as info and distinguish the stop request from its confirmation.",
-        "de": "Den Stopp am Mindest-SoC als Info protokollieren und Abschaltanforderung und Bestätigung getrennt melden.",
-        "es": "Registra como información la parada por carga mínima y distingue la solicitud de su confirmación.",
-        "fr": "Journalise l’arrêt au niveau de charge minimal comme information et distingue la demande de sa confirmation.",
-        "it": "Registra come informativo l’arresto alla carica minima e distingue la richiesta dalla conferma.",
-        "nl": "Log de stop bij het minimale laadniveau als informatie en onderscheid de aanvraag van de bevestiging.",
-        "pl": "Zapisuje zatrzymanie przy minimalnym naładowaniu jako informację i rozróżnia żądanie od potwierdzenia.",
-        "pt": "Regista como informação a paragem na carga mínima e distingue o pedido da confirmação.",
-        "ru": "Записывает остановку при минимальном заряде как информацию и различает запрос и подтверждение.",
-        "uk": "Записує зупинку при мінімальному заряді як інформацію та розрізняє запит і підтвердження.",
-        "zh-cn": "将达到最低荷电状态时的停止记录为信息，并区分停止请求和确认。"
       }
     },
     "titleLang": {
