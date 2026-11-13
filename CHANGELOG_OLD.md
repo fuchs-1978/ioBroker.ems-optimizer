@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.228 (2026-11-12)
+
+- Include a running wallbox’s stop-delay draw in the shared PV and electrical budget. [Release notes](docs/release-0.17.0-alpha.228.md)
+
 ## 0.17.0-alpha.227 (2026-11-11)
 
 - Apply configured single-phase Mii/e-Up SoC current steps after the other vehicles receive their minimum current. [Release notes](docs/release-0.17.0-alpha.227.md)

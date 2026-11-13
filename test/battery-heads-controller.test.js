@@ -474,7 +474,47 @@ test('PV target drops up to 200 W wait for feedback before evaluating a reductio
     }
 });
 
-test('a pending small target drop still stops on a hard limit, zero target, or missing feedback', () => {
+test('confirmed GS permits successive PV reductions while actual charging lags', () => {
+    const h = harness(1);
+    h.own('Config.BatteryFineStep_W', 500);
+    h.tick(); h.complete(); h.follow();
+    h.own('Control.Targets.Battery_W', 700);
+    h.tick(); h.complete();
+    h.advance(2000); h.snapshot(1, {GS: -700, GP: -673}); h.fresh();
+    h.own('Control.Targets.Battery_W', 176); h.tick();
+    assert.deepEqual(h.commands(), [-500, -700, -176]);
+    assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 700);
+    const check = () => h.run('batteryHeadsQueuedCheck("sunenergyxt500.0.heads.1.control.GS", -176)');
+    assert.equal(check().allowed, true);
+    h.snapshot(1, {GS: -500}); assert.equal(check().allowed, false);
+    h.snapshot(1, {GS: -700}); h.complete();
+    h.advance(1000); h.snapshot(1, {GS: -176, GP: -260}); h.fresh();
+    h.own('Control.Targets.Battery_W', 90); h.tick(); h.complete();
+    assert.deepEqual(h.commands(), [-500, -700, -176, -90]);
+    assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 700);
+    h.advance(1000); h.snapshot(1, {GS: -90, GP: -80}); h.fresh(); h.tick();
+    assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 90);
+    h.own('Control.Targets.Battery_W', 1800); h.tick();
+    assert.equal(h.commands().at(-1), -580, 'one step from the actual 80 W');
+});
+
+test('zero after an echoed charge releases the reserve only with post-write zero feedback', () => {
+    const h = harness(1);
+    h.own('Config.BatteryFineStep_W', 500);
+    h.tick(); h.complete();
+    h.advance(1000); h.snapshot(1, {GS: -500, GP: -450}); h.fresh();
+    h.own('Control.Targets.Battery_W', 0); h.tick();
+    assert.deepEqual(h.commands(), [-500, 0]);
+    h.advance(1000); h.snapshot(1, {GS: 0, GP: 0}); h.fresh();
+    h.complete(); h.tick();
+    assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 500);
+    h.advance(1000); h.fresh(); h.tick();
+    assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 0);
+    h.own('Control.Targets.Battery_W', 350); h.tick();
+    assert.equal(h.commands().at(-1), -350);
+});
+
+test('a pending charge without a GS echo still stops when immediate reduction is needed', () => {
     const cases = {
         house: h => h.put('ha3', 45.3),
         operator: h => { h.limit.budgetW = 1488; },
@@ -483,9 +523,9 @@ test('a pending small target drop still stops on a hard limit, zero target, or m
         head: h => { h.nativeConfig.batteryHead1MaxChargeW = 1488; },
         soc: h => h.snapshot(1, {SC: 100}),
         price: h => h.own('Control.BatteryPriceGridCharge_W', 100),
-        actual: h => h.snapshot(1, {GS: -1500, GP: -1530}),
-        'actual above target with 200 W drop': h => { h.snapshot(1, {GS: -1500, GP: -1326}); h.own('Control.Targets.Battery_W', 1300); },
-        'over 200 W drop': h => { h.snapshot(1, {GS: -1500, GP: -1250}); h.own('Control.Targets.Battery_W', 1299); },
+        actual: h => h.snapshot(1, {GS: -1400, GP: -1530}),
+        'actual above target with 200 W drop': h => { h.snapshot(1, {GS: -1400, GP: -1326}); h.own('Control.Targets.Battery_W', 1300); },
+        'over 200 W drop': h => { h.snapshot(1, {GS: -1400, GP: -1250}); h.own('Control.Targets.Battery_W', 1299); },
         'zero target': h => h.own('Control.Targets.Battery_W', 0),
         timeout: h => { h.advance(15000); h.fresh(); }
     };
@@ -496,7 +536,7 @@ test('a pending small target drop still stops on a hard limit, zero target, or m
         h.tick(); h.complete(); h.follow();
         h.own('Config.BatteryFineStep_W', 100);
         h.own('Control.Targets.Battery_W', 1500); h.tick(); h.complete();
-        h.advance(4000); h.snapshot(1, {GS: -1500, GP: -1324}); h.fresh();
+        h.advance(4000); h.snapshot(1, {GS: -1400, GP: -1324}); h.fresh();
         h.own('Control.Targets.Battery_W', 1488);
         change(h); h.tick();
         assert.deepEqual(h.commands(), [-1000, -1400, -1500, 0], reason);
