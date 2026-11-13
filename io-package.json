@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.243",
+    "version": "0.17.0-alpha.244",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.244": {
+        "en": "Automatically return a confirmed SunEnergy discharge command after fresh zero feedback.",
+        "de": "Bestätigten SunEnergy-Entladeauftrag nach frischer Nullrückmeldung automatisch freigeben.",
+        "es": "Libera la orden de descarga SunEnergy confirmada tras recibir una nueva lectura de cero.",
+        "fr": "Libère la commande de décharge SunEnergy confirmée après un nouveau retour à zéro.",
+        "it": "Rilascia il comando di scarica SunEnergy confermato dopo una nuova lettura a zero.",
+        "nl": "Geeft een bevestigde SunEnergy-ontlaadopdracht vrij na een nieuwe nulmeting.",
+        "pl": "Zwalnia potwierdzone polecenie rozładowania SunEnergy po nowym odczycie zera.",
+        "pt": "Liberta a ordem de descarga SunEnergy confirmada após uma nova leitura de zero.",
+        "ru": "Снимает подтверждённую команду разряда SunEnergy после нового нулевого показания.",
+        "uk": "Знімає підтверджену команду розряджання SunEnergy після нового нульового показання.",
+        "zh-cn": "收到新的归零反馈后，自动释放已确认的 SunEnergy 放电指令。"
+      },
       "0.17.0-alpha.243": {
         "en": "Correct measured grid power watt by watt after confirmed SunEnergy charging feedback.",
         "de": "Netzleistung nach bestätigter SunEnergy-Laderückmeldung wattgenau korrigieren.",
@@ -81,19 +94,6 @@
         "ru": "Сохраняет ожидающую зарядку SunEnergy при падении экспорта и записывает мощность сети.",
         "uk": "Утримує незавершену команду заряджання SunEnergy при падінні експорту та записує потужність мережі.",
         "zh-cn": "观察模式下，光伏余量下降时保留待确认的 SunEnergy 充电指令并记录电网功率。"
-      },
-      "0.17.0-alpha.237": {
-        "en": "Add optional SunEnergy PV charge feedback observation with warnings while grid and protection limits allow the existing request.",
-        "de": "Optionaler SunEnergy-Beobachtungsmodus mit Warnungen bei ausstehender PV-Laderückmeldung und ausreichender Netzreserve.",
-        "es": "Añade observación opcional de la respuesta de carga SunEnergy con avisos y límites de red activos.",
-        "fr": "Ajoute une observation facultative du retour de charge SunEnergy avec avertissements et limites réseau actives.",
-        "it": "Aggiunge l’osservazione opzionale della risposta di carica SunEnergy con avvisi e limiti di rete attivi.",
-        "nl": "Voegt optionele observatie van SunEnergy-laadterugmelding toe, met waarschuwingen en actieve netgrenzen.",
-        "pl": "Dodaje opcjonalną obserwację ładowania SunEnergy z ostrzeżeniami i aktywnymi limitami sieci.",
-        "pt": "Adiciona observação opcional da resposta de carga SunEnergy com avisos e limites de rede ativos.",
-        "ru": "Добавляет опциональное наблюдение за зарядкой SunEnergy с предупреждениями и действующими ограничениями сети.",
-        "uk": "Додає опційне спостереження за заряджанням SunEnergy з попередженнями та чинними мережевими обмеженнями.",
-        "zh-cn": "新增可选的 SunEnergy 光伏充电反馈观察模式，保留电网及保护限制并记录警告。"
       }
     },
     "titleLang": {

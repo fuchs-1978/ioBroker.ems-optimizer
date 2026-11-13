@@ -625,6 +625,24 @@ test('a late charge echo still requires fresh zero after the stop before releasi
     assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 0);
 });
 
+test('late discharge echo permits automatic return after a fresh zero and then PV charging', () => {
+    const h = harness(1);
+    h.own('Config.BatteryFineStep_W', 600);
+    h.own('Control.Targets.Battery_W', -514);
+    h.tick(); h.complete();
+    h.own('Control.Targets.Battery_W', 0);
+    h.tick(); h.complete();
+    h.advance(1000); h.fresh(); h.tick();
+    assert.deepEqual(h.commands(), [514, 0]);
+    assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), -514);
+    h.advance(1000); h.snapshot(1, {GS: 514, GP: 60}); h.fresh(); h.tick();
+    h.advance(1000); h.snapshot(1, {GS: 0, GP: 0}); h.fresh();
+    h.own('Control.Targets.Battery_W', 650);
+    h.tick();
+    assert.deepEqual(h.commands(), [514, 0, -600]);
+    assert.equal(h.value('Devices.Battery.ConfirmPhysicalStop'), false);
+});
+
 test('a pending charge without a GS echo still stops when immediate reduction is needed', () => {
     const cases = {
         house: h => h.put('ha3', 45.3),

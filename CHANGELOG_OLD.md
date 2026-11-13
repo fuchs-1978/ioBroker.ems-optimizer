@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.237 (2026-11-13)
+
+- Add an optional SunEnergy feedback observation mode. [Release notes](docs/release-0.17.0-alpha.237.md)
+
 ## 0.17.0-alpha.236 (2026-11-13)
 
 - Wait briefly for the first SunEnergy charging confirmation after a PV dip. [Release notes](docs/release-0.17.0-alpha.236.md)
