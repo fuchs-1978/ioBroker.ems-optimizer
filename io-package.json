@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.256",
+    "version": "0.17.0-alpha.257",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.257": {
+        "en": "Recover from delayed SunEnergy feedback after confirmed standstill and retry charging when surplus rises.",
+        "de": "Nach verspäteter SunEnergy-Rückmeldung und bestätigtem Stillstand wieder regeln und bei steigendem Überschuss neu laden.",
+        "es": "Reanuda el control tras una respuesta tardía de SunEnergy y una parada confirmada, y reintenta la carga si aumenta el excedente.",
+        "fr": "Reprend la régulation après un retour SunEnergy tardif et un arrêt confirmé, et relance la charge si le surplus augmente.",
+        "it": "Riprende la regolazione dopo un riscontro tardivo di SunEnergy e un arresto confermato, e ritenta la carica se aumenta il surplus.",
+        "nl": "Hervat de regeling na vertraagde SunEnergy-terugmelding en bevestigde stilstand, en probeert opnieuw te laden bij meer overschot.",
+        "pl": "Wznawia regulację po opóźnionej odpowiedzi SunEnergy i potwierdzonym zatrzymaniu oraz ponawia ładowanie, gdy rośnie nadwyżka.",
+        "pt": "Retoma a regulação após uma resposta tardia da SunEnergy e uma paragem confirmada, e volta a carregar se o excedente aumentar.",
+        "ru": "Возобновляет регулирование после запоздалого отклика SunEnergy и подтверждённой остановки и повторяет зарядку при росте избытка.",
+        "uk": "Відновлює регулювання після запізнілої відповіді SunEnergy й підтвердженої зупинки та повторює заряджання за зростання надлишку.",
+        "zh-cn": "在 SunEnergy 反馈延迟且确认停止后恢复调节，并在余电增加时重试充电。"
+      },
       "0.17.0-alpha.256": {
         "en": "Recalculate SunEnergy household discharge corrections when newer measurements arrive before dispatch.",
         "de": "SunEnergy-Entladekorrektur für den Haushalt bei neueren Messwerten vor der Ausgabe neu berechnen.",
@@ -81,19 +94,6 @@
         "ru": "Продолжает смену направления после подтверждения нулевой команды и измеренной остановки.",
         "uk": "Продовжує зміну напрямку після підтвердження нульової команди та виміряної зупинки.",
         "zh-cn": "确认零功率指令并测得停止后继续切换 SunEnergy 方向。"
-      },
-      "0.17.0-alpha.250": {
-        "en": "Reduce an acknowledged SunEnergy discharge while AC power is still settling, including household discharge.",
-        "de": "Bestätigten SunEnergy-Entladeauftrag auch bei der Haushaltsentladung direkt reduzieren.",
-        "es": "Reduce la descarga confirmada de SunEnergy también para el consumo del hogar.",
-        "fr": "Réduit la décharge SunEnergy confirmée également pour la consommation du foyer.",
-        "it": "Riduce la scarica SunEnergy confermata anche per i consumi domestici.",
-        "nl": "Verlaagt een bevestigde SunEnergy-ontlading ook bij huishoudelijk verbruik.",
-        "pl": "Zmniejsza potwierdzone rozładowanie SunEnergy także na potrzeby domu.",
-        "pt": "Reduz a descarga confirmada da SunEnergy também para o consumo doméstico.",
-        "ru": "Снижает подтверждённую мощность разряда SunEnergy и для бытовой нагрузки.",
-        "uk": "Зменшує підтверджену потужність розряду SunEnergy також для побутового навантаження.",
-        "zh-cn": "家庭用电时也可直接降低已确认的 SunEnergy 放电功率。"
       }
     },
     "titleLang": {

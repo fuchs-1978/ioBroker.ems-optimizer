@@ -294,6 +294,19 @@ function attachRealController(f) {
         tick: () => adapter.runEngine('updateBatteryProductionOutput()')};
 }
 
+test('an older foreign GS write remains evidence of conflicting ownership after a newer driver echo', () => {
+    const f = fixture(1);
+    const h = attachRealController(f);
+    const id = f.id(1), now = Date.now();
+    f.adapter.stateCache.set(id, {val: 0, ack: true, ts: now, from: 'system.adapter.sunenergyxt500.0'});
+    f.adapter.onStateChange(id, {val: 100, ack: false, ts: now - 100, from: 'system.adapter.javascript.0'});
+    assert.equal(f.adapter.getCachedState(id).val, 0);
+    assert.equal(f.adapter.runEngine(`batteryHeadForeignGsWrites.get(${JSON.stringify(id)})`), h.now());
+    h.advance(1000);
+    f.adapter.onStateChange(id, {val: 100, ack: false, ts: now - 100, from: 'system.adapter.ems.0'});
+    assert.equal(f.adapter.runEngine(`batteryHeadForeignGsWrites.get(${JSON.stringify(id)})`), h.now() - 1000);
+});
+
 for (const count of [1, 2, 3]) {
     test(`real ${count}-head runtime and production transport complete a durable SoC-weighted plan then stop`, async () => {
         const f = fixture(count);
