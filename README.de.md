@@ -1,11 +1,12 @@
 # EMS Optimizer
 
-**Aktuelle Adapterversion: 0.17.0-alpha.257.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
+**Aktuelle Adapterversion: 0.17.0-alpha.258.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
 
 [English overview](README.md) · [Vollständige Admin-Feldreferenz](docs/admin-reference.de.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) · [Versionsänderungen](README.md#changelog)
 
 ## Aktuelle Änderungen
 
+- **Alpha.258** erfasst im Recorder je SunEnergy-Kopf die Zeit bis zum Sollwert-Echo und bis zur gemessenen AC-Reaktion. [Versionshinweise](docs/release-0.17.0-alpha.258.md)
 - **Alpha.257** setzt die SunEnergy-Regelung nach einer eindeutig verspäteten Rückmeldung und bestätigtem Stillstand fort. Im PV-Beobachtungsmodus kann steigender Überschuss einen wirkungslosen Kleinladeauftrag ablösen. [Versionshinweise](docs/release-0.17.0-alpha.257.md)
 - **Alpha.256** berücksichtigt bei der SunEnergy-Haushaltsentladung kurzzeitig versetzte Rückmeldungen und berechnet überholte Entladekorrekturen erneut. [Versionshinweise](docs/release-0.17.0-alpha.256.md)
 - **Alpha.255** reduziert bestätigte SunEnergy-Entladeaufträge bei kurzer Einspeisung direkt, wenn weiter Haushaltsbedarf besteht. [Versionshinweise](docs/release-0.17.0-alpha.255.md)

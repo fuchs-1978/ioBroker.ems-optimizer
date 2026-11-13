@@ -21,6 +21,7 @@ function fixture(initialNow = Date.now()) {
         setCompatState: async (id, value) => {writes.push({id, value});}, log: {warn() {}}};
     adapter.debugRecorder = new DebugRecorder(adapter);
     const shadow = new ShadowController(adapter, {now: () => now}); shadow.initialized = true;
+    adapter.shadowController = shadow;
     own('System.RealOutputsEnabled', true); own('Control.Valid', true);
     own('Control.Targets.Wallbox0_W', 1380); own('Vehicles.Wallbox0.StartDelayRemaining_s', 600);
     own('Config.WallboxStartDelay_s', 600); own('Config.WallboxMinimumRunTime_s', 600); own('Config.WallboxStopDelay_s', 600);
@@ -541,6 +542,206 @@ test('indexed sources bypass the fallback while dynamic ACKs and battery observa
     assert.equal(battery[0].actualInternal_W, 95);
     assert.ok(!JSON.stringify(battery[0]).includes('omit-raw'));
     assert.ok(events.some(event => event.type === 'source.update' && event.id === `${head}.grid.GP`));
+});
+
+function sunEnergyHead(h, index = 1) {
+    const base = `sunenergyxt500.0.heads.${index}`, rawId = `${base}.info.rawResponse`;
+    const id = `${base}.control.GS`;
+    h.put(`${base}.info.online`, true);
+    return {
+        id,
+        receive(gs, gp, {timestamp = h.now(), sourceTs = h.now(),
+            from = 'system.adapter.sunenergyxt500.0', q = 0, ...context} = {}) {
+            const previous = h.states.get(rawId);
+            h.put(rawId, JSON.stringify({state: {reported: {SC: 60, ON: 1, GS: gs, GP: gp,
+                MM: 0, LM: 1, SI: 10, SA: 90, MG: 2400, IS: 2400, PK: 2, LP: 0, timestamp,
+                IP: 'PRIVATE-HEAD-CONFIG', ...context}}}), {from, q, ts: sourceTs});
+            h.shadow.captureProduction(rawId, h.states.get(rawId), previous);
+        },
+        start(watts) {
+            const token = h.shadow.commandEvent('attempt', id, watts);
+            h.shadow.beginBatteryFeedbackTiming(id, watts, token);
+            return token;
+        },
+        complete: (watts, token) => h.shadow.commandEvent('transport_complete', id, watts, token),
+        timing: () => h.records().at(-1).production.commands[id].feedbackTiming
+    };
+}
+
+test('SunEnergy records distinct GS and GP times for each head, including feedback before the transport callback', async t => {
+    const h = fixture(2000000); t.mock.method(Date, 'now', h.now);
+    Object.assign(h.adapter.config, {batteryDispatchMode: 'sunenergy-heads', batteryHeadCount: 2});
+    const one = sunEnergyHead(h), two = sunEnergyHead(h, 2);
+    one.receive(0, 0); two.receive(0, 0);
+    h.advance(100);
+    const issuedAt = h.now(), first = one.start(-12), second = two.start(-120);
+    two.complete(-120, second);
+    h.advance(1000); one.receive(-12, 0, {timestamp: issuedAt + 700, sourceTs: h.now() - 20,
+        UO: 0, AF1: 3, BF: 0, EF: -1});
+    await h.flush();
+    const early = h.records().at(-1).event;
+    assert.equal(early.feedbackTiming.gsEcho.state, 'transport-pending');
+    assert.equal(early.feedbackTiming.gpResponse.state, 'transport-pending');
+    assert.deepEqual(early.deviceDiagnostics, {upsMode: 0, faultMasks: {AF1: 3, BF: 0}});
+    assert.equal(early.deviceTs, issuedAt + 700);
+    assert.equal(early.sourceTs, issuedAt + 980);
+    h.advance(30); one.complete(-12, first);
+    await h.flush();
+    const awaiting = one.timing();
+    assert.equal(awaiting.gsEcho.latency_ms, 700);
+    assert.equal(awaiting.gsEcho.receivedAt, issuedAt + 1000);
+    assert.equal(awaiting.gpResponse.state, 'waiting');
+    assert.equal(awaiting.gpResponse.latency_ms, null);
+    h.advance(80); two.receive(-120, -120);
+    h.advance(800); one.receive(-12, -4);
+    h.advance(800); one.receive(-12, -6, {timestamp: issuedAt + 2600});
+    await h.flush();
+    const timing = one.timing();
+    assert.equal(timing.gsEcho.latency_ms, 700);
+    assert.equal(timing.gpResponse.latency_ms, 2600);
+    assert.equal(timing.gpResponse.powerInternal_W, 6);
+    assert.equal(two.timing().commandId, second);
+    assert.equal(two.timing().gpResponse.latency_ms, 1110);
+    assert.deepEqual(h.records().at(-1).production.battery.headFeedback.heads[0].feedbackTiming, timing);
+    assert.equal(awaiting.gpResponse.state, 'waiting', 'prior recorded frame remains immutable');
+    assert.doesNotMatch(JSON.stringify(h.records()), /PRIVATE-HEAD-CONFIG/);
+});
+
+test('SunEnergy ignores pre-write and repeated acquisitions and marks unresolved overlapping commands unknown', async t => {
+    const h = fixture(2000000); t.mock.method(Date, 'now', h.now);
+    h.adapter.config.batteryDispatchMode = 'sunenergy-heads';
+    const head = sunEnergyHead(h);
+    head.receive(0, 0);
+    h.advance(100); const issued = h.now();
+    const old = head.start(150);
+    head.complete(150, old);
+    h.advance(20); head.receive(150, 150, {timestamp: issued - 10});
+    h.advance(20); head.receive(0, 0, {timestamp: issued + 10});
+    h.advance(20); head.receive(150, 150, {timestamp: issued + 10});
+    await h.flush();
+    assert.equal(head.timing().gsEcho.state, 'waiting', 'republishing the same acquisition cannot create an echo');
+    assert.equal(head.timing().gpResponse.state, 'waiting');
+    h.advance(20); head.receive(0, 0);
+    const newCommand = head.start(90), nextAt = h.now();
+    h.advance(1); head.complete(150, old);
+    head.complete(90, newCommand);
+    h.advance(800); head.receive(150, 150, {timestamp: nextAt + 700});
+    h.advance(800); head.receive(90, 90, {timestamp: nextAt + 1400});
+    await h.flush();
+    const superseded = h.records().map(r => r.event).find(event => event?.supersededFeedbackTiming);
+    assert.equal(superseded.supersededFeedbackTiming.commandId, old);
+    assert.equal(superseded.supersededFeedbackTiming.gsEcho.reason, 'superseded');
+    assert.equal(superseded.supersededFeedbackTiming.gpResponse.latency_ms, null);
+    assert.equal(head.timing().commandId, newCommand);
+    assert.equal(head.timing().gsEcho.reason, 'overlapping-command');
+    assert.equal(head.timing().gsEcho.latency_ms, null);
+    assert.equal(head.timing().gpResponse.reason, 'overlapping-command');
+    assert.equal(head.timing().gpResponse.latency_ms, null);
+});
+
+test('SunEnergy does not use a contradictory duplicate device acquisition as the next baseline', async t => {
+    const h = fixture(2000000); t.mock.method(Date, 'now', h.now);
+    h.adapter.config.batteryDispatchMode = 'sunenergy-heads';
+    const head = sunEnergyHead(h);
+    head.receive(0, 0);
+    h.advance(100); head.complete(100, head.start(100));
+    h.advance(100); const acquired = h.now();
+    head.receive(0, 0);
+    h.advance(100); head.receive(100, 100, {timestamp: acquired});
+    h.advance(100); head.complete(90, head.start(90));
+    h.advance(500); head.receive(90, 90);
+    await h.flush();
+    assert.equal(head.timing().gsEcho.reason, 'missing-baseline');
+    assert.equal(head.timing().gpResponse.latency_ms, null);
+});
+
+test('SunEnergy can measure a new GS echo while a preceding command still accounts for the power change', async t => {
+    const h = fixture(2000000); t.mock.method(Date, 'now', h.now);
+    h.adapter.config.batteryDispatchMode = 'sunenergy-heads';
+    const head = sunEnergyHead(h);
+    head.receive(0, 0);
+    h.advance(100); head.complete(-120, head.start(-120));
+    h.advance(400); head.receive(-120, -30);
+    h.advance(100); head.complete(-60, head.start(-60));
+    h.advance(500); head.receive(-60, -60);
+    await h.flush();
+    assert.equal(head.timing().gsEcho.latency_ms, 500);
+    assert.equal(head.timing().gpResponse.reason, 'overlapping-command');
+});
+
+test('SunEnergy keeps identical overlapping GS, failed writes and foreign writes unassigned', async t => {
+    const h = fixture(2000000); t.mock.method(Date, 'now', h.now);
+    h.adapter.config.batteryDispatchMode = 'sunenergy-heads';
+    const head = sunEnergyHead(h);
+    head.receive(0, 0); h.advance(100); head.start(-30);
+    h.advance(100); head.complete(-30, head.start(-30));
+    h.advance(500); head.receive(-30, -30);
+    await h.flush();
+    assert.equal(head.timing().gsEcho.reason, 'overlapping-command');
+    assert.equal(head.timing().gpResponse.reason, 'overlapping-command');
+    h.advance(200);
+    const failed = head.start(-50);
+    h.advance(100); head.receive(-50, -50);
+    h.shadow.commandEvent('transport_error', head.id, -50, failed, 'failed write');
+    await h.flush();
+    assert.equal(head.timing().gsEcho.reason, 'transport-error');
+    assert.equal(head.timing().gpResponse.reason, 'transport-error');
+    const interrupted = fixture(2000000);
+    interrupted.adapter.config.batteryDispatchMode = 'sunenergy-heads';
+    const other = sunEnergyHead(interrupted);
+    other.receive(0, 0);
+    interrupted.advance(100); other.complete(-80, other.start(-80));
+    interrupted.shadow.captureForeignBatteryHeadGsWrite(other.id);
+    interrupted.advance(500); other.receive(-80, -80);
+    await interrupted.flush();
+    assert.equal(other.timing().gsEcho.reason, 'foreign-write');
+    assert.equal(other.timing().gpResponse.reason, 'foreign-write');
+});
+
+test('SunEnergy times a decrease towards zero and keeps a timed-out electrical response unknown', async t => {
+    const h = fixture(2000000); t.mock.method(Date, 'now', h.now);
+    h.adapter.config.batteryDispatchMode = 'sunenergy-heads';
+    h.own('Config.BatteryFeedbackTimeout_s', 2);
+    const head = sunEnergyHead(h);
+    head.receive(120, 120);
+    h.advance(100); head.complete(0, head.start(0));
+    h.advance(500); head.receive(120, 105);
+    h.advance(600); head.receive(0, 80);
+    await h.flush();
+    assert.equal(head.timing().gsEcho.latency_ms, 1100);
+    assert.equal(head.timing().gpResponse.latency_ms, 500);
+    assert.equal(head.timing().gpResponse.powerInternal_W, -105);
+    h.advance(500); head.receive(0, 0);
+    h.advance(100); head.complete(-12, head.start(-12));
+    h.advance(700); head.receive(-12, 0);
+    h.advance(1500); head.receive(-12, -12);
+    await h.flush();
+    assert.equal(head.timing().gsEcho.latency_ms, 700);
+    assert.equal(head.timing().gpResponse.reason, 'feedback-timeout');
+    assert.equal(head.timing().gpResponse.latency_ms, null);
+});
+
+test('SunEnergy reports missing or untrusted acquisition times without substituting a database timestamp', async t => {
+    const h = fixture(2000000); t.mock.method(Date, 'now', h.now);
+    h.adapter.config.batteryDispatchMode = 'sunenergy-heads';
+    const head = sunEnergyHead(h);
+    head.receive(0, 0, {timestamp: null});
+    h.advance(100); head.complete(-12, head.start(-12));
+    h.advance(1000); head.receive(-12, -12);
+    await h.flush();
+    assert.equal(head.timing().gsEcho.reason, 'missing-baseline');
+    assert.equal(head.timing().gpResponse.latency_ms, null);
+    h.advance(100); head.complete(-99, head.start(-99));
+    h.advance(1000); head.receive(-99, -99, {timestamp: null});
+    h.advance(1000); head.receive(-99, -99, {from: 'system.adapter.javascript.0'});
+    h.advance(1000); head.receive(-99, -99, {q: 64});
+    await h.flush();
+    assert.equal(head.timing().gsEcho.state, 'waiting');
+    assert.equal(head.timing().gpResponse.state, 'waiting');
+    h.advance(1000); head.receive(-99, -99);
+    await h.flush();
+    assert.equal(head.timing().gsEcho.latency_ms, 4000);
+    assert.equal(head.timing().gpResponse.latency_ms, 4000);
 });
 
 test('unchanged source polls retain new timestamps, real ACK/q/NULL edges and every cyclic zero command completion', async t => {

@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.257",
+    "version": "0.17.0-alpha.258",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.258": {
+        "en": "Record the SunEnergy setpoint echo and AC power response times per head.",
+        "de": "Zeit bis zum SunEnergy-Sollwert-Echo und bis zur AC-Leistungsreaktion je Kopf erfassen.",
+        "es": "Registra por cada unidad SunEnergy los tiempos de confirmación de la consigna y de respuesta de la potencia de CA.",
+        "fr": "Enregistre pour chaque unité SunEnergy les délais de retour de la consigne et de réaction de la puissance CA.",
+        "it": "Registra per ogni unità SunEnergy i tempi di conferma del setpoint e di risposta della potenza CA.",
+        "nl": "Registreert per SunEnergy-unit de tijd tot de terugmelding van het setpoint en de reactie van het AC-vermogen.",
+        "pl": "Rejestruje dla każdej jednostki SunEnergy czas potwierdzenia wartości zadanej i reakcji mocy AC.",
+        "pt": "Regista em cada unidade SunEnergy os tempos de confirmação do valor de referência e de resposta da potência CA.",
+        "ru": "Для каждого блока SunEnergy записывает время подтверждения уставки и изменения мощности на стороне переменного тока.",
+        "uk": "Для кожного блока SunEnergy записує час підтвердження заданого значення й реакції потужності змінного струму.",
+        "zh-cn": "分别记录每台 SunEnergy 设备的设定值回读时间和交流功率响应时间。"
+      },
       "0.17.0-alpha.257": {
         "en": "Recover from delayed SunEnergy feedback after confirmed standstill and retry charging when surplus rises.",
         "de": "Nach verspäteter SunEnergy-Rückmeldung und bestätigtem Stillstand wieder regeln und bei steigendem Überschuss neu laden.",
@@ -81,19 +94,6 @@
         "ru": "Опциональная ночная зарядка Mii избытком когенерации и 10 процентными пунктами заряда накопителя.",
         "uk": "Додаткове нічне заряджання Mii надлишком когенерації та в діапазоні 10 відсоткових пунктів заряду.",
         "zh-cn": "可在夜间用热电联产余电和储能电池 10 个百分点的电量区间为 Mii 充电。"
-      },
-      "0.17.0-alpha.251": {
-        "en": "Resume a SunEnergy direction change after a confirmed zero command and measured standstill.",
-        "de": "SunEnergy-Richtungswechsel nach bestätigtem Nullbefehl und gemessenem Stillstand fortsetzen.",
-        "es": "Reanuda el cambio de sentido tras confirmar la orden de cero y la parada medida.",
-        "fr": "Reprend le changement de sens après confirmation de la consigne zéro et de l’arrêt mesuré.",
-        "it": "Riprende il cambio di direzione dopo la conferma del comando zero e dell’arresto misurato.",
-        "nl": "Hervat de richtingswissel na een bevestigd nulcommando en gemeten stilstand.",
-        "pl": "Wznawia zmianę kierunku po potwierdzeniu polecenia zerowego i zmierzeniu zatrzymania.",
-        "pt": "Retoma a mudança de direção após a confirmação do comando zero e da paragem medida.",
-        "ru": "Продолжает смену направления после подтверждения нулевой команды и измеренной остановки.",
-        "uk": "Продовжує зміну напрямку після підтвердження нульової команди та виміряної зупинки.",
-        "zh-cn": "确认零功率指令并测得停止后继续切换 SunEnergy 方向。"
       }
     },
     "titleLang": {
