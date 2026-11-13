@@ -14,7 +14,7 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
     mii = false, adoptRunningMii = false, wallboxStopResponseDelayMs = 0,
     initialSurplusW = 6000, batteryPlanW = 0, lpcLimitW = null, phaseBiasW = [0, 0, 0],
     batteryDelayMs = 2000, heatingDelayMs = 4000, dhwDelayMs = 4000,
-    batteryDcFactor = 1, batteryDcPvW = 0, wb2InitialPhaseMode = null,
+    batteryDcFactor = 1, batteryDcPvW = 0, batteryHeadType = 1, wb2InitialPhaseMode = null,
     nativeConfig: configOverrides = {}, sourceQuality, phaseResponseDelayMs = null,
     initialTime = Date.UTC(2026, 8, 21, 12), wallboxUptakeA = (_wb, amps) => amps} = {}) {
     let now = initialTime, surplusW = 6000, idleWallboxNoiseKW = 0;
@@ -297,7 +297,7 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
             put(`${base}.info.online`, batteryHeartbeat);
             put(`${base}.info.rawResponse`, JSON.stringify({GS: -batteryW || 0, GP: -batteryW || 0,
                 SC: states.get(mapping.DP_BATTERY_SOC)?.val ?? 50, ON: 1, MM: 0, LM: 1,
-                SI: 20, SA: 80, MG: 2400, IS: 2400, LP: 0, PK: 1}));
+                SI: 20, SA: 80, MG: 2400, IS: 2400, LP: 0, PK: batteryHeadType}));
         }
         if (batteryHeartbeat) put(config.batteryHeartbeatId, now);
         for (const wb of [0, 1, 2]) {

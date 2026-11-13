@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.251",
+    "version": "0.17.0-alpha.252",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.252": {
+        "en": "Optionally charge the Mii at night using CHP surplus and a 10-point battery SoC band.",
+        "de": "Mii nachts optional aus BHKW-Überschuss und einem Speicherfenster von 10 SoC-Punkten laden.",
+        "es": "Carga nocturna opcional del Mii con excedente de cogeneración y una banda de 10 puntos de carga de batería.",
+        "fr": "Recharge nocturne optionnelle du Mii avec surplus de cogénération et une plage de 10 points de charge.",
+        "it": "Ricarica notturna opzionale della Mii con surplus di cogenerazione e una fascia di 10 punti di carica.",
+        "nl": "Laad de Mii optioneel ’s nachts met WKK-overschot en een accubereik van 10 procentpunten.",
+        "pl": "Opcjonalne nocne ładowanie Mii z nadwyżki kogeneracji i zakresu 10 punktów naładowania.",
+        "pt": "Carregamento noturno opcional do Mii com excedente de cogeração e uma faixa de 10 pontos de carga.",
+        "ru": "Опциональная ночная зарядка Mii избытком когенерации и 10 процентными пунктами заряда накопителя.",
+        "uk": "Додаткове нічне заряджання Mii надлишком когенерації та в діапазоні 10 відсоткових пунктів заряду.",
+        "zh-cn": "可在夜间用热电联产余电和储能电池 10 个百分点的电量区间为 Mii 充电。"
+      },
       "0.17.0-alpha.251": {
         "en": "Resume a SunEnergy direction change after a confirmed zero command and measured standstill.",
         "de": "SunEnergy-Richtungswechsel nach bestätigtem Nullbefehl und gemessenem Stillstand fortsetzen.",
@@ -81,19 +94,6 @@
         "ru": "Возобновляет подтверждённый заряд и разряд SunEnergy после перезапуска.",
         "uk": "Відновлює підтверджені заряджання й розряджання SunEnergy після перезапуску.",
         "zh-cn": "正常重启后接管已确认的 SunEnergy 充放电。"
-      },
-      "0.17.0-alpha.245": {
-        "en": "Wait briefly for SunEnergy discharge confirmation when the target drops or the adapter restarts.",
-        "de": "Bei fallendem Entladeziel und beim Neustart kurz auf die SunEnergy-Bestätigung warten.",
-        "es": "Espera brevemente la confirmación SunEnergy al reducir la descarga o reiniciar.",
-        "fr": "Attend brièvement la confirmation SunEnergy à la baisse de décharge ou au redémarrage.",
-        "it": "Attende brevemente la conferma SunEnergy al calo di scarica o al riavvio.",
-        "nl": "Wacht kort op SunEnergy-bevestiging bij dalende ontlading of herstart.",
-        "pl": "Krótko czeka na potwierdzenie SunEnergy przy spadku rozładowania lub restarcie.",
-        "pt": "Aguarda brevemente a confirmação SunEnergy ao reduzir a descarga ou reiniciar.",
-        "ru": "Кратко ожидает подтверждения SunEnergy при снижении разряда или перезапуске.",
-        "uk": "Коротко чекає на підтвердження SunEnergy при зниженні розряду або перезапуску.",
-        "zh-cn": "放电目标降低或适配器重启时短暂等待 SunEnergy 确认。"
       }
     },
     "titleLang": {
@@ -224,6 +224,7 @@
     "batteryFineReserveW": 200,
     "batteryPvPriorityEnabled": false,
     "batteryWallboxHalfStepEnabled": false,
+    "bhkwWallboxCycleEnabled": false,
     "batteryDeadbandW": 50,
     "batteryCycleS": 1,
     "batteryFeedbackTimeoutS": 15,

@@ -1395,6 +1395,42 @@ test('SunEnergy bridges a 300 W PV dip without resetting the wallbox stop delay'
     assert.ok(h.physical().batteryW >= 0, h.diagnostic());
 });
 
+test('night CHP surplus and battery start the Mii at 6 A, stop at 70%, and recharge before repeating', async () => {
+    const h = await plant({battery: true, batteryHeadType: 2, mii: true, wallbox: false, initialSurplusW: 530,
+        split: false, startDelayS: 5, minimumRuntimeS: 600, initialTime: Date.UTC(2026, 10, 13, 22),
+        nativeConfig: {batteryDispatchMode: 'sunenergy-heads', batteryHead1MaxDischargeW: 2400,
+            bhkwPresent: true, bhkwWallboxCycleEnabled: true, wallboxParallelChargingEnabled: true,
+            dhwControlEnabled: false}});
+    h.own('Devices.MyPV_DHW.ControlEnabled', false);
+    h.own('Config.WallboxStartReserve_W', 150);
+    h.own('Config.BatteryCapacity_kWh', 5.02);
+    h.own('Control.TargetGridPower_W', 0);
+    h.put(h.run('CFG.dp.pvPower'), 0);
+    h.put(h.run('CFG.dp.bhkwPower'), 890);
+    const setSoc = soc => h.put(h.mapping.DP_BATTERY_SOC, soc);
+    setSoc(79); await h.advance(12);
+    assert.equal(h.physical().miiAllow, 0);
+    setSoc(80); await h.advance(45);
+    assert.equal(h.physical().miiAllow, 1, h.value('Devices.Wallbox0.OutputStatus'));
+    assert.equal(h.physical().miiAmps, 6);
+    assert.equal(h.physical().batteryW, -850, h.diagnostic());
+    assert.equal(h.trace.at(-1).gridW, 0);
+    setSoc(71); await h.advance(8);
+    assert.equal(h.physical().miiAllow, 1);
+    setSoc(70); await h.advance(40);
+    assert.equal(h.physical().miiAllow, 0);
+    assert.ok(h.physical().batteryW > 0, h.diagnostic());
+    setSoc(79); await h.advance(12);
+    assert.equal(h.physical().miiAllow, 0);
+    setSoc(80); await h.advance(60);
+    assert.equal(h.physical().miiAllow, 1, h.value('Devices.Wallbox0.OutputStatus'));
+    h.put(h.run('CFG.dp.bhkwPower'), 0);
+    h.setSurplus(0);
+    await h.advance(15);
+    assert.equal(h.physical().miiAllow, 0, 'loss of CHP stops the assisted session despite minimum runtime');
+    assert.equal(h.value('Control.BatteryWallboxBuffer_W'), 0);
+});
+
 test('battery full, minimum SoC and off hand fine regulation back to EHZ without phantom allocation', async () => {
     const h = await plant({battery: true, heating: true, wallbox: false});
     await h.advance(90);
