@@ -636,6 +636,34 @@ test('PV feedback observation warns and keeps the outstanding lower charge throu
     assert.deepEqual(h.commands(), [-600, -1000, -157, -500]);
 });
 
+test('PV observation ramps past the learned ceiling only against fresh export after confirmation', () => {
+    const h = harness(1);
+    h.own('Config.BatteryPvFeedbackObservationEnabled', true);
+    h.own('Config.BatteryFineStep_W', 1000);
+    h.tick(); h.complete();
+    h.advance(5000); h.snapshot(1, {GS: -1000, GP: -850}); h.fresh(); h.tick();
+    h.advance(10000); h.fresh(); h.tick(); h.complete();
+    assert.deepEqual(h.commands(), [-1000, -850]);
+    h.own('Config.BatteryFineStep_W', 600);
+    h.own('Control.Targets.Battery_W', 2000);
+    h.advance(2000); h.fresh(); h.tick();
+    assert.deepEqual(h.commands(), [-1000, -850]);
+    h.snapshot(1, {GS: -850, GP: -842}); h.fresh();
+    for (const grid of [{valid: false, gridW: -390}, {valid: true, gridW: -390, held: true},
+        {valid: true, gridW: 50, held: false}]) {
+        Object.assign(h.grid, grid); h.tick();
+        assert.deepEqual(h.commands(), [-1000, -850]);
+    }
+    h.grid.gridW = -390; h.tick();
+    assert.equal(h.commands().at(-1), -1232, '842 W actual plus 390 W export');
+    h.complete(); h.advance(2000); h.snapshot(1, {GS: -1232, GP: -1230}); h.fresh();
+    h.grid.gridW = -900; h.tick();
+    assert.equal(h.commands().at(-1), -1830, 'next step is limited to 600 W above actual');
+    h.complete(); h.advance(2000); h.snapshot(1, {GS: -1830, GP: -1820}); h.fresh();
+    h.own('Control.Targets.Battery_W', 2700); h.own('Config.BatteryMaxCharge_W', 2000); h.tick();
+    assert.equal(h.commands().at(-1), -2000, 'configured charge ceiling is still binding');
+});
+
 test('PV feedback observation keeps waiting past the deadline and stops when disabled', () => {
     const h = harness(1);
     h.own('Config.BatteryPvFeedbackObservationEnabled', true);
