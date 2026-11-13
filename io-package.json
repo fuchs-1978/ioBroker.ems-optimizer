@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.242",
+    "version": "0.17.0-alpha.243",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.243": {
+        "en": "Correct measured grid power watt by watt after confirmed SunEnergy charging feedback.",
+        "de": "Netzleistung nach bestätigter SunEnergy-Laderückmeldung wattgenau korrigieren.",
+        "es": "Corrige la potencia de red vatio a vatio tras confirmar la carga SunEnergy.",
+        "fr": "Corrige la puissance réseau au watt près après confirmation de la charge SunEnergy.",
+        "it": "Corregge la potenza di rete al watt dopo la conferma della carica SunEnergy.",
+        "nl": "Corrigeert het netvermogen per watt na bevestigde SunEnergy-laadterugmelding.",
+        "pl": "Koryguje moc sieci co do wata po potwierdzeniu ładowania SunEnergy.",
+        "pt": "Corrige a potência da rede watt a watt após confirmação do carregamento SunEnergy.",
+        "ru": "Корректирует мощность сети с точностью до ватта после подтверждения зарядки SunEnergy.",
+        "uk": "Коригує мережеву потужність до вата після підтвердження заряджання SunEnergy.",
+        "zh-cn": "确认 SunEnergy 充电反馈后，按瓦修正并网功率。"
+      },
       "0.17.0-alpha.242": {
         "en": "Allow brief SunEnergy feedback before a normal restart stops an in-flight charge.",
         "de": "Bei regulärem Neustart vor dem Nullbefehl kurz auf die laufende SunEnergy-Rückmeldung warten.",
@@ -81,19 +94,6 @@
         "ru": "Добавляет опциональное наблюдение за зарядкой SunEnergy с предупреждениями и действующими ограничениями сети.",
         "uk": "Додає опційне спостереження за заряджанням SunEnergy з попередженнями та чинними мережевими обмеженнями.",
         "zh-cn": "新增可选的 SunEnergy 光伏充电反馈观察模式，保留电网及保护限制并记录警告。"
-      },
-      "0.17.0-alpha.236": {
-        "en": "Allow a brief wait for the SunEnergy charge-start echo when PV surplus drops.",
-        "de": "Bei sinkendem PV-Überschuss kurz auf die Bestätigung des SunEnergy-Ladestarts warten.",
-        "es": "Espera brevemente la confirmación de inicio de carga SunEnergy cuando cae el excedente solar.",
-        "fr": "Attend brièvement la confirmation du démarrage de la charge SunEnergy si le surplus solaire diminue.",
-        "it": "Attende brevemente la conferma di avvio della carica SunEnergy se cala il surplus fotovoltaico.",
-        "nl": "Wacht kort op bevestiging van de SunEnergy-laadstart als het PV-overschot daalt.",
-        "pl": "Krótko czeka na potwierdzenie rozpoczęcia ładowania SunEnergy przy spadku nadwyżki PV.",
-        "pt": "Aguarda brevemente a confirmação do início de carga SunEnergy quando cai o excedente solar.",
-        "ru": "Кратко ожидает подтверждения начала зарядки SunEnergy при снижении избытка солнечной энергии.",
-        "uk": "Коротко очікує підтвердження початку заряджання SunEnergy при зменшенні надлишку сонячної енергії.",
-        "zh-cn": "光伏余量下降时短暂等待 SunEnergy 确认启动充电。"
       }
     },
     "titleLang": {

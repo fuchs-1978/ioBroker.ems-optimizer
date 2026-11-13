@@ -38,7 +38,7 @@ function harness(count = 3, persisted = new Map(), config = {}) {
     const reservations = {valid: true, otherW: [0, 0, 0]};
     const ctx = vm.createContext({Math, Date: {now: () => now, parse: Date.parse}, nativeConfig,
         sunEnergyHeads, SMA_GRID_MAX_AGE_MS, CFG: {root: 'ems.0', dp: {myPvDhwHaCurrentA: ['ha1', 'ha2', 'ha3']}},
-        realtimeGridMeasurement: () => grid, log: (message, level) => logs.push({message, level}),
+        realtimeGridMeasurement: () => ({sourceTs: [now, now], ...grid}), log: (message, level) => logs.push({message, level}),
         getState: id => states.get(id), existsState: id => states.has(id),
         write: put, stateDef: (id, val) => { if (!states.has(id)) put(id, val); },
         configDef: (id, val) => { if (!states.has(id)) put(id, val); },
@@ -678,7 +678,7 @@ test('PV feedback observation warns and keeps the outstanding lower charge throu
     assert.match(h.logs[0].message, /Auftrag 157 W.*GS -1000 W.*AC-Ladung 620 W.*PV-Ziel 0 W.*Netz 80 W/);
     h.tick(); assert.equal(h.logs.length, 1);
     h.advance(2000); h.snapshot(1, {GS: -157, GP: -150}); h.fresh();
-    h.own('Control.Targets.Battery_W', 500); h.tick();
+    h.grid.gridW = -350; h.own('Control.Targets.Battery_W', 500); h.tick();
     assert.deepEqual(h.commands(), [-600, -1000, -157, -500]);
 });
 
@@ -696,11 +696,11 @@ test('PV observation ramps past the learned ceiling only against fresh export af
     assert.deepEqual(h.commands(), [-1000, -850]);
     h.snapshot(1, {GS: -850, GP: -842}); h.fresh();
     for (const grid of [{valid: false, gridW: -390}, {valid: true, gridW: -390, held: true},
-        {valid: true, gridW: 50, held: false}]) {
+        {valid: true, gridW: -390, held: false, sourceTs: [2000000, 2000000]}]) {
         Object.assign(h.grid, grid); h.tick();
         assert.deepEqual(h.commands(), [-1000, -850]);
     }
-    h.grid.gridW = -390; h.tick();
+    delete h.grid.sourceTs; h.grid.gridW = -390; h.tick();
     assert.equal(h.commands().at(-1), -1232, '842 W actual plus 390 W export');
     h.complete(); h.advance(1000); h.fresh(); h.tick();
     assert.deepEqual(h.commands(), [-1000, -850, -1232], 'keep the probe while feedback is pending');
@@ -710,6 +710,22 @@ test('PV observation ramps past the learned ceiling only against fresh export af
     h.complete(); h.advance(2000); h.snapshot(1, {GS: -1830, GP: -1820}); h.fresh();
     h.own('Control.Targets.Battery_W', 2700); h.own('Config.BatteryMaxCharge_W', 2000); h.tick();
     assert.equal(h.commands().at(-1), -2000, 'configured charge ceiling is still binding');
+});
+
+test('SunEnergy observation corrects 150 W export, then 10 W export, then 20 W import', () => {
+    const h = harness(1);
+    h.own('Config.BatteryPvFeedbackObservationEnabled', true);
+    h.own('Config.BatteryFineStep_W', 600);
+    h.own('Control.TargetGridPower_W', 0);
+    h.tick(); h.complete(); h.follow();
+    for (const [gridW, targetW] of [[-150, 750], [-10, 760], [20, 740], [0, 740]]) {
+        h.grid.gridW = gridW;
+        h.own('Control.Targets.Battery_W', targetW);
+        h.tick();
+        assert.equal(h.commands().at(-1), -targetW);
+        h.complete(); h.follow();
+    }
+    assert.deepEqual(h.commands(), [-600, -750, -760, -740]);
 });
 
 test('PV feedback observation keeps waiting past the deadline and stops when disabled', () => {
