@@ -1,11 +1,12 @@
 # EMS Optimizer
 
-**Aktuelle Adapterversion: 0.17.0-alpha.235.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
+**Aktuelle Adapterversion: 0.17.0-alpha.236.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
 
 [English overview](README.md) · [Vollständige Admin-Feldreferenz](docs/admin-reference.de.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) · [Versionsänderungen](README.md#changelog)
 
 ## Aktuelle Änderungen
 
+- **Alpha.236** wartet beim XT500 bei einem PV-Einbruch kurz auf die Bestätigung des gerade gesendeten Ladestarts. [Versionshinweise](docs/release-0.17.0-alpha.236.md)
 - **Alpha.235** senkt beim einzelnen SunEnergy-Kopf einen bestätigten PV-Ladeauftrag auch bei nachlaufender Istleistung. Beim Hochregeln geht jeder Schritt von der gemessenen Leistung aus. [Versionshinweise](docs/release-0.17.0-alpha.235.md)
 - **Alpha.234** behält die gelernte SunEnergy-Ladegrenze bei vorübergehend geringerem PV-Überschuss. [Versionshinweise](docs/release-0.17.0-alpha.234.md)
 - **Alpha.233** gibt die Leistungsreserve für einen vor der Ausgabe verworfenen SunEnergy-Auftrag nach frischer Nullbestätigung frei. [Versionshinweise](docs/release-0.17.0-alpha.233.md)
