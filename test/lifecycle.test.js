@@ -373,6 +373,28 @@ test('recorded foreign write distinguishes attempt/transport from raw actuator A
     await a.writeRecordedForeignState('charger', 0); assert.equal(writes, 1);
 });
 
+test('SunEnergy timing starts at the guarded transport and a foreign GS write interrupts it before cache rejection', async () => {
+    const a = adapter(), stages = [];
+    a.config.batteryDispatchMode = 'sunenergy-heads';
+    const id = 'sunenergyxt500.0.heads.1.control.GS';
+    a.shadowController.commandEvent = (stage, _id, _value, token) => {stages.push(stage); return token || 'cmd:1';};
+    a.shadowController.beginBatteryFeedbackTiming = (target, value, token) => {
+        stages.push('timing');
+        assert.deepEqual([target, value, token], [id, -99, 'cmd:1']);
+    };
+    a.setForeignStateAsync = async () => { stages.push('write'); };
+    await a.writeRecordedForeignState(id, -99);
+    assert.deepEqual(stages, ['attempt', 'timing', 'write', 'transport_complete']);
+    const interrupt = [];
+    a.shadowController.captureForeignBatteryHeadGsWrite = target => interrupt.push(target);
+    const now = Date.now();
+    a.stateCache.set(id, {val: 0, ack: true, ts: now, from: 'system.adapter.sunenergyxt500.0'});
+    a.onStateChange(id, {val: -99, ack: false, ts: now - 1000, from: 'system.adapter.javascript.0'});
+    a.onStateChange(id, {val: -99, ack: false, ts: now - 1000, from: `system.adapter.${a.namespace}`});
+    assert.deepEqual(interrupt, [id]);
+    assert.equal(a.getCachedState(id).val, 0);
+});
+
 test('native settings and startup invalidation finish before outputs and schedules start', async () => {
     const a = adapter();
     const steps = [];

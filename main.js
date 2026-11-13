@@ -248,6 +248,8 @@ class EmsOptimizer extends utils.Adapter {
         const commandId = this.runShadow('commandEvent', 'attempt', id, value);
         const heaterToken = this.heaterWriteProof.begin(id, value);
         try {
+            if (this.config.batteryDispatchMode === 'sunenergy-heads' && SUN_SETPOINT.test(id))
+                this.runShadow('beginBatteryFeedbackTiming', id, value, commandId);
             const result = await this.setForeignStateAsync(id, value, false);
             this.heaterWriteProof.transportCompleted(id, heaterToken);
             this.runShadow('commandEvent', 'transport_complete', id, value, commandId);
@@ -1152,8 +1154,10 @@ class EmsOptimizer extends utils.Adapter {
     onStateChange(id, state) {
         // A delayed foreign command still matters for ownership, even if a
         // newer driver acknowledgement has already replaced it in the cache.
-        if (state?.ack === false && state.from !== `system.adapter.${this.namespace}` && SUN_SETPOINT.test(id))
+        if (state?.ack === false && state.from !== `system.adapter.${this.namespace}` && SUN_SETPOINT.test(id)) {
             this.engineContext?.observeForeignBatteryHeadGsWrite?.(id);
+            this.runShadow('captureForeignBatteryHeadGsWrite', id);
+        }
         const previous = this.stateCache.get(id);
         if (this.ownRelative(id) !== null && state && previous && state.ack === true
             && (Number(state.ts) < Number(previous.ts)
