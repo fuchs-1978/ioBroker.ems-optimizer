@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.235",
+    "version": "0.17.0-alpha.236",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.236": {
+        "en": "Wait briefly for the first SunEnergy charge feedback during small PV dips and release observed charge reservations after confirmed zero.",
+        "de": "Bei kleinen PV-Schwankungen kurz auf die erste SunEnergy-Laderückmeldung warten und beobachtete Ladeaufträge nach bestätigter Nullleistung freigeben.",
+        "es": "Espera brevemente la primera confirmación de carga SunEnergy ante pequeñas caídas solares y libera la reserva tras confirmar cero.",
+        "fr": "Attend brièvement le premier retour de charge SunEnergy lors des petites baisses solaires et libère la réserve après confirmation du zéro.",
+        "it": "Attende brevemente il primo riscontro SunEnergy durante piccoli cali fotovoltaici e libera la riserva dopo la conferma dello zero.",
+        "nl": "Wacht kort op de eerste SunEnergy-laadterugmelding bij kleine PV-dalingen en geeft de reserve vrij na bevestiging van nul.",
+        "pl": "Krótko czeka na pierwsze potwierdzenie ładowania SunEnergy przy małych spadkach PV i zwalnia rezerwę po potwierdzeniu zera.",
+        "pt": "Espera brevemente pela primeira confirmação SunEnergy durante pequenas quedas solares e liberta a reserva após confirmar zero.",
+        "ru": "При небольших колебаниях ФЭМ кратко ждёт первый отклик SunEnergy и снимает резерв после подтверждения нуля.",
+        "uk": "За невеликих коливань ФЕМ коротко чекає першу відповідь SunEnergy і знімає резерв після підтвердження нуля.",
+        "zh-cn": "光伏余量小幅下降时短暂等待 SunEnergy 首次充电反馈，并在确认零功率后释放已观测指令的预留功率。"
+      },
       "0.17.0-alpha.235": {
         "en": "Reduce PV charging as soon as the SunEnergy setpoint is echoed and ramp up from measured power.",
         "de": "PV-Ladung nach bestätigtem SunEnergy-Sollwert direkt reduzieren und anhand der Istleistung hochregeln.",
@@ -81,19 +94,6 @@
         "ru": "При небольшом снижении уставки ФЭМ одиночный блок SunEnergy ждёт подтверждения зарядки.",
         "uk": "За невеликого зниження заданої потужності ФЕМ один блок SunEnergy очікує підтвердження заряджання.",
         "zh-cn": "光伏充电目标小幅下降时，单台 SunEnergy 设备等待充电反馈。"
-      },
-      "0.17.0-alpha.229": {
-        "en": "Recover a SunEnergy battery output with battery control disabled while leaving other EMS devices enabled.",
-        "de": "SunEnergy-Speicherausgang bei gesperrter Speichersteuerung zurückgeben, während andere EMS-Geräte freigegeben bleiben.",
-        "es": "Libera la salida de la batería SunEnergy con su control desactivado y los demás equipos del EMS habilitados.",
-        "fr": "Rétablit la sortie de batterie SunEnergy avec sa commande désactivée et les autres équipements EMS actifs.",
-        "it": "Ripristina l’uscita della batteria SunEnergy con il controllo batteria disattivato e gli altri dispositivi EMS abilitati.",
-        "nl": "Geeft de SunEnergy-batterijuitgang vrij met de batterijregeling uit en de andere EMS-apparaten ingeschakeld.",
-        "pl": "Pozwala zwolnić wyjście akumulatora SunEnergy przy wyłączonym sterowaniu akumulatorem i aktywnych pozostałych urządzeniach EMS.",
-        "pt": "Libera a saída da bateria SunEnergy com o seu controlo desativado e os restantes dispositivos EMS ativos.",
-        "ru": "Позволяет освободить выход батареи SunEnergy при отключённом управлении батареей и включённых остальных устройствах EMS.",
-        "uk": "Дає змогу звільнити вихід батареї SunEnergy за вимкненого керування батареєю та ввімкнених інших пристроїв EMS.",
-        "zh-cn": "在禁用电池控制的情况下释放 SunEnergy 电池输出，同时保持其他 EMS 设备启用。"
       }
     },
     "titleLang": {

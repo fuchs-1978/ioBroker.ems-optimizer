@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.229 (2026-11-13)
+
+- Allow returning a blocked SunEnergy battery output while only the battery control release is disabled. [Release notes](docs/release-0.17.0-alpha.229.md)
+
 ## 0.17.0-alpha.228 (2026-11-12)
 
 - Include a running wallbox’s stop-delay draw in the shared PV and electrical budget. [Release notes](docs/release-0.17.0-alpha.228.md)
