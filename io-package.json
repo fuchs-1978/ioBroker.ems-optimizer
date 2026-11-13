@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.250",
+    "version": "0.17.0-alpha.251",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.251": {
+        "en": "Resume a SunEnergy direction change after a confirmed zero command and measured standstill.",
+        "de": "SunEnergy-Richtungswechsel nach bestätigtem Nullbefehl und gemessenem Stillstand fortsetzen.",
+        "es": "Reanuda el cambio de sentido tras confirmar la orden de cero y la parada medida.",
+        "fr": "Reprend le changement de sens après confirmation de la consigne zéro et de l’arrêt mesuré.",
+        "it": "Riprende il cambio di direzione dopo la conferma del comando zero e dell’arresto misurato.",
+        "nl": "Hervat de richtingswissel na een bevestigd nulcommando en gemeten stilstand.",
+        "pl": "Wznawia zmianę kierunku po potwierdzeniu polecenia zerowego i zmierzeniu zatrzymania.",
+        "pt": "Retoma a mudança de direção após a confirmação do comando zero e da paragem medida.",
+        "ru": "Продолжает смену направления после подтверждения нулевой команды и измеренной остановки.",
+        "uk": "Продовжує зміну напрямку після підтвердження нульової команди та виміряної зупинки.",
+        "zh-cn": "确认零功率指令并测得停止后继续切换 SunEnergy 方向。"
+      },
       "0.17.0-alpha.250": {
         "en": "Reduce an acknowledged SunEnergy discharge while AC power is still settling, including household discharge.",
         "de": "Bestätigten SunEnergy-Entladeauftrag auch bei der Haushaltsentladung direkt reduzieren.",
@@ -81,19 +94,6 @@
         "ru": "Кратко ожидает подтверждения SunEnergy при снижении разряда или перезапуске.",
         "uk": "Коротко чекає на підтвердження SunEnergy при зниженні розряду або перезапуску.",
         "zh-cn": "放电目标降低或适配器重启时短暂等待 SunEnergy 确认。"
-      },
-      "0.17.0-alpha.244": {
-        "en": "Automatically return a confirmed SunEnergy discharge command after fresh zero feedback.",
-        "de": "Bestätigten SunEnergy-Entladeauftrag nach frischer Nullrückmeldung automatisch freigeben.",
-        "es": "Libera la orden de descarga SunEnergy confirmada tras recibir una nueva lectura de cero.",
-        "fr": "Libère la commande de décharge SunEnergy confirmée après un nouveau retour à zéro.",
-        "it": "Rilascia il comando di scarica SunEnergy confermato dopo una nuova lettura a zero.",
-        "nl": "Geeft een bevestigde SunEnergy-ontlaadopdracht vrij na een nieuwe nulmeting.",
-        "pl": "Zwalnia potwierdzone polecenie rozładowania SunEnergy po nowym odczycie zera.",
-        "pt": "Liberta a ordem de descarga SunEnergy confirmada após uma nova leitura de zero.",
-        "ru": "Снимает подтверждённую команду разряда SunEnergy после нового нулевого показания.",
-        "uk": "Знімає підтверджену команду розряджання SunEnergy після нового нульового показання.",
-        "zh-cn": "收到新的归零反馈后，自动释放已确认的 SunEnergy 放电指令。"
       }
     },
     "titleLang": {

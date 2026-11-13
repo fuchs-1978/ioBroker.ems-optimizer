@@ -309,6 +309,37 @@ test('direction reversal waits for physically confirmed zero of every head', () 
     assert.deepEqual(h.commands(), [-50, -50, 0, 0, 50, 50]);
 });
 
+test('reversal resumes after driver-confirmed zero and falling AC power reach standstill', () => {
+    for (const direction of [-1, 1]) {
+        for (const missing of [null, 'driver ack', 'ack source', 'stale ack', 'rundown', 'old GS', 'offline']) {
+            const h = harness(1);
+            const id = 'sunenergyxt500.0.heads.1.control.GS';
+            const from = 'system.adapter.sunenergyxt500.0';
+            h.own('Config.BatteryFineStep_W', 600);
+            h.own('Control.Targets.Battery_W', direction * 500); h.tick(); h.complete();
+            h.follow();
+            h.own('Control.Targets.Battery_W', direction * 550); h.tick(); h.complete();
+            assert.deepEqual(h.commands(), [-direction * 500, -direction * 550]);
+            h.own('Control.Targets.Battery_W', -direction * 650); h.tick(); h.complete();
+            assert.deepEqual(h.commands(), [-direction * 500, -direction * 550, 0]);
+            h.advance(1000); h.fresh();
+            h.put(id, 0, {ack: missing !== 'driver ack', from: missing === 'ack source' ? 'system.adapter.other.0' : from,
+                ...(missing === 'stale ack' ? {ts: 2000000} : {})});
+            h.snapshot(1, {GS: 0, GP: missing === 'rundown' ? 0 : -direction * 300});
+            h.tick();
+            assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), direction * 550);
+            assert.equal(h.commands().length, 3);
+            h.advance(5000); h.fresh();
+            h.snapshot(1, {GS: missing === 'old GS' ? -direction * 525 : 0, GP: 0});
+            if (missing === 'offline') h.put('sunenergyxt500.0.heads.1.info.online', false);
+            h.tick();
+            assert.deepEqual(h.commands(), [-direction * 500, -direction * 550, 0,
+                ...(missing === 'old GS' ? [0] : missing === null ? [direction * 600] : [])], missing);
+            assert.equal(h.logs.some(l => l.message.includes('AC-Stillstand freigegeben')), missing === null);
+        }
+    }
+});
+
 test('explicit manual return with both global releases off and fresh per-head zeros clears unseen debt', () => {
     for (const released of [true, false]) {
         const h = harness(2); h.tick(); h.complete(); h.own('Control.Targets.Battery_W', 0); h.tick(); h.complete();
