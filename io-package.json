@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.247",
+    "version": "0.17.0-alpha.248",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.248": {
+        "en": "Automatically release an old SunEnergy command after repeated fresh zero feedback.",
+        "de": "SunEnergy-Altauftrag nach wiederholter frischer Nullrückmeldung automatisch freigeben.",
+        "es": "Libera automáticamente la orden antigua tras varias lecturas nuevas de cero.",
+        "fr": "Libère automatiquement l’ancienne commande après plusieurs mesures récentes à zéro.",
+        "it": "Rilascia automaticamente il comando precedente dopo nuove letture a zero.",
+        "nl": "Geeft een oude opdracht automatisch vrij na meerdere nieuwe nulmetingen.",
+        "pl": "Automatycznie zwalnia stare polecenie po kolejnych świeżych odczytach zera.",
+        "pt": "Liberta automaticamente o comando antigo após novas leituras de zero.",
+        "ru": "Автоматически снимает старую команду после повторных новых показаний нуля.",
+        "uk": "Автоматично знімає стару команду після повторних свіжих нульових показань.",
+        "zh-cn": "收到多次新的零功率反馈后自动释放旧指令。"
+      },
       "0.17.0-alpha.247": {
         "en": "Bridge a PV shortfall during the wallbox stop delay with SunEnergy storage.",
         "de": "PV-Fehlbetrag während der Wallbox-Ausschaltverzögerung mit dem SunEnergy-Speicher überbrücken.",
@@ -81,19 +94,6 @@
         "ru": "При перезапуске кратко ожидает отклика SunEnergy перед остановкой зарядки.",
         "uk": "Перед зупинкою заряджання під час перезапуску коротко чекає відповіді SunEnergy.",
         "zh-cn": "正常重启时在停止充电前短暂等待 SunEnergy 反馈。"
-      },
-      "0.17.0-alpha.241": {
-        "en": "Keep pending SunEnergy charging steps and retain setpoint confirmation across restarts.",
-        "de": "Offene SunEnergy-Ladeschritte halten und Sollwertbestätigung über Neustarts speichern.",
-        "es": "Mantiene los pasos de carga pendientes y conserva la confirmación al reiniciar.",
-        "fr": "Maintient les paliers de charge en attente et conserve leur confirmation au redémarrage.",
-        "it": "Mantiene i passi di carica in attesa e conserva la conferma al riavvio.",
-        "nl": "Behoudt openstaande laadstappen en de bevestiging bij herstart.",
-        "pl": "Utrzymuje oczekujące kroki ładowania i zachowuje potwierdzenie po restarcie.",
-        "pt": "Mantém os passos de carregamento pendentes e guarda a confirmação após reiniciar.",
-        "ru": "Сохраняет текущий шаг зарядки и подтверждение уставки после перезапуска.",
-        "uk": "Зберігає поточний крок заряджання та підтвердження після перезапуску.",
-        "zh-cn": "保持等待反馈的充电步进并在重启后保留设定值确认。"
       }
     },
     "titleLang": {
