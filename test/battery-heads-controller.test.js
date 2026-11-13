@@ -624,12 +624,12 @@ test('PV feedback observation warns and keeps the outstanding lower charge throu
     h.advance(2000); h.snapshot(1, {GS: -1000, GP: -620}); h.fresh();
     h.own('Control.Targets.Battery_W', 157); h.tick(); h.complete();
     assert.deepEqual(h.commands(), [-600, -1000, -157]);
-    h.advance(650); h.fresh(); h.own('Control.Targets.Battery_W', 0); h.tick();
+    h.advance(650); h.fresh(); h.grid.gridW = 80; h.own('Control.Targets.Battery_W', 0); h.tick();
     assert.deepEqual(h.commands(), [-600, -1000, -157]);
     assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 1000);
     assert.equal(h.logs.length, 1);
     assert.equal(h.logs[0].level, 'warn');
-    assert.match(h.logs[0].message, /Auftrag 157 W.*GS -1000 W.*AC-Ladung 620 W.*PV-Ziel 0 W.*Netz -1500 W/);
+    assert.match(h.logs[0].message, /Auftrag 157 W.*GS -1000 W.*AC-Ladung 620 W.*PV-Ziel 0 W.*Netz 80 W/);
     h.tick(); assert.equal(h.logs.length, 1);
     h.advance(2000); h.snapshot(1, {GS: -157, GP: -150}); h.fresh();
     h.own('Control.Targets.Battery_W', 500); h.tick();
@@ -649,7 +649,7 @@ test('PV feedback observation keeps waiting past the deadline and stops when dis
 });
 
 test('PV feedback observation respects meter availability, electrical caps and the battery release', () => {
-    for (const stop of [h => { h.grid.gridW = -100; }, h => { h.grid.valid = false; },
+    for (const stop of [h => { h.grid.valid = false; }, h => { h.grid.held = true; },
         h => { h.limit.budgetW = 500; }, h => h.snapshot(1, {SC: 100}),
         h => h.own('Devices.Battery.ControlEnabled', false)]) {
         const h = harness(1);

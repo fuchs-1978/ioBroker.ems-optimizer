@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.237",
+    "version": "0.17.0-alpha.238",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.238": {
+        "en": "Keep the pending SunEnergy PV charge in observation mode when export falls, and log the grid reading.",
+        "de": "Offenen SunEnergy-PV-Ladeauftrag im Beobachtungsmodus bei sinkender Einspeisung halten und Netzleistung protokollieren.",
+        "es": "Mantiene la carga SunEnergy pendiente si cae la exportación y registra la potencia de red.",
+        "fr": "Maintient la charge SunEnergy en attente si l’injection baisse et journalise la puissance réseau.",
+        "it": "Mantiene la carica SunEnergy in attesa se cala l’immissione e registra la potenza di rete.",
+        "nl": "Behoudt de openstaande SunEnergy-laadopdracht bij dalende teruglevering en logt het netvermogen.",
+        "pl": "Utrzymuje oczekujące ładowanie SunEnergy przy spadku eksportu i zapisuje moc sieci.",
+        "pt": "Mantém o carregamento SunEnergy pendente quando a exportação cai e regista a potência da rede.",
+        "ru": "Сохраняет ожидающую зарядку SunEnergy при падении экспорта и записывает мощность сети.",
+        "uk": "Утримує незавершену команду заряджання SunEnergy при падінні експорту та записує потужність мережі.",
+        "zh-cn": "观察模式下，光伏余量下降时保留待确认的 SunEnergy 充电指令并记录电网功率。"
+      },
       "0.17.0-alpha.237": {
         "en": "Add optional SunEnergy PV charge feedback observation with warnings while grid and protection limits allow the existing request.",
         "de": "Optionaler SunEnergy-Beobachtungsmodus mit Warnungen bei ausstehender PV-Laderückmeldung und ausreichender Netzreserve.",
@@ -81,19 +94,6 @@
         "ru": "Снижает уставку зарядки от ФЭМ при стабильно меньшей потребляемой мощности SunEnergy.",
         "uk": "Знижує уставку заряджання від ФЕМ за стабільно меншої потужності SunEnergy.",
         "zh-cn": "当 SunEnergy 持续以较低功率充电时，降低光伏充电设定值。"
-      },
-      "0.17.0-alpha.231": {
-        "en": "Allow up to a 200 W drop in the PV charge target while a single SunEnergy head confirms a running charge command.",
-        "de": "Beim Laden eines einzelnen SunEnergy-Kopfs bis zu 200 W weniger PV-Sollleistung während der ausstehenden Rückmeldung zulassen.",
-        "es": "Admite una bajada de hasta 200 W en la consigna fotovoltaica mientras una unidad SunEnergy confirma la carga.",
-        "fr": "Autorise une baisse de consigne photovoltaïque de 200 W pendant la confirmation de charge d’une unité SunEnergy.",
-        "it": "Consente un calo fino a 200 W del setpoint fotovoltaico mentre una singola unità SunEnergy conferma la carica.",
-        "nl": "Staat een daling van het PV-laaddoel tot 200 W toe terwijl één SunEnergy-eenheid de laadopdracht bevestigt.",
-        "pl": "Dopuszcza spadek nastawy ładowania PV o maksymalnie 200 W w czasie potwierdzania polecenia przez jedną jednostkę SunEnergy.",
-        "pt": "Permite uma redução até 200 W na referência fotovoltaica enquanto uma unidade SunEnergy confirma o carregamento.",
-        "ru": "Допускает снижение заданной мощности заряда от ФЭМ до 200 Вт, пока один блок SunEnergy подтверждает команду.",
-        "uk": "Допускає зниження заданої потужності заряджання від ФЕМ до 200 Вт, поки один блок SunEnergy підтверджує команду.",
-        "zh-cn": "单台 SunEnergy 设备确认充电指令期间，允许光伏充电目标最多下降 200 W。"
       }
     },
     "titleLang": {
