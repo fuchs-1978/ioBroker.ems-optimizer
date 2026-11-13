@@ -1,11 +1,12 @@
 # EMS Optimizer
 
-**Aktuelle Adapterversion: 0.17.0-alpha.231.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
+**Aktuelle Adapterversion: 0.17.0-alpha.232.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
 
 [English overview](README.md) · [Vollständige Admin-Feldreferenz](docs/admin-reference.de.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) · [Versionsänderungen](README.md#changelog)
 
 ## Aktuelle Änderungen
 
+- **Alpha.232** senkt beim einzelnen SunEnergy-Kopf den bestätigten PV-Ladeauftrag, wenn die gemessene Leistung stabil darunter bleibt. [Versionshinweise](docs/release-0.17.0-alpha.232.md)
 - **Alpha.231** lässt bei einem bereits ladenden SunEnergy-Kopf eine PV-Sollwertsenkung um bis zu 200 W zu, während die Rückmeldung zum laufenden Auftrag aussteht. [Versionshinweise](docs/release-0.17.0-alpha.231.md)
 - **Alpha.230** wartet bei einem einzelnen SunEnergy-Kopf und einer kleinen PV-Sollwertsenkung innerhalb der Leistungstoleranz auf die ausstehende Laderückmeldung. [Versionshinweise](docs/release-0.17.0-alpha.230.md)
 - **Alpha.229** ermöglicht die Rückgabe eines blockierten SunEnergy-Speicherausgangs bei deaktivierter Speicher-Steuerfreigabe. Wallboxen und Heizstäbe können weiter geregelt werden. [Versionshinweise](docs/release-0.17.0-alpha.229.md)

@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.231",
+    "version": "0.17.0-alpha.232",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.232": {
+        "en": "Reduce a confirmed SunEnergy PV charge request when the head consistently draws less power.",
+        "de": "Bestätigten SunEnergy-PV-Ladeauftrag bei stabil niedrigerer Aufnahmeleistung reduzieren.",
+        "es": "Reduce la consigna de carga fotovoltaica cuando SunEnergy absorbe de forma estable menos potencia.",
+        "fr": "Réduit la consigne de charge photovoltaïque quand SunEnergy absorbe durablement moins de puissance.",
+        "it": "Riduce il setpoint di carica fotovoltaica quando SunEnergy assorbe stabilmente meno potenza.",
+        "nl": "Verlaagt het PV-laadcommando wanneer SunEnergy stabiel minder vermogen opneemt.",
+        "pl": "Obniża nastawę ładowania PV, gdy SunEnergy pobiera stabilnie mniej mocy.",
+        "pt": "Reduz a referência de carregamento fotovoltaico quando SunEnergy absorve de forma estável menos potência.",
+        "ru": "Снижает уставку зарядки от ФЭМ при стабильно меньшей потребляемой мощности SunEnergy.",
+        "uk": "Знижує уставку заряджання від ФЕМ за стабільно меншої потужності SunEnergy.",
+        "zh-cn": "当 SunEnergy 持续以较低功率充电时，降低光伏充电设定值。"
+      },
       "0.17.0-alpha.231": {
         "en": "Allow up to a 200 W drop in the PV charge target while a single SunEnergy head confirms a running charge command.",
         "de": "Beim Laden eines einzelnen SunEnergy-Kopfs bis zu 200 W weniger PV-Sollleistung während der ausstehenden Rückmeldung zulassen.",
@@ -81,19 +94,6 @@
         "ru": "Записывает остановку при минимальном заряде как информацию и различает запрос и подтверждение.",
         "uk": "Записує зупинку при мінімальному заряді як інформацію та розрізняє запит і підтвердження.",
         "zh-cn": "将达到最低荷电状态时的停止记录为信息，并区分停止请求和确认。"
-      },
-      "0.17.0-alpha.225": {
-        "en": "Keep the SQL startup cache usable when older empty intervals leave the rolling history window.",
-        "de": "SQL-Startcache auch beim Wegfallen älterer Datenlücken im rollierenden Historienfenster weiterverwenden.",
-        "es": "Conserva la caché de inicio SQL cuando salen del historial los intervalos antiguos sin datos.",
-        "fr": "Conserve le cache SQL de démarrage quand les anciens intervalles vides sortent de l’historique.",
-        "it": "Mantiene la cache di avvio SQL quando i vecchi intervalli vuoti escono dalla cronologia.",
-        "nl": "Behoud de SQL-opstartcache wanneer oude lege intervallen buiten het geschiedenisvenster vallen.",
-        "pl": "Zachowuje pamięć podręczną SQL przy wyjściu starych pustych przedziałów z okna historii.",
-        "pt": "Mantém a cache de arranque SQL quando os intervalos antigos sem dados saem do histórico.",
-        "ru": "Сохраняет пригодность стартового кэша SQL при выходе старых пустых интервалов из окна истории.",
-        "uk": "Зберігає придатність стартового кешу SQL, коли старі порожні інтервали виходять за межі історії.",
-        "zh-cn": "旧的空数据区间移出滚动历史窗口后，SQL 启动缓存仍可使用。"
       }
     },
     "titleLang": {
