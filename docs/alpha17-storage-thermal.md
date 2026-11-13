@@ -91,9 +91,13 @@ einschließlich der Reserven pro Phase.
 `Devices.MyPV_DHW` / `Devices.MyPV_Heating` ist ausschließlich eine ausdrückliche
 Bestätigung **nach unabhängig geprüftem Gerätestopp und ausgeschlossenem alten
 Stellauftrag**. Kein automatisches Rücksetzen durch Skript oder Zeitplan!
-Die globale Ausgabe muss aus sein; frische plausible Nullleistung bleibt
-zusätzliche Voraussetzung. Kann der alte Auftrag nicht sicher ausgeschlossen
-werden, die Verriegelung stehen lassen und am Gerät/Treiber klären.
+Bei SunEnergy-Kopfregelung kann im Admin allein die Speicher-Steuerfreigabe
+ausgeschaltet werden. Nach einem frischen Nullbefehl mit bestätigtem GS und GP
+je Kopf den Taster betätigen. Sobald die Reservierung auf 0 W steht, die
+Speicher-Steuerfreigabe im Admin wieder einschalten. Für andere
+Speicherausgänge und Heizstäbe muss die globale Ausgabe aus sein. Kann der alte
+Auftrag nicht sicher ausgeschlossen werden, die Verriegelung stehen lassen und
+am Gerät oder Treiber klären.
 
 Diese Prüfung ist absichtlich konservativ: Eine nur teilweise erreichte
 Leistung beweist den vollen früheren Auftrag nicht. Auch eine nachträgliche

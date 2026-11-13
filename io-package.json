@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.228",
+    "version": "0.17.0-alpha.229",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.229": {
+        "en": "Recover a SunEnergy battery output with battery control disabled while leaving other EMS devices enabled.",
+        "de": "SunEnergy-Speicherausgang bei gesperrter Speichersteuerung zurückgeben, während andere EMS-Geräte freigegeben bleiben.",
+        "es": "Libera la salida de la batería SunEnergy con su control desactivado y los demás equipos del EMS habilitados.",
+        "fr": "Rétablit la sortie de batterie SunEnergy avec sa commande désactivée et les autres équipements EMS actifs.",
+        "it": "Ripristina l’uscita della batteria SunEnergy con il controllo batteria disattivato e gli altri dispositivi EMS abilitati.",
+        "nl": "Geeft de SunEnergy-batterijuitgang vrij met de batterijregeling uit en de andere EMS-apparaten ingeschakeld.",
+        "pl": "Pozwala zwolnić wyjście akumulatora SunEnergy przy wyłączonym sterowaniu akumulatorem i aktywnych pozostałych urządzeniach EMS.",
+        "pt": "Libera a saída da bateria SunEnergy com o seu controlo desativado e os restantes dispositivos EMS ativos.",
+        "ru": "Позволяет освободить выход батареи SunEnergy при отключённом управлении батареей и включённых остальных устройствах EMS.",
+        "uk": "Дає змогу звільнити вихід батареї SunEnergy за вимкненого керування батареєю та ввімкнених інших пристроїв EMS.",
+        "zh-cn": "在禁用电池控制的情况下释放 SunEnergy 电池输出，同时保持其他 EMS 设备启用。"
+      },
       "0.17.0-alpha.228": {
         "en": "Use available PV surplus for parallel charging while accounting for a wallbox that is still running during its stop delay.",
         "de": "PV-Überschuss im Parallelbetrieb nutzen und eine während der Abschaltverzögerung weiterladende Wallbox einrechnen.",
@@ -81,19 +94,6 @@
         "ru": "Распределяет нагрев воды по интервалу с одинаковой ценой даже без более позднего периода снабжения.",
         "uk": "Розподіляє запланований нагрів води в межах періоду з однаковою ціною навіть без пізнішого вікна постачання.",
         "zh-cn": "即使之后没有供能窗口，也会在同一电价时段内均匀安排预测的热水加热。"
-      },
-      "0.17.0-alpha.222": {
-        "en": "Optional minimum vehicle SoC by departure with an immediate mobility reserve.",
-        "de": "Optional den Fahrzeug-Mindest-SoC bis zur Abfahrt planen und die Mobilitätsreserve sofort laden.",
-        "es": "Carga mínima opcional del vehículo para la salida con reserva de movilidad inmediata.",
-        "fr": "Charge minimale facultative avant le départ avec réserve de mobilité immédiate.",
-        "it": "Carica minima opzionale entro la partenza con riserva di mobilità immediata.",
-        "nl": "Optioneel minimaal laadniveau vóór vertrek met directe mobiliteitsreserve.",
-        "pl": "Opcjonalne ładowanie do minimum przed odjazdem z natychmiastową rezerwą mobilności.",
-        "pt": "Carga mínima opcional até à partida com reserva de mobilidade imediata.",
-        "ru": "Дополнительное планирование минимального заряда к отправлению с немедленной зарядкой резерва.",
-        "uk": "Опційне планування мінімального заряду до від’їзду з негайним заряджанням резерву.",
-        "zh-cn": "可选择规划出发前的最低荷电状态，并立即补足出行储备。"
       }
     },
     "titleLang": {
