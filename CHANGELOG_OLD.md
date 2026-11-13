@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.230 (2026-11-13)
+
+- Wait for outstanding SunEnergy charge feedback through small PV target reductions. [Release notes](docs/release-0.17.0-alpha.230.md)
+
 ## 0.17.0-alpha.229 (2026-11-13)
 
 - Allow a verified SunEnergy stop to be confirmed with battery control disabled. [Release notes](docs/release-0.17.0-alpha.229.md)
