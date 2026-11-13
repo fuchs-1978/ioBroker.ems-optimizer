@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.233 (2026-11-13)
+
+- Release canceled SunEnergy reservations after a fresh zero confirmation. [Release notes](docs/release-0.17.0-alpha.233.md)
+
 ## 0.17.0-alpha.232 (2026-11-13)
 
 - Reduce an echoed SunEnergy PV charge request to stable measured power and probe the learned ceiling periodically. [Release notes](docs/release-0.17.0-alpha.232.md)
