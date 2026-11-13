@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.222 (2026-11-09)
+
+- Add opt-in minimum vehicle SoC planning by departure. Immediate charging remains the default. [Release notes](docs/release-0.17.0-alpha.222.md)
+
 ## 0.17.0-alpha.221 (2026-11-09)
 
 - Remember a manual vehicle SoC correction for the next connection within 30 minutes. The value applies from the first charging decision. [Release notes](docs/release-0.17.0-alpha.221.md)

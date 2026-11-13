@@ -182,7 +182,7 @@ test('direction reversal waits for physically confirmed zero of every head', () 
     assert.deepEqual(h.commands(), [-50, -50, 0, 0, 50, 50]);
 });
 
-test('only explicit manual return with both global releases off and fresh per-head zeros can clear unseen debt', () => {
+test('explicit manual return with both global releases off and fresh per-head zeros clears unseen debt', () => {
     for (const released of [true, false]) {
         const h = harness(2); h.tick(); h.complete(); h.own('Control.Targets.Battery_W', 0); h.tick(); h.complete();
         h.advance(1100); h.snapshot(1, {GS: 0, GP: 0}); h.snapshot(2, {GS: 0, GP: 0});
@@ -190,6 +190,29 @@ test('only explicit manual return with both global releases off and fresh per-he
         h.own('Devices.Battery.ConfirmPhysicalStop', true, {ack: false}); h.tick();
         assert.equal(h.value('Devices.Battery.OutputOwned'), released);
         assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), released ? 100 : 0);
+    }
+});
+
+test('SunEnergy recovery can return an unseen command with only the battery disabled', () => {
+    for (const missing of [null, 'native disable', 'state disable', 'transport', 'fresh snapshot', 'zero GS', 'zero GP', 'valid ledger']) {
+        const h = harness(1); h.own('Config.BatteryFineStep_W', 800); h.tick(); h.complete();
+        h.own('Control.Targets.Battery_W', 0); h.tick();
+        if (missing !== 'transport') h.complete();
+        h.nativeConfig.batteryControlEnabled = missing === 'native disable';
+        h.own('Devices.Battery.ControlEnabled', missing === 'state disable');
+        h.advance(1600);
+        if (missing !== 'fresh snapshot')
+            h.snapshot(1, {GS: missing === 'zero GS' ? -800 : 0, GP: missing === 'zero GP' ? -200 : 0});
+        if (missing === 'valid ledger') h.run("batteryHeadsOwnershipFault = 'invalid ledger'");
+        h.own('Devices.Battery.ConfirmPhysicalStop', true, {ack: false}); h.tick();
+        assert.equal(h.value('System.RealOutputsEnabled'), true, missing);
+        assert.equal(h.value('Devices.Battery.OutputOwned'), missing !== null, missing);
+        assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), missing === null ? 0 : 800, missing);
+        if (missing !== null) continue;
+        h.nativeConfig.batteryControlEnabled = true;
+        h.own('Devices.Battery.ControlEnabled', true);
+        h.own('Control.Targets.Battery_W', 1000); h.fresh(); h.tick();
+        assert.deepEqual(h.commands(), [-800, 0, -800]);
     }
 });
 
