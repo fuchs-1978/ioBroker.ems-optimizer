@@ -336,6 +336,27 @@ test('stable partial PV charging at timeout reduces the echoed command and retai
     assert.equal(h.commands().at(-1), -1270);
 });
 
+test('a PV dip does not lower the confirmed charge ceiling or restart its probe timer', () => {
+    const h = harness(1);
+    h.own('Config.BatteryFineStep_W', 1000);
+    h.tick(); h.complete();
+    h.advance(5000); h.snapshot(1, {GS: -1000, GP: -850}); h.fresh(); h.tick();
+    h.advance(10000); h.fresh(); h.tick(); h.complete(); h.follow();
+    assert.deepEqual(h.commands(), [-1000, -850]);
+    h.own('Control.Targets.Battery_W', 600);
+    h.tick(); h.complete(); h.follow();
+    assert.equal(h.commands().at(-1), -600);
+    h.own('Config.BatteryFineStep_W', 100);
+    h.own('Control.Targets.Battery_W', 1200);
+    for (const expected of [-700, -800, -850]) {
+        h.tick();
+        assert.equal(h.commands().at(-1), expected);
+        h.complete(); h.follow();
+    }
+    h.advance(55600); h.fresh(); h.tick();
+    assert.equal(h.commands().at(-1), -900);
+});
+
 test('an already settled PV charge can also adapt to a sustained lower response', () => {
     const h = harness(1);
     h.own('Config.BatteryFineStep_W', 1000); h.tick(); h.complete(); h.follow(); h.tick();

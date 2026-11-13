@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.227 (2026-11-11)
+
+- Apply configured single-phase Mii/e-Up SoC current steps after the other vehicles receive their minimum current. [Release notes](docs/release-0.17.0-alpha.227.md)
+
 ## 0.17.0-alpha.226 (2026-11-10)
 
 - Log minimum-SoC stop requests and confirmed stops separately. [Release notes](docs/release-0.17.0-alpha.226.md)

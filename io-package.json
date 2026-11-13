@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.233",
+    "version": "0.17.0-alpha.234",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.234": {
+        "en": "Keep the learned SunEnergy charge ceiling when PV surplus temporarily falls.",
+        "de": "Gelernte SunEnergy-Ladegrenze bei vorübergehend geringerem PV-Überschuss behalten.",
+        "es": "Conserva el límite de carga aprendido cuando baja temporalmente el excedente fotovoltaico.",
+        "fr": "Conserve la limite de charge apprise lorsque le surplus photovoltaïque diminue temporairement.",
+        "it": "Mantiene il limite di carica appreso se il surplus fotovoltaico diminuisce temporaneamente.",
+        "nl": "Behoudt de geleerde laadgrens bij een tijdelijke daling van het PV-overschot.",
+        "pl": "Zachowuje ustalony limit ładowania przy chwilowym spadku nadwyżki PV.",
+        "pt": "Mantém o limite de carregamento aprendido quando o excedente fotovoltaico diminui temporariamente.",
+        "ru": "Сохраняет определённый предел зарядки при временном снижении избытка солнечной энергии.",
+        "uk": "Зберігає визначену межу заряджання при тимчасовому зменшенні надлишку сонячної енергії.",
+        "zh-cn": "光伏余量暂时下降时保留已识别的充电上限。"
+      },
       "0.17.0-alpha.233": {
         "en": "Release a canceled SunEnergy command after a fresh zero confirmation when it was never dispatched.",
         "de": "Vor der Ausgabe verworfenen SunEnergy-Auftrag nach frischer Nullbestätigung freigeben.",
@@ -81,19 +94,6 @@
         "ru": "Использует избыток солнечной энергии для параллельной зарядки с учётом станции, продолжающей работу во время задержки отключения.",
         "uk": "Використовує надлишок сонячної енергії для паралельного заряджання з урахуванням станції, яка працює під час затримки вимкнення.",
         "zh-cn": "并行充电时，将停机延时期间仍在充电的充电桩计入功率预算，以利用光伏余电。"
-      },
-      "0.17.0-alpha.227": {
-        "en": "Use the single-phase Mii/e-Up SoC current steps during parallel charging after other minimum currents are secured.",
-        "de": "Die SoC-Stromstufen des einphasigen Mii/e-Up bei Parallelbetrieb nach den Mindestströmen der anderen Fahrzeuge zuteilen.",
-        "es": "Aplica los escalones de corriente del Mii/e-Up monofásico en carga paralela tras asegurar las corrientes mínimas de los demás vehículos.",
-        "fr": "Applique les paliers de courant du Mii/e-Up monophasé en charge parallèle après avoir assuré les courants minimaux des autres véhicules.",
-        "it": "Applica gli scaglioni di corrente della Mii/e-Up monofase in carica parallela dopo aver garantito la corrente minima agli altri veicoli.",
-        "nl": "Pas de laadstroomstappen voor de eenfasige Mii/e-Up bij parallel laden toe zodra de minimumstromen van de andere voertuigen zijn verzekerd.",
-        "pl": "Stosuje stopnie prądu jednofazowego Mii/e-Up przy ładowaniu równoległym po zapewnieniu minimalnych prądów pozostałych pojazdów.",
-        "pt": "Aplica os escalões de corrente do Mii/e-Up monofásico no carregamento paralelo após assegurar as correntes mínimas dos outros veículos.",
-        "ru": "Применяет ступени тока однофазного Mii/e-Up при параллельной зарядке после обеспечения минимального тока остальных автомобилей.",
-        "uk": "Застосовує ступені струму однофазного Mii/e-Up під час паралельного заряджання після забезпечення мінімального струму інших автомобілів.",
-        "zh-cn": "并行充电时，在保障其他车辆的最低电流后，按单相 Mii/e-Up 的荷电状态分配分档电流。"
       }
     },
     "titleLang": {
