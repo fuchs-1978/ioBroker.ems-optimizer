@@ -330,7 +330,7 @@ test('normal SunEnergy restart waits for pending feedback while independent stop
         a.wallboxOutput.stopAll = async () => {};
         await a.prepareUnload({allowHandoff});
         assert.equal(checks, allowHandoff ? 3 : 0);
-        assert.equal(steps.indexOf('stopBatteryOutput'), allowHandoff ? 3 : 0);
+        assert.equal(steps.indexOf('stopBatteryOutput'), allowHandoff ? 3 : 1);
     }
 });
 

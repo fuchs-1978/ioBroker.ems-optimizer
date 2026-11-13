@@ -1235,15 +1235,22 @@ class EmsOptimizer extends utils.Adapter {
         // Issue independent stops before waiting for any foreign channel.
         // Each actuator queue already orders its own final zero; a stalled
         // storage write must not defer a different heater's stop request.
-        const instanceRead = Promise.resolve().then(() => this.getForeignObjectAsync(`system.adapter.${this.namespace}`))
-            .catch(error => {
+        const readInstance = async () => {
+            try {
+                return await this.getForeignObjectAsync(`system.adapter.${this.namespace}`);
+            } catch (error) {
                 this.log.warn(`Cannot determine restart handoff: ${error.message}`);
                 return null;
-            });
-        let batteryStop;
+            }
+        };
+        let instanceRead, batteryStop;
         if (this.engineContext) {
-            batteryStop = this.stopBatteryOnUnload(allowHandoff, instanceRead);
-            for (const stop of ['stopDhwOutput', 'stopHeatingOutput', 'stopHeatPumpOutput']) {
+            for (const stop of ['stopDhwOutput', 'stopBatteryOutput', 'stopHeatingOutput', 'stopHeatPumpOutput']) {
+                if (stop === 'stopBatteryOutput' && allowHandoff && this.config.batteryDispatchMode === 'sunenergy-heads') {
+                    instanceRead = readInstance();
+                    batteryStop = this.stopBatteryOnUnload(allowHandoff, instanceRead);
+                    continue;
+                }
                 try {
                     this.runEngine(`if (typeof ${stop} === 'function') ${stop}('Adapter wird beendet');`);
                 } catch (error) {
@@ -1254,7 +1261,7 @@ class EmsOptimizer extends utils.Adapter {
         if (this.outputInitialization) await this.outputInitialization.catch(error =>
             this.log.warn(`Output initialization interrupted: ${error.message}`));
         await this.wallboxOutput.waitForIdle();
-        const instanceObject = await instanceRead;
+        const instanceObject = await (instanceRead ?? readInstance());
         const preserveWallbox = allowHandoff && shouldPreserveWallboxOnUnload(this.config, instanceObject,
             this.wallboxOutput.hasActiveOwnedOutput(), this.wallboxOutput.devices
                 .filter(d => d.owned).map(d => d.wb));
@@ -1275,7 +1282,8 @@ class EmsOptimizer extends utils.Adapter {
             stops.push(this.wallboxOutput.stopAll());
             this.setCompatState(`${this.namespace}.Control.RestartHandoffActive`, false, true);
         }
-        stops.push(batteryStop, ...this.pendingForeignWrites);
+        if (batteryStop) stops.push(batteryStop);
+        stops.push(...this.pendingForeignWrites);
         const results = await Promise.allSettled(stops);
         for (const result of results) if (result.status === "rejected")
             this.log.error(`Cannot stop output on unload: ${result.reason}`);
