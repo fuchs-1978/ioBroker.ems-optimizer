@@ -1485,6 +1485,87 @@ async function runningSunEnergyPvWallbox() {
     return h;
 }
 
+async function lateBatteryHandoffPlant({surplusW = 2450, wallboxPlanW = 0} = {}) {
+    const slot = Date.UTC(2026, 10, 14, 13, 15);
+    const h = await plant({mii: true, wallbox: false, battery: true, batteryHeadType: 2, batteryHeadMaxSoc: 100,
+        initialTime: slot - 60000, initialSurplusW: surplusW, startDelayS: 0, minimumRuntimeS: 600, split: false,
+        wallboxStopResponseDelayMs: 8000, nativeConfig: {wallboxParallelChargingEnabled: true, wallboxStopDelayS: 600,
+            batteryDispatchMode: 'sunenergy-heads', batteryPvPriorityEnabled: true, batteryWallboxHalfStepEnabled: true,
+            dhwControlEnabled: false}});
+    h.own('Devices.MyPV_DHW.ControlEnabled', false);
+    h.own('Control.TargetGridPower_W', 0);
+    h.own('Config.BatteryMaxSoC_pct', 100);
+    h.put(h.mapping.DP_BATTERY_SOC, 91);
+    h.put('DP_WB0_MIN_SOC', 60);
+    h.put('DP_WB0_SOC', 61);
+    const plan = (name, before, after) => h.own(`Plan.${name}_48h_JSON`, JSON.stringify([
+        {timestamp: slot - 900000, ...before}, {timestamp: slot, ...after}
+    ]));
+    plan('BatteryTargetSoC', {value_pct: 90}, {value_pct: 100});
+    plan('BatteryStage', {stage: 'AFTERNOON_90', target_pct: 90}, {stage: 'LATE_100', target_pct: 100});
+    plan('BatteryPower', {valueW: 0, gridChargeW: 0}, {valueW: 1496, requiredPvChargeW: 0, gridChargeW: 0});
+    for (const name of ['MyPV_DHW', 'MyPV_Heating', 'Wallbox1', 'Wallbox2'])
+        plan(name, {valueW: 0, phases: 1}, {valueW: 0, phases: 1});
+    plan('Wallbox0', {valueW: 1380, phases: 1, gridChargeW: 0}, {valueW: wallboxPlanW, phases: 1, gridChargeW: 0});
+    await h.advance(59);
+    assert.equal(h.physical().miiAllow, 1, h.diagnostic());
+    assert.equal(h.physical().batteryW, 0, h.diagnostic());
+    const {activeSince} = h.output.devices[0];
+    assert.ok(activeSince > 0 && slot - activeSince < 600000);
+    return {h, slot};
+}
+
+test('planned PV final charge pauses a running Mii at the slot boundary with both timers set to ten minutes', async () => {
+    const {h, slot} = await lateBatteryHandoffPlant();
+    const before = h.writes.length;
+    await h.advance(3);
+    const stop = h.writes.slice(before).find(write => write.id === 'goe0.allow' && write.val === 0);
+    assert.ok(stop && stop.at >= slot && stop.at <= slot + 2000, h.diagnostic());
+    assert.match(h.value('Devices.Wallbox0.LastStopReason'), /PV-Schlussladung des Speichers/);
+    assert.equal(h.value('Devices.Wallbox0.StopDelayActive'), false);
+    assert.equal(h.physical().miiAllow, 1, 'the real allow feedback has not arrived yet');
+    assert.ok(h.value('Devices.Wallbox0.OutputReservedPower_W') > 0);
+
+    await h.advance(7);
+    assert.equal(h.physical().miiAllow, 0);
+    assert.ok(h.physical().miiPowerW > 0, 'the car still draws briefly after the allow ACK');
+    assert.equal(h.value('Devices.Wallbox0.StopPowerPending'), true);
+    assert.ok(h.value('Devices.Wallbox0.OutputReservedPower_W') > 0);
+    assert.equal(h.value('Control.BatteryWallboxBuffer_W'), 0);
+
+    await h.advance(45);
+    assert.equal(h.physical().miiPowerW, 0);
+    assert.equal(h.value('Devices.Wallbox0.OutputReservedPower_W'), 0);
+    assert.equal(h.physical().batteryW, 2400, h.diagnostic());
+    assert.ok(h.trace.slice(-10).every(row => row.gridW <= 0), h.diagnostic());
+});
+
+test('final battery charging preserves manual and mandatory vehicle load and uses the normal timer for a PV dip', async t => {
+    const cases = [
+        ['manual minimum current', h => h.put('DP_WB0_AMIN', 6)],
+        ['below minimum SoC', h => h.put('DP_WB0_SOC', 59)],
+        ['battery output unavailable', h => h.own('Devices.Battery.ControlEnabled', false)],
+        ['invalid forecast', h => h.own('Plan.Valid', false)],
+        ['bad-quality final stage', h => {
+            const id = 'ems.0.Plan.BatteryStage_48h_JSON';
+            h.put(id, h.states.get(id).val, {q: 64});
+        }],
+        ['PV insufficient even without the battery', h => h.setSurplus(1150)],
+        ['plan still allocates power to the vehicle', () => {}, {wallboxPlanW: 1380}],
+        ['measured PV can supply both consumers', () => {}, {surplusW: 4000}]
+    ];
+    for (const [name, setCondition, settings] of cases) await t.test(name, async () => {
+        const {h} = await lateBatteryHandoffPlant(settings);
+        const before = h.writes.length;
+        setCondition(h);
+        await h.advance(17);
+        assert.equal(h.physical().miiAllow, 1, h.diagnostic());
+        assert.equal(h.writes.slice(before).some(write => write.id === 'goe0.allow' && write.val === 0), false);
+        if (name === 'PV insufficient even without the battery')
+            assert.equal(h.value('Devices.Wallbox0.StopDelayActive'), true);
+    });
+});
+
 test('SunEnergy buffers a net import step while a running PV wallbox reduces current', async () => {
     const h = await runningSunEnergyPvWallbox();
     const gs = h.config.batterySetpointId;

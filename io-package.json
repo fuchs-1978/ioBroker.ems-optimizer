@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.265",
+    "version": "0.17.0-alpha.266",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.266": {
+        "en": "Pause optional EV charging at the scheduled handover to the battery's final PV charge.",
+        "de": "Freiwillige Autoladung bei der geplanten Übergabe an die PV-Schlussladung des Speichers sofort pausieren.",
+        "es": "Pausa la carga opcional del coche al ceder el excedente a la carga solar final de la batería.",
+        "fr": "Met en pause la recharge facultative du véhicule lorsque le surplus passe à la charge solaire finale de la batterie.",
+        "it": "Sospende la ricarica facoltativa dell’auto quando il surplus passa alla carica fotovoltaica finale della batteria.",
+        "nl": "Pauzeert optioneel autoladen bij de geplande overdracht aan de laatste PV-laadfase van de accu.",
+        "pl": "Wstrzymuje opcjonalne ładowanie auta przy planowanym przekazaniu nadwyżki do końcowego ładowania akumulatora z PV.",
+        "pt": "Pausa o carregamento opcional do veículo quando o excedente passa para a carga solar final da bateria.",
+        "ru": "Приостанавливает необязательную зарядку автомобиля при плановой передаче избытка на завершающую зарядку накопителя от солнца.",
+        "uk": "Призупиняє необов’язкове заряджання авто під час планової передачі надлишку на завершальне заряджання накопичувача від сонця.",
+        "zh-cn": "按计划将光伏余电交给储能进行最后阶段充电时，暂停可选的车辆充电。"
+      },
       "0.17.0-alpha.265": {
         "en": "Keep the wallbox charging allocation valid when go-e briefly reports a small negative power reading near zero.",
         "de": "Ladezuteilung beibehalten, wenn go-e kurz eine leicht negative Leistung nahe null meldet.",
@@ -81,19 +94,6 @@
         "ru": "Использует измеренный избыток солнечной энергии для запуска зарядки и отдаёт приоритет аккумулятору и автомобилю перед дополнительным нагревом.",
         "uk": "Використовує виміряний надлишок сонячної енергії для початку заряджання та надає перевагу акумулятору й авто над додатковим нагріванням.",
         "zh-cn": "利用实测光伏余电启动充电，并优先给储能电池和车辆充电。"
-      },
-      "0.17.0-alpha.259": {
-        "en": "Keep proved SunEnergy discharge active and share PV with a wallbox earlier.",
-        "de": "Bestätigte SunEnergy-Entladung fortführen und PV-Überschuss früher mit einer Wallbox teilen.",
-        "es": "Mantiene la descarga SunEnergy confirmada y comparte antes el excedente fotovoltaico con un cargador.",
-        "fr": "Maintient la décharge SunEnergy confirmée et partage plus tôt le surplus photovoltaïque avec une borne.",
-        "it": "Mantiene la scarica SunEnergy confermata e condivide prima il surplus fotovoltaico con una wallbox.",
-        "nl": "Houdt bevestigde SunEnergy-ontlading actief en deelt PV-overschot eerder met een laadpunt.",
-        "pl": "Podtrzymuje potwierdzone rozładowanie SunEnergy i wcześniej dzieli nadwyżkę PV ze stacją ładowania.",
-        "pt": "Mantém a descarga SunEnergy confirmada e partilha mais cedo o excedente fotovoltaico com um carregador.",
-        "ru": "Поддерживает подтверждённый разряд SunEnergy и раньше направляет избыток солнечной энергии на зарядную станцию.",
-        "uk": "Підтримує підтверджене розряджання SunEnergy та раніше спрямовує надлишок сонячної енергії на зарядну станцію.",
-        "zh-cn": "保持已确认的 SunEnergy 放电，并更早向充电桩分配光伏余电。"
       }
     },
     "titleLang": {
