@@ -1218,6 +1218,42 @@ test('a wallbox buffer still stops for missing proof, export, zero, reversal or 
     }
 });
 
+test('wallbox stop delay retains a proved 2.2 kW discharge through a small pending trim', () => {
+    for (const scenario of ['echo', 'load gone', 'larger export', 'timer ended', 'deadline']) {
+        const h = householdDischargeAt(2207, 2186, 93);
+        h.run('function batteryWallboxStopDelayActive() {return getState(CFG.root + ".Test.StopDelay").val;}');
+        h.own('Test.StopDelay', true);
+        h.own('Control.BatteryWallboxBuffer_W', 1280);
+        h.grid.gridW = -25;
+        h.own('Control.Targets.Battery_W', -2160);
+        h.tick();
+        assert.equal(h.commands().at(-1), 2207, 'a small correction can hold the confirmed command');
+        h.grid.gridW = -61;
+        h.tick(); h.complete();
+        assert.equal(h.commands().at(-1), 2160);
+
+        h.advance(scenario === 'deadline' ? 6000 : 1000);
+        h.fresh();
+        h.snapshot(1, {GS: 2207, GP: 2186, timestamp: h.time() - 50});
+        h.grid.gridW = scenario === 'larger export' ? -100 : -27;
+        h.own('Test.StopDelay', scenario !== 'timer ended');
+        h.own('Control.Targets.Battery_W', scenario === 'load gone' ? 0 : -2155);
+        h.tick();
+        if (scenario !== 'echo') {
+            assert.equal(h.commands().at(-1), 0, scenario);
+            continue;
+        }
+        assert.equal(h.commands().at(-1), 2160);
+        assert.match(h.value('Devices.Battery.OutputStatus'), /warte kurz auf GS/);
+        h.advance(1000); h.fresh();
+        h.snapshot(1, {GS: 2160, GP: 2160, timestamp: h.time() - 50});
+        h.grid.gridW = 2;
+        h.tick();
+        assert.equal(h.commands().at(-1), 2160);
+        assert.equal(h.value('Devices.Battery.Heads.1.ActuatorSettled'), true);
+    }
+});
+
 test('household discharge follows 547 to 432 W after the GS echo while actual power is 369 W', () => {
     const h = harness(1);
     h.own('Config.BatteryFineStep_W', 600);

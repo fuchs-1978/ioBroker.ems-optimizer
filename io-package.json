@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.262",
+    "version": "0.17.0-alpha.263",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.263": {
+        "en": "Use SunEnergy discharge to briefly cover grid import while a running PV wallbox reduces current.",
+        "de": "SunEnergy gleicht Netzbezug kurz aus, während eine laufende PV-Wallbox ihren Ladestrom senkt.",
+        "es": "SunEnergy cubre brevemente la importación de red mientras un cargador solar reduce su corriente.",
+        "fr": "SunEnergy couvre brièvement le soutirage réseau pendant la baisse du courant de la borne solaire.",
+        "it": "SunEnergy copre per breve tempo il prelievo mentre la wallbox fotovoltaica riduce la corrente.",
+        "nl": "SunEnergy dekt kort netafname terwijl een laadpunt op zonnestroom de laadstroom verlaagt.",
+        "pl": "SunEnergy krótko pokrywa pobór z sieci, gdy ładowarka PV zmniejsza prąd.",
+        "pt": "SunEnergy cobre brevemente a importação da rede enquanto o carregador solar reduz a corrente.",
+        "ru": "SunEnergy кратковременно покрывает потребление из сети, пока зарядная станция снижает ток.",
+        "uk": "SunEnergy короткочасно покриває споживання з мережі, поки сонячна зарядна станція знижує струм.",
+        "zh-cn": "光伏充电桩降低电流期间，SunEnergy 短时放电以减少电网取电。"
+      },
       "0.17.0-alpha.262": {
         "en": "Pause PV battery charging at the active SoC target and give surplus to the wallboxes until a higher target is due.",
         "de": "PV-Speicherladung am aktuellen SoC-Ziel pausieren und Überschuss bis zur nächsten höheren Zielstufe an die Wallboxen geben.",
@@ -81,19 +94,6 @@
         "ru": "Возобновляет регулирование после запоздалого отклика SunEnergy и подтверждённой остановки и повторяет зарядку при росте избытка.",
         "uk": "Відновлює регулювання після запізнілої відповіді SunEnergy й підтвердженої зупинки та повторює заряджання за зростання надлишку.",
         "zh-cn": "在 SunEnergy 反馈延迟且确认停止后恢复调节，并在余电增加时重试充电。"
-      },
-      "0.17.0-alpha.256": {
-        "en": "Recalculate SunEnergy household discharge corrections when newer measurements arrive before dispatch.",
-        "de": "SunEnergy-Entladekorrektur für den Haushalt bei neueren Messwerten vor der Ausgabe neu berechnen.",
-        "es": "Recalcula la corrección de descarga doméstica de SunEnergy si llegan mediciones más recientes antes del envío.",
-        "fr": "Recalcule la correction de décharge SunEnergy pour le foyer si des mesures plus récentes arrivent avant l’envoi.",
-        "it": "Ricalcola la correzione della scarica domestica SunEnergy se arrivano misure più recenti prima dell’invio.",
-        "nl": "Herberekent de SunEnergy-ontlaadcorrectie voor het huishouden bij nieuwere metingen vóór verzending.",
-        "pl": "Ponownie oblicza korektę rozładowania SunEnergy na potrzeby domu, gdy przed wysłaniem pojawią się nowsze pomiary.",
-        "pt": "Recalcula a correção da descarga doméstica SunEnergy se chegarem medições mais recentes antes do envio.",
-        "ru": "Пересчитывает поправку разряда SunEnergy для дома при получении новых измерений до отправки команды.",
-        "uk": "Перераховує корекцію розряду SunEnergy для дому, якщо до надсилання надійшли нові вимірювання.",
-        "zh-cn": "发送指令前收到更新的测量值时，重新计算 SunEnergy 家庭放电修正。"
       }
     },
     "titleLang": {

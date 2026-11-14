@@ -812,6 +812,28 @@ test('the write preflight reevaluates a newly reduced operator limit even for a 
     assert.equal(h.output.parallelWriteProblem(h.output.devices[0], 'allow', 0, h.mapping), '');
 });
 
+test('a lost battery-backed current increase leaves an already running wallbox on its last confirmed current', async () => {
+    const h = parallelSetup(1);
+    await h.startParallel([11]);
+    const d = h.output.devices[0];
+    h.advance(6000);
+    h.measure(0, 6);
+    h.grant([11]);
+    const id = 'ems.0.Control.ParallelWallboxAllocation_JSON';
+    const allocation = JSON.parse(h.states.get(id).val);
+    allocation.allocations[0].batteryStepSupportW = 115;
+    h.put(id, JSON.stringify(allocation));
+    h.adapter.engineContext = {wallboxBatteryStepBacking: () => null};
+    h.writes.length = 0;
+    const before = d.response;
+    await h.output.tick();
+    assert.deepEqual(h.writes, []);
+    assert.equal(d.pending, null);
+    assert.equal(d.response, before);
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, true);
+    assert.match(h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val, /Keine Stromerhoehung/);
+});
+
 
 test('a zero power poll cannot erase simultaneous real current from the shared reservation', async () => {
     const h = parallelSetup(); await h.startParallel();
