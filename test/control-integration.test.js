@@ -1403,6 +1403,7 @@ test('SunEnergy bridges a 300 W PV dip without resetting the wallbox stop delay'
             wallboxParallelChargingEnabled: true, wallboxStopDelayS: 40,
             dhwControlEnabled: false, wb2CommissioningMaxA: 6}});
     h.own('Control.TargetGridPower_W', 0);
+    h.own('Config.BatteryFineStep_W', 600);
     h.own('Devices.MyPV_DHW.ControlEnabled', false);
     const timestamp = h.now() - 1000;
     const socId = h.mapping.DP_BATTERY_SOC;
@@ -1423,6 +1424,14 @@ test('SunEnergy bridges a 300 W PV dip without resetting the wallbox stop delay'
     assert.equal(h.value('Devices.Wallbox2.StopDelayActive'), false, h.diagnostic());
     assert.equal(h.physical().allow, 1, h.diagnostic());
     await h.advance(30);
+    h.setSurplus(-200);
+    await h.advance(18);
+    assert.equal(h.physical().batteryW, -800, h.diagnostic());
+    assert.equal(h.trace.at(-1).gridW, 780, 'the battery offsets import up to the head limit');
+    h.setSurplus(4500);
+    await h.advance(10);
+    assert.equal(h.value('Devices.Wallbox2.StopDelayActive'), false, h.diagnostic());
+    await h.advance(12);
     h.setSurplus(1080);
     await h.advance(18);
     assert.equal(h.physical().batteryW, -300, h.diagnostic());
