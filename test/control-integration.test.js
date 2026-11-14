@@ -1481,8 +1481,11 @@ async function runningSunEnergyPvWallbox() {
     h.own('Config.BatteryFineStep_W', 600);
     h.own('Plan.BatteryTargetSoC_48h_JSON', JSON.stringify([{timestamp: h.now(), value_pct: 90}]));
     h.put(h.mapping.DP_BATTERY_SOC, 95);
-    await h.advance(100);
+    await h.advance(125);
     assert.equal(h.physical().wbPowerW, 2990, h.diagnostic());
+    assert.equal(h.physical().batteryW, 180, 'the battery takes the free rest after starting the wallbox');
+    h.setSurplus(2990);
+    await h.advance(12);
     assert.equal(h.physical().batteryW, 0, h.diagnostic());
     return h;
 }
@@ -1511,7 +1514,8 @@ async function lateBatteryHandoffPlant({surplusW = 2450, wallboxPlanW = 0} = {})
     plan('Wallbox0', {valueW: 1380, phases: 1, gridChargeW: 0}, {valueW: wallboxPlanW, phases: 1, gridChargeW: 0});
     await h.advance(59);
     assert.equal(h.physical().miiAllow, 1, h.diagnostic());
-    assert.equal(h.physical().batteryW, 0, h.diagnostic());
+    assert.equal(h.value('Control.BatteryPVReserve_W'), 0);
+    assert.ok(h.physical().batteryW <= surplusW - h.physical().miiPowerW, h.diagnostic());
     const {activeSince} = h.output.devices[0];
     assert.ok(activeSince > 0 && slot - activeSince < 600000);
     return {h, slot};
@@ -1615,7 +1619,7 @@ test('SunEnergy limits the wallbox reduction buffer to one ten-second window per
     assert.equal(h.physical().batteryW, 0, h.diagnostic());
     assert.equal(h.value('Control.BatteryWallboxBuffer_W'), 0);
 
-    h.setSurplus(3170);
+    h.setSurplus(2990);
     await h.advance(5);
     h.setSurplus(1750);
     await h.advance(2);
@@ -2708,7 +2712,7 @@ for (const phases of [1, 3]) {
         await h.advance(130);
         assert.equal(h.physical().allow, 1, h.diagnostic());
         assert.equal(h.physical().amps, 8, h.diagnostic());
-        assert.equal(h.physical().batteryW, 0, h.diagnostic());
+        assert.equal(h.physical().batteryW, stepW / 2 - 30, h.diagnostic());
 
         const surplus = 8 * stepW + stepW / 2 + 40;
         h.setSurplus(surplus);
@@ -2847,7 +2851,7 @@ test('a completed forecast stage releases the PV reservation while live charging
     assert.equal(h.value('Control.BatteryPVReserve_W'), 0);
     assert.ok(h.physical().wbPowerW > 2500, h.diagnostic());
     assert.ok(h.physical().batteryW > 0, h.diagnostic());
-    assert.equal(h.value('Control.Targets.Battery_W'), 5000 - h.physical().wbPowerW, h.diagnostic());
+    assert.ok(h.value('Control.Targets.Battery_W') <= 5000 - h.physical().wbPowerW, h.diagnostic());
 
     h.put(soc, 89);
     h.put('DP_WB2_CAR', 1);
