@@ -1102,8 +1102,22 @@ test('the recorded 07:14 and 04:45 trims leave the confirmed GS free to follow a
     }
 });
 
+test('small discharge trims still follow a newly lowered aggregate or head cap', () => {
+    for (const limit of ['aggregate', 'head', 'inverter']) {
+        const h = householdDischargeAt(654, 647, 15);
+        h.grid.gridW = 2;
+        if (limit === 'aggregate') h.own('Config.BatteryMaxDischarge_W', 651);
+        if (limit === 'head') h.nativeConfig.batteryHead1MaxDischargeW = 651;
+        if (limit === 'inverter') h.snapshot(1, {IS: 651});
+        h.tick();
+        assert.deepEqual(h.commands(), [654, 651], limit);
+        const id = JSON.stringify(h.writes.at(-1).id);
+        assert.equal(h.run(`batteryHeadsQueuedCheck(${id},651).allowed`), true, limit);
+    }
+});
+
 test('an already dispatched small household trim waits briefly for the matching GS on a coherent SMA pair', () => {
-    for (const scenario of ['echo', 'no echo', 'no load', 'lower cap', 'bad net data', 'larger export', 'SoC floor']) {
+    for (const scenario of ['echo', 'no echo', 'no load', 'lower cap', 'lower previous cap', 'bad net data', 'larger export', 'SoC floor']) {
         const h = householdDischargeAt(654, 647, 15);
         const gpAt = h.time();
         h.advance(150);
@@ -1117,6 +1131,7 @@ test('an already dispatched small household trim waits briefly for the matching 
         h.grid.sourceTs = [gpAt + 404, gpAt + 404];
         h.own('Control.Targets.Battery_W', scenario === 'no load' ? 0 : -635);
         if (scenario === 'lower cap') h.own('Config.BatteryMaxDischarge_W', 640);
+        if (scenario === 'lower previous cap') h.own('Config.BatteryMaxDischarge_W', 651);
         if (scenario === 'bad net data') h.grid.valid = false;
         if (scenario === 'SoC floor') h.snapshot(1, {SC: 10});
         h.tick();
