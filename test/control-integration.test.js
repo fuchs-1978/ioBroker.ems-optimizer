@@ -1405,7 +1405,9 @@ test('SunEnergy bridges a 300 W PV dip without resetting the wallbox stop delay'
     h.own('Control.TargetGridPower_W', 0);
     h.own('Devices.MyPV_DHW.ControlEnabled', false);
     const timestamp = h.now() - 1000;
-    h.own('Plan.BatteryTargetSoC_48h_JSON', JSON.stringify([{timestamp, value_pct: 70}]));
+    const socId = h.mapping.DP_BATTERY_SOC;
+    h.put(socId, 75);
+    h.own('Plan.BatteryTargetSoC_48h_JSON', JSON.stringify([{timestamp, value_pct: 90}]));
     await h.advance(80);
     assert.equal(h.physical().allow, 1, h.diagnostic());
     h.setSurplus(1080);
@@ -1422,7 +1424,14 @@ test('SunEnergy bridges a 300 W PV dip without resetting the wallbox stop delay'
     assert.equal(h.physical().allow, 1, h.diagnostic());
     await h.advance(30);
     h.setSurplus(1080);
-    await h.advance(55);
+    await h.advance(18);
+    assert.equal(h.physical().batteryW, -300, h.diagnostic());
+    h.put(socId, 70);
+    await h.advance(10);
+    assert.equal(h.value('Control.BatteryWallboxBuffer_W'), 0);
+    assert.equal(h.physical().batteryW, 0, h.diagnostic());
+    assert.equal(h.physical().allow, 1, 'stop delay continues after the buffer SoC floor');
+    await h.advance(27);
     assert.equal(h.physical().allow, 0, h.diagnostic());
     assert.equal(h.value('Control.BatteryWallboxBuffer_W'), 0);
     assert.ok(h.physical().batteryW >= 0, h.diagnostic());
@@ -1463,6 +1472,16 @@ test('SunEnergy buffers a net import step while a running PV wallbox reduces cur
     assert.equal(h.physical().allow, 1, h.diagnostic());
     assert.equal(h.value('Control.BatteryPVReserve_W'), 0);
     assert.equal(h.value('Devices.Battery.Fault'), '', h.diagnostic());
+});
+
+test('fast SunEnergy wallbox support uses a 70% floor, independent of a higher charge target', async () => {
+    for (const soc of [71, 70, 69]) {
+        const h = await runningSunEnergyPvWallbox();
+        h.put(h.mapping.DP_BATTERY_SOC, soc);
+        h.setSurplus(1750);
+        await h.advance(3);
+        assert.equal(h.physical().batteryW, soc > 70 ? -600 : 0, h.diagnostic());
+    }
 });
 
 test('SunEnergy limits the wallbox reduction buffer to one ten-second window per deficit', async () => {

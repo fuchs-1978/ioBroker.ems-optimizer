@@ -187,7 +187,7 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 
 ### 0.17.0-alpha.263 (2026-11-14)
 
-- Let SunEnergy briefly reduce grid import while an active solar wallbox reduces current. [Release notes](docs/release-0.17.0-alpha.263.md)
+- Let SunEnergy reduce grid import while an active solar wallbox reduces current or its stop delay runs, down to a 70% battery reserve. [Release notes](docs/release-0.17.0-alpha.263.md)
 
 ### 0.17.0-alpha.262 (2026-11-14)
 
