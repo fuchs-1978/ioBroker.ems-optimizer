@@ -7241,7 +7241,7 @@
         },
         "bhkwWallboxCycleEnabled": {
           "type": "checkbox",
-          "label": "Charge the Mii from CHP surplus and a 10-point battery SoC band at night",
+          "label": "Charge the Mii with battery support from daytime surplus or CHP at night",
           "default": false,
           "newLine": true,
           "xs": 12,

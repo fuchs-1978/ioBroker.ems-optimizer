@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.266",
+    "version": "0.17.0-alpha.267",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.267": {
+        "en": "Use up to 500 W of daytime battery support for the Mii, then recharge the battery from surplus.",
+        "de": "Mii tagsüber mit bis zu 500 W Speicherhilfe laden und den Speicher danach aus Überschuss nachladen.",
+        "es": "Apoya la carga diurna del Mii con hasta 500 W de la batería y después recarga la batería con el excedente.",
+        "fr": "Fournit jusqu’à 500 W de la batterie à la Mii en journée, puis recharge la batterie avec le surplus.",
+        "it": "Usa fino a 500 W dalla batteria per caricare di giorno la Mii e poi ricarica la batteria con il surplus.",
+        "nl": "Ondersteunt het laden van de Mii overdag met maximaal 500 W uit de accu en laadt de accu daarna bij met het overschot.",
+        "pl": "Wspomaga dzienne ładowanie Mii mocą do 500 W z akumulatora, a potem doładowuje go z nadwyżki.",
+        "pt": "Apoia o carregamento diurno do Mii com até 500 W da bateria e depois recarrega a bateria com o excedente.",
+        "ru": "Днём добавляет до 500 Вт из накопителя для зарядки Mii, затем заряжает накопитель из избытка.",
+        "uk": "Удень додає до 500 Вт з накопичувача для заряджання Mii, а потім заряджає накопичувач із надлишку.",
+        "zh-cn": "白天最多用储能补足 500 W 为 Mii 充电，随后用余电为储能补电。"
+      },
       "0.17.0-alpha.266": {
         "en": "Pause optional EV charging at the scheduled handover to the battery's final PV charge.",
         "de": "Freiwillige Autoladung bei der geplanten Übergabe an die PV-Schlussladung des Speichers sofort pausieren.",
@@ -81,19 +94,6 @@
         "ru": "Учитывает цели батареи и приоритет зарядки в прогнозе. Корректирует солнечную генерацию по зонам и месяцам.",
         "uk": "Ураховує цілі батареї та пріоритет заряджання в прогнозі. Коригує сонячну генерацію за зонами й місяцями.",
         "zh-cn": "在预测中应用电池电量目标和充电优先级，并按区域和月份修正光伏预测。"
-      },
-      "0.17.0-alpha.260": {
-        "en": "Reuse measured PV surplus for wallbox start and prioritize battery and EV charging over optional PV heating.",
-        "de": "Gemessenen PV-Überschuss für den Wallboxstart nutzen und Speicher sowie Auto vor optionaler PV-Wärme laden.",
-        "es": "Usa el excedente solar medido para iniciar la carga del coche y prioriza la batería y el coche frente a la calefacción solar opcional.",
-        "fr": "Utilise le surplus photovoltaïque mesuré pour démarrer la recharge et donne la priorité à la batterie et au véhicule sur le chauffage solaire optionnel.",
-        "it": "Usa il surplus fotovoltaico misurato per avviare la ricarica e dà precedenza a batteria e auto rispetto al riscaldamento fotovoltaico opzionale.",
-        "nl": "Gebruikt gemeten PV-overschot voor de laadstart en geeft de accu en auto voorrang boven optionele PV-verwarming.",
-        "pl": "Wykorzystuje zmierzoną nadwyżkę PV do rozpoczęcia ładowania i daje akumulatorowi oraz pojazdowi pierwszeństwo przed opcjonalnym ogrzewaniem PV.",
-        "pt": "Usa o excedente fotovoltaico medido para iniciar o carregamento e dá prioridade à bateria e ao veículo sobre o aquecimento fotovoltaico opcional.",
-        "ru": "Использует измеренный избыток солнечной энергии для запуска зарядки и отдаёт приоритет аккумулятору и автомобилю перед дополнительным нагревом.",
-        "uk": "Використовує виміряний надлишок сонячної енергії для початку заряджання та надає перевагу акумулятору й авто над додатковим нагріванням.",
-        "zh-cn": "利用实测光伏余电启动充电，并优先给储能电池和车辆充电。"
       }
     },
     "titleLang": {

@@ -1,11 +1,12 @@
 # EMS Optimizer
 
-**Aktuelle Adapterversion 0.17.0-alpha.266.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
+**Aktuelle Adapterversion 0.17.0-alpha.267.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
 
 [English overview](README.md) · [Vollständige Admin-Feldreferenz](docs/admin-reference.de.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) · [Versionsänderungen](README.md#changelog)
 
 ## Aktuelle Änderungen
 
+- **Alpha.267** ergänzt die 6-A-Ladung des Mii tagsüber mit bis zu 500 W aus dem Speicher. Nach dem Abschalten lädt der Speicher aus dem verbleibenden Überschuss nach. [Versionshinweise](docs/release-0.17.0-alpha.267.md)
 - **Alpha.266** pausiert freiwillige Autoladung bei der geplanten PV-Schlussladung sofort, wenn der ladebereite Speicher den gemessenen Überschuss beansprucht und für die Wallbox zu wenig übrig bleibt. [Versionshinweise](docs/release-0.17.0-alpha.266.md)
 - **Alpha.265** nutzt die bestehende Nulltoleranz für go-e auch im gemeinsamen Verbrauchs- und Phasenbudget. Ein Messwert von −10 W beim Anlauf entzieht der Wallbox dadurch nicht mehr die Ladefreigabe. [Versionshinweise](docs/release-0.17.0-alpha.265.md)
 - **Alpha.264** regelt eine laufende einphasige Wallbox bei einem belegten Rücksprung nach einem PV-Schritt um 1 A herunter und lässt die Ladefreigabe aktiv. [Versionshinweise](docs/release-0.17.0-alpha.264.md)
