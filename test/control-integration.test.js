@@ -2404,6 +2404,9 @@ for (const phases of [1, 3]) {
         assert.equal(h.physical().allow, 0, 'the battery must retain at least half its ceiling after the car starts');
         assert.equal(h.physical().batteryW, 2400, h.diagnostic());
 
+        // A short real shortage invalidates the earlier battery observation.
+        h.setSurplus(2200);
+        await h.advance(8);
         const start = h.trace.length;
         h.setSurplus(startSurplusW);
         await h.advance(startDelayS - 1);
@@ -2441,6 +2444,89 @@ for (const phases of [1, 3]) {
         assert.equal(h.physical().batteryW, 2400, h.diagnostic());
     });
 }
+
+async function batteryPvTransferPlant() {
+    const h = await plant({battery: true, batteryHeadType: 2, split: false, startDelayS: 300,
+        minimumRuntimeS: 0, initialSurplusW: 2400, batteryDelayMs: 5000, dhwDelayMs: 9000,
+        nativeConfig: {batteryDispatchMode: 'sunenergy-heads', batteryHead1MaxChargeW: 2400,
+            batteryPvPriorityEnabled: true, batteryWallboxHalfStepEnabled: true, wallboxParallelChargingEnabled: true}});
+    h.own('Control.TargetGridPower_W', 0);
+    h.own('Config.WallboxStartReserve_W', 150);
+    h.own('Plan.BatteryTargetSoC_48h_JSON', JSON.stringify([{timestamp: h.now() - 1000, value_pct: 70}]));
+    return h;
+}
+
+test('five minutes of measured battery PV qualifies the 2600 W handoff without a second timer or optional heat', async () => {
+    const h = await batteryPvTransferPlant();
+    await h.advance(365);
+    assert.equal(h.physical().batteryW, 2400);
+    assert.equal(h.physical().allow, 0, '2400 W alone still leaves less than 1200 W for the battery after the EV starts');
+    const at = h.now();
+    h.setSurplus(2600);
+    await h.advance(55);
+    const start = h.writes.find(w => w.id === 'goe.allow' && w.val === 1);
+    assert.ok(start && start.at <= at + 45000, h.diagnostic());
+    assert.ok(h.trace.some(row => row.at === start.at && row.gridW <= -1380), 'the meter must prove the power before ON');
+    assert.ok(h.trace.some(row => row.at > at && row.wbW === 0 && row.batteryW === 1070));
+    assert.ok(h.trace.filter(row => row.at >= at).every(row => row.heaterW === 0 && row.heaterTargetW === 0));
+    assert.equal(h.physical().wbPowerW, 1380);
+    assert.equal(h.physical().batteryW, 1220);
+    assert.equal(h.trace.at(-1).gridW, 0);
+});
+
+test('a short good PV interval, a measured dip, and missing battery feedback cannot lend the wallbox a full timer', async () => {
+    const h = await batteryPvTransferPlant();
+    await h.advance(365);
+    h.setSurplus(2100);
+    await h.advance(12);
+    h.setSurplus(2600);
+    await h.advance(130);
+    assert.equal(h.physical().allow, 0, 'the physical PV dip revoked prior battery evidence');
+    h.setBatteryHeartbeat(false);
+    await h.advance(20);
+    assert.equal(h.physical().allow, 0, 'an offline head cannot supply a qualified start');
+    h.setBatteryHeartbeat(true);
+    await h.advance(80);
+    assert.equal(h.physical().allow, 0, 'a telemetry interruption cannot complete an old qualification');
+    await h.advance(270);
+    assert.equal(h.physical().wbPowerW, 1380, h.diagnostic());
+});
+
+test('an initial 2600 W handoff waits for the measured heater reduction and keeps the qualified start', async () => {
+    const h = await batteryPvTransferPlant();
+    // Reproduce the optional heater being on when battery/vehicle priority is
+    // enabled. The AC THOR's command changes before its electrical response.
+    h.config.batteryPvPriorityEnabled = false;
+    h.put('DP_WB2_ALLOW', false);
+    h.setSurplus(4000);
+    await h.advance(350);
+    assert.ok(h.physical().heaterW > 1000, h.diagnostic());
+    h.config.batteryPvPriorityEnabled = true;
+    h.put('DP_WB2_ALLOW', true);
+    h.setSurplus(2600);
+    const at = h.now();
+    await h.advance(340);
+    const start = h.writes.find(w => w.id === 'goe.allow' && w.val === 1);
+    assert.ok(start && start.at >= at + 300000 && start.at < at + 340000, h.diagnostic());
+    assert.ok(h.trace.some(row => row.at === start.at && row.heaterW === 0 && row.gridW <= -1380));
+    assert.equal(h.physical().batteryW, 1220);
+    assert.equal(h.physical().heaterW, 0);
+});
+
+test('an expired start for a non-responsive car restores battery priority', async () => {
+    const h = await batteryPvTransferPlant();
+    h.setWallboxPowerAcceptance(false);
+    await h.advance(365);
+    const at = h.now();
+    h.setSurplus(2600);
+    await h.advance(135);
+    const start = h.writes.find(w => w.id === 'goe.allow' && w.val === 1);
+    const stop = h.writes.find(w => w.id === 'goe.allow' && w.val === 0 && w.at > start?.at);
+    assert.ok(start && stop && stop.at <= at + 47000, h.diagnostic());
+    assert.equal(h.physical().allow, 0);
+    assert.equal(h.physical().batteryW, 2400);
+    assert.equal(h.value('Control.Targets.Wallbox2_A'), 0);
+});
 
 async function miiReadinessPlant({minimumSoc = 70, soc = 49, minimumRuntimeS = 0} = {}) {
     const h = await plant({mii: true, wallbox: false, split: false, startDelayS: 0, minimumRuntimeS,

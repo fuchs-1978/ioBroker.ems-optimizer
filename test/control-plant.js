@@ -297,7 +297,8 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
             put(`${base}.info.online`, batteryHeartbeat);
             put(`${base}.info.rawResponse`, JSON.stringify({GS: -batteryW || 0, GP: -batteryW || 0,
                 SC: states.get(mapping.DP_BATTERY_SOC)?.val ?? 50, ON: 1, MM: 0, LM: 1,
-                SI: 20, SA: 80, MG: 2400, IS: 2400, LP: 0, PK: batteryHeadType}));
+                SI: 20, SA: 80, MG: 2400, IS: 2400, LP: 0, PK: batteryHeadType, timestamp: now}),
+            {from: 'system.adapter.sunenergyxt500.0'});
         }
         if (batteryHeartbeat) put(config.batteryHeartbeatId, now);
         for (const wb of [0, 1, 2]) {
