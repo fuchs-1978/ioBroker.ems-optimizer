@@ -287,7 +287,7 @@
   "Battery fine control and input checks": "电池细节控制和输入检查",
   "Maximum battery setpoint step": "最大电池设置点步骤",
   "Charge battery before PV wallboxes and buffer small EV power steps": "光伏余电优先为储能电池充电，并缓冲电动汽车充电功率的小幅波动",
-  "Charge the Mii from CHP surplus and a 10-point battery SoC band at night": "可在夜间用热电联产余电和储能电池 10 个百分点的电量区间为 Mii 充电",
+  "Charge the Mii with battery support from daytime surplus or CHP at night": "使用白天余电或夜间热电联产并由储能辅助为 Mii 充电",
   "Coordinate wallbox current steps using the battery target state of charge": "按电池目标荷电状态协调充电桩的电流步进",
   "PV reserve for battery fine control before heater allocation": "PV 在加热器分配前储备电池细节控制",
   "Reserves up to this share of actual PV surplus for battery fine control. The effective reserve is capped by available PV, battery charge power and the shared grid-operator budget; without available PV there is no reserve. Existing planned battery charging can require a larger share. This is a power reserve in watts, not an additional SoC reserve or permission to charge from the grid.": "储备高达本份额的实际 PV 电池细节控制的余额. 实际储备上限为可用 PV电池充电能力和共享电网运营商预算; PV 没有储备. 现有计划的电池充电可能需要更大的份额. 这是一个瓦特的电力储备,而不是额外的SoC储备或允许从电网上充电.",

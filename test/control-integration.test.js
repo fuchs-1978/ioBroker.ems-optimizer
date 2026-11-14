@@ -1685,6 +1685,170 @@ test('night CHP surplus and battery start the Mii at 6 A, stop at 70%, and recha
     assert.equal(h.value('Control.BatteryWallboxBuffer_W'), 0);
 });
 
+async function daytimeMiiStoragePlant({surplusW = 900, chargeHysteresisPct = 0, groupNet = false} = {}) {
+    const h = await plant({battery: true, batteryHeadType: 2, batteryHeadMaxSoc: 100,
+        batteryHeadChargeHysteresis: chargeHysteresisPct,
+        mii: true, wallbox: false, initialSurplusW: surplusW, split: false, startDelayS: 8, sourceQuality: 0,
+        minimumRuntimeS: 600, wallboxStopResponseDelayMs: 8000, initialTime: Date.UTC(2026, 10, 14, 14),
+        wallboxUptakeA: (_wb, amps) => amps === 6 ? 1300 / 230 : amps,
+        nativeConfig: {batteryDispatchMode: 'sunenergy-heads', batteryPvPriorityEnabled: true,
+            batteryWallboxHalfStepEnabled: true, bhkwWallboxCycleEnabled: true, wallboxParallelChargingEnabled: true,
+            wallboxStopDelayS: 600, dhwControlEnabled: false,
+            ...(groupNet ? {par14aAccountingMode: 'groupNet', par14aGroupId: 'controlled-loads',
+                par14aBoundaryId: 'whole-site', par14aSiteScope: 'whole-site-ac', par14aStorageCoverage: 'complete-ac',
+                par14aStorageMeters: [{powerId: 'sunenergyxt500.0.heads.1.grid.GP', powerUnit: 'W',
+                    powerScope: 'total-ac', direction: 'discharge-positive'}],
+                par14aParticipants: [{name: 'Mii', kind: 'wallbox', connectionPowerW: 7360,
+                    deviceId: 'Wallbox0', powerId: 'DP_WB0_POWER', powerUnit: 'kW', powerScope: 'total-ac'}],
+                par14aBudgetMode: 'fixed', par14aLimitW: 4200} : {})}});
+    h.own('Devices.MyPV_DHW.ControlEnabled', false);
+    h.own('Config.WallboxStartReserve_W', 150);
+    h.own('Config.BatteryMaxSoC_pct', 100);
+    h.own('Control.TargetGridPower_W', 0);
+    h.put(h.mapping.DP_BATTERY_SOC, 100);
+    h.put(h.run('CFG.dp.pvPower'), 950);
+    h.put(h.run('CFG.dp.bhkwPower'), 910);
+    const timestamp = h.now();
+    h.own('Plan.BatteryTargetSoC_48h_JSON', JSON.stringify([{timestamp, value_pct: 100}]));
+    h.own('Plan.BatteryPower_48h_JSON', JSON.stringify([{timestamp, valueW: 0, gridChargeW: 0, dischargeFloorPct: 20}]));
+    return h;
+}
+
+test('daytime Mii starts from 900 W with a full store and stops after three confirmed deficits over 500 W', async () => {
+    const h = await daytimeMiiStoragePlant({surplusW: 899});
+    await h.advance(35);
+    assert.equal(h.physical().miiAllow, 0);
+    h.setSurplus(900);
+    await h.advance(50);
+    assert.equal(h.physical().miiAllow, 1, h.value('Devices.Wallbox0.OutputStatus'));
+    assert.equal(h.physical().miiAmps, 6);
+    assert.equal(h.physical().batteryW, -400, h.diagnostic());
+    assert.equal(h.trace.at(-1).gridW, 0);
+    h.put(h.mapping.DP_BATTERY_SOC, 99);
+    await h.advance(5);
+    const dipAt = h.now();
+    h.setSurplus(790);
+    await h.advance(1);
+    assert.equal(h.physical().miiAllow, 1);
+    assert.ok(!h.writes.some(w => w.id === 'goe0.allow' && w.val === 0 && w.at > dipAt));
+    h.setSurplus(900);
+    await h.advance(6);
+    assert.equal(h.physical().miiAllow, 1);
+    h.setSurplus(800);
+    await h.advance(12);
+    assert.equal(h.physical().miiAllow, 1);
+    assert.equal(h.physical().batteryW, -500);
+    const at = h.now();
+    h.setSurplus(780);
+    await h.advance(31);
+    const off = h.writes.find(w => w.id === 'goe0.allow' && w.val === 0 && w.at > at);
+    assert.ok(off && off.at >= at + 3000 && off.at <= at + 5000, h.diagnostic());
+    assert.equal(h.physical().miiAllow, 0);
+    assert.equal(h.value('Devices.Wallbox0.LastStopReason'), 'Mii-Speicherhilfe tagsueber beendet');
+    assert.ok(h.trace.filter(row => row.at > at && row.miiW > 20).every(row => row.batteryW <= 0));
+    assert.ok(h.trace.every(row => row.batteryW >= -500));
+    await h.advance(30);
+    assert.equal(h.physical().batteryW, 780, h.diagnostic());
+    assert.equal(h.trace.at(-1).gridW, 0);
+    assert.equal(h.value('Control.BatteryPriceGridCharge_W'), 0);
+    h.setSurplus(-250);
+    await h.advance(20);
+    assert.ok(h.physical().batteryW <= 0, 'refill permission uses the real surplus');
+    h.setSurplus(900);
+    await h.advance(40);
+    assert.equal(h.physical().miiAllow, 0, '99% does not rearm battery-assisted starting');
+    assert.equal(h.physical().batteryW, 900);
+    h.put(h.mapping.DP_BATTERY_SOC, 100);
+    await h.advance(60);
+    assert.equal(h.physical().miiAllow, 1);
+});
+
+test('daytime Mii preserves the 90% reserve and continues on PV alone when the surplus recovers', async () => {
+    const h = await daytimeMiiStoragePlant();
+    await h.advance(60);
+    assert.equal(h.physical().miiAllow, 1, h.value('Devices.Wallbox0.OutputStatus'));
+    h.put(h.mapping.DP_BATTERY_SOC, 95);
+    h.setSurplus(1800);
+    await h.advance(20);
+    assert.equal(h.physical().miiAllow, 1);
+    assert.equal(h.value('Control.BhkwWallboxCycleOwned'), false);
+    assert.equal(h.value('Control.BatteryWallboxBuffer_W'), 0);
+    h.put(h.mapping.DP_BATTERY_SOC, 100);
+    h.setSurplus(900);
+    await h.advance(45);
+    assert.equal(h.physical().miiAllow, 1);
+    assert.equal(h.physical().batteryW, -400);
+    h.put(h.mapping.DP_BATTERY_SOC, 90);
+    await h.advance(18);
+    assert.equal(h.physical().miiAllow, 0);
+    assert.ok(h.physical().batteryW >= 0);
+});
+
+test('a manually forced Mii minimum receives no daytime PV battery support', async () => {
+    const h = await daytimeMiiStoragePlant();
+    h.put('DP_WB0_AMIN', 6);
+    await h.advance(35);
+    assert.equal(h.physical().miiAllow, 1);
+    assert.equal(h.physical().batteryW, 0);
+    assert.equal(h.value('Control.BatteryWallboxBuffer_W'), 0);
+    assert.equal(h.trace.at(-1).gridW, 400);
+});
+
+test('daytime Mii uses net export including CHP and refills within SunEnergy charge hysteresis', async () => {
+    const h = await daytimeMiiStoragePlant({chargeHysteresisPct: 2});
+    h.put(h.run('CFG.dp.pvPower'), 0);
+    await h.advance(55);
+    assert.equal(h.physical().miiAllow, 1);
+    h.put(h.mapping.DP_BATTERY_SOC, 98);
+    h.setSurplus(750);
+    await h.advance(35);
+    assert.equal(h.physical().miiAllow, 0);
+    assert.equal(h.physical().batteryW, 0);
+    assert.equal(h.trace.at(-1).gridW, -750);
+    h.put(h.mapping.DP_BATTERY_SOC, 97);
+    await h.advance(45);
+    assert.equal(h.physical().batteryW, 750);
+    assert.equal(h.trace.at(-1).gridW, 0);
+});
+
+test('daytime Mii rechecks discharge and refill against a new meter sample before output', async () => {
+    const h = await daytimeMiiStoragePlant();
+    await h.advance(60);
+    h.put(h.mapping.DP_BATTERY_SOC, 97);
+    await h.advance(4);
+    assert.equal(h.physical().batteryW, -400);
+    h.setSurplus(1150);
+    await h.replayAt(h.now() + 1000, [], {allocate: false, output: false});
+    assert.equal(h.run('batteryHeadsBudget(batteryRegulationState()).targetW'), -150,
+        'new grid data reduces the previous 400 W permission before writing');
+    h.setSurplus(750);
+    await h.advance(50);
+    assert.equal(h.physical().miiAllow, 0);
+    assert.equal(h.physical().batteryW, 750);
+    h.setSurplus(400);
+    await h.replayAt(h.now() + 1000, [], {allocate: false, output: false});
+    assert.equal(h.run('batteryHeadsBudget(batteryRegulationState()).targetW'), 400,
+        'the previous 750 W target cannot purchase the shortfall from the grid');
+});
+
+test('daytime Mii yields its optional battery-backed run when a network operator limit becomes active', async () => {
+    const h = await daytimeMiiStoragePlant({groupNet: true});
+    h.mapping.DP_PAR14A = 'network.contact';
+    h.mapping.DP_BATTERY_AC_POWER = h.config.batteryAcPowerId;
+    h.run("CFG.dp.par14a='network.contact'");
+    h.put('network.contact', false);
+    await h.advance(50);
+    assert.equal(JSON.parse(h.value('Control.ParallelWallboxAllocation_JSON')).accounting, 'explicit-group-net',
+        h.value('Control.GridOperatorStatus'));
+    assert.equal(h.physical().miiAllow, 1, h.value('Devices.Wallbox0.OutputStatus'));
+    assert.equal(h.physical().batteryW, -400);
+    h.put('network.contact', true);
+    await h.advance(27);
+    assert.equal(h.value('Control.GridOperatorLimitActive'), true);
+    assert.equal(h.physical().miiAllow, 0);
+    assert.equal(h.value('Control.BatteryWallboxBuffer_W'), 0);
+});
+
 test('battery full, minimum SoC and off hand fine regulation back to EHZ without phantom allocation', async () => {
     const h = await plant({battery: true, heating: true, wallbox: false});
     await h.advance(90);

@@ -287,7 +287,7 @@
   "Battery fine control and input checks": "Speicher-Feinregelung und Eingangsprüfung",
   "Maximum battery setpoint step": "Maximale Änderung des Speicher-Sollwerts",
   "Charge battery before PV wallboxes and buffer small EV power steps": "Speicher vor PV-Autoladung laden und kleine Wallbox-Leistungssprünge puffern",
-  "Charge the Mii from CHP surplus and a 10-point battery SoC band at night": "Mii nachts optional aus BHKW-Überschuss und einem Speicherfenster von 10 SoC-Punkten laden",
+  "Charge the Mii with battery support from daytime surplus or CHP at night": "Mii tagsüber aus Überschuss oder nachts aus BHKW-Erzeugung mit Speicherhilfe laden",
   "Coordinate wallbox current steps using the battery target state of charge": "Wallbox-Stromschritte nach dem Ziel-SoC des Speichers abstimmen",
   "PV reserve for battery fine control before heater allocation": "PV-Leistungsreserve für die Speicher-Feinregelung vor der Heizstabverteilung",
   "Reserves up to this share of actual PV surplus for battery fine control. The effective reserve is capped by available PV, battery charge power and the shared grid-operator budget; without available PV there is no reserve. Existing planned battery charging can require a larger share. This is a power reserve in watts, not an additional SoC reserve or permission to charge from the grid.": "Reserviert bis zu diesem Anteil des tatsächlichen PV-Überschusses für die Speicher-Feinregelung. Die effektive Reserve ist durch verfügbare PV, Speicherladeleistung und gemeinsames Netzbetreiberbudget begrenzt; ohne verfügbare PV gibt es keine Reserve. Bereits geplantes Speicherladen kann einen größeren Anteil erfordern. Dies ist eine Leistungsreserve in Watt, keine zusätzliche SoC-Reserve und keine Erlaubnis zum Netzladen.",
