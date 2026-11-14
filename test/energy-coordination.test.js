@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const {normalizeWallboxPowerKW} = require('../lib/wallbox-measurement');
 
 function engine(parallel = true) {
     const now = 1000000;
@@ -13,6 +14,7 @@ function engine(parallel = true) {
     const nativeConfig = {wallboxParallelChargingEnabled: parallel,
         wb0AllowOutputId: 'raw.allow0', wb1AllowOutputId: 'raw.allow1', wb2AllowOutputId: 'raw.allow2'};
     const context = vm.createContext({gridMeasurement: new (require('../lib/grid-measurement').GridMeasurement)(), nativeConfig, Date: Clock,
+        normalizeWallboxPowerKW,
         clamp: (value, low, high) => Math.max(low, Math.min(high, value)),
         getState: id => states.get(id), existsState: id => states.has(id),
         setState: put, createState: () => {}, log: () => {}});
@@ -38,11 +40,15 @@ function engine(parallel = true) {
 }
 
 test('parallel phase coordination ignores stale unused current only for a freshly confirmed OFF/Standby/zero-power peer', () => {
-    const h = engine(); h.put('DP_WB1_L2_A', 0, {ts: 960000});
-    const reserve = h.reserve();
-    assert.equal(reserve.valid, true);
-    assert.deepEqual(Array.from(reserve.wallboxesW[1]), [0, 0, 0]);
-    assert.deepEqual(Array.from(reserve.otherW), [0, 0, 0]);
+    for (const powerKW of [0, -0.01]) {
+        const h = engine();
+        h.put('DP_WB1_L2_A', 0, {ts: 960000});
+        h.put('DP_WB1_POWER', powerKW);
+        const reserve = h.reserve();
+        assert.equal(reserve.valid, true);
+        assert.deepEqual(Array.from(reserve.wallboxesW[1]), [0, 0, 0]);
+        assert.deepEqual(Array.from(reserve.otherW), [0, 0, 0]);
+    }
 });
 
 test('legacy coordinated phase policy is unchanged for an idle peer with stale current', () => {
