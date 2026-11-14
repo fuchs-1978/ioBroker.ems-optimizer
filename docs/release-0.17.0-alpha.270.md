@@ -1,0 +1,7 @@
+# 0.17.0-alpha.270
+
+Bei der Haushaltsentladung mit einem einzelnen SunEnergy-Kopf kann das EMS nach dem Echo des Sollwerts (GS) mit der gemessenen AC-Leistung (GP) weiterregeln, auch wenn GP um bis zu 100 W abweicht. Zu dieser Rückmeldung gehört ein frisches SMA-Messpaar für Bezug und Einspeisung. Zeitlich nahe Netz- und Speichermessungen können gemeinsam ausgewertet werden, wenn beide nach dem vorigen Stellbefehl erfasst wurden. Aus tatsächlicher Entladeleistung und gemessenem Netzfluss ergibt sich die obere Grenze für den nächsten Entladebefehl. Stammt die Netzmessung aus der Zeit vor der Rückmeldung des Speichers, kann der Sollwert pro Schritt um höchstens 100 W steigen. Das EMS prüft diese Grenzen vor der Ausgabe erneut.
+
+Bleibt bei laufender Entladung eine passende Rückmeldung aus, zählt das EMS die neuen Messpaare. Ein Paar zählt erst mit einem neu erfassten Speicherwert und einem neuen SMA-Messpaar. Eine passende Rückmeldung setzt den Zähler zurück. Sind zehn neue Paare in Folge abweichend, setzt das EMS den Sollwert auf 0 W und prüft vor der Wiederaufnahme den Stillstand. Ein älterer, wiederholt gelesener Wert erzeugt keine weiteren Treffer.
+
+Die Toleranz gilt bei Haushaltsbedarf innerhalb der Leistungs- und SoC-Grenzen. Die Aussetzerüberwachung arbeitet zusätzlich zum Schutz bei fehlender oder veralteter Telemetrie. Richtungswechsel, Fehlersignale und ein entfallenes Leistungsbudget können weiterhin einen direkten Nullbefehl auslösen. Das Totband am Netzanschlusspunkt bleibt separat einstellbar.

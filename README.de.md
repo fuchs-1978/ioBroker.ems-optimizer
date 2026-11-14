@@ -1,11 +1,12 @@
 # EMS Optimizer
 
-**Aktuelle Adapterversion 0.17.0-alpha.269.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
+**Aktuelle Adapterversion 0.17.0-alpha.270.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
 
 [English overview](README.md) · [Vollständige Admin-Feldreferenz](docs/admin-reference.de.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) · [Versionsänderungen](README.md#changelog)
 
 ## Aktuelle Änderungen
 
+- **Alpha.270** toleriert bei laufender SunEnergy-Haushaltsentladung bis zu 100 W Differenz zwischen Soll- und Istleistung. Ein anhaltender Rückmeldefehler löst nach zehn frischen abweichenden Messpaaren einen Stopp aus. [Versionshinweise](docs/release-0.17.0-alpha.270.md)
 - **Alpha.269** prüft bei einer laufenden Senkung der SunEnergy-Haushaltsentladung, wie viel Netzleistung nach dem bereits gesendeten Sollwert zu erwarten ist. [Versionshinweise](docs/release-0.17.0-alpha.269.md)
 - **Alpha.268** hält die SunEnergy-Haushaltsentladung bei kleinen Laständerungen, während die passende Geräte- oder Netzmessung noch aussteht. [Versionshinweise](docs/release-0.17.0-alpha.268.md)
 - **Alpha.267** ergänzt die 6-A-Ladung des Mii tagsüber mit bis zu 500 W aus dem Speicher. Nach dem Abschalten lädt der Speicher aus dem verbleibenden Überschuss nach. [Versionshinweise](docs/release-0.17.0-alpha.267.md)
