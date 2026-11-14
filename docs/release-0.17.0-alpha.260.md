@@ -1,0 +1,9 @@
+# 0.17.0-alpha.260
+
+Die Live-Regelung kann das Zeitfenster für den Wallboxstart bereits anhand der gemessenen AC-Ladeleistung eines einzelnen SunEnergy-Kopfs und der Netzmessung nachweisen. Der nutzbare Überschuss muss während der eingestellten Startverzögerung mindestens etwa der verfügbaren Batterieladeleistung entsprechen. Jede Fortschreibung benötigt einen neuen Gerätemesswert und eine neue passende Netzmessung. Ein echter Rückgang unter diese Grenze, eine Lücke in den Messungen oder ein Wegfall der Freigabe setzt diesen Nachweis zurück.
+
+Steigt der gemessene Überschuss anschließend auf das gemeinsame Budget, kann die bevorzugte, startbereite Wallbox ihre Mindestladung ohne erneuten Countdown anfordern. Bei 230 V einphasig, 6 A und einer Speichergrenze von 2.400 W ergibt das rund 2.580 W. Bei 2.600 W kann der Speicher zunächst auf etwa 1.070 W zurückgehen und nach Aufnahme der Fahrzeugladung auf etwa 1.220 W steigen. Der Ausgang prüft weiterhin die am Netzanschlusspunkt freigewordene Leistung sowie die Anschluss-, Phasen- und Gerätefreigaben. Ein Anlauf ohne tatsächliche Leistungsaufnahme gibt die Startreserve nach spätestens 45 Sekunden an den Speicher zurück.
+
+Bei gemeinsam aktiviertem PV-Speichervorrang und SoC-abhängiger Wallbox-Koordination bekommt optionale PV-Wärme in der SunEnergy-Betriebsart erst dann Leistung, wenn weder der Speicher ladbar ist noch eine Wallbox eine Ladefreigabe hat. Trinkwasser-Mindestwärme und Notbetrieb haben eigene Freigaben. Eine separat erlaubte Tarifheizung wird für die kurze Übergabe an das Fahrzeug pausiert.
+
+Die gemeinsamen Leistungsgrenzen für die Aufteilung zwischen Batterie und Fahrzeug stehen in `splitBatteryWallboxStart` in `lib/wallbox-allocation.js`. Die Live-Regelung ergänzt die zeitliche Prüfung und die physische Freigabe.

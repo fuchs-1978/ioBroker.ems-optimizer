@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.259",
+    "version": "0.17.0-alpha.260",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.260": {
+        "en": "Reuse measured PV surplus for wallbox start and prioritize battery and EV charging over optional PV heating.",
+        "de": "Gemessenen PV-Überschuss für den Wallboxstart nutzen und Speicher sowie Auto vor optionaler PV-Wärme laden.",
+        "es": "Usa el excedente solar medido para iniciar la carga del coche y prioriza la batería y el coche frente a la calefacción solar opcional.",
+        "fr": "Utilise le surplus photovoltaïque mesuré pour démarrer la recharge et donne la priorité à la batterie et au véhicule sur le chauffage solaire optionnel.",
+        "it": "Usa il surplus fotovoltaico misurato per avviare la ricarica e dà precedenza a batteria e auto rispetto al riscaldamento fotovoltaico opzionale.",
+        "nl": "Gebruikt gemeten PV-overschot voor de laadstart en geeft de accu en auto voorrang boven optionele PV-verwarming.",
+        "pl": "Wykorzystuje zmierzoną nadwyżkę PV do rozpoczęcia ładowania i daje akumulatorowi oraz pojazdowi pierwszeństwo przed opcjonalnym ogrzewaniem PV.",
+        "pt": "Usa o excedente fotovoltaico medido para iniciar o carregamento e dá prioridade à bateria e ao veículo sobre o aquecimento fotovoltaico opcional.",
+        "ru": "Использует измеренный избыток солнечной энергии для запуска зарядки и отдаёт приоритет аккумулятору и автомобилю перед дополнительным нагревом.",
+        "uk": "Використовує виміряний надлишок сонячної енергії для початку заряджання та надає перевагу акумулятору й авто над додатковим нагріванням.",
+        "zh-cn": "利用实测光伏余电启动充电，并优先给储能电池和车辆充电。"
+      },
       "0.17.0-alpha.259": {
         "en": "Keep proved SunEnergy discharge active and share PV with a wallbox earlier.",
         "de": "Bestätigte SunEnergy-Entladung fortführen und PV-Überschuss früher mit einer Wallbox teilen.",
@@ -81,19 +94,6 @@
         "ru": "Допускает небольшую недостачу мощности AC при подтверждённом пределе разряда.",
         "uk": "Допускає невелике зниження потужності AC на підтвердженій межі розряду.",
         "zh-cn": "允许在已确认的放电上限处出现少量交流功率不足。"
-      },
-      "0.17.0-alpha.253": {
-        "en": "Recharge the SunEnergy reserve at up to 1000 W after falling below minimum SoC.",
-        "de": "SunEnergy unter Mindest-SoC mit bis zu 1000 W nachladen.",
-        "es": "Recarga la reserva SunEnergy con hasta 1000 W al bajar del mínimo.",
-        "fr": "Recharge la réserve SunEnergy jusqu’à 1000 W sous le seuil minimal.",
-        "it": "Ricarica la riserva SunEnergy fino a 1000 W sotto il minimo.",
-        "nl": "Laadt de SunEnergy-reserve met maximaal 1000 W onder het minimum.",
-        "pl": "Uzupełnia rezerwę SunEnergy z mocą do 1000 W poniżej minimum.",
-        "pt": "Recarrega a reserva SunEnergy até 1000 W abaixo do mínimo.",
-        "ru": "Пополняет резерв SunEnergy мощностью до 1000 Вт ниже минимума.",
-        "uk": "Поповнює резерв SunEnergy потужністю до 1000 Вт нижче мінімуму.",
-        "zh-cn": "SunEnergy 电量低于下限时以最高 1000 W 补充储备。"
       }
     },
     "titleLang": {
