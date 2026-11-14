@@ -1698,6 +1698,150 @@
         }
       }
     },
+    "pvCorrectionTab": {
+      "type": "panel",
+      "label": "PV correction",
+      "items": {
+        "_pvMonthlyCorrectionHelp": {
+          "type": "staticText",
+          "text": "Use the exact forecast area name and one row per area. Factors multiply the forecast for the local calendar month. For example, 0.80 uses 80% of the forecast and 1.20 uses 120%. Missing or invalid factors use 1.00.",
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
+        },
+        "pvMonthlyCorrections": {
+          "type": "table",
+          "label": "Monthly PV correction factors",
+          "default": [],
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "items": [
+            {
+              "type": "text",
+              "attr": "area",
+              "title": "PV area name",
+              "default": "",
+              "width": "16%"
+            },
+            {
+              "type": "number",
+              "attr": "jan",
+              "title": "January",
+              "default": 1,
+              "min": 0,
+              "step": 0.01,
+              "width": "7%"
+            },
+            {
+              "type": "number",
+              "attr": "feb",
+              "title": "February",
+              "default": 1,
+              "min": 0,
+              "step": 0.01,
+              "width": "7%"
+            },
+            {
+              "type": "number",
+              "attr": "mar",
+              "title": "March",
+              "default": 1,
+              "min": 0,
+              "step": 0.01,
+              "width": "7%"
+            },
+            {
+              "type": "number",
+              "attr": "apr",
+              "title": "April",
+              "default": 1,
+              "min": 0,
+              "step": 0.01,
+              "width": "7%"
+            },
+            {
+              "type": "number",
+              "attr": "may",
+              "title": "May",
+              "default": 1,
+              "min": 0,
+              "step": 0.01,
+              "width": "7%"
+            },
+            {
+              "type": "number",
+              "attr": "jun",
+              "title": "June",
+              "default": 1,
+              "min": 0,
+              "step": 0.01,
+              "width": "7%"
+            },
+            {
+              "type": "number",
+              "attr": "jul",
+              "title": "July",
+              "default": 1,
+              "min": 0,
+              "step": 0.01,
+              "width": "7%"
+            },
+            {
+              "type": "number",
+              "attr": "aug",
+              "title": "August",
+              "default": 1,
+              "min": 0,
+              "step": 0.01,
+              "width": "7%"
+            },
+            {
+              "type": "number",
+              "attr": "sep",
+              "title": "September",
+              "default": 1,
+              "min": 0,
+              "step": 0.01,
+              "width": "7%"
+            },
+            {
+              "type": "number",
+              "attr": "oct",
+              "title": "October",
+              "default": 1,
+              "min": 0,
+              "step": 0.01,
+              "width": "7%"
+            },
+            {
+              "type": "number",
+              "attr": "nov",
+              "title": "November",
+              "default": 1,
+              "min": 0,
+              "step": 0.01,
+              "width": "7%"
+            },
+            {
+              "type": "number",
+              "attr": "dec",
+              "title": "December",
+              "default": 1,
+              "min": 0,
+              "step": 0.01,
+              "width": "7%"
+            }
+          ]
+        }
+      }
+    },
     "pricesTab": {
       "type": "panel",
       "label": "Prices & tariffs",

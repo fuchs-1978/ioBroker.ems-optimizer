@@ -65,7 +65,8 @@ for (const language of languages.filter(locale => !['en', 'de'].includes(locale)
 }
 
 const sharedLabels = new Set(['§14a / EEBUS LPC', 'kWh', 'Wh', 'J', 'L1', 'L2', 'L3', 'W', 'kW']);
-const sharedLocalWords = {es: ['General'], fr: ['1 phase', '3 phases', 'Standard'], it: ['Standard'], pl: ['VAT']};
+const sharedLocalWords = {es: ['General'], fr: ['1 phase', '3 phases', 'Standard'], it: ['Standard'],
+    nl: ['April', 'September', 'November', 'December'], pl: ['VAT']};
 const countNumbers = text => {
     const result = new Map();
     for (const number of text.match(/\d+(?:\.\d+)*/g) || []) result.set(number, (result.get(number) || 0) + 1);

@@ -620,5 +620,21 @@
   "Unknown heating type": "Calefacción desconocida",
   "Actual room temperature source": "Fuente de temperatura real",
   "Effective room setpoint source": "Fuente de consigna efectiva",
-  "Room history status": "Estado del historial de habitaciones"
+  "Room history status": "Estado del historial de habitaciones",
+  "PV correction": "Corrección FV",
+  "Monthly PV correction factors": "Factores mensuales de corrección FV",
+  "PV area name": "Nombre del área FV",
+  "Use the exact forecast area name and one row per area. Factors multiply the forecast for the local calendar month. For example, 0.80 uses 80% of the forecast and 1.20 uses 120%. Missing or invalid factors use 1.00.": "Use el nombre exacto de la previsión y una fila por área. El factor multiplica la previsión del mes local. 0.80 equivale al 80 % y 1.20 al 120 %. El valor predeterminado es 1.00.",
+  "January": "Enero",
+  "February": "Febrero",
+  "March": "Marzo",
+  "April": "Abril",
+  "May": "Mayo",
+  "June": "Junio",
+  "July": "Julio",
+  "August": "Agosto",
+  "September": "Septiembre",
+  "October": "Octubre",
+  "November": "Noviembre",
+  "December": "Diciembre"
 }

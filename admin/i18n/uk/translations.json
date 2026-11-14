@@ -620,5 +620,21 @@
   "Unknown heating type": "Тип опалення невідомий",
   "Actual room temperature source": "Джерело фактичної температури",
   "Effective room setpoint source": "Джерело чинної уставки",
-  "Room history status": "Стан історії кімнат"
+  "Room history status": "Стан історії кімнат",
+  "PV correction": "Корекція ФЕ",
+  "Monthly PV correction factors": "Місячні коефіцієнти корекції ФЕ",
+  "PV area name": "Назва зони ФЕ",
+  "Use the exact forecast area name and one row per area. Factors multiply the forecast for the local calendar month. For example, 0.80 uses 80% of the forecast and 1.20 uses 120%. Missing or invalid factors use 1.00.": "Вкажіть точну назву з прогнозу й один рядок на зону. Коефіцієнт множить прогноз для місцевого календарного місяця. 0.80 означає 80 %, а 1.20 — 120 %. Типове значення 1.00.",
+  "January": "Січень",
+  "February": "Лютий",
+  "March": "Березень",
+  "April": "Квітень",
+  "May": "Травень",
+  "June": "Червень",
+  "July": "Липень",
+  "August": "Серпень",
+  "September": "Вересень",
+  "October": "Жовтень",
+  "November": "Листопад",
+  "December": "Грудень"
 }

@@ -2408,6 +2408,7 @@ for (const phases of [1, 3]) {
         h.setSurplus(2200);
         await h.advance(8);
         const start = h.trace.length;
+        h.own('Plan.BatteryPower_48h_JSON', JSON.stringify([{timestamp, valueW: 2400, requiredPvChargeW: 1000}]));
         h.setSurplus(startSurplusW);
         await h.advance(startDelayS - 1);
         assert.equal(h.physical().allow, 0, 'the start still requires the configured stability time');
@@ -2431,6 +2432,11 @@ for (const phases of [1, 3]) {
         assert.ok(h.trace.slice(-20).every(row => row.wbW === 7 * stepW && row.gridW === 0), h.diagnostic());
 
         h.setSurplus(startSurplusW);
+        h.own('Plan.BatteryPower_48h_JSON', JSON.stringify([{timestamp, valueW: 2400, requiredPvChargeW: 1250}]));
+        await h.advance(35);
+        assert.equal(h.physical().allow, 0, '1,220 W would miss the binding 1,250 W requirement');
+        assert.equal(h.value('Control.Targets.Battery_W'), 2400, h.diagnostic());
+
         h.own('Plan.BatteryPower_48h_JSON', JSON.stringify([{timestamp, valueW: 2400}]));
         await h.advance(60);
         assert.equal(h.physical().allow, 0, 'full planned storage power keeps its priority');
