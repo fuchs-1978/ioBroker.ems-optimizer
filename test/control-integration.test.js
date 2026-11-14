@@ -2516,11 +2516,13 @@ test('an initial 2600 W handoff waits for the measured heater reduction and keep
 test('an expired start for a non-responsive car restores battery priority', async () => {
     const h = await batteryPvTransferPlant();
     h.setWallboxPowerAcceptance(false);
-    h.config.wallboxStopDelayS = 0;
     await h.advance(365);
+    const at = h.now();
     h.setSurplus(2600);
     await h.advance(135);
-    assert.ok(h.writes.some(w => w.id === 'goe.allow' && w.val === 1));
+    const start = h.writes.find(w => w.id === 'goe.allow' && w.val === 1);
+    const stop = h.writes.find(w => w.id === 'goe.allow' && w.val === 0 && w.at > start?.at);
+    assert.ok(start && stop && stop.at <= at + 47000, h.diagnostic());
     assert.equal(h.physical().allow, 0);
     assert.equal(h.physical().batteryW, 2400);
     assert.equal(h.value('Control.Targets.Wallbox2_A'), 0);
