@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.261",
+    "version": "0.17.0-alpha.262",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.262": {
+        "en": "Pause PV battery charging at the active SoC target and give surplus to the wallboxes until a higher target is due.",
+        "de": "PV-Speicherladung am aktuellen SoC-Ziel pausieren und Überschuss bis zur nächsten höheren Zielstufe an die Wallboxen geben.",
+        "es": "Pausa la carga solar de la batería al alcanzar su objetivo y asigna el excedente a los vehículos hasta el siguiente objetivo más alto.",
+        "fr": "Met en pause la charge solaire de la batterie à son objectif et attribue le surplus aux bornes jusqu’au prochain objectif supérieur.",
+        "it": "Sospende la ricarica fotovoltaica della batteria al raggiungimento dell’obiettivo e assegna il surplus alle colonnine fino a un obiettivo superiore.",
+        "nl": "Pauzeert het laden van de accu op zonne-energie bij het doel en geeft het overschot aan de laadpunten tot het volgende hogere doel.",
+        "pl": "Po osiągnięciu celu wstrzymuje ładowanie akumulatora z PV i przekazuje nadwyżkę do ładowarek do czasu wejścia wyższego celu.",
+        "pt": "Pausa o carregamento solar da bateria ao atingir a meta e direciona o excedente aos veículos até uma meta superior.",
+        "ru": "При достижении цели приостанавливает заряд аккумулятора от солнца и отдаёт избыток зарядным станциям до следующей более высокой цели.",
+        "uk": "Після досягнення цілі призупиняє заряджання акумулятора від сонця й спрямовує надлишок на зарядні станції до наступної вищої цілі.",
+        "zh-cn": "储能达到当前电量目标后暂停光伏充电，并将余电分配给充电桩，直到更高的目标生效。"
+      },
       "0.17.0-alpha.261": {
         "en": "Use storage targets and wallbox priority in the forecast. Set monthly PV factors by area.",
         "de": "SoC-Ziele und Wallbox-Vorrang im Fahrplan abbilden und PV-Prognosen je Anlage und Monat korrigieren.",
@@ -81,19 +94,6 @@
         "ru": "Пересчитывает поправку разряда SunEnergy для дома при получении новых измерений до отправки команды.",
         "uk": "Перераховує корекцію розряду SunEnergy для дому, якщо до надсилання надійшли нові вимірювання.",
         "zh-cn": "发送指令前收到更新的测量值时，重新计算 SunEnergy 家庭放电修正。"
-      },
-      "0.17.0-alpha.255": {
-        "en": "Reduce acknowledged SunEnergy household discharge directly during brief grid export.",
-        "de": "Bestätigte SunEnergy-Haushaltsentladung bei kurzer Einspeisung direkt reduzieren.",
-        "es": "Reduce directamente la descarga confirmada de SunEnergy para el hogar durante una breve exportación a la red.",
-        "fr": "Réduit directement la décharge SunEnergy confirmée pour le foyer lors d’une brève injection réseau.",
-        "it": "Riduce direttamente la scarica SunEnergy confermata per l’abitazione durante una breve immissione in rete.",
-        "nl": "Verlaagt de bevestigde SunEnergy-ontlading voor het huishouden direct bij kortstondige teruglevering.",
-        "pl": "Bezpośrednio zmniejsza potwierdzone rozładowanie SunEnergy na potrzeby domu podczas krótkiego oddawania energii do sieci.",
-        "pt": "Reduz diretamente a descarga SunEnergy confirmada para a casa durante uma breve injeção na rede.",
-        "ru": "Снижает подтверждённую мощность разряда SunEnergy для дома при кратковременной отдаче в сеть.",
-        "uk": "Зменшує підтверджену потужність розряду SunEnergy для дому під час короткочасної віддачі в мережу.",
-        "zh-cn": "短暂向电网送电时，直接降低已确认的 SunEnergy 家庭放电功率。"
       }
     },
     "titleLang": {

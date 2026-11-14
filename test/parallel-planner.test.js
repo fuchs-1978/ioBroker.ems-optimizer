@@ -19,7 +19,7 @@ function fixture(config = {}, minute = 0) {
         wb0PhaseControlMode: 'ems', wb1PhaseControlMode: 'ems', wb2PhaseControlMode: 'ems', ...config},
     Date: Clock, getState: id => states.get(id), existsState: id => states.has(id),
     createState: (id, val) => { if (!states.has(id)) put(id, val); }, setState: put, log() {}});
-    for (const name of ['core', 'prices', 'history', 'forecast', 'vehicles', 'planner', 'config-mapping']) {
+    for (const name of ['core', 'prices', 'history', 'forecast', 'vehicles', 'energy-coordination', 'planner', 'config-mapping']) {
         vm.runInContext(fs.readFileSync(path.join(__dirname, `../lib/engine/${name}.js`), 'utf8')
             .replaceAll('__ADAPTER_ROOT__', 'ems.0').replace(/__([A-Z0-9_]+)__/g, (_, key) => key), context);
     }
@@ -139,6 +139,31 @@ test('forecast fills the configured stages and starts the final charge earlier f
     assert.equal(h.series('BatteryPower')[8].valueW, 0);
     assert.ok(r.cars[0][1].valueW > 0, 'only the watts needed to reach 70% are reserved in that slot');
     balance(r, pvW);
+});
+
+test('forecast keeps a completed PV stage closed after household discharge', () => {
+    const h = fixture(coordinatedBattery);
+    battery(h, 90, 10);
+    h.put('ems.0.Config.BatterySelfConsumptionEnabled', true);
+    car(h, 0, {soc: 75, minimum: 60, target: 100});
+    const pvW = [5000, 0, 3000, 3000, 3000, 3000, 3000, 3000, 0];
+    const houseW = Array(pvW.length).fill(300);
+    const result = h.plan({pvW, houseW, slots: pvW.length});
+    const target = h.series('BatteryTargetSoC'), power = h.series('BatteryPower');
+    assert.equal(target[0].value_pct, 90);
+    assert.equal(power[1].valueW, -300);
+    assert.equal(target[2].value_pct, 90);
+    assert.equal(power[2].valueW, 0);
+    assert.equal(result.cars[0][2].valueW, 2530);
+    const finalStart = target.findIndex(slot => slot.value_pct === 100);
+    assert.ok(finalStart > 2 && power[finalStart].valueW > 0);
+    balance(result, pvW, houseW);
+
+    battery(h, 89, 10);
+    const day = h.run('localDateKey(new Date())');
+    h.put('ems.0.Control.BatteryPVReachedTarget_JSON', JSON.stringify({day, target: 90}));
+    h.plan({pvW, houseW, slots: pvW.length});
+    assert.equal(h.series('BatteryPower')[0].valueW, 0, 'a new forecast retains the measured pause');
 });
 
 test('storage priority preserves mandatory vehicle service and rejects an invalid joint power budget', () => {
