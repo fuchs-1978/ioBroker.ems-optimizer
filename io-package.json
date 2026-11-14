@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.269",
+    "version": "0.17.0-alpha.270",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.270": {
+        "en": "Tolerate a 100 W tracking difference during SunEnergy household discharge and stop after ten consecutive mismatched pairs.",
+        "de": "Bei der SunEnergy-Haushaltsentladung 100 W Soll-Ist-Abweichung tolerieren und erst nach zehn abweichenden Messpaaren in Folge stoppen.",
+        "es": "Tolera una diferencia de 100 W durante la descarga doméstica SunEnergy y se detiene tras diez pares de mediciones discrepantes consecutivos.",
+        "fr": "Tolère un écart de 100 W pendant la décharge domestique SunEnergy et s’arrête après dix paires de mesures non concordantes.",
+        "it": "Tollera una differenza di 100 W durante la scarica domestica SunEnergy e si ferma dopo dieci coppie consecutive discordanti.",
+        "nl": "Tolereert 100 W afwijking bij SunEnergy-ontlading voor het huishouden en stopt na tien opeenvolgende afwijkende meetparen.",
+        "pl": "Toleruje odchylenie 100 W podczas rozładowania SunEnergy na potrzeby domu i zatrzymuje po dziesięciu kolejnych niezgodnych parach pomiarów.",
+        "pt": "Tolera uma diferença de 100 W durante a descarga doméstica SunEnergy e para após dez pares de medições divergentes consecutivos.",
+        "ru": "Допускает отклонение 100 Вт при разряде SunEnergy для дома и останавливается после десяти несовпадающих пар измерений подряд.",
+        "uk": "Допускає відхилення 100 Вт під час розряджання SunEnergy для будинку й зупиняється після десяти невідповідних пар вимірювань поспіль.",
+        "zh-cn": "SunEnergy 为家庭用电放电时允许 100 W 的跟踪偏差，连续十对测量值不符后停止。"
+      },
       "0.17.0-alpha.269": {
         "en": "Keep household discharge active while SunEnergy applies a measured reduction.",
         "de": "Haushaltsentladung aktiv halten, während SunEnergy eine aus Messwerten berechnete Senkung umsetzt.",
@@ -81,19 +94,6 @@
         "ru": "Сохраняет однофазную зарядку при откате подтверждённого повышения тока от солнца на 1 А, если ток можно безопасно снизить.",
         "uk": "Зберігає однофазне заряджання після повернення з підтвердженого підвищення струму від сонця на 1 А, якщо струм можна безпечно зменшити.",
         "zh-cn": "已确认的光伏充电电流上调 1 A 后回退时，若可安全降低电流，则继续单相充电。"
-      },
-      "0.17.0-alpha.263": {
-        "en": "Use SunEnergy discharge to briefly cover grid import while a running PV wallbox reduces current.",
-        "de": "SunEnergy gleicht Netzbezug kurz aus, während eine laufende PV-Wallbox ihren Ladestrom senkt.",
-        "es": "SunEnergy cubre brevemente la importación de red mientras un cargador solar reduce su corriente.",
-        "fr": "SunEnergy couvre brièvement le soutirage réseau pendant la baisse du courant de la borne solaire.",
-        "it": "SunEnergy copre per breve tempo il prelievo mentre la wallbox fotovoltaica riduce la corrente.",
-        "nl": "SunEnergy dekt kort netafname terwijl een laadpunt op zonnestroom de laadstroom verlaagt.",
-        "pl": "SunEnergy krótko pokrywa pobór z sieci, gdy ładowarka PV zmniejsza prąd.",
-        "pt": "SunEnergy cobre brevemente a importação da rede enquanto o carregador solar reduz a corrente.",
-        "ru": "SunEnergy кратковременно покрывает потребление из сети, пока зарядная станция снижает ток.",
-        "uk": "SunEnergy короткочасно покриває споживання з мережі, поки сонячна зарядна станція знижує струм.",
-        "zh-cn": "光伏充电桩降低电流期间，SunEnergy 短时放电以减少电网取电。"
       }
     },
     "titleLang": {

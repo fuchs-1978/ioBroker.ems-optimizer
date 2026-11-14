@@ -1075,6 +1075,113 @@ function householdDischargeAt(gsW, gpW, soc) {
     return h;
 }
 
+function householdFeedback(h, gs, gp, netW, targetW, ageMs = 0) {
+    h.advance(1100); h.fresh();
+    h.snapshot(1, {GS: gs, GP: gp, timestamp: h.time() - 100});
+    h.grid.gridW = netW;
+    h.grid.sourceTs = [h.time() - ageMs, h.time() - ageMs];
+    h.own('Control.Targets.Battery_W', -targetW);
+    h.tick();
+}
+
+test('household discharge uses a fresh SMA pair and actual GP with up to 100 W tracking error', () => {
+    const h = householdDischargeAt(250, 250, 80);
+    householdFeedback(h, 250, 150, 100, 250);
+    assert.equal(h.value('Devices.Battery.ActuatorSettled'), true);
+    assert.deepEqual(h.commands(), [250]);
+
+    householdFeedback(h, 250, 155, 115, 420);
+    assert.deepEqual(h.commands(), [250, 270], 'use the measured 155 W plus 115 W import');
+    assert.equal(h.run(`batteryHeadsQueuedCheck(${JSON.stringify(firstHeadGs)},270).allowed`), true);
+    h.complete();
+    householdFeedback(h, 270, 350, -90, 290);
+    assert.deepEqual(h.commands(), [250, 270, 260], 'subtract export from actual output before reducing further');
+    assert.equal(h.run(`batteryHeadsQueuedCheck(${JSON.stringify(firstHeadGs)},260).allowed`), true);
+});
+
+test('household discharge stops on the tenth distinct bad feedback pair and a good pair resets the count', () => {
+    const h = householdDischargeAt(300, 300, 80);
+    const bad = () => householdFeedback(h, 300, 190, 110, 300);
+    for (let sample = 0; sample < 8; sample++) bad();
+    for (let repeat = 0; repeat < 20; repeat++) {h.advance(500); h.tick();}
+    assert.deepEqual(h.commands(), [300], 'one acquisition cannot accumulate misses on repeated ticks');
+
+    householdFeedback(h, 300, 200, 100, 300);
+    assert.equal(h.value('Devices.Battery.ActuatorSettled'), true);
+    for (let sample = 0; sample < 9; sample++) {
+        bad();
+        assert.deepEqual(h.commands(), [300], `hold after ${sample + 1} consecutive bad pairs`);
+    }
+    bad();
+    assert.deepEqual(h.commands(), [300, 0]);
+    assert.match(h.value('Devices.Battery.Fault'), /10.*Messpaare/);
+});
+
+test('a new SMA value alone does not count the same inverter acquisition again', () => {
+    const h = householdDischargeAt(300, 300, 80);
+    householdFeedback(h, 300, 175, 125, 300);
+    for (let n = 0; n < 10; n++) {
+        h.advance(200);
+        h.grid.sourceTs = [h.time(), h.time()];
+        h.tick();
+    }
+    assert.deepEqual(h.commands(), [300]);
+    for (let n = 0; n < 8; n++) householdFeedback(h, 300, 175, 125, 300);
+    assert.deepEqual(h.commands(), [300]);
+    householdFeedback(h, 300, 175, 125, 300);
+    assert.deepEqual(h.commands(), [300, 0]);
+});
+
+test('a fresh nearby SMA pair can be used with an echoed but imprecise discharge response', () => {
+    const h = householdDischargeAt(300, 300, 80);
+    h.grid.gridW = 35;
+    h.own('Control.Targets.Battery_W', -335);
+    h.tick(); h.complete();
+    assert.deepEqual(h.commands(), [300, 335]);
+
+    householdFeedback(h, 335, 260, 90, 350, 500);
+    assert.deepEqual(h.commands(), [300, 335, 350]);
+    const guard = `batteryHeadsQueuedCheck(${JSON.stringify(firstHeadGs)},350)`;
+    assert.equal(h.run(guard).allowed, true, 'a slightly older SMA pair can be rechecked');
+    h.grid.gridW = 75;
+    const result = h.run(guard);
+    assert.equal(result.allowed, false);
+    assert.equal(result.code, 'BATTERY_DISCHARGE_REPLAN');
+    h.complete(Object.assign(new Error(result.reason), {code: result.code}), {notDispatched: true});
+    assert.equal(h.value('Devices.Battery.OutputCommandInternal_W'), -335);
+    assert.deepEqual(h.commands(), [300, 335, 350], 'the obsolete attempt never turns the head off');
+});
+
+test('a nearby SMA spike from before the inverter response can increase discharge by at most 100 W', () => {
+    const h = householdDischargeAt(300, 300, 80);
+    h.grid.gridW = 35;
+    h.own('Control.Targets.Battery_W', -335);
+    h.tick(); h.complete();
+
+    householdFeedback(h, 335, 260, 2230, 2400, 500);
+    assert.deepEqual(h.commands(), [300, 335, 435]);
+    assert.equal(h.run(`batteryHeadsQueuedCheck(${JSON.stringify(firstHeadGs)},435).allowed`), true);
+});
+
+test('a protection limit still stops a pending household adjustment without waiting for ten pairs', () => {
+    for (const [name, change] of Object.entries({
+        'minimum charge': h => h.snapshot(1, {SC: 10}),
+        'control disabled': h => h.own('Devices.Battery.ControlEnabled', false),
+        'no discharge release': h => h.own('Config.BatterySelfConsumptionEnabled', false),
+        'charging requested': h => h.own('Control.Targets.Battery_W', 200),
+        'previous output above new limit': h => h.own('Config.BatteryMaxDischarge_W', 130),
+        'meter failure': h => { h.grid.valid = false; },
+        'foreign GS writer': h => h.put(firstHeadGs, 500, {ack: false, from: 'system.adapter.javascript.0'})
+    })) {
+        const h = pendingReductionFromRecording({
+            gs: 131, gp: 119, pendingW: 83, targetW: 66, gridBefore: -36.4, gridAfter: -52.6, skewMs: 539
+        });
+        householdFeedback(h, 131, 119, -52.6, 66);
+        change(h); h.tick();
+        assert.deepEqual(h.commands(), [131, 83, 0], name);
+    }
+});
+
 test('the recorded 07:14 and 04:45 trims leave the confirmed GS free to follow a later load drop', () => {
     for (const [gs, gp, soc, trim, initialGrid, nextTarget, nextGrid, expected] of [
         [654, 647, 15, 649, 1.6, 635, -11.7, 635],
@@ -1253,11 +1360,6 @@ test('waiting for a dispatched household reduction requires a current budget and
         'foreign GS write': h => h.put(h.writes.at(-1).id, 83, {ack: false, from: 'system.adapter.javascript.0'}),
         'wallbox buffer now active': h => h.own('Control.BatteryWallboxBuffer_W', 40),
         'BHKW wallbox cycle now owns the grant': h => h.run('const bhkwWallboxCycle = {granted: true};'),
-        'three seconds with no GS echo': h => {
-            h.advance(2100); h.fresh();
-            h.snapshot(1, {timestamp: h.time() - 90});
-            h.grid.sourceTs = [h.time(), h.time()];
-        }
     })) {
         const high = reason === 'large export at high output';
         const h = pendingReductionFromRecording(high
@@ -1267,6 +1369,20 @@ test('waiting for a dispatched household reduction requires a current budget and
         change(h); h.tick();
         assert.deepEqual(h.commands(), [...original, 0], reason);
     }
+});
+
+test('a previous GS can remain visible for nine fresh pairs while a household reduction takes effect', () => {
+    const h = pendingReductionFromRecording({
+        gs: 131, gp: 119, pendingW: 83, targetW: 66, gridBefore: -36.4, gridAfter: -52.6, skewMs: 539
+    });
+    h.own('Config.BatteryFeedbackTimeout_s', 3);
+    for (let n = 0; n < 9; n++) {
+        householdFeedback(h, 131, 119, -52.6, 66);
+        assert.deepEqual(h.commands(), [131, 83], `pending reduction with ${n + 1} bad pairs`);
+    }
+    householdFeedback(h, 131, 119, -52.6, 66);
+    assert.deepEqual(h.commands(), [131, 83, 0]);
+    assert.match(h.value('Devices.Battery.Fault'), /10.*Messpaare/);
 });
 
 test('a recorded reduction of a GS with partial AC response waits for the new echo', () => {
@@ -1298,10 +1414,11 @@ test('a recorded reduction of a GS with partial AC response waits for the new ec
     h.advance(600); h.fresh();
     h.snapshot(1, {GS: 138, GP: 164, timestamp: h.time() - 100});
     h.grid.sourceTs = [h.time() - 500, h.time() - 500];
-    h.tick();
-    assert.deepEqual(h.commands(), [107, 184, 138]);
-    h.advance(600);
     h.grid.gridW = -46.5;
+    h.tick();
+    assert.deepEqual(h.commands(), [107, 184, 138, 117], 'use the nearby SMA pair and the measured 164 W');
+    assert.equal(h.run(`batteryHeadsQueuedCheck(${JSON.stringify(firstHeadGs)},117).allowed`), true);
+    h.advance(600);
     h.grid.sourceTs = [h.time(), h.time()];
     h.tick();
     assert.deepEqual(h.commands(), [107, 184, 138, 117]);
