@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.263",
+    "version": "0.17.0-alpha.264",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.264": {
+        "en": "Keep single-phase charging active when a confirmed one-amp solar increase rolls back and the current can safely be reduced.",
+        "de": "Einphasiges Laden bei einem bestätigten PV-Stromrücksprung um 1 A sicher fortsetzen.",
+        "es": "Mantiene la carga monofásica cuando un aumento solar confirmado vuelve al valor anterior y se puede reducir la corriente con seguridad.",
+        "fr": "Maintient la charge monophasée après le retour d’une hausse solaire confirmée de 1 A si le courant peut être réduit en sécurité.",
+        "it": "Mantiene la ricarica monofase se un aumento fotovoltaico confermato di 1 A torna al valore precedente e la corrente può essere ridotta in sicurezza.",
+        "nl": "Houdt eenfasig laden actief als een bevestigde zonnestroomstap van 1 A terugvalt en de laadstroom veilig kan worden verlaagd.",
+        "pl": "Kontynuuje ładowanie jednofazowe po cofnięciu potwierdzonego zwiększenia prądu PV o 1 A, jeśli można bezpiecznie zmniejszyć prąd.",
+        "pt": "Mantém o carregamento monofásico quando um aumento solar confirmado de 1 A recua e a corrente pode ser reduzida com segurança.",
+        "ru": "Сохраняет однофазную зарядку при откате подтверждённого повышения тока от солнца на 1 А, если ток можно безопасно снизить.",
+        "uk": "Зберігає однофазне заряджання після повернення з підтвердженого підвищення струму від сонця на 1 А, якщо струм можна безпечно зменшити.",
+        "zh-cn": "已确认的光伏充电电流上调 1 A 后回退时，若可安全降低电流，则继续单相充电。"
+      },
       "0.17.0-alpha.263": {
         "en": "Use SunEnergy discharge to briefly cover grid import while a running PV wallbox reduces current.",
         "de": "SunEnergy gleicht Netzbezug kurz aus, während eine laufende PV-Wallbox ihren Ladestrom senkt.",
@@ -81,19 +94,6 @@
         "ru": "Для каждого блока SunEnergy записывает время подтверждения уставки и изменения мощности на стороне переменного тока.",
         "uk": "Для кожного блока SunEnergy записує час підтвердження заданого значення й реакції потужності змінного струму.",
         "zh-cn": "分别记录每台 SunEnergy 设备的设定值回读时间和交流功率响应时间。"
-      },
-      "0.17.0-alpha.257": {
-        "en": "Recover from delayed SunEnergy feedback after confirmed standstill and retry charging when surplus rises.",
-        "de": "Nach verspäteter SunEnergy-Rückmeldung und bestätigtem Stillstand wieder regeln und bei steigendem Überschuss neu laden.",
-        "es": "Reanuda el control tras una respuesta tardía de SunEnergy y una parada confirmada, y reintenta la carga si aumenta el excedente.",
-        "fr": "Reprend la régulation après un retour SunEnergy tardif et un arrêt confirmé, et relance la charge si le surplus augmente.",
-        "it": "Riprende la regolazione dopo un riscontro tardivo di SunEnergy e un arresto confermato, e ritenta la carica se aumenta il surplus.",
-        "nl": "Hervat de regeling na vertraagde SunEnergy-terugmelding en bevestigde stilstand, en probeert opnieuw te laden bij meer overschot.",
-        "pl": "Wznawia regulację po opóźnionej odpowiedzi SunEnergy i potwierdzonym zatrzymaniu oraz ponawia ładowanie, gdy rośnie nadwyżka.",
-        "pt": "Retoma a regulação após uma resposta tardia da SunEnergy e uma paragem confirmada, e volta a carregar se o excedente aumentar.",
-        "ru": "Возобновляет регулирование после запоздалого отклика SunEnergy и подтверждённой остановки и повторяет зарядку при росте избытка.",
-        "uk": "Відновлює регулювання після запізнілої відповіді SunEnergy й підтвердженої зупинки та повторює заряджання за зростання надлишку.",
-        "zh-cn": "在 SunEnergy 反馈延迟且确认停止后恢复调节，并在余电增加时重试充电。"
       }
     },
     "titleLang": {

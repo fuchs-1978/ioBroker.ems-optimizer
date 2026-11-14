@@ -1,11 +1,12 @@
 # EMS Optimizer
 
-**Aktuelle Adapterversion 0.17.0-alpha.263.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
+**Aktuelle Adapterversion 0.17.0-alpha.264.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
 
 [English overview](README.md) · [Vollständige Admin-Feldreferenz](docs/admin-reference.de.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) · [Versionsänderungen](README.md#changelog)
 
 ## Aktuelle Änderungen
 
+- **Alpha.264** regelt eine laufende einphasige Wallbox bei einem belegten Rücksprung nach einem PV-Schritt um 1 A herunter und lässt die Ladefreigabe aktiv. [Versionshinweise](docs/release-0.17.0-alpha.264.md)
 - **Alpha.263** puffert Netzbezug beim Abregeln einer laufenden PV-Wallbox und während ihrer Ausschaltverzögerung. Für diese Entladung gilt eine SoC-Untergrenze von 70 %. [Versionshinweise](docs/release-0.17.0-alpha.263.md)
 - **Alpha.262** pausiert die PV-Speicherladung am erreichten SoC-Ziel. Bis zum nächsten höheren Fahrplanziel steht der Überschuss den Wallboxen zur Verfügung. [Versionshinweise](docs/release-0.17.0-alpha.262.md)
 - **Alpha.261** bildet die SoC-Stufen und die Übergabe ans Auto im Fahrplan ab. Im Reiter PV-Korrektur lassen sich zwölf Faktoren pro Anlage pflegen. [Versionshinweise](docs/release-0.17.0-alpha.261.md)
