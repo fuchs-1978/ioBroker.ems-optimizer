@@ -58,7 +58,7 @@ function harness(count = 3, persisted = new Map(), config = {}) {
     };
     return {nativeConfig, states, writes, pending, logs, grid, put, own, snapshot, run, limit, loads, reservations, time,
         tick: () => run('updateBatteryProductionOutput()'), advance: ms => { now += ms; }, fresh,
-        complete: error => { for (const cb of pending.splice(0)) cb(error || null); },
+        complete: (error, receipt) => { for (const cb of pending.splice(0)) cb(error || null, receipt); },
         follow: () => { now += 1100; for (const w of writes) {
             const index = Number(w.id.match(/heads\.(\d)/)[1]); snapshot(index, {GS: w.val, GP: w.val}); }
             fresh(); },
@@ -1148,9 +1148,206 @@ test('an already dispatched small household trim waits briefly for the matching 
             continue;
         }
         h.advance(1025); h.fresh(); h.snapshot(1, {GS: 649, GP: 645, timestamp: h.time() - 60});
-        h.grid.gridW = -10; h.grid.sourceTs = [h.time(), h.time()];
+        h.grid.gridW = -11.7; h.grid.sourceTs = [h.time(), h.time()];
         h.tick();
         assert.deepEqual(h.commands(), [654, 649, 635]);
+    }
+});
+
+test('the recorded in-flight household reductions wait through the next small target drop', () => {
+    for (const [previous, measured, pending, target, gridW] of [
+        [419, 410, 405, 400, -10.4],
+        [62, 49, 48, 37, -12.1],
+        [160, 145, 136, 126, -19.2],
+        [87, 79, 71, 62, -16.6]
+    ]) {
+        const h = householdDischargeAt(previous, measured, 95);
+        const gpAt = h.time();
+        h.advance(150);
+        h.grid.gridW = -11;
+        h.grid.sourceTs = [gpAt - 20, gpAt - 20];
+        h.own('Control.Targets.Battery_W', -pending);
+        h.tick(); h.complete();
+        assert.deepEqual(h.commands(), [previous, pending]);
+
+        h.advance(850);
+        h.grid.gridW = gridW;
+        h.own('Control.Targets.Battery_W', -target);
+        h.tick();
+        assert.deepEqual(h.commands(), [previous, pending]);
+        assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), -pending);
+
+        h.advance(1000); h.fresh();
+        h.snapshot(1, {GS: pending, GP: pending, timestamp: h.time() - 100});
+        h.grid.gridW = -12;
+        h.grid.sourceTs = [h.time(), h.time()];
+        h.tick();
+        assert.deepEqual(h.commands(), [previous, pending, target]);
+    }
+});
+
+test('the expanded discharge trim wait still stops at a load drop or loss of proof', () => {
+    for (const [reason, change] of Object.entries({
+        'load drop': h => { h.grid.gridW = -47; h.own('Control.Targets.Battery_W', -98); },
+        'no demand': h => h.own('Control.Targets.Battery_W', 0),
+        'reversal': h => h.own('Control.Targets.Battery_W', 150),
+        'wallbox buffer': h => h.own('Control.BatteryWallboxBuffer_W', 40),
+        'previous output exceeds head limit': h => { h.nativeConfig.batteryHead1MaxDischargeW = 150; },
+        'minimum SoC': h => h.snapshot(1, {SC: 10}),
+        'foreign GS write': h => h.put(h.writes.at(-1).id, 136, {ack: false, from: 'system.adapter.javascript.0'}),
+        'held grid pair': h => { h.grid.held = true; },
+        'grid and battery samples too far apart': h => { h.grid.sourceTs = [h.time() - 2400, h.time() - 2400]; },
+        'no GS echo within grace': h => { h.advance(6000); h.fresh(); }
+    })) {
+        const h = householdDischargeAt(160, 145, 95);
+        const gpAt = h.time();
+        h.advance(150);
+        h.grid.gridW = -11;
+        h.grid.sourceTs = [gpAt - 20, gpAt - 20];
+        h.own('Control.Targets.Battery_W', -136);
+        h.tick(); h.complete();
+        h.advance(850);
+        h.grid.gridW = -19.2;
+        h.own('Control.Targets.Battery_W', -126);
+        change(h); h.tick();
+        assert.deepEqual(h.commands(), [160, 136, 0], reason);
+        assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), -136, reason);
+    }
+});
+
+test('household discharge holds the settled GS when actual AC and net power are in the deadband', () => {
+    const h = householdDischargeAt(160, 145, 95);
+    const gpAt = h.time();
+    h.advance(200);
+    h.grid.gridW = -9;
+    h.grid.sourceTs = [gpAt - 800, gpAt - 800];
+    h.own('Control.Targets.Battery_W', -136);
+    h.tick();
+    assert.deepEqual(h.commands(), [160]);
+    assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), 0);
+
+    h.advance(100); h.fresh();
+    h.grid.gridW = -19.2;
+    h.grid.sourceTs = [h.time(), h.time()];
+    h.own('Control.Targets.Battery_W', -126);
+    h.tick();
+    assert.deepEqual(h.commands(), [160, 126]);
+});
+
+test('the recorded 111 W discharge awaits its SMA sample before increasing the confirmed GS', () => {
+    for (const nextGridW of [-34, 38]) {
+        const h = harness(1);
+        h.own('Config.BatteryDeadband_W', 10);
+        h.own('Config.BatteryFineStep_W', 600);
+        h.grid.gridW = 111;
+        h.own('Control.Targets.Battery_W', -111);
+        h.tick(); h.complete();
+
+        h.advance(1500); h.fresh();
+        const confirmedAt = h.time();
+        h.snapshot(1, {GS: 111, GP: 104, timestamp: confirmedAt - 100});
+        h.advance(150);
+        h.grid.gridW = 11.3;
+        h.grid.sourceTs = [confirmedAt - 570, confirmedAt - 570];
+        h.own('Control.Targets.Battery_W', -115);
+        h.tick();
+        assert.deepEqual(h.commands(), [111]);
+        assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), 0);
+
+        h.advance(1000); h.fresh();
+        h.grid.gridW = nextGridW;
+        h.grid.sourceTs = [confirmedAt + 430, confirmedAt + 430];
+        const nextTargetW = 104 + nextGridW;
+        h.own('Control.Targets.Battery_W', -nextTargetW);
+        h.tick();
+        assert.deepEqual(h.commands(), [111, nextTargetW]);
+    }
+});
+
+test('a queued household discharge increase with superseded meter proof leaves the previous GS active', () => {
+    const h = householdDischargeAt(111, 104, 95);
+    h.grid.gridW = 16;
+    h.own('Control.Targets.Battery_W', -120);
+    h.tick();
+    assert.deepEqual(h.commands(), [111, 120]);
+    const queued = `batteryHeadsQueuedCheck(${JSON.stringify(h.writes[1].id)},120)`;
+    assert.equal(h.run(queued).allowed, true);
+
+    h.grid.held = true;
+    const result = h.run(queued);
+    assert.equal(result.allowed, false);
+    assert.equal(result.code, 'BATTERY_DISCHARGE_REPLAN');
+    h.complete(Object.assign(new Error(result.reason), {code: result.code}), {notDispatched: true});
+    h.tick();
+    assert.deepEqual(h.commands(), [111, 120], 'only the two original attempts, with no zero write');
+    assert.equal(h.value('Devices.Battery.OutputCommandInternal_W'), -111);
+    assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), 0);
+
+    h.advance(1000); h.fresh();
+    h.grid.held = false;
+    h.grid.gridW = -12;
+    h.own('Control.Targets.Battery_W', -92);
+    h.tick();
+    assert.deepEqual(h.commands(), [111, 120, 92]);
+    assert.equal(h.run(`batteryHeadsQueuedCheck(${JSON.stringify(h.writes[2].id)},92).allowed`), true);
+});
+
+test('the recorded 425 W GS echo waits for the next SMA sample while GP is still rising', () => {
+    const h = harness(1);
+    h.own('Config.BatteryDeadband_W', 10);
+    h.own('Config.BatteryFineStep_W', 600);
+    h.own('Control.Targets.Battery_W', -425);
+    h.grid.gridW = 425;
+    h.tick();
+    h.advance(100); h.complete();
+    const completedAt = h.time();
+    h.advance(550); h.fresh();
+    h.snapshot(1, {GS: 425, GP: 395, timestamp: h.time() - 140});
+    h.advance(300);
+    h.grid.gridW = 25.5;
+    h.grid.sourceTs = [completedAt - 50, completedAt - 50];
+    h.own('Control.Targets.Battery_W', -420);
+    h.tick();
+    assert.deepEqual(h.commands(), [425]);
+    assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), -425);
+
+    h.advance(850);
+    h.grid.gridW = 8;
+    h.grid.sourceTs = [h.time(), h.time()];
+    h.own('Control.Targets.Battery_W', -403);
+    h.tick();
+    assert.deepEqual(h.commands(), [425, 403]);
+    assert.equal(h.run(`batteryHeadsQueuedCheck(${JSON.stringify(h.writes[1].id)},403).allowed`), true);
+});
+
+test('a recent SMA pair predating GS never authorizes a second discharge command', () => {
+    for (const [reason, change] of Object.entries({
+        'coherent but no newer pair': () => {},
+        'one old leg and one new leg': (h, completedAt) => { h.grid.sourceTs = [completedAt - 50, h.time()]; },
+        'both grid legs significantly older than GP': (h, completedAt) => {
+            h.grid.sourceTs = [completedAt - 1500, completedAt - 1500];
+        },
+        'old unchanged leg and a recent leg': (h, completedAt) => {
+            h.grid.sourceTs = [completedAt - 1500, h.time()];
+        },
+        'already exporting': h => { h.grid.gridW = -20; },
+        'discharge cap lowered': h => h.own('Config.BatteryMaxDischarge_W', 410)
+    })) {
+        const h = harness(1);
+        h.own('Config.BatteryDeadband_W', 10);
+        h.own('Config.BatteryFineStep_W', 600);
+        h.grid.gridW = 425;
+        h.own('Control.Targets.Battery_W', -425);
+        h.tick(); h.advance(100); h.complete();
+        const completedAt = h.time();
+        h.advance(550); h.fresh();
+        h.snapshot(1, {GS: 425, GP: 395, timestamp: h.time() - 140});
+        h.grid.gridW = 25.5;
+        h.grid.sourceTs = [completedAt - 50, completedAt - 50];
+        h.own('Control.Targets.Battery_W', -420);
+        change(h, completedAt); h.tick();
+        const mayWait = ['coherent but no newer pair', 'one old leg and one new leg'].includes(reason);
+        assert.deepEqual(h.commands(), mayWait ? [425] : [425, 0], reason);
     }
 });
 

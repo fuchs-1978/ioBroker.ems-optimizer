@@ -1,0 +1,7 @@
+# 0.17.0-alpha.268
+
+Bei der SunEnergy-Haushaltsentladung konnten zwei kurz aufeinanderfolgende Sollwertkorrekturen einen Nullbefehl auslösen. Im Mitschnitt wollte der Regler einen Auftrag von 405 auf 400 W senken, während der Wechselrichter noch 419 W als Sollwert und 410 W als AC-Leistung meldete. Auf den Nullbefehl folgten 403 W Netzbezug. Im selben Mitschnitt löste ein bereits bestätigter Sollwert von 425 W einen Stopp aus, während die passende SMA-Netzmessung noch ausstand.
+
+Bei einem einzelnen Kopf hält das EMS einen bestätigten Entladeauftrag, wenn Netzleistung und gemessene AC-Leistung im Totband um ihr jeweiliges Ziel liegen und die Sollwertänderung höchstens Totband plus AC-Messtoleranz beträgt. Eine bereits gesendete kleine Reduktion kann bei frischen, zusammenpassenden Messungen und weiter nachgewiesenem Haushaltsbedarf auf das Sollwert-Echo warten. Die bestehende Wartefrist beträgt höchstens sechs Sekunden. Sie endet bei deutlicher Einspeisung, fehlendem Bedarf, verlorener Freigabe oder einer überschrittenen Leistungsgrenze.
+
+Wenn der Wechselrichter den Sollwert bereits meldet und die passende SMA-Messung noch folgt, kann das EMS kurz auf das nächste vollständige Messpaar warten. Nach bestätigter AC-Reaktion braucht auch eine weitere Erhöhung eine darauf folgende Netzmessung. So fordert der Regler keine zusätzliche Entladung für einen Netzbezug an, den der vorige Schritt bereits ausgeglichen hat. Bei Richtungswechsel fordert das EMS zuerst null an und wartet auf die physische Bestätigung.
