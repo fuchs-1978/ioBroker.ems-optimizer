@@ -784,6 +784,28 @@ test('larger negative idle go-e power still withdraws live release and identifie
     assert.equal(h.states.get('DP_WB2_POWER').val, -0.04);
 });
 
+for (const [name, kw, quality, valid] of [
+    ['minus 10 W', -0.01, {}, true],
+    ['minus 30 W', -0.03, {}, true],
+    ['outside the zero band', -0.031, {}, false],
+    ['unacknowledged', -0.01, {ack: false}, false],
+    ['bad quality', -0.01, {q: 1}, false],
+    ['stale', -0.01, {ts: 1}, false]
+]) test(`coordinated wallbox start reads ${name} with the shared power contract`, async () => {
+    const h = await plant({battery: true, split: false, startDelayS: 0, minimumRuntimeS: 600,
+        initialSurplusW: 2560, nativeConfig: {wallboxParallelChargingEnabled: true, dhwControlEnabled: false}});
+    h.own('Devices.MyPV_DHW.ControlEnabled', false);
+    for (let second = 0; second < 30 && h.physical().allow === 0; second++) await h.advance(1);
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    const at = h.now();
+    await h.replayAt(at + 1000, [['DP_WB2_POWER', kw, quality]]);
+    assert.equal(h.states.get('DP_WB2_POWER').val, kw, 'the original reading is preserved');
+    assert.equal(h.run('coordinatedConsumptionLoads().valid'), valid, h.diagnostic());
+    assert.equal(h.value('Control.Valid'), valid, h.diagnostic());
+    assert.equal(h.writes.some(write => write.id === 'goe.allow' && write.val === 0 && write.at > at),
+        !valid, h.diagnostic());
+});
+
 test('parallel priority defers a new handoff while donor phase preparation is pending', async () => {
     for (const phaseFlag of ['PhaseSwitchPending', 'PhaseTransitionActive']) {
         const h = await plant({mii: true, startDelayS: 300, minimumRuntimeS: 600,
