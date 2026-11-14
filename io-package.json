@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.264",
+    "version": "0.17.0-alpha.265",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.265": {
+        "en": "Keep the wallbox charging allocation valid when go-e briefly reports a small negative power reading near zero.",
+        "de": "Ladezuteilung beibehalten, wenn go-e kurz eine leicht negative Leistung nahe null meldet.",
+        "es": "Mantiene válida la asignación de carga cuando go-e indica brevemente una potencia negativa cercana a cero.",
+        "fr": "Maintient l’allocation de charge lorsque go-e signale brièvement une faible puissance négative proche de zéro.",
+        "it": "Mantiene valida l’assegnazione di ricarica quando go-e segnala brevemente una potenza negativa vicina a zero.",
+        "nl": "Behoudt de laadverdeling als go-e kort een klein negatief vermogen dicht bij nul meldt.",
+        "pl": "Zachowuje przydział mocy ładowania, gdy go-e chwilowo zgłasza niewielką ujemną moc bliską zeru.",
+        "pt": "Mantém válida a atribuição de carregamento quando o go-e indica brevemente uma potência negativa próxima de zero.",
+        "ru": "Сохраняет выделенную мощность зарядки, если go-e кратковременно сообщает небольшое отрицательное значение мощности около нуля.",
+        "uk": "Зберігає виділену потужність заряджання, якщо go-e короткочасно повідомляє невелике від’ємне значення потужності поблизу нуля.",
+        "zh-cn": "go-e 短暂报告接近零的微小负功率时，保持充电功率分配有效。"
+      },
       "0.17.0-alpha.264": {
         "en": "Keep single-phase charging active when a confirmed one-amp solar increase rolls back and the current can safely be reduced.",
         "de": "Einphasiges Laden bei einem bestätigten PV-Stromrücksprung um 1 A sicher fortsetzen.",
@@ -81,19 +94,6 @@
         "ru": "Поддерживает подтверждённый разряд SunEnergy и раньше направляет избыток солнечной энергии на зарядную станцию.",
         "uk": "Підтримує підтверджене розряджання SunEnergy та раніше спрямовує надлишок сонячної енергії на зарядну станцію.",
         "zh-cn": "保持已确认的 SunEnergy 放电，并更早向充电桩分配光伏余电。"
-      },
-      "0.17.0-alpha.258": {
-        "en": "Record the SunEnergy setpoint echo and AC power response times per head.",
-        "de": "Zeit bis zum SunEnergy-Sollwert-Echo und bis zur AC-Leistungsreaktion je Kopf erfassen.",
-        "es": "Registra por cada unidad SunEnergy los tiempos de confirmación de la consigna y de respuesta de la potencia de CA.",
-        "fr": "Enregistre pour chaque unité SunEnergy les délais de retour de la consigne et de réaction de la puissance CA.",
-        "it": "Registra per ogni unità SunEnergy i tempi di conferma del setpoint e di risposta della potenza CA.",
-        "nl": "Registreert per SunEnergy-unit de tijd tot de terugmelding van het setpoint en de reactie van het AC-vermogen.",
-        "pl": "Rejestruje dla każdej jednostki SunEnergy czas potwierdzenia wartości zadanej i reakcji mocy AC.",
-        "pt": "Regista em cada unidade SunEnergy os tempos de confirmação do valor de referência e de resposta da potência CA.",
-        "ru": "Для каждого блока SunEnergy записывает время подтверждения уставки и изменения мощности на стороне переменного тока.",
-        "uk": "Для кожного блока SunEnergy записує час підтвердження заданого значення й реакції потужності змінного струму.",
-        "zh-cn": "分别记录每台 SunEnergy 设备的设定值回读时间和交流功率响应时间。"
       }
     },
     "titleLang": {
