@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.270",
+    "version": "0.17.0-alpha.271",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.271": {
+        "en": "Wait for the next SMA reading after SunEnergy confirms a small discharge reduction.",
+        "de": "Nach einer bestätigten kleinen SunEnergy-Entladesenkung kurz auf die nächste SMA-Messung warten.",
+        "es": "Espera la siguiente lectura de SMA cuando SunEnergy confirma una pequeña reducción de la descarga.",
+        "fr": "Attend la prochaine mesure SMA après la confirmation d’une légère réduction de la décharge par SunEnergy.",
+        "it": "Attende la prossima lettura SMA dopo la conferma di una piccola riduzione della scarica da parte di SunEnergy.",
+        "nl": "Wacht op de volgende SMA-meting nadat SunEnergy een kleine verlaging van de ontlading bevestigt.",
+        "pl": "Czeka na kolejny pomiar SMA po potwierdzeniu przez SunEnergy niewielkiego zmniejszenia mocy rozładowania.",
+        "pt": "Aguarda a próxima leitura SMA após a confirmação de uma pequena redução da descarga pela SunEnergy.",
+        "ru": "Ожидает следующего измерения SMA после подтверждения небольшого снижения разряда SunEnergy.",
+        "uk": "Очікує наступного вимірювання SMA після підтвердження невеликого зменшення потужності розряджання SunEnergy.",
+        "zh-cn": "SunEnergy 确认小幅降低放电功率后，等待下一次 SMA 测量。"
+      },
       "0.17.0-alpha.270": {
         "en": "Tolerate a 100 W tracking difference during SunEnergy household discharge and stop after ten consecutive mismatched pairs.",
         "de": "Bei der SunEnergy-Haushaltsentladung 100 W Soll-Ist-Abweichung tolerieren und erst nach zehn abweichenden Messpaaren in Folge stoppen.",
@@ -81,19 +94,6 @@
         "ru": "Сохраняет выделенную мощность зарядки, если go-e кратковременно сообщает небольшое отрицательное значение мощности около нуля.",
         "uk": "Зберігає виділену потужність заряджання, якщо go-e короткочасно повідомляє невелике від’ємне значення потужності поблизу нуля.",
         "zh-cn": "go-e 短暂报告接近零的微小负功率时，保持充电功率分配有效。"
-      },
-      "0.17.0-alpha.264": {
-        "en": "Keep single-phase charging active when a confirmed one-amp solar increase rolls back and the current can safely be reduced.",
-        "de": "Einphasiges Laden bei einem bestätigten PV-Stromrücksprung um 1 A sicher fortsetzen.",
-        "es": "Mantiene la carga monofásica cuando un aumento solar confirmado vuelve al valor anterior y se puede reducir la corriente con seguridad.",
-        "fr": "Maintient la charge monophasée après le retour d’une hausse solaire confirmée de 1 A si le courant peut être réduit en sécurité.",
-        "it": "Mantiene la ricarica monofase se un aumento fotovoltaico confermato di 1 A torna al valore precedente e la corrente può essere ridotta in sicurezza.",
-        "nl": "Houdt eenfasig laden actief als een bevestigde zonnestroomstap van 1 A terugvalt en de laadstroom veilig kan worden verlaagd.",
-        "pl": "Kontynuuje ładowanie jednofazowe po cofnięciu potwierdzonego zwiększenia prądu PV o 1 A, jeśli można bezpiecznie zmniejszyć prąd.",
-        "pt": "Mantém o carregamento monofásico quando um aumento solar confirmado de 1 A recua e a corrente pode ser reduzida com segurança.",
-        "ru": "Сохраняет однофазную зарядку при откате подтверждённого повышения тока от солнца на 1 А, если ток можно безопасно снизить.",
-        "uk": "Зберігає однофазне заряджання після повернення з підтвердженого підвищення струму від сонця на 1 А, якщо струм можна безпечно зменшити.",
-        "zh-cn": "已确认的光伏充电电流上调 1 A 后回退时，若可安全降低电流，则继续单相充电。"
       }
     },
     "titleLang": {
