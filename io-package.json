@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.267",
+    "version": "0.17.0-alpha.268",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.268": {
+        "en": "Prevent unnecessary SunEnergy discharge stops while small household load corrections await fresh feedback.",
+        "de": "Unnötige SunEnergy-Entladestopps bei kleinen Änderungen der Haushaltslast und ausstehender Rückmeldung vermeiden.",
+        "es": "Evita paradas innecesarias de la descarga SunEnergy mientras se confirma un pequeño ajuste de la carga doméstica.",
+        "fr": "Évite les arrêts inutiles de la décharge SunEnergy en attendant la confirmation de petits ajustements de la charge du foyer.",
+        "it": "Evita arresti inutili della scarica SunEnergy in attesa di conferma per piccoli aggiustamenti del carico domestico.",
+        "nl": "Voorkomt onnodige SunEnergy-ontlaadstops terwijl kleine wijzigingen in de huishoudelijke belasting op bevestiging wachten.",
+        "pl": "Zapobiega zbędnemu przerywaniu rozładowania SunEnergy w oczekiwaniu na potwierdzenie niewielkich zmian obciążenia domu.",
+        "pt": "Evita interrupções desnecessárias da descarga SunEnergy enquanto aguarda a confirmação de pequenos ajustes na carga doméstica.",
+        "ru": "Предотвращает ненужные остановки разряда SunEnergy при ожидании подтверждения небольших изменений нагрузки дома.",
+        "uk": "Запобігає зайвим зупинкам розряджання SunEnergy під час очікування підтвердження невеликих змін навантаження будинку.",
+        "zh-cn": "在等待家庭负载小幅调节的反馈时，避免 SunEnergy 不必要地停止放电。"
+      },
       "0.17.0-alpha.267": {
         "en": "Use up to 500 W of daytime battery support for the Mii, then recharge the battery from surplus.",
         "de": "Mii tagsüber mit bis zu 500 W Speicherhilfe laden und den Speicher danach aus Überschuss nachladen.",
@@ -81,19 +94,6 @@
         "ru": "При достижении цели приостанавливает заряд аккумулятора от солнца и отдаёт избыток зарядным станциям до следующей более высокой цели.",
         "uk": "Після досягнення цілі призупиняє заряджання акумулятора від сонця й спрямовує надлишок на зарядні станції до наступної вищої цілі.",
         "zh-cn": "储能达到当前电量目标后暂停光伏充电，并将余电分配给充电桩，直到更高的目标生效。"
-      },
-      "0.17.0-alpha.261": {
-        "en": "Use storage targets and wallbox priority in the forecast. Set monthly PV factors by area.",
-        "de": "SoC-Ziele und Wallbox-Vorrang im Fahrplan abbilden und PV-Prognosen je Anlage und Monat korrigieren.",
-        "es": "Usa los objetivos de la batería y la prioridad de carga en la previsión. Ajusta la FV por área y mes.",
-        "fr": "Applique les cibles de batterie et la priorité de recharge à la prévision. Corrige le PV par zone et par mois.",
-        "it": "Applica alla previsione gli obiettivi della batteria e le priorità di ricarica. Corregge il FV per area e mese.",
-        "nl": "Gebruikt accudoelen en laadprioriteit in de prognose. Corrigeert PV per gebied en maand.",
-        "pl": "Uwzględnia cele naładowania i priorytety ładowania w prognozie. Koryguje PV według obszaru i miesiąca.",
-        "pt": "Aplica à previsão as metas da bateria e a prioridade de carregamento. Corrige a FV por área e mês.",
-        "ru": "Учитывает цели батареи и приоритет зарядки в прогнозе. Корректирует солнечную генерацию по зонам и месяцам.",
-        "uk": "Ураховує цілі батареї та пріоритет заряджання в прогнозі. Коригує сонячну генерацію за зонами й місяцями.",
-        "zh-cn": "在预测中应用电池电量目标和充电优先级，并按区域和月份修正光伏预测。"
       }
     },
     "titleLang": {
