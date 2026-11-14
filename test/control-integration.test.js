@@ -2821,7 +2821,7 @@ async function batteryPvTransferPlant() {
     return h;
 }
 
-test('SunEnergy stops an unconfirmed PV charge at 90% and waits for the 100% forecast stage', async () => {
+test('a completed forecast stage releases the PV reservation while live charging and the wallbox continue', async () => {
     const h = await plant({battery: true, batteryHeadType: 2, batteryHeadMaxSoc: 100, batteryHeadChargeHysteresis: 5,
         startDelayS: 0, minimumRuntimeS: 0, initialSurplusW: 2500, batteryDelayMs: 5000,
         nativeConfig: {batteryDispatchMode: 'sunenergy-heads', batteryPvPriorityEnabled: true,
@@ -2841,31 +2841,73 @@ test('SunEnergy stops an unconfirmed PV charge at 90% and waits for the 100% for
     assert.ok(h.writes.some(write => write.id === gs && write.val < 0), h.diagnostic());
     assert.equal(h.physical().batteryW, 0, 'the start has yet to be confirmed by the AC measurement');
 
-    const pauseAt = h.now();
     h.put(soc, 90);
     h.setSurplus(5000);
     await h.advance(60);
-    assert.equal(h.value('Control.Targets.Battery_W'), 0, h.diagnostic());
-    assert.equal(h.physical().batteryW, 0, h.diagnostic());
-    assert.equal(h.writes.filter(write => write.id === gs).at(-1)?.val, 0);
     assert.equal(h.value('Control.BatteryPVReserve_W'), 0);
     assert.ok(h.physical().wbPowerW > 2500, h.diagnostic());
+    assert.ok(h.physical().batteryW > 0, h.diagnostic());
+    assert.equal(h.value('Control.Targets.Battery_W'), 5000 - h.physical().wbPowerW, h.diagnostic());
 
-    // SoC variation and even a forecast outage must not reopen the same stage.
     h.put(soc, 89);
     h.put('DP_WB2_CAR', 1);
     h.own('Plan.Valid', false);
     await h.advance(25);
     assert.equal(h.physical().wbPowerW, 0, h.diagnostic());
-    assert.equal(h.physical().batteryW, 0, h.diagnostic());
+    assert.equal(h.value('Control.BatteryPVReserve_W'), 0);
     h.own('Plan.Valid', true);
     await h.advance((finalStart - h.now()) / 1000 - 1);
-    assert.ok(h.writes.every(write => write.id !== gs || write.val >= 0 || write.at <= pauseAt), h.diagnostic());
-    assert.equal(h.physical().batteryW, 0, h.diagnostic());
-    await h.advance(50);
-    assert.ok(h.value('Control.Targets.Battery_W') > 0, h.diagnostic());
+    assert.equal(h.value('Control.BatteryPVReserve_W'), 0);
     assert.ok(h.physical().batteryW > 0, h.diagnostic());
+    await h.advance(2);
+    assert.equal(h.value('Control.BatteryPVReserve_W'), 2400);
 });
+
+for (const batteryDispatchMode of ['single-head', 'sunenergy-heads']) {
+    test(`live battery absorbs 10, 20 and 100 W of CHP export after the daily target in ${batteryDispatchMode} mode`, async () => {
+        const h = await plant({battery: true, batteryHeadType: 2, batteryHeadMaxSoc: 100, wallbox: false,
+            initialSurplusW: 100, nativeConfig: {batteryDispatchMode, batteryPvPriorityEnabled: true,
+                batteryWallboxHalfStepEnabled: true, wallboxParallelChargingEnabled: true,
+                bhkwPresent: true, dhwControlEnabled: false}});
+        const socId = batteryDispatchMode === 'single-head' ? h.run('CFG.dp.batterySoc') : h.mapping.DP_BATTERY_SOC;
+        h.put(h.run('CFG.dp.bhkwPower'), 910);
+        h.own('Actual.PV_W', 0);
+        h.own('Control.TargetGridPower_W', 0);
+        h.own('Config.BatteryDeadband_W', 10);
+        h.own('Config.BatteryMaxSoC_pct', 100);
+        h.own('Config.BatteryPriceChargingEnabled', false);
+        h.own('Plan.BatteryTargetSoC_48h_JSON', JSON.stringify([{timestamp: h.now() - 1000, value_pct: 100}]));
+        h.put(socId, 100);
+        await h.advance(5);
+        const reached = h.value('Control.BatteryPVReachedTarget_JSON');
+        assert.equal(JSON.parse(reached).target, 100);
+        assert.equal(h.physical().batteryW, 0, 'the configured maximum SoC blocks charging');
+
+        h.put(socId, 61);
+        h.setSurplus(9);
+        await h.advance(8);
+        assert.equal(h.physical().batteryW, 0, 'an export smaller than the configured deadband stays idle');
+
+        for (const watts of [10, 20, 100]) {
+            h.own('Config.BatteryMaxCharge_W', watts === 10 ? 10 : 2400);
+            h.setSurplus(watts);
+            await h.advance(15);
+            assert.equal(h.value('Control.Targets.Battery_W'), watts);
+            assert.ok(h.writes.some(w => w.id === h.config.batterySetpointId && w.val === -watts));
+            assert.equal(h.physical().batteryW, watts, h.diagnostic());
+            assert.equal(h.value('Control.ActualGridPower_W'), 0);
+            assert.equal(h.value('Control.BatteryPVReserve_W'), 0);
+            assert.equal(h.value('Control.BatteryPVReachedTarget_JSON'), reached);
+            if (batteryDispatchMode === 'single-head')
+                assert.equal(h.run(`checkQueuedElectricalOutput('Battery', ${-watts}).allowed`), true);
+        }
+
+        h.setSurplus(0);
+        await h.advance(12);
+        assert.equal(h.value('Control.Targets.Battery_W'), 0);
+        assert.equal(h.physical().batteryW, 0, 'the fine controller gives up its charge when export disappears');
+    });
+}
 
 test('five minutes of measured battery PV qualifies the 2600 W handoff without a second timer or optional heat', async () => {
     const h = await batteryPvTransferPlant();
