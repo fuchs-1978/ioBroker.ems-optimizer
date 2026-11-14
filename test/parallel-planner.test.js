@@ -14,7 +14,8 @@ function fixture(config = {}, minute = 0) {
         constructor(...args) { super(...(args.length ? args : [now])); }
         static now() { return now; }
     }
-    const context = vm.createContext({vehicleSocEstimator: require('../lib/vehicle-soc-estimator'), nativeConfig: {wallboxParallelChargingEnabled: true,
+    const context = vm.createContext({vehicleSocEstimator: require('../lib/vehicle-soc-estimator'),
+        wallboxAllocationPolicy: require('../lib/wallbox-allocation'), nativeConfig: {wallboxParallelChargingEnabled: true,
         wb0PhaseControlMode: 'ems', wb1PhaseControlMode: 'ems', wb2PhaseControlMode: 'ems', ...config},
     Date: Clock, getState: id => states.get(id), existsState: id => states.has(id),
     createState: (id, val) => { if (!states.has(id)) put(id, val); }, setState: put, log() {}});
@@ -73,6 +74,88 @@ function balance(result, pvW, houseW = 0) {
             + result.cars.reduce((sum, series) => sum + series[i].valueW, 0) + Math.round(a.batteryW) - Math.round(pv));
     }
 }
+
+function battery(h, soc, capacity = 5.02) {
+    h.put('ems.0.Devices.Battery.Present', true);
+    h.put(h.run('CFG.dp.batterySoc'), soc);
+    h.put('ems.0.Config.BatteryCapacity_kWh', capacity);
+    h.put('ems.0.Config.BatteryEfficiency_pct', 100);
+    h.put('ems.0.Config.BatteryMinSoC_pct', 10);
+    h.put('ems.0.Config.BatteryMaxCharge_W', 2400);
+    h.put('ems.0.Config.WallboxStartReserve_W', 150);
+}
+
+const coordinatedBattery = {batteryPvPriorityEnabled: true, batteryWallboxHalfStepEnabled: true};
+
+for (const phases of [1, 3]) {
+    test(`forecast shares PV with a ${phases}P wallbox at minimum without missing the storage target`, () => {
+        const h = fixture({...coordinatedBattery, wb2PhaseControlMode: 'script'});
+        battery(h, 18);
+        car(h, 0, {soc: 70, minimum: 60, connected: phases === 1});
+        car(h, 2, {soc: 75, minimum: 30, phases, connected: phases === 3});
+        h.put(h.run('CFG.dp.wallboxPhaseModes[2]'), 2);
+        const wb = phases === 1 ? 0 : 2;
+        const minimumW = 1380 * phases;
+        const pvW = [minimumW + 1170, minimumW + 1220, ...Array(6).fill(6000), 6500, 6000, 4500, 3000];
+        const r = h.plan({pvW, slots: pvW.length});
+        assert.equal(r.cars[wb][0].valueW, 0);
+        assert.equal(r.allocation[0].batteryW, 2400);
+        assert.equal(r.cars[wb][1].currentA, 6);
+        assert.equal(r.cars[wb][1].phases, phases);
+        assert.equal(r.cars[wb][1].valueW, minimumW);
+        assert.equal(r.allocation[1].batteryW, 1220);
+        assert.equal(r.grid[1].valueW, 0);
+        balance(r, pvW);
+    });
+}
+
+test('forecast protects the storage deadline and the minimum SoC from an early wallbox start', () => {
+    const h = fixture(coordinatedBattery);
+    car(h, 0, {soc: 75, minimum: 60});
+    battery(h, 18, 15);
+    const urgent = h.plan({pvW: [2600, 5000, 0], slots: 3});
+    assert.equal(urgent.cars[0][0].valueW, 0);
+    assert.equal(urgent.allocation[0].batteryW, 2400);
+    assert.equal(h.series('BatteryPower')[0].requiredPvChargeW, 2400);
+
+    battery(h, 10);
+    const enoughLater = [2600, ...Array(8).fill(6000), 6500, 6000, 4500, 3000];
+    const atMinimum = h.plan({pvW: enoughLater, slots: enoughLater.length});
+    assert.equal(atMinimum.cars[0][0].valueW, 0);
+    assert.equal(atMinimum.allocation[0].batteryW, 2400);
+    assert.equal(h.series('BatteryPower')[0].requiredPvChargeW, 0);
+});
+
+test('forecast fills the configured stages and starts the final charge earlier for a weak PV tail', () => {
+    const h = fixture(coordinatedBattery);
+    battery(h, 60, 10);
+    car(h, 0, {soc: 75, minimum: 60});
+    const pvW = [3500, 5000, 6000, 5100, 4200, 4000, 3100, 2000, 900, 700, 500, 0];
+    const r = h.plan({pvW, slots: pvW.length});
+    assert.deepEqual(h.series('BatteryTargetSoC').slice(0, 9).map(slot => slot.value_pct), [70, 70, 90, 90, 90, 90, 100, 100, 100]);
+    assert.equal(h.series('BatterySoC')[1].value_pct, 70);
+    assert.equal(h.series('BatterySoC')[5].value_pct, 90);
+    assert.equal(h.series('BatterySoC')[7].value_pct, 100);
+    assert.equal(h.series('BatteryPower')[8].valueW, 0);
+    assert.ok(r.cars[0][1].valueW > 0, 'only the watts needed to reach 70% are reserved in that slot');
+    balance(r, pvW);
+});
+
+test('storage priority preserves mandatory vehicle service and rejects an invalid joint power budget', () => {
+    const h = fixture({...coordinatedBattery, par14aLimitW: 2700});
+    battery(h, 18);
+    car(h, 2, {soc: 20, minimum: 40});
+    h.put(h.run('CFG.dp.par14a'), true);
+    const r = h.plan({pvW: 3000, slots: 1});
+    assert.equal(r.cars[2][0].valueW, 1380);
+    assert.equal(r.allocation[0].batteryW, 1320);
+    assert.equal(r.grid[0].valueW, -300);
+
+    h.put('ems.0.Config.HouseConnectionWorkingLimit_A', null);
+    const invalid = h.plan({pvW: 3000, slots: 1});
+    assert.equal(invalid.cars[2][0].valueW, 0);
+    assert.equal(invalid.allocation[0].batteryW, 0);
+});
 
 test('parallel forecast plans the Mii SoC step alongside both peer minimums without PV', () => {
     const h = fixture();

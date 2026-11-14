@@ -620,5 +620,21 @@
   "Unknown heating type": "供暖类型未知",
   "Actual room temperature source": "实际室温数据源",
   "Effective room setpoint source": "有效室温设定值数据源",
-  "Room history status": "室温历史状态"
+  "Room history status": "室温历史状态",
+  "PV correction": "光伏修正",
+  "Monthly PV correction factors": "月度光伏修正系数",
+  "PV area name": "光伏区域名称",
+  "Use the exact forecast area name and one row per area. Factors multiply the forecast for the local calendar month. For example, 0.80 uses 80% of the forecast and 1.20 uses 120%. Missing or invalid factors use 1.00.": "请使用预报中的准确区域名称，每个区域一行。系数乘以当地日历月份的预报值。0.80 为 80%，1.20 为 120%。默认值为 1.00。",
+  "January": "1月",
+  "February": "2月",
+  "March": "3月",
+  "April": "4月",
+  "May": "5月",
+  "June": "6月",
+  "July": "7月",
+  "August": "8月",
+  "September": "9月",
+  "October": "10月",
+  "November": "11月",
+  "December": "12月"
 }

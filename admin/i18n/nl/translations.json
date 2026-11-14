@@ -620,5 +620,21 @@
   "Unknown heating type": "Onbekend verwarmingstype",
   "Actual room temperature source": "Bron werkelijke kamertemperatuur",
   "Effective room setpoint source": "Bron effectieve gewenste temperatuur",
-  "Room history status": "Status kamerhistorie"
+  "Room history status": "Status kamerhistorie",
+  "PV correction": "PV-correctie",
+  "Monthly PV correction factors": "Maandelijkse PV-correctiefactoren",
+  "PV area name": "Naam van het PV-gebied",
+  "Use the exact forecast area name and one row per area. Factors multiply the forecast for the local calendar month. For example, 0.80 uses 80% of the forecast and 1.20 uses 120%. Missing or invalid factors use 1.00.": "Gebruik de exacte naam uit de prognose en één rij per gebied. De factor vermenigvuldigt de prognose voor de lokale kalendermaand. 0.80 is 80% en 1.20 is 120%. De standaardwaarde is 1.00.",
+  "January": "Januari",
+  "February": "Februari",
+  "March": "Maart",
+  "April": "April",
+  "May": "Mei",
+  "June": "Juni",
+  "July": "Juli",
+  "August": "Augustus",
+  "September": "September",
+  "October": "Oktober",
+  "November": "November",
+  "December": "December"
 }

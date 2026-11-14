@@ -101,6 +101,41 @@ test('the next four hours use exact weather and preceding-interval PV on the pla
     assert.equal(h.states.get('ems.0.Forecast.PVNext2h_Wh').val, 1400);
 });
 
+test('monthly PV factors are applied per area in both grids, using the delivery interval month', () => {
+    const h = weatherFixture(meteoPv);
+    const start = new Date(h.now());
+    start.setMonth(9, 31);
+    start.setHours(23, 45, 0, 0);
+    h.at(start.toISOString());
+    for (let hour = 0; hour < 8; hour++) {
+        const timestamp = h.now() - 3 * QUARTER + hour * 3600000;
+        h.put(`wx.hour${hour}.date`, timestamp);
+        h.put(`wx.hour${hour}.temperature_2m`, 10);
+        h.put(`wx.hour${hour}.wind_speed_10m`, 5);
+        for (const [area, watts] of [['Carport', 600], ['Roof', 1400]]) {
+            h.put(`${meteoPv}.${area}.hourly-forecast.hour${hour}.unix_time_stamp`, timestamp);
+            h.put(`${meteoPv}.${area}.hourly-forecast.hour${hour}.global_tilted_irradiance`, watts);
+        }
+    }
+    addQuarterForecast(h);
+    h.put(`${meteoPv}.Carport.15-min-forecast.0.global_tilted_irradiance`, 600);
+    h.put(`${meteoPv}.Roof.15-min-forecast.30.global_tilted_irradiance`, 1400);
+    h.config.pvMonthlyCorrections = [
+        {area: 'Carport', oct: '0,50', nov: 0}, {area: ' Roof ', oct: 'bad', nov: 1.2},
+        {area: 'unknown', oct: 10, nov: 10}];
+    let {pv} = readBuiltForecast(h);
+    assert.equal(pv[0].valueW, 1700, '23:45 is in October even when delivery ends at November midnight');
+    assert.equal(pv[1].valueW, 120);
+    assert.equal(pv[16].valueW, 1680);
+    assert.equal(pv[16].source, 'hourly');
+
+    h.config.pvMonthlyCorrections.push({area: 'Roof', nov: 0.5});
+    ({pv} = readBuiltForecast(h));
+    assert.equal(pv[1].valueW, 100, 'ambiguous duplicate rows use the neutral factor');
+    assert.equal(pv[16].valueW, 1400);
+    assert.equal(h.states.get(`${meteoPv}.Roof.hourly-forecast.hour4.global_tilted_irradiance`).val, 1400);
+});
+
 test('quarter-hour fields fall back independently and partial or misdated PV never replaces the hourly total', () => {
     const h = weatherFixture(meteoPv); addQuarterForecast(h);
     const roof = `${meteoPv}.Roof.15-min-forecast`;

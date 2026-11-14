@@ -620,5 +620,21 @@
   "Unknown heating type": "Unknown heating type",
   "Actual room temperature source": "Actual room temperature source",
   "Effective room setpoint source": "Effective room setpoint source",
-  "Room history status": "Room history status"
+  "Room history status": "Room history status",
+  "PV correction": "PV correction",
+  "Monthly PV correction factors": "Monthly PV correction factors",
+  "PV area name": "PV area name",
+  "Use the exact forecast area name and one row per area. Factors multiply the forecast for the local calendar month. For example, 0.80 uses 80% of the forecast and 1.20 uses 120%. Missing or invalid factors use 1.00.": "Use the exact forecast area name and one row per area. Factors multiply the forecast for the local calendar month. For example, 0.80 uses 80% of the forecast and 1.20 uses 120%. Missing or invalid factors use 1.00.",
+  "January": "January",
+  "February": "February",
+  "March": "March",
+  "April": "April",
+  "May": "May",
+  "June": "June",
+  "July": "July",
+  "August": "August",
+  "September": "September",
+  "October": "October",
+  "November": "November",
+  "December": "December"
 }

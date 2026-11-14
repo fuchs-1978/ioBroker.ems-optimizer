@@ -1,11 +1,12 @@
 # EMS Optimizer
 
-**Aktuelle Adapterversion: 0.17.0-alpha.260.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
+**Aktuelle Adapterversion: 0.17.0-alpha.261.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
 
 [English overview](README.md) · [Vollständige Admin-Feldreferenz](docs/admin-reference.de.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) · [Versionsänderungen](README.md#changelog)
 
 ## Aktuelle Änderungen
 
+- **Alpha.261** bildet die SoC-Stufen und die Übergabe ans Auto im Fahrplan ab. Im Reiter PV-Korrektur lassen sich zwölf Faktoren pro Anlage pflegen. [Versionshinweise](docs/release-0.17.0-alpha.261.md)
 - **Alpha.260** zählt stabil gemessenen Speicherüberschuss für den Wallboxstart und priorisiert Speicher und Auto vor optionaler PV-Wärme. [Versionshinweise](docs/release-0.17.0-alpha.260.md)
 - **Alpha.259** hält bestätigte SunEnergy-Entladeaufträge bei kleinen Netzabweichungen, führt die Entladegrenze bei belegter Minderleistung nach und teilt PV-Überschuss früher mit der Wallbox. [Versionshinweise](docs/release-0.17.0-alpha.259.md)
 - **Alpha.258** erfasst im Recorder je SunEnergy-Kopf die Zeit bis zum Sollwert-Echo und bis zur gemessenen AC-Reaktion. [Versionshinweise](docs/release-0.17.0-alpha.258.md)

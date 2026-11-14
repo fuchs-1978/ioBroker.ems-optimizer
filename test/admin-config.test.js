@@ -33,6 +33,22 @@ test('AP2 admin exposes the shared source and house-connection fields', () => {
         'wallboxPriorityId']) assert.ok(allFields[field], `missing Admin field ${field}`);
 });
 
+test('the PV correction tab exposes one neutral factor per calendar month and area', () => {
+    const tab = tabs.pvCorrectionTab;
+    const table = tab.items.pvMonthlyCorrections;
+    assert.equal(table.type, 'table');
+    assert.deepEqual(ioPackage.native.pvMonthlyCorrections, []);
+    assert.deepEqual(table.items.map(column => column.attr),
+        ['area', 'jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']);
+    const de = JSON.parse(fs.readFileSync('admin/i18n/de/translations.json', 'utf8'));
+    for (const column of table.items.slice(1)) {
+        assert.equal(column.default, 1);
+        assert.equal(column.min, 0);
+        assert.ok(de[column.title]);
+    }
+    assert.equal(de[tab.label], 'PV-Korrektur');
+});
+
 test('dynamic production phase feedback is configurable for every wallbox', () => {
     for (let wb = 0; wb < 3; wb++) {
         assert.ok(allFields[`wb${wb}PhaseModeId`], `missing wb${wb}PhaseModeId`);
@@ -90,7 +106,7 @@ test('update defaults never arm a productive output', () => {
 });
 
 test('package manifests publish the same alpha version', () => {
-    assert.equal(packageJson.version, '0.17.0-alpha.260');
+    assert.equal(packageJson.version, '0.17.0-alpha.261');
     assert.equal(ioPackage.common.version, packageJson.version);
     const core = fs.readFileSync('lib/engine/core.js', 'utf8');
     const bootstrap = fs.readFileSync('lib/engine/bootstrap.js', 'utf8');

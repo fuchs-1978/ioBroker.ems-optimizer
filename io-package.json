@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.260",
+    "version": "0.17.0-alpha.261",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.261": {
+        "en": "Use storage targets and wallbox priority in the forecast. Set monthly PV factors by area.",
+        "de": "SoC-Ziele und Wallbox-Vorrang im Fahrplan abbilden und PV-Prognosen je Anlage und Monat korrigieren.",
+        "es": "Usa los objetivos de la batería y la prioridad de carga en la previsión. Ajusta la FV por área y mes.",
+        "fr": "Applique les cibles de batterie et la priorité de recharge à la prévision. Corrige le PV par zone et par mois.",
+        "it": "Applica alla previsione gli obiettivi della batteria e le priorità di ricarica. Corregge il FV per area e mese.",
+        "nl": "Gebruikt accudoelen en laadprioriteit in de prognose. Corrigeert PV per gebied en maand.",
+        "pl": "Uwzględnia cele naładowania i priorytety ładowania w prognozie. Koryguje PV według obszaru i miesiąca.",
+        "pt": "Aplica à previsão as metas da bateria e a prioridade de carregamento. Corrige a FV por área e mês.",
+        "ru": "Учитывает цели батареи и приоритет зарядки в прогнозе. Корректирует солнечную генерацию по зонам и месяцам.",
+        "uk": "Ураховує цілі батареї та пріоритет заряджання в прогнозі. Коригує сонячну генерацію за зонами й місяцями.",
+        "zh-cn": "在预测中应用电池电量目标和充电优先级，并按区域和月份修正光伏预测。"
+      },
       "0.17.0-alpha.260": {
         "en": "Reuse measured PV surplus for wallbox start and prioritize battery and EV charging over optional PV heating.",
         "de": "Gemessenen PV-Überschuss für den Wallboxstart nutzen und Speicher sowie Auto vor optionaler PV-Wärme laden.",
@@ -81,19 +94,6 @@
         "ru": "Снижает подтверждённую мощность разряда SunEnergy для дома при кратковременной отдаче в сеть.",
         "uk": "Зменшує підтверджену потужність розряду SunEnergy для дому під час короткочасної віддачі в мережу.",
         "zh-cn": "短暂向电网送电时，直接降低已确认的 SunEnergy 家庭放电功率。"
-      },
-      "0.17.0-alpha.254": {
-        "en": "Accept a small AC shortfall at the confirmed SunEnergy discharge ceiling.",
-        "de": "Kleine AC-Minderleistung an der bestätigten SunEnergy-Entladegrenze akzeptieren.",
-        "es": "Admite un pequeño déficit de CA en el límite de descarga confirmado.",
-        "fr": "Accepte un léger déficit de puissance AC à la limite de décharge confirmée.",
-        "it": "Accetta un lieve calo di potenza AC al limite di scarica confermato.",
-        "nl": "Accepteert een klein AC-tekort bij de bevestigde ontlaadgrens.",
-        "pl": "Dopuszcza niewielki niedobór mocy AC przy potwierdzonym limicie rozładowania.",
-        "pt": "Aceita um pequeno défice de potência CA no limite de descarga confirmado.",
-        "ru": "Допускает небольшую недостачу мощности AC при подтверждённом пределе разряда.",
-        "uk": "Допускає невелике зниження потужності AC на підтвердженій межі розряду.",
-        "zh-cn": "允许在已确认的放电上限处出现少量交流功率不足。"
       }
     },
     "titleLang": {
@@ -184,6 +184,7 @@
     "apartmentPowerId": "",
     "weatherHourlyBaseId": "",
     "pvForecastBaseId": "",
+    "pvMonthlyCorrections": [],
     "energyPriceSeriesId": "",
     "gridFeeSeriesId": "",
     "dynamicEnergyPriceEnabledId": "",

@@ -620,5 +620,21 @@
   "Unknown heating type": "Тип отопления неизвестен",
   "Actual room temperature source": "Источник фактической температуры",
   "Effective room setpoint source": "Источник действующей уставки",
-  "Room history status": "Состояние истории комнат"
+  "Room history status": "Состояние истории комнат",
+  "PV correction": "Коррекция ФЭ",
+  "Monthly PV correction factors": "Месячные коэффициенты коррекции ФЭ",
+  "PV area name": "Имя зоны ФЭ",
+  "Use the exact forecast area name and one row per area. Factors multiply the forecast for the local calendar month. For example, 0.80 uses 80% of the forecast and 1.20 uses 120%. Missing or invalid factors use 1.00.": "Укажите точное имя из прогноза и одну строку на зону. Коэффициент умножает прогноз на местный календарный месяц. 0.80 означает 80 %, а 1.20 — 120 %. Значение по умолчанию 1.00.",
+  "January": "Январь",
+  "February": "Февраль",
+  "March": "Март",
+  "April": "Апрель",
+  "May": "Май",
+  "June": "Июнь",
+  "July": "Июль",
+  "August": "Август",
+  "September": "Сентябрь",
+  "October": "Октябрь",
+  "November": "Ноябрь",
+  "December": "Декабрь"
 }
