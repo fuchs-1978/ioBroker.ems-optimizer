@@ -1428,6 +1428,67 @@ test('SunEnergy bridges a 300 W PV dip without resetting the wallbox stop delay'
     assert.ok(h.physical().batteryW >= 0, h.diagnostic());
 });
 
+async function runningSunEnergyPvWallbox() {
+    const h = await plant({battery: true, batteryHeadType: 2, batteryHeadMaxSoc: 100,
+        split: false, initialSurplusW: 3170, startDelayS: 0, minimumRuntimeS: 0,
+        nativeConfig: {batteryDispatchMode: 'sunenergy-heads', batteryPvPriorityEnabled: true,
+            batteryWallboxHalfStepEnabled: true, wallboxParallelChargingEnabled: true, dhwControlEnabled: false,
+            wb2CommissioningMaxA: 13}});
+    h.own('Control.TargetGridPower_W', 0);
+    h.own('Config.BatteryMaxSoC_pct', 100);
+    h.own('Config.BatteryFineStep_W', 600);
+    h.own('Plan.BatteryTargetSoC_48h_JSON', JSON.stringify([{timestamp: h.now(), value_pct: 90}]));
+    h.put(h.mapping.DP_BATTERY_SOC, 95);
+    await h.advance(100);
+    assert.equal(h.physical().wbPowerW, 2990, h.diagnostic());
+    assert.equal(h.physical().batteryW, 0, h.diagnostic());
+    return h;
+}
+
+test('SunEnergy buffers a net import step while a running PV wallbox reduces current', async () => {
+    const h = await runningSunEnergyPvWallbox();
+    const gs = h.config.batterySetpointId;
+    const stepAt = h.now();
+    h.setSurplus(1750);
+    await h.advance(3);
+    const first = h.writes.find(row => row.id === gs && row.val > 0 && row.at > stepAt);
+    assert.ok(first && first.val === 600 && first.at === stepAt + 1000, h.diagnostic());
+    assert.equal(h.physical().batteryW, -600, h.diagnostic());
+    assert.equal(h.physical().wbPowerW, 2990, 'the vehicle has not yet followed its reduction');
+    assert.equal(h.trace.at(-1).gridW, 640, h.diagnostic());
+
+    await h.advance(32);
+    assert.ok(h.physical().wbPowerW <= 1840, h.diagnostic());
+    assert.ok(h.physical().batteryW >= -115, h.diagnostic());
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    assert.equal(h.value('Control.BatteryPVReserve_W'), 0);
+    assert.equal(h.value('Devices.Battery.Fault'), '', h.diagnostic());
+});
+
+test('SunEnergy limits the wallbox reduction buffer to one ten-second window per deficit', async () => {
+    const h = await runningSunEnergyPvWallbox();
+    h.setWallboxCurrentAck(2, false);
+    h.setSurplus(1750);
+    await h.advance(3);
+    const first = h.writes.findLast(row => row.id === h.config.batterySetpointId && row.val > 0);
+    const check = `batteryHeadsQueuedCheck(${JSON.stringify(first.id)}, ${first.val}).allowed`;
+    assert.ok(h.value('Control.BatteryWallboxBuffer_W') >= first.val);
+    assert.equal(h.run(check), true);
+    h.put('DP_GRID_IMPORT', 0);
+    h.put('DP_GRID_EXPORT', 700);
+    assert.equal(h.run(check), false, 'a more recent net reading revokes the old discharge budget');
+    await h.advance(13);
+    assert.equal(h.physical().wbPowerW, 2990, h.diagnostic());
+    assert.equal(h.physical().batteryW, 0, h.diagnostic());
+    assert.equal(h.value('Control.BatteryWallboxBuffer_W'), 0);
+
+    h.setSurplus(3170);
+    await h.advance(5);
+    h.setSurplus(1750);
+    await h.advance(2);
+    assert.ok(h.value('Control.BatteryWallboxBuffer_W') > 115, h.diagnostic());
+});
+
 test('SunEnergy replenishes the minimum reserve at up to 1000 W without price permission', async () => {
     const h = await plant({battery: true, batteryHeadType: 2, wallbox: false, initialSurplusW: 0,
         split: false, lpcLimitW: 4200,

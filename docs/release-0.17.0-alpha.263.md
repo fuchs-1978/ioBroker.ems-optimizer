@@ -1,0 +1,5 @@
+# 0.17.0-alpha.263
+
+Bei einem Bezugssprung kann der SunEnergy-Speicher bereits im nächsten Speicherregelzyklus einen Entladeauftrag bekommen, während die Wallbox einen kleineren PV-Ladestrom anfordert. Die Entladung ist durch den gemessenen Bezug abzüglich der aktuellen Speicherwirkung, die noch nicht umgesetzte Leistungsreduzierung des Fahrzeugs und die zugelassene Entladeleistung begrenzt. Der Speicher folgt seinen konfigurierten Sollwertschritten und der Rückmeldung von GS und GP.
+
+Die Freigabe gilt für eine einzelne laufende PV-Wallbox mit bestätigter Phasenlage, aktivem PV-Speichervorrang und SoC-abhängiger Koordination. Das Fenster dauert höchstens zehn Sekunden. Erst nach gemessener Erholung des Netzbezugs ohne Speicherwirkung kann bei einem erneuten Fehlbetrag ein weiteres Fenster starten. Messwerte und Freigaben werden vor der tatsächlichen Ausgabe erneut geprüft. Tarif- und Pflichtladen, Phasenwechsel, Netzbetreiberbegrenzung und parallele Heizleistung bleiben ausgenommen. Die PV-Ladepause des Speichers gilt für die Laderichtung.

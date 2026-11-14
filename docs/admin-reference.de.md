@@ -749,6 +749,8 @@ Dies ist eine temperaturgestufte Mindestreserve. Eine umfassende Bedarfsplanung 
 
 Bei SoC-abhängiger Wallbox-Koordination pausiert die PV-Speicherladung, sobald der Speicher das aktuelle Fahrplanziel erreicht. Der Überschuss steht den Wallboxen zur Verfügung. Am selben Tag gibt erst eine höhere aktuelle Fahrplanstufe die PV-Speicherladung wieder frei. [Versionshinweise](release-0.17.0-alpha.262.md)
 
+Mit aktivem PV-Speichervorrang kann SunEnergy einen Bezugssprung bis zu zehn Sekunden abfangen, während eine laufende PV-Wallbox ihren Ladestrom senkt. Die Freigabe verwendet frische Netz- und Fahrzeugmesswerte und endet, wenn der Fehlbetrag entfällt oder die Wallbox dem kleineren Sollwert gefolgt ist. Die SoC- und Leistungsgrenzen gelten auch für diese Entladung. [Versionshinweise](release-0.17.0-alpha.263.md)
+
 In der SunEnergy-Betriebsart berücksichtigen gemeinsam aktivierter PV-Speichervorrang und SoC-abhängige Wallbox-Koordination vorrangig Speicher und Fahrzeug. Optionale PV-Wärme bekommt erst bei fehlender Ladeoption Leistung. Bei einem einzelnen Kopf kann ein anhand der AC- und Netzmessung belegtes Zeitfenster die Startverzögerung bereits erfüllen. Beim Übergang prüft der Wallbox-Ausgang weiterhin die tatsächlich freigewordene Leistung. [Versionshinweise](release-0.17.0-alpha.260.md)
 | PV-Leistungsreserve für die Speicher-Feinregelung vor der Heizstabverteilung<br>`batteryFineReserveW` | 200 W | PV-Leistungsreserve in W für die Speicher-Feinregelung vor Heizstabverteilung. Keine zusätzliche Erzeugung; schützt nutzbaren Regelspielraum. |
 | Totband der Speicher-Netzregelung<br>`batteryDeadbandW` | 50 W | Totband der Speicher-Netzregelung in W gegen unnötige kleine Befehle. Eigenes Speicherfeld, nicht die allgemeine NVP-Toleranz. |
