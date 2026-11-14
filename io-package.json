@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.273",
+    "version": "0.17.0-alpha.274",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.274": {
+        "en": "Trim the active battery charge by small grid imports down to the configured minimum.",
+        "de": "Kleine Netzbezüge vom laufenden Ladeauftrag abziehen, bis die eingestellte Mindestleistung erreicht ist.",
+        "es": "Reduce la consigna de carga activa según el pequeño consumo de red hasta el mínimo configurado.",
+        "fr": "Réduit la consigne de charge en cours selon le faible import réseau jusqu’au minimum configuré.",
+        "it": "Riduce la potenza di carica in corso in base ai piccoli prelievi di rete, fino al minimo impostato.",
+        "nl": "Verlaagt de lopende acculading bij klein netverbruik tot het ingestelde minimum.",
+        "pl": "Zmniejsza moc trwającego ładowania przy małym poborze z sieci do ustawionego minimum.",
+        "pt": "Reduz a potência de carregamento ativa em caso de pequena importação da rede até o mínimo configurado.",
+        "ru": "Уменьшает текущую мощность зарядки при небольшом импорте из сети до заданного минимума.",
+        "uk": "Зменшує поточну потужність заряджання за невеликого імпорту з мережі до заданого мінімуму.",
+        "zh-cn": "从当前充电设定值中扣除少量电网取电，直至设定的最小充电功率。"
+      },
       "0.17.0-alpha.273": {
         "en": "Let the live battery controller absorb leftover grid export after the scheduled charge target is reached.",
         "de": "Verbleibenden Netzueberschuss auch nach erreichtem Speicher-Fahrplanziel mit dem Live-Regler aufnehmen.",
@@ -81,19 +94,6 @@
         "ru": "Предотвращает ненужные остановки разряда SunEnergy при ожидании подтверждения небольших изменений нагрузки дома.",
         "uk": "Запобігає зайвим зупинкам розряджання SunEnergy під час очікування підтвердження невеликих змін навантаження будинку.",
         "zh-cn": "在等待家庭负载小幅调节的反馈时，避免 SunEnergy 不必要地停止放电。"
-      },
-      "0.17.0-alpha.267": {
-        "en": "Use up to 500 W of daytime battery support for the Mii, then recharge the battery from surplus.",
-        "de": "Mii tagsüber mit bis zu 500 W Speicherhilfe laden und den Speicher danach aus Überschuss nachladen.",
-        "es": "Apoya la carga diurna del Mii con hasta 500 W de la batería y después recarga la batería con el excedente.",
-        "fr": "Fournit jusqu’à 500 W de la batterie à la Mii en journée, puis recharge la batterie avec le surplus.",
-        "it": "Usa fino a 500 W dalla batteria per caricare di giorno la Mii e poi ricarica la batteria con il surplus.",
-        "nl": "Ondersteunt het laden van de Mii overdag met maximaal 500 W uit de accu en laadt de accu daarna bij met het overschot.",
-        "pl": "Wspomaga dzienne ładowanie Mii mocą do 500 W z akumulatora, a potem doładowuje go z nadwyżki.",
-        "pt": "Apoia o carregamento diurno do Mii com até 500 W da bateria e depois recarrega a bateria com o excedente.",
-        "ru": "Днём добавляет до 500 Вт из накопителя для зарядки Mii, затем заряжает накопитель из избытка.",
-        "uk": "Удень додає до 500 Вт з накопичувача для заряджання Mii, а потім заряджає накопичувач із надлишку.",
-        "zh-cn": "白天最多用储能补足 500 W 为 Mii 充电，随后用余电为储能补电。"
       }
     },
     "titleLang": {
