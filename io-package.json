@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.258",
+    "version": "0.17.0-alpha.259",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.259": {
+        "en": "Keep proved SunEnergy discharge active and share PV with a wallbox earlier.",
+        "de": "Bestätigte SunEnergy-Entladung fortführen und PV-Überschuss früher mit einer Wallbox teilen.",
+        "es": "Mantiene la descarga SunEnergy confirmada y comparte antes el excedente fotovoltaico con un cargador.",
+        "fr": "Maintient la décharge SunEnergy confirmée et partage plus tôt le surplus photovoltaïque avec une borne.",
+        "it": "Mantiene la scarica SunEnergy confermata e condivide prima il surplus fotovoltaico con una wallbox.",
+        "nl": "Houdt bevestigde SunEnergy-ontlading actief en deelt PV-overschot eerder met een laadpunt.",
+        "pl": "Podtrzymuje potwierdzone rozładowanie SunEnergy i wcześniej dzieli nadwyżkę PV ze stacją ładowania.",
+        "pt": "Mantém a descarga SunEnergy confirmada e partilha mais cedo o excedente fotovoltaico com um carregador.",
+        "ru": "Поддерживает подтверждённый разряд SunEnergy и раньше направляет избыток солнечной энергии на зарядную станцию.",
+        "uk": "Підтримує підтверджене розряджання SunEnergy та раніше спрямовує надлишок сонячної енергії на зарядну станцію.",
+        "zh-cn": "保持已确认的 SunEnergy 放电，并更早向充电桩分配光伏余电。"
+      },
       "0.17.0-alpha.258": {
         "en": "Record the SunEnergy setpoint echo and AC power response times per head.",
         "de": "Zeit bis zum SunEnergy-Sollwert-Echo und bis zur AC-Leistungsreaktion je Kopf erfassen.",
@@ -81,19 +94,6 @@
         "ru": "Пополняет резерв SunEnergy мощностью до 1000 Вт ниже минимума.",
         "uk": "Поповнює резерв SunEnergy потужністю до 1000 Вт нижче мінімуму.",
         "zh-cn": "SunEnergy 电量低于下限时以最高 1000 W 补充储备。"
-      },
-      "0.17.0-alpha.252": {
-        "en": "Optionally charge the Mii at night using CHP surplus and a 10-point battery SoC band.",
-        "de": "Mii nachts optional aus BHKW-Überschuss und einem Speicherfenster von 10 SoC-Punkten laden.",
-        "es": "Carga nocturna opcional del Mii con excedente de cogeneración y una banda de 10 puntos de carga de batería.",
-        "fr": "Recharge nocturne optionnelle du Mii avec surplus de cogénération et une plage de 10 points de charge.",
-        "it": "Ricarica notturna opzionale della Mii con surplus di cogenerazione e una fascia di 10 punti di carica.",
-        "nl": "Laad de Mii optioneel ’s nachts met WKK-overschot en een accubereik van 10 procentpunten.",
-        "pl": "Opcjonalne nocne ładowanie Mii z nadwyżki kogeneracji i zakresu 10 punktów naładowania.",
-        "pt": "Carregamento noturno opcional do Mii com excedente de cogeração e uma faixa de 10 pontos de carga.",
-        "ru": "Опциональная ночная зарядка Mii избытком когенерации и 10 процентными пунктами заряда накопителя.",
-        "uk": "Додаткове нічне заряджання Mii надлишком когенерації та в діапазоні 10 відсоткових пунктів заряду.",
-        "zh-cn": "可在夜间用热电联产余电和储能电池 10 个百分点的电量区间为 Mii 充电。"
       }
     },
     "titleLang": {
