@@ -1163,6 +1163,78 @@ test('a nearby SMA spike from before the inverter response can increase discharg
     assert.equal(h.run(`batteryHeadsQueuedCheck(${JSON.stringify(firstHeadGs)},435).allowed`), true);
 });
 
+test('recorded household reductions wait for a new SMA telegram when GS already echoes within 100 W', () => {
+    for (const [previous, previousGp, sent, gp, exportW, target] of [
+        [611, 593, 530, 581, 62.7, 518],
+        [379, 382, 353, 379, 28.5, 350]
+    ]) {
+        const h = householdDischargeAt(previous, previousGp, 70);
+        h.advance(150);
+        h.grid.gridW = -exportW;
+        h.grid.sourceTs = [h.time() - 125, h.time() - 125];
+        h.own('Control.Targets.Battery_W', -sent);
+        h.tick(); h.advance(95); h.complete();
+        h.advance(787); h.fresh();
+        h.snapshot(1, {GS: sent, GP: gp, timestamp: h.time() - 180});
+        h.own('Control.Targets.Battery_W', -target);
+        h.tick();
+        assert.deepEqual(h.commands(), [previous, sent]);
+        assert.match(h.value('Devices.Battery.OutputStatus'), /Netzmessung nach/);
+
+        h.advance(1000); h.fresh();
+        h.snapshot(1, {GS: sent, GP: sent, timestamp: h.time() - 100});
+        h.grid.gridW = -15;
+        h.grid.sourceTs = [h.time(), h.time()];
+        h.own('Control.Targets.Battery_W', 15 - sent);
+        h.tick();
+        assert.deepEqual(h.commands(), [previous, sent, sent - 15]);
+        assert.equal(h.run(`batteryHeadsQueuedCheck(${JSON.stringify(firstHeadGs)},${sent - 15}).allowed`), true);
+    }
+});
+
+test('the wait for a new SMA telegram ends at a protection stop or when meter proof ages out', () => {
+    for (const [reason, change] of Object.entries({
+        'material export': h => { h.grid.gridW = -140; },
+        'no remaining demand': h => h.own('Control.Targets.Battery_W', 0),
+        'new hard limit': h => h.own('Config.BatteryMaxDischarge_W', 520),
+        'old net readings': h => { h.advance(3100); h.fresh(); },
+        'invalid net reading': h => { h.grid.valid = false; }
+    })) {
+        const h = householdDischargeAt(611, 593, 70);
+        h.advance(150);
+        h.grid.gridW = -62.7;
+        h.grid.sourceTs = [h.time() - 125, h.time() - 125];
+        h.own('Control.Targets.Battery_W', -530);
+        h.tick(); h.advance(95); h.complete();
+        h.advance(787); h.fresh();
+        h.snapshot(1, {GS: 530, GP: 581, timestamp: h.time() - 180});
+        h.own('Control.Targets.Battery_W', -518);
+        change(h); h.tick();
+        assert.deepEqual(h.commands(), [611, 530, 0], reason);
+    }
+});
+
+test('the recorded 1 W trim holds near zero with split SMA timestamps before reducing for a load drop', () => {
+    const h = householdDischargeAt(563, 563, 70);
+    const gpAt = h.time();
+    h.advance(100); h.snapshot(1, {GP: 564, timestamp: h.time() - 60});
+    h.advance(1100); h.fresh(); h.snapshot(1, {}, {ts: gpAt + 100});
+    h.grid.gridW = -2.4;
+    h.grid.sourceTs = [h.time() - 35, h.time() - 1035];
+    h.own('Control.Targets.Battery_W', -562);
+    h.tick();
+    assert.deepEqual(h.commands(), [563]);
+    assert.match(h.value('Devices.Battery.OutputStatus'), /Netzleistung im Totband/);
+
+    h.advance(1000); h.fresh();
+    h.grid.gridW = -256.5;
+    h.grid.sourceTs = [h.time(), h.time()];
+    h.own('Control.Targets.Battery_W', -307);
+    h.tick();
+    assert.deepEqual(h.commands(), [563, 307]);
+    assert.equal(h.run(`batteryHeadsQueuedCheck(${JSON.stringify(firstHeadGs)},307).allowed`), true);
+});
+
 test('a protection limit still stops a pending household adjustment without waiting for ten pairs', () => {
     for (const [name, change] of Object.entries({
         'minimum charge': h => h.snapshot(1, {SC: 10}),
