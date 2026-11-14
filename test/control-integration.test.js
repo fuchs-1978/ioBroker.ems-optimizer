@@ -1305,29 +1305,31 @@ test('SunEnergy follows a household load reduction through brief export without 
     h.own('Control.TargetGridPower_W', 0);
     const start = h.now();
     const snapshot = (gs, gp, ts) => ['sunenergyxt500.0.heads.1.info.rawResponse', JSON.stringify({
-        GS: gs, GP: gp, SC: 22, ON: 2, MM: 0, LM: 1, SI: 10, SA: 90, MG: 2400, IS: 2400, LP: 0, PK: 2
-    }), {ts}];
+        GS: gs, GP: gp, SC: 22, ON: 2, MM: 0, LM: 1, SI: 10, SA: 90, MG: 2400, IS: 2400, LP: 0, PK: 2, timestamp: ts
+    }), {ts, from: 'system.adapter.sunenergyxt500.0'}];
     const frame = async (elapsed, gridW, gs, gp, gridLag = 100, batteryLag = 300) => {
         const at = start + elapsed;
         const gridSample = {ts: at - gridLag};
+        const driverSample = {ts: at - batteryLag, from: 'system.adapter.sunenergyxt500.0'};
         await h.replayAt(at, [['DP_GRID_IMPORT', Math.max(gridW, 0), gridSample],
-            ['DP_GRID_EXPORT', Math.max(-gridW, 0), gridSample], snapshot(gs, gp, at - batteryLag)], {output: false});
+            ['DP_GRID_EXPORT', Math.max(-gridW, 0), gridSample], [h.config.batterySetpointId, gs, driverSample],
+            snapshot(gs, gp, driverSample.ts)], {output: false});
     };
     const commands = () => h.writes.filter(w => w.id === h.config.batterySetpointId).map(w => w.val);
 
     await frame(1000, 270, 0, 0);
     await frame(3000, -34, 270, 220, 300, 100);
-    assert.deepEqual(commands(), [270]);
-    await frame(4000, -54, 270, 240);
-    assert.equal(h.value('Control.Targets.Battery_W'), -186);
-    assert.deepEqual(commands(), [270, 186]);
-    await frame(6000, 0, 186, 186);
-    await frame(8000, 0, 186, 186);
+    assert.deepEqual(commands(), [270, 186], h.value('Devices.Battery.OutputStatus'));
+    await frame(4000, -54, 270, 222);
+    assert.equal(h.value('Control.Targets.Battery_W'), -168);
+    assert.deepEqual(commands(), [270, 186, 168]);
+    await frame(6000, 0, 168, 168);
+    await frame(8000, 0, 168, 168);
     assert.equal(h.value('Devices.Battery.Heads.1.ActuatorSettled'), true);
-    assert.deepEqual(commands(), [270, 186]);
+    assert.deepEqual(commands(), [270, 186, 168]);
 
-    await frame(9000, -186, 186, 186);
-    assert.deepEqual(commands(), [270, 186, 0], 'loss of the remaining household demand still stops discharge');
+    await frame(9000, -168, 168, 168);
+    assert.deepEqual(commands(), [270, 186, 168, 0], 'loss of the remaining household demand still stops discharge');
 });
 
 test('integrated delayed plant absorbs PV during 120s countdown then starts only WB2 without dropouts', async () => {

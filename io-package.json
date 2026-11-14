@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.271",
+    "version": "0.17.0-alpha.272",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.272": {
+        "en": "Apply the next SunEnergy household discharge setpoint directly while inverter feedback is pending.",
+        "de": "Bei laufender SunEnergy-Haushaltsentladung direkt auf den nächsten Sollwert wechseln, auch wenn die Rückmeldung aussteht.",
+        "es": "Aplica directamente la siguiente consigna de descarga doméstica aunque la confirmación de SunEnergy esté pendiente.",
+        "fr": "Applique directement la prochaine consigne de décharge domestique pendant l’attente du retour SunEnergy.",
+        "it": "Applica direttamente il nuovo setpoint di scarica domestica mentre la conferma SunEnergy è in attesa.",
+        "nl": "Past de volgende ontlaadinstelling voor het huishouden direct toe terwijl de SunEnergy-terugmelding nog uitstaat.",
+        "pl": "Stosuje kolejną nastawę rozładowania na potrzeby domu podczas oczekiwania na potwierdzenie SunEnergy.",
+        "pt": "Aplica diretamente a próxima consigna de descarga doméstica enquanto aguarda a confirmação da SunEnergy.",
+        "ru": "Применяет следующую уставку разряда для дома, пока ожидается подтверждение SunEnergy.",
+        "uk": "Застосовує наступне задане значення розряду для будинку, поки очікується підтвердження SunEnergy.",
+        "zh-cn": "SunEnergy 反馈尚未返回时，直接应用下一个家庭放电设定值。"
+      },
       "0.17.0-alpha.271": {
         "en": "Wait for the next SMA reading after SunEnergy confirms a small discharge reduction.",
         "de": "Nach einer bestätigten kleinen SunEnergy-Entladesenkung kurz auf die nächste SMA-Messung warten.",
@@ -81,19 +94,6 @@
         "ru": "Приостанавливает необязательную зарядку автомобиля при плановой передаче избытка на завершающую зарядку накопителя от солнца.",
         "uk": "Призупиняє необов’язкове заряджання авто під час планової передачі надлишку на завершальне заряджання накопичувача від сонця.",
         "zh-cn": "按计划将光伏余电交给储能进行最后阶段充电时，暂停可选的车辆充电。"
-      },
-      "0.17.0-alpha.265": {
-        "en": "Keep the wallbox charging allocation valid when go-e briefly reports a small negative power reading near zero.",
-        "de": "Ladezuteilung beibehalten, wenn go-e kurz eine leicht negative Leistung nahe null meldet.",
-        "es": "Mantiene válida la asignación de carga cuando go-e indica brevemente una potencia negativa cercana a cero.",
-        "fr": "Maintient l’allocation de charge lorsque go-e signale brièvement une faible puissance négative proche de zéro.",
-        "it": "Mantiene valida l’assegnazione di ricarica quando go-e segnala brevemente una potenza negativa vicina a zero.",
-        "nl": "Behoudt de laadverdeling als go-e kort een klein negatief vermogen dicht bij nul meldt.",
-        "pl": "Zachowuje przydział mocy ładowania, gdy go-e chwilowo zgłasza niewielką ujemną moc bliską zeru.",
-        "pt": "Mantém válida a atribuição de carregamento quando o go-e indica brevemente uma potência negativa próxima de zero.",
-        "ru": "Сохраняет выделенную мощность зарядки, если go-e кратковременно сообщает небольшое отрицательное значение мощности около нуля.",
-        "uk": "Зберігає виділену потужність заряджання, якщо go-e короткочасно повідомляє невелике від’ємне значення потужності поблизу нуля.",
-        "zh-cn": "go-e 短暂报告接近零的微小负功率时，保持充电功率分配有效。"
       }
     },
     "titleLang": {

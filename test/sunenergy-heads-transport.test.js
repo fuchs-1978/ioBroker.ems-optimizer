@@ -349,15 +349,15 @@ test('real controller/transport recheck an aggregate operator limit reduced duri
     assert.equal(f.adapter.getCachedState(`${f.base}.OutputReservedCharge_W`).val, 600);
 });
 
-test('a superseded household reduction resumes from the acknowledged discharge after a missed write', async () => {
-    const recoverable = ['newer XT500 sample', 'smaller grid budget'];
-    for (const scenario of [...recoverable, 'no remaining demand', 'lower device limit', 'previous deadline', 'revoked release']) {
+test('a superseded household reduction restores the previous discharge without writing zero', async () => {
+    const recoverable = ['newer XT500 sample', 'smaller grid budget', 'previous deadline'];
+    for (const scenario of [...recoverable, 'no remaining demand', 'lower device limit', 'revoked release']) {
         const f = fixture(1);
         const h = attachRealController(f);
         const rawId = 'sunenergyxt500.0.heads.1.info.rawResponse';
         const snapshot = (GS, GP, limits = {}) => h.put(rawId, JSON.stringify({
             ...JSON.parse(f.adapter.getCachedState(rawId).val), GS, GP, ...limits
-        }));
+        }), {from: 'system.adapter.sunenergyxt500.0'});
         const commands = () => f.writes.map(write => write.value);
         const output = () => f.adapter.getCachedState(`${f.base}.OutputCommandInternal_W`).val;
         h.own('Config.BatteryDeadband_W', 10);
@@ -377,7 +377,7 @@ test('a superseded household reduction resumes from the acknowledged discharge a
         assert.equal(output(), -49);
         h.advance(scenario === 'previous deadline' ? 15000 : 1000);
         if (scenario === 'newer XT500 sample') {
-            snapshot(125, 91);
+            snapshot(125, 76);
             h.grid.sourceTs = [h.now() - 100, h.now() - 100];
         }
         if (scenario === 'smaller grid budget' || scenario === 'previous deadline') {
@@ -389,7 +389,7 @@ test('a superseded household reduction resumes from the acknowledged discharge a
             h.own('Control.Targets.Battery_W', 0);
         }
         if (scenario === 'lower device limit') {
-            snapshot(125, 80, {MG: 100});
+            snapshot(125, 80, {MG: 40});
             h.grid.gridW = -37;
         }
         if (scenario === 'revoked release') h.own('System.RealOutputsEnabled', false);
