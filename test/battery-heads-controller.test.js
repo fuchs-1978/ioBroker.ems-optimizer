@@ -1186,6 +1186,127 @@ test('the recorded in-flight household reductions wait through the next small ta
     }
 });
 
+function pendingReductionFromRecording({gs, gp, pendingW, targetW, gridBefore, gridAfter, skewMs}) {
+    const h = householdDischargeAt(gs, gp, 80);
+    h.own('Config.BatteryFineStep_W', 600);
+    const snapshotAt = h.time();
+    h.advance(Math.max(150, skewMs - 80));
+    h.grid.gridW = gridBefore;
+    h.own('Control.Targets.Battery_W', -pendingW);
+    h.tick(); h.advance(90); h.complete();
+    h.advance(810);
+    h.grid.gridW = gridAfter;
+    h.grid.sourceTs = [snapshotAt + skewMs, snapshotAt + skewMs];
+    h.own('Control.Targets.Battery_W', -targetW);
+    return h;
+}
+
+test('SunEnergy waits for the recorded household reductions to reach the head', () => {
+    for (const [gs, gp, pendingW, targetW, gridBefore, gridAfter, skewMs] of [
+        [131, 119, 83, 66, -36.4, -52.6, 539],
+        [98, 87, 65, 41, -21.9, -45.5, 459],
+        [74, 71, 51, 29, -19.9, -42.1, 440],
+        [171, 174, 154, 147, -19.5, -26.5, 2312],
+        [322, 317, 307, 300, -10.2, -16.8, 1553],
+        [140, 124, 89, 87, -35.3, -36.7, 460],
+        [140, 131, 104, 98, -26.7, -33.2, 468]
+    ]) {
+        const h = pendingReductionFromRecording({gs, gp, pendingW, targetW, gridBefore, gridAfter, skewMs});
+        assert.deepEqual(h.commands(), [gs, pendingW]);
+        h.tick();
+        assert.deepEqual(h.commands(), [gs, pendingW], `${gs} -> ${pendingW} -> ${targetW} W`);
+        assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), -pendingW);
+        assert.match(h.value('Devices.Battery.OutputStatus'), /warte kurz auf GS/);
+
+        h.advance(1200); h.fresh();
+        h.snapshot(1, {GS: pendingW, GP: pendingW, timestamp: h.time() - 100});
+        h.grid.gridW = targetW - pendingW;
+        h.grid.sourceTs = [h.time(), h.time()];
+        h.tick();
+        assert.deepEqual(h.commands(), pendingW - targetW <= 10 ? [gs, pendingW] : [gs, pendingW, targetW]);
+    }
+});
+
+test('waiting for a dispatched household reduction requires a current budget and the previous head proof', () => {
+    for (const [reason, change] of Object.entries({
+        'excess after the reduction': h => { h.grid.gridW = -80; h.own('Control.Targets.Battery_W', -39); },
+        'large export at high output': h => { h.grid.gridW = -100; h.own('Control.Targets.Battery_W', -217); },
+        'zero target': h => h.own('Control.Targets.Battery_W', 0),
+        'reversal': h => h.own('Control.Targets.Battery_W', 50),
+        'battery release withdrawn': h => h.own('Config.BatterySelfConsumptionEnabled', false),
+        'minimum SoC': h => h.snapshot(1, {SC: 10}),
+        'aggregate limit below pending GS': h => h.own('Config.BatteryMaxDischarge_W', 73),
+        'head limit below previous GS': h => { h.nativeConfig.batteryHead1MaxDischargeW = 122; },
+        'inverter limit below previous GS': h => h.snapshot(1, {IS: 122}),
+        'unknown grid pair': h => { h.grid.valid = false; },
+        'held grid pair': h => { h.grid.held = true; },
+        'old grid pair': h => { h.grid.sourceTs = [h.time() - 3100, h.time() - 3100]; },
+        'an old grid leg with a recent one': h => { h.grid.sourceTs = [h.time() - 3100, h.time()]; },
+        'future grid sample': h => { h.grid.sourceTs = [h.time(), h.time() + 300]; },
+        'otherwise fresh grid and earlier GP do not pair': h => {
+            h.advance(2250);
+            h.grid.sourceTs = [h.time(), h.time()];
+        },
+        'old device reading republished by the driver': h => h.snapshot(1, {timestamp: h.time() - 2700}),
+        'head snapshot from a different writer': h => h.snapshot(1, {}, {from: 'system.adapter.javascript.0'}),
+        'different reported GS': h => h.snapshot(1, {GS: 125}),
+        'foreign GS write': h => h.put(h.writes.at(-1).id, 83, {ack: false, from: 'system.adapter.javascript.0'}),
+        'wallbox buffer now active': h => h.own('Control.BatteryWallboxBuffer_W', 40),
+        'BHKW wallbox cycle now owns the grant': h => h.run('const bhkwWallboxCycle = {granted: true};'),
+        'three seconds with no GS echo': h => {
+            h.advance(2100); h.fresh();
+            h.snapshot(1, {timestamp: h.time() - 90});
+            h.grid.sourceTs = [h.time(), h.time()];
+        }
+    })) {
+        const high = reason === 'large export at high output';
+        const h = pendingReductionFromRecording(high
+            ? {gs: 322, gp: 317, pendingW: 230, targetW: 220, gridBefore: -87, gridAfter: -97, skewMs: 459}
+            : {gs: 131, gp: 119, pendingW: 83, targetW: 66, gridBefore: -36.4, gridAfter: -52.6, skewMs: 539});
+        const original = h.commands();
+        change(h); h.tick();
+        assert.deepEqual(h.commands(), [...original, 0], reason);
+    }
+});
+
+test('a recorded reduction of a GS with partial AC response waits for the new echo', () => {
+    const h = householdDischargeAt(107, 107, 80);
+    h.own('Config.BatteryFineStep_W', 600);
+    h.grid.gridW = 77;
+    h.own('Control.Targets.Battery_W', -184);
+    h.tick(); h.complete();
+    h.advance(1500); h.fresh();
+    const snapshotAt = h.time();
+    h.snapshot(1, {GS: 184, GP: 154, timestamp: snapshotAt - 60});
+    h.advance(500);
+    h.grid.gridW = -15.5;
+    h.grid.sourceTs = [snapshotAt + 400, snapshotAt + 400];
+    h.own('Control.Targets.Battery_W', -138);
+    h.tick();
+    assert.deepEqual(h.commands(), [107, 184, 138]);
+    assert.equal(h.run(`batteryHeadsQueuedCheck(${JSON.stringify(h.writes[2].id)},138).allowed`), true);
+    h.complete();
+
+    h.advance(950);
+    h.grid.gridW = -36.5;
+    h.grid.sourceTs = [snapshotAt + 1439, snapshotAt + 1439];
+    h.own('Control.Targets.Battery_W', -117);
+    h.tick();
+    assert.deepEqual(h.commands(), [107, 184, 138]);
+    assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), -138);
+
+    h.advance(600); h.fresh();
+    h.snapshot(1, {GS: 138, GP: 164, timestamp: h.time() - 100});
+    h.grid.sourceTs = [h.time() - 500, h.time() - 500];
+    h.tick();
+    assert.deepEqual(h.commands(), [107, 184, 138]);
+    h.advance(600);
+    h.grid.gridW = -46.5;
+    h.grid.sourceTs = [h.time(), h.time()];
+    h.tick();
+    assert.deepEqual(h.commands(), [107, 184, 138, 117]);
+});
+
 test('the expanded discharge trim wait still stops at a load drop or loss of proof', () => {
     for (const [reason, change] of Object.entries({
         'load drop': h => { h.grid.gridW = -47; h.own('Control.Targets.Battery_W', -98); },

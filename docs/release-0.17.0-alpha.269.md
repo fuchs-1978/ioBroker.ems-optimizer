@@ -1,0 +1,7 @@
+# 0.17.0-alpha.269
+
+Bei der Haushaltsentladung eines einzelnen SunEnergy-Kopfs konnte das EMS eine bereits gesendete Senkung unterbrechen, während der Speicher noch die höhere Leistung abgab. Im Mitschnitt um 20:16:26 Uhr lieferte der Kopf 317 W. Bei 17 W Einspeisung lag der Bedarf bei rund 300 W. Die Senkung auf 307 W war bereits gesendet, das EMS wechselte jedoch vor der Rückmeldung auf null. Danach stieg der Netzbezug kurz auf 285 W.
+
+Bei einer nachgewiesenen Senkung berechnet das EMS den verbleibenden Bedarf aus SMA-Netzleistung und der gemessenen AC-Leistung des Kopfs. Es wartet bis zu drei Sekunden ab Anforderung der Senkung auf das Sollwert-Echo, solange die erwartete Restabweichung innerhalb der Toleranz liegt. Das bereits vorliegende Echo des vorherigen Sollwerts kann auch bei noch nachlaufender AC-Leistung als Nachweis dienen. Die gemessene Einspeisung muss im kurzen Wartefenster innerhalb des Totbands plus zweimal der AC-Messtoleranz liegen. Bei 10 W Totband und 25 W AC-Messtoleranz sind das 60 W gemessene Einspeisung und höchstens 35 W erwartete Restabweichung in Einspeiserichtung.
+
+Die Wartezeit endet bei größerer Einspeisung, fehlendem Haushaltsbedarf, unplausibler Rückmeldung, erreichter SoC-Untergrenze oder zu niedriger Leistungsgrenze. Einen weiteren Stellbefehl gibt das EMS erst nach der passenden Rückmeldung frei. Bei echtem Richtungswechsel fordert es zuerst null an.
