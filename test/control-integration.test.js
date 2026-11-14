@@ -2378,32 +2378,43 @@ for (const phases of [1, 3]) {
 for (const phases of [1, 3]) {
     test(`PV above battery capacity starts a ${phases}P wallbox at 6 A before filling the battery and raising current`, async () => {
         const stepW = phases * 230, minimumW = 6 * stepW;
-        const startSurplusW = minimumW + 1620;
-        const h = await plant({battery: true, split: false, startDelayS: 15, minimumRuntimeS: 0, initialSurplusW: 2400,
+        const startSurplusW = minimumW + 1220;
+        const startDelayS = phases === 1 ? 300 : 15;
+        const aggregateBatteryLimitW = phases === 1 ? 3000 : 2400;
+        const h = await plant({battery: true, batteryHeadType: 2, split: false, startDelayS, minimumRuntimeS: 0, initialSurplusW: 2400,
             ...(phases === 3 ? {wb2InitialPhaseMode: 2, phaseResponseDelayMs: 6000} : {}),
-            nativeConfig: {batteryWallboxHalfStepEnabled: true, wallboxParallelChargingEnabled: true,
+            nativeConfig: {batteryDispatchMode: 'sunenergy-heads', batteryHead1MaxChargeW: 2400,
+                batteryPvPriorityEnabled: true, batteryWallboxHalfStepEnabled: true, wallboxParallelChargingEnabled: true,
                 dhwControlEnabled: false, wallboxStopDelayS: 10,
                 ...(phases === 3 ? {wb2PhaseControlMode: 'script', wb2MaxPowerW: 11040, wb2MaxCurrent3pA: 16} : {})}});
         h.own('Devices.MyPV_DHW.ControlEnabled', false);
         h.own('Control.TargetGridPower_W', 0);
+        h.own('Config.WallboxStartReserve_W', 150);
+        h.own('Config.BatteryMaxCharge_W', aggregateBatteryLimitW);
         const timestamp = h.now() - 1000;
-        const socId = h.run('CFG.dp.batterySoc');
+        const socId = h.mapping.DP_BATTERY_SOC;
         h.own('Plan.BatteryTargetSoC_48h_JSON', JSON.stringify([{timestamp, value_pct: 70}]));
         h.put(socId, 45);
         await h.advance(80);
         assert.equal(h.physical().allow, 0, h.diagnostic());
         assert.equal(h.physical().batteryW, 2400, h.diagnostic());
 
-        h.setSurplus(minimumW + 1470);
+        h.setSurplus(minimumW + 1170);
         await h.advance(35);
-        assert.equal(h.physical().allow, 0, 'the start requires the battery share, 6 A and the configured reserve');
+        assert.equal(h.physical().allow, 0, 'the battery must retain at least half its ceiling after the car starts');
         assert.equal(h.physical().batteryW, 2400, h.diagnostic());
 
+        const start = h.trace.length;
         h.setSurplus(startSurplusW);
+        await h.advance(startDelayS - 1);
+        assert.equal(h.physical().allow, 0, 'the start still requires the configured stability time');
         await h.advance(70);
         assert.equal(h.physical().allow, 1, h.diagnostic());
         assert.equal(h.physical().amps, 6, h.diagnostic());
-        assert.equal(h.physical().batteryW, 1620, h.diagnostic());
+        assert.ok(h.trace.slice(start).some(row => row.wbW === 0
+            && row.batteryW === 1070), 'the battery temporarily yields the 150 W start reserve');
+        assert.equal(h.physical().batteryW, 1220, h.diagnostic());
+        assert.ok(h.trace.slice(-20).every(row => row.gridW === 0), h.diagnostic());
 
         h.setSurplus(2400 + minimumW);
         await h.advance(35);
@@ -2425,6 +2436,7 @@ for (const phases of [1, 3]) {
         h.own('Plan.BatteryPower_48h_JSON', JSON.stringify([{timestamp, valueW: 0}]));
         h.put(socId, 20);
         await h.advance(40);
+        assert.equal(h.value('Devices.Battery.Heads.1.SoC_pct'), 20);
         assert.equal(h.physical().allow, 0, 'the configured minimum SoC keeps full battery priority');
         assert.equal(h.physical().batteryW, 2400, h.diagnostic());
     });
