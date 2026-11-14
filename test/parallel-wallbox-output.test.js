@@ -1437,6 +1437,69 @@ test('shared measured PV step sends 9 A for 220 W export and waits for a real re
     assert.deepEqual(h.writes, [], JSON.stringify({message:'ACK/unchanged uptake cannot earn a second step', budget:h.states.get('ems.0.Devices.Wallbox0.IncreaseBudget_JSON'),status:h.states.get('ems.0.Devices.Wallbox0.OutputStatus')}));
 });
 
+async function measuredStepRollbackCandidate(targetA = 7) {
+    const h = await measuredHoldOutput();
+    grantPVStep(h); h.put('export', 220);
+    await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'cmd', val: 9}]);
+    const d = h.output.devices[0];
+    h.advance(2500); grantPVStep(h); h.put('export', 180);
+    h.ack('cmd', 9); h.ack('feedback', 9);
+    await h.output.tick();
+    assert.equal(d.lastA, 9);
+    assert.ok(d.response.ackAt > d.response.at);
+    assert.equal(d.measuredBudgetStep.amps, 9);
+    h.advance(5400); grantPVStep(h, targetA);
+    h.put('export', targetA === 7 ? 94.5 : 350);
+    h.ack('cmd', 8); h.measure(0, 8);
+    const electricalAt = h.output.now() + 2;
+    h.put('power', 1.73, {ts: electricalAt});
+    h.put('i1', 7.9, {ts: electricalAt});
+    h.writes.length = 0;
+    return h;
+}
+
+for (const targetA of [7, 9]) test(`EQE 9/8 A measured PV step rollback respects live target ${targetA} A`, async () => {
+    const h = await measuredStepRollbackCandidate(targetA);
+    const d = h.output.devices[0];
+    const reducedA = Math.min(8, targetA);
+    await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'cmd', val: reducedA}]);
+    assert.equal(d.lastA, 9, 'reserve the higher current until both confirmations');
+    assert.equal(d.measuredBudgetStep, null);
+    assert.equal(d.currentCorrection.lowerRollback, true);
+    h.advance(1000); grantPVStep(h, targetA); h.measure(0, reducedA);
+    await h.output.tick();
+    assert.equal(d.currentCorrection.result, 'pending');
+    h.ack('cmd', reducedA); await h.output.tick();
+    assert.equal(d.lastA, reducedA);
+    assert.equal(d.currentCorrection.result, 'confirmed');
+    assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, true);
+    assert.deepEqual(h.writes, [{id: 'cmd', val: reducedA}]);
+});
+
+for (const [reason, change] of [
+    ['unrelated measured step', h => { h.output.devices[0].measuredBudgetStep.amps = 10; }],
+    ['stale physical proof after dispatch preparation', h => {
+        const original = h.adapter.setCompatState;
+        h.adapter.setCompatState = (id, value, ack) => {
+            original(id, value, ack);
+            if (id.endsWith('.CurrentCorrection_JSON')) h.put('power', 1.73, {ts: 1000000});
+        };
+    }],
+    ['house-connection limit', h => h.put('h1', 100)],
+    ['grid-operator cap', h => {
+        h.put('par14a', true);
+        h.put('ems.0.Devices.MyPV_DHW.Present', true);
+        h.put('ems.0.Actual.MyPV_DHW_W', 3000);
+    }],
+    ['connection loss', h => h.put('connection', false)]
+]) test(`EQE measured PV step rollback stops on ${reason}`, async () => {
+    const h = await measuredStepRollbackCandidate(); change(h);
+    await h.output.tick();
+    assert.deepEqual(h.writes, [{id: 'allow', val: 0}]);
+});
+
 test('PV step respects admission hysteresis, ownership, disabled config and hard current caps', async () => {
     for (const change of [
         h => h.put('export', 199), // 31 W expected import > 30 W admission.
