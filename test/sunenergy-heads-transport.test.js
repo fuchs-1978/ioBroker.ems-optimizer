@@ -349,6 +349,39 @@ test('real controller/transport recheck an aggregate operator limit reduced duri
     assert.equal(f.adapter.getCachedState(`${f.base}.OutputReservedCharge_W`).val, 600);
 });
 
+test('a small charging reduction follows an in-flight GS through the production queue without zero', async () => {
+    const f = fixture(1);
+    const h = attachRealController(f);
+    const originalWrite = f.adapter.setForeignStateAsync;
+    let begin;
+    let finish;
+    const started = new Promise(resolve => { begin = resolve; });
+    const inFlight = new Promise(resolve => { finish = resolve; });
+    f.adapter.setForeignStateAsync = async (id, value, ack) => {
+        await originalWrite(id, value, ack);
+        if (value === -11) {
+            begin();
+            await inFlight;
+        }
+    };
+    h.own('Config.BatteryDeadband_W', 10);
+    h.own('Control.Targets.Battery_W', 11);
+    h.grid.gridW = -11;
+    h.tick();
+    await started;
+
+    h.advance(1000);
+    h.own('Control.LastUpdate', h.now());
+    h.own('Control.Targets.Battery_W', 10);
+    h.grid.gridW = 1;
+    h.tick();
+    finish();
+    await f.drain();
+
+    assert.deepEqual(f.writes.map(write => write.value), [-11, -10]);
+    assert.equal(f.adapter.getCachedState(`${f.base}.OutputReservedCharge_W`).val, 11);
+});
+
 test('a superseded household reduction restores the previous discharge without writing zero', async () => {
     const recoverable = ['newer XT500 sample', 'smaller grid budget', 'previous deadline'];
     for (const scenario of [...recoverable, 'no remaining demand', 'lower device limit', 'revoked release']) {

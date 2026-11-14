@@ -2868,6 +2868,57 @@ test('a completed forecast stage releases the PV reservation while live charging
 });
 
 for (const batteryDispatchMode of ['single-head', 'sunenergy-heads']) {
+    test(`small grid import trims an unconfirmed charge to the 10 W limit in ${batteryDispatchMode} mode`, async () => {
+        const h = await plant({battery: true, batteryHeadType: 2, batteryHeadMaxSoc: 100, wallbox: false,
+            initialSurplusW: 0, nativeConfig: {batteryDispatchMode, batteryPvPriorityEnabled: true,
+                batteryWallboxHalfStepEnabled: true, wallboxParallelChargingEnabled: true, dhwControlEnabled: false}});
+        h.own('Control.TargetGridPower_W', 0);
+        h.own('Config.BatteryDeadband_W', 10);
+        h.own('Config.BatteryMaxSoC_pct', 100);
+        h.own('Config.BatteryPvFeedbackObservationEnabled', true);
+        h.own('Plan.BatteryTargetSoC_48h_JSON', JSON.stringify([{timestamp: h.now() - 1000, value_pct: 100}]));
+        const socId = batteryDispatchMode === 'single-head' ? h.run('CFG.dp.batterySoc') : h.mapping.DP_BATTERY_SOC;
+        h.put(socId, 100);
+        await h.advance(2);
+        assert.equal(JSON.parse(h.value('Control.BatteryPVReachedTarget_JSON')).target, 100);
+        h.put(socId, 60);
+        const start = h.now();
+        const frame = (elapsed, gridW, meterAt = start + elapsed) => h.replayAt(start + elapsed, [
+            ['DP_GRID_IMPORT', Math.max(0, gridW), {ts: meterAt}],
+            ['DP_GRID_EXPORT', Math.max(0, -gridW), {ts: meterAt}]
+        ], {output: false});
+        const commands = () => h.writes.filter(write => write.id === h.config.batterySetpointId).map(write => write.val);
+
+        await frame(1000, -11);
+        assert.deepEqual(commands(), [-11]);
+        assert.equal(h.physical().batteryW, 0, 'GP still reads zero when the small import arrives');
+
+        await frame(2000, 1.1);
+        assert.equal(h.value('Control.Targets.Battery_W'), 10);
+        assert.deepEqual(commands(), [-11, -10]);
+        assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 11);
+
+        await frame(3000, 1.1, start + 2000);
+        assert.equal(h.value('Control.Targets.Battery_W'), 10, 'a repeated meter sample cannot trim again');
+        const beforeStop = commands();
+        assert.ok(beforeStop.slice(2).every(val => val === -10), 'the single-head driver may refresh 10 W');
+
+        await frame(4000, 1.1);
+        assert.deepEqual(commands(), [...beforeStop, 0], 'the next fresh watt would reduce charge to 9 W');
+    });
+
+    test(`107 W grid import stops a 25 W charge in ${batteryDispatchMode} mode`, async () => {
+        const h = await plant({battery: true, batteryHeadType: 2, wallbox: false, initialSurplusW: 25,
+            nativeConfig: {batteryDispatchMode, dhwControlEnabled: false}});
+        h.own('Control.TargetGridPower_W', 0);
+        h.own('Config.BatteryDeadband_W', 10);
+        await h.advance(5);
+        assert.equal(h.physical().batteryW, 25);
+        await h.replayAt(h.now() + 1000, [['DP_GRID_IMPORT', 107], ['DP_GRID_EXPORT', 0]], {output: false});
+        const commands = h.writes.filter(write => write.id === h.config.batterySetpointId).map(write => write.val);
+        assert.equal(commands.at(-1), 0);
+    });
+
     test(`live battery absorbs 10, 20 and 100 W of CHP export after the daily target in ${batteryDispatchMode} mode`, async () => {
         const h = await plant({battery: true, batteryHeadType: 2, batteryHeadMaxSoc: 100, wallbox: false,
             initialSurplusW: 100, nativeConfig: {batteryDispatchMode, batteryPvPriorityEnabled: true,
