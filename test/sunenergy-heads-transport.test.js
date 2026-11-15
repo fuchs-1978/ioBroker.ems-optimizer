@@ -392,6 +392,67 @@ for (const {name, previousW, gridW, targetW, coordinated = false} of [
     });
 }
 
+for (const {previousW, plannedW, plannedGridW, freshGridW, nextW, protection} of [
+    {previousW: 110, plannedW: -82, plannedGridW: 192, freshGridW: 80, nextW: 30},
+    {previousW: -110, plannedW: 82, plannedGridW: -192, freshGridW: -80, nextW: -30},
+    {previousW: 110, plannedW: -82, plannedGridW: 192, freshGridW: 80, protection: 'an unconfirmed grid pair'},
+    {previousW: 110, plannedW: -82, plannedGridW: 192, freshGridW: 80, protection: 'a reduced charge limit'}
+]) {
+    const name = protection ? `an unsent reversal stops for ${protection}`
+        : `an obsolete reversal from ${previousW} W replans without sending zero or logging an error`;
+    test(name, async () => {
+        const f = fixture(1), h = attachRealController(f);
+        const commands = () => f.writes.map(write => write.value);
+        const errors = [], debug = [];
+        f.adapter.log.error = message => errors.push(message);
+        f.adapter.log.debug = message => debug.push(message);
+        const demand = (watts, gridW) => {
+            h.own('Control.LastUpdate', h.now());
+            h.own('Control.Targets.Battery_W', watts);
+            h.grid.gridW = gridW;
+        };
+        const report = watts => {
+            const driver = {from: 'system.adapter.sunenergyxt500.0'};
+            const rawId = f.id(1).replace('.control.GS', '.info.rawResponse');
+            const raw = JSON.parse(f.adapter.getCachedState(rawId).val);
+            h.put(rawId, JSON.stringify({...raw, timestamp: h.now(), GS: -watts, GP: -watts}), driver);
+            h.put(f.id(1), -watts, driver);
+        };
+        h.own('Config.BatteryDeadband_W', 10);
+        demand(previousW, -previousW); h.tick(); await f.drain();
+        h.advance(1000); report(previousW); demand(previousW, 0); h.tick(); await f.drain();
+        assert.deepEqual(commands(), [-previousW]);
+
+        let release;
+        const persistence = new Promise(resolve => { release = resolve; });
+        f.adapter.setStateAsync = async (id, state) => {
+            if (id === 'Devices.Battery.Heads.1.OutputCommandInternal_W' && state.val === plannedW) await persistence;
+        };
+        h.advance(1000); report(previousW); demand(plannedW, plannedGridW); h.tick();
+        assert.equal(f.adapter.getCachedState(`${f.base}.OutputCommandInternal_W`).val, plannedW);
+
+        h.advance(1000); report(previousW); h.grid.gridW = freshGridW;
+        if (protection === 'an unconfirmed grid pair') h.grid.held = true;
+        if (protection === 'a reduced charge limit') h.limit.budgetW = 10;
+        release(); await f.drain(); await f.drain();
+
+        if (protection) {
+            assert.deepEqual(commands(), [-previousW, 0]);
+            assert.equal(errors.length, 1);
+            assert.equal(debug.some(message => message.startsWith('Deferred production output')), false);
+            return;
+        }
+        assert.deepEqual(commands(), [-previousW]);
+        assert.equal(f.adapter.getCachedState(`${f.base}.OutputCommandInternal_W`).val, previousW);
+        assert.equal(f.adapter.getCachedState(`${f.base}.OutputReservedCharge_W`).val, Math.max(0, previousW));
+        assert.equal(errors.length, 0);
+        assert.ok(debug.some(message => message.startsWith('Deferred production output')));
+
+        demand(nextW, freshGridW); h.tick(); await f.drain();
+        assert.deepEqual(commands(), [-previousW, -nextW], f.adapter.getCachedState(`${f.base}.OutputStatus`).val);
+    });
+}
+
 test('a queued live charge increase follows the newer budget without resetting GS', async () => {
     const f = fixture(1), h = attachRealController(f);
     const commands = () => f.writes.map(write => write.value);

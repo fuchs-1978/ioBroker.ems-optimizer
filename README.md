@@ -7,7 +7,7 @@
 
 Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Combines PV and grid measurements, load history, weather forecasts and electricity prices in a rolling 48-hour plan.
 
-**Current GitHub build 0.17.0-alpha.282.** Install the tested build from GitHub and commission each enabled device against its actual feedback and protection limits.
+**Current GitHub build 0.17.0-alpha.283.** Install the tested build from GitHub and commission each enabled device against its actual feedback and protection limits.
 
 [Deutsche Bedienungsanleitung](README.de.md) · [Release history](CHANGELOG_OLD.md) · [Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
@@ -192,6 +192,10 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 
 ## Changelog
 
+### 0.17.0-alpha.283 (2026-11-15)
+
+- Replan a queued battery direction change when the current grid measurement no longer calls for it. Keep observing the last issued setpoint while it fits the current protection limits. [Release notes](docs/release-0.17.0-alpha.283.md)
+
 ### 0.17.0-alpha.282 (2026-11-15)
 
 - Start single-phase WB1 charging at 6 A from at least 800 W of measured daytime surplus, with up to 600 W from a nearly full SunEnergy store. Use later surplus for storage charging. [Release notes](docs/release-0.17.0-alpha.282.md)
@@ -215,10 +219,6 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 ### 0.17.0-alpha.277 (2026-11-15)
 
 - A fresh SunEnergy echo of a direct direction change ends the short switching wait once AC power has left the old direction. Normal AC feedback handling takes over. [Release notes](docs/release-0.17.0-alpha.277.md)
-
-### 0.17.0-alpha.276 (2026-11-15)
-
-- Reduce single-head SunEnergy charging without waiting for the previous setpoint echo and switch directly in either direction when the meter supports the opposite demand. [Release notes](docs/release-0.17.0-alpha.276.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 
