@@ -2762,10 +2762,11 @@ for (const phases of [1, 3]) {
         assert.equal(h.physical().allow, 0, h.diagnostic());
         assert.equal(h.physical().batteryW, 2400, h.diagnostic());
 
+        h.setSurplus(2200);
+        await h.advance(8);
         h.setSurplus(minimumW + 1170);
-        await h.advance(35);
-        assert.equal(h.physical().allow, 0, 'the battery must retain at least half its ceiling after the car starts');
-        assert.equal(h.physical().batteryW, 2400, h.diagnostic());
+        await h.advance(10);
+        assert.equal(h.physical().allow, 0, 'a live handoff without proved near-limit charging cannot waive the planned floor');
 
         // A short real shortage invalidates the earlier battery observation.
         h.setSurplus(2200);
@@ -2773,8 +2774,8 @@ for (const phases of [1, 3]) {
         const start = h.trace.length;
         h.own('Plan.BatteryPower_48h_JSON', JSON.stringify([{timestamp, valueW: 2400, requiredPvChargeW: 1000}]));
         h.setSurplus(startSurplusW);
-        await h.advance(startDelayS - 1);
-        assert.equal(h.physical().allow, 0, 'the start still requires the configured stability time');
+        await h.advance(Math.min(startDelayS, 120) - 1);
+        assert.equal(h.physical().allow, 0, 'the start still requires proved stability');
         await h.advance(70);
         assert.equal(h.physical().allow, 1, h.diagnostic());
         assert.equal(h.physical().amps, 6, h.diagnostic());
@@ -2795,15 +2796,9 @@ for (const phases of [1, 3]) {
         assert.ok(h.trace.slice(-20).every(row => row.wbW === 7 * stepW && row.gridW === 0), h.diagnostic());
 
         h.setSurplus(startSurplusW);
-        h.own('Plan.BatteryPower_48h_JSON', JSON.stringify([{timestamp, valueW: 2400, requiredPvChargeW: 1250}]));
         await h.advance(35);
-        assert.equal(h.physical().allow, 0, '1,220 W would miss the binding 1,250 W requirement');
-        assert.equal(h.value('Control.Targets.Battery_W'), 2400, h.diagnostic());
-
-        h.own('Plan.BatteryPower_48h_JSON', JSON.stringify([{timestamp, valueW: 2400}]));
-        await h.advance(60);
-        assert.equal(h.physical().allow, 0, 'full planned storage power keeps its priority');
-        assert.equal(h.physical().batteryW, 2400, h.diagnostic());
+        assert.equal(h.physical().wbPowerW, minimumW, h.diagnostic());
+        assert.equal(h.physical().batteryW, 1220, h.diagnostic());
 
         h.own('Plan.BatteryPower_48h_JSON', JSON.stringify([{timestamp, valueW: 0}]));
         h.put(socId, 20);
@@ -2814,15 +2809,49 @@ for (const phases of [1, 3]) {
     });
 }
 
-async function batteryPvTransferPlant() {
+async function batteryPvTransferPlant(initialSurplusW = 2400) {
     const h = await plant({battery: true, batteryHeadType: 2, split: false, startDelayS: 300,
-        minimumRuntimeS: 0, initialSurplusW: 2400, batteryDelayMs: 5000, dhwDelayMs: 9000,
+        minimumRuntimeS: 0, initialSurplusW, batteryDelayMs: 5000, dhwDelayMs: 9000,
         nativeConfig: {batteryDispatchMode: 'sunenergy-heads', batteryHead1MaxChargeW: 2400,
             batteryPvPriorityEnabled: true, batteryWallboxHalfStepEnabled: true, wallboxParallelChargingEnabled: true}});
     h.own('Control.TargetGridPower_W', 0);
     h.own('Config.WallboxStartReserve_W', 150);
     h.own('Plan.BatteryTargetSoC_48h_JSON', JSON.stringify([{timestamp: h.now() - 1000, value_pct: 70}]));
     return h;
+}
+
+for (const {surplusW, requiredPvChargeW, startCapW, remainderW} of [
+    {surplusW: 2430, requiredPvChargeW: 1524, startCapW: 900, remainderW: 1050},
+    {surplusW: 3400, requiredPvChargeW: 2400, startCapW: 1870, remainderW: 2020}
+]) {
+    test(`two minutes of measured battery charging hand off ${surplusW} W of surplus at 6 A`, async () => {
+        const h = await batteryPvTransferPlant(surplusW);
+        h.own('Plan.BatteryPower_48h_JSON', JSON.stringify([{timestamp: h.now() - 1000,
+            valueW: 2400, requiredPvChargeW}]));
+        h.own('Config.BatteryDeadband_W', 10);
+        await h.advance(125);
+        const saturated = h.trace.find(row => row.batteryW >= 2350);
+        assert.ok(saturated, h.diagnostic());
+        assert.equal(h.physical().allow, 0, 'near-limit charging must be observed for two minutes');
+        const readyAt = saturated.at + 120000;
+        await h.advance(Math.ceil((readyAt - h.now()) / 1000) + 45);
+        const start = h.writes.find(w => w.id === 'goe.allow' && w.val === 1);
+        assert.ok(start && start.at >= readyAt && start.at < readyAt + 45000, h.diagnostic());
+        assert.ok(h.trace.some(row => row.wbW === 0 && row.batteryW === startCapW),
+            'the battery clears the measured start reserve');
+        assert.ok(h.trace.some(row => row.at === start.at && row.gridW <= -1380),
+            'the output waits for measured surplus');
+        assert.equal(h.physical().wbPowerW, 1380, h.diagnostic());
+        assert.equal(h.physical().batteryW, remainderW, h.diagnostic());
+        assert.equal(h.trace.at(-1).gridW, 0);
+
+        h.own('Plan.BatteryPower_48h_JSON', JSON.stringify([{timestamp: h.now() - 1000,
+            valueW: 2400, requiredPvChargeW: 2400}]));
+        h.setSurplus(2160);
+        await h.advance(50);
+        assert.equal(h.physical().wbPowerW, 1380, h.diagnostic());
+        assert.equal(h.physical().batteryW, 780, h.diagnostic());
+    });
 }
 
 test('a completed forecast stage releases the PV reservation while live charging and the wallbox continue', async () => {
@@ -3069,11 +3098,38 @@ for (const batteryDispatchMode of ['single-head', 'sunenergy-heads']) {
     });
 }
 
-test('five minutes of measured battery PV qualifies the 2600 W handoff without a second timer or optional heat', async () => {
+test('two minutes at 2350 W qualify a later export for immediate transfer without starting at zero export', async () => {
+    const h = await batteryPvTransferPlant(2350);
+    h.own('Config.BatteryDeadband_W', 10);
+    h.own('Plan.BatteryPower_48h_JSON', JSON.stringify([{timestamp: h.now() - 1000,
+        valueW: 2400, requiredPvChargeW: 2400}]));
+    await h.advance(170);
+    assert.equal(h.physical().batteryW, 2350, h.diagnostic());
+    assert.equal(h.physical().allow, 0, 'the battery can absorb all the surplus');
+    const at = h.now();
+    h.setSurplus(2430);
+    await h.advance(45);
+    const start = h.writes.find(w => w.id === 'goe.allow' && w.val === 1);
+    assert.ok(start && start.at > at && start.at < at + 45000, h.diagnostic());
+    assert.equal(h.physical().batteryW, 1050, h.diagnostic());
+});
+
+test('export and a battery setpoint cannot qualify a handoff without measured battery charging', async () => {
+    const h = await batteryPvTransferPlant(2430);
+    h.own('Plan.BatteryPower_48h_JSON', JSON.stringify([{timestamp: h.now() - 1000,
+        valueW: 2400, requiredPvChargeW: 2400}]));
+    h.setBatteryResponse(false);
+    await h.advance(170);
+    assert.equal(h.physical().batteryW, 0);
+    assert.ok(h.writes.some(w => w.id === h.config.batterySetpointId && w.val < 0));
+    assert.ok(h.writes.every(w => w.id !== 'goe.allow' || w.val === 0));
+});
+
+test('measured battery PV qualifies the 2600 W handoff without a second timer or optional heat', async () => {
     const h = await batteryPvTransferPlant();
-    await h.advance(365);
+    await h.advance(170);
     assert.equal(h.physical().batteryW, 2400);
-    assert.equal(h.physical().allow, 0, '2400 W alone still leaves less than 1200 W for the battery after the EV starts');
+    assert.equal(h.physical().allow, 0, '2400 W alone causes no export');
     const at = h.now();
     h.setSurplus(2600);
     await h.advance(55);
@@ -3120,7 +3176,7 @@ test('an initial 2600 W handoff waits for the measured heater reduction and keep
     const at = h.now();
     await h.advance(340);
     const start = h.writes.find(w => w.id === 'goe.allow' && w.val === 1);
-    assert.ok(start && start.at >= at + 300000 && start.at < at + 340000, h.diagnostic());
+    assert.ok(start && start.at >= at + 120000 && start.at < at + 300000, h.diagnostic());
     assert.ok(h.trace.some(row => row.at === start.at && row.heaterW === 0 && row.gridW <= -1380));
     assert.equal(h.physical().batteryW, 1220);
     assert.equal(h.physical().heaterW, 0);
