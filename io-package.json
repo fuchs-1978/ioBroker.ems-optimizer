@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.278",
+    "version": "0.17.0-alpha.279",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.279": {
+        "en": "Hand off PV surplus to the wallbox after two minutes of measured battery charging near its power limit.",
+        "de": "PV-Überschuss nach zwei Minuten gemessener Speicherladung nahe der Leistungsgrenze an die Wallbox übergeben.",
+        "es": "Transfiere el excedente solar a la estación de carga tras dos minutos de carga de la batería cerca de su límite.",
+        "fr": "Transfère le surplus photovoltaïque à la borne après deux minutes de charge mesurée de la batterie près de sa limite.",
+        "it": "Trasferisce il surplus fotovoltaico alla wallbox dopo due minuti di carica misurata della batteria vicino al limite.",
+        "nl": "Geeft PV-overschot aan de laadpaal door na twee minuten gemeten acculading dicht bij de vermogensgrens.",
+        "pl": "Przekazuje nadwyżkę PV do ładowarki po dwóch minutach zmierzonego ładowania akumulatora blisko limitu mocy.",
+        "pt": "Transfere o excedente solar para a estação após dois minutos de carregamento medido da bateria perto do limite.",
+        "ru": "Передаёт излишек солнечной энергии зарядной станции после двух минут измеренной зарядки батареи вблизи предела мощности.",
+        "uk": "Передає надлишок сонячної енергії зарядній станції після двох хвилин виміряного заряджання батареї поблизу межі потужності.",
+        "zh-cn": "电池实测充电功率接近上限两分钟后，将光伏余电分配给充电桩。"
+      },
       "0.17.0-alpha.278": {
         "en": "Continue single-head control during pending feedback and stop on ten consecutive missed responses.",
         "de": "Einzelkopf bei offener Rückmeldung weiterregeln und nach zehn fehlenden Rückmeldungen in Folge stoppen.",
@@ -81,19 +94,6 @@
         "ru": "Аккумулятор поглощает оставшийся избыток после достижения плановой цели заряда.",
         "uk": "Акумулятор поглинає залишковий надлишок після досягнення планової цілі заряду.",
         "zh-cn": "达到计划充电目标后，电池继续吸收剩余的上网余电。"
-      },
-      "0.17.0-alpha.272": {
-        "en": "Apply the next SunEnergy household discharge setpoint directly while inverter feedback is pending.",
-        "de": "Bei laufender SunEnergy-Haushaltsentladung direkt auf den nächsten Sollwert wechseln, auch wenn die Rückmeldung aussteht.",
-        "es": "Aplica directamente la siguiente consigna de descarga doméstica aunque la confirmación de SunEnergy esté pendiente.",
-        "fr": "Applique directement la prochaine consigne de décharge domestique pendant l’attente du retour SunEnergy.",
-        "it": "Applica direttamente il nuovo setpoint di scarica domestica mentre la conferma SunEnergy è in attesa.",
-        "nl": "Past de volgende ontlaadinstelling voor het huishouden direct toe terwijl de SunEnergy-terugmelding nog uitstaat.",
-        "pl": "Stosuje kolejną nastawę rozładowania na potrzeby domu podczas oczekiwania na potwierdzenie SunEnergy.",
-        "pt": "Aplica diretamente a próxima consigna de descarga doméstica enquanto aguarda a confirmação da SunEnergy.",
-        "ru": "Применяет следующую уставку разряда для дома, пока ожидается подтверждение SunEnergy.",
-        "uk": "Застосовує наступне задане значення розряду для будинку, поки очікується підтвердження SunEnergy.",
-        "zh-cn": "SunEnergy 反馈尚未返回时，直接应用下一个家庭放电设定值。"
       }
     },
     "titleLang": {
