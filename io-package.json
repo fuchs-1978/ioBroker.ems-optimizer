@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.283",
+    "version": "0.17.0-alpha.284",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.284": {
+        "en": "Spread forecast hot-water demand across a recurring cheap overnight tariff block.",
+        "de": "Warmwasserbedarf im Fahrplan über einen wiederkehrenden günstigen Nachtblock verteilen.",
+        "es": "Distribuye el calentamiento de agua previsto a lo largo de un bloque nocturno recurrente de tarifa baja.",
+        "fr": "Répartit le chauffage de l’eau prévu sur une plage nocturne récurrente à bas tarif.",
+        "it": "Distribuisce il riscaldamento dell’acqua previsto su una fascia notturna ricorrente a tariffa ridotta.",
+        "nl": "Spreidt de geplande waterverwarming over een terugkerend goedkoop nachtelijk tariefblok.",
+        "pl": "Rozkłada planowane podgrzewanie wody na powtarzający się nocny okres niskiej taryfy.",
+        "pt": "Distribui o aquecimento de água previsto ao longo de um período noturno recorrente com tarifa baixa.",
+        "ru": "Распределяет запланированный нагрев воды по повторяющемуся ночному периоду низкого тарифа.",
+        "uk": "Розподіляє запланований нагрів води на повторюваний нічний період із низьким тарифом.",
+        "zh-cn": "将计划的热水加热均匀分配到每天重复的夜间低价时段。"
+      },
       "0.17.0-alpha.283": {
         "en": "Replan an obsolete battery direction change with the current grid reading. Retain the last issued setpoint within protection limits.",
         "de": "Überholte Speicher-Richtungswechsel anhand der aktuellen Netzmessung neu bewerten. Den letzten gesendeten Sollwert innerhalb der Schutzgrenzen weiter beobachten.",
@@ -81,19 +94,6 @@
         "ru": "Продолжает регулировать один модуль в ожидании обратной связи и останавливается после десяти пропущенных ответов подряд.",
         "uk": "Продовжує регулювати один модуль в очікуванні зворотного зв’язку та зупиняється після десяти пропущених відповідей поспіль.",
         "zh-cn": "单机等待反馈时继续调节，连续十次未收到匹配的反馈后停止。"
-      },
-      "0.17.0-alpha.277": {
-        "en": "Use normal AC feedback handling after a confirmed SunEnergy direction change.",
-        "de": "Nach bestätigtem SunEnergy-Richtungswechsel die normale AC-Rückmeldung abwarten.",
-        "es": "Aplica la comprobación normal de potencia CA tras confirmar un cambio de sentido de SunEnergy.",
-        "fr": "Applique le contrôle normal du retour de puissance CA après un changement de sens SunEnergy confirmé.",
-        "it": "Usa il normale riscontro della potenza CA dopo un cambio di direzione SunEnergy confermato.",
-        "nl": "Gebruikt de normale AC-terugmelding na een bevestigde richtingswissel van SunEnergy.",
-        "pl": "Po potwierdzonej zmianie kierunku SunEnergy przechodzi do zwykłego monitorowania mocy AC.",
-        "pt": "Usa o retorno normal da potência CA após uma mudança de direção SunEnergy confirmada.",
-        "ru": "После подтверждения смены направления SunEnergy используется обычный контроль мощности переменного тока.",
-        "uk": "Після підтвердженої зміни напрямку SunEnergy діє звичайна перевірка потужності змінного струму.",
-        "zh-cn": "SunEnergy 确认充放电方向切换后，按常规流程检查交流功率反馈。"
       }
     },
     "titleLang": {

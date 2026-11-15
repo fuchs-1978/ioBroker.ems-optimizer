@@ -1,11 +1,12 @@
 # EMS Optimizer
 
-**Aktuelle Adapterversion 0.17.0-alpha.283.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
+**Aktuelle Adapterversion 0.17.0-alpha.284.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
 
 [English overview](README.md) · [Vollständige Admin-Feldreferenz](docs/admin-reference.de.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) · [Versionsänderungen](README.md#changelog)
 
 ## Aktuelle Änderungen
 
+- **Alpha.284** verteilt die geplante Warmwasserleistung im wiederkehrenden günstigen Nachtblock gleichmäßiger. [Versionshinweise](docs/release-0.17.0-alpha.284.md)
 - **Alpha.283** verwirft überholte Speicher-Richtungswechsel vor der Ausgabe und berechnet den Sollwert mit der nächsten gültigen Netzmessung neu. Der zuletzt gesendete Auftrag darf innerhalb der aktuellen Schutzgrenzen weiterlaufen. [Versionshinweise](docs/release-0.17.0-alpha.283.md)
 - **Alpha.282** kann WB1 (EQV) ab 800 W stabilem Tagesüberschuss einphasig mit 6 A starten. Ein nahezu voller Speicher liefert die fehlende Leistung bis 600 W. Steigender Überschuss kann wieder in den Speicher fließen. [Versionshinweise](docs/release-0.17.0-alpha.282.md)
 - **Alpha.281** nimmt vor der Übertragung verworfene Speicheraufträge zurück. Der Regler bewertet die nächste Messung ausgehend vom letzten gesendeten Auftrag oder bestätigten Stillstand. [Versionshinweise](docs/release-0.17.0-alpha.281.md)

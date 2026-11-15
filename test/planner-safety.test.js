@@ -644,6 +644,29 @@ test('warm-water bridge spreads night heat before a tariff rise without a later 
     assert.equal(r.gridAuthorization, false);
 });
 
+test('warm-water bridge spreads the load when the same cheap block repeats the following night', () => {
+    const initialKWh = 14.25;
+    const temperature = 20 + initialKWh / (500 * 1.163 / 1000);
+    const h = thermalFixture({temperatures: Array(4).fill(temperature), demand: 25});
+    h.put('ems.0.Config.DHWMinTemperature_C', 20);
+    const nightSlots = 24;
+    const daySlots = 96;
+    const price = Array.from({length: 2 * daySlots}, (_, i) => i % daySlots < nightSlots ? 23.56 : 30.04);
+    const data = h.plan({slots: price.length, price, pvW: 0, houseW: 800});
+    const a = balancedPlan(h, data), r = h.report();
+    const demandPerSlot = 27 / 96;
+    const requiredKWh = (daySlots + nightSlots - 1) * demandPerSlot + r.reserveKWh - initialKWh;
+    for (const slot of a.slice(0, nightSlots)) {
+        near(slot.dhwGridW, requiredKWh * 1000 / 6, 'even power in the first night block');
+        assert.ok(slot.dhwGridW >= 900 && slot.dhwGridW <= 9000);
+    }
+    near(r.slots[nightSlots - 1].usableKWh, initialKWh + requiredKWh - nightSlots * demandPerSlot,
+        'reserve at the first tariff rise');
+    assert.ok(a.slice(nightSlots, daySlots).every(slot => slot.dhwGridW < 1e-6));
+    assert.ok(r.minimumProjectedUsableKWh >= r.reserveKWh - 1e-7);
+    assert.equal(r.gridAuthorization, false);
+});
+
 test('warm-water bridge keeps its existing dispatch when a price after the rise is unknown', () => {
     const temperature = 40 + 0.6995 / (500 * 1.163 / 1000);
     const h = thermalFixture({temperatures: Array(4).fill(temperature), demand: 25});

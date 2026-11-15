@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.277 (2026-11-15)
+
+- A fresh SunEnergy echo of a direct direction change ends the short switching wait once AC power has left the old direction. Normal AC feedback handling takes over. [Release notes](docs/release-0.17.0-alpha.277.md)
+
 ## 0.17.0-alpha.276 (2026-11-15)
 
 - Reduce single-head SunEnergy charging without waiting for the previous setpoint echo and switch directly in either direction when the meter supports the opposite demand. [Release notes](docs/release-0.17.0-alpha.276.md)
