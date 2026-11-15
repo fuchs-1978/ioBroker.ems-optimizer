@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.281",
+    "version": "0.17.0-alpha.282",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.282": {
+        "en": "Start eligible single-phase WB1 charging with measured daytime surplus and up to 600 W of battery support. Recharge the battery with surplus as it becomes available.",
+        "de": "Einphasige WB1 bei gemessenem Tagesüberschuss mit bis zu 600 W Speicherhilfe starten. Freien Überschuss zum Nachladen des Speichers nutzen.",
+        "es": "Inicia la carga monofásica de WB1 con excedente diurno medido y hasta 600 W de apoyo de la batería. Recarga la batería con el excedente disponible.",
+        "fr": "Démarre la recharge monophasée sur WB1 avec le surplus diurne mesuré et jusqu’à 600 W fournis par la batterie. Recharge la batterie avec le surplus disponible.",
+        "it": "Avvia la ricarica monofase su WB1 con il surplus diurno misurato e fino a 600 W dalla batteria. Ricarica la batteria con il surplus disponibile.",
+        "nl": "Start eenfasig laden op WB1 met gemeten dagoverschot en tot 600 W accusteun. Laadt de accu met beschikbaar overschot bij.",
+        "pl": "Rozpoczyna jednofazowe ładowanie WB1 z mierzonej nadwyżki w dzień ze wsparciem akumulatora do 600 W. Dostępna nadwyżka doładowuje akumulator.",
+        "pt": "Inicia o carregamento monofásico na WB1 com o excedente diurno medido e até 600 W da bateria. Recarrega a bateria com o excedente disponível.",
+        "ru": "Запускает однофазную зарядку WB1 при измеренном дневном избытке с поддержкой накопителя до 600 Вт. Свободный избыток пополняет накопитель.",
+        "uk": "Запускає однофазне заряджання WB1 за виміряного денного надлишку з підтримкою накопичувача до 600 Вт. Доступний надлишок поповнює накопичувач.",
+        "zh-cn": "白天根据测得的余电启动 WB1 单相充电，并由储能提供最多 600 瓦的辅助。可用余电可为储能补充电量。"
+      },
       "0.17.0-alpha.281": {
         "en": "Restore the last issued battery setpoint when a queued request is rejected before dispatch. Replan with the next valid measurement.",
         "de": "Nach einem vor der Übertragung verworfenen Speicherauftrag den letzten gesendeten Sollwert wiederherstellen und mit dem nächsten gültigen Messwert weiterregeln.",
@@ -81,19 +94,6 @@
         "ru": "Снижает заряд одного модуля до получения подтверждения и напрямую меняет направление при достаточной мощности по измерениям сети.",
         "uk": "Зменшує заряд одного модуля до підтвердження й одразу змінює напрямок, якщо це дозволяють вимірювання мережі.",
         "zh-cn": "等待反馈时降低单机充电功率，并在电网测量值允许时直接切换充放电方向。"
-      },
-      "0.17.0-alpha.275": {
-        "en": "Switch a single battery head directly from charging to household discharge when grid import exceeds battery charging power.",
-        "de": "Einen Speicherkopf direkt vom Laden auf Haushaltsentladung umstellen, wenn der Netzbezug die Ladeleistung übersteigt.",
-        "es": "Cambia directamente de carga a descarga doméstica si el consumo de red supera la potencia de carga de la batería.",
-        "fr": "Passe directement de la charge à la décharge domestique si l’import réseau dépasse la puissance de charge de la batterie.",
-        "it": "Passa direttamente dalla carica alla scarica domestica se il prelievo di rete supera la potenza di carica della batteria.",
-        "nl": "Schakelt direct van laden naar huishoudelijk ontladen als de netafname hoger is dan het laadvermogen van de accu.",
-        "pl": "Przełącza bezpośrednio z ładowania na rozładowanie dla domu, gdy pobór z sieci przekracza moc ładowania akumulatora.",
-        "pt": "Muda diretamente de carregamento para descarga doméstica quando a importação da rede excede a potência de carregamento da bateria.",
-        "ru": "Переключает накопитель напрямую с зарядки на разряд для дома, если импорт из сети превышает мощность зарядки.",
-        "uk": "Перемикає накопичувач безпосередньо із заряджання на розряд для будинку, якщо імпорт із мережі перевищує потужність заряджання.",
-        "zh-cn": "当电网取电功率超过电池充电功率时，单机电池直接从充电切换到家庭放电。"
       }
     },
     "titleLang": {
