@@ -7241,7 +7241,7 @@
         },
         "bhkwWallboxCycleEnabled": {
           "type": "checkbox",
-          "label": "Charge the Mii with battery support from daytime surplus or CHP at night",
+          "label": "Use battery support for WB0 and WB1 during the day and for WB0 with CHP at night",
           "default": false,
           "newLine": true,
           "xs": 12,

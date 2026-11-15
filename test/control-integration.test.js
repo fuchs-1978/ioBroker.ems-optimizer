@@ -1720,6 +1720,120 @@ async function daytimeMiiStoragePlant({surplusW = 900, chargeHysteresisPct = 0, 
     return h;
 }
 
+async function daytimeEqvStoragePlant({startDelayS = 300, surplusW = 800, soc = 99, phases = 1} = {}) {
+    const h = await plant({battery: true, batteryHeadType: 2, batteryHeadMaxSoc: 100,
+        batteryHeadChargeHysteresis: 2, wallboxIndex: 1, initialWallboxPhaseMode: phases === 1 ? 1 : 2,
+        initialSurplusW: surplusW, split: false, startDelayS, sourceQuality: 0, minimumRuntimeS: 600,
+        wallboxStopResponseDelayMs: 8000, initialTime: Date.UTC(2026, 10, 15, 13),
+        nativeConfig: {batteryDispatchMode: 'sunenergy-heads', batteryPvPriorityEnabled: true,
+            batteryWallboxHalfStepEnabled: true, bhkwWallboxCycleEnabled: true, wallboxParallelChargingEnabled: true,
+            wallboxStopDelayS: 600, dhwControlEnabled: false}});
+    h.own('Devices.MyPV_DHW.ControlEnabled', false);
+    h.own('Config.WallboxStartReserve_W', 150);
+    h.own('Config.BatteryMaxSoC_pct', 100);
+    h.own('Config.BatteryFineStep_W', 600);
+    h.own('Control.TargetGridPower_W', 0);
+    h.put(h.mapping.DP_BATTERY_SOC, soc);
+    const timestamp = h.now();
+    h.own('Plan.BatteryTargetSoC_48h_JSON', JSON.stringify([{timestamp, value_pct: 100}]));
+    h.own('Plan.BatteryPower_48h_JSON', JSON.stringify([{timestamp, valueW: 0, gridChargeW: 0, dischargeFloorPct: 20}]));
+    return h;
+}
+
+test('the EQV starts with 800 W of PV and bounded battery support after a fresh two-minute qualification', async () => {
+    const h = await daytimeEqvStoragePlant();
+    await h.advance(70);
+    h.setSurplus(790);
+    await h.advance(4);
+    h.setSurplus(800);
+    const restoredAt = h.now();
+    await h.advance(119);
+    assert.equal(h.value('Vehicles.Wallbox1.StartDelayRemaining_s'), 2);
+    assert.ok(!h.writes.some(w => w.id === 'goe.allow' && w.val === 1));
+    assert.equal(h.physical().batteryW, 0);
+    await h.advance(35);
+    const start = h.writes.find(w => w.id === 'goe.allow' && w.val === 1);
+    assert.ok(start && start.at >= restoredAt + 120000, h.diagnostic());
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    assert.equal(h.physical().amps, 6);
+    assert.equal(h.physical().batteryW, -580, h.diagnostic());
+    assert.equal(h.trace.at(-1).gridW, 0);
+    assert.equal(h.value('Control.ProtectedGridImport_W'), 0);
+    assert.equal(h.value('Control.EqvStorageCycleOwned'), true);
+    assert.equal(h.value('Control.BhkwWallboxCycleOwned'), false);
+});
+
+test('the EQV buffers a short PV dip and stops on a persistent shortfall, then lets the store recharge from PV', async () => {
+    const h = await daytimeEqvStoragePlant({startDelayS: 10});
+    await h.advance(55);
+    assert.equal(h.physical().batteryW, -580, h.diagnostic());
+    const dipAt = h.now();
+    h.setSurplus(700);
+    await h.advance(1);
+    h.setSurplus(800);
+    await h.advance(6);
+    assert.ok(!h.writes.some(w => w.id === 'goe.allow' && w.val === 0 && w.at > dipAt));
+    h.put(h.mapping.DP_BATTERY_SOC, 98);
+    h.setSurplus(700);
+    await h.advance(35);
+    assert.equal(h.physical().allow, 0, h.diagnostic());
+    assert.equal(h.value('Devices.Wallbox1.LastStopReason'), 'EQV-Speicherhilfe beendet');
+    assert.equal(h.physical().batteryW, 0, h.diagnostic());
+    h.put(h.mapping.DP_BATTERY_SOC, 97);
+    await h.advance(35);
+    assert.equal(h.physical().batteryW, 700, h.diagnostic());
+    assert.equal(h.trace.at(-1).gridW, 0);
+    assert.ok(h.trace.every(row => row.batteryW >= -600
+        && !(row.batteryW > 0 && row.wbW > 0)), h.diagnostic());
+});
+
+test('the EQV keeps charging when PV recovers and the store only takes the remaining surplus', async () => {
+    const h = await daytimeEqvStoragePlant({startDelayS: 10});
+    await h.advance(55);
+    assert.equal(h.physical().batteryW, -580, h.diagnostic());
+    const recoveredAt = h.now();
+    h.put(h.mapping.DP_BATTERY_SOC, 97);
+    h.setSurplus(1700);
+    await h.advance(45);
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    assert.equal(h.physical().batteryW, 320, h.diagnostic());
+    assert.equal(h.trace.at(-1).gridW, 0);
+    h.setSurplus(4400);
+    await h.advance(45);
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    assert.equal(h.value('Control.EqvStorageCycleOwned'), false);
+    assert.ok(!h.writes.some(w => w.id === 'goe.allow' && w.val === 0 && w.at > recoveredAt));
+});
+
+test('EQV storage support requires a confirmed single phase and preserves the 90% reserve', async () => {
+    const h = await daytimeEqvStoragePlant({startDelayS: 10, phases: 3});
+    await h.advance(40);
+    assert.equal(h.physical().allow, 0, h.diagnostic());
+    h.put('goe.phase', 1);
+    await h.advance(50);
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    h.put(h.mapping.DP_BATTERY_SOC, 90);
+    await h.advance(35);
+    assert.equal(h.physical().allow, 0, h.diagnostic());
+    assert.equal(h.value('Control.EqvStorageCycleOwned'), false);
+    assert.ok(h.physical().batteryW >= 0);
+});
+
+test('a queued EQV start loses its grant when fresh surplus falls below the supported minimum', async () => {
+    const h = await daytimeEqvStoragePlant({startDelayS: 10});
+    await h.advance(11);
+    const allocation = h.output.parallelAllocation(1);
+    assert.equal(allocation.entry?.storageCycle, true);
+    assert.ok(h.run(`storageWallboxCycleBacking(1, ${allocation.timestamp})`));
+    h.setSurplus(700);
+    await h.replayAt(h.now() + 1000, [], {allocate: false, output: false});
+    assert.equal(h.run(`storageWallboxCycleBacking(1, ${allocation.timestamp})`), null);
+    assert.equal(h.output.parallelWriteProblem(h.output.devices[1], 'allow', 1, h.mapping),
+        'EQV-Speicherhilfe beendet');
+    await h.advance(25);
+    assert.ok(!h.writes.some(w => w.id === 'goe.allow' && w.val === 1), h.diagnostic());
+});
+
 test('daytime Mii starts from 900 W with a full store and stops after three confirmed deficits over 500 W', async () => {
     const h = await daytimeMiiStoragePlant({surplusW: 899});
     await h.advance(35);

@@ -1483,7 +1483,7 @@ test('a replacement depends on the current budget, device ownership and fresh te
         'foreign GS write': h => h.put(firstHeadGs, 83, {ack: false, from: 'system.adapter.javascript.0'}),
         'wallbox buffer now active': h => h.own('Control.BatteryWallboxBuffer_W', 40),
         'BHKW wallbox cycle now owns the grant': h => h.run(
-            'globalThis.bhkwWallboxCycle = {granted: true}; function bhkwWallboxCycleBacking() { return {dischargeW: 50}; }'),
+            'globalThis.storageWallboxCycle = {wb: 0, granted: true}; function storageWallboxCycleBacking() { return {dischargeW: 50}; }'),
     })) {
         const h = pendingReductionFromRecording({
             gs: 131, gp: 119, pendingW: 83, targetW: 66, gridBefore: -36.4, gridAfter: -52.6, skewMs: 539

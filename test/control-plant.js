@@ -10,23 +10,24 @@ const {createRequire} = require('node:module');
 // Shared, deterministic plant: real allocator + real output state machines,
 // delayed ioBroker ack and delayed AC THOR power, no device/network writes.
 async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, diagnostics,
-    battery = false, heating = false, wallbox = true, cheap = false,
+    battery = false, heating = false, wallbox = true, wallboxIndex = 2, cheap = false,
     mii = false, adoptRunningMii = false, wallboxStopResponseDelayMs = 0,
     initialSurplusW = 6000, batteryPlanW = 0, lpcLimitW = null, phaseBiasW = [0, 0, 0],
     batteryDelayMs = 2000, heatingDelayMs = 4000, dhwDelayMs = 4000,
     batteryDcFactor = 1, batteryDcPvW = 0, batteryHeadType = 1,
     batteryHeadMaxSoc = 80, batteryHeadChargeHysteresis = 0, wb2InitialPhaseMode = null,
+    initialWallboxPhaseMode = wb2InitialPhaseMode,
     nativeConfig: configOverrides = {}, sourceQuality, phaseResponseDelayMs = null,
     initialTime = Date.UTC(2026, 8, 21, 12), wallboxUptakeA = (_wb, amps) => amps} = {}) {
     let now = initialTime, surplusW = 6000, idleWallboxNoiseKW = 0;
     let heaterW = 0, heaterCommandW = 0, physicalAllow = 0, physicalA = 6;
     let wallboxWriteDelayMs = 0;
-    let physicalPhases = phaseResponseDelayMs !== null && wb2InitialPhaseMode === 2 ? 3 : 1;
+    let physicalPhases = phaseResponseDelayMs !== null && initialWallboxPhaseMode === 2 ? 3 : 1;
     let phaseDestination = physicalPhases, phaseSequence = 0;
     let physicalPowerAllow = 0, miiAllow = 0, miiPowerAllow = 0, miiA = 6;
     let wallboxAcceptsPower = true;
     const uptake = (wb, amps) => wallboxUptakeA(wb, amps);
-    const wbPower = () => physicalPowerAllow && wallboxAcceptsPower ? uptake(2, physicalA) * 230 * physicalPhases : 0;
+    const wbPower = () => physicalPowerAllow && wallboxAcceptsPower ? uptake(wallboxIndex, physicalA) * 230 * physicalPhases : 0;
     const miiPower = () => miiPowerAllow ? uptake(0, miiA) * 230 : 0;
     const wallboxStopAck = [true, true, true];
     const wallboxCurrentAck = [true, true, true];
@@ -56,13 +57,15 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
             mapping[key] = key;
             return key;
         });
+    const box = `wb${wallboxIndex}`;
     const config = {globalWriteEnabled: true, wb0Present: true, wb0ControlEnabled: false,
-        wb1Present: false, wb2Present: true, wb2ControlEnabled: true, wb2ProductionArmed: true,
-        wb2CommissioningMaxA: 32, wb2MaxCurrent1pA: 32, wb2MinCurrent1pA: 6,
-        wb2MaxPowerW: 7360, wb2PhaseSwitchEnabled: false, wb2ProductionPhases: 1,
-        wb2AmpereOutputId: 'goe.cmd', wb2AmpereFeedbackId: 'goe.feedback',
-        wb2AllowOutputId: 'goe.allow', wb2ConnectionId: 'goe.connection', wb2ErrorId: 'goe.error',
-        wb2FeedbackTimeoutS: 20, wallboxMeasurementMaxAgeS: 30, wallboxPrioritySource: 'internal',
+        wb1Present: wallboxIndex === 1, wb2Present: wallboxIndex === 2,
+        [`${box}ControlEnabled`]: wallbox, [`${box}ProductionArmed`]: true,
+        [`${box}CommissioningMaxA`]: 32, [`${box}MaxCurrent1pA`]: 32, [`${box}MinCurrent1pA`]: 6,
+        [`${box}MaxPowerW`]: 7360, [`${box}PhaseSwitchEnabled`]: false, [`${box}ProductionPhases`]: 1,
+        [`${box}AmpereOutputId`]: 'goe.cmd', [`${box}AmpereFeedbackId`]: 'goe.feedback',
+        [`${box}AllowOutputId`]: 'goe.allow', [`${box}ConnectionId`]: 'goe.connection', [`${box}ErrorId`]: 'goe.error',
+        [`${box}FeedbackTimeoutS`]: 20, wallboxMeasurementMaxAgeS: 30, wallboxPrioritySource: 'internal',
         wallboxPriority: 0, wallboxStartDelayS: startDelayS, wallboxMinimumRunTimeS: minimumRuntimeS,
         wallboxStopDelayS: 120, wallboxRestartHandoffSettleS: 10, slowCycleS: 2,
         dhwControlEnabled: true, combinedProductionArmed: true, dhwSetpointId: 'DP_DHW_SETPOINT',
@@ -79,8 +82,8 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         heatingSetpointId: 'hk.setpoint', heatingConnectionId: 'hk.connected', heatingTempId: 'hk.temp',
         heatingCoolingActiveId: 'hk.cooling', heatingOutput1Id: 'hk.power1',
         heatingOutput2Id: 'hk.power2', heatingOutput3Id: 'hk.power3'};
-    if (wb2InitialPhaseMode !== null) Object.assign(config, {wb2PhaseSwitchEnabled: true,
-        wb2PhaseControlMode: 'ems', wb2PhaseModeId: 'goe.phase', phaseSwitchMinHoldMin: 0});
+    if (initialWallboxPhaseMode !== null) Object.assign(config, {[`${box}PhaseSwitchEnabled`]: true,
+        [`${box}PhaseControlMode`]: 'ems', [`${box}PhaseModeId`]: 'goe.phase', phaseSwitchMinHoldMin: 0});
     if (mii) Object.assign(config, {multiWallboxAlphaArmed: true,
         wallboxPrioritySource: 'external', wallboxPriorityId: 'DP_WB_PRIORITY',
         wb0ControlEnabled: true, wb0ProductionArmed: true,
@@ -89,7 +92,6 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         wb0AmpereOutputId: 'goe0.cmd', wb0AmpereFeedbackId: 'goe0.feedback',
         wb0AllowOutputId: 'goe0.allow', wb0ConnectionId: 'goe0.connection', wb0ErrorId: 'goe0.error'});
     if (adoptRunningMii) config.wallboxParallelChargingEnabled = true;
-    if (!wallbox) config.wb2ControlEnabled = false;
     Object.assign(config, configOverrides);
     const writeForeign = (id, val, callback) => {
         writes.push({id, val, at: now});
@@ -117,13 +119,13 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         } else if (id === 'goe.cmd') {
             put(id, val, {ack: false});
             events.push({at: now + 4000, run: () => {
-                if (!wallboxCurrentAck[2]) return;
+                if (!wallboxCurrentAck[wallboxIndex]) return;
                 physicalA = val; put(id, val); put('goe.feedback', val);
             }});
         } else if (id === 'goe.allow') {
             put(id, val, {ack: false});
             events.push({at: now + 4000, run: () => {
-                if (val === 0 && !wallboxStopAck[2]) return;
+                if (val === 0 && !wallboxStopAck[wallboxIndex]) return;
                 physicalAllow = val; put(id, val);
                 const responseSequence = ++physicalStopResponseSequence;
                 if (val || wallboxStopResponseDelayMs === 0 || !physicalPowerAllow) physicalPowerAllow = val;
@@ -212,15 +214,15 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         own('Config.ThermalCheapPriceMax_ct_kWh', 20); own('Config.ThermalCheapGridMax_W', 2000);
     }
     for (const wb of [0, 1, 2]) {
-        own(`Devices.Wallbox${wb}.Present`, wb !== 1);
-        own(`Devices.Wallbox${wb}.ControlEnabled`, wb === 2 && wallbox || wb === 0 && mii);
-        own(`Vehicles.Wallbox${wb}.PhaseSwitchEnabled`, wb === 2 && wb2InitialPhaseMode !== null);
-        own(`Vehicles.Wallbox${wb}.MaximumPhases`, wb === 2 && wb2InitialPhaseMode !== null ? 3 : 1);
+        own(`Devices.Wallbox${wb}.Present`, wb === 0 || wb === wallboxIndex);
+        own(`Devices.Wallbox${wb}.ControlEnabled`, wb === wallboxIndex && wallbox || wb === 0 && mii);
+        own(`Vehicles.Wallbox${wb}.PhaseSwitchEnabled`, wb === wallboxIndex && initialWallboxPhaseMode !== null);
+        own(`Vehicles.Wallbox${wb}.MaximumPhases`, wb === wallboxIndex && initialWallboxPhaseMode !== null ? 3 : 1);
         own(`Vehicles.Wallbox${wb}.MinCurrent1P_A`, 6);
         own(`Vehicles.Wallbox${wb}.MaxCurrent1P_A`, wb === 0 && mii ? 16 : 32);
         own(`Config.Wallbox${wb}MaxPower_W`, wb === 0 && mii ? 3680 : 7360);
         own(`Config.Wallbox${wb}VehicleCapacity_kWh`, 50);
-        put(`DP_WB${wb}_CAR`, wb === 1 ? 1 : 2);
+        put(`DP_WB${wb}_CAR`, wb === 0 || wb === wallboxIndex ? 2 : 1);
         put(`DP_WB${wb}_SOC`, 50); put(`DP_WB${wb}_MIN_SOC`, 20);
         put(`DP_WB${wb}_TARGET`, 80); put(`DP_WB${wb}_ALLOW`, true);
         put(`DP_WB${wb}_RELEASE`, 1);
@@ -230,10 +232,10 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
     put('DP_HA_CRITICAL', false);
     put('goe.connection', true); put('goe.error', 0);
     put('goe.allow', 0); put('goe.feedback', 6);
-    if (wb2InitialPhaseMode !== null) put('goe.phase', wb2InitialPhaseMode);
+    if (initialWallboxPhaseMode !== null) put('goe.phase', initialWallboxPhaseMode);
     if (mii) {
         put('goe0.connection', true); put('goe0.error', 0);
-        put('goe0.allow', 0); put('goe0.feedback', 6); put('DP_WB_PRIORITY', 2);
+        put('goe0.allow', 0); put('goe0.feedback', 6); put('DP_WB_PRIORITY', wallboxIndex);
     }
     for (const id of vm.runInContext('CFG.dp.dhwTemps', ctx)) put(id, 50);
     put('DP_DHW_OUTLET_TEMP', 50);
@@ -304,13 +306,14 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         }
         if (batteryHeartbeat) put(config.batteryHeartbeatId, now);
         for (const wb of [0, 1, 2]) {
-            const powerW = wb === 2 ? wbW : wb === 0 ? miiW : 0;
+            const powerW = wb === wallboxIndex ? wbW : wb === 0 ? miiW : 0;
             put(`DP_WB${wb}_POWER`, powerW === 0 ? idleWallboxNoiseKW : powerW / 1000);
             const currentQuality = wallboxCurrentQuality[wb] ? {q: wallboxCurrentQuality[wb]} : {};
-            put(`DP_WB${wb}_L1_A`, wb === 2 && physicalPowerAllow && wallboxAcceptsPower ? uptake(2, physicalA) : wb === 0 && miiPowerAllow ? uptake(0, miiA) : 0,
+            const mainAmps = wb === wallboxIndex && physicalPowerAllow && wallboxAcceptsPower ? uptake(wb, physicalA) : 0;
+            put(`DP_WB${wb}_L1_A`, wb === 0 && miiPowerAllow ? uptake(wb, miiA) : mainAmps,
                 currentQuality);
-            put(`DP_WB${wb}_L2_A`, wb === 2 && physicalPowerAllow && wallboxAcceptsPower && physicalPhases === 3 ? uptake(2, physicalA) : 0, currentQuality);
-            put(`DP_WB${wb}_L3_A`, wb === 2 && physicalPowerAllow && wallboxAcceptsPower && physicalPhases === 3 ? uptake(2, physicalA) : 0, currentQuality);
+            put(`DP_WB${wb}_L2_A`, physicalPhases === 3 ? mainAmps : 0, currentQuality);
+            put(`DP_WB${wb}_L3_A`, physicalPhases === 3 ? mainAmps : 0, currentQuality);
         }
         const stagedPhases = (watts, stage) => watts <= stage ? [watts, 0, 0]
             : watts <= stage * 2 ? [watts - stage, stage, 0] : [watts - stage * 2, stage, stage];
@@ -348,7 +351,7 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         }
         vm.runInContext('realtimeControl();updateBatteryProductionOutput()', ctx);
         if (phaseResponseDelayMs !== null) {
-            const target = value('Control.Targets.Wallbox2_Phases');
+            const target = value(`Control.Targets.Wallbox${wallboxIndex}_Phases`);
             if ([1, 3].includes(target) && target !== phaseDestination) {
                 phaseDestination = target;
                 const sequence = ++phaseSequence;
@@ -369,13 +372,13 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
             miiW: miiPower(), heaterW, heatingW, batteryW,
             gridW: heaterW + heatingW + batteryW + wbPower() + miiPower() - surplusW,
             fine: value('Control.FineRegulator'), physicalAllow, miiAllow,
-            ...(phaseResponseDelayMs !== null ? {physicalPhases, requestedPhases: value('Control.Targets.Wallbox2_Phases')} : {}),
+            ...(phaseResponseDelayMs !== null ? {physicalPhases, requestedPhases: value(`Control.Targets.Wallbox${wallboxIndex}_Phases`)} : {}),
             selectedWallbox: value('Control.SelectedWallbox'),
             phaseImportW: [1, 2, 3].map(p => Number(states.get(`DP_DHW_HA_L${p}_CURRENT_A`)?.val || 0) * 230),
-            targetW: value('Control.Targets.Wallbox2_W'), heaterTargetW: value('Control.Targets.MyPV_DHW_W'),
+            targetW: value(`Control.Targets.Wallbox${wallboxIndex}_W`), heaterTargetW: value('Control.Targets.MyPV_DHW_W'),
             heatingTargetW: value('Control.Targets.MyPV_Heating_W'), batteryTargetW: value('Control.Targets.Battery_W'),
             batteryStatus: value('Devices.Battery.OutputStatus'), heatingStatus: value('Devices.MyPV_Heating.OutputStatus'),
-            status: value('Devices.Wallbox2.OutputStatus'), heaterStatus: value('Devices.MyPV_DHW.OutputStatus')});
+            status: value(`Devices.Wallbox${wallboxIndex}.OutputStatus`), heaterStatus: value('Devices.MyPV_DHW.OutputStatus')});
     };
     return {states, writes, trace, put, own, value, get output() {return output;}, diagnosticWrites,
         config, mapping, engineContext: ctx,
@@ -421,7 +424,7 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
             if (wb === 0) {
                 miiAllow = miiPowerAllow = allow; miiA = amps; ++miiStopResponseSequence;
                 put('goe0.allow', allow); put('goe0.feedback', amps);
-            } else if (wb === 2) {
+            } else if (wb === wallboxIndex) {
                 physicalAllow = physicalPowerAllow = allow; physicalA = amps; ++physicalStopResponseSequence;
                 put('goe.allow', allow); put('goe.feedback', amps);
             } else assert.fail(`unknown synthetic wallbox ${wb}`);
