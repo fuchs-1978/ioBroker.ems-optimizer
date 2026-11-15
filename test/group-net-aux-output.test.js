@@ -193,29 +193,32 @@ async function accountingHeadsPlant() {
     return {h, head};
 }
 
-test('real group accounting admits head GS commands once and rejects them after a source failure behind the queue', async () => {
-    const {h} = await accountingHeadsPlant();
-    const limit = h.run('currentConsumptionLimit()');
-    assert.equal(limit.valid, true, limit.reason);
-    assert.equal(limit.snapshot.grossBudgetW, 500);
-    const before = h.writes.length;
-    h.run('updateBatteryProductionOutput()');
-    const commands = h.writes.slice(before).filter(write => /\.control\.GS$/.test(write.id));
-    assert.deepEqual(commands.map(write => write.val), [-200, -200], h.value('Devices.Battery.OutputStatus'));
-    assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 400);
-    for (const command of commands)
-        assert.equal(h.run(`batteryHeadsQueuedCheck(${JSON.stringify(command.id)},${command.val}).allowed`), true);
-    h.put('sunenergyxt500.0.heads.2.grid.GP', null);
-    for (const command of commands)
-        assert.equal(h.run(`batteryHeadsQueuedCheck(${JSON.stringify(command.id)},${command.val}).allowed`), false,
-            'a persisted head command cannot reuse accounting from before a source failure');
-    assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 400,
-        'rejected dispatch cannot prove the old positive head effects were cancelled');
-    assert.equal(h.run('sendBatteryHeadCommand(batteryHeadOwners[0],0,"source failed")'), true);
-    assert.equal(h.writes.at(-1).val, 0);
-    assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 400,
-        'a zero transport is not electrical proof of released head reservations');
-});
+for (const [threshold, expected] of [[0, [-200, -200]], [500, [-400]]]) {
+    test(`real group accounting admits head GS commands at a ${threshold} W threshold and rechecks source failures`, async () => {
+        const {h} = await accountingHeadsPlant();
+        h.config.batterySingleHeadThresholdW = threshold;
+        const limit = h.run('currentConsumptionLimit()');
+        assert.equal(limit.valid, true, limit.reason);
+        assert.equal(limit.snapshot.grossBudgetW, 500);
+        const before = h.writes.length;
+        h.run('updateBatteryProductionOutput()');
+        const commands = h.writes.slice(before).filter(write => /\.control\.GS$/.test(write.id));
+        assert.deepEqual(commands.map(write => write.val), expected, h.value('Devices.Battery.OutputStatus'));
+        assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 400);
+        for (const command of commands)
+            assert.equal(h.run(`batteryHeadsQueuedCheck(${JSON.stringify(command.id)},${command.val}).allowed`), true);
+        h.put('sunenergyxt500.0.heads.2.grid.GP', null);
+        for (const command of commands)
+            assert.equal(h.run(`batteryHeadsQueuedCheck(${JSON.stringify(command.id)},${command.val}).allowed`), false,
+                'a persisted head command cannot reuse accounting from before a source failure');
+        assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 400,
+            'rejected dispatch cannot prove the old positive head effects were cancelled');
+        assert.equal(h.run('sendBatteryHeadCommand(batteryHeadOwners[0],0,"source failed")'), true);
+        assert.equal(h.writes.at(-1).val, 0);
+        assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 400,
+            'a zero transport is not electrical proof of released head reservations');
+    });
+}
 
 test('real multihead accounting retains separate charging and discharging AC contributions', async () => {
     const {h, head} = await accountingHeadsPlant();
