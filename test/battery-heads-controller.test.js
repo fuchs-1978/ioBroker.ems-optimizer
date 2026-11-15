@@ -1870,8 +1870,33 @@ test('live charging follows the recorded 10 W to 545 W export rise even with zer
     assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 545);
 });
 
+test('live charging continues with confirmed GS and an 81 W GP lag', () => {
+    const h = harness(1);
+    h.snapshot(1, {MG: 2400, IS: 2400});
+    h.own('Control.CoordinationActive', true);
+    h.own('Config.BatteryFineStep_W', 1000);
+    h.own('Control.Targets.Battery_W', 1266);
+    h.grid.gridW = -1266;
+    h.tick(); h.complete();
+    h.advance(2000); h.fresh();
+    h.snapshot(1, {GS: -1000, GP: -1000, timestamp: h.time()});
+    h.grid.gridW = -266;
+    h.tick(); h.complete();
+    assert.deepEqual(h.commands(), [-1000, -1266]);
+
+    for (let command = 1266; command < 1326; command += 5) {
+        h.advance(2000); h.fresh();
+        h.snapshot(1, {GS: -command, GP: -(command - 81), timestamp: h.time()});
+        h.grid.gridW = -86;
+        h.own('Control.Targets.Battery_W', command + 5);
+        h.tick(); h.complete();
+        assert.equal(h.commands().at(-1), -(command + 5), h.value('Devices.Battery.OutputStatus'));
+        assert.equal(h.value('Devices.Battery.Heads.1.ActuatorSettled'), false);
+    }
+});
+
 for (const direction of [1, -1]) {
-    test(`live ${direction === 1 ? 'charge' : 'discharge'} stops on the tenth distinct missed response`, () => {
+    test(`live ${direction === 1 ? 'charge' : 'discharge'} stops after ten delivered setpoints without a GS echo`, () => {
         const h = harness(1);
         h.own('Control.CoordinationActive', true);
         h.own('Config.BatteryDeadband_W', 10);
@@ -1881,7 +1906,7 @@ for (const direction of [1, -1]) {
         h.own('Control.Targets.Battery_W', initial);
         h.tick(); h.complete();
 
-        const sample = (target, feedback = {GS: -initial, GP: 0}) => {
+        const sample = (target, feedback = {GS: 0, GP: 0}) => {
             h.advance(2000); h.fresh(); h.snapshot(1, {...feedback, timestamp: h.time()});
             h.grid.gridW = -target;
             h.own('Control.Targets.Battery_W', target);
@@ -1893,18 +1918,21 @@ for (const direction of [1, -1]) {
         assert.ok(beforeResponse.every(watts => watts * direction < 0));
 
         const newest = beforeResponse.at(-1);
-        sample(-newest, {GS: newest, GP: newest});
-        sample(initial + 20 * direction, {GS: newest, GP: newest});
+        const echoed = {GS: newest, GP: newest + 81 * direction};
+        sample(-newest, echoed);
         for (let miss = 1; miss <= 9; miss++) {
-            sample(initial + (20 + miss) * direction, {GS: newest, GP: 0});
+            sample(initial + (19 + miss) * direction, echoed);
             for (let poll = 0; poll < 4; poll++) {
-                h.advance(50); h.fresh(); h.tick();
+                h.advance(50); h.fresh(); h.snapshot(1, {...echoed, timestamp: h.time()}); h.tick();
             }
             assert.ok(h.commands().every(watts => watts * direction < 0), h.value('Devices.Battery.OutputStatus'));
         }
-        sample(initial + 30 * direction, {GS: newest, GP: 0});
+        const tenth = initial + 29 * direction;
+        sample(tenth, echoed);
+        assert.equal(h.commands().at(-1), -tenth);
+        sample(tenth, echoed);
         assert.equal(h.commands().at(-1), 0);
-        assert.match(h.value('Devices.Battery.OutputStatus'), /10|zehn/i);
+        assert.match(h.value('Devices.Battery.OutputStatus'), /10 fehlende GS-Rueckmeldungen/);
     });
 }
 

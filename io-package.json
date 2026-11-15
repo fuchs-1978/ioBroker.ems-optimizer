@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.279",
+    "version": "0.17.0-alpha.280",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.280": {
+        "en": "Count missing acknowledgements by GS setpoint. Use GP to verify actual power and reserved headroom.",
+        "de": "Fehlende Rückmeldungen je GS-Auftrag zählen. GP belegt die tatsächliche Leistung und die frei gewordene Leistungsreserve.",
+        "es": "Cuenta las confirmaciones ausentes por consigna GS. Usa GP para verificar la potencia real y el margen disponible.",
+        "fr": "Compte les confirmations manquantes par consigne GS. Utilise GP pour vérifier la puissance réelle et la marge disponible.",
+        "it": "Conta le conferme mancanti per ogni setpoint GS. Usa GP per verificare la potenza reale e il margine disponibile.",
+        "nl": "Telt ontbrekende terugmeldingen per GS-setpoint. Gebruikt GP voor het gemeten vermogen en de vrijgekomen vermogensruimte.",
+        "pl": "Zlicza brakujące potwierdzenia poszczególnych nastaw GS. GP służy do weryfikacji mocy rzeczywistej i dostępnej rezerwy.",
+        "pt": "Conta as confirmações em falta por valor de referência GS. Usa GP para verificar a potência real e a margem disponível.",
+        "ru": "Учитывает пропущенные подтверждения по каждой уставке GS. GP подтверждает фактическую мощность и доступный резерв.",
+        "uk": "Підраховує пропущені підтвердження для кожної уставки GS. GP підтверджує фактичну потужність і доступний резерв.",
+        "zh-cn": "按 GS 设定指令统计缺失的确认。使用 GP 验证实际功率和可用功率余量。"
+      },
       "0.17.0-alpha.279": {
         "en": "Hand off PV surplus to the wallbox after two minutes of measured battery charging near its power limit.",
         "de": "PV-Überschuss nach zwei Minuten gemessener Speicherladung nahe der Leistungsgrenze an die Wallbox übergeben.",
@@ -81,19 +94,6 @@
         "ru": "Уменьшает текущую мощность зарядки при небольшом импорте из сети до заданного минимума.",
         "uk": "Зменшує поточну потужність заряджання за невеликого імпорту з мережі до заданого мінімуму.",
         "zh-cn": "从当前充电设定值中扣除少量电网取电，直至设定的最小充电功率。"
-      },
-      "0.17.0-alpha.273": {
-        "en": "Let the live battery controller absorb leftover grid export after the scheduled charge target is reached.",
-        "de": "Verbleibenden Netzueberschuss auch nach erreichtem Speicher-Fahrplanziel mit dem Live-Regler aufnehmen.",
-        "es": "La batería absorbe el excedente restante de la red tras alcanzar el objetivo de carga programado.",
-        "fr": "La batterie absorbe le surplus restant après avoir atteint l’objectif de charge planifié.",
-        "it": "La batteria assorbe il surplus residuo dopo il raggiungimento dell’obiettivo di carica programmato.",
-        "nl": "De batterij neemt het resterende netoverschot op nadat het geplande laaddoel is bereikt.",
-        "pl": "Magazyn przejmuje pozostałą nadwyżkę po osiągnięciu planowanego celu ładowania.",
-        "pt": "A bateria absorve o excedente restante após atingir a meta de carregamento programada.",
-        "ru": "Аккумулятор поглощает оставшийся избыток после достижения плановой цели заряда.",
-        "uk": "Акумулятор поглинає залишковий надлишок після досягнення планової цілі заряду.",
-        "zh-cn": "达到计划充电目标后，电池继续吸收剩余的上网余电。"
       }
     },
     "titleLang": {
