@@ -84,6 +84,81 @@ test('one, two and three heads receive absolute GS with capacity-weighted SoC di
     assert.deepEqual(discharge.commands(), [50, 650]);
 });
 
+test('the single-head threshold compares against final demand rather than the current ramp', () => {
+    for (const {threshold, target, commands} of [
+        {threshold: 500, target: 500, commands: [-200]},
+        {threshold: 500, target: 501, commands: [-100, -100]},
+        {threshold: 0, target: 100, commands: [-50, -50]}
+    ]) {
+        const h = harness(2, new Map(), {batterySingleHeadThresholdW: threshold});
+        h.own('Config.BatteryFineStep_W', 200);
+        h.own('Control.Targets.Battery_W', target);
+        h.tick();
+        assert.deepEqual(h.commands(), commands);
+    }
+});
+
+test('confirmed low-power starts rotate across all three heads and survive a restart', () => {
+    const h = harness(3);
+    const indexOf = write => Number(write.id.match(/heads\.(\d)/)[1]);
+    const last = 'Devices.Battery.LastLowPowerHead';
+    for (const [i, expectedHead] of [1, 2, 3, 1].entries()) {
+        h.own('Control.Targets.Battery_W', 100);
+        h.tick();
+        assert.equal(h.writes.at(-1).val, -100);
+        assert.equal(indexOf(h.writes.at(-1)), expectedHead);
+        assert.equal(h.value(last), i === 0 ? 0 : [1, 2, 3][i - 1]);
+        h.complete(); h.follow(); h.tick();
+        assert.equal(h.value(last), expectedHead);
+        h.own('Control.Targets.Battery_W', 0);
+        h.tick(); h.complete(); h.follow(); h.tick();
+        assert.equal(h.value('Devices.Battery.OutputOwned'), false);
+    }
+    const saved = new Map([[`ems.0.${last}`, {...h.states.get(`ems.0.${last}`), ts: 2000000}]]);
+    const restarted = harness(2, saved);
+    restarted.own('Control.Targets.Battery_W', 100);
+    restarted.tick();
+    assert.deepEqual(restarted.commands(), [-100]);
+    assert.equal(indexOf(restarted.writes[0]), 2);
+});
+
+test('the controller waits for a confirmed stop before changing low-power heads across the SoC band', () => {
+    const h = harness(2);
+    h.own('Config.BatteryFineStep_W', 600);
+    h.own('Control.Targets.Battery_W', -240);
+    h.snapshot(1, {SC: 50}); h.snapshot(2, {SC: 53});
+    h.tick(); h.complete(); h.follow(); h.tick();
+    assert.deepEqual(h.commands(), [240]);
+    assert.match(h.writes[0].id, /heads\.1\./);
+
+    h.advance(1100); h.fresh(); h.snapshot(2, {SC: 55}); h.tick();
+    assert.deepEqual(h.commands(), [240]);
+    h.snapshot(2, {SC: 56}); h.tick(); h.complete();
+    assert.deepEqual(h.commands(), [240, 0]);
+    assert.match(h.writes[1].id, /heads\.1\./);
+    h.advance(1100); h.fresh(); h.snapshot(1, {GS: 0, GP: 130}); h.tick();
+    assert.deepEqual(h.commands(), [240, 0]);
+    h.follow(); h.tick();
+    assert.deepEqual(h.commands(), [240, 0, 240]);
+    assert.match(h.writes[2].id, /heads\.2\./);
+});
+
+test('queued multi-head starts are reevaluated when demand drops below the single-head threshold', () => {
+    const h = harness(2);
+    h.own('Config.BatteryFineStep_W', 200);
+    h.own('Control.Targets.Battery_W', 800);
+    h.tick();
+    assert.deepEqual(h.commands(), [-100, -100]);
+    h.own('Control.Targets.Battery_W', 400);
+    const results = h.writes.map(({id, val}) => h.run(`batteryHeadsQueuedCheck(${JSON.stringify(id)}, ${val})`));
+    assert.ok(results.every(result => !result.allowed && result.code === 'BATTERY_CHARGE_REPLAN'));
+    h.complete(Object.assign(new Error(results[0].reason), {code: results[0].code}), {notDispatched: true});
+    assert.equal(h.value('Devices.Battery.LastLowPowerHead'), 0);
+    h.tick();
+    assert.deepEqual(h.commands(), [-100, -100, -200]);
+    assert.equal(h.run(`batteryHeadsQueuedCheck(${JSON.stringify(h.writes[2].id)}, -200).allowed`), true);
+});
+
 test('a qualified 50 W wallbox buffer passes the normal deadband in SunEnergy head mode', () => {
     const h = harness(1, new Map(), {batteryPvPriorityEnabled: true, batteryDeadbandW: 50});
     h.own('Control.Targets.Battery_W', -50);
@@ -656,12 +731,14 @@ test('unknown own-consumption permission never authorizes discharge and phase ov
 });
 
 test('repeated confirmed charge blocks reuse bounded per-head lifecycle entries', () => {
-    const h = harness(3);
-    for (let cycle = 0; cycle < 10; cycle++) {
-        h.own('Control.Targets.Battery_W', 100); h.tick(); h.complete(); h.follow();
-        h.own('Control.Targets.Battery_W', 0); h.tick(); h.complete(); h.follow(); h.tick();
-        assert.equal(h.run('batteryHeadOwners.length'), 3);
-        assert.equal(h.value('Devices.Battery.OutputOwned'), false);
+    for (const threshold of [0, 500]) {
+        const h = harness(3, new Map(), {batterySingleHeadThresholdW: threshold});
+        for (let cycle = 0; cycle < 10; cycle++) {
+            h.own('Control.Targets.Battery_W', 100); h.tick(); h.complete(); h.follow();
+            h.own('Control.Targets.Battery_W', 0); h.tick(); h.complete(); h.follow(); h.tick();
+            assert.equal(h.run('batteryHeadOwners.length'), threshold ? Math.min(cycle + 1, 3) : 3);
+            assert.equal(h.value('Devices.Battery.OutputOwned'), false);
+        }
     }
 });
 
@@ -677,7 +754,8 @@ test('a partially persisted lost ownership flag cannot erase a nonzero head comm
 });
 
 test('settled unchanged standard-adapter GS holds without creating repeated identical downstream HTTP requests', () => {
-    const h = harness(2); h.own('Control.Targets.Battery_W', 100); h.tick(); h.complete(); h.follow();
+    const h = harness(2, new Map(), {batterySingleHeadThresholdW: 0});
+    h.own('Control.Targets.Battery_W', 100); h.tick(); h.complete(); h.follow();
     for (let cycle = 0; cycle < 8; cycle++) { h.tick(); h.advance(1100); h.fresh(); }
     assert.deepEqual(h.commands(), [-50, -50]);
     assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 100);
@@ -685,7 +763,8 @@ test('settled unchanged standard-adapter GS holds without creating repeated iden
 });
 
 test('settled diagnostics remain true on later fresh matching polls and a lost electrical response blocks increases', () => {
-    const h = harness(2); h.own('Control.Targets.Battery_W', 100); h.tick(); h.complete(); h.follow(); h.tick();
+    const h = harness(2, new Map(), {batterySingleHeadThresholdW: 0});
+    h.own('Control.Targets.Battery_W', 100); h.tick(); h.complete(); h.follow(); h.tick();
     h.advance(1100); h.fresh(); h.tick();
     assert.equal(h.value('Devices.Battery.Heads.1.ActuatorSettled'), true);
     assert.equal(h.value('Devices.Battery.ActuatorSettled'), true);

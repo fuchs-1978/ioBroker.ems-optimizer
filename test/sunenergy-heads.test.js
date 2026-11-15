@@ -14,6 +14,29 @@ const parse = (extra = {}, feedback = {}, opts = {}) => parseHeadSnapshot(state(
 const head = (index, extra = {}) => ({...parse(extra), index});
 const powers = result => result.commands.map(command => command.internalW);
 
+test('single-head allocation holds an active head inside the SoC band and rotates new starts', () => {
+    const h = [head(1, {SC: 50}), head(2, {SC: 55}), head(3, {SC: 52})];
+    const power = (value, activeIndex, lastIndex) => powers(allocate(value, h,
+        {singleHead: {targetW: 100, socHysteresisPct: 5, activeIndex, lastIndex}}));
+    assert.deepEqual(power(100, 2, 2), [0, 100, 0]);
+    assert.deepEqual(power(-100, 1, 1), [-100, 0, 0]);
+    assert.deepEqual(power(100, 0, 2), [0, 0, 100]);
+    assert.deepEqual(power(-100, 0, 3), [-100, 0, 0]);
+    h[1].soc = 56;
+    assert.deepEqual(power(100, 2, 2), [0, 0, 100]);
+    assert.deepEqual(power(-100, 1, 1), [0, -100, 0]);
+});
+
+test('one capable head covers the full request or provides its maximum without splitting', () => {
+    const h = [{...head(1, {SC: 80}), maxDischargeW: 300}, {...head(2), maxDischargeW: 600}];
+    const options = {singleHead: {targetW: 500, socHysteresisPct: 5, activeIndex: 1, lastIndex: 1}};
+    assert.deepEqual(powers(allocate(-100, h, options)), [0, -100], 'select for the total target before ramping');
+    h[1].maxDischargeW = 400;
+    const allocation = allocate(-500, h, options);
+    assert.deepEqual(powers(allocation), [0, -400]);
+    assert.equal(allocation.unallocatedW, -100);
+});
+
 test('standard adapter topology supports exactly one, two or three heads', () => {
     for (const count of [1, 2, 3]) {
         const topology = readTopology({batteryHeadCount: count, batterySunEnergyInstance: 'sunenergyxt500.3'});

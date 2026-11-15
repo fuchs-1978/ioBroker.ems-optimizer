@@ -7,7 +7,7 @@
 
 Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Combines PV and grid measurements, load history, weather forecasts and electricity prices in a rolling 48-hour plan.
 
-**Current GitHub build 0.17.0-alpha.284.** Install the tested build from GitHub and commission each enabled device against its actual feedback and protection limits.
+**Current GitHub build 0.17.0-alpha.285.** Install the tested build from GitHub and commission each enabled device against its actual feedback and protection limits.
 
 [Deutsche Bedienungsanleitung](README.de.md) · [Release history](CHANGELOG_OLD.md) · [Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
@@ -192,6 +192,10 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 
 ## Changelog
 
+### 0.17.0-alpha.285 (2026-11-15)
+
+- Use one SunEnergy head at low combined power and rotate new starts among similarly charged heads. The Admin defaults are 500 W and a five-percentage-point SoC band. [Release notes](docs/release-0.17.0-alpha.285.md)
+
 ### 0.17.0-alpha.284 (2026-11-15)
 
 - Spread forecast hot-water demand across a recurring cheap overnight tariff block while preserving the modeled heat reserve. [Release notes](docs/release-0.17.0-alpha.284.md)
@@ -215,10 +219,6 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 ### 0.17.0-alpha.279 (2026-11-15)
 
 - After two minutes of measured near-limit charging at a single SunEnergy head, use real PV export to qualify a wallbox start and let the battery absorb the remaining surplus. [Release notes](docs/release-0.17.0-alpha.279.md)
-
-### 0.17.0-alpha.278 (2026-11-15)
-
-- Continue sending valid single-head setpoints during pending feedback. Ten consecutive independent head readings without a matching response trigger a stop. [Release notes](docs/release-0.17.0-alpha.278.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 

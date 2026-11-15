@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.284",
+    "version": "0.17.0-alpha.285",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.285": {
+        "en": "Use one SunEnergy head at low total power. Rotate starts among heads with similar state of charge using the configurable SoC hysteresis.",
+        "de": "Kleine Gesamtleistungen auf einem SunEnergy-Kopf bündeln. Bei ähnlichem SoC mit einstellbarer Hysterese die Startreihenfolge wechseln.",
+        "es": "Usa un cabezal SunEnergy a baja potencia total. Alterna los arranques entre cabezales con SoC similar mediante una histéresis ajustable.",
+        "fr": "Utilise une seule tête SunEnergy à faible puissance totale. Alterne les démarrages entre têtes de SoC proche selon une hystérésis réglable.",
+        "it": "Usa un solo modulo SunEnergy a bassa potenza totale. Alterna gli avvii tra moduli con SoC simile tramite un’isteresi regolabile.",
+        "nl": "Gebruikt één SunEnergy-kop bij laag totaalvermogen. Wisselt bij een start tussen koppen met vergelijkbare SoC op basis van instelbare hysterese.",
+        "pl": "Przy małej mocy łącznej używa jednej jednostki SunEnergy. Zmienia jednostkę startową przy podobnym SoC według ustawianej histerezy.",
+        "pt": "Usa um módulo SunEnergy quando a potência total é baixa. Alterna os arranques entre módulos com SoC semelhante, com histerese ajustável.",
+        "ru": "При малой суммарной мощности используется один блок SunEnergy. При близком SoC блоки запускаются по очереди с настраиваемым гистерезисом.",
+        "uk": "За малої сумарної потужності використовується один блок SunEnergy. За близького SoC блоки запускаються почергово з налаштовуваним гістерезисом.",
+        "zh-cn": "总功率较低时使用一个 SunEnergy 主机。按可配置的荷电状态滞回，在荷电状态接近的主机之间轮换启动。"
+      },
       "0.17.0-alpha.284": {
         "en": "Spread forecast hot-water demand across a recurring cheap overnight tariff block.",
         "de": "Warmwasserbedarf im Fahrplan über einen wiederkehrenden günstigen Nachtblock verteilen.",
@@ -81,19 +94,6 @@
         "ru": "Передаёт излишек солнечной энергии зарядной станции после двух минут измеренной зарядки батареи вблизи предела мощности.",
         "uk": "Передає надлишок сонячної енергії зарядній станції після двох хвилин виміряного заряджання батареї поблизу межі потужності.",
         "zh-cn": "电池实测充电功率接近上限两分钟后，将光伏余电分配给充电桩。"
-      },
-      "0.17.0-alpha.278": {
-        "en": "Continue single-head control during pending feedback and stop on ten consecutive missed responses.",
-        "de": "Einzelkopf bei offener Rückmeldung weiterregeln und nach zehn fehlenden Rückmeldungen in Folge stoppen.",
-        "es": "Continúa regulando un cabezal mientras llega la respuesta y se detiene tras diez respuestas ausentes consecutivas.",
-        "fr": "Poursuit la régulation d’un module en attente de retour et s’arrête après dix retours manquants consécutifs.",
-        "it": "Continua a regolare un modulo in attesa del riscontro e si ferma dopo dieci riscontri mancanti consecutivi.",
-        "nl": "Regelt één module verder bij uitblijvende terugmelding en stopt na tien ontbrekende terugmeldingen op rij.",
-        "pl": "Kontynuuje regulację pojedynczej jednostki w oczekiwaniu na odpowiedź i zatrzymuje po dziesięciu kolejnych brakach odpowiedzi.",
-        "pt": "Continua a regular um módulo enquanto aguarda resposta e para após dez respostas consecutivas em falta.",
-        "ru": "Продолжает регулировать один модуль в ожидании обратной связи и останавливается после десяти пропущенных ответов подряд.",
-        "uk": "Продовжує регулювати один модуль в очікуванні зворотного зв’язку та зупиняється після десяти пропущених відповідей поспіль.",
-        "zh-cn": "单机等待反馈时继续调节，连续十次未收到匹配的反馈后停止。"
       }
     },
     "titleLang": {
@@ -203,6 +203,8 @@
     "batteryDispatchMode": "single-head",
     "batterySunEnergyInstance": "sunenergyxt500.0",
     "batteryHeadCount": 1,
+    "batterySingleHeadThresholdW": 500,
+    "batterySingleHeadSocHysteresisPct": 5,
     "batteryHead1MaxChargeW": 2400,
     "batteryHead1MaxDischargeW": 800,
     "batteryHead2MaxChargeW": 2400,
