@@ -311,6 +311,46 @@ test('direction reversal waits for physically confirmed zero of every head', () 
     assert.deepEqual(h.commands(), [-50, -50, 0, 0, 50, 50]);
 });
 
+test('a confirmed 10 W charge after discharge uses the normal AC feedback deadline', () => {
+    const cases = [
+        {GS: -10, GP: 0, holdsCharge: true},
+        {GS: 18, GP: 0, holdsCharge: false},
+        {GS: -10, GP: 18, holdsCharge: false}
+    ];
+    for (const {GS, GP, holdsCharge} of cases) {
+        const h = harness(1);
+        h.own('Config.BatteryDeadband_W', 10);
+        h.own('Config.BatteryPvFeedbackObservationEnabled', true);
+        h.own('Control.Targets.Battery_W', -18);
+        h.grid.gridW = 18;
+        h.tick(); h.complete();
+        h.advance(2000); h.fresh(); h.snapshot(1, {GS: 18, GP: 0});
+        h.own('Control.Targets.Battery_W', 28);
+        h.grid.gridW = -28;
+        h.tick(); h.complete();
+        assert.deepEqual(h.commands(), [18, -10]);
+
+        h.advance(2000); h.fresh(); h.snapshot(1, {GS, GP});
+        h.own('Control.Targets.Battery_W', 13);
+        h.grid.gridW = -13;
+        h.tick();
+        assert.deepEqual(h.commands(), [18, -10]);
+        h.advance(4100); h.fresh();
+        h.own('Control.Targets.Battery_W', 10);
+        h.grid.gridW = -9.7;
+        h.tick();
+        assert.deepEqual(h.commands(), holdsCharge ? [18, -10] : [18, -10, 0], `GS=${GS}, GP=${GP}`);
+        assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 10);
+        if (holdsCharge) {
+            assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), 10);
+            assert.equal(h.value('Devices.Battery.Heads.1.ActuatorSettled'), false);
+            h.own('Config.BatteryMaxCharge_W', 0);
+            h.tick();
+            assert.deepEqual(h.commands(), [18, -10, 0]);
+        }
+    }
+});
+
 test('reversal without measured residual demand resumes after driver-confirmed zero and AC standstill', () => {
     for (const direction of [-1, 1]) {
         for (const missing of [null, 'driver ack', 'ack source', 'stale ack', 'rundown', 'old GS', 'offline']) {

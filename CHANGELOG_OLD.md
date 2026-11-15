@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.270 (2026-11-14)
+
+- Use measured AC power for single-head household discharge within a 100 W tracking tolerance and stop on ten consecutive fresh mismatched pairs. [Release notes](docs/release-0.17.0-alpha.270.md)
+
 ## 0.17.0-alpha.269 (2026-11-14)
 
 - Assess an in-flight household discharge reduction against measured load before interrupting SunEnergy output. [Release notes](docs/release-0.17.0-alpha.269.md)
@@ -626,6 +630,7 @@ Bindet die ausdrücklich konfigurierte Gruppen-Netz-/Eigenstrombilanz an den pro
 
 ## Deutsche Versionshistorie
 
+- **Alpha.270** toleriert bei laufender SunEnergy-Haushaltsentladung bis zu 100 W Differenz zwischen Soll- und Istleistung. Ein anhaltender Rückmeldefehler löst nach zehn frischen abweichenden Messpaaren einen Stopp aus. [Versionshinweise](docs/release-0.17.0-alpha.270.md)
 - **Alpha.269** prüft bei einer laufenden Senkung der SunEnergy-Haushaltsentladung, wie viel Netzleistung nach dem bereits gesendeten Sollwert zu erwarten ist. [Versionshinweise](docs/release-0.17.0-alpha.269.md)
 - **Alpha.268** hält die SunEnergy-Haushaltsentladung bei kleinen Laständerungen, während die passende Geräte- oder Netzmessung noch aussteht. [Versionshinweise](docs/release-0.17.0-alpha.268.md)
 - **Alpha.267** ergänzt die 6-A-Ladung des Mii tagsüber mit bis zu 500 W aus dem Speicher. Nach dem Abschalten lädt der Speicher aus dem verbleibenden Überschuss nach. [Versionshinweise](docs/release-0.17.0-alpha.267.md)

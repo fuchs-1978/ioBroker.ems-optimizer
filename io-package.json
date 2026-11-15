@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.276",
+    "version": "0.17.0-alpha.277",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.277": {
+        "en": "Use normal AC feedback handling after a confirmed SunEnergy direction change.",
+        "de": "Nach bestätigtem SunEnergy-Richtungswechsel die normale AC-Rückmeldung abwarten.",
+        "es": "Aplica la comprobación normal de potencia CA tras confirmar un cambio de sentido de SunEnergy.",
+        "fr": "Applique le contrôle normal du retour de puissance CA après un changement de sens SunEnergy confirmé.",
+        "it": "Usa il normale riscontro della potenza CA dopo un cambio di direzione SunEnergy confermato.",
+        "nl": "Gebruikt de normale AC-terugmelding na een bevestigde richtingswissel van SunEnergy.",
+        "pl": "Po potwierdzonej zmianie kierunku SunEnergy przechodzi do zwykłego monitorowania mocy AC.",
+        "pt": "Usa o retorno normal da potência CA após uma mudança de direção SunEnergy confirmada.",
+        "ru": "После подтверждения смены направления SunEnergy используется обычный контроль мощности переменного тока.",
+        "uk": "Після підтвердженої зміни напрямку SunEnergy діє звичайна перевірка потужності змінного струму.",
+        "zh-cn": "SunEnergy 确认充放电方向切换后，按常规流程检查交流功率反馈。"
+      },
       "0.17.0-alpha.276": {
         "en": "Reduce an active single-head charge while feedback is pending and switch directions directly when supported by grid measurements.",
         "de": "Ladeleistung eines Speicherkopfs bei offener Rückmeldung senken und bei ausreichender gemessener Restleistung direkt die Richtung wechseln.",
@@ -81,19 +94,6 @@
         "ru": "Ожидает следующего измерения SMA после подтверждения небольшого снижения разряда SunEnergy.",
         "uk": "Очікує наступного вимірювання SMA після підтвердження невеликого зменшення потужності розряджання SunEnergy.",
         "zh-cn": "SunEnergy 确认小幅降低放电功率后，等待下一次 SMA 测量。"
-      },
-      "0.17.0-alpha.270": {
-        "en": "Tolerate a 100 W tracking difference during SunEnergy household discharge and stop after ten consecutive mismatched pairs.",
-        "de": "Bei der SunEnergy-Haushaltsentladung 100 W Soll-Ist-Abweichung tolerieren und erst nach zehn abweichenden Messpaaren in Folge stoppen.",
-        "es": "Tolera una diferencia de 100 W durante la descarga doméstica SunEnergy y se detiene tras diez pares de mediciones discrepantes consecutivos.",
-        "fr": "Tolère un écart de 100 W pendant la décharge domestique SunEnergy et s’arrête après dix paires de mesures non concordantes.",
-        "it": "Tollera una differenza di 100 W durante la scarica domestica SunEnergy e si ferma dopo dieci coppie consecutive discordanti.",
-        "nl": "Tolereert 100 W afwijking bij SunEnergy-ontlading voor het huishouden en stopt na tien opeenvolgende afwijkende meetparen.",
-        "pl": "Toleruje odchylenie 100 W podczas rozładowania SunEnergy na potrzeby domu i zatrzymuje po dziesięciu kolejnych niezgodnych parach pomiarów.",
-        "pt": "Tolera uma diferença de 100 W durante a descarga doméstica SunEnergy e para após dez pares de medições divergentes consecutivos.",
-        "ru": "Допускает отклонение 100 Вт при разряде SunEnergy для дома и останавливается после десяти несовпадающих пар измерений подряд.",
-        "uk": "Допускає відхилення 100 Вт під час розряджання SunEnergy для будинку й зупиняється після десяти невідповідних пар вимірювань поспіль.",
-        "zh-cn": "SunEnergy 为家庭用电放电时允许 100 W 的跟踪偏差，连续十对测量值不符后停止。"
       }
     },
     "titleLang": {
