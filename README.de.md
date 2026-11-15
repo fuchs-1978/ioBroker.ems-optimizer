@@ -1,18 +1,18 @@
 # EMS Optimizer
 
-**Aktuelle Adapterversion 0.17.0-alpha.276.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
+**Aktuelle Adapterversion 0.17.0-alpha.277.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
 
 [English overview](README.md) · [Vollständige Admin-Feldreferenz](docs/admin-reference.de.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) · [Versionsänderungen](README.md#changelog)
 
 ## Aktuelle Änderungen
 
+- **Alpha.277** beendet die kurze Umschaltfrist, wenn SunEnergy den neuen GS zurückmeldet und GP keine Leistung in der alten Richtung mehr zeigt. Die normale AC-Rückmeldeprüfung übernimmt. [Versionshinweise](docs/release-0.17.0-alpha.277.md)
 - **Alpha.276** sendet kleinere Ladeaufträge bei offener Rückmeldung direkt und wechselt bei ausreichender gemessener Restleistung in beide Richtungen ohne Zwischenstopp. [Versionshinweise](docs/release-0.17.0-alpha.276.md)
 - **Alpha.275** schaltet einen Speicherkopf bei ausreichendem Haushaltsbezug direkt vom Laden auf Entladen. Bei 25 W Laden und 107 W Netzbezug sind das 82 W Entladen. [Versionshinweise](docs/release-0.17.0-alpha.275.md)
 - **Alpha.274** zieht kleinen Netzbezug vom laufenden Ladeauftrag ab. Bei 10 W Mindestleistung werden aus 11 W Ladeauftrag und 1 W Netzbezug 10 W. [Versionshinweise](docs/release-0.17.0-alpha.274.md)
 - **Alpha.273** lässt den Speicher nach Erreichen des Fahrplanziels weiterhin auf den Netzsollwert regeln. Ladeleistung ist ab dem eingestellten Totband möglich. [Versionshinweise](docs/release-0.17.0-alpha.273.md)
 - **Alpha.272** schickt bei laufender SunEnergy-Haushaltsentladung den nächsten Sollwert direkt, auch wenn die Geräterückmeldung aussteht. [Versionshinweise](docs/release-0.17.0-alpha.272.md)
 - **Alpha.271** hält eine bestätigte SunEnergy-Entladesenkung bei ausstehendem SMA-Telegramm und vermeidet kleine Stellschritte im Netztotband. [Versionshinweise](docs/release-0.17.0-alpha.271.md)
-- **Alpha.270** toleriert bei laufender SunEnergy-Haushaltsentladung bis zu 100 W Differenz zwischen Soll- und Istleistung. Ein anhaltender Rückmeldefehler löst nach zehn frischen abweichenden Messpaaren einen Stopp aus. [Versionshinweise](docs/release-0.17.0-alpha.270.md)
 
 [Ältere Versionshinweise](CHANGELOG_OLD.md#deutsche-versionshistorie)
 

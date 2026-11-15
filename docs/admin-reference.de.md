@@ -781,6 +781,8 @@ Die Beispiele gelten bei 0 W Netzsollwert, 10 W Speichertotband, gültigen Messw
 
 Am einzelnen SunEnergy-Kopf schickt das EMS eine zulässige Absenkung des laufenden Ladeauftrags direkt an denselben Ausgang. Für einen direkten Richtungswechsel muss die frische Netzmessung nach Abzug der bisherigen Speicherwirkung noch Bedarf in der neuen Richtung zeigen. Vor dem Schreiben prüft das EMS die Netzmessung und die Leistungsgrenzen erneut. Die bisherige Ladeleistung bleibt bis zur gemessenen Reaktion reserviert. Für Richtungswechsel über mehrere Köpfe wertet das EMS die Rückgabe je Kopf aus. [Versionshinweise](release-0.17.0-alpha.276.md)
 
+Sobald der SunEnergy-Kopf den neuen GS zurückmeldet und GP keine Leistung in der alten Richtung mehr zeigt, arbeitet der Regler mit der normalen AC-Rückmeldefrist weiter. GS kann also bereits 10 W Laden bestätigen, während GP vorübergehend noch 0 W meldet. [Versionshinweise](release-0.17.0-alpha.277.md)
+
 | Datenpunkt | Bedeutung bei der Diagnose |
 | --- | --- |
 | `Control.Targets.Battery_W` | Sollwert des EMS in W. Positiv lädt, negativ entlädt. |
