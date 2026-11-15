@@ -62,6 +62,7 @@ function harness() {
             if (accepted) { writes.push({id, val: value, at: now}); pending.push(callback); }
             return accepted;
         },
+        realtimeGridMeasurement: () => ({valid: false}),
         currentConsumptionLimit: () => consumptionLimit,
         coordinatedConsumptionLoads: () => loads,
         coordinatedPhaseReservations: () => reservations});
@@ -229,7 +230,7 @@ test('reduced same-direction allocation is immediate even while older command is
     assert.equal(h.value('Devices.Battery.OutputOwned'), true);
 });
 
-test('direction reversal requires a zero command and confirmed physical zero first', () => {
+test('a direction reversal without measured import uses confirmed physical zero first', () => {
     const h = harness();
     h.tick(); h.complete(); h.put('power', 100);
     h.own('Control.Targets.Battery_W', -1000);

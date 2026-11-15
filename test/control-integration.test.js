@@ -2907,16 +2907,44 @@ for (const batteryDispatchMode of ['single-head', 'sunenergy-heads']) {
         assert.deepEqual(commands(), [...beforeStop, 0], 'the next fresh watt would reduce charge to 9 W');
     });
 
-    test(`107 W grid import stops a 25 W charge in ${batteryDispatchMode} mode`, async () => {
+    test(`107 W grid import reverses 25 W charge into 82 W discharge in ${batteryDispatchMode} mode`, async () => {
         const h = await plant({battery: true, batteryHeadType: 2, wallbox: false, initialSurplusW: 25,
             nativeConfig: {batteryDispatchMode, dhwControlEnabled: false}});
         h.own('Control.TargetGridPower_W', 0);
         h.own('Config.BatteryDeadband_W', 10);
         await h.advance(5);
         assert.equal(h.physical().batteryW, 25);
-        await h.replayAt(h.now() + 1000, [['DP_GRID_IMPORT', 107], ['DP_GRID_EXPORT', 0]], {output: false});
-        const commands = h.writes.filter(write => write.id === h.config.batterySetpointId).map(write => write.val);
-        assert.equal(commands.at(-1), 0);
+        const gsId = h.config.batterySetpointId;
+        const driver = {from: 'system.adapter.sunenergyxt500.0'};
+        const commands = () => h.writes.filter(write => write.id === gsId).map(write => write.val);
+        const before = commands().length;
+        const frame = (gridW, gs, gp) => {
+            const at = h.now() + 1000;
+            const samples = [['DP_GRID_IMPORT', gridW], ['DP_GRID_EXPORT', 0], [gsId, gs, driver],
+                [h.run('CFG.dp.batteryAcPower'), gp, driver]];
+            if (batteryDispatchMode === 'sunenergy-heads') {
+                const rawId = gsId.replace('.control.GS', '.info.rawResponse');
+                const raw = {...JSON.parse(h.states.get(rawId).val), GS: gs, GP: gp, timestamp: at};
+                samples.push([rawId, JSON.stringify(raw), driver]);
+            }
+            return h.replayAt(at, samples, {output: false});
+        };
+
+        await frame(107, -25, -25);
+        assert.equal(h.value('Control.Targets.Battery_W'), -82);
+        assert.deepEqual(commands().slice(before), [82]);
+        assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 25);
+        if (batteryDispatchMode === 'single-head')
+            assert.equal(h.run("checkQueuedElectricalOutput('Battery', 82).allowed"), true);
+
+        await frame(107, -25, -25);
+        await frame(0, -25, -25);
+        assert.deepEqual(commands().slice(before), [82], 'old charge feedback cannot undo the direct switch');
+
+        await frame(0, 82, 82);
+        assert.equal(h.value('Control.Targets.Battery_W'), -82);
+        assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 0);
+        assert.ok(commands().slice(before).every(watts => watts === 82));
     });
 
     test(`live battery absorbs 10, 20 and 100 W of CHP export after the daily target in ${batteryDispatchMode} mode`, async () => {
