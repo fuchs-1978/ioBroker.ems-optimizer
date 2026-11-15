@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.282",
+    "version": "0.17.0-alpha.283",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.283": {
+        "en": "Replan an obsolete battery direction change with the current grid reading. Retain the last issued setpoint within protection limits.",
+        "de": "Überholte Speicher-Richtungswechsel anhand der aktuellen Netzmessung neu bewerten. Den letzten gesendeten Sollwert innerhalb der Schutzgrenzen weiter beobachten.",
+        "es": "Recalcula un cambio de sentido obsoleto de la batería con la medición de red actual. Mantiene la última consigna enviada dentro de los límites de protección.",
+        "fr": "Recalcule un changement de sens devenu inutile à partir de la mesure réseau actuelle. Maintient la dernière consigne envoyée dans les limites de protection.",
+        "it": "Ricalcola un cambio di direzione superato usando la misura di rete attuale. Mantiene l’ultimo setpoint inviato entro i limiti di protezione.",
+        "nl": "Plant een achterhaalde richtingswissel opnieuw met de actuele netmeting. Bewaakt het laatst verzonden setpoint binnen de beschermingsgrenzen.",
+        "pl": "Przelicza nieaktualną zmianę kierunku pracy magazynu na podstawie bieżącego pomiaru sieci. Utrzymuje ostatnią wysłaną nastawę w granicach ochronnych.",
+        "pt": "Recalcula uma mudança de direção desatualizada com a medição atual da rede. Mantém a última referência enviada dentro dos limites de proteção.",
+        "ru": "Пересчитывает устаревшую команду смены направления по текущему измерению сети. Сохраняет последнюю отправленную уставку в пределах защитных ограничений.",
+        "uk": "Перераховує застарілу команду зміни напрямку за поточним вимірюванням мережі. Зберігає останню надіслану уставку в межах захисних обмежень.",
+        "zh-cn": "根据当前电网测量值重新规划已过时的充放电切换请求，并在保护限值内继续监视上一条已发送的设定值。"
+      },
       "0.17.0-alpha.282": {
         "en": "Start eligible single-phase WB1 charging with measured daytime surplus and up to 600 W of battery support. Recharge the battery with surplus as it becomes available.",
         "de": "Einphasige WB1 bei gemessenem Tagesüberschuss mit bis zu 600 W Speicherhilfe starten. Freien Überschuss zum Nachladen des Speichers nutzen.",
@@ -81,19 +94,6 @@
         "ru": "После подтверждения смены направления SunEnergy используется обычный контроль мощности переменного тока.",
         "uk": "Після підтвердженої зміни напрямку SunEnergy діє звичайна перевірка потужності змінного струму.",
         "zh-cn": "SunEnergy 确认充放电方向切换后，按常规流程检查交流功率反馈。"
-      },
-      "0.17.0-alpha.276": {
-        "en": "Reduce an active single-head charge while feedback is pending and switch directions directly when supported by grid measurements.",
-        "de": "Ladeleistung eines Speicherkopfs bei offener Rückmeldung senken und bei ausreichender gemessener Restleistung direkt die Richtung wechseln.",
-        "es": "Reduce la carga de un cabezal mientras llega la confirmación y cambia de sentido cuando lo permiten las mediciones de red.",
-        "fr": "Réduit la charge d’un module en attendant son retour et change de sens lorsque les mesures réseau le permettent.",
-        "it": "Riduce la carica di un modulo in attesa del riscontro e cambia direzione quando le misure di rete lo consentono.",
-        "nl": "Verlaagt het laadvermogen van één module tijdens het wachten op terugmelding en wisselt direct van richting als de netmeting dat toelaat.",
-        "pl": "Zmniejsza moc ładowania pojedynczej jednostki przed potwierdzeniem i zmienia kierunek, gdy pozwalają na to pomiary sieci.",
-        "pt": "Reduz a carga de um módulo enquanto aguarda confirmação e muda diretamente de direção quando as medições da rede permitem.",
-        "ru": "Снижает заряд одного модуля до получения подтверждения и напрямую меняет направление при достаточной мощности по измерениям сети.",
-        "uk": "Зменшує заряд одного модуля до підтвердження й одразу змінює напрямок, якщо це дозволяють вимірювання мережі.",
-        "zh-cn": "等待反馈时降低单机充电功率，并在电网测量值允许时直接切换充放电方向。"
       }
     },
     "titleLang": {
