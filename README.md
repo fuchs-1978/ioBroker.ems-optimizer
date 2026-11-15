@@ -16,6 +16,7 @@ Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Comb
 - [Features](#features)
 - [Current scope](#current-scope)
 - [Live distribution and plan recovery](#live-distribution-and-plan-recovery)
+- [Battery live regulation](#battery-live-regulation)
 - [Hot-water planning](#hot-water-planning)
 - [Vehicle SoC and handoff](#vehicle-soc-and-handoff)
 - [Minimum SoC by departure](#minimum-soc-by-departure)
@@ -42,19 +43,19 @@ Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Comb
 - Preserve selected existing room-temperature histories and archive available weather forecasts for later analysis.
 - Record bounded diagnostic episodes and daily summaries for targeted investigation instead of full-day SQL downloads.
 
-`Diagnostics.BatteryStrategy` provides a read-only preview of the storage reserve, intermediate SoC target and combined overnight demand. The optional PV coordination in Alpha.220 uses the battery target in the current plan to share surplus and buffer wallbox current steps. [Strategy preview](docs/release-0.17.0-alpha.165.md) · [PV coordination in Alpha.220](#0170-alpha220-2026-11-09)
+`Diagnostics.BatteryStrategy` previews the storage reserve, intermediate SoC target and combined overnight demand. The optional PV coordination uses the battery target in the current plan to share surplus and buffer wallbox current steps. [Strategy preview](docs/release-0.17.0-alpha.165.md) · [Battery and wallbox configuration](docs/admin-reference.de.md#speicher-feinregelung-und-eingangsprüfung)
 
 ## Current scope
 
 | Available | Remaining work |
 | --- | --- |
-| Wallbox allocation, qualified handoff, measured SoC estimation and bounded current recovery | Live evidence for SoC after a trip, Mii taper transfer, and phase/protection cases. The source of contradictory go-e reports and the live Alpha.205 recovery remain open. [Vehicle operation #7](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/7) · [Phase switching #8](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/8) · [go-e #216](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/216) |
+| Wallbox allocation, qualified handoff, measured SoC estimation and bounded current recovery | Live evidence for SoC after a trip, Mii taper transfer, one-amp recovery and phase/protection cases. [Vehicle operation #7](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/7) · [Phase switching #8](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/8) · [go-e feedback #216](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/216) |
 | Optional minimum-SoC planning with an immediate mobility reserve | Verify reserve charging, tariff selection and fallback on site. [Integration and commissioning #25](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/25) |
 | Four passive day-ahead load candidates, common-slot 7/14-day evaluation and weather/room-history retention | Longer validation against time-weighted actuals and confirmation of archive delivery. [Forecast comparison #284](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/284) |
-| Bounded recorder, exact SQL confirmation and qualified recovery | Long SQL transport delays and historical recording gaps remain under [recorder investigation](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/60). A healthy current queue does not repair past losses. |
-| Battery strategy preview, optional PV coordination and heat-pump telemetry | Integrate the remaining storage reserve and overnight planning and commission the battery on site. Track heat planning and group-net control separately. [Battery #25](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/25) · [Heat planning #160](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/160) · [LPC group-net #166](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/166) |
+| Bounded recorder, exact SQL confirmation and qualified recovery | The SQL investigation documented a table-lock incident and recorder catch-up. External history coverage and the table-copy comparison are tracked separately. [SQL investigation #60](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/60) · [External coverage #158](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/158) · [Table-copy test #378](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/378) |
+| Battery live control, optional PV coordination and battery strategy preview | Complete storage reserve and overnight planning and verify the battery's live response. [Battery #25](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/25) · [Small-power stops #410](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/410) · [Step response #423](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/423) |
 
-The [current roadmap](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) assigns each remaining task. Implemented transition/reaction features are closed as software work; their natural operating checks remain in #7. General Admin/runtime acceptance stays in [#26](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/26), the current checker report in [#316](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/316). [Archived issue evidence](docs/issue-audit/2026-11-03/README.md) preserves previous reports and requirements.
+The [issue review for Alpha.275](docs/issue-audit/2026-11-15/README.md) records the status of the open tasks and the dated reports. [Roadmap #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) assigns the operational checks and integrations. Admin and runtime acceptance is tracked in [#26](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/26), repository checker follow-up in [#316](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/316). Earlier evidence is in the [November 3 issue review](docs/issue-audit/2026-11-03/README.md).
 
 ## Live distribution and plan recovery
 
@@ -63,6 +64,12 @@ A missing, incomplete or stale plan no longer blocks allocation from valid curre
 A restart can use validated cached SQL quarter-hours while SQL refreshes them in the background. Check `History.Building` for the refresh and `Plan.Valid` for the usable plan. [History cache and startup behavior](docs/release-0.17.0-alpha.213.md)
 
 An enabled optional heater may temporarily use the start budget of a waiting vehicle, including a lower-priority follower. The heater must release the required power before the car starts. This works with the fixed wallbox/heater split switched off. An ongoing mandatory 3P charge uses its running minimum. The startup reserve applies to a stopped charger. [Countdown buffer policy](docs/release-0.17.0-alpha.199.md)
+
+## Battery live regulation
+
+When the optional battery and wallbox coordination finishes a scheduled SoC stage, the EMS releases its reserved PV power. The battery's live controller can still absorb residual PV or CHP export within the available SoC, power and allocation limits.
+
+The configured battery deadband applies to the new charge request. With a 10 W deadband, a 1 W import trims an active 11 W charge to 10 W. At an eligible single SunEnergy head, 25 W of charging during 107 W of grid import leads directly to an 82 W household discharge request. The return from discharge to charging goes through a zero command and output feedback. [Setpoints, signs and diagnostics](docs/admin-reference.de.md#live-regelung-des-speichers)
 
 ## Hot-water planning
 
@@ -212,291 +219,6 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 ### 0.17.0-alpha.269 (2026-11-14)
 
 - Assess an in-flight household discharge reduction against measured load before interrupting SunEnergy output. [Release notes](docs/release-0.17.0-alpha.269.md)
-
-### 0.17.0-alpha.268 (2026-11-14)
-
-- Keep SunEnergy household discharge active through small load corrections while the matching inverter or grid feedback is pending. [Release notes](docs/release-0.17.0-alpha.268.md)
-
-### 0.17.0-alpha.267 (2026-11-14)
-
-- Supplement the Mii's 6 A charge with up to 500 W from the battery during the day, then restore the battery with measured surplus after the vehicle stops. [Release notes](docs/release-0.17.0-alpha.267.md)
-
-### 0.17.0-alpha.266 (2026-11-14)
-
-- Pause optional vehicle charging at the scheduled handover if the battery can absorb PV and the remaining measured surplus cannot sustain the wallbox minimum. [Release notes](docs/release-0.17.0-alpha.266.md)
-
-### 0.17.0-alpha.265 (2026-11-14)
-
-- Apply the existing go-e zero-power tolerance to the shared consumption and phase budgets so a small signed reading during startup keeps the charging allocation valid. [Release notes](docs/release-0.17.0-alpha.265.md)
-
-### 0.17.0-alpha.264 (2026-11-14)
-
-- Reduce the current of a running single-phase wallbox after a measured 1 A PV step rolls back, when fresh go-e feedback and electrical measurements agree. [Release notes](docs/release-0.17.0-alpha.264.md)
-
-### 0.17.0-alpha.263 (2026-11-14)
-
-- Let SunEnergy reduce grid import while an active solar wallbox reduces current or its stop delay runs, down to a 70% battery reserve. [Release notes](docs/release-0.17.0-alpha.263.md)
-
-### 0.17.0-alpha.262 (2026-11-14)
-
-- Pause PV battery charging at the measured SoC target and make surplus available to the wallboxes until a higher target is due. [Release notes](docs/release-0.17.0-alpha.262.md)
-
-### 0.17.0-alpha.261 (2026-11-14)
-
-- Apply battery SoC targets and wallbox handoff to the 48-hour plan. Configure monthly PV forecast factors per area. [Release notes](docs/release-0.17.0-alpha.261.md)
-
-### 0.17.0-alpha.260 (2026-11-14)
-
-- Reuse measured SunEnergy charging and grid power to qualify a wallbox start. Give battery and EV charging priority over optional PV heating. [Release notes](docs/release-0.17.0-alpha.260.md)
-
-### 0.17.0-alpha.259 (2026-11-14)
-
-- Suppress verified SunEnergy discharge trims within the grid deadband, and follow measured AC power at a single head's discharge ceiling. Share PV with a wallbox sooner under the SoC-based priority rule. [Release notes](docs/release-0.17.0-alpha.259.md)
-
-### 0.17.0-alpha.258 (2026-11-14)
-
-- Record SunEnergy setpoint echo and measured AC response delays per head, with original device and ioBroker timestamps. [Release notes](docs/release-0.17.0-alpha.258.md)
-
-### 0.17.0-alpha.257 (2026-11-13)
-
-- Resume SunEnergy regulation after an attributable delayed response and confirmed AC standstill. Renew an ineffective small charge in single-head PV observation mode when measured surplus rises. [Release notes](docs/release-0.17.0-alpha.257.md)
-
-### 0.17.0-alpha.256 (2026-11-13)
-
-- Handle staggered SunEnergy household discharge feedback and recalculate corrections superseded before dispatch. [Release notes](docs/release-0.17.0-alpha.256.md)
-
-### 0.17.0-alpha.255 (2026-11-13)
-
-- Reduce acknowledged SunEnergy household discharge through brief export when measured demand still supports a lower output. [Release notes](docs/release-0.17.0-alpha.255.md)
-
-### 0.17.0-alpha.254 (2026-11-13)
-
-- Hold acknowledged SunEnergy discharge at its ceiling when AC power falls slightly short. [Release notes](docs/release-0.17.0-alpha.254.md)
-
-### 0.17.0-alpha.253 (2026-11-13)
-
-- Restore the SunEnergy reserve at up to 1,000 W when SoC drops below the effective minimum. [Release notes](docs/release-0.17.0-alpha.253.md)
-
-### 0.17.0-alpha.252 (2026-11-13)
-
-- Optionally use CHP surplus and a battery SoC band to charge the Mii at night. [Release notes](docs/release-0.17.0-alpha.252.md)
-
-### 0.17.0-alpha.251 (2026-11-13)
-
-- Resume a SunEnergy direction change after a driver-confirmed zero command and measured AC rundown to standstill. [Release notes](docs/release-0.17.0-alpha.251.md)
-
-### 0.17.0-alpha.250 (2026-11-13)
-
-- Reduce an acknowledged SunEnergy household discharge while AC power is still settling. [Release notes](docs/release-0.17.0-alpha.250.md)
-
-### 0.17.0-alpha.249 (2026-11-13)
-
-- Reduce an acknowledged SunEnergy discharge while buffering a wallbox, even while AC power is still settling. [Release notes](docs/release-0.17.0-alpha.249.md)
-
-### 0.17.0-alpha.248 (2026-11-13)
-
-- Release stale SunEnergy commands automatically after a successful zero write and sustained fresh zero feedback. [Release notes](docs/release-0.17.0-alpha.248.md)
-
-### 0.17.0-alpha.247 (2026-11-13)
-
-- Let SunEnergy bridge a PV shortfall during an active wallbox stop delay while the timer continues to use the PV-only budget. [Release notes](docs/release-0.17.0-alpha.247.md)
-
-### 0.17.0-alpha.246 (2026-11-13)
-
-- Preserve confirmed SunEnergy charging or discharging during a routine restart when the current configuration and device feedback allow takeover. [Release notes](docs/release-0.17.0-alpha.246.md)
-
-### 0.17.0-alpha.245 (2026-11-13)
-
-- Give an outstanding SunEnergy discharge time to confirm before applying a reduced target or stopping during a restart. [Release notes](docs/release-0.17.0-alpha.245.md)
-
-### 0.17.0-alpha.244 (2026-11-13)
-
-- Automatically return a stopped SunEnergy discharge when the device echoes the previous command and subsequently confirms zero. [Release notes](docs/release-0.17.0-alpha.244.md)
-
-### 0.17.0-alpha.243 (2026-11-13)
-
-- Correct the SunEnergy charge against the measured grid error after confirmed feedback in observation mode. [Release notes](docs/release-0.17.0-alpha.243.md)
-
-### 0.17.0-alpha.242 (2026-11-13)
-
-- Give pending SunEnergy feedback up to 2.5 seconds before issuing the stop during a normal restart. [Release notes](docs/release-0.17.0-alpha.242.md)
-
-### 0.17.0-alpha.241 (2026-11-13)
-
-- Hold the issued charging step while waiting for feedback and retain SunEnergy setpoint confirmation across restart. [Release notes](docs/release-0.17.0-alpha.241.md)
-
-### 0.17.0-alpha.240 (2026-11-13)
-
-- Automatically resume SunEnergy control after a verified zero response when the persisted output has no unresolved command. [Release notes](docs/release-0.17.0-alpha.240.md)
-
-### 0.17.0-alpha.239 (2026-11-13)
-
-- In SunEnergy observation mode, use the configured charging step above the learned limit when the previous command is confirmed and fresh grid export covers the increase. [Release notes](docs/release-0.17.0-alpha.239.md)
-
-### 0.17.0-alpha.238 (2026-11-13)
-
-- In SunEnergy observation mode, a drop in grid export is logged while an outstanding charging request is held. [Release notes](docs/release-0.17.0-alpha.238.md)
-
-### 0.17.0-alpha.237 (2026-11-13)
-
-- Add optional warning-only observation of pending SunEnergy PV charge feedback with verified export and protection limits. [Release notes](docs/release-0.17.0-alpha.237.md)
-
-### 0.17.0-alpha.236 (2026-11-13)
-
-- Allow a brief wait for the SunEnergy charge-start echo when PV surplus drops. [Release notes](docs/release-0.17.0-alpha.236.md)
-
-### 0.17.0-alpha.235 (2026-11-13)
-
-- Reduce single-head SunEnergy PV charging once the previous setpoint is echoed, even if measured power still lags. Ramp up from measured charging power and retain the prior reservation through confirmation. [Release notes](docs/release-0.17.0-alpha.235.md)
-
-### 0.17.0-alpha.234 (2026-11-13)
-
-- Preserve the learned SunEnergy charging ceiling when PV surplus temporarily falls, so a recovery can use the previously confirmed charging range. [Release notes](docs/release-0.17.0-alpha.234.md)
-
-### 0.17.0-alpha.233 (2026-11-13)
-
-- Release the SunEnergy reservation for a command canceled before dispatch after a fresh zero confirmation. [Release notes](docs/release-0.17.0-alpha.233.md)
-
-### 0.17.0-alpha.232 (2026-11-13)
-
-- For a single SunEnergy head with an echoed PV charging setpoint and stable lower measured power, reduce the setpoint and hold the previous power reservation until the reduction is confirmed. Probe again in steps of up to 50 W after 60 seconds when PV surplus allows. [Release notes](docs/release-0.17.0-alpha.232.md)
-
-### 0.17.0-alpha.231 (2026-11-13)
-
-- Allow a PV charge target drop of up to 200 W while a single SunEnergy head is already charging and its command is still being confirmed. The existing electrical limits and feedback deadline still apply. [Release notes](docs/release-0.17.0-alpha.231.md)
-
-### 0.17.0-alpha.230 (2026-11-13)
-
-- For a single SunEnergy head, wait for outstanding charging feedback when the PV target drops within the existing power tolerance and all limits still allow the previous request. [Release notes](docs/release-0.17.0-alpha.230.md)
-
-### 0.17.0-alpha.229 (2026-11-13)
-
-- Recover a blocked SunEnergy head by disabling only battery control and confirming that each head is stopped and the old command cannot execute. Other EMS outputs can remain enabled. [Release notes](docs/release-0.17.0-alpha.229.md)
-
-### 0.17.0-alpha.228 (2026-11-12)
-
-- Include a running wallbox's stop-delay draw in the shared budget when PV and electrical limits cover it alongside the other targets. Another vehicle can then use the available PV surplus during the delay. [Release notes](docs/release-0.17.0-alpha.228.md)
-
-### 0.17.0-alpha.227 (2026-11-11)
-
-- Apply the configured Mii/e-Up SoC current steps in parallel charging when grid capacity remains after the other vehicles' minimum currents. [Release notes](docs/release-0.17.0-alpha.227.md)
-
-### 0.17.0-alpha.226 (2026-11-10)
-
-- Log a minimum-SoC stop as information. Log confirmation after the wallbox acknowledges OFF and fresh measurements confirm that charging has stopped. Warn if either confirmation misses its deadline. [Release notes](docs/release-0.17.0-alpha.226.md)
-
-### 0.17.0-alpha.225 (2026-11-09)
-
-- Keep validated history available on successive restarts when the rolling SQL window drops the oldest part of an empty interval. [Release notes](docs/release-0.17.0-alpha.225.md)
-
-### 0.17.0-alpha.224 (2026-11-09)
-
-- Count metered energy toward the minimum SoC, replan explicit departure changes within the active plug session, and allocate shared price windows to earlier departures first unless a vehicle has explicit priority. [Release notes](docs/release-0.17.0-alpha.224.md)
-
-### 0.17.0-alpha.223 (2026-11-09)
-
-- Spread forecast hot-water heating across an equal-price block before a tariff increase when no later supply window is visible. The forecast still checks the tank reserve, available capacity and heater power. [Release notes](docs/release-0.17.0-alpha.223.md)
-
-### 0.17.0-alpha.222 (2026-11-09)
-
-- Optional vehicle readiness planning keeps an immediate mobility reserve and schedules the minimum SoC by departure using total energy prices. Disabled by default for every vehicle. [Release notes](docs/release-0.17.0-alpha.222.md)
-
-### 0.17.0-alpha.221 (2026-11-09)
-
-- Remember a manual vehicle SoC correction entered while unplugged for the next connection within 30 minutes. The value applies to the first charging decision. Energy tracking begins with the new session's first fresh meter reading. [Release notes](docs/release-0.17.0-alpha.221.md)
-
-### 0.17.0-alpha.220 (2026-11-09)
-
-- Optional battery coordination uses the live SoC and the battery target in the current plan. Above the target, the battery can support half of the running wallbox's next current step, with separate limits for single- and three-phase charging. In the battery-first band, surplus above the battery charge ceiling can start the preferred wallbox at its minimum, while retaining at least half of that ceiling for storage. The battery then gets priority up to its full charge power before the wallbox increases its current.
-
-### 0.17.0-alpha.219 (2026-11-08)
-
-- Compare recorder source settings directly and reuse mapped IDs for unindexed source lookup. Changed device IDs, meter units and command observations are picked up on the next notification. [Verification and live measurements](docs/release-0.17.0-alpha.219.md)
-
-### 0.17.0-alpha.218 (2026-11-08)
-
-- Reuse recorder data point mappings and pick up configuration changes on the next notification.
-
-### 0.17.0-alpha.217 (2026-11-08)
-
-- Apply indexed recorder sampling rules directly and retain the fallback for unindexed notifications.
-
-### 0.17.0-alpha.215 (2026-11-08)
-
-- Build full recorder snapshots only for recorded frames. Command and protection events and raw observations keep their existing capture rules.
-
-### 0.17.0-alpha.214 (2026-11-08)
-
-- Reuse measured UTF-8 sample sizes in routine and pre-event recorder batches. Samples, batch limits and electrical control logic are unchanged.
-
-### 0.17.0-alpha.213 (2026-11-08)
-
-- Restore validated SQL quarter-hours after a restart, avoid unchanged wallbox display writes, and reuse decoded schedules. [Release notes](docs/release-0.17.0-alpha.213.md).
-
-### 0.17.0-alpha.212 (2026-11-08)
-
-- Add independent emergency grid heating for both heating rods. [Release notes](docs/release-0.17.0-alpha.212.md).
-
-### 0.17.0-alpha.211 (2026-11-08)
-
-- When the manually preferred vehicle is unplugged, rank replacement vehicles by the gap to their target charge level and keep the active choice until charging stops. [Release notes](docs/release-0.17.0-alpha.211.md).
-
-### 0.17.0-alpha.210 (2026-11-08)
-
-- Publish numeric timestamps for eCharts forecast and schedule updates. [Release notes](docs/release-0.17.0-alpha.210.md).
-
-### 0.17.0-alpha.209 (2026-11-07)
-
-- Freeze a separate Lasso forecast when a single missing quarter-hour can be interpolated between its neighbors. [Scoring and limits](docs/release-0.17.0-alpha.209.md).
-
-### 0.17.0-alpha.208 (2026-11-07)
-
-- Prefer valid Open-Meteo quarter-hour weather and PV values for the first four hours of the plan. Archive the available quarter-hour weather series alongside the hourly series. [Sources and coverage](docs/release-0.17.0-alpha.208.md).
-
-### 0.17.0-alpha.207 (2026-11-06)
-
-- Spread the combined forecast hot-water reserve for the next PV supply and the dearer tariff block when the modeled reserve, heater power and storage limits permit. [Scope and model assumptions](docs/release-0.17.0-alpha.207.md).
-
-### 0.17.0-alpha.206 (2026-11-05)
-
-- Spread forecast hot-water heating within the equal-price night block before a tariff rise when the thermal reserve and heater limits permit. [Scope and model assumptions](docs/release-0.17.0-alpha.206.md).
-
-### 0.17.0-alpha.205 (2026-11-05)
-
-- Take back control once after a physically confirmed one-amp rollback in an active single-phase charge, subject to the current budget and fresh acknowledgements. [Policy and limits](docs/release-0.17.0-alpha.205.md).
-
-### 0.17.0-alpha.204 (2026-11-05)
-
-- Accept one early lower arrival report after an observed unplug when the current estimate still starts from the pre-trip value. Continue counting at the first aligned charge-counter sample. [Policy and limits](docs/release-0.17.0-alpha.204.md).
-
-### 0.17.0-alpha.203 (2026-11-05)
-
-- Spread necessary hot-water heating at constant power across a contiguous equal-price window ahead of a cheaper tariff. The forecast retains the minimum reserve, heater and storage limits, and priority for acute demand.
-- Resume vehicle SoC estimation from the latest app value and new measured charge after reconnect. Flag app reports that disagree with the estimate when their measurement time is unknown.
-
-### 0.17.0-alpha.202 (2026-11-04)
-
-- (fuchs-1978) Build the required hot-water reserve before a dearer price block using the latest feasible cheaper slots. Account for bounded future PV, heater power, storage capacity and partial slots; preserve live permissions. [Method and limits](docs/release-0.17.0-alpha.202.md).
-
-### 0.17.0-alpha.201 (2026-11-04)
-
-- (fuchs-1978) Share usable mandatory hot-water power with a confirmed preferred 1P minimum; enforce explicit current reduction. Retain a bounded thermal-pause qualification for the same charge with 15 seconds of fresh budget evidence and all physical safety gates. [Policy and limits](docs/release-0.17.0-alpha.201.md).
-
-### 0.17.0-alpha.200 (2026-11-04)
-
-- (fuchs-1978) Build quarter-hour power histories from time-weighted raw values instead of sample-count means. Keep missing/invalid intervals unknown, bound dense SQL queries, and preserve issued forecasts while correcting training and actual evaluation. [Method and limits](docs/release-0.17.0-alpha.200.md).
-
-### 0.17.0-alpha.199 (2026-11-04)
-
-- (fuchs-1978) Let the optional EHZ use the reserved countdown budget of additional waiting vehicles. Preserve physical heater reservations until measured reduction permits starting. Keep a running mandatory 3P charge when its electrical minimum is funded; apply the configured reserve only to stopped starts. [Details and limits](docs/release-0.17.0-alpha.199.md).
-
-### 0.17.0-alpha.196 (2026-11-03)
-
-- (fuchs-1978) Attribute passive current-response diagnostics to the sent target instead of the previous ACK; distinguish superseded commands from pending evidence. Keep charging control and timing unchanged. [Details and limits](docs/release-0.17.0-alpha.196.md).
-
-### 0.17.0-alpha.195 (2026-11-03)
-
-- (fuchs-1978) Redistribute PV budget during sustained vehicle uptake limits using a confirmed lower current command, while retaining nominal reservations until ACK. Preserve measured SoC progress against delayed lower cloud reports and observed charge/Finish transitions. [Details and limits](docs/release-0.17.0-alpha.195.md).
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 

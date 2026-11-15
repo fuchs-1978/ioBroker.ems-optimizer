@@ -747,7 +747,7 @@ Dies ist eine temperaturgestufte Mindestreserve. Eine umfassende Bedarfsplanung 
 | PV-Vorrang für den Speicher und Wallbox-Feinausgleich<br>`batteryPvPriorityEnabled` | AUS | In der Echtzeitregelung wird der Speicher vor der PV-Wallbox-Zuteilung bis zur verfügbaren Ladegrenze eingeplant. Eine bereits laufende reine PV-Ladung darf bei einem gemessenen kleinen Leistungsdefizit bis zur eingestellten `wallboxPVImportToleranceW` unterstützt werden. Pflicht- und Tarifladung erhalten keine solche Unterstützung. |
 | Wallbox-Stromschritte nach dem Ziel-SoC des Speichers abstimmen<br>`batteryWallboxHalfStepEnabled` | AUS | Mit aktiver Parallelverteilung und gültigem aktuellem Speicherziel hat die Batterie bis zum Ziel Vorrang. Oberhalb der verfügbaren Batterieladeleistung darf die bevorzugte Wallbox mit ihrem Mindeststrom starten, wenn nach Aufnahme des Mindeststroms mindestens die halbe verfügbare Ladeleistung für den Speicher übrig bleibt. Der Speicher gibt die zusätzliche Startreserve beim Anlauf vorübergehend frei. Danach bekommt er wieder bis zur vollen Ladeleistung Vorrang vor weiteren Ampere-Schritten. Am oder unter dem Mindest-SoC sowie bei einem Fahrplansoll auf Höhe der verfügbaren Ladeleistung behält der Speicher den vollen Vorrang. Oberhalb von Ziel + 1 Prozentpunkt kann der Speicher einen 1-A-Schritt einer laufenden reinen PV-Ladung puffern. Bei 230 V sind das bis zu 115 W einphasig oder 345 W dreiphasig. Für die Erhöhung werden 20 W zusätzlicher PV-Überschuss verlangt. Die Pufferfunktion ist auf eine bereits ladende Wallbox ohne parallele Heizleistung begrenzt. Pflicht- und Tarifladen, Phasenwechsel und aktive Netzbetreiberbegrenzung bleiben von der Pufferfreigabe ausgenommen. |
 
-Bei SoC-abhängiger Wallbox-Koordination pausiert die PV-Speicherladung, sobald der Speicher das aktuelle Fahrplanziel erreicht. Der Überschuss steht den Wallboxen zur Verfügung. Am selben Tag gibt erst eine höhere aktuelle Fahrplanstufe die PV-Speicherladung wieder frei. [Versionshinweise](release-0.17.0-alpha.262.md)
+Mit SoC-abhängiger Wallbox-Koordination gibt eine abgeschlossene Fahrplanstufe den Speichervorrang und die vorgemerkte PV-Reserve frei. Der Live-Regler kann den verbleibenden Überschuss am Netzanschlusspunkt aufnehmen, einschließlich Überschuss aus dem BHKW. Eine höhere Fahrplanstufe am selben Tag kann erneut PV-Leistung für den Speicher vorsehen. Die eingestellten SoC- und Leistungsgrenzen bestimmen die tatsächlich verfügbare Ladeleistung. [Versionshinweise](release-0.17.0-alpha.273.md)
 
 Bei der geplanten PV-Schlussladung kann das EMS eine laufende freiwillige PV-Ladung sofort pausieren. Das gilt bei aktiver gemeinsamer Wallbox-Zuteilung, wenn der Speicher laden kann und erst durch seine PV-Zuteilung der Mindestladestrom des Autos unterschritten wird. Pflichtladung, manuell vorgegebener Mindeststrom und Tarifladung haben ihre eigenen Freigaben. [Versionshinweise](release-0.17.0-alpha.266.md)
 
@@ -756,13 +756,36 @@ Die Option `bhkwWallboxCycleEnabled` erlaubt bei aktiviertem PV-Speichervorrang 
 Mit aktivem PV-Speichervorrang kann SunEnergy einen Bezugssprung bis zu zehn Sekunden abfangen, während eine laufende PV-Wallbox ihren Ladestrom senkt. Während der Ausschaltverzögerung kann er den gemessenen PV-Fehlbetrag bis zum Ende des Timers decken. Der Timer beurteilt den PV-Überschuss anhand der Netzleistung ohne Speicherwirkung. Für diese Übergänge gilt eine Untergrenze von 70 % am niedrigsten gemeldeten Pack-SoC. Höhere Entladegrenzen haben Vorrang. [Versionshinweise](release-0.17.0-alpha.263.md)
 
 In der SunEnergy-Betriebsart berücksichtigen gemeinsam aktivierter PV-Speichervorrang und SoC-abhängige Wallbox-Koordination vorrangig Speicher und Fahrzeug. Optionale PV-Wärme bekommt erst bei fehlender Ladeoption Leistung. Bei einem einzelnen Kopf kann ein anhand der AC- und Netzmessung belegtes Zeitfenster die Startverzögerung bereits erfüllen. Beim Übergang prüft der Wallbox-Ausgang weiterhin die tatsächlich freigewordene Leistung. [Versionshinweise](release-0.17.0-alpha.260.md)
+
+| Feld / technischer Schlüssel | Auslieferung | Zweck und erwartete Eingabe |
+| --- | --- | --- |
 | PV-Leistungsreserve für die Speicher-Feinregelung vor der Heizstabverteilung<br>`batteryFineReserveW` | 200 W | PV-Leistungsreserve in W für die Speicher-Feinregelung vor Heizstabverteilung. Keine zusätzliche Erzeugung; schützt nutzbaren Regelspielraum. |
-| Totband der Speicher-Netzregelung<br>`batteryDeadbandW` | 50 W | Totband der Speicher-Netzregelung in W gegen unnötige kleine Befehle. Eigenes Speicherfeld, nicht die allgemeine NVP-Toleranz. |
+| Totband der Speicher-Netzregelung<br>`batteryDeadbandW` | 50 W | Gilt im Regler als `Config.BatteryDeadband_W`. Ein Ladeergebnis ab diesem Wert kann ausgegeben werden. Für die allgemeine NVP-Toleranz gibt es ein eigenes Feld. |
 | Regelzyklus des Speichers<br>`batteryCycleS` | 1 s | Regelzyklus des Speichers in s. Schnellerer Zyklus bewirkt keine schnellere physische Antwort als Treiber/Gerät; Antwortfristen bleiben erforderlich. |
 | Zeitlimit für Befehl / physische Rückmeldung<br>`batteryFeedbackTimeoutS` | 15 s | Maximale Frist in s für Befehl und physische Antwort. Transport, Modus und tatsächliche AC-Leistung zusammen prüfen. |
 | Maximales Alter der Speichermesswerte / Treiberaktualisierung<br>`batteryMeasurementMaxAgeS` | 30 s | Maximales Alter von Speichermesswerten und Treiberaktualisierung in s. Nicht durch künstliche EMS-Zeitstempel erneuern. |
 | Maximales Alter des Speicher-SoC<br>`batterySoCMaxAgeS` | 300 s | Eigene maximale SoC-Altersfrist in s, weil SoC langsamer als Leistung aktualisiert werden kann. Alte SoC-Werte dürfen keine uneingeschränkte Entladung erlauben. |
 | Optionale Abschaltgrenze der Batterietemperatur<br>`batteryTemperatureMaxC` | 50 °C | Optionale Abschaltgrenze in °C bei zugeordnetem gültigem Temperaturfühler. Nicht mit der Betriebsfreigabe gleichsetzen. |
+
+### Live-Regelung des Speichers
+
+Die Beispiele gelten bei 0 W Netzsollwert, 10 W Speichertotband, gültigen Messwerten und entsprechend freigegebenem Leistungsbudget. Bei kleinem verbleibendem Netzbezug zieht der Regler die Abweichung vom laufenden Ladeauftrag ab. Er übernimmt denselben frischen Netzmesswert nur einmal für diese Absenkung.
+
+| Situation | Neuer Speicherbefehl |
+| --- | --- |
+| 11 W Ladeauftrag, 1 W Netzbezug | 10 W Laden (`GS = −10 W`). Die Absenkung kann bei noch offener Rückmeldung des vorherigen Auftrags folgen. |
+| 10 W Ladeauftrag, weiterer 1 W Netzbezug in einer frischen Messung | 0 W. Die berechneten 9 W liegen unterhalb des eingestellten Totbands. |
+| 25 W Laden, 107 W Netzbezug | 82 W Haushaltsentladung (`GS = +82 W`) direkt am selben freigegebenen SunEnergy-Kopf. |
+| 82 W Entladen, 126 W Netzeinspeisung | `GS = 0 W`, danach 44 W Laden, sobald der Regler die passende Rückmeldung zur Rückgabe hat. |
+
+Der direkte Wechsel zur Haushaltsentladung gilt bei einem einzelnen SunEnergy-Kopf mit ausreichendem gemessenem Haushaltsbezug. Vor der Ausgabe prüft der Regler den Bezug und die jeweils wirksamen Grenzen erneut. Er berücksichtigt die bisherige Ladeleistung in der Leistungsreserve, bis die Entladung bestätigt ist. Für Richtungswechsel über mehrere Köpfe wertet das EMS die Rückgabe je Kopf aus. [Kleine Ladekorrekturen](release-0.17.0-alpha.274.md) · [Direkter Entladewechsel](release-0.17.0-alpha.275.md)
+
+| Datenpunkt | Bedeutung bei der Diagnose |
+| --- | --- |
+| `Control.Targets.Battery_W` | Sollwert des EMS in W. Positiv lädt, negativ entlädt. |
+| `sunenergyxt500.N.heads.H.control.GS` | Auftrag am SunEnergy-Kopf. Negativ lädt, positiv entlädt. `ack=false` kennzeichnet den Schreibauftrag, `ack=true` die Rückmeldung. |
+| `sunenergyxt500.N.heads.H.grid.GP` | Gemessene AC-Leistung am Kopf im gleichen Vorzeichen wie `GS`. |
+| `Devices.Battery.OutputStatus` und `Debug.Shadow.DecisionRecord` | Grund und Zeitfolge der Entscheidung. Für einen Richtungswechsel die getrennten Zeitstempel von GS, GP und Netzmessung vergleichen. |
 
 ## Admin: Wärmepumpe
 

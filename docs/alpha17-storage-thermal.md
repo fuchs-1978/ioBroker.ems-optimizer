@@ -1,5 +1,7 @@
 # Speicher und Wärme: alpha17
 
+Diese Seite dokumentiert die Einführung von Speicher und Wärme ab Alpha.17. Die [aktuelle Speicher-Live-Regelung](admin-reference.de.md#live-regelung-des-speichers) beschreibt das abgeschlossene Fahrplanziel, kleine Leistungskorrekturen und den direkten Einzelkopf-Wechsel zur Haushaltsentladung.
+
 **Aktualisierung alpha.20:** Der Standard-Speichertakt beträgt jetzt 1 s.
 Phasenführung, Schattenmodell und neue Regressionen sind in
 [Issues #57–#60 / alpha.20](issues57-60-alpha20.md) dokumentiert.
@@ -73,11 +75,11 @@ und Höchst-SoC bleiben wirksam. Neue Installationen starten mit 15 % Reserve;
 ein vorhandener ausdrücklich gesetzter Wert wird nicht still überschrieben.
 Eine Reserve von null ist keine Freigabe für produktives Entladen.
 
-Ein Befehl gilt nicht schon durch den ioBroker-Schreibabschluss als physisch
-ausgeführt. Erhöhungen warten auf tatsächliche Leistungsrückmeldung;
-Richtungswechsel führen über bestätigte Null. Fehlende Rückmeldung stoppt und
-verriegelt den Ausgang. Diagnose beachten; `ResetFault` ist kein Ersatz für
-behobene Kommunikations- oder Gerätefehler.
+Der ioBroker-Schreibabschluss belegt die Übergabe des Befehls. Die physische
+Antwort wird separat gemessen. Im damaligen Stand warteten Erhöhungen auf die
+Leistungsrückmeldung und Richtungswechsel liefen über bestätigte Null. Bei
+fehlender Rückmeldung stoppte und verriegelte der Regler den Ausgang. Die
+aktuelle Ausgabelogik und die Diagnosepunkte stehen in der [Admin-Referenz](admin-reference.de.md#live-regelung-des-speichers).
 
 Ein bislang nicht beobachteter älterer Leistungsauftrag bleibt separat
 reserviert, auch nach einem neueren Nullbefehl und über einen Adapterneustart
