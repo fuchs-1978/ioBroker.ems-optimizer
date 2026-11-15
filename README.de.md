@@ -13,61 +13,15 @@
 - **Alpha.271** hält eine bestätigte SunEnergy-Entladesenkung bei ausstehendem SMA-Telegramm und vermeidet kleine Stellschritte im Netztotband. [Versionshinweise](docs/release-0.17.0-alpha.271.md)
 - **Alpha.270** toleriert bei laufender SunEnergy-Haushaltsentladung bis zu 100 W Differenz zwischen Soll- und Istleistung. Ein anhaltender Rückmeldefehler löst nach zehn frischen abweichenden Messpaaren einen Stopp aus. [Versionshinweise](docs/release-0.17.0-alpha.270.md)
 - **Alpha.269** prüft bei einer laufenden Senkung der SunEnergy-Haushaltsentladung, wie viel Netzleistung nach dem bereits gesendeten Sollwert zu erwarten ist. [Versionshinweise](docs/release-0.17.0-alpha.269.md)
-- **Alpha.268** hält die SunEnergy-Haushaltsentladung bei kleinen Laständerungen, während die passende Geräte- oder Netzmessung noch aussteht. [Versionshinweise](docs/release-0.17.0-alpha.268.md)
-- **Alpha.267** ergänzt die 6-A-Ladung des Mii tagsüber mit bis zu 500 W aus dem Speicher. Nach dem Abschalten lädt der Speicher aus dem verbleibenden Überschuss nach. [Versionshinweise](docs/release-0.17.0-alpha.267.md)
-- **Alpha.266** pausiert freiwillige Autoladung bei der geplanten PV-Schlussladung sofort, wenn der ladebereite Speicher den gemessenen Überschuss beansprucht und für die Wallbox zu wenig übrig bleibt. [Versionshinweise](docs/release-0.17.0-alpha.266.md)
-- **Alpha.265** nutzt die bestehende Nulltoleranz für go-e auch im gemeinsamen Verbrauchs- und Phasenbudget. Ein Messwert von −10 W beim Anlauf entzieht der Wallbox dadurch nicht mehr die Ladefreigabe. [Versionshinweise](docs/release-0.17.0-alpha.265.md)
-- **Alpha.264** regelt eine laufende einphasige Wallbox bei einem belegten Rücksprung nach einem PV-Schritt um 1 A herunter und lässt die Ladefreigabe aktiv. [Versionshinweise](docs/release-0.17.0-alpha.264.md)
-- **Alpha.263** puffert Netzbezug beim Abregeln einer laufenden PV-Wallbox und während ihrer Ausschaltverzögerung. Für diese Entladung gilt eine SoC-Untergrenze von 70 %. [Versionshinweise](docs/release-0.17.0-alpha.263.md)
-- **Alpha.262** pausiert die PV-Speicherladung am erreichten SoC-Ziel. Bis zum nächsten höheren Fahrplanziel steht der Überschuss den Wallboxen zur Verfügung. [Versionshinweise](docs/release-0.17.0-alpha.262.md)
-- **Alpha.261** bildet die SoC-Stufen und die Übergabe ans Auto im Fahrplan ab. Im Reiter PV-Korrektur lassen sich zwölf Faktoren pro Anlage pflegen. [Versionshinweise](docs/release-0.17.0-alpha.261.md)
-- **Alpha.260** zählt stabil gemessenen Speicherüberschuss für den Wallboxstart und priorisiert Speicher und Auto vor optionaler PV-Wärme. [Versionshinweise](docs/release-0.17.0-alpha.260.md)
-- **Alpha.259** hält bestätigte SunEnergy-Entladeaufträge bei kleinen Netzabweichungen, führt die Entladegrenze bei belegter Minderleistung nach und teilt PV-Überschuss früher mit der Wallbox. [Versionshinweise](docs/release-0.17.0-alpha.259.md)
-- **Alpha.258** erfasst im Recorder je SunEnergy-Kopf die Zeit bis zum Sollwert-Echo und bis zur gemessenen AC-Reaktion. [Versionshinweise](docs/release-0.17.0-alpha.258.md)
-- **Alpha.257** setzt die SunEnergy-Regelung nach einer eindeutig verspäteten Rückmeldung und bestätigtem Stillstand fort. Im PV-Beobachtungsmodus kann steigender Überschuss einen wirkungslosen Kleinladeauftrag ablösen. [Versionshinweise](docs/release-0.17.0-alpha.257.md)
-- **Alpha.256** berücksichtigt bei der SunEnergy-Haushaltsentladung kurzzeitig versetzte Rückmeldungen und berechnet überholte Entladekorrekturen erneut. [Versionshinweise](docs/release-0.17.0-alpha.256.md)
-- **Alpha.255** reduziert bestätigte SunEnergy-Entladeaufträge bei kurzer Einspeisung direkt, wenn weiter Haushaltsbedarf besteht. [Versionshinweise](docs/release-0.17.0-alpha.255.md)
-- **Alpha.254** hält bestätigte SunEnergy-Entladeaufträge bei kleiner AC-Minderleistung an der Entladegrenze. [Versionshinweise](docs/release-0.17.0-alpha.254.md)
-- **Alpha.253** lädt SunEnergy bei unterschrittenem Mindest-SoC mit bis zu 1.000 W nach. [Versionshinweise](docs/release-0.17.0-alpha.253.md)
-- **Alpha.252** ergänzt optional die nächtliche Mii-Ladung mit BHKW-Überschuss und Speicherpuffer. [Versionshinweise](docs/release-0.17.0-alpha.252.md)
-- **Alpha.251** setzt einen SunEnergy-Richtungswechsel nach bestätigtem Nullbefehl und gemessenem Stillstand früher fort. [Versionshinweise](docs/release-0.17.0-alpha.251.md)
-- **Alpha.250** senkt den bestätigten SunEnergy-Entladeauftrag auch bei der Haushaltsentladung direkt. [Versionshinweise](docs/release-0.17.0-alpha.250.md)
-- **Alpha.249** senkt beim Wallbox-Puffern den bestätigten SunEnergy-Entladeauftrag direkt. [Versionshinweise](docs/release-0.17.0-alpha.249.md)
-- **Alpha.248** gibt SunEnergy-Altaufträge nach mehreren frischen Nullrückmeldungen automatisch frei. [Versionshinweise](docs/release-0.17.0-alpha.248.md)
-- **Alpha.247** überbrückt einen PV-Fehlbetrag während der Wallbox-Ausschaltverzögerung aus dem SunEnergy-Speicher. [Versionshinweise](docs/release-0.17.0-alpha.247.md)
-- **Alpha.246** übernimmt bei einem regulären Neustart bestätigte SunEnergy-Lade- und Entladeaufträge. [Versionshinweise](docs/release-0.17.0-alpha.246.md)
-- **Alpha.245** wartet bei sinkendem Entladeziel oder Neustart kurz auf eine ausstehende SunEnergy-Bestätigung. [Versionshinweise](docs/release-0.17.0-alpha.245.md)
-- **Alpha.244** gibt bestätigte SunEnergy-Entladeaufträge nach frischer Nullrückmeldung automatisch frei. [Versionshinweise](docs/release-0.17.0-alpha.244.md)
-- **Alpha.243** korrigiert den SunEnergy-Ladeauftrag im Beobachtungsmodus anhand der gemessenen Abweichung am Netzanschlusspunkt. [Versionshinweise](docs/release-0.17.0-alpha.243.md)
-- **Alpha.242** gibt einer ausstehenden SunEnergy-Laderückmeldung bei regulärem Neustart kurz Zeit vor dem Nullbefehl. [Versionshinweise](docs/release-0.17.0-alpha.242.md)
-- **Alpha.241** hält laufende Ladeschritte bis zur Rückmeldung und speichert die GS-Bestätigung für den Wiederanlauf. [Versionshinweise](docs/release-0.17.0-alpha.241.md)
-- **Alpha.240** nimmt die SunEnergy-Regelung nach einem Neustart automatisch wieder auf, sobald die Rückgabe des bekannten Auftrags bestätigt ist. [Versionshinweise](docs/release-0.17.0-alpha.240.md)
-- **Alpha.239** nutzt im SunEnergy-Beobachtungsmodus nach bestätigter Ladeleistung wieder die eingestellte Schrittweite, begrenzt durch die aktuelle Einspeisung. [Versionshinweise](docs/release-0.17.0-alpha.239.md)
-- **Alpha.238** hält im SunEnergy-Beobachtungsmodus einen offenen Ladeauftrag auch bei vorübergehendem Netzbezug. [Versionshinweise](docs/release-0.17.0-alpha.238.md)
-- **Alpha.237** ergänzt einen optionalen Beobachtungsmodus für die SunEnergy-PV-Laderückmeldung. [Versionshinweise](docs/release-0.17.0-alpha.237.md)
-- **Alpha.236** wartet beim XT500 bei einem PV-Einbruch kurz auf die Bestätigung des gerade gesendeten Ladestarts. [Versionshinweise](docs/release-0.17.0-alpha.236.md)
-- **Alpha.235** senkt beim einzelnen SunEnergy-Kopf einen bestätigten PV-Ladeauftrag auch bei nachlaufender Istleistung. Beim Hochregeln geht jeder Schritt von der gemessenen Leistung aus. [Versionshinweise](docs/release-0.17.0-alpha.235.md)
-- **Alpha.234** behält die gelernte SunEnergy-Ladegrenze bei vorübergehend geringerem PV-Überschuss. [Versionshinweise](docs/release-0.17.0-alpha.234.md)
-- **Alpha.233** gibt die Leistungsreserve für einen vor der Ausgabe verworfenen SunEnergy-Auftrag nach frischer Nullbestätigung frei. [Versionshinweise](docs/release-0.17.0-alpha.233.md)
-- **Alpha.232** senkt beim einzelnen SunEnergy-Kopf den bestätigten PV-Ladeauftrag, wenn die gemessene Leistung stabil darunter bleibt. Bei genügend PV-Überschuss prüft es nach 60 Sekunden bis zu 50 W mehr. [Versionshinweise](docs/release-0.17.0-alpha.232.md)
-- **Alpha.231** lässt bei einem bereits ladenden SunEnergy-Kopf eine PV-Sollwertsenkung um bis zu 200 W zu, während die Rückmeldung zum laufenden Auftrag aussteht. [Versionshinweise](docs/release-0.17.0-alpha.231.md)
-- **Alpha.230** wartet bei einem einzelnen SunEnergy-Kopf und einer kleinen PV-Sollwertsenkung innerhalb der Leistungstoleranz auf die ausstehende Laderückmeldung. [Versionshinweise](docs/release-0.17.0-alpha.230.md)
-- **Alpha.229** ermöglicht die Rückgabe eines blockierten SunEnergy-Speicherausgangs bei deaktivierter Speicher-Steuerfreigabe. Wallboxen und Heizstäbe können weiter geregelt werden. [Versionshinweise](docs/release-0.17.0-alpha.229.md)
-- **Alpha.228** berücksichtigt die Leistung einer nachlaufenden Wallbox im gemeinsamen Ladebudget. Bei ausreichendem PV-Überschuss kann ein anderes Fahrzeug schon während der Abschaltverzögerung hochregeln. [Versionshinweise](docs/release-0.17.0-alpha.228.md)
-- **Alpha.227** nutzt die SoC-Stromstufen des Mii/e-Up im Parallelbetrieb, sobald nach den Mindestströmen der anderen Fahrzeuge Netzreserve verfügbar ist. [Versionshinweise](docs/release-0.17.0-alpha.227.md)
-- **Alpha.226** protokolliert den Stopp am Mindest-SoC als Info und meldet Anforderung und Bestätigung getrennt. [Versionshinweise](docs/release-0.17.0-alpha.226.md)
-- **Alpha.225** hält den SQL-Startcache nutzbar, wenn das rollierende Historienfenster über ältere Datenlücken hinauswandert. [Versionshinweise](docs/release-0.17.0-alpha.225.md)
-- **Alpha.224** berücksichtigt gemessene Ladeenergie beim Mindest-SoC, übernimmt geänderte Abfahrtszeiten und plant bei konkurrierenden Fahrzeugen frühere Abfahrten zuerst. [Versionshinweise](docs/release-0.17.0-alpha.224.md)
-- **Alpha.223** verteilt die geplante Warmwasserladung vor einem Preisanstieg auch dann im gleich teuren Tarifblock, wenn bis zum Ende des Fahrplans kein weiteres Versorgungsfenster sichtbar ist. [Versionshinweise](docs/release-0.17.0-alpha.223.md)
-- **Alpha.222** ergänzt je Fahrzeug die optionale Planung des Mindest-SoC bis zur Abfahrt. Die Vorgabe bleibt die Sofortladung. [Mobilitätsreserve und Ladefenster](#mobilitätsreserve-und-vorhandene-abfahrtszeit)
-- **Alpha.221** merkt eine manuelle SoC-Korrektur bis zu 30 Minuten für das nächste Anstecken vor. Der Wert gilt ab der ersten Ladeentscheidung. [Versionshinweise](docs/release-0.17.0-alpha.221.md)
-- **Alpha.220** ergänzt die optionale PV-Abstimmung zwischen Speicher und Wallbox anhand des geplanten Speicher-Ziel-SoC. [Batteriespeicher](#admin-batteriespeicher)
+
+[Ältere Versionshinweise](CHANGELOG_OLD.md#deutsche-versionshistorie)
 
 ## Inhaltsverzeichnis
 
 - [Installation und Aktualisierung](#installation-und-aktualisierung)
 - [Betriebsarten und sichere Zuständigkeit](#betriebsarten-und-sichere-zuständigkeit)
 - [Istwertverteilung ohne Fahrplan](#istwertverteilung-ohne-fahrplan)
+- [Speicher-Nullregelung](#speicher-nullregelung)
 - [Warmwasserplanung und Vorrang](#warmwasserplanung-und-vorrang)
 - [Fahrzeug-SoC und Sitzungswechsel](#fahrzeug-soc-und-sitzungswechsel)
 - [Mobilitätsreserve und Ladefenster](#mobilitätsreserve-und-vorhandene-abfahrtszeit)
@@ -110,9 +64,15 @@ Fehlt ein gültiger aktueller Fahrplan, verteilt das EMS verfügbare Leistung we
 
 Ein freigegebener EHZ kann während der Startwartezeit auch das vorgemerkte Budget weiterer wartender Fahrzeuge nutzen. Die Autos behalten Vorrang; vor deren Start muss die erforderliche Heizleistung nachweislich zurückgenommen sein. „Aufteilung AUS“ bedeutet keine feste gemeinsame Zuteilung und sperrt diese Restnutzung nicht. Eine entzogene EHZ-Freigabe wird dadurch nicht übergangen. Bei laufender 3P-Mindestladung wird keine neue Startreserve verlangt; gestoppte Fahrzeuge verwenden die konfigurierte Reserve. [Zwischenpuffer und Grenzen](docs/release-0.17.0-alpha.199.md).
 
+## Speicher-Nullregelung
+
+Nach einer abgeschlossenen SoC-Etappe gibt die optionale Speicher- und Wallbox-Koordination die vorgemerkte PV-Reserve frei. Der Live-Regler lädt mit dem verbleibenden Überschuss am Netzanschlusspunkt, auch wenn er vom BHKW kommt. Maßgeblich sind der Netzsollwert, das Speicher-Totband sowie die aktuell nutzbaren Leistungs- und SoC-Grenzen.
+
+Bei 10 W Totband macht 1 W Netzbezug aus einem laufenden 11‑W‑Ladeauftrag 10 W. Bei 25 W Laden und 107 W Netzbezug kann derselbe freigegebene Speicherkopf direkt 82 W entladen. Beim Wechsel von Entladen auf Laden fordert der Regler zunächst 0 W an und wertet die Geräterückmeldung aus. [Rechenbeispiele, Vorzeichen und Diagnose](docs/admin-reference.de.md#live-regelung-des-speichers)
+
 ## Warmwasserplanung und Vorrang
 
-Der Fahrplan baut die nötige Warmwasserreserve vor einem teureren Preisblock in den letzten nutzbaren günstigeren Intervallen auf. PV, Heizleistung, Speicherplatz und Restzeit begrenzen die Vorziehung. Vor einem günstigeren Fenster kann der Planer die notwendige Überbrückungswärme gleichmäßig über gleich teure Viertelstunden verteilen. Voraussetzung sind ausreichende Mindestreserve und passende Heizgrenzen. Die tatsächliche Heizleistung benötigt eine eigene Freigabe. [Preisvorschau und Grenzen](docs/release-0.17.0-alpha.202.md) · [Änderungen in Alpha.203](README.md#0170-alpha203-2026-11-05)
+Der Fahrplan baut die nötige Warmwasserreserve vor einem teureren Preisblock in den letzten nutzbaren günstigeren Intervallen auf. PV, Heizleistung, Speicherplatz und Restzeit begrenzen die Vorziehung. Vor einem günstigeren Fenster kann der Planer die notwendige Überbrückungswärme gleichmäßig über gleich teure Viertelstunden verteilen. Voraussetzung sind ausreichende Mindestreserve und passende Heizgrenzen. Die tatsächliche Heizleistung benötigt eine eigene Freigabe. [Preisvorschau und Grenzen](docs/release-0.17.0-alpha.202.md) · [Änderungen in Alpha.203](CHANGELOG_OLD.md#0170-alpha203-2026-11-05)
 
 Der EHZ kann Pflichtwärme liefern, während das bevorzugte Fahrzeug seine bestätigte einphasige Mindestladung hält, wenn beide Lasten ins Budget passen und oben ausreichend warmes Wasser verfügbar ist. Nach einem bestätigten Wärmestopp kann dasselbe Fahrzeug bei frischem Budget und erfüllten Schutz- und Freigabebedingungen früher wieder anlaufen. [Wärmepriorität und Wiederanlauf](docs/release-0.17.0-alpha.201.md)
 
@@ -221,7 +181,7 @@ Die [vollständige Adminreferenz](docs/admin-reference.de.md) enthält alle bish
 
 ### Admin: Batteriespeicher
 
-Seit Alpha.220 kann die optionale PV-Abstimmung den geplanten Speicher-Ziel-SoC für die Aufteilung zwischen Speicher und Wallbox nutzen. Bei ausreichender Reserve kann der Speicher einen halben Wallbox-Stromschritt puffern, bis zu 115 W einphasig beziehungsweise 345 W dreiphasig. Bei Speichervorrang kann die Wallbox mit Mindeststrom starten, sobald der Überschuss ausreicht. Danach steigt die Speicherladung bis zur Ladegrenze, bevor die Wallbox den Strom weiter erhöht. Offen sind die gemeinsame Reserve- und Nachtplanung sowie die reale Speicherabnahme. [Admin-Referenz zum Speicher](docs/admin-reference.de.md#admin-batteriespeicher) · [Integration und Abnahme #25](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/25)
+Die Admin-Referenz beschreibt Kopfzuordnung, SoC-Grenzen, Speichervorrang und die Pufferung von Wallbox-Stromschritten. [Speicherfelder im Admin](docs/admin-reference.de.md#admin-batteriespeicher) · [Integration und Abnahme #25](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/25)
 
 ### Admin: Wärmepumpe
 
@@ -249,6 +209,6 @@ Zuerst reale Gerätefreigabe, gültige Quellen und gemeinsame Zuteilung prüfen,
 
 ## Offene Arbeiten
 
-Die [Roadmap #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) ordnet die offenen Nachweise und Integrationen. Für die aktuelle Version stehen insbesondere der Live-Nachweis der SoC-Fortschreibung nach einer Fahrt, die Wärmeplanung und ein realer Fall der 1‑A‑Wiederübernahme aus. [Betriebsabnahme #7](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/7) · [go-e-Rückmeldungen #216](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/216) · [SoC-Quellzeit #320](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/320)
+Die [Issue-Sichtung zu Alpha.275](docs/issue-audit/2026-11-15/README.md) hält den Stand der offenen Aufgaben und datierten Berichte fest. Die Speicherabnahme umfasst die NVP-Regelung, kleine Ladeaufträge und die zeitliche Zuordnung von Befehl, Istleistung und Netzmessung. [Speicherintegration #25](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/25) · [Ladestopps #410](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/410) · [Sprungantwort #423](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/423)
 
-Abgeschlossene Tagesberichte bleiben datierte Belege. Die [Bereinigung vom 03.11.2026](docs/issue-audit/2026-11-03/README.md) dokumentiert Übergaben und erhält die ursprünglichen Issue-Texte. [Übersetzungsstand](docs/translations.md) · [Aktuelle Änderungen](README.md#changelog) · [Ältere Versionen](CHANGELOG_OLD.md).
+Die [Roadmap #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) verknüpft die Betriebsabnahme und Integrationen. Frühere Berichte und Übergaben stehen in der [Sichtung vom 03.11.2026](docs/issue-audit/2026-11-03/README.md). [Übersetzungsstand](docs/translations.md) · [Ältere Versionen](CHANGELOG_OLD.md#deutsche-versionshistorie)

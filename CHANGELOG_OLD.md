@@ -2,101 +2,209 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.268 (2026-11-14)
+
+- Keep SunEnergy household discharge active through small load corrections while the matching inverter or grid feedback is pending. [Release notes](docs/release-0.17.0-alpha.268.md)
+
+## 0.17.0-alpha.267 (2026-11-14)
+
+- Supplement the Mii's 6 A charge with up to 500 W from the battery during the day, then restore the battery with measured surplus after the vehicle stops. [Release notes](docs/release-0.17.0-alpha.267.md)
+
+## 0.17.0-alpha.266 (2026-11-14)
+
+- Pause optional vehicle charging at the scheduled handover if the battery can absorb PV and the remaining measured surplus cannot sustain the wallbox minimum. [Release notes](docs/release-0.17.0-alpha.266.md)
+
+## 0.17.0-alpha.265 (2026-11-14)
+
+- Apply the existing go-e zero-power tolerance to the shared consumption and phase budgets so a small signed reading during startup keeps the charging allocation valid. [Release notes](docs/release-0.17.0-alpha.265.md)
+
+## 0.17.0-alpha.264 (2026-11-14)
+
+- Reduce the current of a running single-phase wallbox after a measured 1 A PV step rolls back, when fresh go-e feedback and electrical measurements agree. [Release notes](docs/release-0.17.0-alpha.264.md)
+
+## 0.17.0-alpha.263 (2026-11-14)
+
+- Let SunEnergy reduce grid import while an active solar wallbox reduces current or its stop delay runs, down to a 70% battery reserve. [Release notes](docs/release-0.17.0-alpha.263.md)
+
+## 0.17.0-alpha.262 (2026-11-14)
+
+- Pause PV battery charging at the measured SoC target and make surplus available to the wallboxes until a higher target is due. [Release notes](docs/release-0.17.0-alpha.262.md)
+
+## 0.17.0-alpha.261 (2026-11-14)
+
+- Apply battery SoC targets and wallbox handoff to the 48-hour plan. Configure monthly PV forecast factors per area. [Release notes](docs/release-0.17.0-alpha.261.md)
+
+## 0.17.0-alpha.260 (2026-11-14)
+
+- Reuse measured SunEnergy charging and grid power to qualify a wallbox start. Give battery and EV charging priority over optional PV heating. [Release notes](docs/release-0.17.0-alpha.260.md)
+
+## 0.17.0-alpha.259 (2026-11-14)
+
+- Suppress verified SunEnergy discharge trims within the grid deadband, and follow measured AC power at a single head's discharge ceiling. Share PV with a wallbox sooner under the SoC-based priority rule. [Release notes](docs/release-0.17.0-alpha.259.md)
+
+## 0.17.0-alpha.258 (2026-11-14)
+
+- Record SunEnergy setpoint echo and measured AC response delays per head, with original device and ioBroker timestamps. [Release notes](docs/release-0.17.0-alpha.258.md)
+
+## 0.17.0-alpha.257 (2026-11-13)
+
+- Resume SunEnergy regulation after an attributable delayed response and confirmed AC standstill. Renew an ineffective small charge in single-head PV observation mode when measured surplus rises. [Release notes](docs/release-0.17.0-alpha.257.md)
+
+## 0.17.0-alpha.256 (2026-11-13)
+
+- Handle staggered SunEnergy household discharge feedback and recalculate corrections superseded before dispatch. [Release notes](docs/release-0.17.0-alpha.256.md)
+
+## 0.17.0-alpha.255 (2026-11-13)
+
+- Reduce acknowledged SunEnergy household discharge through brief export when measured demand still supports a lower output. [Release notes](docs/release-0.17.0-alpha.255.md)
+
+## 0.17.0-alpha.254 (2026-11-13)
+
+- Hold acknowledged SunEnergy discharge at its ceiling when AC power falls slightly short. [Release notes](docs/release-0.17.0-alpha.254.md)
+
+## 0.17.0-alpha.253 (2026-11-13)
+
+- Restore the SunEnergy reserve at up to 1,000 W when SoC drops below the effective minimum. [Release notes](docs/release-0.17.0-alpha.253.md)
+
+## 0.17.0-alpha.252 (2026-11-13)
+
+- Optionally use CHP surplus and a battery SoC band to charge the Mii at night. [Release notes](docs/release-0.17.0-alpha.252.md)
+
+## 0.17.0-alpha.251 (2026-11-13)
+
+- Resume a SunEnergy direction change after a driver-confirmed zero command and measured AC rundown to standstill. [Release notes](docs/release-0.17.0-alpha.251.md)
+
+## 0.17.0-alpha.250 (2026-11-13)
+
+- Reduce an acknowledged SunEnergy household discharge while AC power is still settling. [Release notes](docs/release-0.17.0-alpha.250.md)
+
+## 0.17.0-alpha.249 (2026-11-13)
+
+- Reduce an acknowledged SunEnergy discharge while buffering a wallbox, even while AC power is still settling. [Release notes](docs/release-0.17.0-alpha.249.md)
+
+## 0.17.0-alpha.248 (2026-11-13)
+
+- Release stale SunEnergy commands automatically after a successful zero write and sustained fresh zero feedback. [Release notes](docs/release-0.17.0-alpha.248.md)
+
+## 0.17.0-alpha.247 (2026-11-13)
+
+- Let SunEnergy bridge a PV shortfall during an active wallbox stop delay while the timer continues to use the PV-only budget. [Release notes](docs/release-0.17.0-alpha.247.md)
+
+## 0.17.0-alpha.246 (2026-11-13)
+
+- Preserve confirmed SunEnergy charging or discharging during a routine restart when the current configuration and device feedback allow takeover. [Release notes](docs/release-0.17.0-alpha.246.md)
+
+## 0.17.0-alpha.245 (2026-11-13)
+
+- Give an outstanding SunEnergy discharge time to confirm before applying a reduced target or stopping during a restart. [Release notes](docs/release-0.17.0-alpha.245.md)
+
+## 0.17.0-alpha.244 (2026-11-13)
+
+- Automatically return a stopped SunEnergy discharge when the device echoes the previous command and subsequently confirms zero. [Release notes](docs/release-0.17.0-alpha.244.md)
+
+## 0.17.0-alpha.243 (2026-11-13)
+
+- Correct the SunEnergy charge against the measured grid error after confirmed feedback in observation mode. [Release notes](docs/release-0.17.0-alpha.243.md)
+
+## 0.17.0-alpha.242 (2026-11-13)
+
+- Give pending SunEnergy feedback up to 2.5 seconds before issuing the stop during a normal restart. [Release notes](docs/release-0.17.0-alpha.242.md)
+
 ## 0.17.0-alpha.241 (2026-11-13)
 
-- Hold a charging step until feedback arrives and retain the SunEnergy confirmation across restart. [Release notes](docs/release-0.17.0-alpha.241.md)
+- Hold the issued charging step while waiting for feedback and retain SunEnergy setpoint confirmation across restart. [Release notes](docs/release-0.17.0-alpha.241.md)
 
 ## 0.17.0-alpha.240 (2026-11-13)
 
-- Resume SunEnergy regulation after a verified restart stop. [Release notes](docs/release-0.17.0-alpha.240.md)
+- Automatically resume SunEnergy control after a verified zero response when the persisted output has no unresolved command. [Release notes](docs/release-0.17.0-alpha.240.md)
 
 ## 0.17.0-alpha.239 (2026-11-13)
 
-- Use the configured charging step when a confirmed SunEnergy head can absorb measured export. [Release notes](docs/release-0.17.0-alpha.239.md)
+- In SunEnergy observation mode, use the configured charging step above the learned limit when the previous command is confirmed and fresh grid export covers the increase. [Release notes](docs/release-0.17.0-alpha.239.md)
 
 ## 0.17.0-alpha.238 (2026-11-13)
 
-- Hold pending SunEnergy charge through short grid import in observation mode. [Release notes](docs/release-0.17.0-alpha.238.md)
+- In SunEnergy observation mode, a drop in grid export is logged while an outstanding charging request is held. [Release notes](docs/release-0.17.0-alpha.238.md)
 
 ## 0.17.0-alpha.237 (2026-11-13)
 
-- Add an optional SunEnergy feedback observation mode. [Release notes](docs/release-0.17.0-alpha.237.md)
+- Add optional warning-only observation of pending SunEnergy PV charge feedback with verified export and protection limits. [Release notes](docs/release-0.17.0-alpha.237.md)
 
 ## 0.17.0-alpha.236 (2026-11-13)
 
-- Wait briefly for the first SunEnergy charging confirmation after a PV dip. [Release notes](docs/release-0.17.0-alpha.236.md)
+- Allow a brief wait for the SunEnergy charge-start echo when PV surplus drops. [Release notes](docs/release-0.17.0-alpha.236.md)
 
 ## 0.17.0-alpha.235 (2026-11-13)
 
-- Adjust confirmed SunEnergy charging requests while AC response catches up. [Release notes](docs/release-0.17.0-alpha.235.md)
+- Reduce single-head SunEnergy PV charging once the previous setpoint is echoed, even if measured power still lags. Ramp up from measured charging power and retain the prior reservation through confirmation. [Release notes](docs/release-0.17.0-alpha.235.md)
 
 ## 0.17.0-alpha.234 (2026-11-13)
 
-- Preserve the learned charging ceiling through a PV dip. [Release notes](docs/release-0.17.0-alpha.234.md)
+- Preserve the learned SunEnergy charging ceiling when PV surplus temporarily falls, so a recovery can use the previously confirmed charging range. [Release notes](docs/release-0.17.0-alpha.234.md)
 
 ## 0.17.0-alpha.233 (2026-11-13)
 
-- Release canceled SunEnergy reservations after a fresh zero confirmation. [Release notes](docs/release-0.17.0-alpha.233.md)
+- Release the SunEnergy reservation for a command canceled before dispatch after a fresh zero confirmation. [Release notes](docs/release-0.17.0-alpha.233.md)
 
 ## 0.17.0-alpha.232 (2026-11-13)
 
-- Reduce an echoed SunEnergy PV charge request to stable measured power and probe the learned ceiling periodically. [Release notes](docs/release-0.17.0-alpha.232.md)
+- For a single SunEnergy head with an echoed PV charging setpoint and stable lower measured power, reduce the setpoint and hold the previous power reservation until the reduction is confirmed. Probe again in steps of up to 50 W after 60 seconds when PV surplus allows. [Release notes](docs/release-0.17.0-alpha.232.md)
 
 ## 0.17.0-alpha.231 (2026-11-13)
 
-- Wait for SunEnergy feedback through small PV target drops during active charging. [Release notes](docs/release-0.17.0-alpha.231.md)
+- Allow a PV charge target drop of up to 200 W while a single SunEnergy head is already charging and its command is still being confirmed. The existing electrical limits and feedback deadline still apply. [Release notes](docs/release-0.17.0-alpha.231.md)
 
 ## 0.17.0-alpha.230 (2026-11-13)
 
-- Wait for outstanding SunEnergy charge feedback through small PV target reductions. [Release notes](docs/release-0.17.0-alpha.230.md)
+- For a single SunEnergy head, wait for outstanding charging feedback when the PV target drops within the existing power tolerance and all limits still allow the previous request. [Release notes](docs/release-0.17.0-alpha.230.md)
 
 ## 0.17.0-alpha.229 (2026-11-13)
 
-- Allow a verified SunEnergy stop to be confirmed with battery control disabled. [Release notes](docs/release-0.17.0-alpha.229.md)
+- Recover a blocked SunEnergy head by disabling only battery control and confirming that each head is stopped and the old command cannot execute. Other EMS outputs can remain enabled. [Release notes](docs/release-0.17.0-alpha.229.md)
 
 ## 0.17.0-alpha.228 (2026-11-12)
 
-- Include a running wallbox’s stop-delay draw in the shared PV and electrical budget. [Release notes](docs/release-0.17.0-alpha.228.md)
+- Include a running wallbox's stop-delay draw in the shared budget when PV and electrical limits cover it alongside the other targets. Another vehicle can then use the available PV surplus during the delay. [Release notes](docs/release-0.17.0-alpha.228.md)
 
 ## 0.17.0-alpha.227 (2026-11-11)
 
-- Apply configured single-phase Mii/e-Up SoC current steps after the other vehicles receive their minimum current. [Release notes](docs/release-0.17.0-alpha.227.md)
+- Apply the configured Mii/e-Up SoC current steps in parallel charging when grid capacity remains after the other vehicles' minimum currents. [Release notes](docs/release-0.17.0-alpha.227.md)
 
 ## 0.17.0-alpha.226 (2026-11-10)
 
-- Log minimum-SoC stop requests and confirmed stops separately. [Release notes](docs/release-0.17.0-alpha.226.md)
+- Log a minimum-SoC stop as information. Log confirmation after the wallbox acknowledges OFF and fresh measurements confirm that charging has stopped. Warn if either confirmation misses its deadline. [Release notes](docs/release-0.17.0-alpha.226.md)
 
 ## 0.17.0-alpha.225 (2026-11-09)
 
-- Keep the validated SQL history cache usable as the rolling window moves beyond a previous data gap. [Release notes](docs/release-0.17.0-alpha.225.md)
+- Keep validated history available on successive restarts when the rolling SQL window drops the oldest part of an empty interval. [Release notes](docs/release-0.17.0-alpha.225.md)
 
 ## 0.17.0-alpha.224 (2026-11-09)
 
-- Account for measured charging energy when tracking minimum SoC, update changed departure times and prioritize earlier departures. [Release notes](docs/release-0.17.0-alpha.224.md)
+- Count metered energy toward the minimum SoC, replan explicit departure changes within the active plug session, and allocate shared price windows to earlier departures first unless a vehicle has explicit priority. [Release notes](docs/release-0.17.0-alpha.224.md)
 
 ## 0.17.0-alpha.223 (2026-11-09)
 
-- Spread planned hot-water charging across the remaining slots at the same price before a price rise. [Release notes](docs/release-0.17.0-alpha.223.md)
+- Spread forecast hot-water heating across an equal-price block before a tariff increase when no later supply window is visible. The forecast still checks the tank reserve, available capacity and heater power. [Release notes](docs/release-0.17.0-alpha.223.md)
 
 ## 0.17.0-alpha.222 (2026-11-09)
 
-- Add opt-in minimum vehicle SoC planning by departure. Immediate charging remains the default. [Release notes](docs/release-0.17.0-alpha.222.md)
+- Optional vehicle readiness planning keeps an immediate mobility reserve and schedules the minimum SoC by departure using total energy prices. Disabled by default for every vehicle. [Release notes](docs/release-0.17.0-alpha.222.md)
 
 ## 0.17.0-alpha.221 (2026-11-09)
 
-- Remember a manual vehicle SoC correction for the next connection within 30 minutes. The value applies from the first charging decision. [Release notes](docs/release-0.17.0-alpha.221.md)
+- Remember a manual vehicle SoC correction entered while unplugged for the next connection within 30 minutes. The value applies to the first charging decision. Energy tracking begins with the new session's first fresh meter reading. [Release notes](docs/release-0.17.0-alpha.221.md)
 
 ## 0.17.0-alpha.220 (2026-11-09)
 
-- Coordinate wallbox current steps with the battery target SoC. Above target, the battery can support half a current step. In the battery-first band, surplus can start the preferred wallbox while reserving at least half the battery charge ceiling for storage.
+- Optional battery coordination uses the live SoC and the battery target in the current plan. Above the target, the battery can support half of the running wallbox's next current step, with separate limits for single- and three-phase charging. In the battery-first band, surplus above the battery charge ceiling can start the preferred wallbox at its minimum, while retaining at least half of that ceiling for storage. The battery then gets priority up to its full charge power before the wallbox increases its current.
 
 ## 0.17.0-alpha.219 (2026-11-08)
 
-- Compare recorder source settings directly and reuse mapped IDs for unindexed source lookup. [Verification and live measurements](docs/release-0.17.0-alpha.219.md)
+- Compare recorder source settings directly and reuse mapped IDs for unindexed source lookup. Changed device IDs, meter units and command observations are picked up on the next notification. [Verification and live measurements](docs/release-0.17.0-alpha.219.md)
 
 ## 0.17.0-alpha.218 (2026-11-08)
 
-- Reuse recorder data point mappings while their configuration is unchanged.
+- Reuse recorder data point mappings and pick up configuration changes on the next notification.
 
 ## 0.17.0-alpha.217 (2026-11-08)
 
@@ -108,15 +216,72 @@ Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) 
 
 ## 0.17.0-alpha.215 (2026-11-08)
 
-- Build full recorder snapshots only for recorded frames.
+- Build full recorder snapshots only for recorded frames. Command and protection events and raw observations keep their existing capture rules.
 
 ## 0.17.0-alpha.214 (2026-11-08)
 
-- Reuse measured UTF-8 sample sizes in routine and pre-event recorder batches.
+- Reuse measured UTF-8 sample sizes in routine and pre-event recorder batches. Samples, batch limits and electrical control logic are unchanged.
 
 ## 0.17.0-alpha.213 (2026-11-08)
 
-- Reuse validated SQL quarter-hours across restarts, skip duplicate wallbox display writes, and cache decoded schedules. [Release notes](docs/release-0.17.0-alpha.213.md).
+- Restore validated SQL quarter-hours after a restart, avoid unchanged wallbox display writes, and reuse decoded schedules. [Release notes](docs/release-0.17.0-alpha.213.md).
+
+## 0.17.0-alpha.212 (2026-11-08)
+
+- Add independent emergency grid heating for both heating rods. [Release notes](docs/release-0.17.0-alpha.212.md).
+
+## 0.17.0-alpha.211 (2026-11-08)
+
+- When the manually preferred vehicle is unplugged, rank replacement vehicles by the gap to their target charge level and keep the active choice until charging stops. [Release notes](docs/release-0.17.0-alpha.211.md).
+
+## 0.17.0-alpha.210 (2026-11-08)
+
+- Publish numeric timestamps for eCharts forecast and schedule updates. [Release notes](docs/release-0.17.0-alpha.210.md).
+
+## 0.17.0-alpha.209 (2026-11-07)
+
+- Freeze a separate Lasso forecast when a single missing quarter-hour can be interpolated between its neighbors. [Scoring and limits](docs/release-0.17.0-alpha.209.md).
+
+## 0.17.0-alpha.208 (2026-11-07)
+
+- Prefer valid Open-Meteo quarter-hour weather and PV values for the first four hours of the plan. Archive the available quarter-hour weather series alongside the hourly series. [Sources and coverage](docs/release-0.17.0-alpha.208.md).
+
+## 0.17.0-alpha.207 (2026-11-06)
+
+- Spread the combined forecast hot-water reserve for the next PV supply and the dearer tariff block when the modeled reserve, heater power and storage limits permit. [Scope and model assumptions](docs/release-0.17.0-alpha.207.md).
+
+## 0.17.0-alpha.206 (2026-11-05)
+
+- Spread forecast hot-water heating within the equal-price night block before a tariff rise when the thermal reserve and heater limits permit. [Scope and model assumptions](docs/release-0.17.0-alpha.206.md).
+
+## 0.17.0-alpha.205 (2026-11-05)
+
+- Take back control once after a physically confirmed one-amp rollback in an active single-phase charge, subject to the current budget and fresh acknowledgements. [Policy and limits](docs/release-0.17.0-alpha.205.md).
+
+## 0.17.0-alpha.204 (2026-11-05)
+
+- Accept one early lower arrival report after an observed unplug when the current estimate still starts from the pre-trip value. Continue counting at the first aligned charge-counter sample. [Policy and limits](docs/release-0.17.0-alpha.204.md).
+
+## 0.17.0-alpha.203 (2026-11-05)
+
+- Spread necessary hot-water heating at constant power across a contiguous equal-price window ahead of a cheaper tariff. The forecast retains the minimum reserve, heater and storage limits, and priority for acute demand.
+- Resume vehicle SoC estimation from the latest app value and new measured charge after reconnect. Flag app reports that disagree with the estimate when their measurement time is unknown.
+
+## 0.17.0-alpha.202 (2026-11-04)
+
+- (fuchs-1978) Build the required hot-water reserve before a dearer price block using the latest feasible cheaper slots. Account for bounded future PV, heater power, storage capacity and partial slots; preserve live permissions. [Method and limits](docs/release-0.17.0-alpha.202.md).
+
+## 0.17.0-alpha.201 (2026-11-04)
+
+- (fuchs-1978) Share usable mandatory hot-water power with a confirmed preferred 1P minimum; enforce explicit current reduction. Retain a bounded thermal-pause qualification for the same charge with 15 seconds of fresh budget evidence and all physical safety gates. [Policy and limits](docs/release-0.17.0-alpha.201.md).
+
+## 0.17.0-alpha.200 (2026-11-04)
+
+- (fuchs-1978) Build quarter-hour power histories from time-weighted raw values instead of sample-count means. Keep missing/invalid intervals unknown, bound dense SQL queries, and preserve issued forecasts while correcting training and actual evaluation. [Method and limits](docs/release-0.17.0-alpha.200.md).
+
+## 0.17.0-alpha.199 (2026-11-04)
+
+- (fuchs-1978) Let the optional EHZ use the reserved countdown budget of additional waiting vehicles. Preserve physical heater reservations until measured reduction permits starting. Keep a running mandatory 3P charge when its electrical minimum is funded; apply the configured reserve only to stopped starts. [Details and limits](docs/release-0.17.0-alpha.199.md).
 
 ## 0.17.0-alpha.198 (2026-11-04)
 
@@ -128,11 +293,11 @@ Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) 
 
 ## 0.17.0-alpha.196 (2026-11-03)
 
-- (fuchs-1978) Attribute passive current-response diagnostics to the sent target instead of the previous ACK. [Details and limits](docs/release-0.17.0-alpha.196.md).
+- (fuchs-1978) Attribute passive current-response diagnostics to the sent target instead of the previous ACK; distinguish superseded commands from pending evidence. Keep charging control and timing unchanged. [Details and limits](docs/release-0.17.0-alpha.196.md).
 
 ## 0.17.0-alpha.195 (2026-11-03)
 
-- (fuchs-1978) Redistribute PV budget during sustained vehicle uptake limits using a confirmed lower current command, retaining nominal reservations until ACK. Preserve measured SoC progress against delayed lower cloud reports and observed charge/Finish transitions. [Details and limits](docs/release-0.17.0-alpha.195.md).
+- (fuchs-1978) Redistribute PV budget during sustained vehicle uptake limits using a confirmed lower current command, while retaining nominal reservations until ACK. Preserve measured SoC progress against delayed lower cloud reports and observed charge/Finish transitions. [Details and limits](docs/release-0.17.0-alpha.195.md).
 
 ## 0.17.0-alpha.194 (2026-11-03)
 
@@ -455,6 +620,58 @@ Zeitversetzte, weiterhin frische und gültige Originalmessungen führen im ausdr
 Bindet die ausdrücklich konfigurierte Gruppen-Netz-/Eigenstrombilanz an den produktiven Regler, die gemeinsame Leistungsverteilung sowie Wallbox-, EHZ-, Heizpuffer- und Speicherausgänge an. Vollständige AC-Messgrenzen, Originalqualität und gemeinsame ausstehende Stellwirkungen begrenzen jede Freigabe; wartende Befehle werden vor dem Schreiben erneut geprüft. Standard und bestehende Konfiguration bleiben im bisherigen Bruttomodus. Der neue Modus unterstützt vorhandene Binärkontakt-Budgets aus Festwert, EMS-Berechnung oder externer Gesamtbudgetquelle; konfigurierte LPC-Eingänge sperren ihn bis zum verifizierten Schnittstellenvertrag. Keine automatische Aktivierung oder Installation; reale Abnahme bleibt offen. [Releasehinweise](docs/release-0.17.0-alpha.117.md).
 
 
+## Deutsche Versionshistorie
+
+- **Alpha.268** hält die SunEnergy-Haushaltsentladung bei kleinen Laständerungen, während die passende Geräte- oder Netzmessung noch aussteht. [Versionshinweise](docs/release-0.17.0-alpha.268.md)
+- **Alpha.267** ergänzt die 6-A-Ladung des Mii tagsüber mit bis zu 500 W aus dem Speicher. Nach dem Abschalten lädt der Speicher aus dem verbleibenden Überschuss nach. [Versionshinweise](docs/release-0.17.0-alpha.267.md)
+- **Alpha.266** pausiert freiwillige Autoladung bei der geplanten PV-Schlussladung sofort, wenn der ladebereite Speicher den gemessenen Überschuss beansprucht und für die Wallbox zu wenig übrig bleibt. [Versionshinweise](docs/release-0.17.0-alpha.266.md)
+- **Alpha.265** nutzt die bestehende Nulltoleranz für go-e auch im gemeinsamen Verbrauchs- und Phasenbudget. Ein Messwert von −10 W beim Anlauf entzieht der Wallbox dadurch nicht mehr die Ladefreigabe. [Versionshinweise](docs/release-0.17.0-alpha.265.md)
+- **Alpha.264** regelt eine laufende einphasige Wallbox bei einem belegten Rücksprung nach einem PV-Schritt um 1 A herunter und lässt die Ladefreigabe aktiv. [Versionshinweise](docs/release-0.17.0-alpha.264.md)
+- **Alpha.263** puffert Netzbezug beim Abregeln einer laufenden PV-Wallbox und während ihrer Ausschaltverzögerung. Für diese Entladung gilt eine SoC-Untergrenze von 70 %. [Versionshinweise](docs/release-0.17.0-alpha.263.md)
+- **Alpha.262** pausiert die PV-Speicherladung am erreichten SoC-Ziel. Bis zum nächsten höheren Fahrplanziel steht der Überschuss den Wallboxen zur Verfügung. [Versionshinweise](docs/release-0.17.0-alpha.262.md)
+- **Alpha.261** bildet die SoC-Stufen und die Übergabe ans Auto im Fahrplan ab. Im Reiter PV-Korrektur lassen sich zwölf Faktoren pro Anlage pflegen. [Versionshinweise](docs/release-0.17.0-alpha.261.md)
+- **Alpha.260** zählt stabil gemessenen Speicherüberschuss für den Wallboxstart und priorisiert Speicher und Auto vor optionaler PV-Wärme. [Versionshinweise](docs/release-0.17.0-alpha.260.md)
+- **Alpha.259** hält bestätigte SunEnergy-Entladeaufträge bei kleinen Netzabweichungen, führt die Entladegrenze bei belegter Minderleistung nach und teilt PV-Überschuss früher mit der Wallbox. [Versionshinweise](docs/release-0.17.0-alpha.259.md)
+- **Alpha.258** erfasst im Recorder je SunEnergy-Kopf die Zeit bis zum Sollwert-Echo und bis zur gemessenen AC-Reaktion. [Versionshinweise](docs/release-0.17.0-alpha.258.md)
+- **Alpha.257** setzt die SunEnergy-Regelung nach einer eindeutig verspäteten Rückmeldung und bestätigtem Stillstand fort. Im PV-Beobachtungsmodus kann steigender Überschuss einen wirkungslosen Kleinladeauftrag ablösen. [Versionshinweise](docs/release-0.17.0-alpha.257.md)
+- **Alpha.256** berücksichtigt bei der SunEnergy-Haushaltsentladung kurzzeitig versetzte Rückmeldungen und berechnet überholte Entladekorrekturen erneut. [Versionshinweise](docs/release-0.17.0-alpha.256.md)
+- **Alpha.255** reduziert bestätigte SunEnergy-Entladeaufträge bei kurzer Einspeisung direkt, wenn weiter Haushaltsbedarf besteht. [Versionshinweise](docs/release-0.17.0-alpha.255.md)
+- **Alpha.254** hält bestätigte SunEnergy-Entladeaufträge bei kleiner AC-Minderleistung an der Entladegrenze. [Versionshinweise](docs/release-0.17.0-alpha.254.md)
+- **Alpha.253** lädt SunEnergy bei unterschrittenem Mindest-SoC mit bis zu 1.000 W nach. [Versionshinweise](docs/release-0.17.0-alpha.253.md)
+- **Alpha.252** ergänzt optional die nächtliche Mii-Ladung mit BHKW-Überschuss und Speicherpuffer. [Versionshinweise](docs/release-0.17.0-alpha.252.md)
+- **Alpha.251** setzt einen SunEnergy-Richtungswechsel nach bestätigtem Nullbefehl und gemessenem Stillstand früher fort. [Versionshinweise](docs/release-0.17.0-alpha.251.md)
+- **Alpha.250** senkt den bestätigten SunEnergy-Entladeauftrag auch bei der Haushaltsentladung direkt. [Versionshinweise](docs/release-0.17.0-alpha.250.md)
+- **Alpha.249** senkt beim Wallbox-Puffern den bestätigten SunEnergy-Entladeauftrag direkt. [Versionshinweise](docs/release-0.17.0-alpha.249.md)
+- **Alpha.248** gibt SunEnergy-Altaufträge nach mehreren frischen Nullrückmeldungen automatisch frei. [Versionshinweise](docs/release-0.17.0-alpha.248.md)
+- **Alpha.247** überbrückt einen PV-Fehlbetrag während der Wallbox-Ausschaltverzögerung aus dem SunEnergy-Speicher. [Versionshinweise](docs/release-0.17.0-alpha.247.md)
+- **Alpha.246** übernimmt bei einem regulären Neustart bestätigte SunEnergy-Lade- und Entladeaufträge. [Versionshinweise](docs/release-0.17.0-alpha.246.md)
+- **Alpha.245** wartet bei sinkendem Entladeziel oder Neustart kurz auf eine ausstehende SunEnergy-Bestätigung. [Versionshinweise](docs/release-0.17.0-alpha.245.md)
+- **Alpha.244** gibt bestätigte SunEnergy-Entladeaufträge nach frischer Nullrückmeldung automatisch frei. [Versionshinweise](docs/release-0.17.0-alpha.244.md)
+- **Alpha.243** korrigiert den SunEnergy-Ladeauftrag im Beobachtungsmodus anhand der gemessenen Abweichung am Netzanschlusspunkt. [Versionshinweise](docs/release-0.17.0-alpha.243.md)
+- **Alpha.242** gibt einer ausstehenden SunEnergy-Laderückmeldung bei regulärem Neustart kurz Zeit vor dem Nullbefehl. [Versionshinweise](docs/release-0.17.0-alpha.242.md)
+- **Alpha.241** hält laufende Ladeschritte bis zur Rückmeldung und speichert die GS-Bestätigung für den Wiederanlauf. [Versionshinweise](docs/release-0.17.0-alpha.241.md)
+- **Alpha.240** nimmt die SunEnergy-Regelung nach einem Neustart automatisch wieder auf, sobald die Rückgabe des bekannten Auftrags bestätigt ist. [Versionshinweise](docs/release-0.17.0-alpha.240.md)
+- **Alpha.239** nutzt im SunEnergy-Beobachtungsmodus nach bestätigter Ladeleistung wieder die eingestellte Schrittweite, begrenzt durch die aktuelle Einspeisung. [Versionshinweise](docs/release-0.17.0-alpha.239.md)
+- **Alpha.238** hält im SunEnergy-Beobachtungsmodus einen offenen Ladeauftrag auch bei vorübergehendem Netzbezug. [Versionshinweise](docs/release-0.17.0-alpha.238.md)
+- **Alpha.237** ergänzt einen optionalen Beobachtungsmodus für die SunEnergy-PV-Laderückmeldung. [Versionshinweise](docs/release-0.17.0-alpha.237.md)
+- **Alpha.236** wartet beim XT500 bei einem PV-Einbruch kurz auf die Bestätigung des gerade gesendeten Ladestarts. [Versionshinweise](docs/release-0.17.0-alpha.236.md)
+- **Alpha.235** senkt beim einzelnen SunEnergy-Kopf einen bestätigten PV-Ladeauftrag auch bei nachlaufender Istleistung. Beim Hochregeln geht jeder Schritt von der gemessenen Leistung aus. [Versionshinweise](docs/release-0.17.0-alpha.235.md)
+- **Alpha.234** behält die gelernte SunEnergy-Ladegrenze bei vorübergehend geringerem PV-Überschuss. [Versionshinweise](docs/release-0.17.0-alpha.234.md)
+- **Alpha.233** gibt die Leistungsreserve für einen vor der Ausgabe verworfenen SunEnergy-Auftrag nach frischer Nullbestätigung frei. [Versionshinweise](docs/release-0.17.0-alpha.233.md)
+- **Alpha.232** senkt beim einzelnen SunEnergy-Kopf den bestätigten PV-Ladeauftrag, wenn die gemessene Leistung stabil darunter bleibt. Bei genügend PV-Überschuss prüft es nach 60 Sekunden bis zu 50 W mehr. [Versionshinweise](docs/release-0.17.0-alpha.232.md)
+- **Alpha.231** lässt bei einem bereits ladenden SunEnergy-Kopf eine PV-Sollwertsenkung um bis zu 200 W zu, während die Rückmeldung zum laufenden Auftrag aussteht. [Versionshinweise](docs/release-0.17.0-alpha.231.md)
+- **Alpha.230** wartet bei einem einzelnen SunEnergy-Kopf und einer kleinen PV-Sollwertsenkung innerhalb der Leistungstoleranz auf die ausstehende Laderückmeldung. [Versionshinweise](docs/release-0.17.0-alpha.230.md)
+- **Alpha.229** ermöglicht die Rückgabe eines blockierten SunEnergy-Speicherausgangs bei deaktivierter Speicher-Steuerfreigabe. Wallboxen und Heizstäbe können weiter geregelt werden. [Versionshinweise](docs/release-0.17.0-alpha.229.md)
+- **Alpha.228** berücksichtigt die Leistung einer nachlaufenden Wallbox im gemeinsamen Ladebudget. Bei ausreichendem PV-Überschuss kann ein anderes Fahrzeug schon während der Abschaltverzögerung hochregeln. [Versionshinweise](docs/release-0.17.0-alpha.228.md)
+- **Alpha.227** nutzt die SoC-Stromstufen des Mii/e-Up im Parallelbetrieb, sobald nach den Mindestströmen der anderen Fahrzeuge Netzreserve verfügbar ist. [Versionshinweise](docs/release-0.17.0-alpha.227.md)
+- **Alpha.226** protokolliert den Stopp am Mindest-SoC als Info und meldet Anforderung und Bestätigung getrennt. [Versionshinweise](docs/release-0.17.0-alpha.226.md)
+- **Alpha.225** hält den SQL-Startcache nutzbar, wenn das rollierende Historienfenster über ältere Datenlücken hinauswandert. [Versionshinweise](docs/release-0.17.0-alpha.225.md)
+- **Alpha.224** berücksichtigt gemessene Ladeenergie beim Mindest-SoC, übernimmt geänderte Abfahrtszeiten und plant bei konkurrierenden Fahrzeugen frühere Abfahrten zuerst. [Versionshinweise](docs/release-0.17.0-alpha.224.md)
+- **Alpha.223** verteilt die geplante Warmwasserladung vor einem Preisanstieg auch dann im gleich teuren Tarifblock, wenn bis zum Ende des Fahrplans kein weiteres Versorgungsfenster sichtbar ist. [Versionshinweise](docs/release-0.17.0-alpha.223.md)
+- **Alpha.222** ergänzt je Fahrzeug die optionale Planung des Mindest-SoC bis zur Abfahrt. Die Vorgabe bleibt die Sofortladung. [Mobilitätsreserve und Ladefenster](README.de.md#mobilitätsreserve-und-vorhandene-abfahrtszeit)
+- **Alpha.221** merkt eine manuelle SoC-Korrektur bis zu 30 Minuten für das nächste Anstecken vor. Der Wert gilt ab der ersten Ladeentscheidung. [Versionshinweise](docs/release-0.17.0-alpha.221.md)
+- **Alpha.220** ergänzt die optionale PV-Abstimmung zwischen Speicher und Wallbox anhand des geplanten Speicher-Ziel-SoC. [Batteriespeicher](README.de.md#admin-batteriespeicher)
+
 ## Frühere README-Versionseinträge
 
 ### 0.17.0-alpha.116 (2026-10-21)
@@ -656,7 +873,7 @@ Vor dem Journalabschluss bei geordnetem EMS-Neustart bis zu zwei Sekunden auf ta
 
 # Ältere Änderungen und historische Detaildokumentation
 
-[Zur aktuellen Bedienungsanleitung und neuesten Änderung](README.md#changelog-und-historische-detaildokumentation)
+[Zur aktuellen Bedienungsanleitung und neuesten Änderung](README.de.md#aktuelle-änderungen)
 
 Diese Datei archiviert die bisherigen Versionshinweise und historischen Detailbeschreibungen unverändert. Sie beschreiben den jeweiligen damaligen Stand; für aktuelle Einstellungen und Betriebsgrenzen gilt die [README](README.md).
 
