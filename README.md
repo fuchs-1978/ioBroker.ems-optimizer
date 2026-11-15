@@ -7,7 +7,7 @@
 
 Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Combines PV and grid measurements, load history, weather forecasts and electricity prices in a rolling 48-hour plan.
 
-**Current GitHub build 0.17.0-alpha.280.** Install the tested build from GitHub and commission each enabled device against its actual feedback and protection limits.
+**Current GitHub build 0.17.0-alpha.281.** Install the tested build from GitHub and commission each enabled device against its actual feedback and protection limits.
 
 [Deutsche Bedienungsanleitung](README.de.md) · [Release history](CHANGELOG_OLD.md) · [Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
@@ -192,6 +192,10 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 
 ## Changelog
 
+### 0.17.0-alpha.281 (2026-11-15)
+
+- Roll back battery setpoints rejected before dispatch. The controller replans from the last issued setpoint or confirmed idle state. [Release notes](docs/release-0.17.0-alpha.281.md)
+
 ### 0.17.0-alpha.280 (2026-11-15)
 
 - Use fresh GS echoes to count consecutive unacknowledged single-head setpoints. GP continues to verify electrical response and reserved power. [Release notes](docs/release-0.17.0-alpha.280.md)
@@ -215,10 +219,6 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 ### 0.17.0-alpha.275 (2026-11-15)
 
 - A single battery head switches directly from charging to household discharge when the meter shows enough residual import. [Release notes](docs/release-0.17.0-alpha.275.md)
-
-### 0.17.0-alpha.274 (2026-11-15)
-
-- Subtract small grid imports from the active battery charge setpoint. A result at the configured minimum still charges. [Release notes](docs/release-0.17.0-alpha.274.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 

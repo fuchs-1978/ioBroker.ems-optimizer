@@ -168,6 +168,97 @@ test('queued stale plans and fresh aggregate/SoC/quality/house operator limits a
     assert.equal(h.run(`batteryHeadsQueuedCheck(${JSON.stringify(old.id)},${old.val}).allowed`), false);
 });
 
+test('discarding the recorded 427 W discharge request releases the idle head and permits the next request', () => {
+    const h = harness(1);
+    h.own('Control.CoordinationActive', true);
+    h.own('Config.BatteryDeadband_W', 10);
+    h.own('Config.BatteryFineStep_W', 600);
+    h.own('Control.Targets.Battery_W', -427);
+    h.grid.gridW = 413;
+    h.tick();
+    assert.deepEqual(h.commands(), [427]);
+
+    const idleAcquisition = h.time() - 500;
+    h.advance(250); h.fresh();
+    h.snapshot(1, {GS: 0, GP: 0, timestamp: idleAcquisition});
+    h.own('Control.Targets.Battery_W', 0);
+    h.grid.gridW = -55;
+    const gs = JSON.stringify(h.writes[0].id);
+    const rejected = h.run(`batteryHeadsQueuedCheck(${gs},427)`);
+    assert.equal(rejected.allowed, false);
+    h.complete(Object.assign(new Error(rejected.reason), {code: rejected.code}), {notDispatched: true});
+    assert.deepEqual(h.commands(), [427]);
+    assert.equal(h.value('Devices.Battery.Fault'), '');
+    assert.equal(h.value('Devices.Battery.OutputOwned'), false);
+    assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), 0);
+    assert.deepEqual(JSON.parse(h.value('Devices.Battery.HeadOwnership_JSON')), {version: 1, heads: []});
+
+    h.advance(1100); h.fresh();
+    h.snapshot(1, {GS: 0, GP: 0, timestamp: h.time()});
+    h.grid.gridW = -121;
+    h.own('Control.Targets.Battery_W', 121);
+    h.tick();
+    assert.deepEqual(h.commands(), [427, -121]);
+    assert.equal(h.run(`batteryHeadsQueuedCheck(${gs},-121).allowed`), true);
+});
+
+test('a rejected queued charge increase preserves the prior output and its actual reservation', () => {
+    const h = harness(1);
+    h.own('Control.CoordinationActive', true);
+    h.own('Config.BatteryFineStep_W', 600);
+    h.own('Control.Targets.Battery_W', 600);
+    h.grid.gridW = -600;
+    h.tick(); h.complete(); h.follow(); h.tick();
+    h.own('Control.Targets.Battery_W', 700);
+    h.grid.gridW = -100;
+    h.tick();
+    assert.deepEqual(h.commands(), [-600, -700]);
+
+    const gs = JSON.stringify(h.writes[0].id);
+    h.advance(250); h.fresh();
+    h.own('Control.Targets.Battery_W', 650);
+    h.grid.gridW = -50;
+    const rejected = h.run(`batteryHeadsQueuedCheck(${gs},-700)`);
+    assert.equal(rejected.allowed, false);
+    h.complete(Object.assign(new Error(rejected.reason), {code: rejected.code}), {notDispatched: true});
+    assert.deepEqual(h.commands(), [-600, -700]);
+    assert.equal(h.value('Devices.Battery.Fault'), '');
+    assert.equal(h.value('Devices.Battery.OutputCommandInternal_W'), 600);
+    assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 600);
+
+    h.advance(1100); h.fresh(); h.tick();
+    assert.deepEqual(h.commands(), [-600, -700, -650]);
+    assert.equal(h.run(`batteryHeadsQueuedCheck(${gs},-650).allowed`), true);
+});
+
+test('a budget loss returns a previously active GS to zero and restarts after confirmed stop', () => {
+    const h = harness(1);
+    h.own('Config.BatteryFineStep_W', 600);
+    h.own('Control.Targets.Battery_W', 600);
+    h.tick(); h.complete(); h.follow(); h.tick();
+    h.own('Control.Targets.Battery_W', 700); h.tick();
+    assert.deepEqual(h.commands(), [-600, -700]);
+
+    const gs = JSON.stringify(h.writes[0].id);
+    h.advance(250); h.fresh();
+    h.own('Control.Targets.Battery_W', 0);
+    const rejected = h.run(`batteryHeadsQueuedCheck(${gs},-700)`);
+    assert.equal(rejected.allowed, false);
+    h.complete(Object.assign(new Error(rejected.reason), {code: rejected.code}), {notDispatched: true});
+    assert.deepEqual(h.commands(), [-600, -700, 0]);
+    assert.equal(h.value('Devices.Battery.Fault'), '');
+    assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 600);
+
+    h.complete(); h.advance(1100); h.fresh();
+    h.snapshot(1, {GS: 0, GP: 0, timestamp: h.time()});
+    h.tick();
+    assert.equal(h.value('Devices.Battery.OutputOwned'), false);
+    h.own('Control.Targets.Battery_W', 150);
+    h.tick();
+    assert.deepEqual(h.commands(), [-600, -700, 0, -150]);
+    assert.equal(h.run(`batteryHeadsQueuedCheck(${gs},-150).allowed`), true);
+});
+
 test('restart or topology change returns all former IDs and never reuses their aggregate as zero proof', () => {
     const before = harness(3); before.tick();
     const restarted = harness(1, before.states); restarted.tick();

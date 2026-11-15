@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.274 (2026-11-15)
+
+- Subtract small grid imports from the active battery charge setpoint. A result at the configured minimum still charges. [Release notes](docs/release-0.17.0-alpha.274.md)
+
 ## 0.17.0-alpha.273 (2026-11-14)
 
 - Keep live battery control active for leftover grid export after a scheduled charge stage is complete. A charge request at the configured deadband is eligible. [Release notes](docs/release-0.17.0-alpha.273.md)
@@ -642,6 +646,7 @@ Bindet die ausdrücklich konfigurierte Gruppen-Netz-/Eigenstrombilanz an den pro
 
 ## Deutsche Versionshistorie
 
+- **Alpha.274** zieht kleinen Netzbezug vom laufenden Ladeauftrag ab. Bei 10 W Mindestleistung werden aus 11 W Ladeauftrag und 1 W Netzbezug 10 W. [Versionshinweise](docs/release-0.17.0-alpha.274.md)
 - **Alpha.273** lässt den Speicher nach Erreichen des Fahrplanziels weiterhin auf den Netzsollwert regeln. Ladeleistung ist ab dem eingestellten Totband möglich. [Versionshinweise](docs/release-0.17.0-alpha.273.md)
 - **Alpha.272** schickt bei laufender SunEnergy-Haushaltsentladung den nächsten Sollwert direkt, auch wenn die Geräterückmeldung aussteht. [Versionshinweise](docs/release-0.17.0-alpha.272.md)
 - **Alpha.271** hält eine bestätigte SunEnergy-Entladesenkung bei ausstehendem SMA-Telegramm und vermeidet kleine Stellschritte im Netztotband. [Versionshinweise](docs/release-0.17.0-alpha.271.md)
