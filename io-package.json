@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.280",
+    "version": "0.17.0-alpha.281",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.281": {
+        "en": "Restore the last issued battery setpoint when a queued request is rejected before dispatch. Replan with the next valid measurement.",
+        "de": "Nach einem vor der Übertragung verworfenen Speicherauftrag den letzten gesendeten Sollwert wiederherstellen und mit dem nächsten gültigen Messwert weiterregeln.",
+        "es": "Restaura la última consigna enviada de la batería cuando una nueva se rechaza antes de enviarse. Replanifica con la siguiente medición válida.",
+        "fr": "Rétablit la dernière consigne de batterie envoyée après un rejet avant transmission. Replanifie à la prochaine mesure valide.",
+        "it": "Ripristina l’ultimo setpoint della batteria inviato dopo un rifiuto prima della trasmissione. Ricalcola al prossimo dato valido.",
+        "nl": "Herstelt het laatst verzonden batterijsetpoint na afwijzing voor verzending. Plant opnieuw met de volgende geldige meting.",
+        "pl": "Przywraca ostatnią wysłaną nastawę magazynu po odrzuceniu przed wysłaniem. Planuje ponownie po kolejnym poprawnym pomiarze.",
+        "pt": "Restaura o último valor de referência da bateria enviado após rejeição antes do envio. Recalcula com a próxima medição válida.",
+        "ru": "После отклонения уставки до передачи восстанавливает последнюю отправленную уставку батареи и пересчитывает управление по следующему измерению.",
+        "uk": "Після відхилення уставки до передачі відновлює останню надіслану уставку батареї та перераховує керування за наступним вимірюванням.",
+        "zh-cn": "电池设定值在发送前被拒绝时恢复上一条已发送的设定值，并根据下一次有效测量重新计算。"
+      },
       "0.17.0-alpha.280": {
         "en": "Count missing acknowledgements by GS setpoint. Use GP to verify actual power and reserved headroom.",
         "de": "Fehlende Rückmeldungen je GS-Auftrag zählen. GP belegt die tatsächliche Leistung und die frei gewordene Leistungsreserve.",
@@ -81,19 +94,6 @@
         "ru": "Переключает накопитель напрямую с зарядки на разряд для дома, если импорт из сети превышает мощность зарядки.",
         "uk": "Перемикає накопичувач безпосередньо із заряджання на розряд для будинку, якщо імпорт із мережі перевищує потужність заряджання.",
         "zh-cn": "当电网取电功率超过电池充电功率时，单机电池直接从充电切换到家庭放电。"
-      },
-      "0.17.0-alpha.274": {
-        "en": "Trim the active battery charge by small grid imports down to the configured minimum.",
-        "de": "Kleine Netzbezüge vom laufenden Ladeauftrag abziehen, bis die eingestellte Mindestleistung erreicht ist.",
-        "es": "Reduce la consigna de carga activa según el pequeño consumo de red hasta el mínimo configurado.",
-        "fr": "Réduit la consigne de charge en cours selon le faible import réseau jusqu’au minimum configuré.",
-        "it": "Riduce la potenza di carica in corso in base ai piccoli prelievi di rete, fino al minimo impostato.",
-        "nl": "Verlaagt de lopende acculading bij klein netverbruik tot het ingestelde minimum.",
-        "pl": "Zmniejsza moc trwającego ładowania przy małym poborze z sieci do ustawionego minimum.",
-        "pt": "Reduz a potência de carregamento ativa em caso de pequena importação da rede até o mínimo configurado.",
-        "ru": "Уменьшает текущую мощность зарядки при небольшом импорте из сети до заданного минимума.",
-        "uk": "Зменшує поточну потужність заряджання за невеликого імпорту з мережі до заданого мінімуму.",
-        "zh-cn": "从当前充电设定值中扣除少量电网取电，直至设定的最小充电功率。"
       }
     },
     "titleLang": {

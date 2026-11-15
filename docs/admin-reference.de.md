@@ -784,6 +784,8 @@ Am einzelnen SunEnergy-Kopf schickt das EMS eine zulässige Absenkung des laufen
 
 In der normalen Netzregelung eines Einzelkopfs ersetzt ein gültiger neuer Sollwert den laufenden Auftrag bei offener Rückmeldung. Der Regler verwendet den letzten Sollwert als erwartete Leistung und begrenzt die Korrektur anhand der gemeldeten Leistung und des Netzflusses. Eine frische Rückmeldung des aktuellsten gesendeten GS setzt den Zähler zurück. Zehn gesendete Aufträge in Folge ohne GS-Echo lösen einen Nullbefehl aus. Jeder gesendete Auftrag kann einmal in die Zählung eingehen. GP prüft die elektrische Reaktion, die gebundene Leistung und den Stillstand bei der Rückgabe. Der Stopp bei ungültigen Quellen, aufgehobener Freigabe oder wirksamen Schutzgrenzen folgt seinen jeweiligen Bedingungen. [Versionshinweise](release-0.17.0-alpha.280.md)
 
+Verwirft die Ausgabeprüfung einen GS-Auftrag vor der Übertragung, nimmt das EMS den dafür vorgemerkten Auftrag und seine Leistungsreservierung zurück. Ein stillstehender Kopf ist mit der nächsten gültigen Messung wieder für einen Auftrag verfügbar. Bei einem laufenden Kopf prüft der Regler die Rückmeldung zum letzten gesendeten GS. Ein Stopp wegen eines entfallenen Budgets gibt die Regelung nach bestätigtem Stillstand und erneut gültigem Budget automatisch frei. [Versionshinweise](release-0.17.0-alpha.281.md)
+
 | Datenpunkt | Bedeutung bei der Diagnose |
 | --- | --- |
 | `Control.Targets.Battery_W` | Sollwert des EMS in W. Positiv lädt, negativ entlädt. |
