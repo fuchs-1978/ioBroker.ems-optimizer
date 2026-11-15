@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.275",
+    "version": "0.17.0-alpha.276",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.276": {
+        "en": "Reduce an active single-head charge while feedback is pending and switch directions directly when supported by grid measurements.",
+        "de": "Ladeleistung eines Speicherkopfs bei offener Rückmeldung senken und bei ausreichender gemessener Restleistung direkt die Richtung wechseln.",
+        "es": "Reduce la carga de un cabezal mientras llega la confirmación y cambia de sentido cuando lo permiten las mediciones de red.",
+        "fr": "Réduit la charge d’un module en attendant son retour et change de sens lorsque les mesures réseau le permettent.",
+        "it": "Riduce la carica di un modulo in attesa del riscontro e cambia direzione quando le misure di rete lo consentono.",
+        "nl": "Verlaagt het laadvermogen van één module tijdens het wachten op terugmelding en wisselt direct van richting als de netmeting dat toelaat.",
+        "pl": "Zmniejsza moc ładowania pojedynczej jednostki przed potwierdzeniem i zmienia kierunek, gdy pozwalają na to pomiary sieci.",
+        "pt": "Reduz a carga de um módulo enquanto aguarda confirmação e muda diretamente de direção quando as medições da rede permitem.",
+        "ru": "Снижает заряд одного модуля до получения подтверждения и напрямую меняет направление при достаточной мощности по измерениям сети.",
+        "uk": "Зменшує заряд одного модуля до підтвердження й одразу змінює напрямок, якщо це дозволяють вимірювання мережі.",
+        "zh-cn": "等待反馈时降低单机充电功率，并在电网测量值允许时直接切换充放电方向。"
+      },
       "0.17.0-alpha.275": {
         "en": "Switch a single battery head directly from charging to household discharge when grid import exceeds battery charging power.",
         "de": "Einen Speicherkopf direkt vom Laden auf Haushaltsentladung umstellen, wenn der Netzbezug die Ladeleistung übersteigt.",
@@ -81,19 +94,6 @@
         "ru": "Допускает отклонение 100 Вт при разряде SunEnergy для дома и останавливается после десяти несовпадающих пар измерений подряд.",
         "uk": "Допускає відхилення 100 Вт під час розряджання SunEnergy для будинку й зупиняється після десяти невідповідних пар вимірювань поспіль.",
         "zh-cn": "SunEnergy 为家庭用电放电时允许 100 W 的跟踪偏差，连续十对测量值不符后停止。"
-      },
-      "0.17.0-alpha.269": {
-        "en": "Keep household discharge active while SunEnergy applies a measured reduction.",
-        "de": "Haushaltsentladung aktiv halten, während SunEnergy eine aus Messwerten berechnete Senkung umsetzt.",
-        "es": "Mantiene la descarga doméstica mientras SunEnergy aplica una reducción calculada a partir de las mediciones.",
-        "fr": "Maintient la décharge du foyer pendant que SunEnergy applique une réduction calculée à partir des mesures.",
-        "it": "Mantiene attiva la scarica domestica mentre SunEnergy applica una riduzione calcolata dalle misure.",
-        "nl": "Houdt ontlading voor het huishouden actief terwijl SunEnergy een op metingen gebaseerde verlaging uitvoert.",
-        "pl": "Utrzymuje rozładowanie na potrzeby domu, gdy SunEnergy wdraża zmniejszenie mocy obliczone z pomiarów.",
-        "pt": "Mantém a descarga para a casa enquanto o SunEnergy aplica uma redução calculada a partir das medições.",
-        "ru": "Сохраняет разряд для дома, пока SunEnergy снижает мощность по результатам измерений.",
-        "uk": "Підтримує розряд для будинку, поки SunEnergy знижує потужність за результатами вимірювань.",
-        "zh-cn": "SunEnergy 按测量结果降低功率期间，保持家庭用电放电。"
       }
     },
     "titleLang": {

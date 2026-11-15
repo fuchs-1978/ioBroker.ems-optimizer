@@ -7,7 +7,7 @@
 
 Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Combines PV and grid measurements, load history, weather forecasts and electricity prices in a rolling 48-hour plan.
 
-**Current GitHub build 0.17.0-alpha.275.** Install the tested build from GitHub and commission each enabled device against its actual feedback and protection limits.
+**Current GitHub build 0.17.0-alpha.276.** Install the tested build from GitHub and commission each enabled device against its actual feedback and protection limits.
 
 [Deutsche Bedienungsanleitung](README.de.md) · [Release history](CHANGELOG_OLD.md) · [Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
@@ -69,7 +69,7 @@ An enabled optional heater may temporarily use the start budget of a waiting veh
 
 When the optional battery and wallbox coordination finishes a scheduled SoC stage, the EMS releases its reserved PV power. The battery's live controller can still absorb residual PV or CHP export within the available SoC, power and allocation limits.
 
-The configured battery deadband applies to the new charge request. With a 10 W deadband, a 1 W import trims an active 11 W charge to 10 W. At an eligible single SunEnergy head, 25 W of charging during 107 W of grid import leads directly to an 82 W household discharge request. The return from discharge to charging goes through a zero command and output feedback. [Setpoints, signs and diagnostics](docs/admin-reference.de.md#live-regelung-des-speichers)
+The configured battery deadband applies to the new charge request. With a 10 W deadband, a 1 W import trims an active 11 W charge to 10 W. An eligible single SunEnergy head accepts a smaller charge request while feedback is pending. It can change direction directly when fresh grid measurements support the opposite demand after accounting for the previous power. [Setpoints, signs and diagnostics](docs/admin-reference.de.md#live-regelung-des-speichers)
 
 ## Hot-water planning
 
@@ -192,6 +192,10 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 
 ## Changelog
 
+### 0.17.0-alpha.276 (2026-11-15)
+
+- Reduce single-head SunEnergy charging without waiting for the previous setpoint echo and switch directly in either direction when the meter supports the opposite demand. [Release notes](docs/release-0.17.0-alpha.276.md)
+
 ### 0.17.0-alpha.275 (2026-11-15)
 
 - A single battery head switches directly from charging to household discharge when the meter shows enough residual import. [Release notes](docs/release-0.17.0-alpha.275.md)
@@ -215,10 +219,6 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 ### 0.17.0-alpha.270 (2026-11-14)
 
 - Use measured AC power for single-head household discharge within a 100 W tracking tolerance and stop on ten consecutive fresh mismatched pairs. [Release notes](docs/release-0.17.0-alpha.270.md)
-
-### 0.17.0-alpha.269 (2026-11-14)
-
-- Assess an in-flight household discharge reduction against measured load before interrupting SunEnergy output. [Release notes](docs/release-0.17.0-alpha.269.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 

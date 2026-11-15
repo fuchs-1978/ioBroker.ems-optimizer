@@ -2868,6 +2868,42 @@ test('a completed forecast stage releases the PV reservation while live charging
 });
 
 for (const batteryDispatchMode of ['single-head', 'sunenergy-heads']) {
+    test(`a fresh 15 W import with delayed GP trims charging in ${batteryDispatchMode} mode`, async () => {
+        for (const oldGp of [0, 17]) {
+            const h = await plant({battery: true, batteryHeadType: 2, wallbox: false, initialSurplusW: 0,
+                nativeConfig: {batteryDispatchMode, dhwControlEnabled: false}});
+            h.own('Control.TargetGridPower_W', 0);
+            h.own('Config.BatteryDeadband_W', 10);
+            h.own('Config.BatteryFineStep_W', 300);
+            const gsId = h.config.batterySetpointId;
+            const rawId = gsId.replace('.control.GS', '.info.rawResponse');
+            const start = h.now();
+            const oldAt = start + 900;
+            const driver = {from: 'system.adapter.sunenergyxt500.0', ts: oldAt};
+            const frame = (at, gridW, meterAt = at) => {
+                const samples = [['DP_GRID_IMPORT', Math.max(0, gridW), {ts: meterAt}],
+                    ['DP_GRID_EXPORT', Math.max(0, -gridW), {ts: meterAt}],
+                    [gsId, 0, driver], [h.run('CFG.dp.batteryAcPower'), oldGp, driver]];
+                if (batteryDispatchMode === 'sunenergy-heads') {
+                    const raw = {...JSON.parse(h.states.get(rawId).val), GS: 0, GP: oldGp, timestamp: oldAt};
+                    samples.push([rawId, JSON.stringify(raw), driver]);
+                }
+                return h.replayAt(at, samples, {output: false});
+            };
+            const commands = () => h.writes.filter(write => write.id === gsId).map(write => write.val);
+
+            await frame(start + 1000, -210 - oldGp);
+            assert.deepEqual(commands(), [-210]);
+            await frame(start + 4000, 15.4);
+            assert.equal(h.value('Control.Targets.Battery_W'), 195);
+            assert.deepEqual(commands(), [-210, -195]);
+
+            await frame(start + 5000, 15.4, start + 4000);
+            assert.equal(h.value('Control.Targets.Battery_W'), 195, 'the same SMA sample cannot trim twice');
+            assert.deepEqual(commands(), [-210, -195]);
+        }
+    });
+
     test(`small grid import trims an unconfirmed charge to the 10 W limit in ${batteryDispatchMode} mode`, async () => {
         const h = await plant({battery: true, batteryHeadType: 2, batteryHeadMaxSoc: 100, wallbox: false,
             initialSurplusW: 0, nativeConfig: {batteryDispatchMode, batteryPvPriorityEnabled: true,
@@ -2907,45 +2943,53 @@ for (const batteryDispatchMode of ['single-head', 'sunenergy-heads']) {
         assert.deepEqual(commands(), [...beforeStop, 0], 'the next fresh watt would reduce charge to 9 W');
     });
 
-    test(`107 W grid import reverses 25 W charge into 82 W discharge in ${batteryDispatchMode} mode`, async () => {
-        const h = await plant({battery: true, batteryHeadType: 2, wallbox: false, initialSurplusW: 25,
-            nativeConfig: {batteryDispatchMode, dhwControlEnabled: false}});
-        h.own('Control.TargetGridPower_W', 0);
-        h.own('Config.BatteryDeadband_W', 10);
-        await h.advance(5);
-        assert.equal(h.physical().batteryW, 25);
-        const gsId = h.config.batterySetpointId;
-        const driver = {from: 'system.adapter.sunenergyxt500.0'};
-        const commands = () => h.writes.filter(write => write.id === gsId).map(write => write.val);
-        const before = commands().length;
-        const frame = (gridW, gs, gp) => {
-            const at = h.now() + 1000;
-            const samples = [['DP_GRID_IMPORT', gridW], ['DP_GRID_EXPORT', 0], [gsId, gs, driver],
-                [h.run('CFG.dp.batteryAcPower'), gp, driver]];
-            if (batteryDispatchMode === 'sunenergy-heads') {
-                const rawId = gsId.replace('.control.GS', '.info.rawResponse');
-                const raw = {...JSON.parse(h.states.get(rawId).val), GS: gs, GP: gp, timestamp: at};
-                samples.push([rawId, JSON.stringify(raw), driver]);
-            }
-            return h.replayAt(at, samples, {output: false});
-        };
+    for (const {name, previousW, gridW, nextW} of [
+        {name: '107 W grid import reverses 25 W charge into 82 W discharge', previousW: 25, gridW: 107, nextW: -82},
+        {name: '806 W grid export reverses 705 W discharge into 101 W charge', previousW: -705, gridW: -806, nextW: 101}
+    ]) {
+        test(`${name} in ${batteryDispatchMode} mode`, async () => {
+            const h = await plant({battery: true, batteryHeadType: 2, wallbox: false, initialSurplusW: 0,
+                nativeConfig: {batteryDispatchMode, dhwControlEnabled: false}});
+            h.own('Control.TargetGridPower_W', 0);
+            h.own('Config.BatteryDeadband_W', 10);
+            h.own('Config.BatteryFineStep_W', 1000);
+            h.put(h.mapping.DP_BATTERY_SOC, 60);
+            const gsId = h.config.batterySetpointId;
+            const driver = {from: 'system.adapter.sunenergyxt500.0'};
+            const commands = () => h.writes.filter(write => write.id === gsId).map(write => write.val);
+            const frame = (meterW, gs, gp) => {
+                const at = h.now() + 1000;
+                const samples = [['DP_GRID_IMPORT', Math.max(0, meterW)], ['DP_GRID_EXPORT', Math.max(0, -meterW)],
+                    [gsId, gs, driver], [h.run('CFG.dp.batteryAcPower'), gp, driver]];
+                if (batteryDispatchMode === 'sunenergy-heads') {
+                    const rawId = gsId.replace('.control.GS', '.info.rawResponse');
+                    const raw = {...JSON.parse(h.states.get(rawId).val), GS: gs, GP: gp, timestamp: at};
+                    samples.push([rawId, JSON.stringify(raw), driver]);
+                }
+                return h.replayAt(at, samples, {output: false});
+            };
 
-        await frame(107, -25, -25);
-        assert.equal(h.value('Control.Targets.Battery_W'), -82);
-        assert.deepEqual(commands().slice(before), [82]);
-        assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 25);
-        if (batteryDispatchMode === 'single-head')
-            assert.equal(h.run("checkQueuedElectricalOutput('Battery', 82).allowed"), true);
+            await frame(-previousW, 0, 0);
+            assert.deepEqual(commands(), [-previousW]);
+            await frame(0, -previousW, -previousW);
+            const before = commands().length;
+            await frame(gridW, -previousW, -previousW);
+            assert.equal(h.value('Control.Targets.Battery_W'), nextW);
+            assert.deepEqual(commands().slice(before), [-nextW]);
+            assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), Math.max(previousW, nextW));
+            if (batteryDispatchMode === 'single-head')
+                assert.equal(h.run(`checkQueuedElectricalOutput('Battery', ${-nextW}).allowed`), true);
 
-        await frame(107, -25, -25);
-        await frame(0, -25, -25);
-        assert.deepEqual(commands().slice(before), [82], 'old charge feedback cannot undo the direct switch');
+            await frame(gridW, -previousW, -previousW);
+            await frame(0, -previousW, -previousW);
+            assert.deepEqual(commands().slice(before), [-nextW], 'old feedback cannot undo the direct switch');
 
-        await frame(0, 82, 82);
-        assert.equal(h.value('Control.Targets.Battery_W'), -82);
-        assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 0);
-        assert.ok(commands().slice(before).every(watts => watts === 82));
-    });
+            await frame(0, -nextW, -nextW);
+            assert.equal(h.value('Control.Targets.Battery_W'), nextW);
+            assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), Math.max(0, nextW));
+            assert.ok(commands().slice(before).every(watts => watts === -nextW));
+        });
+    }
 
     test(`live battery absorbs 10, 20 and 100 W of CHP export after the daily target in ${batteryDispatchMode} mode`, async () => {
         const h = await plant({battery: true, batteryHeadType: 2, batteryHeadMaxSoc: 100, wallbox: false,

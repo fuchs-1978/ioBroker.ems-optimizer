@@ -311,7 +311,7 @@ test('direction reversal waits for physically confirmed zero of every head', () 
     assert.deepEqual(h.commands(), [-50, -50, 0, 0, 50, 50]);
 });
 
-test('reversal resumes after driver-confirmed zero and falling AC power reach standstill', () => {
+test('reversal without measured residual demand resumes after driver-confirmed zero and AC standstill', () => {
     for (const direction of [-1, 1]) {
         for (const missing of [null, 'driver ack', 'ack source', 'stale ack', 'rundown', 'old GS', 'offline']) {
             const h = harness(1);
@@ -322,6 +322,7 @@ test('reversal resumes after driver-confirmed zero and falling AC power reach st
             h.follow();
             h.own('Control.Targets.Battery_W', direction * 550); h.tick(); h.complete();
             assert.deepEqual(h.commands(), [-direction * 500, -direction * 550]);
+            h.grid.gridW = direction * 550;
             h.own('Control.Targets.Battery_W', -direction * 650); h.tick(); h.complete();
             assert.deepEqual(h.commands(), [-direction * 500, -direction * 550, 0]);
             h.advance(1000); h.fresh();
@@ -849,41 +850,34 @@ test('a 100 to 101 W increase cannot use old 100 W GS/GP as proof before a later
     assert.equal(h.value('Devices.Battery.OutputOwned'), false);
 });
 
-test('GP near an unseen higher command does not clear its debt when the same snapshot echoes only the later lower GS', () => {
+test('a lower GS echo retains the higher charge reserve until GP actually falls', () => {
     const h = harness(1); h.own('Config.BatteryFineStep_W', 600); h.own('Control.Targets.Battery_W', 600); h.tick(); h.complete();
     h.own('Control.Targets.Battery_W', 500); h.tick(); h.complete();
     h.advance(1100); h.snapshot(1, {GS: -500, GP: -600}); h.fresh(); h.tick();
-    assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), 600);
+    assert.deepEqual(h.commands(), [-600, -500]);
     assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 600);
-    h.nativeConfig.globalWriteEnabled = false; h.own('System.RealOutputsEnabled', false); h.tick(); h.complete();
-    h.advance(1100); h.snapshot(1, {GS: 0, GP: 0}); h.tick();
-    assert.equal(h.value('Devices.Battery.OutputOwned'), true);
+    h.advance(1100); h.snapshot(1, {GS: -500, GP: -500}); h.fresh(); h.tick();
+    assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 500);
 });
 
-test('an unseen 600 W request followed by requested 500 W reduction creates only zero, never a second delayed nonzero request', () => {
+test('an unseen 600 W charge accepts successive reductions while reserving the original peak', () => {
     const h = harness(1); h.own('Config.BatteryFineStep_W', 600); h.own('Control.Targets.Battery_W', 600);
-    h.tick(); h.complete(); h.own('Control.Targets.Battery_W', 500); h.tick();
-    assert.deepEqual(h.commands(), [-600]);
-    h.advance(6000); h.fresh(); h.tick(); h.complete();
-    assert.deepEqual(h.commands(), [-600, 0]);
-    h.own('Control.Targets.Battery_W', 0); h.tick();
-    h.advance(1100); h.snapshot(1, {GS: 0, GP: 0}); h.tick();
-    assert.equal(h.value('Devices.Battery.OutputOwned'), true);
-    assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), 600);
-    h.advance(16000); h.snapshot(1, {GS: -600, GP: -600}); h.fresh(); h.tick(); h.complete();
-    assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), 0);
-    h.advance(1100); h.snapshot(1, {GS: 0, GP: 0}); h.tick();
-    assert.equal(h.value('Devices.Battery.OutputOwned'), false);
-    assert.ok(!h.commands().includes(-500));
+    h.tick(); h.complete(); h.own('Control.Targets.Battery_W', 500); h.tick(); h.complete();
+    h.advance(1000); h.fresh();
+    h.own('Control.Targets.Battery_W', 450); h.tick(); h.complete();
+    h.own('Control.Targets.Battery_W', 550); h.tick();
+    assert.deepEqual(h.commands(), [-600, -500, -450]);
+    assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 600);
+    assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), 450);
 });
 
-test('PV target drops up to 200 W wait for feedback before evaluating a reduction', () => {
+test('PV target drops up to 200 W reduce the head command while the earlier GP lags', () => {
     const cases = [
-        {command: 1500, previous: 1400, actual: 1324, target: 1488, expected: 1500},
+        {command: 1500, previous: 1400, actual: 1324, target: 1488},
         {command: 764, previous: 700, actual: 677, target: 714},
         {command: 900, previous: 800, actual: 715, target: 700}
     ];
-    for (const {command, previous, actual, target, expected = target} of cases) {
+    for (const {command, previous, actual, target} of cases) {
         const h = harness(1);
         h.own('Config.BatteryFineStep_W', 1000);
         h.own('Control.Targets.Battery_W', previous);
@@ -892,17 +886,20 @@ test('PV target drops up to 200 W wait for feedback before evaluating a reductio
         h.own('Config.BatteryFineStep_W', 100);
         h.own('Control.Targets.Battery_W', command); h.tick(); h.complete();
         h.advance(4000); h.snapshot(1, {GS: -command, GP: -actual}); h.fresh();
-        h.own('Control.Targets.Battery_W', target); h.tick();
-        assert.deepEqual(h.commands(), [-Math.min(previous, 1000), ...(previous > 1000 ? [-previous] : []), -command]);
+        h.own('Control.Targets.Battery_W', target); h.tick(); h.complete();
+        const commands = [-Math.min(previous, 1000), ...(previous > 1000 ? [-previous] : []), -command, -target];
+        assert.deepEqual(h.commands(), commands);
         assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), command);
-        assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), command);
-        assert.match(h.value('Devices.Battery.OutputStatus'), /PV-Sollwert gesunken/);
+        assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), target);
         h.advance(1000); h.snapshot(1, {GS: -command, GP: -(command - 18)}); h.fresh(); h.tick();
-        assert.equal(h.commands().at(-1), -expected);
+        assert.deepEqual(h.commands(), commands);
+        assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), command);
+        h.advance(1000); h.snapshot(1, {GS: -target, GP: -target}); h.fresh(); h.tick();
+        assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), target);
     }
 });
 
-test('confirmed GS permits successive PV reductions while actual charging lags', () => {
+test('successive PV reductions tolerate older GS and GP while retaining the peak', () => {
     const h = harness(1);
     h.own('Config.BatteryFineStep_W', 500);
     h.tick(); h.complete(); h.follow();
@@ -914,7 +911,7 @@ test('confirmed GS permits successive PV reductions while actual charging lags',
     assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 700);
     const check = () => h.run('batteryHeadsQueuedCheck("sunenergyxt500.0.heads.1.control.GS", -176)');
     assert.equal(check().allowed, true);
-    h.snapshot(1, {GS: -500}); assert.equal(check().allowed, false);
+    h.snapshot(1, {GS: -500}); assert.equal(check().allowed, true);
     h.snapshot(1, {GS: -700}); h.complete();
     h.advance(1000); h.snapshot(1, {GS: -176, GP: -260}); h.fresh();
     h.own('Control.Targets.Battery_W', 90); h.tick(); h.complete();
@@ -942,16 +939,16 @@ test('zero after an echoed charge releases the reserve only with post-write zero
     assert.equal(h.commands().at(-1), -350);
 });
 
-test('a PV dip during a dispatched 600 W start waits for the first GS echo and then recovers', () => {
+test('a PV dip during a 600 W start sends a positive reduction directly and briefly waits on zero', () => {
     for (const lowerTarget of [0, 176]) {
         const h = harness(1);
         h.own('Config.BatteryFineStep_W', 600);
         h.own('Control.Targets.Battery_W', 998);
         h.tick(); h.complete();
         h.advance(2000); h.fresh();
-        h.own('Control.Targets.Battery_W', lowerTarget); h.tick();
-        assert.deepEqual(h.commands(), [-600]);
-        assert.match(h.value('Devices.Battery.OutputStatus'), /GS-Bestaetigung des Ladestarts/);
+        h.own('Control.Targets.Battery_W', lowerTarget); h.tick(); h.complete();
+        assert.deepEqual(h.commands(), lowerTarget === 0 ? [-600] : [-600, -lowerTarget]);
+        if (lowerTarget === 0) assert.match(h.value('Devices.Battery.OutputStatus'), /GS-Bestaetigung des Ladestarts/);
         assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 600);
         h.advance(3000); h.snapshot(1, {GS: -600, GP: -542}); h.fresh(); h.tick(); h.complete();
         assert.deepEqual(h.commands(), [-600, lowerTarget === 0 ? 0 : -lowerTarget]);
@@ -1768,22 +1765,26 @@ test('late discharge echo permits automatic return after a fresh zero and then P
     assert.equal(h.value('Devices.Battery.ConfirmPhysicalStop'), false);
 });
 
-test('a pending charge without a GS echo still stops when immediate reduction is needed', () => {
-    const cases = {
-        house: h => h.put('ha3', 45.3),
-        operator: h => { h.limit.budgetW = 1488; },
-        group: h => { h.limit.groupNet = true; h.limit.groupMaximumW = 1488; },
-        configured: h => h.own('Config.BatteryMaxCharge_W', 1488),
-        head: h => { h.nativeConfig.batteryHead1MaxChargeW = 1488; },
-        soc: h => h.snapshot(1, {SC: 100}),
-        price: h => h.own('Control.BatteryPriceGridCharge_W', 100),
-        actual: h => h.snapshot(1, {GS: -1400, GP: -1530}),
-        'actual above target with 200 W drop': h => { h.snapshot(1, {GS: -1400, GP: -1326}); h.own('Control.Targets.Battery_W', 1300); },
-        'over 200 W drop': h => { h.snapshot(1, {GS: -1400, GP: -1250}); h.own('Control.Targets.Battery_W', 1299); },
-        'zero target': h => h.own('Control.Targets.Battery_W', 0),
-        timeout: h => { h.advance(15000); h.fresh(); }
-    };
-    for (const [reason, change] of Object.entries(cases)) {
+test('a pending charge follows a reduced valid limit and stops when its charge permission is lost', () => {
+    const cases = [
+        ['house', 1485, h => h.put('ha3', 45.3)],
+        ['operator', 1488, h => { h.limit.budgetW = 1488; }],
+        ['group', 1488, h => { h.limit.groupNet = true; h.limit.groupMaximumW = 1488; }],
+        ['configured', 1488, h => h.own('Config.BatteryMaxCharge_W', 1488)],
+        ['head', 1488, h => { h.nativeConfig.batteryHead1MaxChargeW = 1488; }],
+        ['soc', 0, h => h.snapshot(1, {SC: 100})],
+        ['price', 0, h => h.own('Control.BatteryPriceGridCharge_W', 100)],
+        ['actual above previous charge', 1488, h => h.snapshot(1, {GS: -1400, GP: -1530})],
+        ['actual above target with 200 W drop', 1300, h => {
+            h.snapshot(1, {GS: -1400, GP: -1326}); h.own('Control.Targets.Battery_W', 1300);
+        }],
+        ['over 200 W drop', 1299, h => {
+            h.snapshot(1, {GS: -1400, GP: -1250}); h.own('Control.Targets.Battery_W', 1299);
+        }],
+        ['zero target', 0, h => h.own('Control.Targets.Battery_W', 0)],
+        ['timeout', 0, h => { h.advance(15000); h.fresh(); }]
+    ];
+    for (const [reason, expectedW, change] of cases) {
         const h = harness(1);
         h.own('Config.BatteryFineStep_W', 1000);
         h.own('Control.Targets.Battery_W', 1400); h.tick(); h.complete(); h.follow();
@@ -1793,7 +1794,7 @@ test('a pending charge without a GS echo still stops when immediate reduction is
         h.advance(4000); h.snapshot(1, {GS: -1400, GP: -1324}); h.fresh();
         h.own('Control.Targets.Battery_W', 1488);
         change(h); h.tick();
-        assert.deepEqual(h.commands(), [-1000, -1400, -1500, 0], reason);
+        assert.deepEqual(h.commands(), [-1000, -1400, -1500, -expectedW || 0], reason);
         assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 1500, reason);
     }
 });
