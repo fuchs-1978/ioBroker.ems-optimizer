@@ -1846,6 +1846,68 @@ test('a reduced nonzero command is still immediate after the previous command ph
     assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), 500);
 });
 
+test('live charging follows the recorded 10 W to 545 W export rise even with zero GP', () => {
+    const h = harness(1);
+    h.own('Control.CoordinationActive', true);
+    h.own('Config.BatteryDeadband_W', 10);
+    h.own('Config.BatteryFineStep_W', 600);
+    h.own('Config.BatteryPvFeedbackObservationEnabled', true);
+    h.own('Control.Targets.Battery_W', 10);
+    h.grid.gridW = -10;
+    h.tick(); h.complete();
+    h.advance(1700); h.fresh(); h.snapshot(1, {GS: -10, GP: 0});
+    h.own('Control.Targets.Battery_W', 545);
+    h.grid.gridW = -545;
+    h.tick();
+    assert.deepEqual(h.commands(), [-10, -545]);
+    assert.equal(h.run('batteryHeadsQueuedCheck("sunenergyxt500.0.heads.1.control.GS", -545).allowed'), true);
+    h.complete();
+    h.advance(2000); h.fresh();
+    h.own('Control.Targets.Battery_W', 470);
+    h.grid.gridW = -470;
+    h.tick(); h.complete();
+    assert.deepEqual(h.commands(), [-10, -545, -470]);
+    assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 545);
+});
+
+for (const direction of [1, -1]) {
+    test(`live ${direction === 1 ? 'charge' : 'discharge'} stops on the tenth distinct missed response`, () => {
+        const h = harness(1);
+        h.own('Control.CoordinationActive', true);
+        h.own('Config.BatteryDeadband_W', 10);
+        h.own('Config.BatteryFineStep_W', 600);
+        const initial = 94 * direction;
+        h.grid.gridW = -initial;
+        h.own('Control.Targets.Battery_W', initial);
+        h.tick(); h.complete();
+
+        const sample = (target, feedback = {GS: -initial, GP: 0}) => {
+            h.advance(2000); h.fresh(); h.snapshot(1, {...feedback, timestamp: h.time()});
+            h.grid.gridW = -target;
+            h.own('Control.Targets.Battery_W', target);
+            h.tick(); h.complete();
+        };
+        for (let miss = 1; miss <= 8; miss++) sample(initial + miss * direction);
+        const beforeResponse = h.commands();
+        assert.equal(beforeResponse.length, 9);
+        assert.ok(beforeResponse.every(watts => watts * direction < 0));
+
+        const newest = beforeResponse.at(-1);
+        sample(-newest, {GS: newest, GP: newest});
+        sample(initial + 20 * direction, {GS: newest, GP: newest});
+        for (let miss = 1; miss <= 9; miss++) {
+            sample(initial + (20 + miss) * direction, {GS: newest, GP: 0});
+            for (let poll = 0; poll < 4; poll++) {
+                h.advance(50); h.fresh(); h.tick();
+            }
+            assert.ok(h.commands().every(watts => watts * direction < 0), h.value('Devices.Battery.OutputStatus'));
+        }
+        sample(initial + 30 * direction, {GS: newest, GP: 0});
+        assert.equal(h.commands().at(-1), 0);
+        assert.match(h.value('Devices.Battery.OutputStatus'), /10|zehn/i);
+    });
+}
+
 test('PV feedback observation warns and keeps the outstanding lower charge through a zero target', () => {
     const h = harness(1);
     h.own('Config.BatteryPvFeedbackObservationEnabled', true);

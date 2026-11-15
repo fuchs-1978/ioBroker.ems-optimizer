@@ -2867,6 +2867,39 @@ test('a completed forecast stage releases the PV reservation while live charging
     assert.equal(h.value('Control.BatteryPVReserve_W'), 2400);
 });
 
+test('SunEnergy live dispatch raises the recorded 10 W request before GP responds without stacking the same export', async () => {
+    const h = await plant({battery: true, batteryHeadType: 2, wallbox: false, initialSurplusW: 0,
+        nativeConfig: {batteryDispatchMode: 'sunenergy-heads', dhwControlEnabled: false}});
+    h.own('Control.TargetGridPower_W', 0);
+    h.own('Config.BatteryDeadband_W', 10);
+    h.own('Config.BatteryFineStep_W', 600);
+    h.own('Config.BatteryPvFeedbackObservationEnabled', true);
+    const gsId = h.config.batterySetpointId;
+    const rawId = gsId.replace('.control.GS', '.info.rawResponse');
+    const driver = {from: 'system.adapter.sunenergyxt500.0'};
+    const commands = () => h.writes.filter(write => write.id === gsId).map(write => write.val);
+    const frame = (exportW, gs, gp) => {
+        const at = h.now() + 1000;
+        const raw = {...JSON.parse(h.states.get(rawId).val), GS: gs, GP: gp, timestamp: at};
+        return h.replayAt(at, [['DP_GRID_IMPORT', 0], ['DP_GRID_EXPORT', exportW],
+            [gsId, gs, driver], [rawId, JSON.stringify(raw), driver]], {output: false});
+    };
+
+    await frame(10, 0, 0);
+    assert.deepEqual(commands(), [-10]);
+    await frame(545, -10, 0);
+    assert.equal(h.value('Control.Targets.Battery_W'), 545);
+    assert.deepEqual(commands(), [-10, -545]);
+    await frame(545, -10, 0);
+    assert.equal(h.value('Control.Targets.Battery_W'), 545);
+    assert.deepEqual(commands(), [-10, -545], 'an unchanged export must not stack another 545 W');
+    await frame(700, -10, 0);
+    assert.deepEqual(commands(), [-10, -545, -700]);
+    await frame(0, -700, -700);
+    assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), 0);
+    assert.equal(h.value('Control.Targets.Battery_W'), 700);
+});
+
 for (const batteryDispatchMode of ['single-head', 'sunenergy-heads']) {
     test(`a fresh 15 W import with delayed GP trims charging in ${batteryDispatchMode} mode`, async () => {
         for (const oldGp of [0, 17]) {

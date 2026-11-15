@@ -110,10 +110,10 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
                 batteryCommandW = val;
                 events.push({at: now + batteryDelayMs, run: () => {
                     if (batteryResponds) batteryW = -val || 0;
-                    put(id, val);
+                    put(id, val, {from: 'system.adapter.sunenergyxt500.0'});
                 }});
             }
-            put(id, val, {ack: false});
+            put(id, val, {ack: false, from: 'system.adapter.ems.0'});
         } else if (id === 'goe.cmd') {
             put(id, val, {ack: false});
             events.push({at: now + 4000, run: () => {
@@ -287,7 +287,7 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         const wbW = wbPower();
         const miiW = miiPower();
         const gridW = heaterW + heatingW + batteryW + wbW + miiW - surplusW;
-        for (const [id, state] of states) if (state.ack && !id.startsWith('ems.0.')) put(id, state.val);
+        for (const [id, state] of states) if (state.ack && !id.startsWith('ems.0.')) put(id, state.val, {from: state.from});
         put('DP_GRID_IMPORT', Math.max(0, gridW)); put('DP_GRID_EXPORT', Math.max(0, -gridW));
         own('Actual.GridPower_W', gridW); own('Actual.MyPV_DHW_W', heaterW);
         own('Actual.MyPV_Heating_W', heatingW);

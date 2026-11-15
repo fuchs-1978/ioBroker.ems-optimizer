@@ -7,7 +7,7 @@
 
 Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Combines PV and grid measurements, load history, weather forecasts and electricity prices in a rolling 48-hour plan.
 
-**Current GitHub build 0.17.0-alpha.277.** Install the tested build from GitHub and commission each enabled device against its actual feedback and protection limits.
+**Current GitHub build 0.17.0-alpha.278.** Install the tested build from GitHub and commission each enabled device against its actual feedback and protection limits.
 
 [Deutsche Bedienungsanleitung](README.de.md) · [Release history](CHANGELOG_OLD.md) · [Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
@@ -192,6 +192,10 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 
 ## Changelog
 
+### 0.17.0-alpha.278 (2026-11-15)
+
+- Continue sending valid single-head setpoints during pending feedback. Ten consecutive independent head readings without a matching response trigger a stop. [Release notes](docs/release-0.17.0-alpha.278.md)
+
 ### 0.17.0-alpha.277 (2026-11-15)
 
 - A fresh SunEnergy echo of a direct direction change ends the short switching wait once AC power has left the old direction. Normal AC feedback handling takes over. [Release notes](docs/release-0.17.0-alpha.277.md)
@@ -215,10 +219,6 @@ Admin translation catalogs are stored in `admin/i18n/<language>/translations.jso
 ### 0.17.0-alpha.272 (2026-11-14)
 
 - Apply the next single-head SunEnergy household discharge command directly while device feedback is pending. [Release notes](docs/release-0.17.0-alpha.272.md)
-
-### 0.17.0-alpha.271 (2026-11-14)
-
-- Keep a verified SunEnergy household discharge reduction active while awaiting the next SMA reading. Hold adjustments within the deadband when the meter and inverter report at different times. [Release notes](docs/release-0.17.0-alpha.271.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 

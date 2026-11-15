@@ -991,7 +991,8 @@ class EmsOptimizer extends utils.Adapter {
         this.foreignWriteQueues.set(id, promise);
         this.pendingForeignWrites.add(promise);
         void promise.then(() => onComplete?.(null, {value}), error => {
-            const replanBattery = !dispatchStarted && ['BATTERY_CHARGE_REPLAN', 'BATTERY_DISCHARGE_REPLAN'].includes(error.code);
+            const replanBattery = !dispatchStarted
+                && ['BATTERY_CHARGE_REPLAN', 'BATTERY_DISCHARGE_REPLAN', 'BATTERY_LIVE_REPLAN'].includes(error.code);
             if (replanBattery) this.log.debug(`Deferred production output ${id}: ${error.message}`);
             else this.log.error(`Cannot write production output ${id}: ${error.message}`);
             onComplete?.(error, head && nonzero && !dispatchStarted ? {notDispatched: true} : undefined);
