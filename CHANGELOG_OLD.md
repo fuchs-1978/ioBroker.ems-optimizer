@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.278 (2026-11-15)
+
+- Continue sending valid single-head setpoints during pending feedback. Ten consecutive independent head readings without a matching response trigger a stop. [Release notes](docs/release-0.17.0-alpha.278.md)
+
 ## 0.17.0-alpha.277 (2026-11-15)
 
 - A fresh SunEnergy echo of a direct direction change ends the short switching wait once AC power has left the old direction. Normal AC feedback handling takes over. [Release notes](docs/release-0.17.0-alpha.277.md)
@@ -658,6 +662,7 @@ Bindet die ausdrücklich konfigurierte Gruppen-Netz-/Eigenstrombilanz an den pro
 
 ## Deutsche Versionshistorie
 
+- **Alpha.278** sendet dem einzelnen SunEnergy-Kopf in der Live-Regelung den nächsten gültigen Sollwert bei offener Rückmeldung. Zehn frische Messungen in Folge ohne passende GS/GP-Antwort lösen einen Stopp aus. [Versionshinweise](docs/release-0.17.0-alpha.278.md)
 - **Alpha.276** sendet kleinere Ladeaufträge bei offener Rückmeldung direkt und wechselt bei ausreichender gemessener Restleistung in beide Richtungen ohne Zwischenstopp. [Versionshinweise](docs/release-0.17.0-alpha.276.md)
 - **Alpha.275** schaltet einen Speicherkopf bei ausreichendem Haushaltsbezug direkt vom Laden auf Entladen. Bei 25 W Laden und 107 W Netzbezug sind das 82 W Entladen. [Versionshinweise](docs/release-0.17.0-alpha.275.md)
 - **Alpha.274** zieht kleinen Netzbezug vom laufenden Ladeauftrag ab. Bei 10 W Mindestleistung werden aus 11 W Ladeauftrag und 1 W Netzbezug 10 W. [Versionshinweise](docs/release-0.17.0-alpha.274.md)
