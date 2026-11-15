@@ -349,9 +349,11 @@ test('real controller/transport recheck an aggregate operator limit reduced duri
     assert.equal(f.adapter.getCachedState(`${f.base}.OutputReservedCharge_W`).val, 600);
 });
 
-for (const {name, chargeW, gridW, targetW} of [
-    {name: 'a small charging reduction', chargeW: 11, gridW: 1, targetW: 10},
-    {name: 'a direct household discharge after charging', chargeW: 25, gridW: 107, targetW: -82}
+for (const {name, previousW, gridW, targetW} of [
+    {name: 'a small charging reduction', previousW: 11, gridW: 1, targetW: 10},
+    {name: 'a 211 W charge reduced to 198 W', previousW: 211, gridW: -9.4, targetW: 198},
+    {name: 'a direct household discharge after charging', previousW: 25, gridW: 107, targetW: -82},
+    {name: 'a direct charge after household discharge', previousW: -705, gridW: -806, targetW: 101}
 ]) {
     test(`${name} follows an in-flight GS through the production queue without zero`, async () => {
         const f = fixture(1);
@@ -363,14 +365,15 @@ for (const {name, chargeW, gridW, targetW} of [
         const inFlight = new Promise(resolve => { finish = resolve; });
         f.adapter.setForeignStateAsync = async (id, value, ack) => {
             await originalWrite(id, value, ack);
-            if (value === -chargeW) {
+            if (value === -previousW) {
                 begin();
                 await inFlight;
             }
         };
         h.own('Config.BatteryDeadband_W', 10);
-        h.own('Control.Targets.Battery_W', chargeW);
-        h.grid.gridW = -chargeW;
+        h.own('Config.BatteryFineStep_W', 1000);
+        h.own('Control.Targets.Battery_W', previousW);
+        h.grid.gridW = -previousW;
         h.tick();
         await started;
 
@@ -382,10 +385,45 @@ for (const {name, chargeW, gridW, targetW} of [
         finish();
         await f.drain();
 
-        assert.deepEqual(f.writes.map(write => write.value), [-chargeW, -targetW]);
-        assert.equal(f.adapter.getCachedState(`${f.base}.OutputReservedCharge_W`).val, chargeW);
+        assert.deepEqual(f.writes.map(write => write.value), [-previousW, -targetW]);
+        assert.equal(f.adapter.getCachedState(`${f.base}.OutputReservedCharge_W`).val, Math.max(previousW, targetW));
     });
 }
+
+test('a waiting PV reduction follows a newer positive target without interrupting the head', async () => {
+    for (const nextW of [175, 0]) {
+        const f = fixture(1);
+        const h = attachRealController(f);
+        const commands = () => f.writes.map(write => write.value);
+        h.own('Config.BatteryDeadband_W', 10);
+        h.own('Control.Targets.Battery_W', 211);
+        h.grid.gridW = -211;
+        h.tick(); await f.drain();
+
+        let finish;
+        const durableWrite = new Promise(resolve => { finish = resolve; });
+        f.adapter.setStateAsync = async (id, state) => {
+            if (id === 'Devices.Battery.Heads.1.OutputCommandInternal_W' && state.val === 198) await durableWrite;
+        };
+        h.advance(1000);
+        h.own('Control.Targets.Battery_W', 198);
+        h.tick();
+        h.advance(1000);
+        h.own('Control.Targets.Battery_W', nextW);
+        finish(); await f.drain();
+
+        if (nextW === 0) {
+            await f.drain();
+            assert.deepEqual(commands(), [-211, 0]);
+            continue;
+        }
+        assert.deepEqual(commands(), [-211]);
+        assert.equal(f.adapter.getCachedState(`${f.base}.OutputCommandInternal_W`).val, 211);
+        h.tick(); await f.drain();
+        assert.deepEqual(commands(), [-211, -175]);
+        assert.equal(f.adapter.getCachedState(`${f.base}.OutputReservedCharge_W`).val, 211);
+    }
+});
 
 test('a superseded household reduction restores the previous discharge without writing zero', async () => {
     const recoverable = ['newer XT500 sample', 'smaller grid budget', 'previous deadline'];
