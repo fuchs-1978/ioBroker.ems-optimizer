@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.277",
+    "version": "0.17.0-alpha.278",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.278": {
+        "en": "Continue single-head control during pending feedback and stop on ten consecutive missed responses.",
+        "de": "Einzelkopf bei offener Rückmeldung weiterregeln und nach zehn fehlenden Rückmeldungen in Folge stoppen.",
+        "es": "Continúa regulando un cabezal mientras llega la respuesta y se detiene tras diez respuestas ausentes consecutivas.",
+        "fr": "Poursuit la régulation d’un module en attente de retour et s’arrête après dix retours manquants consécutifs.",
+        "it": "Continua a regolare un modulo in attesa del riscontro e si ferma dopo dieci riscontri mancanti consecutivi.",
+        "nl": "Regelt één module verder bij uitblijvende terugmelding en stopt na tien ontbrekende terugmeldingen op rij.",
+        "pl": "Kontynuuje regulację pojedynczej jednostki w oczekiwaniu na odpowiedź i zatrzymuje po dziesięciu kolejnych brakach odpowiedzi.",
+        "pt": "Continua a regular um módulo enquanto aguarda resposta e para após dez respostas consecutivas em falta.",
+        "ru": "Продолжает регулировать один модуль в ожидании обратной связи и останавливается после десяти пропущенных ответов подряд.",
+        "uk": "Продовжує регулювати один модуль в очікуванні зворотного зв’язку та зупиняється після десяти пропущених відповідей поспіль.",
+        "zh-cn": "单机等待反馈时继续调节，连续十次未收到匹配的反馈后停止。"
+      },
       "0.17.0-alpha.277": {
         "en": "Use normal AC feedback handling after a confirmed SunEnergy direction change.",
         "de": "Nach bestätigtem SunEnergy-Richtungswechsel die normale AC-Rückmeldung abwarten.",
@@ -81,19 +94,6 @@
         "ru": "Применяет следующую уставку разряда для дома, пока ожидается подтверждение SunEnergy.",
         "uk": "Застосовує наступне задане значення розряду для будинку, поки очікується підтвердження SunEnergy.",
         "zh-cn": "SunEnergy 反馈尚未返回时，直接应用下一个家庭放电设定值。"
-      },
-      "0.17.0-alpha.271": {
-        "en": "Wait for the next SMA reading after SunEnergy confirms a small discharge reduction.",
-        "de": "Nach einer bestätigten kleinen SunEnergy-Entladesenkung kurz auf die nächste SMA-Messung warten.",
-        "es": "Espera la siguiente lectura de SMA cuando SunEnergy confirma una pequeña reducción de la descarga.",
-        "fr": "Attend la prochaine mesure SMA après la confirmation d’une légère réduction de la décharge par SunEnergy.",
-        "it": "Attende la prossima lettura SMA dopo la conferma di una piccola riduzione della scarica da parte di SunEnergy.",
-        "nl": "Wacht op de volgende SMA-meting nadat SunEnergy een kleine verlaging van de ontlading bevestigt.",
-        "pl": "Czeka na kolejny pomiar SMA po potwierdzeniu przez SunEnergy niewielkiego zmniejszenia mocy rozładowania.",
-        "pt": "Aguarda a próxima leitura SMA após a confirmação de uma pequena redução da descarga pela SunEnergy.",
-        "ru": "Ожидает следующего измерения SMA после подтверждения небольшого снижения разряда SunEnergy.",
-        "uk": "Очікує наступного вимірювання SMA після підтвердження невеликого зменшення потужності розряджання SunEnergy.",
-        "zh-cn": "SunEnergy 确认小幅降低放电功率后，等待下一次 SMA 测量。"
       }
     },
     "titleLang": {

@@ -349,9 +349,10 @@ test('real controller/transport recheck an aggregate operator limit reduced duri
     assert.equal(f.adapter.getCachedState(`${f.base}.OutputReservedCharge_W`).val, 600);
 });
 
-for (const {name, previousW, gridW, targetW} of [
+for (const {name, previousW, gridW, targetW, coordinated = false} of [
     {name: 'a small charging reduction', previousW: 11, gridW: 1, targetW: 10},
     {name: 'a 211 W charge reduced to 198 W', previousW: 211, gridW: -9.4, targetW: 198},
+    {name: 'a live 10 W charge raised to 545 W', previousW: 10, gridW: -545, targetW: 545, coordinated: true},
     {name: 'a direct household discharge after charging', previousW: 25, gridW: 107, targetW: -82},
     {name: 'a direct charge after household discharge', previousW: -705, gridW: -806, targetW: 101}
 ]) {
@@ -372,6 +373,7 @@ for (const {name, previousW, gridW, targetW} of [
         };
         h.own('Config.BatteryDeadband_W', 10);
         h.own('Config.BatteryFineStep_W', 1000);
+        if (coordinated) h.own('Control.CoordinationActive', true);
         h.own('Control.Targets.Battery_W', previousW);
         h.grid.gridW = -previousW;
         h.tick();
@@ -389,6 +391,32 @@ for (const {name, previousW, gridW, targetW} of [
         assert.equal(f.adapter.getCachedState(`${f.base}.OutputReservedCharge_W`).val, Math.max(previousW, targetW));
     });
 }
+
+test('a queued live charge increase follows the newer budget without resetting GS', async () => {
+    const f = fixture(1), h = attachRealController(f);
+    const commands = () => f.writes.map(write => write.value);
+    const demand = watts => {
+        h.grid.gridW = -watts;
+        h.own('Control.LastUpdate', h.now());
+        h.own('Control.Targets.Battery_W', watts);
+    };
+    h.own('Control.CoordinationActive', true);
+    h.own('Config.BatteryDeadband_W', 10);
+    demand(10);
+    h.tick(); await f.drain();
+    let finish;
+    const durableWrite = new Promise(resolve => { finish = resolve; });
+    f.adapter.setStateAsync = async (id, state) => {
+        if (id === 'Devices.Battery.Heads.1.OutputCommandInternal_W' && state.val === 545) await durableWrite;
+    };
+    h.advance(1000); demand(545); h.tick();
+    h.advance(1000); demand(470);
+    finish(); await f.drain();
+    assert.deepEqual(commands(), [-10]);
+    assert.equal(f.adapter.getCachedState(`${f.base}.OutputCommandInternal_W`).val, 10);
+    h.tick(); await f.drain();
+    assert.deepEqual(commands(), [-10, -470]);
+});
 
 test('a waiting PV reduction follows a newer positive target without interrupting the head', async () => {
     for (const nextW of [175, 0]) {

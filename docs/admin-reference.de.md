@@ -776,12 +776,13 @@ Die Beispiele gelten bei 0 W Netzsollwert, 10 W Speichertotband, gültigen Messw
 | 11 W Ladeauftrag, 1 W Netzbezug | 10 W Laden (`GS = −10 W`). Die Absenkung kann bei noch offener Rückmeldung des vorherigen Auftrags folgen. |
 | 10 W Ladeauftrag, weiterer 1 W Netzbezug in einer frischen Messung | 0 W. Die berechneten 9 W liegen unterhalb des eingestellten Totbands. |
 | 210 W Ladeauftrag, 15 W Netzbezug, GP meldet noch den Zustand vor dem Auftrag | 195 W Laden (`GS = −195 W`). Der Regler zieht den frischen Bezug vom laufenden Auftrag ab. |
+| 10 W Ladeauftrag, GP meldet 0 W, die Einspeisung steigt auf 545 W | 545 W Laden (`GS = −545 W`) ohne Zwischenstopp. |
 | 25 W Laden, 107 W Netzbezug | 82 W Haushaltsentladung (`GS = +82 W`) direkt am selben freigegebenen SunEnergy-Kopf. |
 | 705 W Entladen, 806 W Netzeinspeisung | 101 W Laden (`GS = −101 W`) direkt am selben freigegebenen SunEnergy-Kopf. |
 
 Am einzelnen SunEnergy-Kopf schickt das EMS eine zulässige Absenkung des laufenden Ladeauftrags direkt an denselben Ausgang. Für einen direkten Richtungswechsel muss die frische Netzmessung nach Abzug der bisherigen Speicherwirkung noch Bedarf in der neuen Richtung zeigen. Vor dem Schreiben prüft das EMS die Netzmessung und die Leistungsgrenzen erneut. Die bisherige Ladeleistung bleibt bis zur gemessenen Reaktion reserviert. Für Richtungswechsel über mehrere Köpfe wertet das EMS die Rückgabe je Kopf aus. [Versionshinweise](release-0.17.0-alpha.276.md)
 
-Sobald der SunEnergy-Kopf den neuen GS zurückmeldet und GP keine Leistung in der alten Richtung mehr zeigt, arbeitet der Regler mit der normalen AC-Rückmeldefrist weiter. GS kann also bereits 10 W Laden bestätigen, während GP vorübergehend noch 0 W meldet. [Versionshinweise](release-0.17.0-alpha.277.md)
+In der normalen Netzregelung eines Einzelkopfs ersetzt ein gültiger neuer Sollwert den laufenden Auftrag bei offener Rückmeldung. Der Regler verwendet den letzten Sollwert als erwartete Leistung und begrenzt die Korrektur anhand der gemeldeten Leistung und des Netzflusses. Zehn unabhängige Kopf-Messungen in Folge ohne passende GS/GP-Antwort lösen einen Nullbefehl aus. Eine passende Antwort setzt den Zähler zurück. Der Stopp bei ungültigen Quellen, aufgehobener Freigabe oder wirksamen Schutzgrenzen folgt seinen jeweiligen Bedingungen. [Versionshinweise](release-0.17.0-alpha.278.md)
 
 | Datenpunkt | Bedeutung bei der Diagnose |
 | --- | --- |
