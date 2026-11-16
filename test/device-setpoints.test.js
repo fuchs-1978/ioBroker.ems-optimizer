@@ -4,25 +4,20 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 const {chooseSetpoint} = require('../lib/device-setpoints');
 
-const config = {
-    normal: 7, optimized: 5, enterW: -500, exitW: 0, enterMinutes: 10,
-    exitMinutes: 10, priceObject: 'price', priceLimit: -40
-};
-const initial = () => ({coldSince: null, normalSince: null});
+const bounds = {min: 4, max: 5};
 
-test('cheap price takes priority and ends immediately at nonnegative virtual grid power', () => {
-    const state = initial();
-    assert.equal(chooseSetpoint(config, state, 100, -40, 0), 5);
-    assert.equal(chooseSetpoint(config, state, 100, -39, 1), 7);
+test('confirmed solar surplus cools within the configured bounds', () => {
+    const state = {};
+    const surplus = {gridW: 0, batteryW: 400, cheap: false};
+    assert.equal(chooseSetpoint(bounds, state, surplus, 0), null);
+    assert.equal(chooseSetpoint(bounds, state, surplus, 300000), 4);
 });
 
-test('PV-only transitions require uninterrupted threshold crossings', () => {
-    const row = {...config, priceObject: ''};
-    const state = initial();
-    assert.equal(chooseSetpoint(row, state, -501, undefined, 0), null);
-    assert.equal(chooseSetpoint(row, state, -500, undefined, 599999), null);
-    assert.equal(chooseSetpoint(row, state, -501, undefined, 600000), null);
-    assert.equal(chooseSetpoint(row, state, -501, undefined, 1200000), 5);
-    assert.equal(chooseSetpoint(row, state, 0, undefined, 1200001), null);
-    assert.equal(chooseSetpoint(row, state, 0, undefined, 1800001), 7);
+test('battery discharge returns to max unless a cheap price window applies', () => {
+    const state = {};
+    const discharge = {gridW: -500, batteryW: -200, cheap: false};
+    assert.equal(chooseSetpoint(bounds, state, discharge, 0), null);
+    assert.equal(chooseSetpoint(bounds, state, discharge, 300000), 5);
+    assert.equal(chooseSetpoint(bounds, state, {...discharge, cheap: true}, 300001), null);
+    assert.equal(chooseSetpoint(bounds, state, {...discharge, cheap: true}, 600001), 4);
 });

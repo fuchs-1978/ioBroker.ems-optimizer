@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.280
+
+- Count missing acknowledgements by GS setpoint. Use GP to verify actual power and reserved headroom.
+
 ## 0.17.0-alpha.279
 
 - Hand off PV surplus to the wallbox after two minutes of measured battery charging near its power limit.
