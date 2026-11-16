@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.287",
+    "version": "0.17.0-alpha.288",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.288": {
+        "en": "Prioritize below-minimum EV charging and recover a 20% forecast battery reserve within grid limits.",
+        "de": "Fahrzeug-Mindestladung priorisieren und die 20-%-Prognosereserve im freien Netzbudget nachladen.",
+        "es": "Prioriza la carga mínima del vehículo y recupera la reserva del 20 % de la batería dentro de los límites de red.",
+        "fr": "Priorise la charge minimale des véhicules et rétablit la réserve de batterie de 20 % dans les limites du réseau.",
+        "it": "Dà priorità alla carica minima dei veicoli e ripristina la riserva del 20% entro i limiti di rete.",
+        "nl": "Geeft voorrang aan minimale voertuiglaadbehoefte en vult de batterijreserve van 20% aan binnen de netlimieten.",
+        "pl": "Nadaje priorytet minimalnemu ładowaniu pojazdów i uzupełnia rezerwę akumulatora do 20% w granicach sieci.",
+        "pt": "Prioriza a carga mínima dos veículos e repõe a reserva de 20% da bateria dentro dos limites da rede.",
+        "ru": "Приоритет минимальной зарядки автомобилей и восстановление резерва батареи до 20 % в пределах допустимой нагрузки.",
+        "uk": "Пріоритет мінімального заряджання авто та відновлення резерву батареї до 20 % у межах лімітів мережі.",
+        "zh-cn": "优先满足车辆最低充电需求，并在电网限额内将储能电池补充至 20%。"
+      },
       "0.17.0-alpha.287": {
         "en": "Drive device temperature bounds from central EMS power and price data.",
         "de": "Gerätetemperatur innerhalb konfigurierter Grenzen mit zentralen EMS-Daten optimieren.",
@@ -81,19 +94,6 @@
         "ru": "Запускает однофазную зарядку WB1 при измеренном дневном избытке с поддержкой накопителя до 600 Вт. Свободный избыток пополняет накопитель.",
         "uk": "Запускає однофазне заряджання WB1 за виміряного денного надлишку з підтримкою накопичувача до 600 Вт. Доступний надлишок поповнює накопичувач.",
         "zh-cn": "白天根据测得的余电启动 WB1 单相充电，并由储能提供最多 600 瓦的辅助。可用余电可为储能补充电量。"
-      },
-      "0.17.0-alpha.281": {
-        "en": "Restore the last issued battery setpoint when a queued request is rejected before dispatch. Replan with the next valid measurement.",
-        "de": "Nach einem vor der Übertragung verworfenen Speicherauftrag den letzten gesendeten Sollwert wiederherstellen und mit dem nächsten gültigen Messwert weiterregeln.",
-        "es": "Restaura la última consigna enviada de la batería cuando una nueva se rechaza antes de enviarse. Replanifica con la siguiente medición válida.",
-        "fr": "Rétablit la dernière consigne de batterie envoyée après un rejet avant transmission. Replanifie à la prochaine mesure valide.",
-        "it": "Ripristina l’ultimo setpoint della batteria inviato dopo un rifiuto prima della trasmissione. Ricalcola al prossimo dato valido.",
-        "nl": "Herstelt het laatst verzonden batterijsetpoint na afwijzing voor verzending. Plant opnieuw met de volgende geldige meting.",
-        "pl": "Przywraca ostatnią wysłaną nastawę magazynu po odrzuceniu przed wysłaniem. Planuje ponownie po kolejnym poprawnym pomiarze.",
-        "pt": "Restaura o último valor de referência da bateria enviado após rejeição antes do envio. Recalcula com a próxima medição válida.",
-        "ru": "После отклонения уставки до передачи восстанавливает последнюю отправленную уставку батареи и пересчитывает управление по следующему измерению.",
-        "uk": "Після відхилення уставки до передачі відновлює останню надіслану уставку батареї та перераховує керування за наступним вимірюванням.",
-        "zh-cn": "电池设定值在发送前被拒绝时恢复上一条已发送的设定值，并根据下一次有效测量重新计算。"
       }
     },
     "titleLang": {

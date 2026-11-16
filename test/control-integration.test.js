@@ -1420,7 +1420,8 @@ test('battery buffers PV wallbox power within tolerance without covering a large
 });
 
 test('SunEnergy bridges a 300 W PV dip without resetting the wallbox stop delay', async () => {
-    const h = await plant({battery: true, initialSurplusW: 4500, split: false, startDelayS: 0, minimumRuntimeS: 0,
+    const h = await plant({battery: true, batteryHeadMaxSoc: 90, initialSurplusW: 4500, split: false,
+        startDelayS: 0, minimumRuntimeS: 0,
         nativeConfig: {batteryDispatchMode: 'sunenergy-heads', batterySunEnergyInstance: 'sunenergyxt500.0',
             batteryHeadCount: 1, batteryHead1MaxChargeW: 2400, batteryHead1MaxDischargeW: 2400,
             batteryPvPriorityEnabled: true, batteryWallboxHalfStepEnabled: true,
@@ -1431,7 +1432,7 @@ test('SunEnergy bridges a 300 W PV dip without resetting the wallbox stop delay'
     h.own('Devices.MyPV_DHW.ControlEnabled', false);
     const timestamp = h.now() - 1000;
     const socId = h.mapping.DP_BATTERY_SOC;
-    h.put(socId, 75);
+    h.put(socId, 82);
     h.own('Plan.BatteryTargetSoC_48h_JSON', JSON.stringify([{timestamp, value_pct: 90}]));
     await h.advance(80);
     assert.equal(h.physical().allow, 1, h.diagnostic());
@@ -1592,13 +1593,13 @@ test('SunEnergy buffers a net import step while a running PV wallbox reduces cur
     assert.equal(h.value('Devices.Battery.Fault'), '', h.diagnostic());
 });
 
-test('fast SunEnergy wallbox support uses a 70% floor, independent of a higher charge target', async () => {
-    for (const soc of [71, 70, 69]) {
+test('fast SunEnergy wallbox support requires 80% irrespective of a higher charge target', async () => {
+    for (const soc of [81, 80, 79]) {
         const h = await runningSunEnergyPvWallbox();
         h.put(h.mapping.DP_BATTERY_SOC, soc);
         h.setSurplus(1750);
         await h.advance(3);
-        assert.equal(h.physical().batteryW, soc > 70 ? -600 : 0, h.diagnostic());
+        assert.equal(h.physical().batteryW, soc >= 80 ? -600 : 0, h.diagnostic());
     }
 });
 
@@ -1655,8 +1656,8 @@ test('SunEnergy replenishes the minimum reserve at up to 1000 W without price pe
     assert.equal(h.physical().batteryW, 0);
 });
 
-test('night CHP surplus and battery start the Mii at 6 A, stop at 70%, and recharge before repeating', async () => {
-    const h = await plant({battery: true, batteryHeadType: 2, mii: true, wallbox: false, initialSurplusW: 530,
+test('night CHP surplus and battery start the Mii at 6 A, stop at 80%, and recharge before repeating', async () => {
+    const h = await plant({battery: true, batteryHeadType: 2, batteryHeadMaxSoc: 90, mii: true, wallbox: false, initialSurplusW: 530,
         split: false, startDelayS: 5, minimumRuntimeS: 600, initialTime: Date.UTC(2026, 10, 13, 22),
         nativeConfig: {batteryDispatchMode: 'sunenergy-heads', batteryHead1MaxDischargeW: 2400,
             bhkwPresent: true, bhkwWallboxCycleEnabled: true, wallboxParallelChargingEnabled: true,
@@ -1668,21 +1669,21 @@ test('night CHP surplus and battery start the Mii at 6 A, stop at 70%, and recha
     h.put(h.run('CFG.dp.pvPower'), 0);
     h.put(h.run('CFG.dp.bhkwPower'), 890);
     const setSoc = soc => h.put(h.mapping.DP_BATTERY_SOC, soc);
-    setSoc(79); await h.advance(12);
+    setSoc(89); await h.advance(12);
     assert.equal(h.physical().miiAllow, 0);
-    setSoc(80); await h.advance(45);
+    setSoc(90); await h.advance(45);
     assert.equal(h.physical().miiAllow, 1, h.value('Devices.Wallbox0.OutputStatus'));
     assert.equal(h.physical().miiAmps, 6);
     assert.equal(h.physical().batteryW, -850, h.diagnostic());
     assert.equal(h.trace.at(-1).gridW, 0);
-    setSoc(71); await h.advance(8);
+    setSoc(81); await h.advance(8);
     assert.equal(h.physical().miiAllow, 1);
-    setSoc(70); await h.advance(40);
+    setSoc(80); await h.advance(40);
     assert.equal(h.physical().miiAllow, 0);
     assert.ok(h.physical().batteryW > 0, h.diagnostic());
-    setSoc(79); await h.advance(12);
+    setSoc(89); await h.advance(12);
     assert.equal(h.physical().miiAllow, 0);
-    setSoc(80); await h.advance(60);
+    setSoc(90); await h.advance(60);
     assert.equal(h.physical().miiAllow, 1, h.value('Devices.Wallbox0.OutputStatus'));
     h.put(h.run('CFG.dp.bhkwPower'), 0);
     h.setSurplus(0);
@@ -2021,18 +2022,119 @@ test('cheap import heats both independent tanks without being canceled or suppli
     assert.equal(h.physical().heaterW, 0, h.diagnostic());
 });
 
-test('mandatory EV import is protected while battery discharges only the separate house baseline', async () => {
-    const h = await plant({battery: true, heating: true, startDelayS: 0, initialSurplusW: -800});
+test('every below-minimum car pauses battery discharge and the battery returns at the minimum', async t => {
+    for (const wb of [0, 1, 2]) await t.test(`WB${wb}`, async () => {
+        const h = await plant({battery: true, mii: wb === 0, wallbox: wb !== 0,
+            wallboxIndex: wb === 0 ? 2 : wb, startDelayS: 0, split: false, initialSurplusW: -800,
+            batteryDelayMs: 12000, nativeConfig: {dhwControlEnabled: false,
+                ...(wb !== 2 ? {batteryDispatchMode: 'sunenergy-heads', wallboxParallelChargingEnabled: true} : {})}});
+        h.own('Devices.MyPV_DHW.ControlEnabled', false);
+        h.own('Control.TargetGridPower_W', 0);
+        h.own('Config.BatteryFineStep_W', 1000);
+        await h.advance(42);
+        assert.equal(h.physical().batteryW, -800, h.diagnostic());
+        const plugAt = h.now();
+        h.put(`DP_WB${wb}_SOC`, 10);
+        await h.advance(8);
+        assert.equal(h.value('Control.Targets.Battery_W'), 0);
+        assert.equal(h.value('Control.BatteryPVReserve_W'), 0);
+        assert.equal(h.physical()[wb === 0 ? 'miiAllow' : 'allow'], 0);
+        await h.advance(37);
+        assert.equal(h.physical()[wb === 0 ? 'miiAllow' : 'allow'], 1, h.diagnostic());
+        assert.equal(h.physical().batteryW, 0, h.diagnostic());
+        assert.ok(h.trace.filter(row => row.at > plugAt && (wb === 0 ? row.miiW : row.wbW) > 0)
+            .every(row => row.batteryW === 0), h.diagnostic());
+        h.put(`DP_WB${wb}_SOC`, 20);
+        await h.advance(32);
+        assert.equal(h.physical().batteryW, -800, h.diagnostic());
+    });
+});
+
+test('battery charging waits for the last below-minimum car to finish', async () => {
+    const h = await plant({battery: true, mii: true, startDelayS: 0, split: false, initialSurplusW: 4200,
+        nativeConfig: {batteryPvPriorityEnabled: true, wallboxParallelChargingEnabled: true,
+            dhwControlEnabled: false, wb0CommissioningMaxA: 6, wb2CommissioningMaxA: 6}});
+    h.own('Devices.MyPV_DHW.ControlEnabled', false);
+    h.own('Control.TargetGridPower_W', 0);
+    h.put('DP_WB0_SOC', 10);
     h.put('DP_WB2_SOC', 10);
-    await h.advance(110);
+    await h.advance(35);
+    assert.equal(h.physical().miiAllow, 1, h.diagnostic());
     assert.equal(h.physical().allow, 1, h.diagnostic());
-    assert.ok(h.physical().batteryW >= -800 && h.physical().batteryW <= -700, h.diagnostic());
-    assert.equal(h.physical().heaterW + h.physical().heatingW, 0);
-    assert.ok(h.trace.filter(point => point.batteryW < 0).every(point => point.batteryW >= -800));
-    h.put(h.run('CFG.dp.batterySoc'), 20);
-    await h.advance(15);
     assert.equal(h.physical().batteryW, 0, h.diagnostic());
-    assert.equal(h.physical().allow, 1, 'mandatory charging continues but cannot consume the battery reserve');
+    h.put('DP_WB2_SOC', 20);
+    await h.advance(10);
+    assert.equal(h.value('Control.Targets.Battery_W'), 0);
+    h.put('DP_WB0_SOC', 20);
+    await h.advance(26);
+    assert.ok(h.physical().batteryW > 0, h.diagnostic());
+    assert.equal(h.value('Control.BatteryPVReserve_W'), 2400);
+});
+
+function publishForecastReserve(h, {chargeAt = h.now(), deadlineAt = 0} = {}) {
+    h.own('Plan.BatteryForecastValid', true);
+    h.own('Plan.BatteryForecastReserve_JSON', JSON.stringify({
+        plannedAt: h.now(), lowFrom: h.now(), lowUntil: h.now() + 8 * 3600000,
+        chargeAt, deadlineAt}));
+}
+
+test('20% forecast recovery runs alongside mandatory EV charging within the live grid budget', async () => {
+    const h = await plant({battery: true, initialSurplusW: -200, split: false, startDelayS: 0,
+        lpcLimitW: 2000, nativeConfig: {batteryDispatchMode: 'sunenergy-heads',
+            wallboxParallelChargingEnabled: true, dhwControlEnabled: false, wb2CommissioningMaxA: 6}});
+    h.own('Devices.MyPV_DHW.ControlEnabled', false);
+    h.own('Config.BatteryMinSoC_pct', 10);
+    h.own('Config.BatteryPriceChargingEnabled', false);
+    h.own('Config.BatteryFineStep_W', 1000);
+    h.own('Control.TargetGridPower_W', 0);
+    h.put(h.mapping.DP_BATTERY_SOC, 18);
+    h.put('DP_WB2_SOC', 10);
+    publishForecastReserve(h);
+    await h.advance(32);
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    assert.equal(h.physical().batteryW, 620, h.diagnostic());
+    assert.equal(h.value('Control.BatteryForecastReserveGridCharge_W'), 620);
+    assert.equal(h.value('Control.BatteryPriceGridCharge_W'), 0);
+    assert.ok(h.trace.every(row => row.wbW + Math.max(0, row.batteryW) <= 2000), h.diagnostic());
+    h.put('lpc.limit', 1380);
+    await h.advance(28);
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    assert.equal(h.physical().batteryW, 0, h.diagnostic());
+    h.put('lpc.limit', 2000);
+    await h.advance(15);
+    assert.equal(h.physical().batteryW, 620, h.diagnostic());
+    h.put(h.mapping.DP_BATTERY_SOC, 20);
+    await h.advance(10);
+    assert.equal(h.physical().batteryW, 0, h.diagnostic());
+    assert.equal(h.value('Control.BatteryForecastReserveGridCharge_W'), 0);
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+});
+
+test('forecast holds the legacy output at 20% and refills past the price wait only when timely', async () => {
+    const h = await plant({battery: true, wallbox: false, initialSurplusW: -800, cheap: true,
+        nativeConfig: {dhwControlEnabled: false}});
+    h.own('Devices.MyPV_DHW.ControlEnabled', false);
+    h.own('Config.BatteryMinSoC_pct', 10);
+    h.own('Control.TargetGridPower_W', 0);
+    h.own('Config.BatteryFineStep_W', 1000);
+    const batterySocId = h.run('CFG.dp.batterySoc');
+    h.put(batterySocId, 20);
+    publishForecastReserve(h);
+    await h.advance(8);
+    assert.equal(h.physical().batteryW, 0, h.diagnostic());
+    assert.equal(h.run('batteryEffectiveMinimumSoc()'), 20);
+    h.put(batterySocId, 19);
+    const cheapAt = h.now() + 2 * 3600000;
+    publishForecastReserve(h, {chargeAt: cheapAt, deadlineAt: h.now() + 6 * 3600000});
+    await h.advance(8);
+    assert.equal(h.value('Control.BatteryForecastReserveGridCharge_W'), 0);
+    assert.equal(h.physical().batteryW, 0);
+    publishForecastReserve(h, {chargeAt: cheapAt, deadlineAt: h.now() + 30 * 60000});
+    await h.advance(22);
+    assert.equal(h.physical().batteryW, 1000, h.diagnostic());
+    h.put(batterySocId, 20);
+    await h.advance(10);
+    assert.equal(h.physical().batteryW, 0, h.diagnostic());
 });
 
 test('LPC constrains gross battery charging + both heaters + WB during delayed handoffs and cooling', async () => {

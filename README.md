@@ -7,7 +7,7 @@
 
 Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Combines PV and grid measurements, load history, weather forecasts and electricity prices in a rolling 48-hour plan.
 
-**Current GitHub build 0.17.0-alpha.285.** Install the tested build from GitHub and commission each enabled device against its actual feedback and protection limits.
+**Current GitHub build 0.17.0-alpha.288.** Install the tested build from GitHub and commission each enabled device against its actual feedback and protection limits.
 
 [Deutsche Bedienungsanleitung](README.de.md) · [Release history](CHANGELOG_OLD.md) · [Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
@@ -66,6 +66,8 @@ A restart can use validated cached SQL quarter-hours while SQL refreshes them in
 An enabled optional heater may temporarily use the start budget of a waiting vehicle, including a lower-priority follower. The heater must release the required power before the car starts. This works with the fixed wallbox/heater split switched off. An ongoing mandatory 3P charge uses its running minimum. The startup reserve applies to a stopped charger. [Countdown buffer policy](docs/release-0.17.0-alpha.199.md)
 
 ## Battery live regulation
+
+A vehicle charging below its minimum SoC takes priority over normal home-battery operation on every wallbox. Optional battery assistance for EV charging requires at least 80% storage SoC. If the forecast expects more than six consecutive hours below 20%, the EMS holds that reserve and allows a bounded refill to 20%. A cheaper refill window must fit within the protection deadline. Grid and phase budgets govern simultaneous EV charging and reserve recovery. [Release notes](docs/release-0.17.0-alpha.288.md)
 
 When the optional battery and wallbox coordination finishes a scheduled SoC stage, the EMS releases its reserved PV power. The battery's live controller can still absorb residual PV or CHP export within the available SoC, power and allocation limits.
 
@@ -191,6 +193,10 @@ npm run test:equivalence
 Admin translation catalogs are stored in `admin/i18n/<language>/translations.json`. Keep their keys aligned with the English catalog and all visible Admin text. Release notices in the package are translated into all eleven languages. [Translation coverage and checks](docs/translations.md) · [Checker follow-up #316](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/316)
 
 ## Changelog
+
+### 0.17.0-alpha.288 (2026-11-16)
+
+- Prioritize minimum-SoC charging on all wallboxes. Protect the storage reserve during forecast periods longer than six hours below 20%, with price-aware recovery within the available grid budget. [Release notes](docs/release-0.17.0-alpha.288.md)
 
 ### 0.17.0-alpha.285 (2026-11-15)
 

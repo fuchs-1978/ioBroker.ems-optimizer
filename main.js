@@ -954,7 +954,8 @@ class EmsOptimizer extends utils.Adapter {
                 } else if (this.engineContext && device === 'Battery') {
                     const state = this.runEngine('batteryRegulationState()');
                     if (!state.eligible || (value < 0 ? !state.canCharge : !state.canDischarge))
-                        throw new Error(`Speicher vor Ausgabe gesperrt: ${state.reason}`);
+                        throw Object.assign(new Error(`Speicher vor Ausgabe gesperrt: ${state.reason}`),
+                            {code: state.eligible && value > 0 && state.forecastReserve ? 'BATTERY_LIVE_REPLAN' : undefined});
                     // GS uses the opposite sign to the internal allocation.
                     // A limit can shrink while a previously valid command is
                     // queued, without changing its release or direction.
@@ -983,7 +984,8 @@ class EmsOptimizer extends utils.Adapter {
                         if (electrical?.allowed) value = replacementW;
                     }
                     if (!electrical?.allowed)
-                        throw new Error(electrical?.reason || 'Elektrische Grenze vor Ausgabe nicht bestaetigt');
+                        throw Object.assign(new Error(electrical?.reason || 'Elektrische Grenze vor Ausgabe nicht bestaetigt'),
+                            {code: electrical?.code});
                 }
             }
             dispatchStarted = true;
@@ -996,7 +998,7 @@ class EmsOptimizer extends utils.Adapter {
                 && ['BATTERY_CHARGE_REPLAN', 'BATTERY_DISCHARGE_REPLAN', 'BATTERY_LIVE_REPLAN'].includes(error.code);
             if (replanBattery) this.log.debug(`Deferred production output ${id}: ${error.message}`);
             else this.log.error(`Cannot write production output ${id}: ${error.message}`);
-            onComplete?.(error, head && nonzero && !dispatchStarted ? {notDispatched: true} : undefined);
+            onComplete?.(error, device === 'Battery' && nonzero && !dispatchStarted ? {notDispatched: true} : undefined);
         }).catch(error => this.log.warn(`Output callback failed: ${error.message}`))
             .finally(() => {
                 this.pendingForeignWrites.delete(promise);

@@ -389,13 +389,18 @@ for (const [name, actualW, field] of [['charge', 2000, 'storageChargeW'], ['disc
     });
 }
 
-test('a controlled AC storage participant shares the live allowance and loses charging authority with bad AC quality', async () => {
+test('a controlled AC storage reserve charge shares the live allowance and stops on bad AC quality', async () => {
     const storage = [{powerId: STORAGE_AC, powerUnit: 'W', powerScope: 'total-ac', direction: 'discharge-positive'}];
     const member = {name: 'StorageCharging', kind: 'storage', connectionPowerW: 5000,
         deviceId: 'Battery', powerId: STORAGE_AC, powerUnit: 'W', powerScope: 'total-ac'};
-    const h = await groupedPlant({participants: [member], storage, battery: true, batteryPlanW: 1000});
+    const h = await groupedPlant({participants: [member], storage, battery: true});
+    h.put(h.run('CFG.dp.batterySoc'), 19);
+    h.own('Plan.BatteryForecastValid', true);
+    h.own('Plan.BatteryForecastReserve_JSON', JSON.stringify({plannedAt: h.now(),
+        lowFrom: h.now(), lowUntil: h.now() + 8 * 3600000, chargeAt: h.now(), deadlineAt: 0}));
     await h.advance(100);
-    assert.ok(h.physical().batteryW > 0, h.diagnostic());
+    assert.ok(h.physical().batteryW > 0 && h.physical().wbPowerW > 0, h.diagnostic());
+    assert.ok(h.value('Control.BatteryForecastReserveGridCharge_W') > 0);
     const s = snapshot(h);
     assert.equal(s.valid, true, JSON.stringify(s));
     assert.equal(s.devices.Battery.member, true);
@@ -419,6 +424,10 @@ test('parallel cars, AC storage and both nonparticipant heaters keep one joint p
         deviceId: 'Battery', powerId: STORAGE_AC, powerUnit: 'W', powerScope: 'total-ac'};
     const h = await groupedPlant({members: [0, 2], participants: [member], storage,
         battery: true, heating: true, batteryPlanW: 1000, surplusW: 10000, split: true});
+    h.put('DP_WB0_SOC', 50);
+    h.put('DP_WB2_SOC', 50);
+    h.put('DP_WB0_AMIN', 6);
+    h.put('DP_WB2_AMIN', 6);
     h.config.dhwPresent = true; h.config.dhwControlEnabled = true;
     h.own('Devices.MyPV_DHW.Present', true); h.own('Devices.MyPV_DHW.ControlEnabled', true);
     const inspect = () => {
