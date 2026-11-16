@@ -673,5 +673,9 @@
   "Program start value (JSON)": "Значення запуску програми (JSON)",
   "Appliance power object (W)": "Об’єкт потужності приладу (W)",
   "Finish by (HH:mm)": "Завершити до (HH:mm)",
-  "Program profile (W per 15 min, JSON array)": "Профіль програми (W за 15 хв, масив JSON)"
+  "Program profile (W per 15 min, JSON array)": "Профіль програми (W за 15 хв, масив JSON)",
+  "Selected program object": "Об’єкт вибраної програми",
+  "Active program object": "Об’єкт активної програми",
+  "Finished status value": "Значення завершення",
+  "Start selected program": "Запустити вибрану програму"
 }

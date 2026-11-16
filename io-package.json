@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.289",
+    "version": "0.17.0-alpha.290",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.290": {
+        "en": "Learn household appliance profiles by selected program.",
+        "de": "Lastprofile für Haushaltsgeräte je gewähltem Programm lernen.",
+        "es": "Learn household appliance profiles by selected program.",
+        "fr": "Learn household appliance profiles by selected program.",
+        "it": "Learn household appliance profiles by selected program.",
+        "nl": "Learn household appliance profiles by selected program.",
+        "pl": "Learn household appliance profiles by selected program.",
+        "pt": "Learn household appliance profiles by selected program.",
+        "ru": "Learn household appliance profiles by selected program.",
+        "uk": "Learn household appliance profiles by selected program.",
+        "zh-cn": "Learn household appliance profiles by selected program."
+      },
       "0.17.0-alpha.289": {
         "en": "Optional appliance program scheduling",
         "de": "Optionale Programmplanung für Haushaltsgeräte",
@@ -81,19 +94,6 @@
         "ru": "Распределяет запланированный нагрев воды по повторяющемуся ночному периоду низкого тарифа.",
         "uk": "Розподіляє запланований нагрів води на повторюваний нічний період із низьким тарифом.",
         "zh-cn": "将计划的热水加热均匀分配到每天重复的夜间低价时段。"
-      },
-      "0.17.0-alpha.283": {
-        "en": "Replan an obsolete battery direction change with the current grid reading. Retain the last issued setpoint within protection limits.",
-        "de": "Überholte Speicher-Richtungswechsel anhand der aktuellen Netzmessung neu bewerten. Den letzten gesendeten Sollwert innerhalb der Schutzgrenzen weiter beobachten.",
-        "es": "Recalcula un cambio de sentido obsoleto de la batería con la medición de red actual. Mantiene la última consigna enviada dentro de los límites de protección.",
-        "fr": "Recalcule un changement de sens devenu inutile à partir de la mesure réseau actuelle. Maintient la dernière consigne envoyée dans les limites de protection.",
-        "it": "Ricalcola un cambio di direzione superato usando la misura di rete attuale. Mantiene l’ultimo setpoint inviato entro i limiti di protezione.",
-        "nl": "Plant een achterhaalde richtingswissel opnieuw met de actuele netmeting. Bewaakt het laatst verzonden setpoint binnen de beschermingsgrenzen.",
-        "pl": "Przelicza nieaktualną zmianę kierunku pracy magazynu na podstawie bieżącego pomiaru sieci. Utrzymuje ostatnią wysłaną nastawę w granicach ochronnych.",
-        "pt": "Recalcula uma mudança de direção desatualizada com a medição atual da rede. Mantém a última referência enviada dentro dos limites de proteção.",
-        "ru": "Пересчитывает устаревшую команду смены направления по текущему измерению сети. Сохраняет последнюю отправленную уставку в пределах защитных ограничений.",
-        "uk": "Перераховує застарілу команду зміни напрямку за поточним вимірюванням мережі. Зберігає останню надіслану уставку в межах захисних обмежень.",
-        "zh-cn": "根据当前电网测量值重新规划已过时的充放电切换请求，并在保护限值内继续监视上一条已发送的设定值。"
       }
     },
     "titleLang": {

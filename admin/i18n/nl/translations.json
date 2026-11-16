@@ -673,5 +673,9 @@
   "Program start value (JSON)": "Waarde voor programmastart (JSON)",
   "Appliance power object (W)": "Vermogensobject apparaat (W)",
   "Finish by (HH:mm)": "Gereed om (HH:mm)",
-  "Program profile (W per 15 min, JSON array)": "Programmaprofiel (W per 15 min, JSON-reeks)"
+  "Program profile (W per 15 min, JSON array)": "Programmaprofiel (W per 15 min, JSON-reeks)",
+  "Selected program object": "Object geselecteerd programma",
+  "Active program object": "Object actief programma",
+  "Finished status value": "Statuswaarde voltooid",
+  "Start selected program": "Start geselecteerd programma"
 }

@@ -8429,6 +8429,30 @@
               "attr": "profileJson",
               "title": "Program profile (W per 15 min, JSON array)",
               "default": ""
+            },
+            {
+              "type": "text",
+              "attr": "programObject",
+              "title": "Selected program object",
+              "default": ""
+            },
+            {
+              "type": "text",
+              "attr": "activeProgramObject",
+              "title": "Active program object",
+              "default": ""
+            },
+            {
+              "type": "text",
+              "attr": "finishedValue",
+              "title": "Finished status value",
+              "default": ""
+            },
+            {
+              "type": "checkbox",
+              "attr": "startFromSelection",
+              "title": "Start selected program",
+              "default": false
             }
           ]
         }
