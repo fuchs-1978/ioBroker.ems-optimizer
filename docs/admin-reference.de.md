@@ -1,17 +1,19 @@
 # Adminreferenz – EMS Optimizer
 
-Feldreferenz für **0.17.0-alpha.201**. [Deutscher Einstieg und Bedienablauf](../README.de.md) · [English overview](../README.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36).
+Feldreferenz zum Admin-Stand **0.17.0-alpha.293**. Die [Schritt-für-Schritt-Anleitung](../README.de.md) führt durch die Einrichtung und Prüfung. [English overview](../README.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36)
 
 Die Tabellen dokumentieren die vorhandenen Admin-Einstellungen und Auslieferungswerte. Bestehende Anlagen können davon abweichen. Ein Feld oder eine Softwareprüfung belegt keine reale Inbetriebnahme.
 
 ## Bereiche
 
 - [So liest man die Admin-Anleitung](#so-liest-man-die-admin-anleitung)
+- [Admin: EMS-Übersicht](#admin-ems-übersicht)
 - [Admin: Allgemein](#admin-allgemein)
 - [Admin: Netzanschluss / §14a / EEBUS](#admin-netzanschluss--14a--eebus)
 - [Admin: Messwerte](#admin-messwerte)
 - [Admin: Historie und Prognose](#admin-historie-und-prognose)
-- [Admin: Preise und Tarife](#admin-preise-und-tarife)
+- [Admin: PV-Korrektur](#admin-pv-korrektur)
+- [Admin: Preise & Tarife](#admin-preise-und-tarife)
 - [Admin: Wallboxen allgemein](#admin-wallboxen-allgemein)
 - [Admin: Wallbox 0, 1 und 2](#admin-wallbox-0-1-und-2)
 - [Admin: Warmwasser-Heizstab](#admin-warmwasser-heizstab)
@@ -21,6 +23,7 @@ Die Tabellen dokumentieren die vorhandenen Admin-Einstellungen und Auslieferungs
 - [Admin: Wärmestrategie](#admin-wärmestrategie)
 - [Admin: Echtzeitregelung](#admin-echtzeitregelung)
 - [Admin: Erweiterte Datenpunkte](#admin-erweiterte-datenpunkte)
+- [Admin: Geräte](#admin-geräte)
 - [Typische Einrichtung und Fehlersuche](#typische-einrichtung-und-fehlersuche)
 - [Diagnose, SQL und Datenqualität](#diagnose-sql-und-datenqualität)
 - [Mobilitätsreserve und vorhandene Abfahrtszeit](#mobilitätsreserve-und-vorhandene-abfahrtszeit)
@@ -33,7 +36,21 @@ Ein Feld „Datenpunkt“ benötigt die **vollständige Objekt-ID eines vorhande
 
 Lesende Quellen und beschreibbare Stellregister sind verschieden. Ein ACK bestätigt einen Treiber-/Gerätewert; `ack=false` kann ein Auftrag/Echo sein. Qualität `q`, Quellenzeit `ts` und Änderungszeit `lc` sind getrennt: konstante Temperatur mit neuer Bestätigung kann frisch sein, ein unverändertes altes Objekt nicht. Ein zyklisches Aggregationsskript darf nur bei tatsächlich gültigen Originalquellen eine neue gültige Bestätigung ausgeben.
 
-Ein leeres optionales Feld bedeutet nur dann „nicht verwendet“, wenn keine alte JSON-Zuordnung greift. Für nicht vorhandene Geräte „vorhanden“ deaktivieren, statt künstliche Nullquellen zu hinterlegen. Änderungen an Admin-Feldern speichern; anschließend Diagnose und tatsächlich wirksame Zuordnung prüfen. Die Anleitung aktiviert oder installiert nichts.
+Ein leeres optionales Feld kann auf eine alte JSON-Zuordnung zurückfallen. Deaktiviere für fehlende Geräte **vorhanden**. Speichere geänderte Felder und prüfe anschließend die wirksame Zuordnung in der Diagnose.
+
+## Admin: EMS-Übersicht
+
+Der Reiter zeigt lesende EMS-Zustände. Mit der Instanznummer 0 beginnt die vollständige Objekt-ID mit `ems-optimizer.0.`.
+
+| Anzeige | Zustände relativ zur Instanz | Prüffrage |
+| --- | --- | --- |
+| Betriebszustand, aktuelle Hinweise, Geräte auf einen Blick | `Diagnostics.Overview`, `Diagnostics.Attention`, `Diagnostics.Devices` | Sind Messwerte, Freigaben und Geräte verfügbar? |
+| Fahrplan und Batterie-Vorschau | `Diagnostics.Planning`, `Diagnostics.BatteryStrategy` | Ist ein Abfahrtsziel im Modell erreichbar? Welche Speicherreserve und Nachtenergie zeigt die Vorschau? |
+| Tagesbilanzen | `Diagnostics.CurrentDay`, `Diagnostics.PreviousDay`, Details in `Debug.DailySummary_JSON` | Welche Energie wurde für die Periode ab 20:00 Uhr Europe/Berlin geschätzt und wie vollständig war die Zeitabdeckung? |
+| Technische Diagnose | `Diagnostics.Configuration`, `Diagnostics.Live`, `Diagnostics.Transitions`, `Diagnostics.RegulationQuality`, `Diagnostics.ForecastInsights` | Welcher Grund, welche Messquelle und welche Zuteilung erklären die aktuelle Reaktion? |
+| Aufnahme, Datenbank und Abruf | `Diagnostics.Recorder`, `Diagnostics.SQL`, `Diagnostics.History` | Welche Daten wurden aufgenommen, exakt in SQL bestätigt und historisch abrufbar geprüft? |
+
+Vergleiche zur Stellprüfung den EMS-Auftrag, die Gerätebestätigung und die unabhängige Strom- oder Leistungsmessung. Die aktuelle Version steht in `System.Version`. In den [technischen Diagnosen](#diagnose-sql-und-datenqualität) sind Abdeckung, Originalzustellung und Wiederherstellung beschrieben.
 
 ## Admin: Allgemein
 
@@ -203,14 +220,19 @@ Bereits ausgegebene Median-/Lasso-Prognosen und ihre Ausgabezeit werden nicht ne
 | --- | --- | --- |
 | Basisdatenpunkt der stündlichen Wetterprognose<br>`weatherHourlyBaseId` | leer | Basis des unterstützten stündlichen Wetterbaums, nicht einzelner Temperaturwert. Erwartete Unterstruktur: hour0 bis hour47 mit date, temperature_2m und wind_speed_10m, optional cloud_cover. Zeit-/Quellenformat mit dem verwendeten Wetteradapter abgleichen. |
 | Basisdatenpunkt der PV-Prognose<br>`pvForecastBaseId` | leer | Basis des unterstützten PV-Prognosebaums. Die konfigurierten PV-Flächen werden unter <Basis>.<Fläche>.hourly-forecast.hour0…hour47 gelesen, mit unix_time_stamp und global_tilted_irradiance. Der hier unterstützte Datenvertrag erwartet letzteren bereits als auf die Fläche umgerechnete W-Leistung; rohe W/m² nicht ungeprüft eintragen. Die Flächennamen müssen zur Engine-Zuordnung passen. |
-| Reiter PV-Korrektur<br>`pvMonthlyCorrections` | leere Tabelle, Faktor 1,00 | Pro Anlage eine Zeile mit ihrem exakten Namen im PV-Prognosebaum. Jeder Monatswert wird auf die stündliche und die viertelstündliche Prognose dieser Anlage angewendet. 0,80 übernimmt 80 % der Prognose. Der Monat richtet sich nach dem Beginn des Lieferintervalls in lokaler Zeit. Ohne gültigen Eintrag verwendet das EMS den Faktor 1,00. |
 | Feiertag heute<br>`holidayTodayId` | leer | Boolesches/numerisches Feiertagssignal für genau den genannten Tag. Dient der Zuordnung typischer Tagesprofile. Kein Kalendertext oder Liste mehrerer Termine; optional, wenn keine solche Quelle vorhanden ist. |
 | Feiertag morgen<br>`holidayTomorrowId` | leer | Boolesches/numerisches Feiertagssignal für genau den genannten Tag. Dient der Zuordnung typischer Tagesprofile. Kein Kalendertext oder Liste mehrerer Termine; optional, wenn keine solche Quelle vorhanden ist. |
 | Feiertag übermorgen<br>`holidayAfterTomorrowId` | leer | Boolesches/numerisches Feiertagssignal für genau den genannten Tag. Dient der Zuordnung typischer Tagesprofile. Kein Kalendertext oder Liste mehrerer Termine; optional, wenn keine solche Quelle vorhanden ist. |
 
 ### Median, Lasso und Kombinationen
 
-Im Reiter Historie/Prognose ist `loadComparisonEnabled` standardmäßig **aus**. Für den Fahrplan ist Median die Voreinstellung. Unter der historischen Profilmethode kann zusätzlich 50/50 gewählt werden. Dafür muss der Vergleich aktiv sein. Der Fahrplan verwendet pro Viertelstunde das gültige, vorab gesicherte Paar und bei fehlendem Paar das Medianprofil. `loadComparisonTemperature` ist bei aktiviertem Vergleich standardmäßig an und nutzt historisierte Außentemperatur sowie die für morgen verfügbare Wetterprognose.
+| Feld / technischer Schlüssel | Auslieferung | Zweck und erwartete Eingabe |
+| --- | --- | --- |
+| Verfahren für historische Lastprofile<br>`historyProfileMethod` | `median` | `median` für das übliche Profil je Wochentag und Viertelstunde. `recent-weighted` gewichtet jüngere Daten mit 28 Tagen Halbwertszeit stärker. `median-lasso-blend` nutzt die qualifizierte 50/50-Mischung im Fahrplan. |
+| Prognosevergleich Median / Lasso aktivieren<br>`loadComparisonEnabled` | AUS | Speichert und bewertet die Modellvarianten für dieselben Zeitpunkte. Für die 50/50-Mischung im Fahrplan muss der Vergleich aktiv sein. |
+| Außentemperatur im Lasso-Vergleich berücksichtigen<br>`loadComparisonTemperature` | EIN | Verwendet die historisierte Außentemperatur und die verfügbare Wetterprognose im Modellvergleich. |
+
+Im 50/50-Modus verwendet der Fahrplan je Viertelstunde ein gültiges zeitgleiches Paar aus der vorher gespeicherten Vortagsprognose. Bei fehlendem Paar greift der Median. Das Feld `source` in `Forecast.Baseload_48h_JSON` zeigt, welche Methode den jeweiligen Wert lieferte. [Fahrplanprofil und Bedingungen](release-0.17.0-alpha.293.md)
 
 | Variante | Berechnung |
 | --- | --- |
@@ -238,7 +260,17 @@ Für neue Zuordnungen die Admin-Tabelle verwenden. Die vorhandene optionale Lauf
 
 `Debug.WeatherArchive.Status` und `Debug.RoomHistory.Status`/`Status_JSON` zeigen Sammlung beziehungsweise Metadatenprüfung, keine Garantie vollständiger Datenbankzustellung. Anbieter-current ist eine Schätzung, keine lokale Messung; fehlende Strahlung bleibt unbekannt. Wind, Bewölkung, Feuchte, Niederschlag, Sonnenscheindauer und Raumtemperaturen dienen vorerst dem Datenaufbau. Keine automatische Wärme-/KONNEX-Steuerung. [Wetterarchiv](release-0.17.0-alpha.178.md) · [Originale Raumhistorien](release-0.17.0-alpha.180.md).
 
-## Admin: Preise und Tarife
+## Admin: PV-Korrektur
+
+| Feld / technischer Schlüssel | Auslieferung | Zweck und erwartete Eingabe |
+| --- | --- | --- |
+| Monatliche PV-Korrekturfaktoren<br>`pvMonthlyCorrections` | leere Tabelle, Faktor 1,00 | Eine Zeile je exakt benannter Fläche aus dem unter **Historie und Prognose** eingestellten PV-Prognosebaum. Die Monatswerte multiplizieren die stündliche und viertelstündliche Prognose dieser Fläche. Ohne gültigen Faktor gilt 1,00. |
+
+Der Beginn des Lieferintervalls bestimmt den Monat. Bei 2.000 W Prognose und Faktor 0,80 gehen für diese Fläche 1.600 W in die Vorausschau ein. Die Netz- und PV-Livequellen stehen im Reiter [Messwerte](#admin-messwerte). [PV-Monatsfaktoren](release-0.17.0-alpha.261.md)
+
+<a name="admin-preise-und-tarife"></a>
+
+## Admin: Preise & Tarife
 
 Verglichen wird der vollständige Bruttopreis in ct/kWh: Energie plus erforderliche Aufschläge plus Netzentgelt. Preisplanung nutzt 15-min-Intervalle; der Echtzeitregler weiter Sekundenzyklen. Dynamische Preise bedeuten nicht automatisch erlaubte Nachtladung.
 
@@ -728,7 +760,17 @@ Unter `Devices.Battery` und im Speicher-Reiter anzeigen:
 
 Die produktiven Diagnoseaufzeichnungen führen wirksames und statisches Minimum, die Auswahl mit ihrem echten Zeitpunkt sowie die Prognose-Originalquelle samt ACK/q und Quellenzeit mit. Für einen SQL-Nachweis zusammengehörige Records verwenden; aktuelle Admin-Anzeigen ersetzen keine fehlende Historie.
 
-Dies ist eine temperaturgestufte Mindestreserve. Eine umfassende Bedarfsplanung aus Hausverbrauch, zukünftigem WP-Verbrauch, PV-Prognosefehlern und Ladegelegenheiten ist damit nicht vollständig umgesetzt oder real abgenommen.
+Die Temperaturauswahl bestimmt den Grundwert der EMS-Entladegrenze für ihre Periode. Weitergehende Strategie- und Betriebsnachweise stehen in [#25](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/25).
+
+### Fahrzeug-Pflichtladung und 20-%-Prognosereserve
+
+Unter dem Fahrzeug-Mindest-SoC hat eine freigegebene Pflichtladung an jeder der drei Wallboxen Vorrang vor der normalen Batteriespeicherregelung. Für einen neuen Start wird die bisherige Speicherleistung anhand der Rückmeldung berücksichtigt. Bei optionaler Speicherhilfe für Autos gelten 80 % Mindest-SoC, bei SunEnergy auch für den niedrigsten Pack-SoC, sowie alle weiteren wirksamen Entladegrenzen.
+
+Erwartet der gültige 48-Stunden-Plan vor Anwendung der Schutzregel **mehr als sechs zusammenhängende Stunden unter 20 % SoC**, setzt das EMS intern eine Entladegrenze von mindestens 20 %. `Devices.Battery.EffectiveMinimumSoC_pct` kombiniert den EMS-Grundwert beziehungsweise die Temperaturauswahl mit der Prognosereserve. Geräte- und weitere strategiebedingte Grenzen können die Freigabe zusätzlich einschränken. Das EMS setzt die Reserve über den Leistungssollwert durch. Die geräteseitige Grenze steht in `SI`. `SI1` ist die SoC-Hysterese für den Wiederanlauf des Geräts. `batterySingleHeadSocHysteresisPct` bezieht sich auf die Auswahl unter mehreren Köpfen.
+
+Bei einem gemessenen SoC unter 20 % nutzt die Reservenachladung freien PV-Überschuss bis zur erlaubten Ladeleistung. In einem zulässigen Netzladefenster ergänzt Netzstrom den Anteil bis 1.000 W Gesamtladung. Bei bekanntem Beginn der Unterdeckung kann der Preisplan ein günstigeres Fenster innerhalb der verfügbaren Schutzfrist wählen. Bei unklarem Beginn, fehlendem Preis oder zu knappem Fenster erfolgt die verfügbare Nachladung ohne Preisaufschub. Netz-, Phasen- und Gerätegrenzen können die Nachladung auch parallel zur Fahrzeug-Pflichtladung begrenzen.
+
+`Plan.BatteryForecastReserve_JSON` zeigt die prognostizierte Unterdeckung und das geplante Nachladefenster. `Control.BatteryForecastReserveCharge_W` und `Control.BatteryForecastReserveGridCharge_W` zeigen die zugeteilte Gesamtladeleistung und den zugehörigen Netzanteil. [Vorrang und Reservelogik](release-0.17.0-alpha.288.md) · [PV-Aufteilung](release-0.17.0-alpha.292.md)
 
 ### Preisabhängiges Speicherladen
 
@@ -891,16 +933,41 @@ Bei produktiver Mehrfahrzeugregelung kann ein bereits elektrisch bestaetigter La
 
 ## Admin: Erweiterte Datenpunkte
 
-Nur Migration/Altintegration. Für normale Zuordnung die fachlichen Reiter verwenden. Ein geleertes sichtbares Feld kann auf eine noch vorhandene alte JSON-Zuordnung zurückfallen; wirksame Quelle kontrollieren.
+Nutze für normale Geräte- und Messzuordnungen die fachlichen Reiter. Dieser Reiter unterstützt Migration und die Zuordnung von PV-Prognoseflächen. Ein leeres sichtbares Feld kann auf eine alte JSON-Zuordnung zurückfallen.
 
 ### Erweiterte Datenpunktzuordnung
 
 | Feld / technischer Schlüssel | Auslieferung | Zweck und erwartete Eingabe |
 | --- | --- | --- |
-| Bisherige Datenpunktzuordnung als JSON (Migrations-Ersatz)<br>`dataPointMapJson` | — | Alte Schlüssel→Objekt-ID-Zuordnung als JSON nur für Migration/Sonderfälle. Explizite ausgefüllte Admin-ID-Felder haben Vorrang; leere Felder können weiter auf alte Zuordnung zurückfallen. Wirksame Quelle unter System.MappingStatus_JSON kontrollieren. |
+| Bisherige Datenpunktzuordnung als JSON (Migrations-Ersatz)<br>`dataPointMapJson` | — | JSON-Objekt mit alten Schlüssel-zu-Objekt-ID-Zuordnungen und gegebenenfalls `PV_AREA1_NAME` bis `PV_AREA5_NAME`. Explizite Admin-ID-Felder haben Vorrang. Prüfe die wirksame Zuordnung unter `System.MappingStatus_JSON` und die Summe unter `Forecast.PV_48h_JSON`. [Beispiel für die fünf Flächenplätze](../README.de.md#pv-flächen-im-prognosebaum). |
 | Bisheriger freier Strom L1 (A)<br>`dhwHaL1FreeCurrentId` | leer | Optionaler bisheriger freier Strom der jeweiligen Netzphase in A für Altintegration. Kein gemessener Gesamt-/Wallboxstrom. Physische gemeinsame Anschlussgrenze bleibt maßgeblich. |
 | Bisheriger freier Strom L2 (A)<br>`dhwHaL2FreeCurrentId` | leer | Optionaler bisheriger freier Strom der jeweiligen Netzphase in A für Altintegration. Kein gemessener Gesamt-/Wallboxstrom. Physische gemeinsame Anschlussgrenze bleibt maßgeblich. |
 | Bisheriger freier Strom L3 (A)<br>`dhwHaL3FreeCurrentId` | leer | Optionaler bisheriger freier Strom der jeweiligen Netzphase in A für Altintegration. Kein gemessener Gesamt-/Wallboxstrom. Physische gemeinsame Anschlussgrenze bleibt maßgeblich. |
+
+## Admin: Geräte
+
+### Programmplanung für Haushaltsgeräte
+
+Die Tabelle `devicePrograms` ist bei Auslieferung leer. Eine Zeile beschreibt ein Gerät.
+
+| Feld | Erwartete Eingabe |
+| --- | --- |
+| Name, Modus | Name für Anzeige und Ansage. **Aus** deaktiviert die Zeile, **Beobachten** lernt und plant ohne Startauftrag, **Automatisch** darf bei aktiver Echtzeitregelung und Master-Freigabe starten. |
+| Fernstartfreigabe-Objekt und Wert (JSON) | Vollständige ID und der passende JSON-Wert. Bei booleschem `true` steht `true` im Feld, bei einem Textwert stehen doppelte Anführungszeichen um den Text. |
+| Programmstatus-Objekt und Statuswerte | ID der bestätigten Betriebsrückmeldung. Gib die Werte für bereit, läuft und beendet genau wie vom Treiber gemeldet ein. |
+| Objekt für gewähltes und aktives Programm | Die Programmauswahl liefert die Kennung für den nächsten Start und das gewünschte Profil. Mit zugeordnetem Objekt für das aktive Programm ordnet der Lernpfad die Messung der tatsächlich laufenden Kennung zu. |
+| Programmstart-Objekt, Startwert und Gewähltes Programm starten | ID des beschreibbaren Aktors. Im Modus **Gewähltes Programm starten** ist der Auftragswert die ausgewählte Programmkennung. Sonst wird der eingetragene JSON-Startwert verwendet. Werttyp, Gerätefunktion und erneute Prüfung von Freigabe und Bereitstatus müssen passen. |
+| Leistungsobjekt des Geräts (W) | Bestätigte Momentanleistung. Die gewählte Historieninstanz muss einen zusammenhängenden vollständig erkannten Lauf liefern. Das EMS berechnet die Energie aus dem Leistungsintegral und bildet je Programm einen typischen Verlauf aus bis zu neun vollständigen Läufen. |
+| Programmprofil (W je 15 min, JSON-Array) | Festes Startprofil für eine Zeile ohne Objekt für Programmauswahl. Mit Programmauswahl wird das gelernte Profil für die jeweilige Kennung verwendet. |
+| Fertig bis (HH:mm) | Nächster vorkommender Termin nach lokaler Zeit des ioBroker-Hosts. Ein leeres Feld erlaubt einen Suchhorizont von bis zu 48 Stunden innerhalb vorhandener gültiger Prognosen. |
+
+`Devices.Programs.N` zeigt den Status, die geplante Startzeit und erwartete Kosten. `Devices.ProgramProfiles` enthält je Programm gemessene Energie, Leistung je Viertelstunde und Anzahl der vollständigen Läufe. In der Automatik kann `Devices.Programs.N.Announcement` für einen geplanten Lauf JSON mit `id` und `text` enthalten. Ein separates Skript kann daraus eine Ansage erzeugen. Der Status und die gemessene Leistung zeigen, ob der Startauftrag tatsächlich zum Programmlauf geführt hat. [Einrichtungsschritte](../README.de.md#programmplanung-für-haushaltsgeräte)
+
+### Temperatur-Sollwertoptimierung
+
+Die Tabelle `deviceSetpoints` ist bei Auslieferung leer. Gib **Name**, bestätigte **Ist-Temperatur** und einen beschreibbaren numerischen **Sollwert** an. Der **Optimierungssollwert** darf höchstens so hoch wie der **Normalsollwert** sein. Beide Werte müssen im freigegebenen Wertebereich `common.min` bis `common.max` des ioBroker-Objekts liegen. Der Sollwert benötigt eine numerische Rückmeldung.
+
+Der niedrigere Sollwert kommt bei geeignetem gemessenem Überschuss oder einem günstigen variablen Preisfenster infrage. Der gewünschte Wert muss fünf Minuten stabil sein. Master-Freigabe und aktive Echtzeitregelung erlauben den Schreibauftrag. Jede Zeile benötigt ein eigenes Zielobjekt. Unter `Devices.Setpoints.N` stehen der gewünschte Wert, die bestätigte Rückmeldung und ein möglicher Sperrgrund.
 
 ## Typische Einrichtung und Fehlersuche
 
