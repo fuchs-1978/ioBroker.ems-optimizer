@@ -179,13 +179,25 @@ async function worker(tree) {
         assert.ok(eventCount > 0, `${scenario}: no observations`);
         results.push({scenario, events: eventCount, sha256: hash.digest('hex')});
     };
+    // The historical plant fixtures have no active forecast reserve. Ignore
+    // its new empty objects, including the reserve-power state now created
+    // in legacy mode. Active reserve publications and all actuator writes
+    // still have to appear in the trace.
+    const inactiveReserveDefaults = new Map([
+        ['ems.0.Plan.BatteryForecastReserve_JSON', '{}'],
+        ['ems.0.Control.BatteryForecastReserveGridCharge_W', 0],
+        ['ems.0.Control.BatteryReserveGridCharge_W', 0]
+    ]);
+    const inactiveReserveObject = (id, state) => inactiveReserveDefaults.has(id)
+        && inactiveReserveDefaults.get(id) === state?.val;
     // One shared fixture, evaluated with each tree's own production loader and
     // controllers. Record every pre-existing state write, including intermediate transitions.
     let plantSource = fs.readFileSync(path.join(root, 'test/control-plant.js'), 'utf8');
     assert.equal(plantSource.split('states.set(id, state);').length, 2);
     plantSource = 'const auditEvent = module.auditEvent;\n' + plantSource.replace(
         'states.set(id, state);', 'states.set(id, state); auditEvent({kind:"state", at:now, id, state});');
-    const {plant: createPlant} = compile(plantSource, path.join(tree, 'test/control-plant.js'), {auditEvent: record});
+    const {plant: createPlant} = compile(plantSource, path.join(tree, 'test/control-plant.js'),
+        {auditEvent: event => { if (!inactiveReserveObject(event.id, event.state)) record(event); }});
     const plant = async options => {
         const h = await createPlant(options);
         // These byte-exact historical traces cover unchanged, confirmed
@@ -199,7 +211,8 @@ async function worker(tree) {
         return h;
     };
     const checkpoint = h => record({kind: 'checkpoint', at: h.now(), commands: h.writes,
-        trace: h.trace, diagnostics: h.diagnosticWrites, states: [...h.states],
+        trace: h.trace, diagnostics: h.diagnosticWrites,
+        states: [...h.states].filter(([id, state]) => !inactiveReserveObject(id, state)),
         devices: h.output.devices,
         engine: h.run('({slowTargets, realtimeParallelActive, lastSlowUpdate, wallboxStartCandidateSince, wallboxRunStartedAt, wallboxPhaseDecision, wallboxSequenceResume})')});
     for (const [name, options, change] of [

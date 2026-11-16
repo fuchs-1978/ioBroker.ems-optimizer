@@ -82,6 +82,60 @@ function near(actual, expected, message) {
     assert.ok(Math.abs(actual - expected) < 1e-7, `${message}: ${actual} != ${expected}`);
 }
 
+test('the battery forecast reserve requires a continuous interval longer than six hours', () => {
+    const h = engine();
+    const low = slots => Array.from({length: slots}, (_, i) => ({timestamp: h.now + i * 900000, soc: 19}));
+    const window = points => h.run(`forecastBatteryLowSocWindow(${JSON.stringify(points)}, 19, ${h.now})`);
+    assert.equal(window(low(24)), null);
+    assert.equal(window(low(25)).durationMs, 25 * 900000);
+    const interrupted = low(30);
+    interrupted[15].soc = 20;
+    assert.equal(window(interrupted), null);
+    assert.equal(window(low(30).filter((_, i) => i !== 15)), null);
+});
+
+test('the unprotected forecast keeps the 20% reserve active when the published plan holds its floor', () => {
+    const h = engine();
+    h.put('ems.0.Devices.Battery.Present', true);
+    h.put('ems.0.Config.BatteryMinSoC_pct', 10);
+    h.put('ems.0.Config.BatterySelfConsumptionEnabled', true);
+    h.put('DP_BATTERY_SOC', 50);
+    const reserve = () => JSON.parse(h.states.get('ems.0.Plan.BatteryForecastReserve_JSON').val);
+    for (let n = 0; n < 2; n++) {
+        h.plan({pvW: 0, houseW: 1600, slots: 48});
+        assert.ok(reserve().durationMs > 6 * 3600000);
+        assert.ok(h.series('BatterySoC').every(point => point.value_pct >= 20));
+        assert.equal(h.series('BatterySoC').at(-1).value_pct, 20);
+        assert.ok(h.series('BatteryPower').every(point => point.reserveGridChargeW === 0));
+    }
+    h.plan({pvW: 0, houseW: 1600, slots: 8});
+    assert.deepEqual(reserve(), {});
+    assert.ok(h.series('BatterySoC').at(-1).value_pct < 20);
+});
+
+test('the forecast chooses a cheaper reserve refill only when the missing energy fits before the deadline', () => {
+    const h = engine();
+    h.run("CFG.dp.par14a = ''; CFG.dp.lpcState = ''; CFG.dp.lpcLimit = '';");
+    h.put('ems.0.Devices.Battery.Present', true);
+    h.put('ems.0.Config.BatteryMinSoC_pct', 10);
+    h.put('ems.0.Config.BatterySelfConsumptionEnabled', true);
+    h.put('DP_BATTERY_SOC', 19);
+    h.run('let elapsedBelowMs = 0; function batteryForecastReserveBelowSince(now) {return now - elapsedBelowMs;}');
+    const cheapIndex = 8;
+    const slots = Array.from({length: 32}, (_, i) => i === cheapIndex ? 7 : 31);
+    const charge = () => {
+        const data = h.plan({pvW: 0, houseW: 600, price: slots, slots: slots.length});
+        balancedPlan(h, data);
+        return h.series('BatteryPower').findIndex(point => point.reserveGridChargeW > 0);
+    };
+    assert.equal(charge(), cheapIndex);
+    assert.equal(h.series('BatterySoC').at(-1).value_pct, 20);
+    h.run('elapsedBelowMs = 5 * 3600000');
+    assert.equal(charge(), 0);
+    h.run('elapsedBelowMs = 0; batteryForecastReserveBelowSince = () => 0');
+    assert.equal(charge(), 0);
+});
+
 function balancedPlan(h, data) {
     const wallboxes = [0, 1, 2].map(wb => h.series(`Wallbox${wb}`));
     const hotWater = h.series('MyPV_DHW');

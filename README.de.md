@@ -1,11 +1,12 @@
 # EMS Optimizer
 
-**Aktuelle Adapterversion 0.17.0-alpha.285.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
+**Aktuelle Adapterversion 0.17.0-alpha.288.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
 
 [English overview](README.md) · [Vollständige Admin-Feldreferenz](docs/admin-reference.de.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) · [Versionsänderungen](README.md#changelog)
 
 ## Aktuelle Änderungen
 
+- **Alpha.288** gibt allen drei Wallboxen bei Unterschreitung ihres Mindest-SoC Vorrang und schützt den Hausspeicher bei längeren prognostizierten Phasen unter 20 %. Die preisbewusste Nachladung darf bei freiem Netzbudget gleichzeitig mit der Pflichtladung laufen. [Versionshinweise](docs/release-0.17.0-alpha.288.md)
 - **Alpha.285** bündelt kleine Lade- und Entladeleistungen auf einem Kopf und wechselt bei ähnlichem SoC die Startreihenfolge. Die Admin-Vorgaben sind 500 W und 5 Prozentpunkte. [Versionshinweise](docs/release-0.17.0-alpha.285.md)
 - **Alpha.284** verteilt die geplante Warmwasserleistung im wiederkehrenden günstigen Nachtblock gleichmäßiger. [Versionshinweise](docs/release-0.17.0-alpha.284.md)
 - **Alpha.283** verwirft überholte Speicher-Richtungswechsel vor der Ausgabe und berechnet den Sollwert mit der nächsten gültigen Netzmessung neu. Der zuletzt gesendete Auftrag darf innerhalb der aktuellen Schutzgrenzen weiterlaufen. [Versionshinweise](docs/release-0.17.0-alpha.283.md)
@@ -65,6 +66,8 @@ Fehlt ein gültiger aktueller Fahrplan, verteilt das EMS verfügbare Leistung we
 Ein freigegebener EHZ kann während der Startwartezeit auch das vorgemerkte Budget weiterer wartender Fahrzeuge nutzen. Die Autos behalten Vorrang; vor deren Start muss die erforderliche Heizleistung nachweislich zurückgenommen sein. „Aufteilung AUS“ bedeutet keine feste gemeinsame Zuteilung und sperrt diese Restnutzung nicht. Eine entzogene EHZ-Freigabe wird dadurch nicht übergangen. Bei laufender 3P-Mindestladung wird keine neue Startreserve verlangt; gestoppte Fahrzeuge verwenden die konfigurierte Reserve. [Zwischenpuffer und Grenzen](docs/release-0.17.0-alpha.199.md).
 
 ## Speicher-Nullregelung
+
+Bei Pflichtladung unter dem Fahrzeug-Mindest-SoC pausiert die normale Speicherregelung. Speicherhilfe für die Wallboxen setzt mindestens 80 % Speicher-SoC voraus. Prognostiziert der Fahrplan mehr als sechs Stunden am Stück unter 20 %, hält das EMS diese Reserve und nutzt bei gemessenem Unterschreiten ein rechtzeitig nutzbares günstiges Nachladefenster. Die verfügbaren Netz- und Phasenbudgets begrenzen den gleichzeitigen Betrieb. [Versionshinweise](docs/release-0.17.0-alpha.288.md)
 
 Nach einer abgeschlossenen SoC-Etappe gibt die optionale Speicher- und Wallbox-Koordination die vorgemerkte PV-Reserve frei. Der Live-Regler lädt mit dem verbleibenden Überschuss am Netzanschlusspunkt, auch wenn er vom BHKW kommt. Maßgeblich sind der Netzsollwert, das Speicher-Totband sowie die aktuell nutzbaren Leistungs- und SoC-Grenzen.
 
