@@ -662,5 +662,16 @@
   "Wallbox 1 power in kW (optional)": "Potencia del cargador 1 en kW (opcional)",
   "Wallbox 2 power in kW (optional)": "Potencia del cargador 2 en kW (opcional)",
   "Wallbox 3 power in kW (optional)": "Potencia del cargador 3 en kW (opcional)",
-  "Writable setpoint": "Consigna editable"
+  "Writable setpoint": "Consigna editable",
+  "Appliance program scheduling": "Planificación de electrodomésticos",
+  "Remote start release object": "Objeto de permiso remoto",
+  "Remote start release value (JSON)": "Valor de permiso remoto (JSON)",
+  "Program status object": "Objeto de estado del programa",
+  "Ready status value": "Valor de estado listo",
+  "Running status value": "Valor de estado en marcha",
+  "Program start object": "Objeto de inicio del programa",
+  "Program start value (JSON)": "Valor de inicio del programa (JSON)",
+  "Appliance power object (W)": "Objeto de potencia del aparato (W)",
+  "Finish by (HH:mm)": "Terminar antes de (HH:mm)",
+  "Program profile (W per 15 min, JSON array)": "Perfil del programa (W por 15 min, matriz JSON)"
 }

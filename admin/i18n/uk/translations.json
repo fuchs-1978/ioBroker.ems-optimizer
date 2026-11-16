@@ -662,5 +662,16 @@
   "Wallbox 1 power in kW (optional)": "Потужність зарядної станції 1 у kW (необов’язково)",
   "Wallbox 2 power in kW (optional)": "Потужність зарядної станції 2 у kW (необов’язково)",
   "Wallbox 3 power in kW (optional)": "Потужність зарядної станції 3 у kW (необов’язково)",
-  "Writable setpoint": "Уставка для запису"
+  "Writable setpoint": "Уставка для запису",
+  "Appliance program scheduling": "Планування роботи приладів",
+  "Remote start release object": "Об’єкт дозволу дистанційного запуску",
+  "Remote start release value (JSON)": "Значення дозволу дистанційного запуску (JSON)",
+  "Program status object": "Об’єкт стану програми",
+  "Ready status value": "Значення готовності",
+  "Running status value": "Значення роботи",
+  "Program start object": "Об’єкт запуску програми",
+  "Program start value (JSON)": "Значення запуску програми (JSON)",
+  "Appliance power object (W)": "Об’єкт потужності приладу (W)",
+  "Finish by (HH:mm)": "Завершити до (HH:mm)",
+  "Program profile (W per 15 min, JSON array)": "Профіль програми (W за 15 хв, масив JSON)"
 }

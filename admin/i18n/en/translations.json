@@ -662,5 +662,16 @@
   "Wallbox 1 power in kW (optional)": "Wallbox 1 power in kW (optional)",
   "Wallbox 2 power in kW (optional)": "Wallbox 2 power in kW (optional)",
   "Wallbox 3 power in kW (optional)": "Wallbox 3 power in kW (optional)",
-  "Writable setpoint": "Writable setpoint"
+  "Writable setpoint": "Writable setpoint",
+  "Appliance program scheduling": "Appliance program scheduling",
+  "Remote start release object": "Remote start release object",
+  "Remote start release value (JSON)": "Remote start release value (JSON)",
+  "Program status object": "Program status object",
+  "Ready status value": "Ready status value",
+  "Running status value": "Running status value",
+  "Program start object": "Program start object",
+  "Program start value (JSON)": "Program start value (JSON)",
+  "Appliance power object (W)": "Appliance power object (W)",
+  "Finish by (HH:mm)": "Finish by (HH:mm)",
+  "Program profile (W per 15 min, JSON array)": "Program profile (W per 15 min, JSON array)"
 }

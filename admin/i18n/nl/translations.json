@@ -662,5 +662,16 @@
   "Wallbox 1 power in kW (optional)": "Vermogen laadpunt 1 in kW (optioneel)",
   "Wallbox 2 power in kW (optional)": "Vermogen laadpunt 2 in kW (optioneel)",
   "Wallbox 3 power in kW (optional)": "Vermogen laadpunt 3 in kW (optioneel)",
-  "Writable setpoint": "Schrijfbare instelwaarde"
+  "Writable setpoint": "Schrijfbare instelwaarde",
+  "Appliance program scheduling": "Apparaatprogramma’s plannen",
+  "Remote start release object": "Object voor toestemming op afstand",
+  "Remote start release value (JSON)": "Waarde voor toestemming op afstand (JSON)",
+  "Program status object": "Object voor programmastatus",
+  "Ready status value": "Statuswaarde gereed",
+  "Running status value": "Statuswaarde actief",
+  "Program start object": "Object voor programmastart",
+  "Program start value (JSON)": "Waarde voor programmastart (JSON)",
+  "Appliance power object (W)": "Vermogensobject apparaat (W)",
+  "Finish by (HH:mm)": "Gereed om (HH:mm)",
+  "Program profile (W per 15 min, JSON array)": "Programmaprofiel (W per 15 min, JSON-reeks)"
 }

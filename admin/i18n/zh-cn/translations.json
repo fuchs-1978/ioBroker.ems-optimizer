@@ -662,5 +662,16 @@
   "Wallbox 1 power in kW (optional)": "充电桩 1 功率（kW，可选）",
   "Wallbox 2 power in kW (optional)": "充电桩 2 功率（kW，可选）",
   "Wallbox 3 power in kW (optional)": "充电桩 3 功率（kW，可选）",
-  "Writable setpoint": "可写设定值"
+  "Writable setpoint": "可写设定值",
+  "Appliance program scheduling": "家电程序调度",
+  "Remote start release object": "远程启动授权对象",
+  "Remote start release value (JSON)": "远程启动授权值（JSON）",
+  "Program status object": "程序状态对象",
+  "Ready status value": "就绪状态值",
+  "Running status value": "运行状态值",
+  "Program start object": "程序启动对象",
+  "Program start value (JSON)": "程序启动值（JSON）",
+  "Appliance power object (W)": "家电功率对象（W）",
+  "Finish by (HH:mm)": "最晚完成时间（HH:mm）",
+  "Program profile (W per 15 min, JSON array)": "程序功率曲线（每 15 分钟 W，JSON 数组）"
 }
