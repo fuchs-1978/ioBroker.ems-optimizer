@@ -313,6 +313,67 @@ test('an enabled ready comparison leaves every production forecast and planner i
     assert.deepEqual(failed.production, off.production); assert.deepEqual(failed.plan, off.plan);
 });
 
+test('opt-in production blend uses frozen day-ahead pairs on the rolling planner grid', () => {
+    const {createEngineContext} = require('../lib/engine-loader');
+    const entry = isolatedForecast(), time = entry.start + 12 * SLOT;
+    entry.ensembleVersion = 1;
+    for (const row of entry.slots) {
+        row.blendW = row.lassoW === null ? null : (row.medianW + row.lassoW) / 2;
+        row.hybridW = null;
+    }
+    entry.slots[12] = {...entry.slots[12], medianW: 800, lassoW: 1600, blendW: 1200};
+    entry.slots[13] = {...entry.slots[13], medianW: 100, lassoW: 300, blendW: 200};
+    entry.slots[14] = {...entry.slots[14], medianW: 800, lassoW: 1600, blendW: 42};
+    const backup = {...entry.slots[33], lassoW: 1000};
+    entry.slots[33] = {...backup, blendW: (backup.medianW + backup.lassoW) / 2};
+    class Clock extends Date {constructor(...args) {super(...(args.length ? args : [time]));} static now() {return time;}}
+    const cache = new Map(), config = {loadComparisonEnabled: true, historyProfileMethod: 'median-lasso-blend'};
+    const ctx = createEngineContext('ems.0', {}, {nativeConfig: config, Date: Clock,
+        getState: id => cache.get(id), existsState: () => false,
+        setState: (id, val) => cache.set(id, {val, ack: true, q: 0})});
+    let plan;
+    ctx.capturePlan = value => {plan = JSON.parse(JSON.stringify(value));};
+    vm.runInContext(`historyReady=true;
+        for (const type of DAY_TYPES) {historyProfiles.houseTotal[type]=Array(96).fill(2000); historyProfiles.baseload[type]=Array(96).fill(1000);}
+        weatherHours=()=>[]; buildDevicePlan=capturePlan;
+        buildPriceForecast=()=>({energy:[], grid:[], total:[], valid:true, status:'ok', mode:'test'});`, ctx);
+    const signature = vm.runInContext('loadComparisonContract()', ctx);
+    const state = 'ems.0.Forecast.LoadComparison.Ledger_JSON';
+    const save = (entries, options = {}) => cache.set(state, {
+        val: JSON.stringify({schema: 1, signature, entries, ...options.ledger}),
+        ack: options.ack ?? true, q: 0});
+    const build = () => {
+        vm.runInContext('buildForecast()', ctx);
+        const series = JSON.parse(cache.get('ems.0.Forecast.Baseload_48h_JSON').val);
+        assert.deepEqual(plan.house, series);
+        assert.equal(JSON.parse(cache.get('ems.0.Forecast.HouseLoad_48h_JSON').val)[0].valueW, 2000);
+        return series;
+    };
+    save([entry]);
+    const out = build();
+    assert.deepEqual(out.slice(0, 3).map(x => [x.valueW, x.source]),
+        [[1200, 'median-lasso-blend'], [500, 'median-lasso-blend'], [1000, 'median-fallback']]);
+    assert.equal(out.at(-1).valueW, 1000);
+    assert.equal(out.at(-1).source, 'median-fallback');
+    for (const options of [{ledger: {signature: 'old sources'}}, {ack: false}]) {
+        save([entry], options);
+        assert.ok(build().every(x => x.valueW === 1000 && x.source === 'median-fallback'));
+    }
+    save([{...entry, issuedAt: entry.start}]);
+    assert.equal(build()[0].valueW, 1000);
+    save([{...entry, issuedAt: entry.issuedAt - 2 * 86400000}]);
+    assert.equal(build()[0].valueW, 1000);
+    save([{...entry, ensembleVersion: undefined}]);
+    assert.equal(build()[0].valueW, 1000);
+    save([entry]);
+    config.loadComparisonEnabled = false;
+    assert.equal(build()[0].valueW, 1000);
+    config.loadComparisonEnabled = true;
+    config.historyProfileMethod = 'median';
+    assert.equal(build()[0].valueW, 1000);
+    assert.equal(build()[0].source, undefined);
+});
+
 test('unrecorded temperature disables only the diagnostic comparison with an explicit reason', async () => {
     const h = wrapper({loadComparisonEnabled: true, outsideTemperatureId: 'temperature'});
     h.context.historySourceEnabled = async () => false;

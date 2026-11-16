@@ -210,7 +210,7 @@ Bereits ausgegebene Median-/Lasso-Prognosen und ihre Ausgabezeit werden nicht ne
 
 ### Median, Lasso und Kombinationen
 
-Im Reiter Historie/Prognose ist `loadComparisonEnabled` standardmäßig **aus**. Der Vergleich beeinflusst keine produktive Zuteilung. `loadComparisonTemperature` ist bei aktiviertem Vergleich standardmäßig an und nutzt historisierte Außentemperatur sowie die für morgen verfügbare Wetterprognose.
+Im Reiter Historie/Prognose ist `loadComparisonEnabled` standardmäßig **aus**. Für den Fahrplan ist Median die Voreinstellung. Unter der historischen Profilmethode kann zusätzlich 50/50 gewählt werden. Dafür muss der Vergleich aktiv sein. Der Fahrplan verwendet pro Viertelstunde das gültige, vorab gesicherte Paar und bei fehlendem Paar das Medianprofil. `loadComparisonTemperature` ist bei aktiviertem Vergleich standardmäßig an und nutzt historisierte Außentemperatur sowie die für morgen verfügbare Wetterprognose.
 
 | Variante | Berechnung |
 | --- | --- |

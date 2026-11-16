@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.292",
+    "version": "0.17.0-alpha.293",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.293": {
+        "en": "Add an optional 50/50 Median and Lasso baseload profile with Median fallback.",
+        "de": "Optionale 50/50-Grundlastprognose aus Median und Lasso mit Median-Rückfall.",
+        "es": "Add an optional 50/50 Median and Lasso baseload profile with Median fallback.",
+        "fr": "Add an optional 50/50 Median and Lasso baseload profile with Median fallback.",
+        "it": "Add an optional 50/50 Median and Lasso baseload profile with Median fallback.",
+        "nl": "Add an optional 50/50 Median and Lasso baseload profile with Median fallback.",
+        "pl": "Add an optional 50/50 Median and Lasso baseload profile with Median fallback.",
+        "pt": "Add an optional 50/50 Median and Lasso baseload profile with Median fallback.",
+        "ru": "Add an optional 50/50 Median and Lasso baseload profile with Median fallback.",
+        "uk": "Add an optional 50/50 Median and Lasso baseload profile with Median fallback.",
+        "zh-cn": "Add an optional 50/50 Median and Lasso baseload profile with Median fallback."
+      },
       "0.17.0-alpha.292": {
         "en": "Use available solar surplus to restore the 20% battery reserve, with grid power covering the shortfall up to 1,000 W total.",
         "de": "Freien PV-Überschuss für die 20-%-Speicherreserve nutzen und fehlende Leistung bis 1.000 W mit Netzstrom ergänzen.",
@@ -72,19 +85,6 @@
       "0.17.0-alpha.287": {
         "en": "Drive device temperature bounds from central EMS power and price data.",
         "de": "Gerätetemperatur innerhalb konfigurierter Grenzen mit zentralen EMS-Daten optimieren.",
-        "es": "Configurable temperature setpoint optimization for household devices.",
-        "fr": "Configurable temperature setpoint optimization for household devices.",
-        "it": "Configurable temperature setpoint optimization for household devices.",
-        "nl": "Configurable temperature setpoint optimization for household devices.",
-        "pl": "Configurable temperature setpoint optimization for household devices.",
-        "pt": "Configurable temperature setpoint optimization for household devices.",
-        "ru": "Configurable temperature setpoint optimization for household devices.",
-        "uk": "Configurable temperature setpoint optimization for household devices.",
-        "zh-cn": "Configurable temperature setpoint optimization for household devices."
-      },
-      "0.17.0-alpha.286": {
-        "en": "Add configurable temperature setpoint optimization for household devices.",
-        "de": "Konfigurierbare Sollwertoptimierung für Haushaltsgeräte ergänzen.",
         "es": "Configurable temperature setpoint optimization for household devices.",
         "fr": "Configurable temperature setpoint optimization for household devices.",
         "it": "Configurable temperature setpoint optimization for household devices.",
