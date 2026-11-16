@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.284
+
+- Spread forecast hot-water demand across a recurring cheap overnight tariff block.
+
 ## 0.17.0-alpha.283
 
 - Replan an obsolete battery direction change with the current grid reading. Retain the last issued setpoint within protection limits.

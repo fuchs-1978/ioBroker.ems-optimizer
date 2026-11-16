@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const {learnProfile, planProgram, startDevicePrograms} = require('../lib/device-programs');
+const {learnProfile, planProgram, programAnnouncement, startDevicePrograms} = require('../lib/device-programs');
 
 test('disabled rows make no I/O', () => {
     startDevicePrograms({config: {devicePrograms: [{mode: 'off'}]}});
@@ -25,4 +25,16 @@ test('learns quarter-hour loads from a run starting off the grid and rejects gap
     assert.equal(learned.energyKWh, 0.2);
     assert.deepEqual(learned.watts, [600, 200]);
     assert.equal(learnProfile(samples.filter((_, i) => i !== 6), start, start + 1200000), null);
+});
+
+test('announcement is stable per release and describes estimated savings', () => {
+    const now = Date.parse('2026-11-16T19:00:00Z');
+    const plan = {plannedStartAt: now + 3600000, estimatedSavings_EUR: 0.18};
+    const first = programAnnouncement('Geschirrspüler', plan, 'release-1', 'eco', now);
+    assert.match(first.text, /21:00 Uhr.*18 Cent/);
+    assert.equal(first.id, programAnnouncement('Geschirrspüler', {...plan, plannedStartAt: now},
+        'release-1', 'eco', now).id);
+    assert.notEqual(first.id, programAnnouncement('Geschirrspüler', plan, 'release-2', 'eco', now).id);
+    assert.doesNotMatch(programAnnouncement('Geschirrspüler', {...plan, estimatedSavings_EUR: null},
+        'release-1', 'eco', now).text, /Cent/);
 });
