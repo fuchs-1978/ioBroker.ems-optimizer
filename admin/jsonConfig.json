@@ -8304,6 +8304,12 @@
           "items": [
             {
               "type": "text",
+              "attr": "name",
+              "title": "Name",
+              "default": ""
+            },
+            {
+              "type": "text",
               "attr": "actualObject",
               "title": "Actual temperature",
               "default": ""
