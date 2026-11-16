@@ -6,7 +6,16 @@
     "news": {
       "0.17.0-alpha.286": {
         "en": "Add configurable temperature setpoint optimization for household devices.",
-        "de": "Konfigurierbare Sollwertoptimierung für Haushaltsgeräte ergänzen."
+        "de": "Konfigurierbare Sollwertoptimierung für Haushaltsgeräte ergänzen.",
+        "es": "Configurable temperature setpoint optimization for household devices.",
+        "fr": "Configurable temperature setpoint optimization for household devices.",
+        "it": "Configurable temperature setpoint optimization for household devices.",
+        "nl": "Configurable temperature setpoint optimization for household devices.",
+        "pl": "Configurable temperature setpoint optimization for household devices.",
+        "pt": "Configurable temperature setpoint optimization for household devices.",
+        "ru": "Configurable temperature setpoint optimization for household devices.",
+        "uk": "Configurable temperature setpoint optimization for household devices.",
+        "zh-cn": "Configurable temperature setpoint optimization for household devices."
       },
       "0.17.0-alpha.285": {
         "en": "Use one SunEnergy head at low total power. Rotate starts among heads with similar state of charge using the configurable SoC hysteresis.",

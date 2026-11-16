@@ -8329,55 +8329,55 @@
               ]
             },
             {
-              "type": "objectId",
+              "type": "text",
               "attr": "actualObject",
               "title": "Actual temperature",
               "default": ""
             },
             {
-              "type": "objectId",
+              "type": "text",
               "attr": "writeObject",
               "title": "Writable setpoint",
               "default": ""
             },
             {
-              "type": "objectId",
+              "type": "text",
               "attr": "feedbackObject",
               "title": "Setpoint feedback (optional)",
               "default": ""
             },
             {
-              "type": "objectId",
+              "type": "text",
               "attr": "gridObject",
               "title": "Signed grid power in W",
               "default": ""
             },
             {
-              "type": "objectId",
+              "type": "text",
               "attr": "heaterObject",
               "title": "Heater power in W (optional)",
               "default": ""
             },
             {
-              "type": "objectId",
+              "type": "text",
               "attr": "wallbox1",
               "title": "Wallbox 1 power in kW (optional)",
               "default": ""
             },
             {
-              "type": "objectId",
+              "type": "text",
               "attr": "wallbox2",
               "title": "Wallbox 2 power in kW (optional)",
               "default": ""
             },
             {
-              "type": "objectId",
+              "type": "text",
               "attr": "wallbox3",
               "title": "Wallbox 3 power in kW (optional)",
               "default": ""
             },
             {
-              "type": "objectId",
+              "type": "text",
               "attr": "priceObject",
               "title": "Price score object (optional)",
               "default": ""
