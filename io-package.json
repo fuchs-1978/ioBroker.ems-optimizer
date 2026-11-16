@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.290",
+    "version": "0.17.0-alpha.291",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.291": {
+        "en": "Publish appliance start and savings announcements.",
+        "de": "Ansagen zu geplantem Gerätestart und Ersparnis bereitstellen.",
+        "es": "Publish appliance start and savings announcements.",
+        "fr": "Publish appliance start and savings announcements.",
+        "it": "Publish appliance start and savings announcements.",
+        "nl": "Publish appliance start and savings announcements.",
+        "pl": "Publish appliance start and savings announcements.",
+        "pt": "Publish appliance start and savings announcements.",
+        "ru": "Publish appliance start and savings announcements.",
+        "uk": "Publish appliance start and savings announcements.",
+        "zh-cn": "Publish appliance start and savings announcements."
+      },
       "0.17.0-alpha.290": {
         "en": "Learn household appliance profiles by selected program.",
         "de": "Lastprofile für Haushaltsgeräte je gewähltem Programm lernen.",
@@ -81,19 +94,6 @@
         "ru": "При малой суммарной мощности используется один блок SunEnergy. При близком SoC блоки запускаются по очереди с настраиваемым гистерезисом.",
         "uk": "За малої сумарної потужності використовується один блок SunEnergy. За близького SoC блоки запускаються почергово з налаштовуваним гістерезисом.",
         "zh-cn": "总功率较低时使用一个 SunEnergy 主机。按可配置的荷电状态滞回，在荷电状态接近的主机之间轮换启动。"
-      },
-      "0.17.0-alpha.284": {
-        "en": "Spread forecast hot-water demand across a recurring cheap overnight tariff block.",
-        "de": "Warmwasserbedarf im Fahrplan über einen wiederkehrenden günstigen Nachtblock verteilen.",
-        "es": "Distribuye el calentamiento de agua previsto a lo largo de un bloque nocturno recurrente de tarifa baja.",
-        "fr": "Répartit le chauffage de l’eau prévu sur une plage nocturne récurrente à bas tarif.",
-        "it": "Distribuisce il riscaldamento dell’acqua previsto su una fascia notturna ricorrente a tariffa ridotta.",
-        "nl": "Spreidt de geplande waterverwarming over een terugkerend goedkoop nachtelijk tariefblok.",
-        "pl": "Rozkłada planowane podgrzewanie wody na powtarzający się nocny okres niskiej taryfy.",
-        "pt": "Distribui o aquecimento de água previsto ao longo de um período noturno recorrente com tarifa baixa.",
-        "ru": "Распределяет запланированный нагрев воды по повторяющемуся ночному периоду низкого тарифа.",
-        "uk": "Розподіляє запланований нагрів води на повторюваний нічний період із низьким тарифом.",
-        "zh-cn": "将计划的热水加热均匀分配到每天重复的夜间低价时段。"
       }
     },
     "titleLang": {
