@@ -1,6 +1,6 @@
 # EMS Optimizer
 
-**Aktuelle Adapterversion 0.17.0-alpha.292.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
+**Aktuelle Adapterversion 0.17.0-alpha.293.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
 
 [English overview](README.md) · [Vollständige Admin-Feldreferenz](docs/admin-reference.de.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) · [Versionsänderungen](README.md#changelog)
 
@@ -141,7 +141,7 @@ Ein hängender Verifikationsleser sperrt weitere Prüfqueries, während begrenzt
 
 Der passive Vergleich stellt Median, Lasso, feste 50/50-Mischung und Lasso-Tagesenergie mit Median-Verlauf gegenüber. Prognosen werden vorab gespeichert und bei Neustart nicht rückwirkend ersetzt. Training startet beim Adapterstart und täglich um 00:10, mit höchstens 84 Tagen.
 
-Die Istwerte werden aus zeitgewichteten Rohmessungen auf gemeinsamen Viertelstunden berechnet. Lücken bleiben unbekannt. MAE, RMSE und Energiefehler nur für dieselben gültigen Messpaare vergleichen. Die 7-/14‑Kalendertage-Fenster zeigen die Abdeckung. Eine Tagesenergie erfordert 96 gültige Paare. Tage mit 92 oder 100 Viertelstunden sind derzeit ausgeschlossen. Die produktive Profilwahl erfolgt separat. [Berechnung und Grenzen](docs/release-0.17.0-alpha.200.md) · [Aktueller Vergleich #284](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/284)
+Die Istwerte werden aus zeitgewichteten Rohmessungen auf gemeinsamen Viertelstunden berechnet. Lücken bleiben unbekannt. MAE, RMSE und Energiefehler nur für dieselben gültigen Messpaare vergleichen. Die 7-/14‑Kalendertage-Fenster zeigen die Abdeckung. Eine Tagesenergie erfordert 96 gültige Paare. Tage mit 92 oder 100 Viertelstunden sind derzeit ausgeschlossen. Die produktive Profilwahl erfolgt separat. Optional verwendet der Fahrplan die vorab gesicherte 50/50-Mischung. Für Viertelstunden ohne gültiges Paar bleibt der Median aktiv. [Berechnung und Grenzen](docs/release-0.17.0-alpha.200.md) · [Aktueller Vergleich #284](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/284)
 
 ## So liest man die Admin-Anleitung
 

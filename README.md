@@ -7,7 +7,7 @@
 
 Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Combines PV and grid measurements, load history, weather forecasts and electricity prices in a rolling 48-hour plan.
 
-**Current GitHub build 0.17.0-alpha.292.** Install the tested build from GitHub and commission each enabled device against its actual feedback and protection limits.
+**Current GitHub build 0.17.0-alpha.293.** Install the tested build from GitHub and commission each enabled device against its actual feedback and protection limits.
 
 [Deutsche Bedienungsanleitung](README.de.md) · [Release history](CHANGELOG_OLD.md) · [Issues](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
@@ -39,7 +39,7 @@ Forecast-based energy management for [ioBroker](https://www.iobroker.net/). Comb
 - Plan optional battery charging using forecasts, electricity prices and time-dependent grid charges.
 - Provide separate heating-buffer and battery outputs when explicitly configured and enabled.
 - Observe heat-pump telemetry and publish passive recommendations. Heat-pump, SG-Ready and KNX actuator commands are not implemented.
-- Compare day-ahead Median, Lasso and two fixed combinations without changing production planning.
+- Compare four day-ahead baseload candidates and optionally use the frozen 50/50 blend for planning.
 - Preserve selected existing room-temperature histories and archive available weather forecasts for later analysis.
 - Record bounded diagnostic episodes and daily summaries for targeted investigation instead of full-day SQL downloads.
 
@@ -95,7 +95,7 @@ The EMS charges the mobility reserve immediately. It credits usable PV before de
 
 ## Forecast comparison
 
-Enable the optional comparison in **History & forecast**. Production keeps its selected load profile. The four candidates are:
+Enable the optional comparison in **History & forecast**. Select 50/50 in the historical profile settings to use frozen day-ahead pairs in the rolling planner. Quarters without a valid pair use the Median profile, which is also the default. The four candidates are:
 
 | Candidate | Calculation |
 | --- | --- |
