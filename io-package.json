@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.286",
+    "version": "0.17.0-alpha.287",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.287": {
+        "en": "Drive device temperature bounds from central EMS power and price data.",
+        "de": "Gerätetemperatur innerhalb konfigurierter Grenzen mit zentralen EMS-Daten optimieren.",
+        "es": "Configurable temperature setpoint optimization for household devices.",
+        "fr": "Configurable temperature setpoint optimization for household devices.",
+        "it": "Configurable temperature setpoint optimization for household devices.",
+        "nl": "Configurable temperature setpoint optimization for household devices.",
+        "pl": "Configurable temperature setpoint optimization for household devices.",
+        "pt": "Configurable temperature setpoint optimization for household devices.",
+        "ru": "Configurable temperature setpoint optimization for household devices.",
+        "uk": "Configurable temperature setpoint optimization for household devices.",
+        "zh-cn": "Configurable temperature setpoint optimization for household devices."
+      },
       "0.17.0-alpha.286": {
         "en": "Add configurable temperature setpoint optimization for household devices.",
         "de": "Konfigurierbare Sollwertoptimierung für Haushaltsgeräte ergänzen.",
@@ -81,19 +94,6 @@
         "ru": "После отклонения уставки до передачи восстанавливает последнюю отправленную уставку батареи и пересчитывает управление по следующему измерению.",
         "uk": "Після відхилення уставки до передачі відновлює останню надіслану уставку батареї та перераховує керування за наступним вимірюванням.",
         "zh-cn": "电池设定值在发送前被拒绝时恢复上一条已发送的设定值，并根据下一次有效测量重新计算。"
-      },
-      "0.17.0-alpha.280": {
-        "en": "Count missing acknowledgements by GS setpoint. Use GP to verify actual power and reserved headroom.",
-        "de": "Fehlende Rückmeldungen je GS-Auftrag zählen. GP belegt die tatsächliche Leistung und die frei gewordene Leistungsreserve.",
-        "es": "Cuenta las confirmaciones ausentes por consigna GS. Usa GP para verificar la potencia real y el margen disponible.",
-        "fr": "Compte les confirmations manquantes par consigne GS. Utilise GP pour vérifier la puissance réelle et la marge disponible.",
-        "it": "Conta le conferme mancanti per ogni setpoint GS. Usa GP per verificare la potenza reale e il margine disponibile.",
-        "nl": "Telt ontbrekende terugmeldingen per GS-setpoint. Gebruikt GP voor het gemeten vermogen en de vrijgekomen vermogensruimte.",
-        "pl": "Zlicza brakujące potwierdzenia poszczególnych nastaw GS. GP służy do weryfikacji mocy rzeczywistej i dostępnej rezerwy.",
-        "pt": "Conta as confirmações em falta por valor de referência GS. Usa GP para verificar a potência real e a margem disponível.",
-        "ru": "Учитывает пропущенные подтверждения по каждой уставке GS. GP подтверждает фактическую мощность и доступный резерв.",
-        "uk": "Підраховує пропущені підтвердження для кожної уставки GS. GP підтверджує фактичну потужність і доступний резерв.",
-        "zh-cn": "按 GS 设定指令统计缺失的确认。使用 GP 验证实际功率和可用功率余量。"
       }
     },
     "titleLang": {
