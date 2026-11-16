@@ -8287,6 +8287,146 @@
           "xl": 4
         }
       }
+    },
+    "devicesTab": {
+      "type": "panel",
+      "label": "Devices",
+      "items": {
+        "deviceSetpoints": {
+          "type": "table",
+          "label": "Temperature setpoint optimization",
+          "default": [],
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "items": [
+            {
+              "type": "text",
+              "attr": "name",
+              "title": "Name",
+              "default": ""
+            },
+            {
+              "type": "select",
+              "attr": "mode",
+              "title": "Mode",
+              "default": "observe",
+              "options": [
+                {
+                  "value": "off",
+                  "label": "Off"
+                },
+                {
+                  "value": "observe",
+                  "label": "Observe"
+                },
+                {
+                  "value": "automatic",
+                  "label": "Automatic"
+                }
+              ]
+            },
+            {
+              "type": "objectId",
+              "attr": "actualObject",
+              "title": "Actual temperature",
+              "default": ""
+            },
+            {
+              "type": "objectId",
+              "attr": "writeObject",
+              "title": "Writable setpoint",
+              "default": ""
+            },
+            {
+              "type": "objectId",
+              "attr": "feedbackObject",
+              "title": "Setpoint feedback (optional)",
+              "default": ""
+            },
+            {
+              "type": "objectId",
+              "attr": "gridObject",
+              "title": "Signed grid power in W",
+              "default": ""
+            },
+            {
+              "type": "objectId",
+              "attr": "heaterObject",
+              "title": "Heater power in W (optional)",
+              "default": ""
+            },
+            {
+              "type": "objectId",
+              "attr": "wallbox1",
+              "title": "Wallbox 1 power in kW (optional)",
+              "default": ""
+            },
+            {
+              "type": "objectId",
+              "attr": "wallbox2",
+              "title": "Wallbox 2 power in kW (optional)",
+              "default": ""
+            },
+            {
+              "type": "objectId",
+              "attr": "wallbox3",
+              "title": "Wallbox 3 power in kW (optional)",
+              "default": ""
+            },
+            {
+              "type": "objectId",
+              "attr": "priceObject",
+              "title": "Price score object (optional)",
+              "default": ""
+            },
+            {
+              "type": "number",
+              "attr": "normal",
+              "title": "Normal setpoint (°C)",
+              "default": 5
+            },
+            {
+              "type": "number",
+              "attr": "optimized",
+              "title": "Optimized setpoint (°C)",
+              "default": 4
+            },
+            {
+              "type": "number",
+              "attr": "priceLimit",
+              "title": "Maximum cheap price score",
+              "default": -40
+            },
+            {
+              "type": "number",
+              "attr": "enterW",
+              "title": "Enable below virtual grid power (W)",
+              "default": -500
+            },
+            {
+              "type": "number",
+              "attr": "exitW",
+              "title": "Disable at virtual grid power (W)",
+              "default": 0
+            },
+            {
+              "type": "number",
+              "attr": "enterMinutes",
+              "title": "Enable delay (minutes)",
+              "default": 10
+            },
+            {
+              "type": "number",
+              "attr": "exitMinutes",
+              "title": "Disable delay without price control (minutes)",
+              "default": 10
+            }
+          ]
+        }
+      }
     }
   }
 }
