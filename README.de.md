@@ -1,218 +1,303 @@
-# EMS Optimizer
+# EMS Optimizer – Anleitung für ioBroker
 
-**Aktuelle Adapterversion 0.17.0-alpha.293.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
+[English overview](README.md) · [Admin-Feldreferenz](docs/admin-reference.de.md) · [Versionsänderungen](README.md#changelog) · [Offene Arbeiten auf GitHub](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36)
 
-[English overview](README.md) · [Vollständige Admin-Feldreferenz](docs/admin-reference.de.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) · [Versionsänderungen](README.md#changelog)
+EMS Optimizer hilft, den eigenen Strom für Hausbatterie, E-Autos und elektrische Heizstäbe zu nutzen. Mit angeschlossenen Preis- und Prognosequellen kann er bestimmte Verbräuche in günstige Zeitfenster verschieben. Du entscheidest je Gerät, ob es in der Planung auftaucht und ob das EMS es steuern darf.
 
-## Aktuelle Änderungen
-
-- **Alpha.292** nutzt freien PV-Überschuss zur Wiederherstellung der 20-%-Reserve bis zur zulässigen Speicherleistung. Bei freigegebener Netzladung ergänzt Netzstrom nur den fehlenden Anteil bis 1.000 W Gesamtladeleistung. [Versionshinweise](docs/release-0.17.0-alpha.292.md)
-- **Alpha.288** gibt allen drei Wallboxen bei Unterschreitung ihres Mindest-SoC Vorrang und schützt den Hausspeicher bei längeren prognostizierten Phasen unter 20 %. Die preisbewusste Nachladung darf bei freiem Netzbudget gleichzeitig mit der Pflichtladung laufen. [Versionshinweise](docs/release-0.17.0-alpha.288.md)
-- **Alpha.285** bündelt kleine Lade- und Entladeleistungen auf einem Kopf und wechselt bei ähnlichem SoC die Startreihenfolge. Die Admin-Vorgaben sind 500 W und 5 Prozentpunkte. [Versionshinweise](docs/release-0.17.0-alpha.285.md)
-- **Alpha.284** verteilt die geplante Warmwasserleistung im wiederkehrenden günstigen Nachtblock gleichmäßiger. [Versionshinweise](docs/release-0.17.0-alpha.284.md)
-- **Alpha.283** verwirft überholte Speicher-Richtungswechsel vor der Ausgabe und berechnet den Sollwert mit der nächsten gültigen Netzmessung neu. Der zuletzt gesendete Auftrag darf innerhalb der aktuellen Schutzgrenzen weiterlaufen. [Versionshinweise](docs/release-0.17.0-alpha.283.md)
-- **Alpha.282** kann WB1 (EQV) ab 800 W stabilem Tagesüberschuss einphasig mit 6 A starten. Ein nahezu voller Speicher liefert die fehlende Leistung bis 600 W. Steigender Überschuss kann wieder in den Speicher fließen. [Versionshinweise](docs/release-0.17.0-alpha.282.md)
-- **Alpha.281** nimmt vor der Übertragung verworfene Speicheraufträge zurück. Der Regler bewertet die nächste Messung ausgehend vom letzten gesendeten Auftrag oder bestätigten Stillstand. [Versionshinweise](docs/release-0.17.0-alpha.281.md)
-- **Alpha.280** zählt beim Einzelkopf aufeinanderfolgende gesendete GS-Aufträge ohne frische GS-Rückmeldung. GP dient zur Prüfung der tatsächlich wirksamen Leistung und der Leistungsreserve. [Versionshinweise](docs/release-0.17.0-alpha.280.md)
-- **Alpha.279** lässt einen einzelnen SunEnergy-Kopf nach zwei Minuten nahe seiner Ladegrenze bei gemessener Einspeisung Leistung für den Wallboxstart freigeben. Der Speicher lädt danach mit dem verbleibenden Überschuss. [Versionshinweise](docs/release-0.17.0-alpha.279.md)
-
-[Ältere Versionshinweise](CHANGELOG_OLD.md#deutsche-versionshistorie)
-
-## Inhaltsverzeichnis
-
-- [Installation und Aktualisierung](#installation-und-aktualisierung)
-- [Betriebsarten und sichere Zuständigkeit](#betriebsarten-und-sichere-zuständigkeit)
-- [Istwertverteilung ohne Fahrplan](#istwertverteilung-ohne-fahrplan)
-- [Speicher-Nullregelung](#speicher-nullregelung)
-- [Warmwasserplanung und Vorrang](#warmwasserplanung-und-vorrang)
-- [Fahrzeug-SoC und Sitzungswechsel](#fahrzeug-soc-und-sitzungswechsel)
-- [Mobilitätsreserve und Ladefenster](#mobilitätsreserve-und-vorhandene-abfahrtszeit)
-- [Start, Stopp, Übergabe und Phasenwechsel](#start-stopp-übergabe-und-phasenwechsel)
-- [EMS-Übersicht und Diagnose](#ems-übersicht-erklärung-datenqualität-und-tagesrückblick)
-- [Prognosevergleich](#median-lasso-und-kombinationen)
-- [Admin-Bereiche](#so-liest-man-die-admin-anleitung)
-- [Offene Arbeiten](#offene-arbeiten)
+Der **Fahrplan** rechnet für die nächsten 48 Stunden in Viertelstunden. Die **Echtzeitregelung** prüft laufend, was an der Anlage gerade möglich ist. Zieht eine Wolke vor die PV-Anlage, begrenzen die aktuellen Messwerte die Leistung auch bei einem sonnigen Fahrplan. Die beiden Ebenen findest du in der EMS-Übersicht.
 
 ## Installation und Aktualisierung
 
-Voraussetzungen: Node.js ab 22, js-controller ab 6.0.11 und Admin ab 7.8.23. Die CI prüft Node 22, 24 und 26 unter Ubuntu. Der Adapter befindet sich im Alpha-Test; Softwaretests ersetzen keine vollständige Anlagenabnahme.
+Vorausgesetzt werden Node.js ab 22, ioBroker js-controller ab 6.0.11 und Admin ab 7.8.23. Der Adapter ist eine Alpha-Version. In GitHub steht der geprüfte Quellstand, in `ems-optimizer.0.System.Version` die tatsächlich laufende Version.
 
-Die Alpha-Version wird über **ioBroker Admin → Adapter → Installation aus eigener Quelle → GitHub** installiert. Als Quelle `https://github.com/fuchs-1978/ioBroker.ems-optimizer` eintragen. Für eine reproduzierbare Installation den Commit des gewünschten geprüften Stands auswählen. [Prüfläufe für `main`](https://github.com/fuchs-1978/ioBroker.ems-optimizer/actions/workflows/test-and-release.yml?query=branch%3Amain)
-
-1. Vorhandene Geräte und echte Quellen im Admin zuordnen; Einheiten und Messgrenzen prüfen.
-2. Ausgänge zunächst deaktiviert lassen und Quellen, Plan und Diagnosen prüfen.
-3. Geräte einzeln mit den vorgesehenen Freigaben und Schutzgrenzen in Betrieb nehmen.
-4. Nach Updates installierte Version mit `System.Version` vergleichen. Zeigt der laufende Prozess noch die alte Version, die EMS-Instanz neu starten und danach Einstellungen/Freigaben prüfen.
-
-Die vollständigen Feldbeschreibungen und Auslieferungswerte stehen in der [Adminreferenz](docs/admin-reference.de.md). Ein SQL-Neustart ist kein allgemeiner Updateschritt.
-
-## Betriebsarten und sichere Zuständigkeit
-
-| Bereich | Bedeutung |
-| --- | --- |
-| Planung/Beobachtung | Fahrplan, Prognosen und Empfehlungen; keine Bestätigung einer Stellwirkung. |
-| Schattenbetrieb | Isolierte modellierte Wallboxantwort bei Master AUS. Kein vollständiges Anlagenmodell für Batterie, Wärme und Fahrzeug-SoC. |
-| Livebetrieb | Reale Befehle bei passender Master-, Geräte- und Ausgangsfreigabe sowie gültigen Quellen und Grenzen. |
-| Phasenführung | Ein passend konfiguriertes externes Skript schaltet den go-e-Modus. EMS-Ziel, Modus-ACK und elektrische Phasenlage sind getrennte Nachweise. |
-| Fahrzeugladung zur Abfahrt | Optionale Planung des Mindest-SoC und sofortige Mobilitätsreserve je Fahrzeug. |
-| Batteriestrategie | Optionale PV-Abstimmung von Speicher und Wallbox im Regler. Die gemeinsame Reserve- und Nachtplanung ist als lesende Vorschau verfügbar. |
-| Wärmepumpe | Telemetrie und passive Empfehlungen. WP-, SG-Ready- und KNX-Stellbefehle sind nicht implementiert. |
-
-Pro Stellregister muss genau ein Regler zuständig sein. Mess-, Schutz-, Phasen- und notwendige Pumpenskripte bleiben nach ihrem jeweiligen Vertrag erforderlich. Bei Rückgabe den externen EMS-Phasenfolger passend deaktivieren, EMS-Freigabe entziehen, unabhängiges AUS und elektrische Ruhe prüfen und danach den Folgeregler aktivieren. `OutputOwned=false` allein beweist keine physische Abschaltung.
-
-## Istwertverteilung ohne Fahrplan
-
-Fehlt ein gültiger aktueller Fahrplan, verteilt das EMS verfügbare Leistung weiter anhand gültiger Istwerte. Fahrzeugpriorität, Mindest-SoC/manuelle Vorgaben, EHZ-Temperaturfreigabe und alle Quellen-, Netz-, Phasen- und Gerätegrenzen gelten weiter. `Control.PlanFallbackActive` und `Control.PlanFallbackStatus` zeigen diesen Betrieb an; `Plan.Valid` wird dadurch nicht gültig. Preisfahrplan-Laden, günstiger Netzstrom für Wärme und geplanter PV-Boost bleiben gesperrt. Sobald ein echter aktueller Fahrplan vorliegt, wechselt der Regler automatisch zurück. [Historienwiederherstellung und Grenzen](docs/release-0.17.0-alpha.198.md).
-
-Ein freigegebener EHZ kann während der Startwartezeit auch das vorgemerkte Budget weiterer wartender Fahrzeuge nutzen. Die Autos behalten Vorrang; vor deren Start muss die erforderliche Heizleistung nachweislich zurückgenommen sein. „Aufteilung AUS“ bedeutet keine feste gemeinsame Zuteilung und sperrt diese Restnutzung nicht. Eine entzogene EHZ-Freigabe wird dadurch nicht übergangen. Bei laufender 3P-Mindestladung wird keine neue Startreserve verlangt; gestoppte Fahrzeuge verwenden die konfigurierte Reserve. [Zwischenpuffer und Grenzen](docs/release-0.17.0-alpha.199.md).
-
-## Speicher-Nullregelung
-
-Bei Pflichtladung unter dem Fahrzeug-Mindest-SoC pausiert die normale Speicherregelung. Speicherhilfe für die Wallboxen setzt mindestens 80 % Speicher-SoC voraus. Prognostiziert der Fahrplan mehr als sechs Stunden am Stück unter 20 %, hält das EMS diese Reserve und nutzt bei gemessenem Unterschreiten ein rechtzeitig nutzbares günstiges Nachladefenster. Die verfügbaren Netz- und Phasenbudgets begrenzen den gleichzeitigen Betrieb. [Versionshinweise](docs/release-0.17.0-alpha.288.md)
-
-Nach einer abgeschlossenen SoC-Etappe gibt die optionale Speicher- und Wallbox-Koordination die vorgemerkte PV-Reserve frei. Der Live-Regler lädt mit dem verbleibenden Überschuss am Netzanschlusspunkt, auch wenn er vom BHKW kommt. Maßgeblich sind der Netzsollwert, das Speicher-Totband sowie die aktuell nutzbaren Leistungs- und SoC-Grenzen.
-
-Bei 10 W Totband macht 1 W Netzbezug aus einem laufenden 11‑W‑Ladeauftrag 10 W. Ein freigegebener SunEnergy-Einzelkopf erhält den kleineren Ladeauftrag auch bei offener Rückmeldung. Ein direkter Richtungswechsel ist in beiden Richtungen möglich, wenn nach Abzug der bisherigen Speicherwirkung genügend Bezug oder Überschuss übrig bleibt. [Rechenbeispiele, Vorzeichen und Diagnose](docs/admin-reference.de.md#live-regelung-des-speichers)
-
-## Warmwasserplanung und Vorrang
-
-Der Fahrplan baut die nötige Warmwasserreserve vor einem teureren Preisblock in den letzten nutzbaren günstigeren Intervallen auf. PV, Heizleistung, Speicherplatz und Restzeit begrenzen die Vorziehung. Vor einem günstigeren Fenster kann der Planer die notwendige Überbrückungswärme gleichmäßig über gleich teure Viertelstunden verteilen. Voraussetzung sind ausreichende Mindestreserve und passende Heizgrenzen. Die tatsächliche Heizleistung benötigt eine eigene Freigabe. [Preisvorschau und Grenzen](docs/release-0.17.0-alpha.202.md) · [Änderungen in Alpha.203](CHANGELOG_OLD.md#0170-alpha203-2026-11-05)
-
-Der EHZ kann Pflichtwärme liefern, während das bevorzugte Fahrzeug seine bestätigte einphasige Mindestladung hält, wenn beide Lasten ins Budget passen und oben ausreichend warmes Wasser verfügbar ist. Nach einem bestätigten Wärmestopp kann dasselbe Fahrzeug bei frischem Budget und erfüllten Schutz- und Freigabebedingungen früher wieder anlaufen. [Wärmepriorität und Wiederanlauf](docs/release-0.17.0-alpha.201.md)
-
-## Fahrzeug-SoC und Sitzungswechsel
-
-| Situation | Wirksame Quelle / Verhalten |
-| --- | --- |
-| Bestätigtes Abstecken | Berechnete Basis, gehaltener Schätzwert, manuelle Korrektur und zugehörige Warnung werden verworfen. |
-| Danach, bis Ladeenergie in der neuen Sitzung erfasst wird | Gültiger Cloud-/Fahrzeugwert. `SocEstimateStatus = cloud-after-unplug` zeigt das Warten auf die neue Ladebasis an. |
-| Neue Ladung bei aktivierter SoC-Schätzung | Letzten gültigen App-Wert mit dem frischen Wallbox-Zähler verankern und anhand der neu gemessenen Energie fortschreiben. |
-| Ladebasis stammt von vor dem beobachteten Abstecken | `energy-estimate-provisional-trip` zeigt die vorläufige Schätzung. In den ersten 30 Minuten kann einmalig ein niedrigerer App-Wert mit passendem Zählerstand zur neuen Basis werden. |
-| Neue manuelle Eingabe | Geprüften SoC von 0 bis 100 mit `ack=false` nach `Vehicles.WallboxN.SoCCorrection_pct` schreiben. Bei bestätigtem Abstecken wird er für das nächste Anstecken innerhalb von 30 Minuten vorgemerkt. Er gilt ab der ersten Ladeentscheidung. Die Fortschreibung beginnt mit dem frischen Energiezählerstand der neuen Sitzung. |
-| Manuelle Eingabe zurücknehmen | `-1` schreiben. Status unter `SoCCorrectionActive` und `SoCCorrectionStatus` prüfen. |
-| Fehlende oder widersprüchliche Daten einer manuellen Basis | Fortschreibung kann suspendiert werden; keine stillschweigende Übernahme einer alten Cloud-Meldung. |
-| Ununterbrochene automatische Ladung ohne Sitzungsende | Vorhandene qualifizierte Fortschreibung bleibt erhalten; verspätete Cloud-Werte können eine Plausibilitätswarnung auslösen. |
-
-Nach einer Fahrt gilt bis zum neuen Ladebeginn der jeweils aktuelle Cloud-Wert. Sobald die Wallbox Ladeenergie erfasst, rechnet das EMS auf dieser Basis weiter. Nach Ablauf der vorläufigen Phase oder Übernahme einer neuen Basis lösen abweichende spätere App-Werte ohne Fahrzeugmesszeitpunkt bei durchgängiger Zählung ab einem Unterschied von mehr als einem Prozentpunkt eine Warnung aus. Der geschätzte SoC bleibt dann wirksam. [Ausnahme und Nachweisgrenzen](docs/release-0.17.0-alpha.204.md) · [Fahrzeugmesszeitpunkt #320](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/320).
-
-`SoC_pct` ist der wirksame Regelwert, `ReportedSoC_pct` der gemeldete Wert und `EstimatedSoC_pct` die aktive Fortschreibung. [Vollständiger SoC-Vertrag](docs/admin-reference.de.md#optionale-soc-schätzung-aus-ladeenergie-alle-drei-fahrzeuge)
-
-### Mobilitätsreserve und vorhandene Abfahrtszeit
-
-Der Haken **Mindest-SoC bis zur Abfahrt einplanen** steht je Wallbox standardmäßig auf **Aus**. Bei Ladefreigabe gilt damit die Sofortladung bis zum Mindest-SoC. Für die Terminplanung braucht das EMS eine gültige Abfahrtszeit und Preisladesitzung, die Abfahrts- und Preis-Netzladefreigabe sowie eine Mobilitätsreserve größer 0 % und unter dem Mindest-SoC.
-
-Unterhalb der Mobilitätsreserve lädt das EMS sofort. Für den restlichen Mindestbedarf rechnet es die bis zur Abfahrt nutzbare PV an und wählt Viertelstunden nach dem niedrigsten Gesamtpreis inklusive Netzentgelt. Bei festem Energiepreis und zeitvariablem Netzentgelt nutzt es zuerst den Niedrigtarif, bei Bedarf den Standardtarif und zuletzt den Hochtarif. Die Preisobergrenze gilt für die freiwillige Netzladung bis zum Ziel-SoC. Bei fehlendem oder rechnerisch unzureichendem Plan greift die Sofortladung bis zum Mindest-SoC. [Admin-Referenz](docs/admin-reference.de.md#mobilitätsreserve-und-vorhandene-abfahrtszeit) · [Versionshinweise](docs/release-0.17.0-alpha.222.md)
-
-### Start, Stopp, Übergabe und Phasenwechsel
-
-Eine beobachtete EMS-Ladung kann unter den vorgesehenen Bedingungen ihre Startqualifikation übertragen. Das bisherige Fahrzeug bleibt bis zum unabhängigen AUS-ACK und zur bestätigten elektrischen Ruhe reserviert; erst freies Budget erlaubt den Empfängerstart. Ein angestecktes Fahrzeug oder ein erfolgreich geschriebener Befehl ist noch keine bestätigte Ladung.
-
-Bei anhaltend begrenzter Aufnahme kann das EMS den Bedarf des weiterladenden Fahrzeugs begrenzen und seinen Befehl absenken. Das nächste Fahrzeug erhält Budget erst nach qualifizierter Freigabe der alten nominalen Reserve. Dieser Fall ist getrennt vom vollständigen Ladeende zu prüfen. [Budgetweitergabe](docs/release-0.17.0-alpha.195.md).
-
-Frisches go-e-Finish nach vorheriger eigener Ladung und zehn Sekunden bestätigter elektrischer Ruhe kann Ladeende und anschließende Übergabe auslösen. Der Hinweis bittet um Prüfung von SoC und Fahrzeuglimit. [Ladeende](docs/release-0.17.0-alpha.194.md) · [Reale Abnahmereste #7](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/7).
-
-Melden beide go-e-Stromdatenpunkte nach einem bestätigten 1‑A‑Schritt den vorherigen niedrigeren Strom, kann das EMS eine laufende einphasige Ladung einmalig übernehmen. Eine frische elektrische Messung muss dazu passen. Das EMS fordert höchstens diesen niedrigeren Wert an und senkt ihn bei kleinerem Budget weiter. Beide Rückmeldungen müssen den neuen Auftrag innerhalb der vorhandenen Frist bestätigen. Bei fehlender Bestätigung oder einer verletzten Schutzgrenze greift der Stopp. [Alpha.205 und Nachweisgrenzen](docs/release-0.17.0-alpha.205.md)
-
-## EMS-Übersicht: Erklärung, Datenqualität und Tagesrückblick
-
-Der erste Admin-Reiter zeigt **Betriebszustand**, **aktuelle Hinweise** und **Geräte auf einen Blick**. Fahrplan/Batterievorschau, Tagesbilanzen und technische Diagnose lassen sich darunter aufklappen. Alle Anzeigen sind lesend.
-
-| Zustände relativ zur Instanz | Wofür sie stehen |
-| --- | --- |
-| `System.Version` | Laufende Adapterversion. |
-| `Diagnostics.*` | Übersicht, aktuelle Hinweise, Planerklärung, Tagesbilanzen und technische Details. |
-| `Control.*` | Gültigkeit, Zuteilung, Budgets und Phasenentscheidungen. |
-| `Devices.WallboxN.*` | Aufträge, ACK-/Antwortstatus, Reserven, Eigentum und Ausgangsfehler. |
-| `Vehicles.WallboxN.*` | Gemeldeter/wirksamer SoC, Quelle, manuelle Korrektur und Ladeziele. |
-| `Debug.DailySummary_JSON` | Begrenzte persistente Leistungsintegrale und Ereignisse pro Berlin-20-Uhr-Periode. |
-| `Debug.Shadow.RecordDeliveryStatus` | Originalzustellung, Rückstand und unabhängige SQL-Bestätigung. |
-| `Debug.Shadow.RecordWriterStatus`, `RecordReaderStatus` | Getrennte Schreib-/Leseprüfung einschließlich offener oder unbekannt abgeschlossener Anfrage. |
-| `Forecast.LoadComparison.*` | Vorab gespeicherte Modellprognosen und paarweise Ist-Auswertung. |
-
-Die vollständige ID beginnt beispielsweise mit `ems-optimizer.0.`. Sollwert, Geräte-ACK und elektrische Wirkung getrennt lesen. Bei der Stromantwortdiagnose bedeutet `superseded`, dass ein neuer Befehl den noch offenen Vorgang abgelöst hat; unvollständige Nachweise bleiben innerhalb ihrer ursprünglichen Frist offen. Solche Ereignisse belegen allein keinen Gerätefehler.
-
-### SQL-Wiederherstellung und historische Lücken
-
-Recorderaufnahme, exakte SQL-Speicherbestätigung und externe historische Abrufbarkeit sind getrennte Qualitätsfragen. Ohne angebundenen externen Prüfbericht steht die Historie auf **„nicht geprüft“**. Tagesenergie aus Leistungsintegralen ist eine Schätzung; unbekannte Zeit, historische Zielerreichung und Kosten werden nicht als Null oder Erfolg ausgegeben.
-
-Ein hängender Verifikationsleser sperrt weitere Prüfqueries, während begrenzte neue Veröffentlichungen weiterlaufen können. Unbestätigte Originale werden nicht nach Alter gelöscht; endliche Kapazität und neue Verluste bleiben sichtbar. Eine frische Bestätigung heilt frühere Verluste nicht. Ein unbekannter SQL-Abschluss darf nicht erzwungen quittiert werden. [Diagnose und qualifizierte Recovery](docs/admin-reference.de.md#diagnose-sql-und-datenqualität) · [Offene technische Ursache #60](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/60).
-
-### Median, Lasso und Kombinationen
-
-Der passive Vergleich stellt Median, Lasso, feste 50/50-Mischung und Lasso-Tagesenergie mit Median-Verlauf gegenüber. Prognosen werden vorab gespeichert und bei Neustart nicht rückwirkend ersetzt. Training startet beim Adapterstart und täglich um 00:10, mit höchstens 84 Tagen.
-
-Die Istwerte werden aus zeitgewichteten Rohmessungen auf gemeinsamen Viertelstunden berechnet. Lücken bleiben unbekannt. MAE, RMSE und Energiefehler nur für dieselben gültigen Messpaare vergleichen. Die 7-/14‑Kalendertage-Fenster zeigen die Abdeckung. Eine Tagesenergie erfordert 96 gültige Paare. Tage mit 92 oder 100 Viertelstunden sind derzeit ausgeschlossen. Die produktive Profilwahl erfolgt separat. Optional verwendet der Fahrplan die vorab gesicherte 50/50-Mischung. Für Viertelstunden ohne gültiges Paar bleibt der Median aktiv. [Berechnung und Grenzen](docs/release-0.17.0-alpha.200.md) · [Aktueller Vergleich #284](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/284)
+1. Öffne im ioBroker-Admin **Adapter → Installation aus eigener Quelle → GitHub**. Verwende `https://github.com/fuchs-1978/ioBroker.ems-optimizer`. Wähle für eine reproduzierbare Installation den Commit eines geprüften Stands. [GitHub-Prüfläufe auf main](https://github.com/fuchs-1978/ioBroker.ems-optimizer/actions/workflows/test-and-release.yml?query=branch%3Amain)
+2. Öffne **Instanzen → ems-optimizer.0 → Einstellungen**. Bei einer weiteren Instanz lautet die Nummer entsprechend anders.
+3. Beginne bei **Allgemein**, **Netzanschluss / §14a / EEBUS** und **Messwerte**. Lass die Master-Freigabe beim Einrichten aus. Schalte in den jeweiligen Reitern **vorhanden** für Geräte aus, die deine Anlage nicht hat.
+4. Ergänze **Historie und Prognose** sowie **Preise & Tarife**, wenn du einen Fahrplan nutzen willst. Richte anschließend einen realen Ausgang ein, etwa eine Wallbox mit einer bewusst niedrigen Inbetriebnahmegrenze.
+5. Speichere und prüfe unter **EMS-Übersicht** die Messwerte, Hinweise und Gerätezuordnung. Erst danach folgt die [Freigabe des einzelnen Ausgangs](#admin-allgemein).
+6. Prüfe nach einem Update `System.Version` und die wirksamen Einstellungen. Zeigt der Prozess noch die alte Version, starte die Instanz neu und prüfe erneut. [Laufzeitvoraussetzungen](docs/runtime-requirements.md)
 
 ## So liest man die Admin-Anleitung
 
-Die [vollständige Adminreferenz](docs/admin-reference.de.md) enthält alle bisherigen Feldtabellen, Schlüssel, Auslieferungswerte und technischen Grenzen. Die folgenden Einstiegspunkte halten auch die bisherigen Bereichslinks erreichbar.
+| Begriff | Bedeutung beim Einrichten |
+| --- | --- |
+| Datenpunkt oder Objekt-ID | Vollständige Adresse unter **Objekte**, etwa `zaehler.0.netz.bezug_W` als Beispiel. Kopiere die ID deiner Anlage. Ein Basisdatenpunkt ist der gemeinsame Anfang mehrerer Objekt-IDs in einem Baum. |
+| Sollwert und Istwert | Der Sollwert ist der Auftrag, etwa 6 A. Der Istwert ist die gemessene Reaktion. Eine Gerätebestätigung (ACK) und der tatsächliche Strom sind zwei eigene Prüfungen. |
+| Leistung und Energie | W und kW geben an, wie viel Leistung gerade fließt. Eine Stunde mit 2 kW ergibt 2 kWh Energie. 1 kW entspricht 1.000 W. |
+| SoC | Füllstand eines Akkus in Prozent. Bei 20 % Mindest-SoC darf eine 15-kWh-Batterie für den normalen Betrieb nur den Bereich oberhalb von ungefähr 3 kWh nutzen. |
+| Netzverknüpfungspunkt (NVP) | Stelle, an der dein Haus Strom aus dem öffentlichen Netz bezieht oder dorthin abgibt. Das EMS rechnet mit positivem Saldo bei Bezug und negativem bei Einspeisung. |
+| Hysterese | Abstand zwischen zwei Umschaltgrenzen. Sie verhindert häufiges Hin- und Herschalten in der Nähe einer Grenze. |
 
-### Admin: Allgemein
+In **Objekte** kannst du Einheiten, Zustände und Zeitstempel ansehen. Ein als optional gekennzeichnetes Feld kannst du leer lassen, wenn die Funktion für deine Anlage entbehrlich ist. Bei einem Update kann für ein leeres Feld noch eine alte [Datenpunktzuordnung](#admin-erweiterte-datenpunkte) greifen. Die Feldreferenz nennt Vorgaben für neue Installationen und die technischen Schlüsselnamen. Verwende für Leistungen, Ströme und Temperaturen die Grenzen deiner Geräte und Anlage.
 
-[Master-, Geräte- und gemeinsame Ausgangsfreigaben](docs/admin-reference.de.md#admin-allgemein).
+### Die Admin-Reiter in Bildschirmreihenfolge
 
-### Admin: Netzanschluss / §14a / EEBUS
+| Reiter | Wann du ihn brauchst |
+| --- | --- |
+| [EMS-Übersicht](#admin-ems-übersicht) | Messwerte, Gründe und Gerätestatus kontrollieren |
+| [Allgemein](#admin-allgemein) | Reale Ausgänge freigeben |
+| [Netzanschluss / §14a / EEBUS](#admin-netzanschluss--14a--eebus) | Hausanschluss und vorhandene Netzbetreibersignale abbilden |
+| [Messwerte](#admin-messwerte) | PV, Bezug und Einspeisung zuordnen |
+| [Historie und Prognose](#admin-historie-und-prognose) | Verbrauch und Erzeugung vorausschätzen |
+| [PV-Korrektur](#admin-pv-korrektur) | Wiederkehrende Prognoseabweichungen je PV-Fläche ausgleichen |
+| [Preise & Tarife](#admin-preise-und-tarife) | Strompreis und gegebenenfalls zeitvariable Netzentgelte hinterlegen |
+| [Wallboxen allgemein](#admin-wallboxen-allgemein) | Priorität, Parallelbetrieb und Wartezeiten festlegen |
+| [Wallbox 0 – Mii/e-Up](#admin-wallbox-0--miie-up) | Erste Wallbox einrichten und gemeinsame Fahrzeugfelder verstehen |
+| [Wallbox 1 – EQV](#admin-wallbox-1--eqv) | Zweite Wallbox einrichten |
+| [Wallbox 2 – EQE](#admin-wallbox-2--eqe) | Dritte Wallbox einrichten |
+| [Warmwasser-Heizstab](#admin-warmwasser-heizstab) | Trinkwarmwasser mit einem my-PV-Heizstab einplanen oder regeln |
+| [Heizpuffer](#admin-heizpuffer) | Einen separaten Heizstab für den Heizkreis einrichten |
+| [Batteriespeicher](#admin-batteriespeicher) | Stationären Speicher einrichten und seine Strategie festlegen |
+| [Wärmepumpe](#admin-wärmepumpe) | Elektrische Leistung, Temperaturen und Empfehlungen anzeigen |
+| [Wärmestrategie](#admin-wärmestrategie) | Kühlstatus und optionales Heizen bei günstigen Preisen einrichten |
+| [Echtzeitregelung](#admin-echtzeitregelung) | Netzsollwert und Toleranzen einstellen |
+| [Erweiterte Datenpunkte](#admin-erweiterte-datenpunkte) | Alte Zuordnungen bei einem Update prüfen |
+| [Geräte](#admin-geräte) | Haushaltsprogramme oder Temperatur-Sollwerte einrichten |
 
-[Hausanschluss, Phasenquellen, Teilnehmergruppe und Budgetarten](docs/admin-reference.de.md#admin-netzanschluss--14a--eebus). LPC/groupNet-Integration bleibt [#166](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/166).
+## Admin: EMS-Übersicht
 
-### Admin: Messwerte
+Dieser Reiter zeigt Ergebnisse und Gründe. Einstellungen bleiben in den jeweiligen Gerätereiter.
 
-[PV, Netz, Haushalt, BHKW und Quellenzeiten](docs/admin-reference.de.md#admin-messwerte). Nur Verbraucher abziehen, die tatsächlich innerhalb der gewählten Messgrenze liegen.
+| Anzeige | Was du dort prüfst |
+| --- | --- |
+| **Betriebszustand** und **Aktuelle Hinweise** | Sind die aktuellen Messwerte nutzbar? Liegt ein Konflikt oder eine fehlende Freigabe vor? |
+| **Geräte auf einen Blick** | Welches Gerät ist verfügbar? Welche Leistung wird verlangt und welche gemessen? |
+| **Fahrplan und Batterie-Vorschau** | Welche Abfahrt ist rechnerisch erreichbar und welche Speicherreserve zeigt der Plan an? |
+| **Tagesbilanzen** | Netzbezug, Einspeisung und weitere Leistungsintegrale für die jeweilige Periode. Die Bilanzperiode wechselt um 20:00 Uhr (Europe/Berlin). Die Werte sind Schätzungen aus aufgezeichneten Messungen. Prüfe die Zeitabdeckung mit. |
+| **Technische Diagnose** | Quellenqualität, Aufzeichnung, SQL-Speicherbestätigung, Reaktionszeiten und Gründe der Regelung. |
 
-### Admin: Historie und Prognose
+Unter **Objekte** ergänzen `Plan.Valid` und `Control.Valid` die Übersicht. Bei gültigen Istwerten kann die normale Leistungszuteilung mit `Control.PlanFallbackActive` weiterlaufen, wenn der Fahrplan fehlt. Preisgeführtes Laden, günstiger Netzstrom für Wärme und geplanter PV-Boost warten dann auf einen gültigen Fahrplan. [Übersicht und Zustände](docs/admin-reference.de.md#admin-ems-übersicht) · [Fahrplan-Ersatzbetrieb](docs/release-0.17.0-alpha.198.md)
 
-[Historien-, Wetter-, Raum- und Prognosequellen](docs/admin-reference.de.md#admin-historie-und-prognose).
+## Admin: Allgemein
 
-### Admin: Preise und Tarife
+Die **Master-Freigabe für konfigurierte reale Ausgänge** erlaubt grundsätzlich Stellbefehle. Die Schalter **vorhanden**, **Regelfreigabe** und **Ausgang freigeben** geben zusätzlich das jeweilige Gerät und seinen Steuerpfad frei. Für die gemeinsame Wallbox-/Warmwasserregelung gibt es die **ALPHA-Regelung** und beim Heizstab eine **gemeinsame Produktivfreigabe**. Die Wärmepumpen-Empfehlung hat ihren eigenen lesenden Pfad.
 
-[Gesamtpreis, Zeitfenster und bestehende Preisladung](docs/admin-reference.de.md#admin-preise-und-tarife).
+1. Prüfe die Messung des betroffenen Geräts bei ausgeschaltetem Master. Der Schattenbetrieb modelliert eine Wallboxreaktion für die Diagnose.
+2. Kläre, wer den Strom-, Leistungs- oder Startdatenpunkt schreibt. Beende konkurrierende Stellskripte des betreffenden Ausgangs. Getrennte Mess-, Schutz- und gegebenenfalls Phasen- oder Pumpenfunktionen bleiben entsprechend ihrer Zuordnung in Betrieb.
+3. Setze die nötigen Freigaben für **einen** Ausgang und beobachte bei niedriger Inbetriebnahmegrenze Auftrag, Bestätigung und gemessene Wirkung. Prüfe auch den Stopp und die elektrische Ruhe.
+4. Soll ein anderer Regler übernehmen, nimm die EMS-Freigabe zurück und deaktiviere gegebenenfalls den EMS-Phasenfolger gemäß seiner Anleitung. Gib den Folgeregler erst nach bestätigtem Stopp frei. `OutputOwned` beschreibt die Zuständigkeit im EMS. Für die Abschaltung brauchst du die Geräterückmeldung und die elektrische Messung. [Freigaben](docs/admin-reference.de.md#admin-allgemein) · [Phasenfolger](docs/phase-follower-v2.md)
 
-### Admin: Wallboxen allgemein
+## Admin: Netzanschluss / §14a / EEBUS
 
-[Gemeinsame Zuteilung, Mindeststrom, Prioritäten und Timer](docs/admin-reference.de.md#admin-wallboxen-allgemein).
+Trage bei **Physische Hausanschlusssicherung je Phase** den Anlagenwert ein. Die **Regelreserve unterhalb des Sicherungsnennstroms** lässt Abstand für wechselnde Hauslasten. Rechnerisch ergeben 50 A je Phase und 4 A Reserve eine Betriebsgrenze von 46 A je Phase. Das ist ein Rechenbeispiel. Reale Phasenmesswerte ordnest du unter **Messwerte** zu. Prüfe auch, auf welcher Netzphase eine einphasig ladende Wallbox tatsächlich liegt.
 
-### Admin: Wallbox 0, 1 und 2
+| Vorhandener Eingang | Einstellung und Kontrolle |
+| --- | --- |
+| §14a-Binärkontakt | Datenpunkt, Schaltlogik und Budgetquelle passend zur Anlage zuordnen. Das Signal und das gemeinsame Limit müssen in der Diagnose im erwarteten Zustand erscheinen. |
+| EEBUS | Zusammengehörige Datenpunkte für **LPC.state** und **LPC.limit** verwenden. Die optionalen LPP-Datenpunkte gehören zur getrennten Erzeugungsseite. |
+| Deklarierte Gruppen-Netzbezugsbilanz | Benötigt eine erklärte gemeinsame AC-Messgrenze, vollständige zeitlich passende Quellen für die Gruppe und die konfigurierte Erfassung von Speichern. Die Felder gehören zur Inbetriebnahme einer solchen Gruppe. |
 
-[Geräte-/SoC-/Leistungsquellen, Stromgrenzen und Ausgangsvertrag](docs/admin-reference.de.md#admin-wallbox-0-1-und-2). Fahrzeugnummer und reale Zuordnung im Admin prüfen.
+**Preise & Tarife** bestimmt den Kostenvergleich. Dieser Reiter bestimmt die im Betrieb einzuhaltenden elektrischen Budgets. Prüfe vor Stellfreigabe das Verhalten im Normalbetrieb und bei aktivem Begrenzungssignal. [Budgetquellen, Phasen und Messgrenzen](docs/admin-reference.de.md#admin-netzanschluss--14a--eebus) · [LPC-Integration #166](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/166)
 
-### Admin: Warmwasser-Heizstab
+## Admin: Messwerte
 
-[Temperaturen, Leistungsgrenzen, Freigaben und my-PV-Rückmeldung](docs/admin-reference.de.md#admin-warmwasser-heizstab). Das Schichtungsminimum kann kleinen Restüberschuss ungenutzt lassen.
+Ordne zuerst **PV-Erzeugungsleistung**, **Netzbezugsleistung** und **Netzeinspeiseleistung** in W zu. Für die getrennten Netzfelder verwendest du positive oder null betragende Werte. Liefert dein Zähler nur einen gemeinsamen Wert mit Vorzeichen, stelle passende getrennte Quellen bereit und prüfe die Zuordnung. Das EMS bildet aus diesen beiden Werten das Saldo Bezug minus Einspeisung.
 
-### Admin: Heizpuffer
+- Schalte einen bekannten Verbraucher im normalen Betrieb ein. Der Bezug sollte steigen oder die Einspeisung sinken. Prüfe bei PV-Überschuss die Gegenrichtung.
+- Ergänze Außentemperatur, Haus-/Unterzähler und BHKW je nach Anlage. Ein Unterzähler zählt für die Lastprognose nur mit seiner tatsächlichen Messgrenze. Ziehe beispielsweise eine Wallboxleistung aus der gemessenen Hauslast nur ab, wenn der Hauszähler sie mitmisst. Das BHKW lässt sich separat anzeigen. Der Netzanschlusszähler enthält seine Wirkung bereits.
+- Für die elektrische Begrenzung ordnest du vorhandene Messwerte auf L1, L2 und L3 zu. Eine Gesamtleistung kann eine hohe Belastung auf einer einzelnen Phase verdecken.
+- Lass den normalen **Zeitstempelvertrag der Netzquelle** bei **Veröffentlichungszeiten**, solange dein Treiber keine gemeinsame Telegramm-Empfangszeit für Bezug und Einspeisung nachweislich liefert. Prüfe, dass die Quellen auch gleichbleibende Werte regelmäßig als aktuell bestätigen. [Messquellen, Zeitgrenzen und Datenqualität](docs/admin-reference.de.md#admin-messwerte)
 
-[Getrennter Heizpufferausgang und thermische Grenzen](docs/admin-reference.de.md#admin-heizpuffer).
+## Admin: Historie und Prognose
 
-### Admin: Batteriespeicher
+Die Historie schätzt die typische Last deines Haushalts. PV- und Wetterprognose beschreiben die nächsten Stunden. Damit kann der Plan zum Beispiel Platz im Batteriespeicher für erwartete PV-Erzeugung vorsehen.
 
-Die Admin-Referenz beschreibt Kopfzuordnung, SoC-Grenzen, Speichervorrang und die Pufferung von Wallbox-Stromschritten. [Speicherfelder im Admin](docs/admin-reference.de.md#admin-batteriespeicher) · [Integration und Abnahme #25](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/25)
+1. Trage bei **Instanz des Historien-/SQL-Adapters** die vorhandene Instanz ein, etwa `sql.0`. Prüfe unter **Objekte**, ob die genutzten Leistungsquellen tatsächlich historisiert werden. Der standardmäßige Rückblick von 84 Tagen nutzt die vorhandenen Werte.
+2. Weise bei **Wetterprognose** und **PV-Prognose** jeweils den Basisdatenpunkt des unterstützten Baums zu. Vergleiche mindestens eine künftige Stunde mit Datum, Einheit und Leistung der Quelle. PV-Leistung wird in W für die jeweilige Fläche erwartet. Ordne die Namen der Flächen im [JSON-Feld für die Prognose](#pv-flächen-im-prognosebaum) zu.
+3. Beginne beim **Verfahren für historische Lastprofile** mit **Median**. Es verwendet typische gemessene Werte nach Wochentag und Uhrzeit. Die aktuelle Gewichtung räumt jüngeren Tagen mehr Einfluss ein.
+4. Für **50/50 Median + Lasso** aktiviere zusätzlich **Prognosevergleich Median / Lasso**. Lasso lernt Zusammenhänge aus der Historie. Die Mischung gilt je Viertelstunde, sobald ein gültiges, vorab gespeichertes Paar passt. In den übrigen Viertelstunden verwendet der Fahrplan den Median. Das Feld `source` in `Forecast.Baseload_48h_JSON` zeigt die verwendete Methode. Zum Zurückstellen wählst du **Median**.
 
-### Admin: Wärmepumpe
+Der Prognosevergleich kann auch bei produktivem Median mitlaufen. Vergleiche Modelle für dieselben gemessenen Viertelstunden und prüfe Abdeckung, Leistungsfehler und Energieabweichung. Das Wetterarchiv und die optionale Raumhistorie sammeln Daten für spätere Auswertungen. [Quellformate, Cache und Vergleich](docs/admin-reference.de.md#admin-historie-und-prognose) · [50/50-Fahrplan](docs/release-0.17.0-alpha.293.md)
 
-[Telemetrie und passive Empfehlungen](docs/admin-reference.de.md#admin-wärmepumpe).
+## Admin: PV-Korrektur
 
-### Admin: Wärmestrategie
+Unter **Monatliche PV-Korrekturfaktoren** kannst du für jede Fläche eine Zeile anlegen. Kopiere deren genauen Namen aus dem PV-Prognosebaum. **0,80** übernimmt 80 % der prognostizierten Leistung. **1,20** erhöht die Prognose um 20 %. Ohne gültigen Monatsfaktor verwendet das EMS 1,00.
 
-[Vorhandene thermische Planungsparameter](docs/admin-reference.de.md#admin-wärmestrategie). Erweiterung mit realer WP bleibt [#160](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/160).
+Wenn eine Fläche im November an vergleichbaren Tagen regelmäßig etwa 8 kWh aus erwarteten 10 kWh erzeugt, ist 0,80 ein prüfbarer Ansatz für diesen Monat. Vergleiche danach mehrere Tage. Die Korrektur ändert die Vorausschau, während die Live-Regelung weiterhin die aktuelle Messung verwendet. [Zuordnung und Geltungsbereich](docs/admin-reference.de.md#admin-pv-korrektur)
 
-### Admin: Echtzeitregelung
+<a name="admin-preise-und-tarife"></a>
 
-[NVP-Regelung und Echtzeitsimulation](docs/admin-reference.de.md#admin-echtzeitregelung).
+## Admin: Preise & Tarife
 
-### Admin: Erweiterte Datenpunkte
+Das EMS vergleicht den **gesamten Brutto-Arbeitspreis in ct/kWh** je Viertelstunde. 0,29 €/kWh entsprechen 29 ct/kWh. Der monatliche Grundpreis gehört nicht in dieses Feld. Beginne mit der für deinen Vertrag zutreffenden Preisart.
 
-[Zusätzliche Quellen und konkrete Objektzuordnung](docs/admin-reference.de.md#admin-erweiterte-datenpunkte).
+| Vertrag oder Datenquelle | Was du einträgst |
+| --- | --- |
+| Fester Arbeitspreis als Gesamtbetrag | Wähle **Vertragspreis gesamt mit Referenz-Netzentgelt**. Hinterlege den gesamten Vertragspreis brutto und das darin enthaltene Referenz-Netzentgelt. Für den Festbetrieb trägst du im Feld **Festes Netzentgelt** das geltende Entgelt mit der gewählten Brutto-/Nettobasis ein. Beispiel bei durchgehend brutto: 29 − 7 + 7 = 29 ct/kWh. |
+| Getrennte Preisbestandteile | Wähle **Energieanteil plus Netzentgelt** und gib beide Beträge in ihrer korrekt gewählten Brutto-/Nettobasis an. |
+| Dynamischer Energiepreis | Aktiviere ihn und wähle **Energy-Charts: DE-LU Day-Ahead** oder eine unterstützte externe Reihe. Ergänze die tatsächlich anfallenden Aufschläge. Bei externer Reihe kontrollierst du Einheit und Brutto-/Nettobasis. |
+| Zeitabhängiges Netzentgelt | Aktiviere es für den anzuwendenden Tarif. Wähle die zeitbezogene externe Reihe oder **Jahrestarif mit Zeitfenstern**. Trage Tarifjahr, Standard-, Hoch- und Niedrigtarif sowie für alle vier Quartale lückenlose Tage im 15-Minuten-Raster ein. |
+
+Ein zugeordneter externer Freigabeschalter bestimmt, ob die dynamische Quelle verwendet wird. Kontrolliere in `Forecast.TotalPrice_48h_JSON` den Preis vor und nach einem Tarifwechsel und vergleiche ihn mit deinem Vertrag. **Netzladen** wird gesondert im Reiter des Fahrzeugs oder der Batterie freigegeben. **Günstigpreisheizen** hat ebenfalls eine eigene Freigabe. [Preise, Reihen und Beispiele](docs/prices-and-tariffs.md) · [Admin-Felder](docs/admin-reference.de.md#admin-preise-und-tarife)
+
+## Admin: Wallboxen allgemein
+
+- **Wallboxen parallel laden** erlaubt mehrere gleichzeitige Ladevorgänge, sofern Mindestströme und das gemeinsame Budget zusammenpassen. Die **bevorzugte Wallbox** erhält bei knappem Budget Vorrang nach den geltenden Lade- und Schutzregeln. Für die manuelle Auswahl im Admin stellst du die Prioritätsquelle passend auf **Auswahl im Admin**.
+- **Zusätzlicher Überschuss vor dem Start** und **Dauer des stabilen Überschusses vor dem Start** helfen bei wechselnder PV. Eine einphasige Wallbox benötigt bei 6 A und 230 V rund 1.380 W. Bei 300 W zusätzlichem Startüberschuss ergibt das im einfachen PV-Fall rund 1.680 W. Dreiphasig sind 6 A je Phase rund 4.140 W vor Startreserve. Weitere Lasten und Schutzreserven können die Freigabe beeinflussen.
+- **Mindestlaufzeit** und **Ausschaltverzögerung** begrenzen Wechsel bei kurzen Wolken. Schutzbedingungen und ausdrückliche Stopps gelten auch während der Wartezeiten. Zeiteinheiten beachten, etwa 120 s = 2 min.
+- Ändere Stromschritte, Rückmeldefristen und Phasenwechselzeiten erst anhand einer beobachteten Reaktion. Prüfe in der Übersicht, ob ein Fahrzeug auf Überschuss, die Startzeit, ein anderes Fahrzeug oder eine Gerätebestätigung wartet. [Gemeinsame Timer und Prioritäten](docs/admin-reference.de.md#admin-wallboxen-allgemein)
+
+<a name="admin-wallbox-0-1-und-2"></a>
+
+## Admin: Wallbox 0 – Mii/e-Up
+
+Die drei Wallbox-Reiter haben dieselbe Vorgehensweise. Die Reiternamen sind vorgegeben. Mit **Fahrzeugname** gibst du deine tatsächliche Zuordnung an. Richte die erste tatsächlich vorhandene Wallbox ein. Die Nummer kann auch 1 oder 2 sein.
+
+### Datenpunkte und elektrische Grenzen
+
+| Bereich | Einrichten und prüfen |
+| --- | --- |
+| Fahrzeug und Verbindung | **SoC-Datenpunkt** des Fahrzeugs in %, **Fahrzeug-Verbindungsstatus** der Wallbox und gegebenenfalls **Ladefreigabe durch Benutzer** zuordnen. An- und Abstecken muss in der Diagnose erkennbar sein. |
+| Messung | Gemessene Ladeleistung in W sowie die gemessenen Ströme und Phasen zuordnen. Beim Test müssen sich Istleistung und Strom passend zum Fahrzeug ändern. |
+| Stromgrenzen | Tatsächliche 1P-/3P-Minima und -Maxima sowie Leistungslimit von Wallbox, Fahrzeug und Installation eintragen. **Von Wallbox L1 verwendete Netzphase** und **Feste Phasen im Produktivbetrieb** prüfen. |
+| go-e-Ausgang | **Beschreibbarer go-e-Strom (amperePV)** und **beschreibbare go-e-Freigabe (allow_charging, 0/1)** getrennt von **bestätigtem go-e-Strom (ampere)**, Verbindung und Fehlercode zuordnen. Die Rückmeldung und die elektrische Reaktion beim Start und Stopp ablesen. |
+| Phasenumschaltung | Für einen festen Betrieb **Dynamischen 1-/3-Phasenbetrieb** aus lassen. Beim dynamischen Betrieb schaltet ein geeignetes externes Skript entweder nach eigener Führung oder nach EMS-Vorgabe. Nur eine Instanz führt den Phasenwechsel. Prüfe bestätigten go-e-Phasenmodus und realen Strom je Phase. |
+
+### Fahrzeug-SoC und Sitzungswechsel
+
+Wähle bei **Quelle der SoC-Grenzen**, ob die Grenzwerte im Admin oder aus zugeordneten Datenpunkten kommen. **Mindest-SoC** ist der Bedarf für Pflichtladung. **Ziel-SoC** ist die Grenze, bis zu der mit PV oder ausdrücklich erlaubtem Netzladen weitergeladen werden kann. Beispiel mit gültiger Ladefreigabe und ausreichender Leistung bei 18 % Ist, 20 % Minimum und 80 % Ziel: zuerst bis 20 % laden, die weitere Ladung folgt der gewählten Strategie.
+
+Bei verzögerten Fahrzeugmeldungen kann das EMS mit **SoC aus gemessener Ladeenergie schätzen** den Füllstand fortschreiben. Dafür braucht es einen echten Fahrzeug-SoC, die nutzbare Fahrzeugkapazität und einen zugeordneten AC-Ladeenergiezähler in kWh. Nach bestätigtem Abstecken beginnt die nächste Sitzung wieder auf Basis der Fahrzeugmeldung. Die Werte `SoC_pct`, `ReportedSoC_pct` und `EstimatedSoC_pct` unterscheiden den wirksamen, gemeldeten und geschätzten Füllstand unter `Vehicles.WallboxN`. [SoC-Vertrag, Zeitstempel und manuelle Korrektur](docs/admin-reference.de.md#optionale-soc-schätzung-aus-ladeenergie-alle-drei-fahrzeuge)
+
+### Mobilitätsreserve und vorhandene Abfahrtszeit
+
+Wenn das Fahrzeug oberhalb einer Sofortreserve erst später laden soll, richte die Option **Mindest-SoC bis zur Abfahrt einplanen** ein. Dazu gehören eine gültige `Vehicles.WallboxN.DepartureTime` (`HH:mm`), die Abfahrtsfreigabe, die Preis-Netzladefreigabe und eine positive `MobilityReserve_pct` unter dem Mindest-SoC. Beispiel bei 10 % Mobilitätsreserve und 30 % Mindest-SoC: Bis 10 % lädt das Fahrzeug sofort. Den Bedarf bis 30 % plant das EMS mit verfügbarer PV und den günstigsten erreichbaren Gesamtpreisen. Fehlt ein ausreichender Plan, greift die Sofortladung bis zum Mindest-SoC. Die Preisobergrenze für freiwillige Ladung gilt weiterhin bis zum Ziel-SoC. [Felder und Rückfallbedingungen](docs/admin-reference.de.md#mobilitätsreserve-und-vorhandene-abfahrtszeit)
+
+### Start, Stopp, Übergabe und Phasenwechsel
+
+Aktiviere nach dem Zuordnen **Regelfreigabe Wallbox N** und **Wallboxausgang freigeben** mit passender **Stromgrenze für die produktive Inbetriebnahme**. Prüfe unter `Devices.WallboxN` den Auftrag und die Bestätigung und am Messwert den tatsächlichen Ladestrom. Wartet das nächste Fahrzeug, muss die bisherige Leistung zuerst physisch reduziert oder beendet und das Budget freigegeben sein. [Wallbox-Felder und Abnahmeschritte](docs/admin-reference.de.md#admin-wallbox-0-1-und-2) · [Phasenfolger](docs/phase-follower-v2.md)
+
+## Admin: Wallbox 1 – EQV
+
+Übernimm die [Einrichtungsschritte von Wallbox 0](#admin-wallbox-0--miie-up) mit den IDs der **zweiten** Wallbox und des dazugehörigen Fahrzeugs. Prüfe insbesondere echte 1P-/3P-Stromgrenzen und die Netzphase bei 1P. Unter **Objekte** findest du die Ergebnisse unter `Vehicles.Wallbox1` und `Devices.Wallbox1`. [Feldreferenz](docs/admin-reference.de.md#admin-wallbox-0-1-und-2)
+
+## Admin: Wallbox 2 – EQE
+
+Verwende für die **dritte** Wallbox die [Einrichtungsschritte von Wallbox 0](#admin-wallbox-0--miie-up) mit eigener Geräteinstanz, eigenem SoC und eigenen Grenzen. Prüfe die Messung unter `Vehicles.Wallbox2` und `Devices.Wallbox2`. Teste einen tatsächlichen Parallel- oder Übergabefall erst nach Prüfung der beteiligten Einzelausgänge. [Feldreferenz](docs/admin-reference.de.md#admin-wallbox-0-1-und-2)
+
+## Admin: Warmwasser-Heizstab
+
+Der Warmwasser-Heizstab erwärmt Trinkwasser im Speicher. Die **Mindesttemperatur** und der angenommene Tagesverbrauch bestimmen die modellierte Pflichtwärme. Die **Zieltemperatur** beschreibt den weiteren geplanten Wärmebedarf. Schutz- und Abschalttemperaturen gehören zur konkreten Anlage.
+
+1. Aktiviere **Warmwasser-Heizstab vorhanden** und trage Speichervolumen, Leistungsgrenzen und die betrieblich vorgesehenen Mindest-, Ziel- und Schutztemperaturen ein. Gib Tagesbedarf und Verluste in kWh pro 24 h als Planungsannahmen an.
+2. Ordne den beschreibbaren Leistungssollwert, die gemessenen Ausgangsleistungen, Verbindung, Freigabe sowie die vorgesehenen Speicher- und Austrittsfühler zu. Prüfe die Reihenfolge der Fühler von unten nach oben.
+3. Wenn **Gemeinsamen Verteiler für Wallbox und Warmwasser verwenden** aktiv ist, gilt der **Warmwasseranteil** im gemeinsamen Leistungsbereich. Bei 50 % hängen die tatsächlichen Watt weiter von Wallbox-Mindeststrom, den Ein-/Ausschaltschwellen und dem nutzbaren Heizbudget ab. Eine laufende Mindestladung und Pflichtwärme können bei ausreichender Leistung und geeigneter oberer Warmwassertemperatur zusammenlaufen.
+4. Prüfe den ersten Stelltest mit niedriger **Leistungsgrenze für die produktive Inbetriebnahme**. Vergleiche Sollwert, drei Ist-Ausgänge, Freigabe und Fühler. Ein eingeplanter Heizblock im Tarifplan benötigt eine tatsächliche Leistungsfreigabe.
+
+Der EMS-Plan kann Wärme vor einem teureren Zeitfenster aufbauen und nötige Wärme zwischen gleich teuren Viertelstunden verteilen. Der optionale Notbetrieb braucht einen passenden separaten Sensor und eine bewusst konfigurierte Einschalttemperatur. [Heizstab-Felder, Temperaturkennlinie und Rückmeldung](docs/admin-reference.de.md#admin-warmwasser-heizstab) · [Wärmeplanung](docs/release-0.17.0-alpha.284.md)
+
+## Admin: Heizpuffer
+
+Ein eigener Heizstab kann Wasser im Puffer des Heizkreises erwärmen. Verwende einen **separaten** my-PV-Aktor mit eigenem Sollwert, Verbindung und gemessenen Leistungen für L1 bis L3. Weise die reale Puffertemperatur zu und kontrolliere Volumen, Min-/Ziel-/Stopp-Temperatur und Maximalleistung. Der manuelle Temperatur-Ersatzwert dient der Planung.
+
+Die **Heizpuffer-Sperre** und der gemeinsame [Kühlstatus](#admin-wärmestrategie) können die Freigabe begrenzen. Nach der einzelnen Ausgangsfreigabe prüfst du Sollwert, Leistung pro Phase, Temperatur und Sperrgrund des Heizpuffers. [Heizpuffer-Felder und Schutzbedingungen](docs/admin-reference.de.md#admin-heizpuffer)
+
+## Admin: Batteriespeicher
+
+### Anschließen und prüfen
+
+1. Aktiviere **Batteriespeicher vorhanden / in Planung berücksichtigen**. Wähle bei **Verteilung des Speicherausgangs** für die aktuelle SunEnergy-Anbindung **SunEnergy-Standardadapter: 1–3 Köpfe mit SoC-Ausgleich** und gib die Treiberinstanz sowie Kopfanzahl an. Ein Kopf ist die Leistungselektronik eines Batterieturms. Ein Turm kann mehrere Akkupacks haben.
+2. Am SunEnergy-Standardadapter steht **Steuermodus Aus** für einen deaktivierten Eigenregler. Jeder zugeordnete Kopf muss den lokalen Modus `LM=1` und den deaktivierten manuellen Modus `MM=0` bestätigen. Unter **Bisherige Einzelkopf-Zuordnung** werden Sollwert, AC-Rückmeldung, SoC, Treiberstatus und Modusdatenpunkte ausdrücklich zugeordnet. Die vorhandene Zuordnung kannst du in der Feldreferenz nachvollziehen.
+3. Trage die bestätigte **Kapazität** der gesamten Batterie manuell ein oder wähle die Summe der online gemeldeten, gleich großen Packs und gib die bestätigte Kapazität pro Pack vor. Setze **maximale Ladeleistung** und **maximale Entladeleistung** als **Gesamtgrenzen**. Bei Kopfverteilung setzt du zusätzlich die Grenze je Kopf. Beispiel für zwei Köpfe mit je 2.400 W erlaubter Entladung: Eine Gesamtgrenze von 2.400 W hält beide zusammen bei höchstens 2.400 W. Bis zu 4.800 W sind erst mit entsprechender Gesamtgrenze, passenden Gerätegrenzen und freiem Anlagenbudget möglich.
+4. Prüfe unter `Devices.Battery.Profile` gültigen SoC, Kapazität und Istleistung. Schalte **Regelfreigabe Batteriespeicher** und den **begleiteten Speicherausgang** für den Stelltest ein. Der SunEnergy-Sollwert `control.GS` und die AC-Leistung `grid.GP` sind positiv beim Entladen und negativ beim Laden. Im EMS ist das Batterievorzeichen umgekehrt. Kontrolliere beim Test die Änderung am Netzzähler. [Anbindung, Feldtabellen und Vorzeichen](docs/admin-reference.de.md#admin-batteriespeicher)
+
+### Entladegrenzen und Fahrzeugvorrang
+
+| Grenze oder Regel | Was sie bewirkt |
+| --- | --- |
+| **Mindest-SoC** im EMS | Grundwert für die Entladung. Neue Installationen starten bei 15 %. Passe ihn an die gewünschte Nutzung und die Batteriegrenzen an. |
+| Mindest-SoC am SunEnergy-Gerät (`SI`) | Eigene Entladegrenze des Speichers. Die Kopfverteilung berücksichtigt sie zusätzlich. Die Gerätehysterese `SI1` beeinflusst, bei welchem SoC ein Kopf nach einem Stopp wieder entladen darf. |
+| **Temperaturprognose für den Mindest-SoC verwenden** | Optional. Mit gültiger Wetterquelle wählt das EMS den eingestellten Mindestwert des passenden Temperaturbereichs für seine Tagesperiode ab 20:00 Uhr. |
+| Prognosereserve | Bei mehr als sechs zusammenhängenden Stunden erwarteten Füllstands unter 20 % hebt das EMS die wirksame Grenze auf mindestens 20 %. Maßgeblich ist die 48-Stunden-Prognose vor der zusätzlichen Reserve. |
+| Fahrzeug unter Mindest-SoC | Bei Pflichtladung an einer der drei Wallboxen pausiert die normale Speicherregelung. Danach kann die normale Priorität wieder greifen. Optionale Speicherhilfe für Autos braucht mindestens 80 % Speicher-SoC sowie alle Geräte- und Leistungsfreigaben. |
+
+Beispiel mit **10 %** am Speicher und einem EMS-Grundwert von **10 %**. Bei aktiver Prognosereserve beendet das EMS die Entladung bei **20 %** über den Leistungssollwert. Die 10 % sind als Gerätegrenze in `SI` hinterlegt. Den wirksamen EMS-Wert siehst du in `Devices.Battery.EffectiveMinimumSoC_pct`. Ein einzelner Kopf kann durch seine eigene Geräte- oder Wiederanlaufgrenze früher gesperrt sein.
+
+Liegt der gemessene SoC bei aktiver Prognosereserve unter 20 %, lädt das EMS bei verfügbarer Leistung nach. Freier PV-Überschuss darf bis zur zulässigen Ladeleistung genutzt werden. Netzstrom ergänzt im freigegebenen Fenster den fehlenden Anteil bis 1.000 W Gesamtladung. Bei 600 W freiem PV-Überschuss sind das bis zu 400 W Netzanteil. Bei genügend PV kann die Gesamtladung über 1.000 W liegen. Für den Netzanteil sucht das EMS ein rechtzeitig nutzbares günstiges Zeitfenster. Die Nachladung darf neben Fahrzeug-Pflichtladung laufen, soweit Netz-, Phasen- und Gerätegrenzen es zulassen. [Prognosereserve](docs/release-0.17.0-alpha.288.md) · [Nachladung mit PV](docs/release-0.17.0-alpha.292.md)
+
+### Kleine Leistungen, PV-Vorrang und Netzladen
+
+- **Bis zu dieser Gesamtleistung einen Speicherkopf verwenden** bündelt kleine Aufträge ab zwei Köpfen. Bei der Vorgabe **500 W** gehen auch 100 W an einen geeigneten Kopf. Beim Laden werden Köpfe mit niedrigerem, beim Entladen mit höherem SoC bevorzugt. Die **SoC-Hysterese für die Kopfauswahl** hält einen laufenden Kopf innerhalb der vorgegebenen **5 Prozentpunkte** im Einsatz. Neue Starts rotieren unter passenden Köpfen. Oberhalb der Schwelle verteilt das EMS nach SoC und Online-Packzahl. [Verteilung und Rückmeldung](docs/release-0.17.0-alpha.285.md)
+- **Speicher vor PV-Autoladung laden und kleine Wallbox-Leistungssprünge puffern** und **Wallbox-Stromschritte nach dem Ziel-SoC des Speichers abstimmen** beeinflussen die optionale PV-Zuteilung. Die Tagesziele bestimmen, wie viel Kapazität für spätere PV und wie viel Ladebudget für Autos vorgesehen sind.
+- **Speicher-Netzladen in ausgewählten günstigen Zeiten erlauben** steuert die optionale Preisladung. Prüfe Preisobergrenze, Preis-Ziel-SoC und Mindestersparnis nach Speicherverlusten. Bei aktiver Preisplanung kann der Fahrplan auch gespeicherte Energie für teurere Zeitfenster zurückhalten. Die Schutz-Nachladung der Prognosereserve folgt der oben beschriebenen eigenen Freigabelogik.
+- **Totband der Speicher-Netzregelung**, Schrittweite und Rückmeldefrist bestimmen das Verhalten bei kleinen Änderungen. Prüfe zunächst die Geschwindigkeit deiner Netz- und Gerätemessung. Das Totband ist eine Toleranz in W. Die Kopfauswahl und der Geräte-Wiederanlauf verwenden eigene SoC-Abstände in Prozentpunkten.
+
+Zur Diagnose zeigen `Plan.BatteryForecastReserve_JSON` die erwartete Unterschreitungsdauer und `Control.BatteryForecastReserveCharge_W` sowie `Control.BatteryForecastReserveGridCharge_W` die zugeteilte Gesamt- und Netzladeleistung. [Speicher-Nullregelung und Diagnose](docs/admin-reference.de.md#live-regelung-des-speichers)
+
+## Admin: Wärmepumpe
+
+Der Reiter liest die Wärmepumpe und kann interne Empfehlungen anzeigen. Die Wärmepumpe, ihr SG-Ready-Eingang und KNX-Aktoren werden weiterhin von ihrer vorhandenen Steuerung bedient.
+
+1. Aktiviere **Wärmepumpe vorhanden** und ordne Leistung, Einheit **W** oder **kW** sowie Messumfang zu. Eine Invertermessung bildet nur diesen Teil der Aufnahme ab. Ergänze, soweit vorhanden, Verbindung, die tatsächliche dekodierte SG-Ready-Stufe 1–4 und Temperaturen.
+2. Für interne Empfehlungen aktiviere **An EMS-Empfehlungen teilnehmen** und **Passive SG-Ready-Empfehlungen aktivieren**. Setze passende Temperaturziele und eine Überschuss-Einschaltschwelle oberhalb der Ausschaltschwelle. Stufe 4 braucht zusätzlich ihre eigene Freigabe.
+3. Prüfe **tatsächlichen SG-Ready-Zustand**, **empfohlenen SG-Ready-Zustand** und **Grund** getrennt. Für die optionale interne Kühl-Empfehlung braucht das EMS gültige Raum-, Vorlauf- und Taupunktwerte. Prüfe auch dort die getrennte Anzeige. [Quellen, SG Ready und Kühl-Empfehlung](docs/admin-reference.de.md#admin-wärmepumpe)
+
+## Admin: Wärmestrategie
+
+Ordne den **gemeinsamen Kühlstatus** zu, wenn der Heizpuffer-Kreis auch kühlt. Ein bestätigtes `true` beziehungsweise `1` meldet Kühlung. Prüfe bei einem konstanten Signal, ob der Treiber oder ein echter Quell-Heartbeat seine Aktualität nachweist. Während der Kühlung sperrt das EMS den Heizpuffer-Heizstab. Die Trinkwarmwasserbereitung hat einen eigenen Pfad.
+
+Für bewusstes **Günstigpreisheizen** setzt du die gemeinsame Freigabe, den maximal akzeptierten Gesamtpreis in ct/kWh und das maximale gesamte Netzleistungsbudget in W. 0 W erlaubt kein preisgeführtes Netzheizen. Beim vorgesehenen Festtarif ist eine zusätzliche Zustimmung erforderlich. Prüfe im Fahrplan Zeitfenster und Wärmebedarf sowie im Livebetrieb Temperatur, Freigabe und gemessene Leistung. [Wärmefreigaben und Kühlstatus](docs/admin-reference.de.md#admin-wärmestrategie)
+
+## Admin: Echtzeitregelung
+
+Der **Netzsollwert** gibt das gewünschte Saldo vor. `0 W` bedeutet Ausgleich am Netzanschluss. `−100 W` zielt auf 100 W Einspeisung. `+100 W` zielt auf 100 W Bezug. Wähle den Sollwert, den du am Zähler prüfen willst.
+
+Das **Totband** toleriert kleine Abweichungen. Die **gemeinsame Netzbezugstoleranz für PV-Wallboxen** betrifft die PV-Fahrzeugladung. Der Speicher besitzt zusätzlich sein eigenes Totband. **Simulation aktivieren** schaltet die gemeinsame Berechnung ein. Reale Befehle hängen weiterhin von den passenden Freigaben ab. Vergleiche `Control.ActualGridPower_W` und `Control.TargetGridPower_W` über mehrere Messzyklen. [Regelzyklus und Toleranzen](docs/admin-reference.de.md#admin-echtzeitregelung)
+
+## Admin: Erweiterte Datenpunkte
+
+Verwende für Mess- und Gerätedatenpunkte die beschrifteten Felder ihrer Reiter. Hier stehen zusätzlich die alte JSON-Zuordnung, die Namen der PV-Prognoseflächen und frühere Datenpunkte für freien Phasenstrom.
+
+Bei einem Update kann ein vorhandener JSON-Eintrag für ein leeres normales Feld weiterwirken. Ein ausdrücklich ausgefülltes Feld hat Vorrang. Übertrage alte Zuordnungen einzeln und prüfe danach Quelle und Diagnose. [Migration und Priorität](docs/admin-reference.de.md#admin-erweiterte-datenpunkte)
+
+### PV-Flächen im Prognosebaum
+
+Für den direkten PV-Prognosepfad wertet der aktuelle Stand fünf Flächenplätze aus. Trage die tatsächlichen Namen der Unterordner im Feld **Bisherige Datenpunktzuordnung als JSON** ein. Beispiel für fünf bereits im Prognoseadapter eingerichtete Flächen
+
+```json
+{
+  "PV_AREA1_NAME": "Ost",
+  "PV_AREA2_NAME": "Sued",
+  "PV_AREA3_NAME": "West",
+  "PV_AREA4_NAME": "Carport",
+  "PV_AREA5_NAME": "Garage"
+}
+```
+
+Übernimm vorhandene JSON-Einträge in dasselbe Objekt. Prüfe `Forecast.PV_48h_JSON` gegen die Summe der zugeordneten Flächen für dieselbe Stunde. Der direkte Pfad braucht gültige Werte für alle fünf Plätze. Mit weniger Flächen kannst du die aktuelle PV-Messung und die Istwertregelung einrichten. Für den direkten PV-Fahrplan braucht der Prognosepfad eine passende Quellenstruktur. [Prognosequellen](docs/admin-reference.de.md#prognosequellen)
+
+## Admin: Geräte
+
+Die beiden Tabellen nutzen vorhandene ioBroker-Geräteobjekte. Art und Werte der Datenpunkte hängen vom Geräteadapter ab.
+
+### Programmplanung für Haushaltsgeräte
+
+1. Lege für Geschirrspüler oder Trockner eine Zeile im Modus **Beobachten** an. Ordne das Objekt für die Fernstartfreigabe samt Wert, das Statusobjekt und dessen genaue Werte für bereit, läuft und fertig zu. Der JSON-Freigabewert kann zum Beispiel `true`, `1` oder `"Ready"` sein. Prüfe Wert und Typ im Objektbaum.
+2. Für **Gewähltes Programm starten** ordnest du das Objekt der Programmauswahl und das passende beschreibbare Startobjekt zu. Ein vorhandenes Objekt für das aktive Programm unterstützt die Zuordnung zur tatsächlichen Ausführung. Aktivierte Fernstartfunktion am Gerät, bestätigter Bereitstatus und Programmauswahl müssen zusammenpassen.
+3. Ordne eine historisierte Geräte-Leistungsmessung in **W** zu und starte mindestens einen vollständigen Lauf manuell. Das EMS lernt aus zusammenhängender Leistungshistorie zwischen erkanntem Start und Ende. Unter `Devices.ProgramProfiles` prüfst du Programm, Stichprobenzahl und Energie. Fehlt für das gewählte Programm ein Profil, wartet die Planung auf einen verwertbaren Lauf. Bei einer Zeile ohne Programmauswahl kannst du ein festes Viertelstundenprofil vorgeben, zum Beispiel `[1000, 500, 100, 0]`. Dieses Beispiel steht für eine Stunde mit etwa 0,4 kWh.
+4. Gib falls gewünscht **Fertig bis** im Format `HH:mm` nach der lokalen Uhr des ioBroker-Hosts an. Prüfe unter `Devices.Programs.N` den geplanten Start und die geschätzten Kosten gegenüber dem Sofortstart.
+5. Setze **Automatisch** erst nach dem Zuordnungs- und Profiltest. Mit Master und aktiver Echtzeitregelung prüft das EMS bei der Planung und unmittelbar vor dem Start die zugehörige Fernstartfreigabe, den Status und das gewählte Programm. Die laufende Leistungsaufnahme bestätigt den realen Start. `Devices.Programs.N.Announcement` liefert in diesem Modus Ansagedaten, die ein eigenes Skript etwa für Alexa ausgeben kann.
+
+### Temperatur-Sollwertoptimierung
+
+Ordne die aktuelle Temperatur und den **beschreibbaren Sollwert** eines geeigneten Geräts zu, etwa bei einem Kühlschrank mit dafür vorgesehener Schnittstelle. Trage die vom Gerät erlaubte niedrigere Optimierungstemperatur und die normale Temperatur ein. Bei stabilen Bedingungen kann das EMS einen niedrigeren Wert in ein günstiges Preisfenster oder in verfügbaren Überschuss legen. Ohne geeigneten Anlass wählt es die Normaltemperatur. Starte die Prüfung mit Master aus und kontrolliere `Devices.Setpoints.N`. Ein realer Schreibbefehl erfordert beide gültigen Rückmeldungen und passende Objektgrenzen. [Gerätefelder und Statuswerte](docs/admin-reference.de.md#admin-geräte)
 
 ## Typische Einrichtung und Fehlersuche
 
-Zuerst reale Gerätefreigabe, gültige Quellen und gemeinsame Zuteilung prüfen, danach Befehls-/ACK-/Leistungskette. [FAQ zu Preis-/Nachtladung, Priorität, Aufteilung, Phasen und Wärme](docs/admin-reference.de.md#typische-einrichtung-und-fehlersuche).
+| Was du beobachtest | Wo du zuerst nachsiehst |
+| --- | --- |
+| Die Übersicht meldet fehlende Daten | **Messwerte**, richtige Instanz, Einheit, Aktualität und Bestätigung. Bei verbundenen Quellen den zugehörigen Originalstatus prüfen. |
+| Ein Gerät steht im Fahrplan und bleibt aus | **Allgemein** und Gerätereiter, dann Geräte-, Benutzer- oder Fernstartfreigabe, aktuelle Begrenzungen und vorhandene Leistung prüfen. |
+| Das Auto lädt aus dem Netz, obwohl wenig PV da ist | **Wallbox N** prüfen. Unter Mindest-SoC kann Pflichtladung greifen. Zusätzliche Gründe sind manuelle Mindeststromvorgabe, Abfahrts- oder Preisfreigabe. |
+| Der Speicher entlädt nicht | **Batteriespeicher** und `Devices.Battery.EffectiveMinimumSoC_pct` prüfen. Dazu kommen eine mögliche Fahrzeug-Pflichtladung, Geräte-SoC, Wiederanlaufgrenze und Rückmeldung. |
+| Die passende Ladung beginnt später | Überschuss, Startwartezeit, priorisierte Geräte, bestehende Leistung und mögliche Tarif-/SoC-Ziele in der Übersicht prüfen. |
 
-## Diagnose, SQL und Datenqualität
+Bei einem Störungsbericht helfen laufende Version, Uhrzeit mit Zeitzone, Gerät, erwartetes Verhalten und ein kleiner passender Ausschnitt von Auftrag, Bestätigung und Messwert. [Diagnose und SQL](docs/admin-reference.de.md#diagnose-sql-und-datenqualität) · [Support](SUPPORT.md)
 
-[Technische Referenz einschließlich Journal-Speicherort und SQL-Recovery](docs/admin-reference.de.md#diagnose-sql-und-datenqualität). Für Meldungen Version, Ereigniszeit mit Zeitzone, betroffenes Gerät und einen kleinen passenden Diagnoseausschnitt angeben. [Support](SUPPORT.md).
+## Aktuelle Änderungen
+
+[Änderungen am aktuellen Code](README.md#changelog) · [Ältere Versionshinweise](CHANGELOG_OLD.md#deutsche-versionshistorie)
 
 ## Offene Arbeiten
 
-Die [Issue-Sichtung zu Alpha.275](docs/issue-audit/2026-11-15/README.md) hält den Stand der offenen Aufgaben und datierten Berichte fest. Die Speicherabnahme umfasst die NVP-Regelung, kleine Ladeaufträge und die zeitliche Zuordnung von Befehl, Istleistung und Netzmessung. [Speicherintegration #25](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/25) · [Ladestopps #410](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/410) · [Sprungantwort #423](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/423)
-
-Die [Roadmap #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) verknüpft die Betriebsabnahme und Integrationen. Frühere Berichte und Übergaben stehen in der [Sichtung vom 03.11.2026](docs/issue-audit/2026-11-03/README.md). [Übersetzungsstand](docs/translations.md) · [Ältere Versionen](CHANGELOG_OLD.md#deutsche-versionshistorie)
+Die [Roadmap #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) verlinkt aktuelle Integrationen, tatsächliche Anlagenprüfungen und datierte Betriebsberichte. Eine gute erste Anlaufstelle für Anzeigefehler ist [Admin-Abnahme #26](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/26).
