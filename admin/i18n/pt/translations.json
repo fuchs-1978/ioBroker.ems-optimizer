@@ -673,5 +673,9 @@
   "Program start value (JSON)": "Valor de início do programa (JSON)",
   "Appliance power object (W)": "Objeto de potência do aparelho (W)",
   "Finish by (HH:mm)": "Terminar até (HH:mm)",
-  "Program profile (W per 15 min, JSON array)": "Perfil do programa (W por 15 min, matriz JSON)"
+  "Program profile (W per 15 min, JSON array)": "Perfil do programa (W por 15 min, matriz JSON)",
+  "Selected program object": "Objeto do programa escolhido",
+  "Active program object": "Objeto do programa ativo",
+  "Finished status value": "Valor do estado concluído",
+  "Start selected program": "Iniciar o programa escolhido"
 }

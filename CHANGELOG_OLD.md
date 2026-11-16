@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.283
+
+- Replan an obsolete battery direction change with the current grid reading. Retain the last issued setpoint within protection limits.
+
 ## 0.17.0-alpha.282
 
 - Start eligible single-phase WB1 charging with measured daytime surplus and up to 600 W of battery support. Recharge the battery with surplus as it becomes available.

@@ -673,5 +673,9 @@
   "Program start value (JSON)": "程序启动值（JSON）",
   "Appliance power object (W)": "家电功率对象（W）",
   "Finish by (HH:mm)": "最晚完成时间（HH:mm）",
-  "Program profile (W per 15 min, JSON array)": "程序功率曲线（每 15 分钟 W，JSON 数组）"
+  "Program profile (W per 15 min, JSON array)": "程序功率曲线（每 15 分钟 W，JSON 数组）",
+  "Selected program object": "所选程序对象",
+  "Active program object": "当前程序对象",
+  "Finished status value": "已完成状态值",
+  "Start selected program": "启动所选程序"
 }

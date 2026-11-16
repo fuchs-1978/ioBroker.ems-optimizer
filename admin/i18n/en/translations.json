@@ -673,5 +673,9 @@
   "Program start value (JSON)": "Program start value (JSON)",
   "Appliance power object (W)": "Appliance power object (W)",
   "Finish by (HH:mm)": "Finish by (HH:mm)",
-  "Program profile (W per 15 min, JSON array)": "Program profile (W per 15 min, JSON array)"
+  "Program profile (W per 15 min, JSON array)": "Program profile (W per 15 min, JSON array)",
+  "Selected program object": "Selected program object",
+  "Active program object": "Active program object",
+  "Finished status value": "Finished status value",
+  "Start selected program": "Start selected program"
 }
