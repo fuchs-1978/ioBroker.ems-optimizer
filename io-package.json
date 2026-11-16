@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.285",
+    "version": "0.17.0-alpha.286",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.286": {
+        "en": "Add configurable temperature setpoint optimization for household devices.",
+        "de": "Konfigurierbare Sollwertoptimierung für Haushaltsgeräte ergänzen.",
+        "es": "Configurable temperature setpoint optimization for household devices.",
+        "fr": "Configurable temperature setpoint optimization for household devices.",
+        "it": "Configurable temperature setpoint optimization for household devices.",
+        "nl": "Configurable temperature setpoint optimization for household devices.",
+        "pl": "Configurable temperature setpoint optimization for household devices.",
+        "pt": "Configurable temperature setpoint optimization for household devices.",
+        "ru": "Configurable temperature setpoint optimization for household devices.",
+        "uk": "Configurable temperature setpoint optimization for household devices.",
+        "zh-cn": "Configurable temperature setpoint optimization for household devices."
+      },
       "0.17.0-alpha.285": {
         "en": "Use one SunEnergy head at low total power. Rotate starts among heads with similar state of charge using the configurable SoC hysteresis.",
         "de": "Kleine Gesamtleistungen auf einem SunEnergy-Kopf bündeln. Bei ähnlichem SoC mit einstellbarer Hysterese die Startreihenfolge wechseln.",
@@ -81,19 +94,6 @@
         "ru": "Учитывает пропущенные подтверждения по каждой уставке GS. GP подтверждает фактическую мощность и доступный резерв.",
         "uk": "Підраховує пропущені підтвердження для кожної уставки GS. GP підтверджує фактичну потужність і доступний резерв.",
         "zh-cn": "按 GS 设定指令统计缺失的确认。使用 GP 验证实际功率和可用功率余量。"
-      },
-      "0.17.0-alpha.279": {
-        "en": "Hand off PV surplus to the wallbox after two minutes of measured battery charging near its power limit.",
-        "de": "PV-Überschuss nach zwei Minuten gemessener Speicherladung nahe der Leistungsgrenze an die Wallbox übergeben.",
-        "es": "Transfiere el excedente solar a la estación de carga tras dos minutos de carga de la batería cerca de su límite.",
-        "fr": "Transfère le surplus photovoltaïque à la borne après deux minutes de charge mesurée de la batterie près de sa limite.",
-        "it": "Trasferisce il surplus fotovoltaico alla wallbox dopo due minuti di carica misurata della batteria vicino al limite.",
-        "nl": "Geeft PV-overschot aan de laadpaal door na twee minuten gemeten acculading dicht bij de vermogensgrens.",
-        "pl": "Przekazuje nadwyżkę PV do ładowarki po dwóch minutach zmierzonego ładowania akumulatora blisko limitu mocy.",
-        "pt": "Transfere o excedente solar para a estação após dois minutos de carregamento medido da bateria perto do limite.",
-        "ru": "Передаёт излишек солнечной энергии зарядной станции после двух минут измеренной зарядки батареи вблизи предела мощности.",
-        "uk": "Передає надлишок сонячної енергії зарядній станції після двох хвилин виміряного заряджання батареї поблизу межі потужності.",
-        "zh-cn": "电池实测充电功率接近上限两分钟后，将光伏余电分配给充电桩。"
       }
     },
     "titleLang": {
@@ -165,6 +165,7 @@
     ]
   },
   "native": {
+    "deviceSetpoints": [],
     "observerOnly": true,
     "globalWriteEnabled": false,
     "multiWallboxAlphaArmed": false,

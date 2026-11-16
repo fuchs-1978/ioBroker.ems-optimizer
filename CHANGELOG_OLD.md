@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.279
+
+- Hand off PV surplus to the wallbox after two minutes of measured battery charging near its power limit.
+
 ## 0.17.0-alpha.278 (2026-11-15)
 
 - Continue sending valid single-head setpoints during pending feedback. Ten consecutive independent head readings without a matching response trigger a stop. [Release notes](docs/release-0.17.0-alpha.278.md)
