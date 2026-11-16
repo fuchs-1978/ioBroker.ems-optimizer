@@ -2110,6 +2110,45 @@ test('20% forecast recovery runs alongside mandatory EV charging within the live
     assert.equal(h.physical().allow, 1, h.diagnostic());
 });
 
+test('forecast recovery uses surplus above 1 kW and buys only the shortfall as PV falls', async () => {
+    const h = await plant({battery: true, initialSurplusW: 4300, split: false, startDelayS: 0,
+        nativeConfig: {batteryDispatchMode: 'sunenergy-heads', wallboxParallelChargingEnabled: true,
+            dhwControlEnabled: false, wb2CommissioningMaxA: 6}});
+    h.own('Devices.MyPV_DHW.ControlEnabled', false);
+    h.own('Config.BatteryMinSoC_pct', 10);
+    h.own('Config.BatteryFineStep_W', 1000);
+    h.own('Control.TargetGridPower_W', 0);
+    h.put(h.mapping.DP_BATTERY_SOC, 16);
+    h.put('DP_WB2_SOC', 10);
+    publishForecastReserve(h);
+    await h.advance(34);
+    assert.equal(h.physical().wbPowerW, 1380, h.diagnostic());
+    assert.equal(h.physical().batteryW, 2400, h.diagnostic());
+    assert.equal(h.value('Control.BatteryForecastReserveCharge_W'), 2400);
+    assert.equal(h.value('Control.BatteryForecastReserveGridCharge_W'), 0);
+
+    h.setSurplus(1980);
+    await h.replayAt(h.now() + 1, [], {allocate: false, output: false});
+    assert.equal(h.value('Control.Targets.Battery_W'), 2400, 'previous target still displayed');
+    assert.equal(h.run('batteryHeadsBudget(batteryHeadsRegulationState()).targetW'), 600,
+        'a fresh meter sample invalidates the old PV-backed target before the next allocation');
+    await h.advance(24);
+    assert.equal(h.physical().wbPowerW, 1380, h.diagnostic());
+    assert.equal(h.physical().batteryW, 1000, h.diagnostic());
+    assert.equal(h.value('Control.BatteryForecastReserveGridCharge_W'), 400);
+
+    h.setSurplus(-200);
+    await h.advance(8);
+    assert.equal(h.physical().batteryW, 1000, h.diagnostic());
+    assert.equal(h.value('Control.BatteryForecastReserveGridCharge_W'), 1000);
+    h.put(h.mapping.DP_BATTERY_SOC, 20);
+    await h.advance(10);
+    assert.equal(h.physical().batteryW, 0, h.diagnostic());
+    assert.equal(h.value('Control.BatteryForecastReserveCharge_W'), 0);
+    assert.equal(h.value('Control.BatteryForecastReserveGridCharge_W'), 0);
+    assert.equal(h.physical().wbPowerW, 1380, h.diagnostic());
+});
+
 test('forecast holds the legacy output at 20% and refills past the price wait only when timely', async () => {
     const h = await plant({battery: true, wallbox: false, initialSurplusW: -800, cheap: true,
         nativeConfig: {dhwControlEnabled: false}});
@@ -2129,6 +2168,11 @@ test('forecast holds the legacy output at 20% and refills past the price wait on
     await h.advance(8);
     assert.equal(h.value('Control.BatteryForecastReserveGridCharge_W'), 0);
     assert.equal(h.physical().batteryW, 0);
+    h.setSurplus(1800);
+    await h.advance(22);
+    assert.equal(h.physical().batteryW, 1800, 'PV can refill the reserve while grid charging waits for a better price');
+    assert.equal(h.value('Control.BatteryForecastReserveGridCharge_W'), 0);
+    h.setSurplus(-800);
     publishForecastReserve(h, {chargeAt: cheapAt, deadlineAt: h.now() + 30 * 60000});
     await h.advance(22);
     assert.equal(h.physical().batteryW, 1000, h.diagnostic());

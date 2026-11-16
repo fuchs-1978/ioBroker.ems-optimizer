@@ -136,6 +136,27 @@ test('the forecast chooses a cheaper reserve refill only when the missing energy
     assert.equal(charge(), 0);
 });
 
+test('the reserve forecast uses all free PV and purchases only the shortfall to 1000 W', () => {
+    const h = engine({batteryPvPriorityEnabled: true});
+    h.run("CFG.dp.par14a = ''; CFG.dp.lpcState = ''; CFG.dp.lpcLimit = '';");
+    h.put('ems.0.Devices.Battery.Present', true);
+    h.put('ems.0.Config.BatteryMinSoC_pct', 10);
+    h.put('ems.0.Config.BatterySelfConsumptionEnabled', true);
+    h.put('DP_BATTERY_SOC', 10);
+    const pv = Array.from({length: 40}, (_, i) => i === 0 ? 3500 : i === 1 ? 1600 : 0);
+    for (const priceCharging of [false, true]) {
+        h.put('ems.0.Config.BatteryPriceChargingEnabled', priceCharging);
+        const data = h.plan({pvW: pv, houseW: 1000, slots: pv.length});
+        balancedPlan(h, data);
+        const [sunny, mixed] = h.series('BatteryPower');
+        assert.equal(sunny.valueW, 2400);
+        assert.equal(sunny.reserveGridChargeW, 0);
+        assert.equal(mixed.valueW, 1000);
+        assert.equal(mixed.reserveGridChargeW, 400);
+        assert.equal(h.series('BatterySoC').at(-1).value_pct, 20);
+    }
+});
+
 function balancedPlan(h, data) {
     const wallboxes = [0, 1, 2].map(wb => h.series(`Wallbox${wb}`));
     const hotWater = h.series('MyPV_DHW');

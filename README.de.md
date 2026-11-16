@@ -1,11 +1,12 @@
 # EMS Optimizer
 
-**Aktuelle Adapterversion 0.17.0-alpha.288.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
+**Aktuelle Adapterversion 0.17.0-alpha.292.** EMS Optimizer verbindet PV-/Netzmessungen, Last- und Wetterprognosen sowie Strompreise zu einem rollierenden 48-Stunden-Fahrplan. Die Echtzeitregelung koordiniert bis zu drei Wallboxen, einen Warmwasser-Heizstab und die jeweils freigegebenen Speicher-/Heizpufferausgänge.
 
 [English overview](README.md) · [Vollständige Admin-Feldreferenz](docs/admin-reference.de.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) · [Versionsänderungen](README.md#changelog)
 
 ## Aktuelle Änderungen
 
+- **Alpha.292** nutzt freien PV-Überschuss zur Wiederherstellung der 20-%-Reserve bis zur zulässigen Speicherleistung. Bei freigegebener Netzladung ergänzt Netzstrom nur den fehlenden Anteil bis 1.000 W Gesamtladeleistung. [Versionshinweise](docs/release-0.17.0-alpha.292.md)
 - **Alpha.288** gibt allen drei Wallboxen bei Unterschreitung ihres Mindest-SoC Vorrang und schützt den Hausspeicher bei längeren prognostizierten Phasen unter 20 %. Die preisbewusste Nachladung darf bei freiem Netzbudget gleichzeitig mit der Pflichtladung laufen. [Versionshinweise](docs/release-0.17.0-alpha.288.md)
 - **Alpha.285** bündelt kleine Lade- und Entladeleistungen auf einem Kopf und wechselt bei ähnlichem SoC die Startreihenfolge. Die Admin-Vorgaben sind 500 W und 5 Prozentpunkte. [Versionshinweise](docs/release-0.17.0-alpha.285.md)
 - **Alpha.284** verteilt die geplante Warmwasserleistung im wiederkehrenden günstigen Nachtblock gleichmäßiger. [Versionshinweise](docs/release-0.17.0-alpha.284.md)

@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.291",
+    "version": "0.17.0-alpha.292",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.292": {
+        "en": "Use available solar surplus to restore the 20% battery reserve, with grid power covering the shortfall up to 1,000 W total.",
+        "de": "Freien PV-Überschuss für die 20-%-Speicherreserve nutzen und fehlende Leistung bis 1.000 W mit Netzstrom ergänzen.",
+        "es": "Usa el excedente solar para recuperar la reserva de batería del 20 % y completa hasta 1000 W totales con la red.",
+        "fr": "Utilise le surplus solaire pour reconstituer la réserve de batterie de 20 % et complète jusqu’à 1 000 W avec le réseau.",
+        "it": "Usa il surplus solare per ripristinare la riserva del 20% e integra con la rete fino a 1.000 W totali.",
+        "nl": "Gebruik het zonneoverschot voor de batterijreserve van 20% en vul het tekort tot 1.000 W totaal aan met netstroom.",
+        "pl": "Wykorzystuje nadwyżkę PV do odbudowy rezerwy 20% i uzupełnia brakującą moc z sieci do 1000 W łącznie.",
+        "pt": "Utiliza o excedente solar para repor a reserva da bateria de 20% e complementa até 1000 W no total com a rede.",
+        "ru": "Избыток солнечной энергии восстанавливает резерв батареи до 20 %, а сеть восполняет недостающую мощность до 1000 Вт суммарно.",
+        "uk": "Надлишок сонячної енергії відновлює резерв батареї до 20 %, а мережа доповнює потужність до 1000 Вт загалом.",
+        "zh-cn": "利用富余光伏电力恢复 20% 的电池储备，电网补足至总充电功率 1000 瓦。"
+      },
       "0.17.0-alpha.291": {
         "en": "Publish appliance start and savings announcements.",
         "de": "Ansagen zu geplantem Gerätestart und Ersparnis bereitstellen.",
@@ -81,19 +94,6 @@
         "ru": "Configurable temperature setpoint optimization for household devices.",
         "uk": "Configurable temperature setpoint optimization for household devices.",
         "zh-cn": "Configurable temperature setpoint optimization for household devices."
-      },
-      "0.17.0-alpha.285": {
-        "en": "Use one SunEnergy head at low total power. Rotate starts among heads with similar state of charge using the configurable SoC hysteresis.",
-        "de": "Kleine Gesamtleistungen auf einem SunEnergy-Kopf bündeln. Bei ähnlichem SoC mit einstellbarer Hysterese die Startreihenfolge wechseln.",
-        "es": "Usa un cabezal SunEnergy a baja potencia total. Alterna los arranques entre cabezales con SoC similar mediante una histéresis ajustable.",
-        "fr": "Utilise une seule tête SunEnergy à faible puissance totale. Alterne les démarrages entre têtes de SoC proche selon une hystérésis réglable.",
-        "it": "Usa un solo modulo SunEnergy a bassa potenza totale. Alterna gli avvii tra moduli con SoC simile tramite un’isteresi regolabile.",
-        "nl": "Gebruikt één SunEnergy-kop bij laag totaalvermogen. Wisselt bij een start tussen koppen met vergelijkbare SoC op basis van instelbare hysterese.",
-        "pl": "Przy małej mocy łącznej używa jednej jednostki SunEnergy. Zmienia jednostkę startową przy podobnym SoC według ustawianej histerezy.",
-        "pt": "Usa um módulo SunEnergy quando a potência total é baixa. Alterna os arranques entre módulos com SoC semelhante, com histerese ajustável.",
-        "ru": "При малой суммарной мощности используется один блок SunEnergy. При близком SoC блоки запускаются по очереди с настраиваемым гистерезисом.",
-        "uk": "За малої сумарної потужності використовується один блок SunEnergy. За близького SoC блоки запускаються почергово з налаштовуваним гістерезисом.",
-        "zh-cn": "总功率较低时使用一个 SunEnergy 主机。按可配置的荷电状态滞回，在荷电状态接近的主机之间轮换启动。"
       }
     },
     "titleLang": {
