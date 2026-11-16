@@ -662,5 +662,16 @@
   "Wallbox 1 power in kW (optional)": "Potenza della wallbox 1 in kW (facoltativa)",
   "Wallbox 2 power in kW (optional)": "Potenza della wallbox 2 in kW (facoltativa)",
   "Wallbox 3 power in kW (optional)": "Potenza della wallbox 3 in kW (facoltativa)",
-  "Writable setpoint": "Valore impostabile"
+  "Writable setpoint": "Valore impostabile",
+  "Appliance program scheduling": "Pianificazione elettrodomestici",
+  "Remote start release object": "Oggetto abilitazione avvio remoto",
+  "Remote start release value (JSON)": "Valore abilitazione avvio remoto (JSON)",
+  "Program status object": "Oggetto stato programma",
+  "Ready status value": "Valore stato pronto",
+  "Running status value": "Valore stato in corso",
+  "Program start object": "Oggetto avvio programma",
+  "Program start value (JSON)": "Valore avvio programma (JSON)",
+  "Appliance power object (W)": "Oggetto potenza apparecchio (W)",
+  "Finish by (HH:mm)": "Fine entro (HH:mm)",
+  "Program profile (W per 15 min, JSON array)": "Profilo programma (W ogni 15 min, array JSON)"
 }

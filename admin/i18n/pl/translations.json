@@ -662,5 +662,16 @@
   "Wallbox 1 power in kW (optional)": "Moc ładowarki 1 w kW (opcjonalnie)",
   "Wallbox 2 power in kW (optional)": "Moc ładowarki 2 w kW (opcjonalnie)",
   "Wallbox 3 power in kW (optional)": "Moc ładowarki 3 w kW (opcjonalnie)",
-  "Writable setpoint": "Zapisywalna nastawa"
+  "Writable setpoint": "Zapisywalna nastawa",
+  "Appliance program scheduling": "Planowanie programów urządzeń",
+  "Remote start release object": "Obiekt zgody na zdalny start",
+  "Remote start release value (JSON)": "Wartość zgody na zdalny start (JSON)",
+  "Program status object": "Obiekt stanu programu",
+  "Ready status value": "Wartość stanu gotowości",
+  "Running status value": "Wartość stanu pracy",
+  "Program start object": "Obiekt uruchomienia programu",
+  "Program start value (JSON)": "Wartość uruchomienia programu (JSON)",
+  "Appliance power object (W)": "Obiekt mocy urządzenia (W)",
+  "Finish by (HH:mm)": "Zakończ do (HH:mm)",
+  "Program profile (W per 15 min, JSON array)": "Profil programu (W na 15 min, tablica JSON)"
 }

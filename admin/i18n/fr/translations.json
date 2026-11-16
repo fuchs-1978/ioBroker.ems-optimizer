@@ -662,5 +662,16 @@
   "Wallbox 1 power in kW (optional)": "Puissance de la borne 1 en kW (facultatif)",
   "Wallbox 2 power in kW (optional)": "Puissance de la borne 2 en kW (facultatif)",
   "Wallbox 3 power in kW (optional)": "Puissance de la borne 3 en kW (facultatif)",
-  "Writable setpoint": "Consigne modifiable"
+  "Writable setpoint": "Consigne modifiable",
+  "Appliance program scheduling": "Planification des appareils",
+  "Remote start release object": "Objet d’autorisation du départ distant",
+  "Remote start release value (JSON)": "Valeur d’autorisation du départ distant (JSON)",
+  "Program status object": "Objet d’état du programme",
+  "Ready status value": "Valeur de l’état prêt",
+  "Running status value": "Valeur de l’état en cours",
+  "Program start object": "Objet de départ du programme",
+  "Program start value (JSON)": "Valeur de départ du programme (JSON)",
+  "Appliance power object (W)": "Objet de puissance de l’appareil (W)",
+  "Finish by (HH:mm)": "Fin avant (HH:mm)",
+  "Program profile (W per 15 min, JSON array)": "Profil du programme (W par 15 min, tableau JSON)"
 }

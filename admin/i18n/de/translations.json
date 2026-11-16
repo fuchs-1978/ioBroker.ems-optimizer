@@ -662,5 +662,16 @@
   "Wallbox 1 power in kW (optional)": "Wallbox 1 power in kW (optional)",
   "Wallbox 2 power in kW (optional)": "Wallbox 2 power in kW (optional)",
   "Wallbox 3 power in kW (optional)": "Wallbox 3 power in kW (optional)",
-  "Writable setpoint": "Beschreibbarer Sollwert"
+  "Writable setpoint": "Beschreibbarer Sollwert",
+  "Appliance program scheduling": "Programmplanung für Haushaltsgeräte",
+  "Remote start release object": "Fernstartfreigabe-Objekt",
+  "Remote start release value (JSON)": "Wert der Fernstartfreigabe (JSON)",
+  "Program status object": "Programmstatus-Objekt",
+  "Ready status value": "Statuswert für bereit",
+  "Running status value": "Statuswert für läuft",
+  "Program start object": "Programmstart-Objekt",
+  "Program start value (JSON)": "Programmstartwert (JSON)",
+  "Appliance power object (W)": "Leistungsobjekt des Geräts (W)",
+  "Finish by (HH:mm)": "Fertig bis (HH:mm)",
+  "Program profile (W per 15 min, JSON array)": "Programmprofil (W je 15 min, JSON-Array)"
 }

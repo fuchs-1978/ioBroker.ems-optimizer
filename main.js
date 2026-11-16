@@ -162,6 +162,7 @@ class EmsOptimizer extends utils.Adapter {
         this.runEngine(fs.readFileSync(path.join(__dirname, 'lib/engine/bootstrap.js'), 'utf8'));
         await this.setStateAsync("info.connection", true, true);
         require("./lib/device-setpoints").startDeviceSetpoints(this);
+        require("./lib/device-programs").startDevicePrograms(this);
         this.log.info(`EMS Optimizer ${require('./package.json').version} started; alpha outputs require explicit release`);
         // Diagnostics must never hold up actuator initialization or scheduling.
         this.debugInitialization = this.startDebug();

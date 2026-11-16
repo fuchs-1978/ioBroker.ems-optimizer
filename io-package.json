@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.288",
+    "version": "0.17.0-alpha.289",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.289": {
+        "en": "Optional appliance program scheduling",
+        "de": "Optionale Programmplanung für Haushaltsgeräte",
+        "es": "Optional appliance program scheduling",
+        "fr": "Optional appliance program scheduling",
+        "it": "Optional appliance program scheduling",
+        "nl": "Optional appliance program scheduling",
+        "pl": "Optional appliance program scheduling",
+        "pt": "Optional appliance program scheduling",
+        "ru": "Optional appliance program scheduling",
+        "uk": "Optional appliance program scheduling",
+        "zh-cn": "Optional appliance program scheduling"
+      },
       "0.17.0-alpha.288": {
         "en": "Prioritize below-minimum EV charging and recover a 20% forecast battery reserve within grid limits.",
         "de": "Fahrzeug-Mindestladung priorisieren und die 20-%-Prognosereserve im freien Netzbudget nachladen.",
@@ -81,19 +94,6 @@
         "ru": "Пересчитывает устаревшую команду смены направления по текущему измерению сети. Сохраняет последнюю отправленную уставку в пределах защитных ограничений.",
         "uk": "Перераховує застарілу команду зміни напрямку за поточним вимірюванням мережі. Зберігає останню надіслану уставку в межах захисних обмежень.",
         "zh-cn": "根据当前电网测量值重新规划已过时的充放电切换请求，并在保护限值内继续监视上一条已发送的设定值。"
-      },
-      "0.17.0-alpha.282": {
-        "en": "Start eligible single-phase WB1 charging with measured daytime surplus and up to 600 W of battery support. Recharge the battery with surplus as it becomes available.",
-        "de": "Einphasige WB1 bei gemessenem Tagesüberschuss mit bis zu 600 W Speicherhilfe starten. Freien Überschuss zum Nachladen des Speichers nutzen.",
-        "es": "Inicia la carga monofásica de WB1 con excedente diurno medido y hasta 600 W de apoyo de la batería. Recarga la batería con el excedente disponible.",
-        "fr": "Démarre la recharge monophasée sur WB1 avec le surplus diurne mesuré et jusqu’à 600 W fournis par la batterie. Recharge la batterie avec le surplus disponible.",
-        "it": "Avvia la ricarica monofase su WB1 con il surplus diurno misurato e fino a 600 W dalla batteria. Ricarica la batteria con il surplus disponibile.",
-        "nl": "Start eenfasig laden op WB1 met gemeten dagoverschot en tot 600 W accusteun. Laadt de accu met beschikbaar overschot bij.",
-        "pl": "Rozpoczyna jednofazowe ładowanie WB1 z mierzonej nadwyżki w dzień ze wsparciem akumulatora do 600 W. Dostępna nadwyżka doładowuje akumulator.",
-        "pt": "Inicia o carregamento monofásico na WB1 com o excedente diurno medido e até 600 W da bateria. Recarrega a bateria com o excedente disponível.",
-        "ru": "Запускает однофазную зарядку WB1 при измеренном дневном избытке с поддержкой накопителя до 600 Вт. Свободный избыток пополняет накопитель.",
-        "uk": "Запускає однофазне заряджання WB1 за виміряного денного надлишку з підтримкою накопичувача до 600 Вт. Доступний надлишок поповнює накопичувач.",
-        "zh-cn": "白天根据测得的余电启动 WB1 单相充电，并由储能提供最多 600 瓦的辅助。可用余电可为储能补充电量。"
       }
     },
     "titleLang": {
@@ -165,6 +165,7 @@
     ]
   },
   "native": {
+    "devicePrograms": [],
     "deviceSetpoints": [],
     "observerOnly": true,
     "globalWriteEnabled": false,

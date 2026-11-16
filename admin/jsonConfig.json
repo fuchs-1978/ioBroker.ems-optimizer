@@ -8333,6 +8333,104 @@
               "default": 5
             }
           ]
+        },
+        "devicePrograms": {
+          "type": "table",
+          "label": "Appliance program scheduling",
+          "default": [],
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "items": [
+            {
+              "type": "text",
+              "attr": "name",
+              "title": "Name",
+              "default": ""
+            },
+            {
+              "type": "select",
+              "attr": "mode",
+              "title": "Mode",
+              "default": "off",
+              "options": [
+                {
+                  "value": "off",
+                  "label": "Off"
+                },
+                {
+                  "value": "observe",
+                  "label": "Observe"
+                },
+                {
+                  "value": "automatic",
+                  "label": "Automatic"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "attr": "remoteObject",
+              "title": "Remote start release object",
+              "default": ""
+            },
+            {
+              "type": "text",
+              "attr": "remoteValue",
+              "title": "Remote start release value (JSON)",
+              "default": "true"
+            },
+            {
+              "type": "text",
+              "attr": "statusObject",
+              "title": "Program status object",
+              "default": ""
+            },
+            {
+              "type": "text",
+              "attr": "readyValue",
+              "title": "Ready status value",
+              "default": ""
+            },
+            {
+              "type": "text",
+              "attr": "runningValue",
+              "title": "Running status value",
+              "default": ""
+            },
+            {
+              "type": "text",
+              "attr": "startObject",
+              "title": "Program start object",
+              "default": ""
+            },
+            {
+              "type": "text",
+              "attr": "startValue",
+              "title": "Program start value (JSON)",
+              "default": "true"
+            },
+            {
+              "type": "text",
+              "attr": "powerObject",
+              "title": "Appliance power object (W)",
+              "default": ""
+            },
+            {
+              "type": "text",
+              "attr": "finishBy",
+              "title": "Finish by (HH:mm)",
+              "default": ""
+            },
+            {
+              "type": "text",
+              "attr": "profileJson",
+              "title": "Program profile (W per 15 min, JSON array)",
+              "default": ""
+            }
+          ]
         }
       }
     }
