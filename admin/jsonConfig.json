@@ -8669,6 +8669,41 @@
       "type": "panel",
       "label": "Devices",
       "items": {
+        "appliancePhaseLearningEnabled": {
+          "type": "checkbox",
+          "label": "Learn appliance grid phases while running",
+          "default": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "newLine": true
+        },
+        "_appliancePhaseHelp": {
+          "type": "staticText",
+          "text": "Grid phases are learned from repeated measured load changes, including switching on and off. Changing storage, PV or other measured loads invalidates the observation. Small or unclear changes remain unassigned. Learning is passive and independent of program automation. Configure appliance power and its correct unit; results are saved per meter.",
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "newLine": true
+        },
+        "_appliancePhases": {
+          "type": "state",
+          "oid": "Devices.Phases.Summary",
+          "label": "Detected appliance grid phases",
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "newLine": true
+        },
         "deviceSetpoints": {
           "type": "table",
           "label": "Temperature setpoint optimization",
@@ -8708,6 +8743,32 @@
               "attr": "maxTemperature",
               "title": "Normal setpoint (°C)",
               "default": 5
+            },
+            {
+              "type": "text",
+              "attr": "powerObject",
+              "title": "Appliance power object",
+              "default": ""
+            },
+            {
+              "type": "select",
+              "attr": "powerUnit",
+              "title": "Power unit",
+              "default": "W",
+              "options": [
+                {
+                  "value": "W",
+                  "label": "W"
+                },
+                {
+                  "value": "mW",
+                  "label": "mW"
+                },
+                {
+                  "value": "kW",
+                  "label": "kW"
+                }
+              ]
             }
           ]
         },

@@ -687,5 +687,8 @@
   "Test grid phase": "测试电网相位",
   "Cancel phase test": "取消相位测试",
   "Phase test status": "相位测试状态",
-  "Save the configuration before testing. The test saves a clearly detected grid phase and restores normal control.": "测试前请保存配置。测试会保存明确识别的电网相位，并恢复正常控制。"
+  "Save the configuration before testing. The test saves a clearly detected grid phase and restores normal control.": "测试前请保存配置。测试会保存明确识别的电网相位，并恢复正常控制。",
+  "Learn appliance grid phases while running": "在设备运行时识别其电网相位",
+  "Detected appliance grid phases": "已识别的设备电网相位",
+  "Grid phases are learned from repeated measured load changes, including switching on and off. Changing storage, PV or other measured loads invalidates the observation. Small or unclear changes remain unassigned. Learning is passive and independent of program automation. Configure appliance power and its correct unit; results are saved per meter.": "根据设备启动和停止时反复测得的功率变化识别电网相位。储能、光伏或其他被测负载发生变化时，本次观测无效。较小或不明确的变化不予分配相位。识别过程是被动的，并且独立于程序自动运行功能。请配置设备功率及正确单位；识别结果按电表保存。"
 }

@@ -396,6 +396,10 @@ async function worker(tree) {
         // source-power-history/lifecycle tests cover it separately. Keep all
         // pre-existing ordered output/startup/shutdown traces byte-exact.
         if (a.sourcePowerHistory) a.sourcePowerHistory.initialize = async () => {};
+        // Alpha.297 publishes a passive appliance-phase summary after actuator
+        // startup. Its own persistence and live sampling have separate tests;
+        // keep this comparison focused on the existing output lifecycle.
+        if (a.appliancePhases) a.appliancePhases.initialize = async () => {};
         // alpha.132 adds passive summary state creation/checkpoints, not control
         // behavior. Its bounded persistence/coverage contract is tested in
         // daily-summary.test.js. Keep the original actuator trace exact.

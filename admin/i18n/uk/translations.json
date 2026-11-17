@@ -687,5 +687,8 @@
   "Test grid phase": "Перевірити фазу мережі",
   "Cancel phase test": "Скасувати перевірку фази",
   "Phase test status": "Стан перевірки фази",
-  "Save the configuration before testing. The test saves a clearly detected grid phase and restores normal control.": "Збережіть конфігурацію перед перевіркою. Перевірка зберігає однозначно визначену фазу мережі та відновлює звичайне керування."
+  "Save the configuration before testing. The test saves a clearly detected grid phase and restores normal control.": "Збережіть конфігурацію перед перевіркою. Перевірка зберігає однозначно визначену фазу мережі та відновлює звичайне керування.",
+  "Learn appliance grid phases while running": "Визначати фази приладів під час роботи",
+  "Detected appliance grid phases": "Визначені фази приладів",
+  "Grid phases are learned from repeated measured load changes, including switching on and off. Changing storage, PV or other measured loads invalidates the observation. Small or unclear changes remain unassigned. Learning is passive and independent of program automation. Configure appliance power and its correct unit; results are saved per meter.": "Фази визначаються за повторюваними виміряними змінами потужності під час увімкнення та вимкнення. Зміни накопичувача, сонячної генерації або інших вимірюваних навантажень роблять спостереження недійсним. Малі або неоднозначні зміни залишаються без призначення. Визначення пасивне й не залежить від автоматизації програм. Укажіть потужність приладу та правильну одиницю; результати зберігаються для кожного лічильника."
 }

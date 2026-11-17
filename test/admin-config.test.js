@@ -9,6 +9,25 @@ const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 const tabs = admin.items;
 const allFields = Object.assign({}, ...Object.values(tabs).map(tab => tab.items || {}));
 
+test('passive appliance phases expose live results and optional refrigerator power units', () => {
+    assert.equal(ioPackage.native.appliancePhaseLearningEnabled, true);
+    const items = tabs.devicesTab.items;
+    assert.equal(items.appliancePhaseLearningEnabled.default, true);
+    assert.equal(items._appliancePhases.oid, 'Devices.Phases.Summary');
+    assert.equal(items._appliancePhases.controlled, false);
+    for (const key of ['devicePrograms', 'deviceSetpoints']) {
+        assert.ok(items[key].items.some(column => column.attr === 'powerObject'));
+        const unit = items[key].items.find(column => column.attr === 'powerUnit');
+        assert.deepEqual(unit.options.map(option => option.value), ['W', 'mW', 'kW']);
+    }
+    for (const lang of ['en', 'de', 'es', 'fr', 'it', 'nl', 'pl', 'pt', 'ru', 'uk', 'zh-cn']) {
+        const texts = JSON.parse(fs.readFileSync(`admin/i18n/${lang}/translations.json`, 'utf8'));
+        assert.ok(texts[items.appliancePhaseLearningEnabled.label]);
+        assert.ok(texts[items._appliancePhases.label]);
+        assert.ok(texts[items._appliancePhaseHelp.text]);
+    }
+});
+
 test('room histories expose configurable original sources and bounded retention without installation defaults', () => {
     assert.equal(ioPackage.native.roomHistoryEnabled, true);
     assert.equal(ioPackage.native.roomHistoryRetentionDays, 90);
@@ -106,7 +125,7 @@ test('update defaults never arm a productive output', () => {
 });
 
 test('package manifests publish the same alpha version', () => {
-    assert.equal(packageJson.version, '0.17.0-alpha.296');
+    assert.equal(packageJson.version, '0.17.0-alpha.297');
     assert.equal(ioPackage.common.version, packageJson.version);
     const core = fs.readFileSync('lib/engine/core.js', 'utf8');
     const bootstrap = fs.readFileSync('lib/engine/bootstrap.js', 'utf8');

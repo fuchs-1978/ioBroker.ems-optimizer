@@ -687,5 +687,8 @@
   "Test grid phase": "Comprobar fase de red",
   "Cancel phase test": "Cancelar prueba de fase",
   "Phase test status": "Estado de la prueba de fase",
-  "Save the configuration before testing. The test saves a clearly detected grid phase and restores normal control.": "Guarde la configuración antes de la prueba. La prueba guarda una fase de red identificada claramente y restablece el control normal."
+  "Save the configuration before testing. The test saves a clearly detected grid phase and restores normal control.": "Guarde la configuración antes de la prueba. La prueba guarda una fase de red identificada claramente y restablece el control normal.",
+  "Learn appliance grid phases while running": "Detectar las fases de los electrodomésticos durante el funcionamiento",
+  "Detected appliance grid phases": "Fases detectadas de los electrodomésticos",
+  "Grid phases are learned from repeated measured load changes, including switching on and off. Changing storage, PV or other measured loads invalidates the observation. Small or unclear changes remain unassigned. Learning is passive and independent of program automation. Configure appliance power and its correct unit; results are saved per meter.": "Las fases se detectan mediante cambios repetidos de potencia medida al encender y apagar. Los cambios del almacenamiento, la generación fotovoltaica u otras cargas medidas invalidan la observación. Los cambios pequeños o ambiguos no se asignan. La detección es pasiva e independiente de la automatización de programas. Configure la potencia del aparato y su unidad correcta; los resultados se guardan por contador."
 }

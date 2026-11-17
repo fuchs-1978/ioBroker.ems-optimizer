@@ -1,6 +1,6 @@
 # Adminreferenz – EMS Optimizer
 
-Feldreferenz zum Admin-Stand **0.17.0-alpha.296**. Die [Schritt-für-Schritt-Anleitung](../README.de.md) führt durch die Einrichtung und Prüfung. [English overview](../README.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36)
+Feldreferenz zum Admin-Stand **0.17.0-alpha.297**. Die [Schritt-für-Schritt-Anleitung](../README.de.md) führt durch die Einrichtung und Prüfung. [English overview](../README.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36)
 
 Die Tabellen dokumentieren die vorhandenen Admin-Einstellungen und Auslieferungswerte. Bestehende Anlagen können davon abweichen. Ein Feld oder eine Softwareprüfung belegt keine reale Inbetriebnahme.
 
@@ -952,6 +952,18 @@ Nutze für normale Geräte- und Messzuordnungen die fachlichen Reiter. Dieser Re
 | Bisheriger freier Strom L3 (A)<br>`dhwHaL3FreeCurrentId` | leer | Optionaler bisheriger freier Strom der jeweiligen Netzphase in A für Altintegration. Kein gemessener Gesamt-/Wallboxstrom. Physische gemeinsame Anschlussgrenze bleibt maßgeblich. |
 
 ## Admin: Geräte
+
+### Phasenzuordnung im laufenden Betrieb
+
+| Feld / Schlüssel | Auslieferung | Bedeutung |
+| --- | --- | --- |
+| Netzphasen der Hausgeräte im Betrieb erkennen / `appliancePhaseLearningEnabled` | EIN | Passive Erkennung aus eigenen Leistungsmessungen und den sechs Bezugs-/Einspeisemesspunkten von L1–L3. Unabhängig von Master-Freigabe und Programm-Modus. |
+| Erkannte Netzphasen der Hausgeräte / `Devices.Phases.Summary` | unbekannt | Phase und Erkennungsstatus je gemessenem Gerät. Mindestens drei passende Lastwechsel mit Anstieg und Abfall sind erforderlich. Unklare Messungen verändern keine bestätigte Zuordnung. Ein verwertbarer Widerspruch hebt sie auf. |
+| Geräte-Leistungsobjekt und Einheit / `deviceSetpoints[].powerObject`, `deviceSetpoints[].powerUnit` | leer / W | Optionaler eigener Leistungsmesspunkt auch für Kühlschränke. W, mW oder kW passend zum Messwert angeben. `devicePrograms` nutzt seine bestehenden Leistungsfelder. |
+
+`Devices.Phases.<Messpunktkennung>.GridPhase` enthält 0 (unbekannt) oder die erkannte Phase 1–3. `Status` erklärt Warte- und Verwerfungsgründe; `Evidence_JSON` speichert die gemessenen Lastwechsel. Ergebnisse hängen am Messpunkt, seiner Einheit und der Netzzuordnung. Eine andere Tabellenreihenfolge erhält sie. Die Status-JSONs der Programme und Temperaturgeräte enthalten `gridPhase`, `phaseStatus` und `phaseEvidenceId`.
+
+Die Erkennung nutzt abonnierte Livewerte ohne zusätzliche SQL-Abfragen und ohne Schaltbefehle. Wechselnde Speicher-, PV- oder andere gemessene Leistungen verhindern die Zuordnung. Frische und wiederholte Rückmeldungen aller beteiligten Messquellen sind erforderlich. Bei kleinen oder unruhigen Lasten kann die Phase unbekannt bleiben. [Messfenster und Grenzen](release-0.17.0-alpha.297.md)
 
 ### Programmplanung für Haushaltsgeräte
 
