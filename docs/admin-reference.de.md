@@ -1,6 +1,6 @@
 # Adminreferenz – EMS Optimizer
 
-Feldreferenz zum Admin-Stand **0.17.0-alpha.297**. Die [Schritt-für-Schritt-Anleitung](../README.de.md) führt durch die Einrichtung und Prüfung. [English overview](../README.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36)
+Feldreferenz zum Admin-Stand **0.17.0-alpha.298**. Die [Schritt-für-Schritt-Anleitung](../README.de.md) führt durch die Einrichtung und Prüfung. [English overview](../README.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36)
 
 Die Tabellen dokumentieren die vorhandenen Admin-Einstellungen und Auslieferungswerte. Bestehende Anlagen können davon abweichen. Ein Feld oder eine Softwareprüfung belegt keine reale Inbetriebnahme.
 
@@ -981,6 +981,8 @@ Die Tabelle `devicePrograms` ist bei Auslieferung leer. Eine Zeile beschreibt ei
 | Fertig bis (HH:mm) | Nächster vorkommender Termin nach lokaler Zeit des ioBroker-Hosts. Ein leeres Feld erlaubt einen Suchhorizont von bis zu 48 Stunden innerhalb vorhandener gültiger Prognosen. |
 
 `Devices.Programs.N` zeigt den Status, die geplante Startzeit und erwartete Kosten. `Devices.ProgramProfiles` enthält je Programm gemessene Energie, Leistung je Viertelstunde und Anzahl der vollständigen Läufe. In der Automatik kann `Devices.Programs.N.Announcement` für einen geplanten Lauf JSON mit `id` und `text` enthalten. Ein separates Skript kann daraus eine Ansage erzeugen. Der Status und die gemessene Leistung zeigen, ob der Startauftrag tatsächlich zum Programmlauf geführt hat. [Einrichtungsschritte](../README.de.md#programmplanung-für-haushaltsgeräte)
+
+Für die Startplanung zählt der erwartete Verbrauch aller laufenden und zuvor eingeplanten Programmgeräte. Das EMS aktualisiert die offenen Starts mit jeder neuen Prognose im nächsten Planungszyklus. Eine gesetzte Fertig-bis-Uhrzeit bleibt für dieselbe Freigabe an das ermittelte Datum gebunden. [Reihenfolge und Statusangaben](release-0.17.0-alpha.298.md)
 
 ### Temperatur-Sollwertoptimierung
 

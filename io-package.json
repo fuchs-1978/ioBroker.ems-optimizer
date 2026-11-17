@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.297",
+    "version": "0.17.0-alpha.298",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.298": {
+        "en": "Coordinate all appliance starts and replan waiting programs with the latest forecast.",
+        "de": "Starts aller Haushaltsgeräte gemeinsam planen und bei neuer Prognose aktualisieren.",
+        "es": "Coordina el arranque de todos los electrodomésticos y actualiza los programas pendientes con la previsión más reciente.",
+        "fr": "Coordonne les départs de tous les appareils et recalcule les horaires selon les dernières prévisions.",
+        "it": "Coordina gli avvii di tutti gli elettrodomestici e ripianifica i programmi in attesa con le nuove previsioni.",
+        "nl": "Stemt de starttijden van alle apparaten op elkaar af en plant wachtende programma’s opnieuw bij een nieuwe prognose.",
+        "pl": "Koordynuje uruchamianie wszystkich urządzeń i ponownie planuje oczekujące programy po aktualizacji prognozy.",
+        "pt": "Coordena o arranque de todos os aparelhos e recalcula os horários com a previsão mais recente.",
+        "ru": "Согласует время запуска всех приборов и пересчитывает расписание ожидающих программ по свежему прогнозу.",
+        "uk": "Узгоджує час запуску всіх приладів і перераховує розклад програм за оновленим прогнозом.",
+        "zh-cn": "协调所有家电的启动时间，并根据最新预测重新安排等待中的程序。"
+      },
       "0.17.0-alpha.297": {
         "en": "Learn appliance grid phases passively from repeated measured load changes.",
         "de": "Netzphasen der Hausgeräte aus wiederholten gemessenen Lastwechseln passiv erkennen.",
@@ -81,19 +94,6 @@
         "ru": "Избыток солнечной энергии восстанавливает резерв батареи до 20 %, а сеть восполняет недостающую мощность до 1000 Вт суммарно.",
         "uk": "Надлишок сонячної енергії відновлює резерв батареї до 20 %, а мережа доповнює потужність до 1000 Вт загалом.",
         "zh-cn": "利用富余光伏电力恢复 20% 的电池储备，电网补足至总充电功率 1000 瓦。"
-      },
-      "0.17.0-alpha.291": {
-        "en": "Publish appliance start and savings announcements.",
-        "de": "Ansagen zu geplantem Gerätestart und Ersparnis bereitstellen.",
-        "es": "Publish appliance start and savings announcements.",
-        "fr": "Publish appliance start and savings announcements.",
-        "it": "Publish appliance start and savings announcements.",
-        "nl": "Publish appliance start and savings announcements.",
-        "pl": "Publish appliance start and savings announcements.",
-        "pt": "Publish appliance start and savings announcements.",
-        "ru": "Publish appliance start and savings announcements.",
-        "uk": "Publish appliance start and savings announcements.",
-        "zh-cn": "Publish appliance start and savings announcements."
       }
     },
     "titleLang": {
