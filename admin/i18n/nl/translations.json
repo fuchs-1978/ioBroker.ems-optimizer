@@ -594,7 +594,6 @@
   "Historical load profile method": "Methode voor historisch belastingsprofiel",
   "Median (compatible default)": "Mediaan (compatibele standaard)",
   "Recent weighted profile (28 day half-life)": "Recent gewogen profiel (halfwaardetijd van 28 dagen)",
-  "50/50 Median + Lasso (Median fallback)": "50/50 Mediaan + Lasso (terugval op mediaan)",
   "Battery strategy preview": "Voorbeeld van de batterijstrategie",
   "Operating status": "Bedrijfsstatus",
   "Current notices": "Actuele meldingen",
@@ -607,7 +606,7 @@
   "Publication times (maximum 5 s skew)": "Publicatietijden (maximaal 5 s verschil)",
   "Shared telegram receipt time (exact match)": "Gezamenlijke telegramontvangst (exact gelijk)",
   "Enable Median / Lasso forecast comparison": "Prognosevergelijking Mediaan / Lasso inschakelen",
-  "Save tomorrow’s forecasts in advance and compare against measured baseload. Enable this for the optional 50/50 planning profile. Training requires at least 28 usable days.": "Sla de prognoses voor morgen vooraf op en vergelijk ze met de gemeten basislast. Schakel dit in voor het optionele 50/50-planningsprofiel. Voor training zijn minstens 28 bruikbare dagen nodig.",
+  "Observation only: issue tomorrow once, retain predictions across restarts and compare with cleaned SQL baseload. Production planning keeps its selected profile. Training needs at least 28 usable days after lag alignment; results follow completed days. No brightness feature yet.": "Alleen observatie: slaat eenmaal een prognose voor morgen op, behoudt die na herstart en vergelijkt met de opgeschoonde SQL-basislast. Planning behoudt het gekozen profiel. Minstens 28 bruikbare dagen na vertragingstoewijzing nodig. Resultaten na volledige dagen. Nog geen helderheidskenmerk.",
   "Include outside temperature in Lasso comparison": "Buitentemperatuur opnemen in Lasso-vergelijking",
   "Uses the configured outside temperature source in SQL for training and fresh Open-Meteo forecasts for tomorrow. Missing history or forecast slots prevent a complete comparison; no fabricated temperatures. Adds one historical source only while comparison is enabled.": "Leert met de ingestelde SQL-buitentemperatuur en actuele Open-Meteo-prognoses voor morgen. Ontbrekende gegevens verhinderen een volledige vergelijking. Alleen bij actieve vergelijking één extra historische bron.",
   "Median / Lasso comparison status": "Status vergelijking Mediaan / Lasso",
@@ -672,11 +671,12 @@
   "Running status value": "Statuswaarde actief",
   "Program start object": "Object voor programmastart",
   "Program start value (JSON)": "Waarde voor programmastart (JSON)",
-  "Appliance power object (W)": "Vermogensobject apparaat (W)",
+  "Appliance power object": "Vermogensobject apparaat",
   "Finish by (HH:mm)": "Gereed om (HH:mm)",
   "Program profile (W per 15 min, JSON array)": "Programmaprofiel (W per 15 min, JSON-reeks)",
   "Selected program object": "Object geselecteerd programma",
   "Active program object": "Object actief programma",
   "Finished status value": "Statuswaarde voltooid",
-  "Start selected program": "Start geselecteerd programma"
+  "Start selected program": "Start geselecteerd programma",
+  "mW": "Milliwatt"
 }

@@ -594,7 +594,6 @@
   "Historical load profile method": "Метод історичного профілю навантаження",
   "Median (compatible default)": "Медіана (сумісне типове налаштування)",
   "Recent weighted profile (28 day half-life)": "Профіль із вагою давності (період напіврозпаду 28 днів)",
-  "50/50 Median + Lasso (Median fallback)": "50/50 Медіана + Lasso (резерв: медіана)",
   "Battery strategy preview": "Попередній перегляд стратегії батареї",
   "Operating status": "Стан роботи",
   "Current notices": "Поточні повідомлення",
@@ -607,7 +606,7 @@
   "Publication times (maximum 5 s skew)": "Час публікації (різниця до 5 с)",
   "Shared telegram receipt time (exact match)": "Спільне приймання телеграми (точний збіг)",
   "Enable Median / Lasso forecast comparison": "Увімкнути порівняння прогнозів Медіана / Lasso",
-  "Save tomorrow’s forecasts in advance and compare against measured baseload. Enable this for the optional 50/50 planning profile. Training requires at least 28 usable days.": "Заздалегідь зберігайте прогноз на завтра та порівнюйте його з виміряним базовим навантаженням. Увімкніть цю опцію для додаткового профілю 50/50. Для навчання потрібно щонайменше 28 днів із придатними даними.",
+  "Observation only: issue tomorrow once, retain predictions across restarts and compare with cleaned SQL baseload. Production planning keeps its selected profile. Training needs at least 28 usable days after lag alignment; results follow completed days. No brightness feature yet.": "Лише спостереження: зберігає прогноз на завтра навіть після перезапуску та порівнює з очищеним базовим навантаженням SQL. Планування зберігає обраний профіль. Потрібно 28 придатних днів після зіставлення лагів. Результати після повних днів. Без освітленості.",
   "Include outside temperature in Lasso comparison": "Враховувати зовнішню температуру в порівнянні Lasso",
   "Uses the configured outside temperature source in SQL for training and fresh Open-Meteo forecasts for tomorrow. Missing history or forecast slots prevent a complete comparison; no fabricated temperatures. Adds one historical source only while comparison is enabled.": "Навчання за зовнішньою температурою в SQL, прогноз на завтра зі свіжих даних Open-Meteo. Пропуски перешкоджають повному порівнянню. Додаткове джерело історії лише за ввімкненого порівняння.",
   "Median / Lasso comparison status": "Стан порівняння Медіана / Lasso",
@@ -672,11 +671,12 @@
   "Running status value": "Значення роботи",
   "Program start object": "Об’єкт запуску програми",
   "Program start value (JSON)": "Значення запуску програми (JSON)",
-  "Appliance power object (W)": "Об’єкт потужності приладу (W)",
+  "Appliance power object": "Об’єкт потужності приладу",
   "Finish by (HH:mm)": "Завершити до (HH:mm)",
   "Program profile (W per 15 min, JSON array)": "Профіль програми (W за 15 хв, масив JSON)",
   "Selected program object": "Об’єкт вибраної програми",
   "Active program object": "Об’єкт активної програми",
   "Finished status value": "Значення завершення",
-  "Start selected program": "Запустити вибрану програму"
+  "Start selected program": "Запустити вибрану програму",
+  "mW": "Міліват"
 }

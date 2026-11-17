@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.287
+
+- Drive device temperature bounds from central EMS power and price data.
+
 ## 0.17.0-alpha.286
 
 - Add configurable temperature setpoint optimization for household devices.

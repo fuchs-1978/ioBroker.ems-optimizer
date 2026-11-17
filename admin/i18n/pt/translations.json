@@ -594,7 +594,6 @@
   "Historical load profile method": "Método do perfil histórico de carga",
   "Median (compatible default)": "Mediana (predefinição compatível)",
   "Recent weighted profile (28 day half-life)": "Perfil ponderado recente (meia-vida de 28 dias)",
-  "50/50 Median + Lasso (Median fallback)": "50/50 Mediana + Lasso (recurso à mediana)",
   "Battery strategy preview": "Prévia da estratégia da bateria",
   "Operating status": "Estado de funcionamento",
   "Current notices": "Avisos atuais",
@@ -607,7 +606,7 @@
   "Publication times (maximum 5 s skew)": "Publicação (diferença máxima 5 s)",
   "Shared telegram receipt time (exact match)": "Receção comum do telegrama (igualdade exata)",
   "Enable Median / Lasso forecast comparison": "Ativar comparação de previsões Mediana / Lasso",
-  "Save tomorrow’s forecasts in advance and compare against measured baseload. Enable this for the optional 50/50 planning profile. Training requires at least 28 usable days.": "Guarde antecipadamente as previsões para amanhã e compare-as com a carga de base medida. Ative esta opção para o perfil opcional 50/50. O treino exige pelo menos 28 dias utilizáveis.",
+  "Observation only: issue tomorrow once, retain predictions across restarts and compare with cleaned SQL baseload. Production planning keeps its selected profile. Training needs at least 28 usable days after lag alignment; results follow completed days. No brightness feature yet.": "Apenas observação: guarda uma previsão para amanhã, preserva após reinício e compara com a carga base SQL corrigida. O planeamento mantém o perfil escolhido. Exige 28 dias utilizáveis após alinhamento dos atrasos. Resultados após dias completos. Sem luminosidade.",
   "Include outside temperature in Lasso comparison": "Incluir temperatura exterior na comparação Lasso",
   "Uses the configured outside temperature source in SQL for training and fresh Open-Meteo forecasts for tomorrow. Missing history or forecast slots prevent a complete comparison; no fabricated temperatures. Adds one historical source only while comparison is enabled.": "Aprende com a temperatura exterior configurada em SQL e utiliza previsões Open-Meteo recentes para amanhã. Dados ausentes impedem uma comparação completa. Uma fonte histórica adicional apenas com o comparador ativo.",
   "Median / Lasso comparison status": "Estado da comparação Mediana / Lasso",
@@ -672,11 +671,12 @@
   "Running status value": "Valor do estado em execução",
   "Program start object": "Objeto de início do programa",
   "Program start value (JSON)": "Valor de início do programa (JSON)",
-  "Appliance power object (W)": "Objeto de potência do aparelho (W)",
+  "Appliance power object": "Objeto de potência do aparelho",
   "Finish by (HH:mm)": "Terminar até (HH:mm)",
   "Program profile (W per 15 min, JSON array)": "Perfil do programa (W por 15 min, matriz JSON)",
   "Selected program object": "Objeto do programa escolhido",
   "Active program object": "Objeto do programa ativo",
   "Finished status value": "Valor do estado concluído",
-  "Start selected program": "Iniciar o programa escolhido"
+  "Start selected program": "Iniciar o programa escolhido",
+  "mW": "Milliwatt"
 }

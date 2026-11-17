@@ -594,7 +594,6 @@
   "Historical load profile method": "历史负载曲线方法",
   "Median (compatible default)": "中位数（兼容默认设置）",
   "Recent weighted profile (28 day half-life)": "近期加权曲线（28天半衰期）",
-  "50/50 Median + Lasso (Median fallback)": "50/50 中位数 + Lasso（缺失时用中位数）",
   "Battery strategy preview": "电池策略预览",
   "Operating status": "运行状态",
   "Current notices": "当前提示",
@@ -607,7 +606,7 @@
   "Publication times (maximum 5 s skew)": "发布时间（最大偏差 5 秒）",
   "Shared telegram receipt time (exact match)": "共同电报接收时间（完全匹配）",
   "Enable Median / Lasso forecast comparison": "启用中位数 / Lasso 预测比较",
-  "Save tomorrow’s forecasts in advance and compare against measured baseload. Enable this for the optional 50/50 planning profile. Training requires at least 28 usable days.": "提前保存明天的预测，并与实测基础负荷比较。使用可选的 50/50 计划配置时，请启用此项。训练至少需要 28 天的可用数据。",
+  "Observation only: issue tomorrow once, retain predictions across restarts and compare with cleaned SQL baseload. Production planning keeps its selected profile. Training needs at least 28 usable days after lag alignment; results follow completed days. No brightness feature yet.": "仅供观察：保存一次明日预测，重启后保留，并与清理后的 SQL 基础负载比较。调度仍使用所选曲线。滞后对齐后至少需要28个可用日，完整日结束后评估。尚无亮度特征。",
   "Include outside temperature in Lasso comparison": "在 Lasso 比较中包含室外温度",
   "Uses the configured outside temperature source in SQL for training and fresh Open-Meteo forecasts for tomorrow. Missing history or forecast slots prevent a complete comparison; no fabricated temperatures. Adds one historical source only while comparison is enabled.": "使用已配置的 SQL 室外温度训练，并使用最新 Open-Meteo 明日预报。缺失数据会阻止完整比较，不虚构温度。仅启用比较时增加一个历史数据源。",
   "Median / Lasso comparison status": "中位数 / Lasso 比较状态",
@@ -672,11 +671,12 @@
   "Running status value": "运行状态值",
   "Program start object": "程序启动对象",
   "Program start value (JSON)": "程序启动值（JSON）",
-  "Appliance power object (W)": "家电功率对象（W）",
+  "Appliance power object": "家电功率对象",
   "Finish by (HH:mm)": "最晚完成时间（HH:mm）",
   "Program profile (W per 15 min, JSON array)": "程序功率曲线（每 15 分钟 W，JSON 数组）",
   "Selected program object": "所选程序对象",
   "Active program object": "当前程序对象",
   "Finished status value": "已完成状态值",
-  "Start selected program": "启动所选程序"
+  "Start selected program": "启动所选程序",
+  "mW": "毫瓦"
 }

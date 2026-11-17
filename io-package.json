@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.293",
+    "version": "0.17.0-alpha.294",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.294": {
+        "en": "Configure the unit of appliance power measurements.",
+        "de": "Einheit der Leistungsmessung für Haushaltsgeräte einstellen.",
+        "es": "Configure the unit of appliance power measurements.",
+        "fr": "Configure the unit of appliance power measurements.",
+        "it": "Configure the unit of appliance power measurements.",
+        "nl": "Configure the unit of appliance power measurements.",
+        "pl": "Configure the unit of appliance power measurements.",
+        "pt": "Configure the unit of appliance power measurements.",
+        "ru": "Configure the unit of appliance power measurements.",
+        "uk": "Configure the unit of appliance power measurements.",
+        "zh-cn": "Configure the unit of appliance power measurements."
+      },
       "0.17.0-alpha.293": {
         "en": "Add an optional 50/50 Median and Lasso baseload profile with Median fallback.",
         "de": "Optionale 50/50-Grundlastprognose aus Median und Lasso mit Median-Rückfall.",
@@ -81,19 +94,6 @@
         "ru": "Приоритет минимальной зарядки автомобилей и восстановление резерва батареи до 20 % в пределах допустимой нагрузки.",
         "uk": "Пріоритет мінімального заряджання авто та відновлення резерву батареї до 20 % у межах лімітів мережі.",
         "zh-cn": "优先满足车辆最低充电需求，并在电网限额内将储能电池补充至 20%。"
-      },
-      "0.17.0-alpha.287": {
-        "en": "Drive device temperature bounds from central EMS power and price data.",
-        "de": "Gerätetemperatur innerhalb konfigurierter Grenzen mit zentralen EMS-Daten optimieren.",
-        "es": "Configurable temperature setpoint optimization for household devices.",
-        "fr": "Configurable temperature setpoint optimization for household devices.",
-        "it": "Configurable temperature setpoint optimization for household devices.",
-        "nl": "Configurable temperature setpoint optimization for household devices.",
-        "pl": "Configurable temperature setpoint optimization for household devices.",
-        "pt": "Configurable temperature setpoint optimization for household devices.",
-        "ru": "Configurable temperature setpoint optimization for household devices.",
-        "uk": "Configurable temperature setpoint optimization for household devices.",
-        "zh-cn": "Configurable temperature setpoint optimization for household devices."
       }
     },
     "titleLang": {
