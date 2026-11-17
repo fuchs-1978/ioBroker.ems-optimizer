@@ -679,5 +679,13 @@
   "Active program object": "Object actief programma",
   "Finished status value": "Statuswaarde voltooid",
   "Start selected program": "Start geselecteerd programma",
-  "mW": "mW"
+  "mW": "mW",
+  "Grid phase of head 1": "Netfase van kop 1",
+  "Grid phase of head 2": "Netfase van kop 2",
+  "Grid phase of head 3": "Netfase van kop 3",
+  "Unknown (conservative phase budget)": "Onbekend (voorzichtige fasereserve)",
+  "Test grid phase": "Netfase testen",
+  "Cancel phase test": "Fasetest annuleren",
+  "Phase test status": "Status van de fasetest",
+  "Save the configuration before testing. The test saves a clearly detected grid phase and restores normal control.": "Sla de configuratie op voordat u test. De test slaat een duidelijk herkende netfase op en herstelt de normale regeling."
 }

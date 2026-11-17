@@ -679,5 +679,13 @@
   "Active program object": "当前程序对象",
   "Finished status value": "已完成状态值",
   "Start selected program": "启动所选程序",
-  "mW": "mW"
+  "mW": "mW",
+  "Grid phase of head 1": "主机 1 的电网相位",
+  "Grid phase of head 2": "主机 2 的电网相位",
+  "Grid phase of head 3": "主机 3 的电网相位",
+  "Unknown (conservative phase budget)": "未知（保守的相位余量）",
+  "Test grid phase": "测试电网相位",
+  "Cancel phase test": "取消相位测试",
+  "Phase test status": "相位测试状态",
+  "Save the configuration before testing. The test saves a clearly detected grid phase and restores normal control.": "测试前请保存配置。测试会保存明确识别的电网相位，并恢复正常控制。"
 }

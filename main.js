@@ -106,6 +106,7 @@ class EmsOptimizer extends utils.Adapter {
         });
         this.on("ready", this.onReady.bind(this));
         this.on("stateChange", this.onStateChange.bind(this));
+        this.on("message", message => void this.onMessage(message));
         this.on("objectChange", id => this.outputMetadata.changed(id));
         this.on("unload", this.onUnload.bind(this));
     }
@@ -1156,6 +1157,62 @@ class EmsOptimizer extends utils.Adapter {
         return vm.runInContext(source, this.engineContext);
     }
 
+    async onMessage(message) {
+        if (!message?.callback || !['phaseTest', 'cancelPhaseTest'].includes(message.command)) return;
+        let response;
+        let started = false;
+        try {
+            if (!this.engineContext || this.unloading) throw new Error("Adapter ist noch nicht bereit");
+            if (message.command === 'cancelPhaseTest') {
+                this.runEngine('cancelPhaseTest()');
+                response = {result: 'Ruecknahme des Phasentests angefordert'};
+            } else {
+                if (this.phaseTestBusy) throw new Error('Ein Phasentest oder dessen Speicherung laeuft bereits');
+                const request = message.message || {};
+                const args = {kind: request.kind, index: request.index};
+                const start = this.runEngine(`beginPhaseTest(${JSON.stringify(args)})`);
+                if (start.error) throw new Error(start.error);
+                this.phaseTestBusy = true;
+                started = true;
+                await this.flushOwnWrites();
+                const deadline = Date.now() + 110000;
+                let report;
+                do {
+                    if (this.unloading) throw new Error('Phasentest durch Adapter-Neustart unterbrochen');
+                    report = this.runEngine('phaseTest');
+                    if (['complete', 'failed'].includes(report?.stage)) break;
+                    await new Promise(resolve => this.runtimeTimers.setTimeout(resolve, 500));
+                } while (Date.now() < deadline);
+                if (report?.stage !== 'complete') {
+                    this.runEngine('cancelPhaseTest("Ruecknahme nach fehlgeschlagenem Phasentest")');
+                    throw new Error(report?.status || 'Phasentest beendet; Ruecknahme noch offen');
+                }
+                const field = report.kind === 'battery' ? `batteryHead${report.index}GridPhase`
+                    : `wb${report.index}SinglePhaseGridPhase`;
+                const instanceId = `system.adapter.${this.namespace}`;
+                const current = await this.getForeignObjectAsync(instanceId);
+                if (this.unloading || !current?.native) throw new Error('Konfiguration nicht mehr verfuegbar');
+                const same = [field, 'globalWriteEnabled', 'controlEnabled', 'batteryControlEnabled',
+                    'batteryDispatchMode', 'batterySunEnergyInstance', 'batteryHeadCount',
+                    'haL1ImportPowerId', 'haL2ImportPowerId', 'haL3ImportPowerId',
+                    'haL1ExportPowerId', 'haL2ExportPowerId', 'haL3ExportPowerId',
+                    ...[0, 1, 2].flatMap(wb => [`wb${wb}L1CurrentId`, `wb${wb}L2CurrentId`,
+                        `wb${wb}L3CurrentId`, `wb${wb}PowerId`])]
+                    .every(key => current.native[key] === this.config[key]);
+                if (!same) throw new Error('Anschlusskonfiguration waehrend des Tests geaendert; Ergebnis nicht uebernommen');
+                await this.flushOwnWrites();
+                await this.extendForeignObjectAsync(instanceId, {native: {[field]: report.phase}});
+                this.config[field] = report.phase;
+                response = {result: report.status, native: {...current.native, [field]: report.phase}};
+            }
+        } catch (error) {
+            response = {error: String(error.message || error)};
+        } finally {
+            if (started) this.phaseTestBusy = false;
+        }
+        this.sendTo(message.from, message.command, response, message.callback);
+    }
+
     onStateChange(id, state) {
         // A delayed foreign command still matters for ownership, even if a
         // newer driver acknowledgement has already replaced it in the cache.
@@ -1242,6 +1299,10 @@ class EmsOptimizer extends utils.Adapter {
     }
 
     async prepareUnload({allowHandoff = true} = {}) {
+        if (this.phaseTestBusy && this.engineContext) {
+            allowHandoff = false;
+            this.runEngine('cancelPhaseTest("Phasentest durch Adapter-Neustart unterbrochen")');
+        }
         if (typeof this.requireLog === "function") this.requireLog(false);
         this.runShadow('beginShutdown');
         this.unloading = true;

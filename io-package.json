@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.295",
+    "version": "0.17.0-alpha.296",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.296": {
+        "en": "Test and save battery and wallbox grid phases.",
+        "de": "Netzphasen von Speicherköpfen und Wallboxen prüfen und speichern.",
+        "es": "Comprobar y guardar las fases de red de baterías y puntos de carga.",
+        "fr": "Tester et enregistrer les phases réseau des batteries et des bornes.",
+        "it": "Verificare e salvare le fasi di rete di batterie e wallbox.",
+        "nl": "Netfasen van batterijkoppen en laadpunten testen en opslaan.",
+        "pl": "Sprawdzanie i zapisywanie faz sieci akumulatorów i ładowarek.",
+        "pt": "Testar e guardar as fases da rede de baterias e postos de carregamento.",
+        "ru": "Проверка и сохранение фаз сети аккумуляторов и зарядных станций.",
+        "uk": "Перевірка та збереження фаз мережі акумуляторів і зарядних станцій.",
+        "zh-cn": "测试并保存电池主机和充电桩的电网相位。"
+      },
       "0.17.0-alpha.295": {
         "en": "Optionally reserve stored energy for the next high tariff period.",
         "de": "Speicherenergie optional für das nächste Hochtariffenster zurückhalten.",
@@ -81,19 +94,6 @@
         "ru": "Learn household appliance profiles by selected program.",
         "uk": "Learn household appliance profiles by selected program.",
         "zh-cn": "Learn household appliance profiles by selected program."
-      },
-      "0.17.0-alpha.289": {
-        "en": "Optional appliance program scheduling",
-        "de": "Optionale Programmplanung für Haushaltsgeräte",
-        "es": "Optional appliance program scheduling",
-        "fr": "Optional appliance program scheduling",
-        "it": "Optional appliance program scheduling",
-        "nl": "Optional appliance program scheduling",
-        "pl": "Optional appliance program scheduling",
-        "pt": "Optional appliance program scheduling",
-        "ru": "Optional appliance program scheduling",
-        "uk": "Optional appliance program scheduling",
-        "zh-cn": "Optional appliance program scheduling"
       }
     },
     "titleLang": {
@@ -162,7 +162,8 @@
       "battery",
       "wallbox",
       "forecast"
-    ]
+    ],
+    "messagebox": true
   },
   "native": {
     "devicePrograms": [],
@@ -764,7 +765,10 @@
     "weatherArchiveEnabled": true,
     "roomHistoryEnabled": true,
     "roomHistoryRetentionDays": 90,
-    "roomHistoryRooms": []
+    "roomHistoryRooms": [],
+    "batteryHead1GridPhase": 0,
+    "batteryHead2GridPhase": 0,
+    "batteryHead3GridPhase": 0
   },
   "objects": [],
   "instanceObjects": [

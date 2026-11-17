@@ -140,11 +140,12 @@ test('temperature reserve selector accepts numeric telemetry without requiring a
     ]) assert.equal(filter(invalid), false);
 });
 
-test('temperature reserve displays are read-only and never substitute defaults for missing diagnosis', () => {
+test('battery diagnostic displays are read-only and never substitute defaults for missing diagnosis', () => {
     const fields = collectFields(config.items.batteryTab, 'state');
     const expected = ['EffectiveMinimumSoC_pct', 'TemperatureReserveStatus', 'TemperatureReserveValid',
         'TemperatureReserveHeld', 'TemperatureForecast_C', 'TemperatureForecastAge_h',
-        'TemperatureReservePeriod'].map(suffix => `Devices.Battery.${suffix}`);
+        'TemperatureReservePeriod'].map(suffix => `Devices.Battery.${suffix}`)
+        .concat([1, 2, 3].map(head => `Devices.Battery.Heads.${head}.PhaseTestStatus`));
     assert.deepEqual(fields.map(field => field.oid).sort(), expected.sort());
     for (const field of fields) {
         assert.equal(field.control, 'text', field.oid);

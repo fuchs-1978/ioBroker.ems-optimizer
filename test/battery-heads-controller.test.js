@@ -84,6 +84,40 @@ test('one, two and three heads receive absolute GS with capacity-weighted SoC di
     assert.deepEqual(discharge.commands(), [50, 650]);
 });
 
+test('a known head phase uses its own room while unknown and invalid phases keep the conservative cap', () => {
+    for (const phase of [0, 1, 9]) {
+        const h = harness(1, new Map(), {batteryHead1GridPhase: phase});
+        h.put('ha2', 45.9);
+        const cap = h.run('batteryHouseConnectionCapW(0)');
+        assert.ok(phase === 1 ? cap > 1000 : cap < 30);
+    }
+});
+
+test('heads sharing a known phase share that phase room and retain separate limits on other phases', () => {
+    for (const secondPhase of [1, 2]) {
+        const h = harness(2, new Map(), {batteryHead1GridPhase: 1, batteryHead2GridPhase: secondPhase});
+        h.put('ha1', 45.5);
+        h.own('Config.BatteryFineStep_W', 1000);
+        h.tick();
+        const onL1 = h.writes.filter(w => secondPhase === 1 || w.id.includes('.heads.1.'));
+        assert.ok(onL1.reduce((sum, w) => sum - w.val, 0) <= 115);
+        if (secondPhase === 2) assert.ok(h.writes.some(w => w.id.includes('.heads.2.') && w.val < -500));
+    }
+});
+
+test('the test allocation addresses each of the three heads independently', () => {
+    for (const index of [1, 2, 3]) {
+        const h = harness(3);
+        h.run(`const phaseTest={kind:"battery",index:${index},stage:"ramp"};
+            function phaseTestActive(){return true;}
+            function phaseTestBatteryTarget(){return 1000;}`);
+        h.own('Config.BatteryFineStep_W', 1000);
+        h.tick();
+        assert.deepEqual(h.commands(), [-1000]);
+        assert.equal(h.writes[0].id, `sunenergyxt500.0.heads.${index}.control.GS`);
+    }
+});
+
 test('the single-head threshold compares against final demand rather than the current ramp', () => {
     for (const {threshold, target, commands} of [
         {threshold: 500, target: 500, commands: [-200]},

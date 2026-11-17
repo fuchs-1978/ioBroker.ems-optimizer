@@ -106,12 +106,32 @@ test('update defaults never arm a productive output', () => {
 });
 
 test('package manifests publish the same alpha version', () => {
-    assert.equal(packageJson.version, '0.17.0-alpha.295');
+    assert.equal(packageJson.version, '0.17.0-alpha.296');
     assert.equal(ioPackage.common.version, packageJson.version);
     const core = fs.readFileSync('lib/engine/core.js', 'utf8');
     const bootstrap = fs.readFileSync('lib/engine/bootstrap.js', 'utf8');
     assert.ok(core.includes("stateDef(`${r}.System.Version`, '" + packageJson.version + "'"));
     assert.ok(bootstrap.includes("write(`${CFG.root}.System.Version`, '" + packageJson.version + "'"));
+});
+
+test('three storage phases default unknown and all six Admin phase buttons use the guarded test command', () => {
+    assert.equal(ioPackage.common.messagebox, true);
+    for (const head of [1, 2, 3]) {
+        const field = `batteryHead${head}GridPhase`;
+        assert.equal(ioPackage.native[field], 0);
+        assert.deepEqual(allFields[field].options.map(option => option.value), [0, 1, 2, 3]);
+        const button = allFields[`_batteryHead${head}PhaseTest`];
+        assert.equal(button.command, 'phaseTest');
+        assert.deepEqual(button.data, {kind: 'battery', index: head});
+        assert.equal(button.useNative, true);
+    }
+    for (const wb of [0, 1, 2]) {
+        const button = allFields[`_wallbox${wb}PhaseTest`];
+        assert.equal(button.command, 'phaseTest');
+        assert.deepEqual(button.data, {kind: 'wallbox', index: wb});
+        assert.equal(button.useNative, true);
+        assert.equal(allFields[`_wallbox${wb}PhaseTestStatus`].controlled, false);
+    }
 });
 
 test('multi-head Admin exposes the power threshold and the SoC band with consistent defaults', () => {

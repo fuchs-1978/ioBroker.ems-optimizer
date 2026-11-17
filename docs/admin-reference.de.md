@@ -1,6 +1,6 @@
 # Adminreferenz – EMS Optimizer
 
-Feldreferenz zum Admin-Stand **0.17.0-alpha.295**. Die [Schritt-für-Schritt-Anleitung](../README.de.md) führt durch die Einrichtung und Prüfung. [English overview](../README.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36)
+Feldreferenz zum Admin-Stand **0.17.0-alpha.296**. Die [Schritt-für-Schritt-Anleitung](../README.de.md) führt durch die Einrichtung und Prüfung. [English overview](../README.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36)
 
 Die Tabellen dokumentieren die vorhandenen Admin-Einstellungen und Auslieferungswerte. Bestehende Anlagen können davon abweichen. Ein Feld oder eine Softwareprüfung belegt keine reale Inbetriebnahme.
 
@@ -675,6 +675,10 @@ Im Reiter **Batteriespeicher → Verteilung des Speicherausgangs** die Auswahl *
 | Bestätigte Kapazität je gleich großem Batteriepack<br>`batteryPackCapacityKWh` | 0 kWh = unbekannt | Nur bei `sunenergy-packs`: positiven kWh-Wert aus der Packdokumentation eintragen. Gleiche Packgröße für alle ausgewählten Köpfe erforderlich. Bei verschiedenen Packgrößen die Gesamtkapazität manuell bestätigen. Es wird keine Standard-Packgröße angenommen. |
 | Kopf N: maximale Ladeleistung<br>`batteryHeadNMaxChargeW` | je 2400 W | Individuelle obere Ladegrenze für N = 1, 2 oder 3. Das EMS begrenzt zusätzlich auf die tatsächlich gemeldeten Modell-/Gerätegrenzen und das gemeinsame Gesamtbudget. 0 sperrt diese Richtung für den Kopf. |
 | Kopf N: maximale Entladeleistung<br>`batteryHeadNMaxDischargeW` | je 800 W | Individuelle obere Entladegrenze. Die konservative Auslieferung ist keine Aussage über eine Zulassung oder die mögliche Nennleistung des konkreten Geräts. Nur passend zum realen Aufbau einstellen. |
+| Netzphase von Kopf N<br>`batteryHeadNGridPhase` | Unbekannt | Für N = 1, 2 und 3 die gemessene Netzphase L1, L2 oder L3 wählen. Unbekannt reserviert zusätzliche Leistung vorsorglich auf allen Phasen. Mehrere Köpfe auf derselben Phase teilen deren verfügbares Ladebudget. |
+| Phasenlage testen | Manueller Start | Prüft den gewählten Kopf mit einem 1.000-W-Ladesprung und speichert eine eindeutig erkannte Phase nach bestätigter Rücknahme. Der Status steht direkt unter dem Button. |
+
+Die Reiter der drei Wallboxen enthalten denselben Button für einphasige Ladung mit angeforderten 16 A. Während eines Wallboxtests pausiert der Speicher nach bestätigtem Stillstand. `Phasentest abbrechen` fordert die Rücknahme an. Voraussetzung sind gespeicherte Konfiguration, passende Betriebsfreigaben und frische phasengetrennte Messwerte. [Ablauf und Diagnose](release-0.17.0-alpha.296.md)
 
 Die Felder `batteryMaxChargeW` und `batteryMaxDischargeW` bleiben **Gesamtgrenzen**, keine Werte je Kopf. Beispiel: Zwei Köpfe mit jeweils 2400 W Ladegrenze ergeben erst dann einen Auftrag bis 4800 W, wenn auch die Gesamt-Ladegrenze mindestens 4800 W beträgt und das reale Budget sowie beide Geräte dies erlauben. Für die Kapazität entweder den bestätigten Gesamtwert in `batteryCapacityKWh` eintragen oder ausdrücklich `sunenergy-packs` mit einer bestätigten Packgröße wählen. Die automatische Datenübernahme erhöht keine selbst eingestellte Gesamt- oder Kopfgrenze.
 
