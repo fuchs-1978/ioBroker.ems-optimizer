@@ -1514,10 +1514,6 @@
             {
               "label": "Recent weighted profile (28 day half-life)",
               "value": "recent-weighted"
-            },
-            {
-              "label": "50/50 Median + Lasso (Median fallback)",
-              "value": "median-lasso-blend"
             }
           ],
           "xs": 12,
@@ -1529,7 +1525,7 @@
         "loadComparisonEnabled": {
           "type": "checkbox",
           "label": "Enable Median / Lasso forecast comparison",
-          "help": "Save tomorrow’s forecasts in advance and compare against measured baseload. Enable this for the optional 50/50 planning profile. Training requires at least 28 usable days.",
+          "help": "Observation only: issue tomorrow once, retain predictions across restarts and compare with cleaned SQL baseload. Production planning keeps its selected profile. Training needs at least 28 usable days after lag alignment; results follow completed days. No brightness feature yet.",
           "default": false,
           "xs": 12,
           "sm": 12,
@@ -8419,8 +8415,28 @@
             {
               "type": "text",
               "attr": "powerObject",
-              "title": "Appliance power object (W)",
+              "title": "Appliance power object",
               "default": ""
+            },
+            {
+              "type": "select",
+              "attr": "powerUnit",
+              "title": "Power unit",
+              "default": "W",
+              "options": [
+                {
+                  "value": "W",
+                  "label": "W"
+                },
+                {
+                  "value": "mW",
+                  "label": "mW"
+                },
+                {
+                  "value": "kW",
+                  "label": "kW"
+                }
+              ]
             },
             {
               "type": "text",

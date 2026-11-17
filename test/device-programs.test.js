@@ -38,3 +38,11 @@ test('announcement is stable per release and describes estimated savings', () =>
     assert.doesNotMatch(programAnnouncement('Geschirrspüler', {...plan, estimatedSavings_EUR: null},
         'release-1', 'eco', now).text, /Cent/);
 });
+
+test('normalizes milliwatts and kilowatts before learning', () => {
+    const start = 12345;
+    const series = val => Array.from({length: 15}, (_, i) => ({ts: start + i * 60000, val}));
+    const expected = learnProfile(series(600), start, start + 900000);
+    assert.deepEqual(learnProfile(series(600000), start, start + 900000, 'mW'), expected);
+    assert.deepEqual(learnProfile(series(0.6), start, start + 900000, 'kW'), expected);
+});
