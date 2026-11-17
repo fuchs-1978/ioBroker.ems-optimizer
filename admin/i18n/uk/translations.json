@@ -679,5 +679,13 @@
   "Active program object": "Об’єкт активної програми",
   "Finished status value": "Значення завершення",
   "Start selected program": "Запустити вибрану програму",
-  "mW": "mW"
+  "mW": "mW",
+  "Grid phase of head 1": "Фаза мережі головного блока 1",
+  "Grid phase of head 2": "Фаза мережі головного блока 2",
+  "Grid phase of head 3": "Фаза мережі головного блока 3",
+  "Unknown (conservative phase budget)": "Невідома (обережний резерв фаз)",
+  "Test grid phase": "Перевірити фазу мережі",
+  "Cancel phase test": "Скасувати перевірку фази",
+  "Phase test status": "Стан перевірки фази",
+  "Save the configuration before testing. The test saves a clearly detected grid phase and restores normal control.": "Збережіть конфігурацію перед перевіркою. Перевірка зберігає однозначно визначену фазу мережі та відновлює звичайне керування."
 }

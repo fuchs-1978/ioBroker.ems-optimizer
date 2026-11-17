@@ -3525,6 +3525,58 @@
           "lg": 6,
           "xl": 6
         },
+        "_wallbox0PhaseTest": {
+          "type": "sendTo",
+          "label": "Test grid phase",
+          "command": "phaseTest",
+          "data": {
+            "kind": "wallbox",
+            "index": 0
+          },
+          "useNative": true,
+          "showProcess": true,
+          "timeout": 120000,
+          "variant": "outlined",
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "_wallbox0PhaseTestStatus": {
+          "type": "state",
+          "label": "Phase test status",
+          "oid": "Devices.Wallbox0.PhaseTestStatus",
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true
+        },
+        "_wallbox0PhaseTestHelp": {
+          "type": "staticText",
+          "text": "Save the configuration before testing. The test saves a clearly detected grid phase and restores normal control.",
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
+        },
+        "_wallbox0PhaseTestCancel": {
+          "type": "sendTo",
+          "label": "Cancel phase test",
+          "command": "cancelPhaseTest",
+          "data": {},
+          "variant": "outlined",
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
         "wb0CommissioningMaxA": {
           "type": "number",
           "label": "Production commissioning current limit",
@@ -4342,6 +4394,58 @@
           "lg": 6,
           "xl": 6
         },
+        "_wallbox1PhaseTest": {
+          "type": "sendTo",
+          "label": "Test grid phase",
+          "command": "phaseTest",
+          "data": {
+            "kind": "wallbox",
+            "index": 1
+          },
+          "useNative": true,
+          "showProcess": true,
+          "timeout": 120000,
+          "variant": "outlined",
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "_wallbox1PhaseTestStatus": {
+          "type": "state",
+          "label": "Phase test status",
+          "oid": "Devices.Wallbox1.PhaseTestStatus",
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true
+        },
+        "_wallbox1PhaseTestHelp": {
+          "type": "staticText",
+          "text": "Save the configuration before testing. The test saves a clearly detected grid phase and restores normal control.",
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
+        },
+        "_wallbox1PhaseTestCancel": {
+          "type": "sendTo",
+          "label": "Cancel phase test",
+          "command": "cancelPhaseTest",
+          "data": {},
+          "variant": "outlined",
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
         "wb1CommissioningMaxA": {
           "type": "number",
           "label": "Production commissioning current limit",
@@ -5155,6 +5259,58 @@
           "sm": 6,
           "newLine": true,
           "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "_wallbox2PhaseTest": {
+          "type": "sendTo",
+          "label": "Test grid phase",
+          "command": "phaseTest",
+          "data": {
+            "kind": "wallbox",
+            "index": 2
+          },
+          "useNative": true,
+          "showProcess": true,
+          "timeout": 120000,
+          "variant": "outlined",
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "_wallbox2PhaseTestStatus": {
+          "type": "state",
+          "label": "Phase test status",
+          "oid": "Devices.Wallbox2.PhaseTestStatus",
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true
+        },
+        "_wallbox2PhaseTestHelp": {
+          "type": "staticText",
+          "text": "Save the configuration before testing. The test saves a clearly detected grid phase and restores normal control.",
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
+        },
+        "_wallbox2PhaseTestCancel": {
+          "type": "sendTo",
+          "label": "Cancel phase test",
+          "command": "cancelPhaseTest",
+          "data": {},
+          "variant": "outlined",
+          "xs": 12,
+          "sm": 6,
           "md": 6,
           "lg": 6,
           "xl": 6
@@ -6483,6 +6639,69 @@
           "lg": 6,
           "xl": 6
         },
+        "batteryHead1GridPhase": {
+          "type": "select",
+          "label": "Grid phase of head 1",
+          "default": 0,
+          "options": [
+            {
+              "value": 0,
+              "label": "Unknown (conservative phase budget)"
+            },
+            {
+              "value": 1,
+              "label": "L1"
+            },
+            {
+              "value": 2,
+              "label": "L2"
+            },
+            {
+              "value": 3,
+              "label": "L3"
+            }
+          ],
+          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads' || Number(data.batteryHeadCount) < 1",
+          "newLine": true,
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "_batteryHead1PhaseTest": {
+          "type": "sendTo",
+          "label": "Test grid phase",
+          "command": "phaseTest",
+          "data": {
+            "kind": "battery",
+            "index": 1
+          },
+          "useNative": true,
+          "showProcess": true,
+          "timeout": 120000,
+          "variant": "outlined",
+          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads' || Number(data.batteryHeadCount) < 1",
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "_batteryHead1PhaseTestStatus": {
+          "type": "state",
+          "label": "Phase test status",
+          "oid": "Devices.Battery.Heads.1.PhaseTestStatus",
+          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads' || Number(data.batteryHeadCount) < 1",
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true
+        },
         "_batteryHead2Header": {
           "type": "header",
           "text": "SunEnergy head 2: power limits",
@@ -6518,6 +6737,69 @@
           "lg": 6,
           "xl": 6
         },
+        "batteryHead2GridPhase": {
+          "type": "select",
+          "label": "Grid phase of head 2",
+          "default": 0,
+          "options": [
+            {
+              "value": 0,
+              "label": "Unknown (conservative phase budget)"
+            },
+            {
+              "value": 1,
+              "label": "L1"
+            },
+            {
+              "value": 2,
+              "label": "L2"
+            },
+            {
+              "value": 3,
+              "label": "L3"
+            }
+          ],
+          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads' || Number(data.batteryHeadCount) < 2",
+          "newLine": true,
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "_batteryHead2PhaseTest": {
+          "type": "sendTo",
+          "label": "Test grid phase",
+          "command": "phaseTest",
+          "data": {
+            "kind": "battery",
+            "index": 2
+          },
+          "useNative": true,
+          "showProcess": true,
+          "timeout": 120000,
+          "variant": "outlined",
+          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads' || Number(data.batteryHeadCount) < 2",
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "_batteryHead2PhaseTestStatus": {
+          "type": "state",
+          "label": "Phase test status",
+          "oid": "Devices.Battery.Heads.2.PhaseTestStatus",
+          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads' || Number(data.batteryHeadCount) < 2",
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true
+        },
         "_batteryHead3Header": {
           "type": "header",
           "text": "SunEnergy head 3: power limits",
@@ -6549,6 +6831,90 @@
           "sm": 6,
           "hidden": "data.batteryDispatchMode !== 'sunenergy-heads' || Number(data.batteryHeadCount) < 3",
           "xs": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "batteryHead3GridPhase": {
+          "type": "select",
+          "label": "Grid phase of head 3",
+          "default": 0,
+          "options": [
+            {
+              "value": 0,
+              "label": "Unknown (conservative phase budget)"
+            },
+            {
+              "value": 1,
+              "label": "L1"
+            },
+            {
+              "value": 2,
+              "label": "L2"
+            },
+            {
+              "value": 3,
+              "label": "L3"
+            }
+          ],
+          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads' || Number(data.batteryHeadCount) < 3",
+          "newLine": true,
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "_batteryHead3PhaseTest": {
+          "type": "sendTo",
+          "label": "Test grid phase",
+          "command": "phaseTest",
+          "data": {
+            "kind": "battery",
+            "index": 3
+          },
+          "useNative": true,
+          "showProcess": true,
+          "timeout": 120000,
+          "variant": "outlined",
+          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads' || Number(data.batteryHeadCount) < 3",
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "_batteryHead3PhaseTestStatus": {
+          "type": "state",
+          "label": "Phase test status",
+          "oid": "Devices.Battery.Heads.3.PhaseTestStatus",
+          "hidden": "data.batteryDispatchMode !== 'sunenergy-heads' || Number(data.batteryHeadCount) < 3",
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "control": "text",
+          "controlled": false,
+          "doNotSave": true
+        },
+        "_batteryPhaseTestHelp": {
+          "type": "staticText",
+          "text": "Save the configuration before testing. The test saves a clearly detected grid phase and restores normal control.",
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
+        },
+        "_batteryPhaseTestCancel": {
+          "type": "sendTo",
+          "label": "Cancel phase test",
+          "command": "cancelPhaseTest",
+          "data": {},
+          "variant": "outlined",
+          "xs": 12,
+          "sm": 6,
           "md": 6,
           "lg": 6,
           "xl": 6

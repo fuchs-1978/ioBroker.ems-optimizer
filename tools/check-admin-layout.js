@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const BREAKPOINTS = ['xs', 'sm', 'md', 'lg', 'xl'];
 const LEAVES = new Set(['number', 'text', 'checkbox', 'state', 'select', 'objectId', 'staticText',
-    'table', 'chips', 'autocomplete', 'password', 'staticLink', 'button']);
+    'table', 'chips', 'autocomplete', 'password', 'staticLink', 'button', 'sendTo']);
 
 function checkLayout(config) {
     let checked = 0;

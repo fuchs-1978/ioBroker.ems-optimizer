@@ -679,5 +679,13 @@
   "Active program object": "Objet du programme actif",
   "Finished status value": "Valeur de l’état terminé",
   "Start selected program": "Lancer le programme sélectionné",
-  "mW": "mW"
+  "mW": "mW",
+  "Grid phase of head 1": "Phase réseau de la tête 1",
+  "Grid phase of head 2": "Phase réseau de la tête 2",
+  "Grid phase of head 3": "Phase réseau de la tête 3",
+  "Unknown (conservative phase budget)": "Inconnue (réserve de phase prudente)",
+  "Test grid phase": "Tester la phase réseau",
+  "Cancel phase test": "Annuler le test de phase",
+  "Phase test status": "État du test de phase",
+  "Save the configuration before testing. The test saves a clearly detected grid phase and restores normal control.": "Enregistrez la configuration avant le test. Le test enregistre une phase réseau clairement identifiée et rétablit la régulation normale."
 }

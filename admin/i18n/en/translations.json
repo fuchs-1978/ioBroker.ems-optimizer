@@ -679,5 +679,13 @@
   "Active program object": "Active program object",
   "Finished status value": "Finished status value",
   "Start selected program": "Start selected program",
-  "mW": "mW"
+  "mW": "mW",
+  "Grid phase of head 1": "Grid phase of head 1",
+  "Grid phase of head 2": "Grid phase of head 2",
+  "Grid phase of head 3": "Grid phase of head 3",
+  "Unknown (conservative phase budget)": "Unknown (conservative phase budget)",
+  "Test grid phase": "Test grid phase",
+  "Cancel phase test": "Cancel phase test",
+  "Phase test status": "Phase test status",
+  "Save the configuration before testing. The test saves a clearly detected grid phase and restores normal control.": "Save the configuration before testing. The test saves a clearly detected grid phase and restores normal control."
 }
