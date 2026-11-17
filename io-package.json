@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.296",
+    "version": "0.17.0-alpha.297",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.297": {
+        "en": "Learn appliance grid phases passively from repeated measured load changes.",
+        "de": "Netzphasen der Hausgeräte aus wiederholten gemessenen Lastwechseln passiv erkennen.",
+        "es": "Learn appliance grid phases passively from repeated measured load changes.",
+        "fr": "Learn appliance grid phases passively from repeated measured load changes.",
+        "it": "Learn appliance grid phases passively from repeated measured load changes.",
+        "nl": "Learn appliance grid phases passively from repeated measured load changes.",
+        "pl": "Learn appliance grid phases passively from repeated measured load changes.",
+        "pt": "Learn appliance grid phases passively from repeated measured load changes.",
+        "ru": "Learn appliance grid phases passively from repeated measured load changes.",
+        "uk": "Learn appliance grid phases passively from repeated measured load changes.",
+        "zh-cn": "Learn appliance grid phases passively from repeated measured load changes."
+      },
       "0.17.0-alpha.296": {
         "en": "Test and save battery and wallbox grid phases.",
         "de": "Netzphasen von Speicherköpfen und Wallboxen prüfen und speichern.",
@@ -81,19 +94,6 @@
         "ru": "Publish appliance start and savings announcements.",
         "uk": "Publish appliance start and savings announcements.",
         "zh-cn": "Publish appliance start and savings announcements."
-      },
-      "0.17.0-alpha.290": {
-        "en": "Learn household appliance profiles by selected program.",
-        "de": "Lastprofile für Haushaltsgeräte je gewähltem Programm lernen.",
-        "es": "Learn household appliance profiles by selected program.",
-        "fr": "Learn household appliance profiles by selected program.",
-        "it": "Learn household appliance profiles by selected program.",
-        "nl": "Learn household appliance profiles by selected program.",
-        "pl": "Learn household appliance profiles by selected program.",
-        "pt": "Learn household appliance profiles by selected program.",
-        "ru": "Learn household appliance profiles by selected program.",
-        "uk": "Learn household appliance profiles by selected program.",
-        "zh-cn": "Learn household appliance profiles by selected program."
       }
     },
     "titleLang": {
@@ -768,7 +768,8 @@
     "roomHistoryRooms": [],
     "batteryHead1GridPhase": 0,
     "batteryHead2GridPhase": 0,
-    "batteryHead3GridPhase": 0
+    "batteryHead3GridPhase": 0,
+    "appliancePhaseLearningEnabled": true
   },
   "objects": [],
   "instanceObjects": [

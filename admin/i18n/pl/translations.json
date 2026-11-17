@@ -687,5 +687,8 @@
   "Test grid phase": "Sprawdź fazę sieci",
   "Cancel phase test": "Anuluj test fazy",
   "Phase test status": "Stan testu fazy",
-  "Save the configuration before testing. The test saves a clearly detected grid phase and restores normal control.": "Zapisz konfigurację przed testem. Test zapisuje jednoznacznie wykrytą fazę sieci i przywraca normalne sterowanie."
+  "Save the configuration before testing. The test saves a clearly detected grid phase and restores normal control.": "Zapisz konfigurację przed testem. Test zapisuje jednoznacznie wykrytą fazę sieci i przywraca normalne sterowanie.",
+  "Learn appliance grid phases while running": "Rozpoznawaj fazy urządzeń podczas pracy",
+  "Detected appliance grid phases": "Rozpoznane fazy urządzeń",
+  "Grid phases are learned from repeated measured load changes, including switching on and off. Changing storage, PV or other measured loads invalidates the observation. Small or unclear changes remain unassigned. Learning is passive and independent of program automation. Configure appliance power and its correct unit; results are saved per meter.": "Fazy są rozpoznawane na podstawie powtarzających się zmierzonych zmian mocy przy włączaniu i wyłączaniu. Zmiany magazynu energii, fotowoltaiki lub innych mierzonych obciążeń unieważniają obserwację. Małe lub niejednoznaczne zmiany pozostają bez przypisania. Rozpoznawanie jest pasywne i niezależne od automatyzacji programów. Skonfiguruj moc urządzenia i właściwą jednostkę; wyniki są zapisywane dla każdego miernika."
 }

@@ -124,6 +124,34 @@ test('source power history setup starts after output initialization and cannot h
     await a.sourcePowerHistoryInitialization;
 });
 
+test('appliance phase metadata cannot delay productive startup and exact appliance power sources are preloaded', async () => {
+    const a = adapter(), sources = [];
+    a.config.devicePrograms = [{powerObject: 'tapo.dryer'}, {powerObject: 'tapo.dryer'}];
+    a.config.deviceSetpoints = [{powerObject: 'tapo.fridge'}];
+    a.subscribeForeignStatesAsync = async id => sources.push(id);
+    a.getForeignStatesAsync = async () => ({});
+    await a.preloadStates();
+    assert.equal(sources.filter(id => id === 'tapo.dryer').length, 1);
+    assert.ok(sources.includes('tapo.fridge'));
+    a.config.devicePrograms = [];
+    a.config.deviceSetpoints = [];
+    const order = [];
+    for (const method of ['preloadStates', 'migrateBatteryCadence', 'startEngine', 'applyNativeVehicleSettings',
+        'applyNativeEmsSettings', 'flushOwnWrites', 'persistBatteryCadenceMigration', 'startDailySummary']) a[method] = async () => {};
+    a.runEngine = () => {};
+    a.publishMappingStatus = () => {};
+    a.outputMetadata.refresh = async () => {};
+    a.wallboxOutput.initialize = async () => {order.push('outputs-ready');};
+    a.startDebug = a.startShadow = a.startMarketPrices = async () => {};
+    a.sourcePowerHistory.initialize = async () => {};
+    let finish;
+    a.appliancePhases.initialize = () => {order.push('phase-learning'); return new Promise(resolve => {finish = resolve;});};
+    await a.initializeAdapter();
+    assert.deepEqual(order, ['outputs-ready', 'phase-learning']);
+    finish();
+    await a.appliancePhasesInitialization;
+});
+
 test('alpha84 connects actual command events, Modbus resets and the VM receipt without confusing database completion',async()=>{
     const a=adapter();let now=1000;
     const id='modbus.4.holdingRegisters.1000_Power';

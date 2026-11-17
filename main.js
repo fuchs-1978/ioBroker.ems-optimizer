@@ -18,6 +18,7 @@ const ShadowHistory = require("./lib/shadow-history");
 const {SourcePowerHistory} = require("./lib/source-power-history");
 const {WeatherForecastHistory} = require("./lib/weather-forecast-history");
 const {RoomTemperatureHistory} = require("./lib/room-temperature-history");
+const {AppliancePhases, appliancePowerSourceIds} = require("./lib/appliance-phases");
 const {createEngineContext} = require("./lib/engine-loader");
 const gridConstraints = require("./lib/grid-constraints");
 const {buildNativeMapping, houseConnectionSettings, FIELD_TO_MAPPING,
@@ -87,6 +88,7 @@ class EmsOptimizer extends utils.Adapter {
         this.sourcePowerHistory = new SourcePowerHistory(this);
         this.weatherForecastHistory = new WeatherForecastHistory(this);
         this.roomTemperatureHistory = new RoomTemperatureHistory(this);
+        this.appliancePhases = new AppliancePhases(this);
         this.marketPrices = new MarketPrices(this, {onUpdate: () => {
             if (this.engineContext && !this.unloading)
                 this.runEngine('requestForecastRebuild();');
@@ -162,6 +164,8 @@ class EmsOptimizer extends utils.Adapter {
         if (this.unloading) return;
         this.runEngine(fs.readFileSync(path.join(__dirname, 'lib/engine/bootstrap.js'), 'utf8'));
         await this.setStateAsync("info.connection", true, true);
+        this.appliancePhasesInitialization = this.appliancePhases.initialize().catch(error =>
+            this.log.warn(`Appliance phase learning unavailable: ${error.message}`));
         require("./lib/device-setpoints").startDeviceSetpoints(this);
         require("./lib/device-programs").startDevicePrograms(this);
         this.log.info(`EMS Optimizer ${require('./package.json').version} started; alpha outputs require explicit release`);
@@ -381,6 +385,7 @@ class EmsOptimizer extends utils.Adapter {
             ...configured,
             ...configured.map(id => `${id}.*`),
             ...diagnosticIds,
+            ...appliancePowerSourceIds(this.config),
             ...this.batteryHeadSourceIds()
         ])];
         for (const pattern of patterns) {

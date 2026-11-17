@@ -687,5 +687,8 @@
   "Test grid phase": "Test grid phase",
   "Cancel phase test": "Cancel phase test",
   "Phase test status": "Phase test status",
-  "Save the configuration before testing. The test saves a clearly detected grid phase and restores normal control.": "Save the configuration before testing. The test saves a clearly detected grid phase and restores normal control."
+  "Save the configuration before testing. The test saves a clearly detected grid phase and restores normal control.": "Save the configuration before testing. The test saves a clearly detected grid phase and restores normal control.",
+  "Learn appliance grid phases while running": "Learn appliance grid phases while running",
+  "Detected appliance grid phases": "Detected appliance grid phases",
+  "Grid phases are learned from repeated measured load changes, including switching on and off. Changing storage, PV or other measured loads invalidates the observation. Small or unclear changes remain unassigned. Learning is passive and independent of program automation. Configure appliance power and its correct unit; results are saved per meter.": "Grid phases are learned from repeated measured load changes, including switching on and off. Changing storage, PV or other measured loads invalidates the observation. Small or unclear changes remain unassigned. Learning is passive and independent of program automation. Configure appliance power and its correct unit; results are saved per meter."
 }
