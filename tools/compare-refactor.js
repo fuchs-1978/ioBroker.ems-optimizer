@@ -104,6 +104,21 @@ async function worker(tree) {
                 + "    on({id: `${CFG.root}.Vehicles.Wallbox${wb}.SoCCorrection_pct`, change: 'any'},\n"
                 + "        ({state}) => applyVehicleSocCorrection(wb, state));\n});\n";
         }
+        // Align the new disabled config slot and its startup subscription.
+        // The enabled high-tariff behavior has its own planner and plant tests.
+        if (!pinned.includes('BatteryHighTariffReserveEnabled')) {
+            const coreAnchor = "    configDef(`${r}.Config.BatteryPriceChargingEnabled`, false, 'boolean', 'switch.enable', '', 'Preisabhängiges Netzladen des Speichers erlauben');";
+            const bootstrapAnchor = '    `${CFG.root}.Config.BatteryPriceChargingEnabled`,';
+            if (String(filename).endsWith('/core.js')) {
+                assert.equal(pinned.split(coreAnchor).length, 2);
+                pinned = pinned.replace(coreAnchor, coreAnchor
+                    + "\n    configDef(`${r}.Config.BatteryHighTariffReserveEnabled`, false, 'boolean', 'switch.enable', '', 'Vorhandene Speicherenergie für das nächste Hochfenster einplanen');");
+            }
+            if (String(filename).endsWith('/bootstrap.js')) {
+                assert.equal(pinned.split(bootstrapAnchor).length, 2);
+                pinned = pinned.replace(bootstrapAnchor, bootstrapAnchor + '\n    `${CFG.root}.Config.BatteryHighTariffReserveEnabled`,');
+            }
+        }
         // alpha.155 represents an unknown initial vehicle SoC as null. Align
         // only the object default; observed reports and all control writes
         // still come from the respective production tree.

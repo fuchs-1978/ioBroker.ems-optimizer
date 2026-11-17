@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.294",
+    "version": "0.17.0-alpha.295",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.295": {
+        "en": "Optionally reserve stored energy for the next high tariff period.",
+        "de": "Speicherenergie optional für das nächste Hochtariffenster zurückhalten.",
+        "es": "Optionally reserve stored energy for the next high tariff period.",
+        "fr": "Optionally reserve stored energy for the next high tariff period.",
+        "it": "Optionally reserve stored energy for the next high tariff period.",
+        "nl": "Optionally reserve stored energy for the next high tariff period.",
+        "pl": "Optionally reserve stored energy for the next high tariff period.",
+        "pt": "Optionally reserve stored energy for the next high tariff period.",
+        "ru": "Optionally reserve stored energy for the next high tariff period.",
+        "uk": "Optionally reserve stored energy for the next high tariff period.",
+        "zh-cn": "Optionally reserve stored energy for the next high tariff period."
+      },
       "0.17.0-alpha.294": {
         "en": "Configure the unit of appliance power measurements.",
         "de": "Einheit der Leistungsmessung für Haushaltsgeräte einstellen.",
@@ -81,19 +94,6 @@
         "ru": "Optional appliance program scheduling",
         "uk": "Optional appliance program scheduling",
         "zh-cn": "Optional appliance program scheduling"
-      },
-      "0.17.0-alpha.288": {
-        "en": "Prioritize below-minimum EV charging and recover a 20% forecast battery reserve within grid limits.",
-        "de": "Fahrzeug-Mindestladung priorisieren und die 20-%-Prognosereserve im freien Netzbudget nachladen.",
-        "es": "Prioriza la carga mínima del vehículo y recupera la reserva del 20 % de la batería dentro de los límites de red.",
-        "fr": "Priorise la charge minimale des véhicules et rétablit la réserve de batterie de 20 % dans les limites du réseau.",
-        "it": "Dà priorità alla carica minima dei veicoli e ripristina la riserva del 20% entro i limiti di rete.",
-        "nl": "Geeft voorrang aan minimale voertuiglaadbehoefte en vult de batterijreserve van 20% aan binnen de netlimieten.",
-        "pl": "Nadaje priorytet minimalnemu ładowaniu pojazdów i uzupełnia rezerwę akumulatora do 20% w granicach sieci.",
-        "pt": "Prioriza a carga mínima dos veículos e repõe a reserva de 20% da bateria dentro dos limites da rede.",
-        "ru": "Приоритет минимальной зарядки автомобилей и восстановление резерва батареи до 20 % в пределах допустимой нагрузки.",
-        "uk": "Пріоритет мінімального заряджання авто та відновлення резерву батареї до 20 % у межах лімітів мережі.",
-        "zh-cn": "优先满足车辆最低充电需求，并在电网限额内将储能电池补充至 20%。"
       }
     },
     "titleLang": {
@@ -466,6 +466,7 @@
     "wallboxPhaseSwitchTimeoutS": 180,
     "priceChargingHorizonH": 24,
     "priceChargingMinBlockMin": 30,
+    "batteryHighTariffReserveEnabled": false,
     "batteryPriceChargingEnabled": false,
     "batteryPriceMaxCt": 0,
     "batteryPriceMinSavingsCt": 2,

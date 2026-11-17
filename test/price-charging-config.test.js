@@ -9,7 +9,7 @@ const {EXTENSION_SETTINGS} = require('../lib/extension-settings');
 const readEngine = file => fs.readFileSync(path.join(__dirname, '../lib/engine', `${file}.js`), 'utf8')
     .replaceAll('__ADAPTER_ROOT__', 'ems.0');
 const priceSettings = Object.fromEntries(Object.entries(EXTENSION_SETTINGS)
-    .filter(([name]) => /^(?:PriceCharging|BatteryPrice|BatteryRoundTrip|Wallbox\dPrice)/.test(name)));
+    .filter(([name]) => /^(?:PriceCharging|BatteryPrice|BatteryRoundTrip|BatteryHighTariff|Wallbox\dPrice)/.test(name)));
 const de = JSON.parse(fs.readFileSync(path.join(__dirname, '../admin/i18n/de/translations.json'), 'utf8'));
 const admin = JSON.parse(fs.readFileSync(path.join(__dirname, '../admin/jsonConfig.json'), 'utf8'));
 const fields = Object.assign({}, ...Object.values(admin.items).map(tab => tab.items || {}));
@@ -43,7 +43,7 @@ test('price settings initialize through the real native mapping without enabling
     const {a} = adapter({globalWriteEnabled: false, batteryMinSocPct: 23});
     await a.applyNativeEmsSettings();
     await a.flushOwnWrites();
-    assert.equal(Object.keys(priceSettings).length, 17);
+    assert.equal(Object.keys(priceSettings).length, 18);
     for (const [suffix, [name, fallback]] of Object.entries(priceSettings)) {
         assert.equal(a.getCachedState(`ems.0.Config.${suffix}`).val, fallback, name);
     }
@@ -60,6 +60,11 @@ test('price settings initialize through the real native mapping without enabling
     assert.equal(enabled.getCachedState('ems.0.Config.Wallbox2PriceEnergy_kWh').val, 9);
     assert.equal(enabled.getCachedState('ems.0.System.RealOutputsEnabled').val, false);
     assert.equal(enabled.getCachedState('ems.0.Devices.Battery.ControlEnabled').val, false);
+    const reserve = adapter({batteryHighTariffReserveEnabled: true}).a;
+    await reserve.applyNativeEmsSettings();
+    await reserve.flushOwnWrites();
+    assert.equal(reserve.getCachedState('ems.0.Config.BatteryHighTariffReserveEnabled').val, true);
+    assert.equal(reserve.getCachedState('ems.0.Config.BatteryPriceChargingEnabled').val, false);
 });
 
 test('vehicle session metadata remains read-only and persisted values survive real state creation and native application', async () => {
@@ -132,7 +137,7 @@ test('price-charging Admin bounds distinguish negative caps, zero energy and opt
     assert.equal(fields.priceChargingMinBlockMin.min, 15);
     assert.equal(fields.priceChargingMinBlockMin.max, 240);
     assert.equal(fields.priceChargingMinBlockMin.step, 15);
-    for (const name of ['batteryPriceChargingEnabled', 'wb0PriceChargingEnabled',
+    for (const name of ['batteryPriceChargingEnabled', 'batteryHighTariffReserveEnabled', 'wb0PriceChargingEnabled',
         'wb1PriceChargingEnabled', 'wb2PriceChargingEnabled']) assert.equal(fields[name].default, false);
     for (const name of ['batteryPriceMaxCt', 'wb0PriceMaxCt', 'wb1PriceMaxCt', 'wb2PriceMaxCt']) {
         assert.ok(fields[name].min < 0, `${name} must support negative prices`);

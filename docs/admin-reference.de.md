@@ -1,6 +1,6 @@
 # Adminreferenz – EMS Optimizer
 
-Feldreferenz zum Admin-Stand **0.17.0-alpha.293**. Die [Schritt-für-Schritt-Anleitung](../README.de.md) führt durch die Einrichtung und Prüfung. [English overview](../README.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36)
+Feldreferenz zum Admin-Stand **0.17.0-alpha.295**. Die [Schritt-für-Schritt-Anleitung](../README.de.md) führt durch die Einrichtung und Prüfung. [English overview](../README.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36)
 
 Die Tabellen dokumentieren die vorhandenen Admin-Einstellungen und Auslieferungswerte. Bestehende Anlagen können davon abweichen. Ein Feld oder eine Softwareprüfung belegt keine reale Inbetriebnahme.
 
@@ -776,12 +776,15 @@ Bei einem gemessenen SoC unter 20 % nutzt die Reservenachladung freien PV-Übers
 
 | Feld / technischer Schlüssel | Auslieferung | Zweck und erwartete Eingabe |
 | --- | --- | --- |
+| Speicherenergie für das nächste Hochtariffenster reservieren<br>`batteryHighTariffReserveEnabled` | AUS | Für das nächste gültige Hochfenster einen Teil der gespeicherten Energie zurückhalten. Bei gleichem Preis bevorzugt der Fahrplan Viertelstunden mit höherem Bedarf nach PV, begrenzt durch die Entladeleistung des Speichers. Einsetzbar bei zeitabhängigen Netzentgelten und gültiger Speicher- und Preisprognose. |
 | Speicher-Netzladen in ausgewählten günstigen Zeiten erlauben<br>`batteryPriceChargingEnabled` | AUS | Explizite Erlaubnis wirtschaftlich ausgewählter Netzladung. Modul-3-/Preisfenster, Wirkungsgrad, PV-Freiraum, Bedarf und Freigaben gelten zusätzlich; NT bedeutet nicht automatisch voll laden. |
 | Maximaler SoC durch Netzladung (PV darf höher laden)<br>`batteryPriceMaxSocPct` | 100 % | Obere SoC-Grenze allein für Netzladung in %. PV-Ladung darf bis zur normalen oberen Grenze weitergehen; Reserve für kommende PV beachten. |
 | Round-Trip-Wirkungsgrad (0 = bisheriger Wert je Richtung)<br>`batteryRoundTripEfficiencyPct` | 0 % | Gesamter Lade-/Entlade-Zykluswirkungsgrad in %. 0 verwendet die bisherige Richtungswirkungsgrad-Ableitung. Wichtig für wirtschaftlichen Preisvergleich nach Verlusten. |
 | Maximaler Gesamtpreis brutto (0 = keine Grenze)<br>`batteryPriceMaxCt` | 0 ct/kWh | Absolute Obergrenze des gesamten Bruttopreises in ct/kWh für Netzladung; 0 ohne zusätzliche absolute Grenze. Wirtschaftlichkeit muss dennoch passen. |
 | Mindestersparnis nach Speicherverlusten<br>`batteryPriceMinSavingsCt` | 2 ct/kWh | Erforderliche Mindestersparnis in ct/kWh nach Speicherverlusten. Verhindert Netzladung für zu kleine Preisunterschiede; keine garantierte Ersparnis im realen Betrieb. |
 | Zusätzliche Reserve über Mindest-SoC<br>`batteryPriceReservePct` | 10 % | Zusätzliche Planungsreserve in Prozentpunkten über Mindest-SoC bei Preisplanung. Keine Erhöhung physischer Kapazität und kein eigener aktueller Messwert. |
+
+In `Plan.PriceChargingDiagnostics_JSON` zeigt `battery.highTariffReserve` den Zeitraum, den erwarteten SoC zu Beginn, die gespeicherte Reserve und den verbleibenden Hausbezug. In `Plan.BatteryPower_48h_JSON` zeigt `dischargeFloorPct` die geplante Entladegrenze pro Viertelstunde. Bei fehlendem oder veraltetem Hochfensterplan greift mit ausgeschalteter Preis-Netzladung die normale Entladeregel. [Versionshinweise](release-0.17.0-alpha.295.md)
 
 ### Speicher-Feinregelung und Eingangsprüfung
 

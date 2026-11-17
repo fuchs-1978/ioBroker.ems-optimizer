@@ -7142,6 +7142,17 @@
           "size": 3,
           "newLine": true
         },
+        "batteryHighTariffReserveEnabled": {
+          "type": "checkbox",
+          "label": "Reserve stored battery energy for the next high tariff period",
+          "default": false,
+          "sm": 12,
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
+        },
         "batteryPriceChargingEnabled": {
           "type": "checkbox",
           "label": "Allow battery grid charging in selected low-price periods",

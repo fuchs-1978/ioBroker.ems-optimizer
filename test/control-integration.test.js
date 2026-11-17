@@ -1257,6 +1257,27 @@ test('battery planned reserve protects bought energy until its discharge floor d
     assert.ok(h.physical().batteryW <= -900, h.diagnostic());
 });
 
+test('high tariff reserve holds the battery before 16:30 and releases against measured demand', async () => {
+    const start = Date.parse('2026-11-17T16:30:00+01:00');
+    const h = await plant({battery: true, wallbox: false, initialSurplusW: -1000, initialTime: start - 20000});
+    h.own('Config.BatteryHighTariffReserveEnabled', true);
+    h.own('Plan.BatteryForecastValid', true);
+    const ready = {highTariffReserve: true, forecastValid: true, gridChargeW: 0};
+    h.own('Plan.BatteryPower_48h_JSON', JSON.stringify([
+        {...ready, timestamp: start - 900000, valueW: 0, dischargeFloorPct: 55},
+        {...ready, timestamp: start, valueW: -1800, dischargeFloorPct: 20}
+    ]));
+    await h.advance(15);
+    assert.equal(h.physical().batteryW, 0);
+    assert.equal(h.run('batteryPriceDischargeFloor()'), 55);
+    h.own('Plan.LastUpdate', h.now() - 21 * 60000);
+    assert.equal(h.run('batteryPriceDischargeFloor()'), 0, 'an expired reserve cannot hold the battery');
+    await h.advance(45);
+    assert.equal(h.run('batteryPriceDischargeFloor()'), 20);
+    assert.equal(h.value('Control.BatteryPriceGridCharge_W'), 0);
+    assert.ok(h.physical().batteryW <= -900 && h.physical().batteryW >= -1050, h.diagnostic());
+});
+
 test('queued battery purchase is rejected after price revocation without changing the old allocation', async () => {
     const h = await plant({battery: true, wallbox: false, initialSurplusW: -500});
     armPricePlans(h, {wallboxW: 0});

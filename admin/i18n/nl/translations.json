@@ -395,6 +395,7 @@
   "Hot-water forecast reserve above minimum temperature": "Warmwatervoorspellingsreserve boven de minimumtemperatuur",
   "Legacy efficiency per direction": "Erfficiëntie per richting",
   "Price-based battery charging": "Opladen van batterijen op basis van prijs",
+  "Reserve stored battery energy for the next high tariff period": "Batterij-energie reserveren voor de volgende periode met hoog tarief",
   "Allow battery grid charging in selected low-price periods": "Het opladen van batterijen in het elektriciteitsnet in geselecteerde periode met lage prijzen mag worden toegestaan.",
   "Maximum SoC from grid charging (PV may charge higher)": "Maximale SoC van het opladen van batterijen in het elektriciteitsnet (PV kan hoger worden geladen)",
   "Round-trip efficiency (0 = legacy per-leg setting)": "De omgekeerde efficiëntie (0 = verleden tijd per been)",

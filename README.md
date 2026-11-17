@@ -7,7 +7,7 @@
 
 **[Deutsche Schritt-für-Schritt-Anleitung für alle Admin-Reiter](README.de.md)** · [Admin field reference (German)](docs/admin-reference.de.md) · [Changelog](#changelog) · [Issue tracker](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
-EMS Optimizer is an energy management adapter for [ioBroker](https://www.iobroker.net/). It coordinates PV surplus, a home battery, up to three wallboxes and available electric heaters. It can also schedule compatible household appliances. The source build on GitHub is **0.17.0-alpha.293**. Check `System.Version` on your instance for the running build.
+EMS Optimizer is an energy management adapter for [ioBroker](https://www.iobroker.net/). It coordinates PV surplus, a home battery, up to three wallboxes and available electric heaters. It can also schedule compatible household appliances. The source build on GitHub is **0.17.0-alpha.295**. Check `System.Version` on your instance for the running build.
 
 ## How it works
 
@@ -70,6 +70,10 @@ npm run test:equivalence
 [Admin translations](docs/translations.md) · [Repository checks #316](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/316)
 
 ## Changelog
+
+### 0.17.0-alpha.295 (2026-11-17)
+
+- Optionally reserve stored energy for the next configured high tariff period. At equal prices, the plan assigns scarce energy to quarters with higher expected household demand after PV. [Release notes](docs/release-0.17.0-alpha.295.md)
 
 ### 0.17.0-alpha.293 (2026-11-16)
 
