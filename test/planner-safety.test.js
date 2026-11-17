@@ -32,12 +32,13 @@ function engine(config = {}, clock = null) {
     for (let wb = 0; wb < 3; wb++) put(`ems.0.Devices.Wallbox${wb}.Present`, false);
     put('ems.0.Devices.Battery.Present', false);
     put('ems.0.Devices.MyPV_Heating.Present', false);
-    const plan = ({pvW = 10000, houseW = 0, price = 28.89, slots = 8, offsetMin = 0} = {}) => {
+    const plan = ({pvW = 10000, houseW = 0, price = 28.89, slots = 8, offsetMin = 0, gridLevels = []} = {}) => {
         const at = (value, i) => Array.isArray(value) ? value[i] : value;
         const data = {
             pv: Array.from({length: slots}, (_, i) => ({timestamp: now + offsetMin * 60000 + i * 900000, valueW: at(pvW, i)})),
             house: Array.from({length: slots}, (_, i) => ({valueW: at(houseW, i)})),
-            prices: {total: Array.from({length: slots}, (_, i) => ({value_ct_kWh: at(price, i)}))}
+            prices: {total: Array.from({length: slots}, (_, i) => ({value_ct_kWh: at(price, i)})),
+                grid: gridLevels.map(level => ({level}))}
         };
         run(`buildDevicePlan(${JSON.stringify(data)})`);
         return data;
@@ -81,6 +82,48 @@ function dhw(h, {volumeL = 500, temperature = 51.6, minimum = 40, target = 76} =
 function near(actual, expected, message) {
     assert.ok(Math.abs(actual - expected) < 1e-7, `${message}: ${actual} != ${expected}`);
 }
+
+test('opt-in high tariff reserve retains stored energy for higher useful load without buying energy', () => {
+    const h = engine({}, '2026-11-17T15:00:00Z');
+    h.put('ems.0.Devices.Battery.Present', true);
+    h.put('ems.0.Config.BatteryCapacity_kWh', 10);
+    h.put('ems.0.Config.BatteryMinSoC_pct', 20);
+    h.put('ems.0.Config.BatterySelfConsumptionEnabled', true);
+    h.put('ems.0.Config.BatteryRoundTripEfficiency_pct', 81);
+    h.put('DP_BATTERY_SOC', 25);
+    const forecast = {pvW: 0, houseW: [450, 900, 450, 1800, 1100, 1200], slots: 6,
+        price: [30.04, 30.04, 32.86, 32.86, 32.86, 30.04],
+        gridLevels: ['standard', 'standard', 'high', 'high', 'high', 'standard']};
+    const diagnostics = () => JSON.parse(h.states.get('ems.0.Plan.PriceChargingDiagnostics_JSON').val).battery;
+
+    h.plan(forecast);
+    assert.equal(diagnostics().highTariffReserve, undefined);
+    h.put('ems.0.Config.BatteryHighTariffReserveEnabled', true);
+    h.plan(forecast);
+    const points = h.series('BatteryPower');
+    assert.deepEqual(points.map(p => p.valueW), [0, 0, 0, -1800, 0, 0]);
+    assert.equal(points[0].dischargeFloorPct, 25);
+    assert.equal(points[3].dischargeFloorPct, 20);
+    assert.equal(points[5].highTariffReserve, undefined);
+    assert.equal(diagnostics().enabled, false);
+    assert.equal(diagnostics().gridKWh, 0);
+    const reserve = diagnostics().highTariffReserve;
+    assert.equal(reserve.startTimestamp, Date.parse('2026-11-17T16:30:00+01:00'));
+    assert.equal(reserve.projectedStartSoCPct, 25);
+    near(reserve.plannedDischargeKWh, 0.45, 'useful energy in the highest-load quarter');
+    near(reserve.remainingHouseholdImportKWh, 0.3875, 'remaining high tariff import');
+
+    h.put('DP_BATTERY_SOC', 50);
+    h.plan(forecast);
+    assert.equal(h.series('BatteryPower')[0].valueW, -450, 'energy beyond the high tariff reserve covers current demand');
+    assert.equal(h.series('BatteryPower')[3].valueW, -1800);
+
+    h.plan({...forecast, price: [30.04, 30.04, null, 32.86, 32.86, 30.04]});
+    assert.equal(diagnostics().reason, 'no-qualified-high-tariff-window');
+    assert.ok(h.series('BatteryPower').every(p => !p.highTariffReserve));
+    h.plan({...forecast, slots: 5});
+    assert.equal(diagnostics().reason, 'no-qualified-high-tariff-window');
+});
 
 test('the battery forecast reserve requires a continuous interval longer than six hours', () => {
     const h = engine();

@@ -395,6 +395,7 @@
   "Hot-water forecast reserve above minimum temperature": "Reserva de agua caliente por encima de la temperatura mínima",
   "Legacy efficiency per direction": "Eficiencia heredada por dirección",
   "Price-based battery charging": "Recarga de baterías basada en el precio",
+  "Reserve stored battery energy for the next high tariff period": "Reservar energía de la batería para el próximo periodo de tarifa alta",
   "Allow battery grid charging in selected low-price periods": "Permitir la recarga de las baterías en la red eléctrica en períodos de bajo precio seleccionados",
   "Maximum SoC from grid charging (PV may charge higher)": "El valor máximo de SoC obtenido por la recarga de las baterías de la red eléctrica (el PV puede cargar más alto)",
   "Round-trip efficiency (0 = legacy per-leg setting)": "Eficiencia de ida y vuelta (0 = ajuste de la patada)",

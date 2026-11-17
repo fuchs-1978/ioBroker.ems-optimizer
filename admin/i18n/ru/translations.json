@@ -395,6 +395,7 @@
   "Hot-water forecast reserve above minimum temperature": "Резерв прогнозируемой горячей воды выше минимальной температуры",
   "Legacy efficiency per direction": "Упоследняя эффективность на направление",
   "Price-based battery charging": "Зарядка аккумуляторов на основе цены",
+  "Reserve stored battery energy for the next high tariff period": "Резервировать энергию аккумулятора на следующий период высокого тарифа",
   "Allow battery grid charging in selected low-price periods": "Позвольте батареям заряжать батарею электросети в выбранные периоды низких цен",
   "Maximum SoC from grid charging (PV may charge higher)": "Максимальная SoC от зарядки батареи электрической сети (PV может взимать более высокую плату)",
   "Round-trip efficiency (0 = legacy per-leg setting)": "Эффективность обратного пути (0 = устаревшая настройка на ногу)",
