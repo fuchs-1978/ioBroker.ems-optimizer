@@ -64,7 +64,7 @@ for (const language of languages.filter(locale => !['en', 'de'].includes(locale)
     });
 }
 
-const sharedLabels = new Set(['§14a / EEBUS LPC', 'kWh', 'Wh', 'J', 'L1', 'L2', 'L3', 'W', 'kW']);
+const sharedLabels = new Set(['§14a / EEBUS LPC', 'kWh', 'Wh', 'J', 'L1', 'L2', 'L3', 'W', 'mW', 'kW']);
 const sharedLocalWords = {es: ['General'], fr: ['1 phase', '3 phases', 'Standard'], it: ['Standard'],
     nl: ['April', 'September', 'November', 'December'], pl: ['VAT']};
 const countNumbers = text => {
