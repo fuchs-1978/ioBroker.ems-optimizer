@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.291
+
+- Publish appliance start and savings announcements.
+
 ## 0.17.0-alpha.289
 
 - Optional appliance program scheduling
