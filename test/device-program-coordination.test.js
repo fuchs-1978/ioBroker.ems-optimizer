@@ -30,13 +30,16 @@ function simulation(t, devices) {
             timestamp: BASE + i * SLOT, value_ct_kWh, valid: true
         }))));
     }
-    const result = {own, rows, writes, state, forecast, afterPublish: null,
+    const result = {own, rows, writes, state, forecast, afterPublish: null, history: [], historyReads: [],
         status: i => JSON.parse(own.get('Devices.Programs.' + (i + 1))),
         at(value) { now = value; },
         restart() { timer = null; },
-        profile(i, program, watts) {
+        profileId(i, program) {
             const key = createHash('sha256').update(JSON.stringify([result.status(i).identity, program])).digest('hex').slice(0, 32);
-            own.set('Devices.ProgramProfiles.' + key, JSON.stringify({sampleCount: 2, watts}));
+            return 'Devices.ProgramProfiles.' + key;
+        },
+        profile(i, program, watts, sampleCount = 2) {
+            own.set(result.profileId(i, program), JSON.stringify({program, sampleCount, watts}));
         },
         async tick() {
             const done = new Promise(resolve => { complete = resolve; });
@@ -46,15 +49,21 @@ function simulation(t, devices) {
             assert.deepEqual(warnings, []);
         }
     };
-    const adapter = {config: {devicePrograms: rows, globalWriteEnabled: true, controlEnabled: true},
+    const namespace = 'ems-optimizer.0';
+    const adapter = {namespace, config: {devicePrograms: rows, globalWriteEnabled: true, controlEnabled: true},
         log: {warn: message => warnings.push(message)},
         setTimeout(callback, delay) { assert.equal(delay, 15000); timer = callback; complete(); },
         async getStateAsync(id) { return {val: own.get(id)}; },
-        async getStatesAsync() {
-            return Object.fromEntries([...own].map(([id, val]) => [id, {val, ts: now}]));
+        async getStatesAsync(pattern) {
+            return Object.fromEntries([...own].filter(([id]) => id.startsWith(pattern.slice(0, -1)))
+                .map(([id, val]) => [namespace + '.' + id, {val, ts: now}]));
         },
+        async runEngine(expression) { result.historyReads.push(expression); return result.history; },
         async getForeignStateAsync(id) { return foreign.get(id); },
-        async getForeignObjectAsync() { return {common: {type: 'boolean', write: true}}; },
+        async getForeignObjectAsync(id) {
+            const row = rows.find(device => device.startObject === id);
+            return {common: {type: row?.startFromSelection ? 'string' : 'boolean', write: true}};
+        },
         async setObjectNotExistsAsync() {},
         async setStateAsync(id, val) { own.set(id, val); result.afterPublish?.(id, JSON.parse(val)); },
         async setForeignStateAsync(id, value, ack) { writes.push({id, value, ack}); }
@@ -202,6 +211,133 @@ test('running program uses its active learned profile; missing and overrun profi
     await h.tick();
     assert.equal(h.status(0).plan, null);
     assert.deepEqual(h.writes, []);
+});
+
+test('a sixth program starts with its appliance average, then uses its own measured run', async t => {
+    const h = simulation(t, [
+        {name: 'Gerät', mode: 'automatic', programObject: 'selected', activeProgramObject: 'active',
+            startFromSelection: true, powerObject: 'plug.power', powerUnit: 'mW'},
+        {name: 'Gerät', programObject: 'other.selected'}
+    ]);
+    h.forecast([-1300, -1300, -1300, -1300]);
+    await h.tick();
+    h.profile(0, 'Eco', [2000, 200], 9);
+    h.profile(0, 'Kurz', [1000, 300], 1);
+    h.profile(0, 'Auto', [500]);
+    h.profile(0, 'Glas', [1500, 500]);
+    h.profile(0, 'Leise', [1000]);
+    h.profile(1, 'Intensiv', [5500, 5500, 5500]);
+    h.profile(1, 'Normal', [1100]);
+    const originalProfiles = [...h.own].filter(([id]) => id.startsWith('Devices.ProgramProfiles.'));
+    const newProfile = h.profileId(0, 'Intensiv');
+    h.state('selected', 'Intensiv');
+    h.state('other.selected', 'Normal');
+    await h.tick();
+    assert.deepEqual(h.writes, [{id: 'start.0', value: 'Intensiv', ack: false}]);
+    assert.equal(h.status(0).profileSource, 'deviceAverage');
+    assert.equal(h.status(0).profileSamples, 0);
+    assert.equal(h.status(0).fallbackProgramCount, 5);
+    assert.deepEqual(h.status(0).reservation.watts, [1200, 200]);
+    assert.equal(h.status(1).plan.plannedStartAt, BASE + SLOT);
+    assert.equal(h.own.has(newProfile), false);
+
+    const start = BASE + 15000, end = start + SLOT;
+    h.at(start);
+    h.state('status.0', 'Running');
+    h.state('remote.0', false);
+    h.state('active', 'Intensiv');
+    h.state('selected', 'Kurz');
+    h.restart();
+    await h.tick();
+    assert.deepEqual(h.status(0).run, {program: 'Intensiv', start});
+    assert.deepEqual(h.status(0).reservation, {kind: 'running', program: 'Intensiv', start, watts: [1200, 200]});
+    assert.equal(h.writes.length, 1);
+    h.history = Array.from({length: 15}, (_, i) => ({ts: start + i * 60000, val: 1800000}));
+    h.at(end + 30000);
+    h.state('status.0', 'Finished', end);
+    await h.tick();
+    await h.tick();
+    assert.deepEqual(h.historyReads, [`getHistory("plug.power", ${start}, ${end}, true)`]);
+    const measured = JSON.parse(h.own.get(newProfile));
+    assert.equal(measured.program, 'Intensiv');
+    assert.equal(measured.sampleCount, 1);
+    assert.deepEqual(measured.runs, [{watts: [1800], durationMs: SLOT, energyKWh: 0.45, start, end}]);
+    for (const [id, value] of originalProfiles) assert.equal(h.own.get(id), value);
+
+    h.at(BASE + 2 * SLOT);
+    h.state('status.0', 'Ready');
+    h.state('remote.0', true);
+    h.state('selected', 'Schnell');
+    h.config.globalWriteEnabled = false;
+    h.forecast([-3000, -3000, -3000, -3000]);
+    await h.tick();
+    assert.equal(h.status(0).fallbackProgramCount, 6);
+    assert.equal(h.writes.length, 1);
+    h.state('selected', 'Intensiv');
+    h.config.globalWriteEnabled = true;
+    await h.tick();
+    assert.equal(h.status(0).profileSource, 'program');
+    assert.equal(h.status(0).profileSamples, 1);
+    assert.deepEqual(h.status(0).reservation.watts, [1800]);
+    assert.deepEqual(h.writes.map(write => write.value), ['Intensiv', 'Intensiv']);
+});
+
+test('one valid profile suffices and incomplete measurements leave the program eligible for an estimate', async t => {
+    const h = simulation(t, [{mode: 'automatic', programObject: 'selected', powerObject: 'meter'}]);
+    h.forecast([-2000, -2000, -2000]);
+    await h.tick();
+    h.profile(0, 'Defekt', [-100]);
+    h.profile(0, 'Leer', [0]);
+    h.profile(0, 'Ohne Messung', [2000], 0);
+    h.profile(0, 'Eco', [900]);
+    await h.tick();
+    assert.deepEqual(h.writes, []); // A boolean start command still requires a reported selection.
+    h.state('selected', 'Neu');
+    await h.tick();
+    assert.equal(h.status(0).fallbackProgramCount, 1);
+    assert.deepEqual(h.status(0).reservation.watts, [900]);
+    h.state('status.0', 'Running');
+    h.state('selected', '');
+    await h.tick();
+    assert.deepEqual(h.status(0).run, {program: 'Neu', start: BASE});
+    h.at(BASE + SLOT + 30000);
+    h.state('status.0', 'Finished', BASE + SLOT);
+    await h.tick();
+    assert.equal(h.status(0).learning, 'incomplete power history');
+    assert.equal(h.own.has(h.profileId(0, 'Neu')), false);
+    h.state('selected', 'Neu');
+    h.state('remote.0', true);
+    h.state('status.0', 'Ready');
+    await h.tick();
+    assert.equal(h.status(0).profileSource, 'deviceAverage');
+    assert.equal(h.status(0).profileSamples, 0);
+    assert.equal(h.writes.length, 2);
+});
+
+test('a different appliance cannot supply the only estimate, and a changed selection cancels a pending start', async t => {
+    const h = simulation(t, [
+        {mode: 'automatic', name: 'Gerät', programObject: 'selected', startFromSelection: true},
+        {name: 'Gerät', programObject: 'other.selected'}
+    ]);
+    h.forecast([-2000, -2000, -2000]);
+    await h.tick();
+    h.profile(1, 'Eco', [1100]);
+    h.state('selected', 'Neu');
+    await h.tick();
+    assert.equal(h.status(0).plan, null);
+    assert.deepEqual(h.writes, []);
+
+    h.profile(0, 'Eco', [900]);
+    h.restart();
+    h.afterPublish = (id, value) => {
+        if (id === 'Devices.Programs.1' && value?.reservation?.kind === 'sent') h.state('selected', 'Anderes');
+    };
+    await h.tick();
+    assert.equal(h.status(0).reservation, null);
+    assert.deepEqual(h.writes, []);
+    h.afterPublish = null;
+    await h.tick();
+    assert.deepEqual(h.writes, [{id: 'start.0', value: 'Anderes', ack: false}]);
 });
 
 for (const change of ['grid', 'price', 'generation', 'valid', 'peer', 'permission']) {
