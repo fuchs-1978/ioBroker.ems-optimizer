@@ -3103,3 +3103,7 @@ Restructure the EMS overview with compact operating status, current notices and 
 ### 0.17.0-alpha.167
 
 Prepare a persistent per-vehicle mobility reserve, default 0 percent (off), in the EMS object tree. Show its bounded energy subset and existing departure in the read-only strategy preview. No productive price or immediate-charging change.
+
+### 0.17.0-alpha.294
+
+- Configure the unit of appliance power measurements.

@@ -8879,7 +8879,7 @@
             {
               "type": "text",
               "attr": "finishBy",
-              "title": "Finish by (HH:mm)",
+              "title": "Finish by (HH:mm) or start within (+hours)",
               "default": ""
             },
             {
