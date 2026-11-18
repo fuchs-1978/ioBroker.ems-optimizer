@@ -400,3 +400,83 @@ test('stale forecasts and elapsed finish-by times cannot dispatch on a continuin
     assert.equal(h.status(0).finishByAt, BASE + 2 * SLOT + 86400000);
     assert.deepEqual(h.writes.map(w => w.id), ['start.0']);
 });
+
+test('relative start deadline anchors to release across replanning, unavailable state and restart', async t => {
+    const h = simulation(t, [{mode: 'automatic', finishBy: '+4', profileJson: '[1000,1000,1000,1000]'}]);
+    h.forecast(Array(24).fill(0), Array.from({length: 24}, (_, i) => i < 16 ? 40 : 5));
+    await h.tick();
+    const limit = BASE - 60000 + 4 * 3600000;
+    assert.equal(h.status(0).startByAt, limit);
+    assert.equal(h.status(0).plan.plannedStartAt, limit - 15000);
+    assert.ok(h.status(0).plan.expectedEndAt > limit);
+    h.at(BASE + 3600000);
+    h.forecast(Array(32).fill(0));
+    h.state('status.0', 'Unavailable');
+    await h.tick();
+    h.state('status.0', 'Ready');
+    h.restart();
+    h.at(BASE + 2 * 3600000);
+    h.forecast(Array(32).fill(0), Array.from({length: 32}, (_, i) => i < 18 ? 40 : 5));
+    await h.tick();
+    assert.equal(h.status(0).startByAt, limit);
+    assert.ok(h.status(0).plan.plannedStartAt <= limit);
+    assert.deepEqual(h.writes, []);
+    h.at(limit + 15000);
+    h.forecast(Array(40).fill(0));
+    await h.tick();
+    assert.equal(h.status(0).plan, null);
+    assert.equal(h.status(0).schedulingStatus, 'start window expired');
+    assert.deepEqual(h.writes, []);
+    h.state('remote.0', false);
+    await h.tick();
+    h.state('remote.0', true);
+    await h.tick();
+    assert.equal(h.status(0).startByAt, limit + 15000 + 4 * 3600000);
+    assert.equal(h.writes.length, 1);
+});
+
+test('dispatch rechecks relative deadline after persisting the intent', async t => {
+    const h = simulation(t, [{mode: 'automatic', finishBy: '+4'}]);
+    h.forecast([-1000, -1000]);
+    h.afterPublish = (id, value) => {
+        if (id === 'Devices.Programs.1' && value?.reservation?.kind === 'sent') h.at(BASE + 4 * 3600000);
+    };
+    await h.tick();
+    assert.deepEqual(h.writes, []);
+    assert.equal(h.status(0).reservation, null);
+});
+
+test('appliance JSON integrates overlapping partial quarters, previews and running manual loads', async t => {
+    const h = simulation(t, [{mode: 'automatic'}, {mode: 'observe'}]);
+    h.forecast([-1000, -1000, -1000]);
+    h.state('status.1', 'Running', BASE - SLOT / 2);
+    await h.tick();
+    const data = JSON.parse(h.own.get('Plan.Appliances_48h_JSON'));
+    assert.equal(data.valid, true);
+    assert.equal(data.series.length, 192);
+    assert.deepEqual(data.series.slice(0, 2).map(slot => slot.valueW), [1000, 500]);
+    assert.equal(data.devices.find(d => d.id === 'Devices.Programs.2').status, 'running');
+    assert.ok(data.devices.every(d => d.scheduled));
+    assert.equal(data.series.reduce((sum, slot) => sum + slot.energy_kWh, 0), 0.375);
+    h.state('status.1', 'Ready');
+    h.config.globalWriteEnabled = false;
+    await h.tick();
+    const preview = JSON.parse(h.own.get('Plan.Appliances_48h_JSON'));
+    assert.ok(preview.devices.every(d => !d.scheduled));
+    assert.ok(preview.series.every(slot => slot.valueW === 0));
+    h.at(BASE + 21 * 60000);
+    await h.tick();
+    const stale = JSON.parse(h.own.get('Plan.Appliances_48h_JSON'));
+    assert.equal(stale.valid, false);
+    assert.deepEqual(stale.devices, []);
+});
+
+for (const setting of ['+0', '+-4', '+49', '+four', '25:00']) {
+    test('invalid start window never dispatches: ' + setting, async t => {
+        const h = simulation(t, [{mode: 'automatic', finishBy: setting}]);
+        h.forecast([-1000, -1000]);
+        await h.tick();
+        assert.equal(h.status(0).plan, null);
+        assert.deepEqual(h.writes, []);
+    });
+}

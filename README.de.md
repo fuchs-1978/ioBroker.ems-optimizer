@@ -309,3 +309,9 @@ Alpha 300 verringert den Rechenaufwand für Fahrplan, Datenpunktzuordnung, histo
 ## Offene Arbeiten
 
 Die [Roadmap #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) verlinkt aktuelle Integrationen, tatsächliche Anlagenprüfungen und datierte Betriebsberichte. Eine gute erste Anlaufstelle für Anzeigefehler ist [Admin-Abnahme #26](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/26).
+
+### Geräte: relatives Startfenster und Diagrammkurven (Alpha.301)
+
+Im bisherigen Feld **Fertig bis** gilt `06:00` weiterhin als Fertigstellungstermin. `+4` bedeutet dagegen: spätestens vier Stunden nach der Fernstartfreigabe starten. Die Laufzeit folgt danach. Neuplanung, Programmwechsel und Neustart verlängern das Fenster nicht. Eine neue Fernstartfreigabe setzt einen neuen Beginn. Nach Ablauf wird ohne neue Freigabe kein Start ausgelöst.
+
+Für Diagramme liefert `ems-optimizer.0.Plan.Appliances_48h_JSON` unter `devices` je Gerät den Namen, das Programm, den Start und eine `series` mit mittlerer Leistung `valueW` in W sowie `energy_kWh` je Viertelstunde. Der stabile `deviceKey` identifiziert das Gerät auch nach einer Änderung der Tabellenreihenfolge. Die oberste `series` summiert eingeplante und laufende Geräte; reine Vorschauen (`scheduled: false`) werden nicht addiert. `unresolvedDevices` nennt laufende Geräte ohne verbleibendes brauchbares Profil. Diese zusätzliche Gerätesumme nicht nochmals auf bereits entsprechend ergänzte Hauslastkurven addieren.

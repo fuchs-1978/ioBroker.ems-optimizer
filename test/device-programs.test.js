@@ -3,8 +3,16 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {learnProfile, planProgram, programAnnouncement, startDevicePrograms} = require('../lib/device-programs');
 
-test('disabled rows make no I/O', () => {
-    startDevicePrograms({config: {devicePrograms: [{mode: 'off'}]}});
+test('disabled rows clear the appliance forecast without reading or controlling devices', async () => {
+    const writes = [];
+    startDevicePrograms({config: {devicePrograms: [{mode: 'off'}]},
+        async setObjectNotExistsAsync() {},
+        async setStateAsync(id, val) { writes.push([id, JSON.parse(val)]); },
+        log: {warn: message => assert.fail(message)}});
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(writes[0][0], 'Plan.Appliances_48h_JSON');
+    assert.deepEqual(writes[0][1].devices, []);
+    assert.ok(writes[0][1].series.every(slot => slot.valueW === 0));
 });
 
 test('selects the cheapest covered slot and reports the marginal grid cost', () => {

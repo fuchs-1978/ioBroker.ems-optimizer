@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.300",
+    "version": "0.17.0-alpha.301",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.301": {
+        "en": "Add release-anchored start windows (+4 hours) and per-appliance quarter-hour forecast curves with a scheduled total.",
+        "de": "Startfenster ab Fernstartfreigabe (+4 Stunden) und Viertelstunden-Prognosekurven je Gerät mit eingeplanter Summe ergänzt.",
+        "es": "Añade ventanas de inicio desde la autorización remota y curvas de previsión por aparato cada quince minutos.",
+        "fr": "Ajoute des fenêtres de démarrage depuis l’autorisation distante et des prévisions par appareil au quart d’heure.",
+        "it": "Aggiunge finestre di avvio dalla disponibilità remota e previsioni per apparecchio ogni quarto d’ora.",
+        "nl": "Voegt startvensters vanaf vrijgave op afstand en prognoses per apparaat per kwartier toe.",
+        "pl": "Dodano okna startu od zdalnego zezwolenia oraz prognozy urządzeń co kwadrans.",
+        "pt": "Adiciona janelas de arranque desde a autorização remota e previsões por aparelho a cada quinze minutos.",
+        "ru": "Добавлены окна запуска от разрешения удалённого пуска и прогнозы приборов по четвертям часа.",
+        "uk": "Додано вікна запуску від дозволу дистанційного пуску та прогнози приладів за чверть години.",
+        "zh-cn": "新增从远程启动授权时刻计算的启动窗口和每台设备的十五分钟预测曲线。"
+      },
       "0.17.0-alpha.300": {
         "en": "Reduce CPU work when reading plans, mapping data points, building load profiles and preparing SQL records.",
         "de": "Weniger Rechenaufwand beim Lesen des Fahrplans, Zuordnen der Datenpunkte, Bilden der Lastprofile und Vorbereiten der SQL-Einträge.",
@@ -81,19 +94,6 @@
         "ru": "Можно зарезервировать энергию аккумулятора на следующий период высокого тарифа.",
         "uk": "Можна зарезервувати енергію акумулятора на наступний період високого тарифу.",
         "zh-cn": "可为下一个高电价时段预留电池电量。"
-      },
-      "0.17.0-alpha.294": {
-        "en": "Configure the unit of appliance power measurements.",
-        "de": "Einheit der Leistungsmessung für Haushaltsgeräte einstellen.",
-        "es": "Permite configurar la unidad de medida de la potencia de cada electrodoméstico.",
-        "fr": "Permet de choisir l’unité de mesure de la puissance de chaque appareil.",
-        "it": "Consente di impostare l’unità di misura della potenza di ciascun elettrodomestico.",
-        "nl": "Maakt de eenheid van het gemeten vermogen per huishoudelijk apparaat instelbaar.",
-        "pl": "Dodano wybór jednostki pomiaru mocy dla każdego urządzenia domowego.",
-        "pt": "Permite configurar a unidade de medida da potência de cada eletrodoméstico.",
-        "ru": "Для каждого бытового прибора можно выбрать единицу измерения мощности.",
-        "uk": "Для кожного побутового приладу можна вибрати одиницю вимірювання потужності.",
-        "zh-cn": "可为每台家电设置功率测量单位。"
       }
     },
     "titleLang": {
