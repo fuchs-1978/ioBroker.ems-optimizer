@@ -41,6 +41,23 @@ for (const language of languages) {
             assert.equal(typeof texts[language], 'string', `${name}: missing ${language}`);
             assert.ok(texts[language].trim(), `${name}: empty ${language}`);
         }
+        if (language !== 'en') {
+            for (const [version, texts] of Object.entries(common.news)) {
+                assert.notEqual(texts[language].trim(), texts.en.trim(),
+                    `${version}: English release note copied into ${language}`);
+            }
+        }
+    });
+    test(`${language}: electrical units, minimum current and go-e phase codes`, () => {
+        const catalog = JSON.parse(fs.readFileSync(`admin/i18n/${language}/translations.json`, 'utf8'));
+        for (const symbol of ['mW', 'W', 'kW', 'Wh', 'kWh', 'J', 'L1', 'L2', 'L3']) {
+            assert.equal(catalog[symbol], symbol, `${language}: changed ${symbol}`);
+        }
+        const parallelHelp = config.items.wallboxGeneralTab.items.wallboxParallelChargingEnabled.help;
+        assert.match(catalog[parallelHelp], /\b6\s*A\b/u);
+        const phaseMode = config.items.wallbox0Tab.items.wb0PhaseModeId.label;
+        assert.match(catalog[phaseMode], /1\s*=\s*1P\b/u);
+        assert.match(catalog[phaseMode], /2\s*=\s*3P\b/u);
     });
 }
 

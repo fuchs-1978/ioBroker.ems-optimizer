@@ -8,7 +8,7 @@ Der **Fahrplan** rechnet für die nächsten 48 Stunden in Viertelstunden. Die **
 
 ## Installation und Aktualisierung
 
-Vorausgesetzt werden Node.js ab 22, ioBroker js-controller ab 6.0.11 und Admin ab 7.8.23. Der Adapter ist eine Alpha-Version. In GitHub steht der geprüfte Quellstand, in `ems-optimizer.0.System.Version` die tatsächlich laufende Version.
+Vorausgesetzt werden Node.js ab 22, ioBroker js-controller ab 6.0.11 und Admin ab 7.8.23. Der hier beschriebene Stand ist **0.17.0-alpha.298**. In GitHub steht der geprüfte Quellstand, in `ems-optimizer.0.System.Version` die tatsächlich laufende Version.
 
 1. Öffne im ioBroker-Admin **Adapter → Installation aus eigener Quelle → GitHub**. Verwende `https://github.com/fuchs-1978/ioBroker.ems-optimizer`. Wähle für eine reproduzierbare Installation den Commit eines geprüften Stands. [GitHub-Prüfläufe auf main](https://github.com/fuchs-1978/ioBroker.ems-optimizer/actions/workflows/test-and-release.yml?query=branch%3Amain)
 2. Öffne **Instanzen → ems-optimizer.0 → Einstellungen**. Bei einer weiteren Instanz lautet die Nummer entsprechend anders.
@@ -272,7 +272,7 @@ Für den direkten PV-Prognosepfad wertet der aktuelle Stand fünf Flächenplätz
 
 Die beiden Tabellen nutzen vorhandene ioBroker-Geräteobjekte. Art und Werte der Datenpunkte hängen vom Geräteadapter ab.
 
-**Netzphasen der Hausgeräte im Betrieb erkennen** beobachtet die gemessene Leistung der eingetragenen Geräte und die Änderungen von L1–L3 am Netzanschluss. Nach mindestens drei passenden Lastwechseln mit Anstieg und Abfall zeigt die Übersicht die erkannte Phase. Wechselnde Speicher-, PV- oder andere gemessene Leistungen verwerfen die Messung. Eine Master-Freigabe ist dafür nicht nötig. Ergebnisse und Messnachweise bleiben je Leistungsmesspunkt gespeichert. Kleine oder uneindeutige Lastwechsel bleiben unbekannt. Für Kühlschränke kann auch in der Temperaturtabelle ein Leistungsobjekt mit Einheit eingetragen werden. [Ablauf und Grenzen](docs/release-0.17.0-alpha.297.md)
+**Netzphasen der Hausgeräte im Betrieb erkennen** beobachtet die gemessene Leistung der eingetragenen Geräte und die Änderungen von L1–L3 am Netzanschluss. Nach mindestens drei passenden Lastwechseln mit Anstieg und Abfall zeigt die Übersicht die erkannte Phase. Wechselnde Speicher-, PV- oder andere gemessene Leistungen verwerfen die Messung. Eine Master-Freigabe ist dafür nicht nötig. Ergebnisse und Messnachweise bleiben je Leistungsmesspunkt gespeichert. Kleine oder uneindeutige Lastwechsel bleiben unbekannt. Für Kühlschränke kann auch in der Temperaturtabelle ein Leistungsobjekt mit Einheit eingetragen werden. Unter **Geräte → Erkannte Netzphasen der Hausgeräte** siehst du das Ergebnis. Für Geschirrspüler, Trockner und andere Hausgeräte ist die Phase schreibgeschützt. Einen eigenen Button **Phasenlage testen** gibt es bei jeder Wallbox und jedem eingerichteten Speicherkopf. [Messung der Hausgeräte](docs/release-0.17.0-alpha.297.md) · [Test für Wallbox und Speicher](docs/release-0.17.0-alpha.296.md)
 
 ### Programmplanung für Haushaltsgeräte
 
@@ -282,7 +282,7 @@ Die beiden Tabellen nutzen vorhandene ioBroker-Geräteobjekte. Art und Werte der
 4. Gib falls gewünscht **Fertig bis** im Format `HH:mm` nach der lokalen Uhr des ioBroker-Hosts an. Prüfe unter `Devices.Programs.N` den geplanten Start und die geschätzten Kosten gegenüber dem Sofortstart.
 5. Setze **Automatisch** erst nach dem Zuordnungs- und Profiltest. Mit Master und aktiver Echtzeitregelung prüft das EMS bei der Planung und unmittelbar vor dem Start die zugehörige Fernstartfreigabe, den Status und das gewählte Programm. Die laufende Leistungsaufnahme bestätigt den realen Start. `Devices.Programs.N.Announcement` liefert in diesem Modus Ansagedaten, die ein eigenes Skript etwa für Alexa ausgeben kann.
 
-Alle freigegebenen Geräte der Programmtabelle teilen sich denselben prognostizierten Überschuss. Das EMS berücksichtigt zuerst laufende Programme und bereits gesendete Starts mit ihrem verbleibenden Lastprofil. Unter den wartenden Automatikgeräten hat die frühere Fernstartfreigabe Vorrang. Bei Gleichstand entscheidet die Tabellenreihenfolge. Die Startzeiten werden im 15-Sekunden-Zyklus anhand der aktuellen Prognose neu berechnet. Geräte dürfen sich überschneiden, wenn sich das mit ihren Lastprofilen rechnet. [Gemeinsame Planung und Startprüfung](docs/release-0.17.0-alpha.298.md)
+Alle freigegebenen Geräte der Programmtabelle teilen sich denselben prognostizierten Überschuss. Das EMS berücksichtigt zuerst laufende Programme und bereits gesendete Starts mit ihrem verbleibenden Lastprofil. Unter den wartenden Automatikgeräten hat die frühere Fernstartfreigabe Vorrang. Bei Gleichstand entscheidet die Tabellenreihenfolge. Die Startzeiten werden im 15-Sekunden-Zyklus anhand der aktuellen Prognose neu berechnet. Zwei Geräte können gleichzeitig laufen, wenn der Überschuss für beide reicht oder das gemeinsame Zeitfenster günstiger ist. Ein bereits laufendes Gerät im Modus **Beobachten** zählt ebenfalls mit. Unter `Devices.Programs.N` findest du den neuen Start in `plan.plannedStartAt` und den verwendeten Prognosestand in `plan.forecastUpdatedAt`. [Gemeinsame Planung und Startprüfung](docs/release-0.17.0-alpha.298.md)
 
 ### Temperatur-Sollwertoptimierung
 
