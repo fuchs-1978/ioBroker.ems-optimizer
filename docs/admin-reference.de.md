@@ -1,6 +1,6 @@
 # Adminreferenz – EMS Optimizer
 
-Feldreferenz zum Admin-Stand **0.17.0-alpha.299**. Die [Schritt-für-Schritt-Anleitung](../README.de.md) führt durch die Einrichtung und Prüfung. [English overview](../README.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36)
+Feldreferenz zum Admin-Stand **0.17.0-alpha.300**. Die [Schritt-für-Schritt-Anleitung](../README.de.md) führt durch die Einrichtung und Prüfung. [English overview](../README.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36)
 
 Die Tabellen dokumentieren die vorhandenen Admin-Einstellungen und Auslieferungswerte. Bestehende Anlagen können davon abweichen. Ein Feld oder eine Softwareprüfung belegt keine reale Inbetriebnahme.
 

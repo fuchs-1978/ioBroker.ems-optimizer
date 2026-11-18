@@ -7,7 +7,7 @@
 
 **[Deutsche Schritt-für-Schritt-Anleitung für alle Admin-Reiter](README.de.md)** · [Admin field reference (German)](docs/admin-reference.de.md) · [Changelog](#changelog) · [Issue tracker](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
-EMS Optimizer is an energy management adapter for [ioBroker](https://www.iobroker.net/). It coordinates PV surplus, a home battery, up to three wallboxes and available electric heaters. It can also schedule compatible household appliances. The source build on GitHub is **0.17.0-alpha.299**. Check `System.Version` on your instance for the running build.
+EMS Optimizer is an energy management adapter for [ioBroker](https://www.iobroker.net/). It coordinates PV surplus, a home battery, up to three wallboxes and available electric heaters. It can also schedule compatible household appliances. The source build on GitHub is **0.17.0-alpha.300**. Check `System.Version` on your instance for the running build.
 
 ## How it works
 
@@ -81,6 +81,10 @@ npm run test:equivalence
 
 ## Changelog
 
+### 0.17.0-alpha.300 (2026-11-18)
+
+- Read the current quarter-hour directly from regular plans, reuse data point field names and daily calendar results, and reuse the compressed SQL payload when publishing a batch. [Release notes](docs/release-0.17.0-alpha.300.md)
+
 ### 0.17.0-alpha.299 (2026-11-18)
 
 - Schedule a newly selected program with the average measured load profile of the same appliance. After its first fully metered run, use the program’s own profile for subsequent starts. [Release notes](docs/release-0.17.0-alpha.299.md)
@@ -104,10 +108,6 @@ npm run test:equivalence
 ### 0.17.0-alpha.294 (2026-11-17)
 
 - Select the appliance power meter’s unit in Admin. Readings in W, mW or kW are converted to watts for program learning. [Power units](https://github.com/fuchs-1978/ioBroker.ems-optimizer/pull/465) · [SI symbols](https://github.com/fuchs-1978/ioBroker.ems-optimizer/pull/466)
-
-### 0.17.0-alpha.293 (2026-11-16)
-
-- Add an optional 50/50 Median and Lasso load forecast for planning. Each slot falls back to Median when the saved forecast pair is unavailable. [Release notes](docs/release-0.17.0-alpha.293.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 
