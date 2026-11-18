@@ -3,7 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {createHash} = require('node:crypto');
-const {unpackOriginals} = require('../lib/decision-record-transport');
+const {packOriginals, unpackOriginals} = require('../lib/decision-record-transport');
 const parsePublished = value => JSON.parse(unpackOriginals(value)[0]);
 const DecisionRecordDelivery = require('../lib/decision-record-delivery');
 
@@ -110,7 +110,7 @@ test('an unresolved publication has its own diagnostics and does not stop proof 
 });
 
 test('bounded bundled transport drains a healthy backlog without increasing the write/query call budget', async () => {
-    const sql = [], {unpackOriginals} = require('../lib/decision-record-transport');
+    const sql = [];
     const h = fixture(64, {bundleOriginals: true, maxPublishPerTick: 16, maxWritesPerTick: 4,
         publishIntervalMs: 5000, maxQueriesPerTick: 1,
         publish: async val => {sql.push({ts: h.now(), val}); return {publishedAt: h.now()};},
@@ -125,6 +125,10 @@ test('bounded bundled transport drains a healthy backlog without increasing the 
     assert.equal(h.stored.size, 0, 'all original records require real exact SQL proof');
     assert.equal(sql.length, 4, 'sixteen originals fit one bounded state write');
     assert.deepEqual(sql.flatMap(row => unpackOriginals(row.val)), h.entries.map(entry => entry.payload));
+    for (const [index, row] of sql.entries()) {
+        const group = h.entries.slice(index * 16, (index + 1) * 16);
+        assert.equal(row.val, packOriginals(group.map(entry => entry.payload)));
+    }
     assert.equal(h.delivery.health().queryCount, 4);
     const oldSql = [];
     const old = fixture(64, {maxPublishPerTick: 4, maxWritesPerTick: 4, publishIntervalMs: 5000,
@@ -206,6 +210,7 @@ test('bundle size, transport-write and actual byte ceilings retain an unsent suf
     assert.equal(h.delivery.cursor, h.entries[1].id);
     h.advance(20); await h.delivery.tick();
     assert.equal(sql.length, 4); assert.equal(h.delivery.cursor, h.entries[3].id);
+    assert.deepEqual(sql, h.entries.slice(0, 4).map(entry => packOriginals([entry.payload])));
     assert.equal(h.confirmations.length, 0, 'publication never proves SQL storage');
 });
 
