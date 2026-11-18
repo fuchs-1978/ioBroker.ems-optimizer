@@ -7,7 +7,7 @@
 
 **[Deutsche Schritt-für-Schritt-Anleitung für alle Admin-Reiter](README.de.md)** · [Admin field reference (German)](docs/admin-reference.de.md) · [Changelog](#changelog) · [Issue tracker](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
-EMS Optimizer is an energy management adapter for [ioBroker](https://www.iobroker.net/). It coordinates PV surplus, a home battery, up to three wallboxes and available electric heaters. It can also schedule compatible household appliances. The source build on GitHub is **0.17.0-alpha.298**. Check `System.Version` on your instance for the running build.
+EMS Optimizer is an energy management adapter for [ioBroker](https://www.iobroker.net/). It coordinates PV surplus, a home battery, up to three wallboxes and available electric heaters. It can also schedule compatible household appliances. The source build on GitHub is **0.17.0-alpha.299**. Check `System.Version` on your instance for the running build.
 
 ## How it works
 
@@ -17,7 +17,7 @@ EMS Optimizer is an energy management adapter for [ioBroker](https://www.iobroke
 
 ## Household appliances
 
-In **Devices**, add one program row per appliance. Choose the unit of its power meter (**W**, **mW** or **kW**). In **Observe**, a full measured run can teach the EMS the selected program’s quarter-hour load profile. The device status shows the planned start under `Devices.Programs.N`.
+In **Devices**, add one program row per appliance. Choose the unit of its power meter (**W**, **mW** or **kW**). In **Observe**, a full measured run can teach the EMS the selected program’s quarter-hour load profile. For a newly selected program, the EMS schedules its first run using the average of the same appliance’s measured program profiles. Once that run finishes with complete power readings, the next start uses its own measured profile. The device status shows the planned start under `Devices.Programs.N`.
 
 In **Automatic**, all ready devices with remote start enabled share the same forecast. Running programs and previously sent starts reserve their remaining load first. The EMS then plans waiting devices in the order they were released. Two programs can overlap when their combined load fits the available PV surplus or the tariff makes that timing cheaper. Every 15 seconds the EMS replans waiting starts. Immediately before sending a command it checks the device, its release, the deadline and the forecast again. [Scheduling and status fields](docs/release-0.17.0-alpha.298.md)
 
@@ -81,6 +81,10 @@ npm run test:equivalence
 
 ## Changelog
 
+### 0.17.0-alpha.299 (2026-11-18)
+
+- Schedule a newly selected program with the average measured load profile of the same appliance. After its first fully metered run, use the program’s own profile for subsequent starts. [Release notes](docs/release-0.17.0-alpha.299.md)
+
 ### 0.17.0-alpha.298 (2026-11-17)
 
 - Coordinate every released appliance against running and already planned program loads. Recalculate waiting starts on each forecast and verify the forecast and device feedback immediately before dispatch. [Release notes](docs/release-0.17.0-alpha.298.md)
@@ -104,10 +108,6 @@ npm run test:equivalence
 ### 0.17.0-alpha.293 (2026-11-16)
 
 - Add an optional 50/50 Median and Lasso load forecast for planning. Each slot falls back to Median when the saved forecast pair is unavailable. [Release notes](docs/release-0.17.0-alpha.293.md)
-
-### 0.17.0-alpha.292 (2026-11-16)
-
-- Use free PV up to the battery charge limit when restoring the 20% reserve. When grid charging is authorized, buy only the power needed to reach a total of 1,000 W. [Release notes](docs/release-0.17.0-alpha.292.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 

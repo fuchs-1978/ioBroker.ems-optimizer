@@ -1,6 +1,6 @@
 # Adminreferenz – EMS Optimizer
 
-Feldreferenz zum Admin-Stand **0.17.0-alpha.298**. Die [Schritt-für-Schritt-Anleitung](../README.de.md) führt durch die Einrichtung und Prüfung. [English overview](../README.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36)
+Feldreferenz zum Admin-Stand **0.17.0-alpha.299**. Die [Schritt-für-Schritt-Anleitung](../README.de.md) führt durch die Einrichtung und Prüfung. [English overview](../README.md) · [Aktuelle Aufgaben #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36)
 
 Die Tabellen dokumentieren die vorhandenen Admin-Einstellungen und Auslieferungswerte. Bestehende Anlagen können davon abweichen. Ein Feld oder eine Softwareprüfung belegt keine reale Inbetriebnahme.
 
@@ -977,12 +977,14 @@ Die Tabelle `devicePrograms` ist bei Auslieferung leer. Eine Zeile beschreibt ei
 | Objekt für gewähltes und aktives Programm | Die Programmauswahl liefert die Kennung für den nächsten Start und das gewünschte Profil. Mit zugeordnetem Objekt für das aktive Programm ordnet der Lernpfad die Messung der tatsächlich laufenden Kennung zu. |
 | Programmstart-Objekt, Startwert und Gewähltes Programm starten | ID des beschreibbaren Aktors. Im Modus **Gewähltes Programm starten** ist der Auftragswert die ausgewählte Programmkennung. Sonst wird der eingetragene JSON-Startwert verwendet. Werttyp, Gerätefunktion und erneute Prüfung von Freigabe und Bereitstatus müssen passen. |
 | Geräte-Leistungsobjekt und Leistungseinheit (`powerObject`, `powerUnit`) | Bestätigte Momentanleistung. Wähle W, mW oder kW passend zum Rohwert. Das EMS rechnet die Messwerte für das Profil in W um. Die gewählte Historieninstanz muss einen zusammenhängenden, vollständig erkannten Lauf liefern. Das EMS berechnet die Energie aus dem Leistungsintegral und bildet je Programm einen typischen Verlauf aus bis zu neun vollständigen Läufen. |
-| Programmprofil (W je 15 min, JSON-Array) | Festes Startprofil für eine Zeile ohne Objekt für Programmauswahl. Mit Programmauswahl wird das gelernte Profil für die jeweilige Kennung verwendet. |
+| Programmprofil (W je 15 min, JSON-Array) | Festes Startprofil für eine Zeile ohne Objekt für Programmauswahl. Mit Programmauswahl gilt das gemessene Profil der gewählten Kennung. Bis zur ersten vollständigen Messung dieses Programms nutzt das EMS den Mittelwert aus den gemessenen Programmprofilen desselben Geräts. |
 | Fertig bis (HH:mm) | Nächster vorkommender Termin nach lokaler Zeit des ioBroker-Hosts. Ein leeres Feld erlaubt einen Suchhorizont von bis zu 48 Stunden innerhalb vorhandener gültiger Prognosen. |
 
 `Devices.Programs.N` zeigt den Status, die geplante Startzeit und erwartete Kosten. `Devices.ProgramProfiles` enthält je Programm gemessene Energie, Leistung je Viertelstunde und Anzahl der vollständigen Läufe. In der Automatik kann `Devices.Programs.N.Announcement` für einen geplanten Lauf JSON mit `id` und `text` enthalten. Ein separates Skript kann daraus eine Ansage erzeugen. Der Status und die gemessene Leistung zeigen, ob der Startauftrag tatsächlich zum Programmlauf geführt hat. [Einrichtungsschritte](../README.de.md#programmplanung-für-haushaltsgeräte)
 
 Für die Startplanung zählt der erwartete Verbrauch aller laufenden und zuvor eingeplanten Programmgeräte. Ein tatsächlich laufendes Gerät im Modus **Beobachten** belegt ebenfalls sein Restprofil. Das EMS plant wartende Starts alle 15 Sekunden mit der aktuellen Prognose neu und prüft diese unmittelbar vor jedem Startauftrag. In `Devices.Programs.N` stehen die Startzeit in `plan.plannedStartAt` und der dabei verwendete Prognosestand in `plan.forecastUpdatedAt`. Eine gesetzte Fertig-bis-Uhrzeit bleibt für dieselbe Freigabe an das ermittelte Datum gebunden. [Reihenfolge und Statusangaben](release-0.17.0-alpha.298.md)
+
+In `Devices.Programs.N` zeigt `profileSource` die Herkunft des verwendeten Lastgangs. `program` steht für das eigene gemessene Programmprofil, `deviceAverage` für den Gerätemittelwert und `configured` für das fest eingetragene Profil. Beim Mittelwert gibt `fallbackProgramCount` die Zahl der einbezogenen Programme an. `profileSamples` zählt ausschließlich Messläufe des gewählten beziehungsweise laufenden Programms. [Erster Fernstart eines neuen Programms](release-0.17.0-alpha.299.md)
 
 ### Temperatur-Sollwertoptimierung
 

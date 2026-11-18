@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.292 (2026-11-16)
+
+- Use free PV up to the battery charge limit when restoring the 20% reserve. When grid charging is authorized, buy only the power needed to reach a total of 1,000 W. [Release notes](docs/release-0.17.0-alpha.292.md)
+
 ## 0.17.0-alpha.291
 
 - Publish appliance start and savings announcements.

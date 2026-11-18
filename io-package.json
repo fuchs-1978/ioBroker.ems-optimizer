@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.298",
+    "version": "0.17.0-alpha.299",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.299": {
+        "en": "Schedule a new program using the appliance’s measured profiles and learn its own profile from the first complete run.",
+        "de": "Neue Programme mit den gemessenen Profilen desselben Geräts einplanen und beim ersten vollständigen Lauf ein eigenes Profil lernen.",
+        "es": "Elige la hora de inicio de un programa nuevo según los perfiles medidos del mismo aparato y registra su perfil propio en el primer ciclo completo.",
+        "fr": "Planifie un nouveau programme à partir des profils mesurés du même appareil et apprend son profil dès le premier cycle complet.",
+        "it": "Pianifica i nuovi programmi usando i profili misurati dello stesso apparecchio e apprende il loro profilo dal primo ciclo completo.",
+        "nl": "Plant een nieuw programma met de gemeten profielen van hetzelfde apparaat en leert het eigen profiel tijdens de eerste volledige cyclus.",
+        "pl": "Planuje nowy program na podstawie zmierzonych profili tego samego urządzenia i zapisuje jego profil po pierwszym pełnym cyklu.",
+        "pt": "Planeia um novo programa com os perfis medidos do mesmo aparelho e aprende o seu perfil no primeiro ciclo completo.",
+        "ru": "Планирует новую программу по измеренным профилям того же прибора и сохраняет её собственный профиль после первого полного цикла.",
+        "uk": "Планує нову програму за виміряними профілями того самого приладу та зберігає її власний профіль після першого повного циклу.",
+        "zh-cn": "根据同一设备已测得的负荷曲线安排新程序，并在首次完整运行后记录该程序自己的负荷曲线。"
+      },
       "0.17.0-alpha.298": {
         "en": "Coordinate all appliance starts and replan waiting programs with the latest forecast.",
         "de": "Starts aller Haushaltsgeräte gemeinsam planen und bei neuer Prognose aktualisieren.",
@@ -81,19 +94,6 @@
         "ru": "Добавлен профиль базовой нагрузки из медианы и Lasso в пропорции 50/50. Если прогноз Lasso недоступен, используется медиана.",
         "uk": "Додано профіль базового навантаження, що поєднує медіану й Lasso у пропорції 50/50. Якщо прогноз Lasso недоступний, використовується медіана.",
         "zh-cn": "新增可选的基础负荷预测，按 50/50 组合中位数和 Lasso 预测。缺少 Lasso 预测时使用中位数。"
-      },
-      "0.17.0-alpha.292": {
-        "en": "Use available solar surplus to restore the 20% battery reserve, with grid power covering the shortfall up to 1,000 W total.",
-        "de": "Freien PV-Überschuss für die 20-%-Speicherreserve nutzen und fehlende Leistung bis 1.000 W mit Netzstrom ergänzen.",
-        "es": "Usa el excedente solar para recuperar la reserva de batería del 20 % y completa hasta 1000 W totales con la red.",
-        "fr": "Utilise le surplus solaire pour reconstituer la réserve de batterie de 20 % et complète jusqu’à 1 000 W avec le réseau.",
-        "it": "Usa il surplus solare per ripristinare la riserva del 20% e integra con la rete fino a 1.000 W totali.",
-        "nl": "Gebruik het zonneoverschot voor de batterijreserve van 20% en vul het tekort tot 1.000 W totaal aan met netstroom.",
-        "pl": "Wykorzystuje nadwyżkę PV do odbudowy rezerwy 20% i uzupełnia brakującą moc z sieci do 1000 W łącznie.",
-        "pt": "Utiliza o excedente solar para repor a reserva da bateria de 20% e complementa até 1000 W no total com a rede.",
-        "ru": "Избыток солнечной энергии восстанавливает резерв батареи до 20 %, а сеть восполняет недостающую мощность до 1000 Вт суммарно.",
-        "uk": "Надлишок сонячної енергії відновлює резерв батареї до 20 %, а мережа доповнює потужність до 1000 Вт загалом.",
-        "zh-cn": "利用富余光伏电力恢复 20% 的电池储备，电网补足至总充电功率 1000 瓦。"
       }
     },
     "titleLang": {
