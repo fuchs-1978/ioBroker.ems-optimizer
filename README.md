@@ -15,12 +15,22 @@ EMS Optimizer is an energy management adapter for [ioBroker](https://www.iobroke
 - **The live controller** allocates power from current measurements. It considers user and device releases, current per-phase and grid-operator limits, the battery and vehicle state of charge, and heater temperatures. When the plan is unavailable, valid live measurements can still support ordinary allocation. Planned price charging and price-based heating resume with a valid plan.
 - **Device control** requires the relevant releases and a supported, commissioned device interface. Heat-pump telemetry and SG Ready recommendations are read-only. Phase changes on a go-e charger require a separate supported phase script. [Device setup](README.de.md#die-admin-reiter-in-bildschirmreihenfolge) · [Phase follower](docs/phase-follower-v2.md)
 
+## Household appliances
+
+In **Devices**, add one program row per appliance. Choose the unit of its power meter (**W**, **mW** or **kW**). In **Observe**, a full measured run can teach the EMS the selected program’s quarter-hour load profile. The device status shows the planned start under `Devices.Programs.N`.
+
+In **Automatic**, all ready devices with remote start enabled share the same forecast. Running programs and previously sent starts reserve their remaining load first. The EMS then plans waiting devices in the order they were released. Two programs can overlap when their combined load fits the available PV surplus or the tariff makes that timing cheaper. Every 15 seconds the EMS replans waiting starts. Immediately before sending a command it checks the device, its release, the deadline and the forecast again. [Scheduling and status fields](docs/release-0.17.0-alpha.298.md)
+
+The **Devices** tab also displays each metered appliance’s grid phase. The EMS learns it from repeated measured load changes. The phase is read-only. Wallboxes and battery heads have their own active phase tests. [Appliance phase detection](docs/release-0.17.0-alpha.297.md) · [Wallbox and battery tests](docs/release-0.17.0-alpha.296.md)
+
 ## Requirements
 
 - Node.js 22 or newer, ioBroker js-controller 6.0.11 or newer and Admin 7.8.23 or newer. Automated checks cover Node.js 22, 24 and 26.
 - Confirmed PV and grid measurements in watts. Use the actual device status, limits and feedback for each output you enable.
 
 ## Installation and setup
+
+To install this development alpha from a tested revision on GitHub, follow these steps.
 
 1. In ioBroker Admin open **Adapters → Install from custom source → GitHub**. Enter `https://github.com/fuchs-1978/ioBroker.ems-optimizer`. Select a tested commit for a reproducible installation. [Checks for main](https://github.com/fuchs-1978/ioBroker.ems-optimizer/actions/workflows/test-and-release.yml?query=branch%3Amain)
 2. Open the instance settings under **Instances → ems-optimizer.0**. Leave the master output release off while mapping measurements and limits. Disable any device that is absent.
@@ -87,6 +97,10 @@ npm run test:equivalence
 
 - Optionally reserve stored energy for the next configured high tariff period. At equal prices, the plan assigns scarce energy to quarters with higher expected household demand after PV. [Release notes](docs/release-0.17.0-alpha.295.md)
 
+### 0.17.0-alpha.294 (2026-11-17)
+
+- Select the appliance power meter’s unit in Admin. Readings in W, mW or kW are converted to watts for program learning. [Power units](https://github.com/fuchs-1978/ioBroker.ems-optimizer/pull/465) · [SI symbols](https://github.com/fuchs-1978/ioBroker.ems-optimizer/pull/466)
+
 ### 0.17.0-alpha.293 (2026-11-16)
 
 - Add an optional 50/50 Median and Lasso load forecast for planning. Each slot falls back to Median when the saved forecast pair is unavailable. [Release notes](docs/release-0.17.0-alpha.293.md)
@@ -94,38 +108,6 @@ npm run test:equivalence
 ### 0.17.0-alpha.292 (2026-11-16)
 
 - Use free PV up to the battery charge limit when restoring the 20% reserve. When grid charging is authorized, buy only the power needed to reach a total of 1,000 W. [Release notes](docs/release-0.17.0-alpha.292.md)
-
-### 0.17.0-alpha.288 (2026-11-16)
-
-- Prioritize minimum-SoC charging on all wallboxes. Protect the storage reserve during forecast periods longer than six hours below 20%, with price-aware recovery within the available grid budget. [Release notes](docs/release-0.17.0-alpha.288.md)
-
-### 0.17.0-alpha.285 (2026-11-15)
-
-- Use one SunEnergy head at low combined power and rotate new starts among similarly charged heads. The Admin defaults are 500 W and a five-percentage-point SoC band. [Release notes](docs/release-0.17.0-alpha.285.md)
-
-### 0.17.0-alpha.284 (2026-11-15)
-
-- Spread forecast hot-water demand across a recurring cheap overnight tariff block while preserving the modeled heat reserve. [Release notes](docs/release-0.17.0-alpha.284.md)
-
-### 0.17.0-alpha.283 (2026-11-15)
-
-- Replan a queued battery direction change when the current grid measurement no longer calls for it. Keep observing the last issued setpoint while it fits the current protection limits. [Release notes](docs/release-0.17.0-alpha.283.md)
-
-### 0.17.0-alpha.282 (2026-11-15)
-
-- Start single-phase WB1 charging at 6 A from at least 800 W of measured daytime surplus, with up to 600 W from a nearly full SunEnergy store. Use later surplus for storage charging. [Release notes](docs/release-0.17.0-alpha.282.md)
-
-### 0.17.0-alpha.281 (2026-11-15)
-
-- Roll back battery setpoints rejected before dispatch. The controller replans from the last issued setpoint or confirmed idle state. [Release notes](docs/release-0.17.0-alpha.281.md)
-
-### 0.17.0-alpha.280 (2026-11-15)
-
-- Use fresh GS echoes to count consecutive unacknowledged single-head setpoints. GP continues to verify electrical response and reserved power. [Release notes](docs/release-0.17.0-alpha.280.md)
-
-### 0.17.0-alpha.279 (2026-11-15)
-
-- After two minutes of measured near-limit charging at a single SunEnergy head, use real PV export to qualify a wallbox start and let the battery absorb the remaining surplus. [Release notes](docs/release-0.17.0-alpha.279.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 
@@ -135,4 +117,6 @@ Report bugs and feature requests through [GitHub Issues](https://github.com/fuch
 
 ## License
 
-MIT License. Copyright (c) 2026 Carsten Reineke. See [LICENSE](LICENSE) for the full license text.
+Copyright (c) 2026 Carsten Reineke
+
+[MIT License](LICENSE)

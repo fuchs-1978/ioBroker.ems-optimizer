@@ -6,9 +6,17 @@ Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) 
 
 - Publish appliance start and savings announcements.
 
+## 0.17.0-alpha.290
+
+- Learn household appliance profiles by selected program.
+
 ## 0.17.0-alpha.289
 
 - Optional appliance program scheduling
+
+## 0.17.0-alpha.288 (2026-11-16)
+
+- Prioritize minimum-SoC charging on all wallboxes. Protect the storage reserve during forecast periods longer than six hours below 20%, with price-aware recovery within the available grid budget. [Release notes](docs/release-0.17.0-alpha.288.md)
 
 ## 0.17.0-alpha.287
 
@@ -18,25 +26,33 @@ Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) 
 
 - Add configurable temperature setpoint optimization for household devices.
 
-## 0.17.0-alpha.284
+## 0.17.0-alpha.285 (2026-11-15)
 
-- Spread forecast hot-water demand across a recurring cheap overnight tariff block.
+- Use one SunEnergy head at low combined power and rotate new starts among similarly charged heads. The Admin defaults are 500 W and a five-percentage-point SoC band. [Release notes](docs/release-0.17.0-alpha.285.md)
 
-## 0.17.0-alpha.283
+## 0.17.0-alpha.284 (2026-11-15)
 
-- Replan an obsolete battery direction change with the current grid reading. Retain the last issued setpoint within protection limits.
+- Spread forecast hot-water demand across a recurring cheap overnight tariff block while preserving the modeled heat reserve. [Release notes](docs/release-0.17.0-alpha.284.md)
 
-## 0.17.0-alpha.282
+## 0.17.0-alpha.283 (2026-11-15)
 
-- Start eligible single-phase WB1 charging with measured daytime surplus and up to 600 W of battery support. Recharge the battery with surplus as it becomes available.
+- Replan a queued battery direction change when the current grid measurement no longer calls for it. Keep observing the last issued setpoint while it fits the current protection limits. [Release notes](docs/release-0.17.0-alpha.283.md)
 
-## 0.17.0-alpha.280
+## 0.17.0-alpha.282 (2026-11-15)
 
-- Count missing acknowledgements by GS setpoint. Use GP to verify actual power and reserved headroom.
+- Start single-phase WB1 charging at 6 A from at least 800 W of measured daytime surplus, with up to 600 W from a nearly full SunEnergy store. Use later surplus for storage charging. [Release notes](docs/release-0.17.0-alpha.282.md)
 
-## 0.17.0-alpha.279
+## 0.17.0-alpha.281 (2026-11-15)
 
-- Hand off PV surplus to the wallbox after two minutes of measured battery charging near its power limit.
+- Roll back battery setpoints rejected before dispatch. The controller replans from the last issued setpoint or confirmed idle state. [Release notes](docs/release-0.17.0-alpha.281.md)
+
+## 0.17.0-alpha.280 (2026-11-15)
+
+- Use fresh GS echoes to count consecutive unacknowledged single-head setpoints. GP continues to verify electrical response and reserved power. [Release notes](docs/release-0.17.0-alpha.280.md)
+
+## 0.17.0-alpha.279 (2026-11-15)
+
+- After two minutes of measured near-limit charging at a single SunEnergy head, use real PV export to qualify a wallbox start and let the battery absorb the remaining surplus. [Release notes](docs/release-0.17.0-alpha.279.md)
 
 ## 0.17.0-alpha.278 (2026-11-15)
 
@@ -3079,7 +3095,3 @@ Restructure the EMS overview with compact operating status, current notices and 
 ### 0.17.0-alpha.167
 
 Prepare a persistent per-vehicle mobility reserve, default 0 percent (off), in the EMS object tree. Show its bounded energy subset and existing departure in the read-only strategy preview. No productive price or immediate-charging change.
-
-### 0.17.0-alpha.290
-
-- Learn household appliance profiles by selected program.
