@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.303",
+    "version": "0.17.0-alpha.304",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.304": {
+        "en": "Reduce memory peaks in diagnostic reports and SQL storage verification.",
+        "de": "Speicherspitzen bei Diagnoseanzeigen und beim Prüfen der SQL-Aufzeichnung reduziert.",
+        "es": "Reduce los picos de memoria de los informes de diagnóstico y de la verificación del registro SQL.",
+        "fr": "Réduit les pics de mémoire des rapports de diagnostic et de la vérification des enregistrements SQL.",
+        "it": "Riduce i picchi di memoria nei rapporti diagnostici e nella verifica delle registrazioni SQL.",
+        "nl": "Verlaagt het piekgeheugengebruik bij diagnoserapporten en bij de controle van SQL-opslag.",
+        "pl": "Zmniejsza szczytowe zużycie pamięci w raportach diagnostycznych i podczas weryfikacji zapisu w SQL.",
+        "pt": "Reduz os picos de memória nos relatórios de diagnóstico e na verificação dos registos SQL.",
+        "ru": "Снижено пиковое потребление памяти при формировании диагностических отчётов и проверке записей SQL.",
+        "uk": "Зменшено пікове споживання пам’яті під час формування діагностичних звітів і перевірки записів SQL.",
+        "zh-cn": "降低诊断报告和 SQL 存储校验的内存峰值。"
+      },
       "0.17.0-alpha.303": {
         "en": "Move planned grid heat to cheaper slots using the finished shared PV allocation.",
         "de": "Geplante Netz-Wärme anhand der gemeinsamen PV-Zuteilung günstiger und mit geringerer Netzspitze einplanen.",
@@ -81,19 +94,6 @@
         "ru": "Согласует время запуска всех приборов и пересчитывает расписание ожидающих программ по свежему прогнозу.",
         "uk": "Узгоджує час запуску всіх приладів і перераховує розклад програм за оновленим прогнозом.",
         "zh-cn": "协调所有家电的启动时间，并根据最新预测重新安排等待中的程序。"
-      },
-      "0.17.0-alpha.297": {
-        "en": "Learn appliance grid phases passively from repeated measured load changes.",
-        "de": "Netzphasen der Hausgeräte aus wiederholten gemessenen Lastwechseln passiv erkennen.",
-        "es": "Identifica la fase de red de cada electrodoméstico observando cambios repetidos en la carga medida.",
-        "fr": "Identifie la phase réseau des appareils en observant les variations répétées de leur puissance mesurée.",
-        "it": "Identifica la fase di rete di ogni elettrodomestico osservando variazioni ripetute della potenza misurata.",
-        "nl": "Herkent de netfase van een huishoudelijk apparaat aan herhaalde veranderingen in het gemeten vermogen.",
-        "pl": "Rozpoznaje fazę sieciową urządzenia na podstawie powtarzających się zmian zmierzonej mocy.",
-        "pt": "Identifica a fase da rede de cada eletrodoméstico observando variações repetidas da potência medida.",
-        "ru": "Определяет фазу сети бытового прибора по повторяющимся изменениям измеренной мощности.",
-        "uk": "Визначає фазу мережі побутового приладу за повторюваними змінами виміряної потужності.",
-        "zh-cn": "通过观察多次实测功率变化，被动识别各家电所接的电网相线。"
       }
     },
     "titleLang": {

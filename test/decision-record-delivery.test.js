@@ -1205,6 +1205,27 @@ test('one independent SQL response submits a deduplicated exact proof batch once
     assert.equal(calls, 1); assert.equal(h.confirmations.length, 16); assert.equal(h.stored.size, 0);
 });
 
+test('mixed SQL packets retain the first exact timestamp and reject an entire damaged packet', async () => {
+    let firstStamp;
+    const h = fixture(3, {bundleOriginals: true, maxQueriesPerTick: 1, readHistory: async request => {
+        firstStamp = request.start + 1;
+        const [a, b, c] = h.entries.map(entry => entry.payload);
+        return {backendCompletionObserved: true, result: [
+            {ts: firstStamp, val: JSON.stringify({schema: 4, frameType: 'transport-bundle', records: [a, '{bad']})},
+            {ts: firstStamp, val: null},
+            {ts: firstStamp, val: packOriginals([b, c])},
+            {ts: firstStamp + 1, val: c},
+            {ts: firstStamp + 1, val: a + ' '}
+        ]};
+    }});
+    await h.delivery.tick();
+    assert.deepEqual(h.confirmations.map(({id}) => id), h.entries.slice(1).map(entry => entry.id));
+    assert.ok(h.stored.has(h.entries[0].id));
+    assert.equal(h.delivery.lastFreshSQLProof.sqlTs, firstStamp);
+    const query = h.delivery.lastQuery;
+    assert.deepEqual([query.originalRecords, query.nullPayloads, query.malformedPayloads], [5, 1, 1]);
+});
+
 test('shutdown drains an actual late SQL callback and its durable fence before journal close', {timeout:10000},async t=>{
     const fs=require('node:fs/promises'),path=require('node:path'),os=require('node:os');
     const Journal=require('../lib/decision-record-journal');

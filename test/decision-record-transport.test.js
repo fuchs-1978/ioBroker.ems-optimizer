@@ -19,6 +19,9 @@ test('transport bundle restores byte-exact originals and both SQL and source clo
     const raw = originals();
     const bundle = packOriginals(raw);
     assert.deepEqual(unpackOriginals(bundle), raw);
+    const envelope = Object.freeze(JSON.parse(bundle));
+    assert.deepEqual(unpackOriginals(envelope), raw);
+    assert.deepEqual(unpackOriginals(envelope), raw, 'reading a stored envelope leaves its compact representation intact');
     assert.deepEqual(expandTransportRows([{ts: 5000, val: bundle}]), raw.map(val => ({ts: 5000, val})));
     assert.deepEqual(decodeDecisionRecords([{ts: 5000, val: bundle}]),
         decodeDecisionRecords(raw.map(val => ({ts: 5000, val}))));
