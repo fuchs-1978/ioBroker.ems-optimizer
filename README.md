@@ -7,7 +7,7 @@
 
 **[Deutsche Schritt-für-Schritt-Anleitung für alle Admin-Reiter](README.de.md)** · [Admin field reference (German)](docs/admin-reference.de.md) · [Changelog](#changelog) · [Issue tracker](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
-EMS Optimizer is an energy management adapter for [ioBroker](https://www.iobroker.net/). It coordinates PV surplus, a home battery, up to three wallboxes and available electric heaters. It can also schedule compatible household appliances. The source build on GitHub is **0.17.0-alpha.302**. Check `System.Version` on your instance for the running build.
+EMS Optimizer is an energy management adapter for [ioBroker](https://www.iobroker.net/). It coordinates PV surplus, a home battery, up to three wallboxes and available electric heaters. It can also schedule compatible household appliances. The source build on GitHub is **0.17.0-alpha.303**. Check `System.Version` on your instance for the running build.
 
 ## How it works
 
@@ -81,6 +81,10 @@ npm run test:equivalence
 
 ## Changelog
 
+### 0.17.0-alpha.303 (2026-11-19)
+
+- Reconcile planned hot-water grid heat with the finished PV allocation, moving existing heat to cheaper slots without changing battery or vehicle energy. [Release notes](docs/release-0.17.0-alpha.303.md)
+
 ### 0.17.0-alpha.302 (2026-11-19)
 
 - Continue single-head SunEnergy regulation up to 100 W when the device clock leads and original measurements keep advancing. [Release notes](docs/release-0.17.0-alpha.302.md)
@@ -108,10 +112,6 @@ npm run test:equivalence
 ### 0.17.0-alpha.296 (2026-11-17)
 
 - Configure the grid phase of each SunEnergy head. Test all three heads and wallboxes from Admin and save a clearly detected phase after confirmed electrical return. [Release notes](docs/release-0.17.0-alpha.296.md)
-
-### 0.17.0-alpha.295 (2026-11-17)
-
-- Optionally reserve stored energy for the next configured high tariff period. At equal prices, the plan assigns scarce energy to quarters with higher expected household demand after PV. [Release notes](docs/release-0.17.0-alpha.295.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 

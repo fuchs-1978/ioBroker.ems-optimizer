@@ -930,6 +930,105 @@ test('thermal price rise: remaining minute, not an elapsed quarter, bounds advan
         'report and published powers share the remaining-slot energy basis');
 });
 
+test('recorded 19 November shared-PV bridge shifts grid heat without altering other consumers', t => {
+    const e = require('../docs/evidence/thermal-shared-pv-2026-11-19.json');
+    const h = engine({}, new Date(e.observedPlanAt).toISOString());
+    const slots = e.slots.map((row, i) => {
+        const x = Object.fromEntries(e.slotColumns.map((key, j) => [key, row[j]]));
+        // The saved evidence identifies the first night's and afternoon's
+        // price-bridge slots. Other reasons are unknown and ineligible here.
+        const knownBridge = i >= 12 && i < 36 || i >= 74 && i < 78;
+        return {...x, priceValid: true, pvAfterBaseW: Math.max(0, x.pvW - x.baseW),
+            dhwReason: knownBridge ? 'price-bridge' : 'unclassified', dhwBeforeQuantizationW: x.dhwW,
+            mandatoryThermalW: x.dhwW, mandatoryThermalGridW: x.dhwGridW, mandatoryThermalRequestedW: x.dhwW,
+            wallboxPvW: 0, heatingPvW: 0, gridW: Math.round(x.rawGridW)};
+    });
+    let usable = e.initialUsable, room = e.initialHeadroom;
+    const thermalSlots = slots.map(x => {
+        const hours = (x.timestamp + 900000 - Math.max(x.timestamp, e.observedPlanAt)) / 3600000;
+        const consumptionKWh = (e.demand + e.loss) / 24 * hours;
+        const heat = x.dhwW * hours / 1000;
+        usable += heat - consumptionKWh;
+        room += consumptionKWh - heat;
+        return {timestamp: x.timestamp, usableKWh: usable, headroomKWh: room, consumptionKWh,
+            gridKWh: x.dhwGridW * hours / 1000, pvKWh: x.dhwPvW * hours / 1000,
+            mandatoryThermalW: x.mandatoryThermalW, mandatoryThermalGridW: x.mandatoryThermalGridW,
+            mandatoryThermalRequestedW: x.mandatoryThermalRequestedW};
+    });
+    const report = {valid: true, gridAuthorization: false, initialColdLayerDeficitKWh: 0,
+        initialUsableAboveMinimumKWh: e.initialUsable, reserveKWh: e.reserve, unmetReserveKWh: 0,
+        minimumProjectedUsableKWh: Math.min(e.initialUsable, ...thermalSlots.map(s => s.usableKWh)), slots: thermalSlots};
+    const run = (a, r, unrestricted = true) => h.run(`(() => {const a=${JSON.stringify(a)}, r=${JSON.stringify(r)};
+        const changed=reconcileDhwPriceBridge(a,r,${e.observedPlanAt},9000,s=>({valid:true,
+            consumptionW:${unrestricted ? 'Infinity' : '4200'},phaseW:[10580-s.baseW-s.wallboxW-s.dhwW-Math.max(0,s.batteryW)]}));
+        return JSON.stringify({changed,a,r});})()`);
+    const blocked = JSON.parse(run(slots, report, false));
+    assert.equal(blocked.changed, false, 'no shift with a group restriction');
+    assert.deepEqual(blocked.a, slots);
+    const noCompetition = slots.map(s => ({...s, batteryPvW: 0}));
+    assert.equal(JSON.parse(run(noCompetition, report)).changed, false, 'do not speculate about unallocated PV');
+    const unknownPrice = slots.map((s, i) => i === 70 ? {...s, priceValid: false, price: null} : s);
+    assert.equal(JSON.parse(run(unknownPrice, report)).changed, false, 'do not cross a price gap');
+    const smallTank = {...report, slots: report.slots.map(s => ({...s, headroomKWh: 0}))};
+    assert.equal(JSON.parse(run(slots, smallTank)).changed, false, 'do not fill beyond the store capacity');
+    const {changed, a, r} = JSON.parse(run(slots, report));
+    assert.equal(changed, true);
+    near(r.gridHeatShift.energyKWh, 6.579, 'same grid heat is moved');
+    near(r.gridHeatShift.savingsEUR, 0.4263192, 'same energy at the cheaper tariff');
+    near(Math.max(...a.slice(0, 96).map(s => s.rawGridW)), 5142.707864583333, 'first 24 h peak');
+    assert.ok(r.minimumProjectedUsableKWh >= e.reserve - 1e-7);
+    assert.ok(r.slots.every(s => s.headroomKWh >= -1e-7));
+    near(r.slots.at(-1).usableKWh, report.slots.at(-1).usableKWh, 'end reserve unchanged');
+    assert.equal(r.gridAuthorization, false);
+    a.forEach((x, i) => {
+        for (const key of ['pvW', 'baseW', 'batteryW', 'batteryPvW', 'wallboxW', 'dhwPvW'])
+            assert.equal(x[key], slots[i][key], `unchanged ${key} at ${i}`);
+        near(x.dhwW, x.dhwGridW + x.dhwPvW, 'heat source balance');
+        near(x.rawGridW, x.baseW + x.dhwW + x.wallboxW + x.batteryW - x.pvW, 'grid balance');
+        assert.ok(x.dhwW <= 9000 + 1e-7);
+        if (x.dhwGridShiftW) assert.ok(x.dhwW >= 900 - 1e-7);
+    });
+    t.diagnostic(JSON.stringify(r.gridHeatShift));
+});
+
+test('shared-PV reconciliation is applied to the published forecast and its diagnostics', () => {
+    const h = thermalFixture({temperatures: Array(4).fill(45), demand: 25,
+        start: '2026-11-19T22:00:00Z', config: {batteryPvPriorityEnabled: true}});
+    h.run("CFG.dp.par14a = ''; CFG.dp.lpcState = ''; CFG.dp.lpcLimit = '';");
+    h.put('ems.0.Devices.Battery.Present', true);
+    h.put('ems.0.Config.BatteryCapacity_kWh', 25);
+    h.put('ems.0.Config.BatteryMinSoC_pct', 20);
+    h.put('ems.0.Config.BatterySelfConsumptionEnabled', true);
+    h.put('DP_BATTERY_SOC', 20);
+    h.put('ems.0.Config.DHWMinTemperature_C', 20);
+    const e = require('../docs/evidence/thermal-shared-pv-2026-11-19.json');
+    const rows = e.slots.slice(12);
+    h.run('const realReconcile = typeof reconcileDhwPriceBridge === "function" ? reconcileDhwPriceBridge : null;'
+        + 'if (realReconcile) reconcileDhwPriceBridge = () => false;');
+    const data = h.plan({slots: rows.length, price: rows.map(x => x[1]),
+        pvW: rows.map(x => x[3]), houseW: rows.map(x => Math.round(x[2]))});
+    const baseline = h.series('Allocation');
+    const baselineBattery = h.series('BatteryPower');
+    const baselineSoc = h.series('BatterySoC');
+    const baselineHeat = h.report();
+    h.run(`if (realReconcile) reconcileDhwPriceBridge = realReconcile; buildDevicePlan(${JSON.stringify(data)});`);
+    const a = balancedPlan(h, data), report = h.report();
+    const cost = series => series.reduce((sum, x) => sum + x.dhwGridW * x.price / 400000, 0);
+    assert.ok(cost(a) < cost(baseline), 'same heat is bought for less');
+    assert.ok(report.gridHeatShift?.energyKWh > 0, 'completed allocation triggers the bridge correction');
+    near(cost(baseline) - cost(a), report.gridHeatShift.savingsEUR, 'published costs match diagnostics');
+    near(report.gridHeatingKWh, baselineHeat.gridHeatingKWh, 'same grid heat');
+    near(report.pvHeatingKWh, baselineHeat.pvHeatingKWh, 'same PV heat');
+    assert.deepEqual(h.series('BatteryPower'), baselineBattery);
+    assert.deepEqual(h.series('BatterySoC'), baselineSoc);
+    assert.ok(Math.max(...a.map(x => x.rawGridW)) <= Math.max(...baseline.map(x => x.rawGridW)) + 1e-7);
+    assert.ok(a.some(x => x.dhwGridShiftW > 0));
+    assert.ok(a.some(x => x.dhwGridShiftW < 0));
+    near(a.reduce((sum, x) => sum + (x.dhwGridShiftW || 0) / 4000, 0), 0, 'energy conserved');
+    assert.ok(report.minimumProjectedUsableKWh >= report.reserveKWh - 1e-7);
+    assert.equal(report.gridAuthorization, false);
+});
+
 test('stratified warm-water reserve waits for NT and forecasts tomorrow consumption and PV refill', () => {
     const h = thermalFixture();
     // Quiet tank sensors older than ten minutes are still valid under the
