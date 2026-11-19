@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.301",
+    "version": "0.17.0-alpha.302",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.302": {
+        "en": "Continue single-head SunEnergy control up to 100 W with fresh measurements when the device clock runs ahead.",
+        "de": "Bei vorgehender Geräteuhr regelt das EMS einen SunEnergy-Kopf bis 100 W mit frischen Messungen weiter.",
+        "es": "El EMS sigue regulando un cabezal SunEnergy hasta 100 W con mediciones recientes si el reloj del equipo se adelanta.",
+        "fr": "Si l’horloge de l’appareil avance, la régulation d’une tête SunEnergy se poursuit jusqu’à 100 W avec des mesures récentes.",
+        "it": "Se l’orologio del dispositivo è avanti, il controllo di una singola unità SunEnergy prosegue fino a 100 W con misure aggiornate.",
+        "nl": "Als de apparaatklok voorloopt, blijft het EMS één SunEnergy-eenheid tot 100 W bijregelen met verse metingen.",
+        "pl": "Gdy zegar urządzenia się spieszy, EMS nadal reguluje moc jednej jednostki SunEnergy do 100 W na podstawie aktualnych pomiarów.",
+        "pt": "Se o relógio do dispositivo estiver adiantado, o EMS continua a regular uma unidade SunEnergy até 100 W com medições recentes.",
+        "ru": "Если часы устройства спешат, EMS продолжает регулировать мощность одного блока SunEnergy до 100 Вт по свежим измерениям.",
+        "uk": "Якщо годинник пристрою поспішає, EMS продовжує регулювати потужність одного блока SunEnergy до 100 Вт за свіжими вимірюваннями.",
+        "zh-cn": "设备时钟超前时，EMS 可根据最新测量值继续调节单台 SunEnergy 设备，功率上限为 100 W。"
+      },
       "0.17.0-alpha.301": {
         "en": "Add release-anchored start windows (+4 hours) and per-appliance quarter-hour forecast curves with a scheduled total.",
         "de": "Startfenster ab Fernstartfreigabe (+4 Stunden) und Viertelstunden-Prognosekurven je Gerät mit eingeplanter Summe ergänzt.",
@@ -81,19 +94,6 @@
         "ru": "Проверка и сохранение фаз сети аккумуляторов и зарядных станций.",
         "uk": "Перевірка та збереження фаз мережі акумуляторів і зарядних станцій.",
         "zh-cn": "测试并保存电池主机和充电桩的电网相位。"
-      },
-      "0.17.0-alpha.295": {
-        "en": "Optionally reserve stored energy for the next high tariff period.",
-        "de": "Speicherenergie optional für das nächste Hochtariffenster zurückhalten.",
-        "es": "Permite reservar energía de la batería para el siguiente periodo de tarifa alta.",
-        "fr": "Permet de réserver de l’énergie de la batterie pour la prochaine plage à tarif élevé.",
-        "it": "Consente di riservare energia della batteria per la prossima fascia tariffaria alta.",
-        "nl": "Kan energie in de accu reserveren voor de volgende periode met hoog tarief.",
-        "pl": "Umożliwia zachowanie energii w akumulatorze na następny okres wysokiej taryfy.",
-        "pt": "Permite reservar energia da bateria para o próximo período de tarifa alta.",
-        "ru": "Можно зарезервировать энергию аккумулятора на следующий период высокого тарифа.",
-        "uk": "Можна зарезервувати енергію акумулятора на наступний період високого тарифу.",
-        "zh-cn": "可为下一个高电价时段预留电池电量。"
       }
     },
     "titleLang": {

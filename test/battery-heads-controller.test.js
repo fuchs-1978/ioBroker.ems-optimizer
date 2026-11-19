@@ -2099,6 +2099,139 @@ test('live charging continues with confirmed GS and an 81 W GP lag', () => {
     }
 });
 
+function startSmallClockControl(target = 24, gridW = -target, gpW = 0) {
+    const h = harness(1);
+    h.own('Control.CoordinationActive', true);
+    h.own('Config.BatteryDeadband_W', 10);
+    h.own('Config.BatteryFineStep_W', 600);
+    h.own('Control.Targets.Battery_W', target);
+    h.grid.gridW = gridW;
+    h.snapshot(1, {GP: gpW, timestamp: h.time() + 8953});
+    h.tick();
+    assert.deepEqual(h.commands(), [], 'one future-stamped reading is insufficient to start');
+    h.advance(5100); h.fresh();
+    h.snapshot(1, {timestamp: h.time() + 8980});
+    h.tick();
+    assert.deepEqual(h.commands(), [-target]);
+    assert.equal(h.run('batteryHeadsQueuedCheck("sunenergyxt500.0.heads.1.control.GS", ' + (-target) + ').allowed'), true);
+    return h;
+}
+
+for (const direction of [1, -1]) {
+    test(`small live ${direction > 0 ? 'charge' : 'discharge'} follows new targets with the observed nine-second clock lead`, () => {
+        // Recorded charging start: 43.2 W grid export still included 19 W of discharge.
+        const h = direction > 0 ? startSmallClockControl(24, -43.2, 19) : startSmallClockControl(-24);
+        h.complete();
+        for (const target of [20, 11, 95, 100]) {
+            h.advance(1100);
+            h.grid.gridW = -target * direction;
+            h.own('Control.Targets.Battery_W', target * direction);
+            h.tick();
+            assert.equal(h.writes.at(-1).val, -target * direction, h.value('Devices.Battery.OutputStatus'));
+            assert.equal(h.run('batteryHeadsQueuedCheck("sunenergyxt500.0.heads.1.control.GS", ' + (-target * direction) + ').allowed'), true);
+            h.complete();
+        }
+        assert.ok(h.writes.every(w => w.val * direction < 0));
+        assert.equal(h.value('Devices.Battery.Heads.1.ActuatorSettled'), false);
+        h.advance(1100); h.own('Control.Targets.Battery_W', 101 * direction); h.tick();
+        assert.equal(h.writes.at(-1).val, 0);
+    });
+}
+
+test('a republished or first post-write GS cannot confirm a small order across clock domains', () => {
+    const h = startSmallClockControl();
+    h.complete();
+    h.advance(2000); h.fresh(); h.snapshot(1, {GS: -24, GP: -24, timestamp: h.time() + 8950}); h.tick();
+    assert.equal(h.value('Devices.Battery.Heads.1.ActuatorSettled'), false);
+    h.advance(2000); h.fresh(); h.tick();
+    assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), 24);
+    h.advance(3000); h.fresh(); h.snapshot(1, {timestamp: h.time() + 8972}); h.tick();
+    assert.equal(h.value('Devices.Battery.Heads.1.ActuatorSettled'), true);
+    assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), 0);
+    assert.equal(h.run('batteryHeadOwners[0].liveFeedback.misses'), 0);
+    assert.deepEqual(h.commands(), [-24]);
+});
+
+test('ten delivered small orders without an echo stop even between device polls', () => {
+    const h = startSmallClockControl();
+    h.complete();
+    for (let i = 1; i <= 9; i++) {
+        h.advance(1100); h.fresh();
+        h.own('Control.Targets.Battery_W', 24 + i); h.grid.gridW = -24 - i;
+        h.tick(); h.complete();
+        assert.equal(h.writes.at(-1).val, -24 - i);
+    }
+    h.advance(1100); h.fresh(); h.tick();
+    assert.equal(h.writes.at(-1).val, 0);
+    assert.match(h.value('Devices.Battery.OutputStatus'), /10 fehlende GS-Rueckmeldungen/);
+});
+
+test('ten advancing measurements with a different GS stop a single unchanged small order', () => {
+    const h = startSmallClockControl();
+    h.complete();
+    for (let poll = 0; poll <= 10; poll++) {
+        h.advance(2500); h.fresh(); h.snapshot(1, {timestamp: h.time() + 8953}); h.tick();
+        if (poll === 10) assert.match(h.value('Devices.Battery.OutputStatus'), /10 fehlende GS-Rueckmeldungen/);
+        h.advance(500); h.fresh(); h.tick();
+        if (poll < 10) assert.deepEqual(h.commands(), [-24]);
+    }
+    assert.deepEqual(h.commands(), [-24, 0]);
+});
+
+test('a later small GS echo clears the missing-order counter while GP is still zero', () => {
+    const h = startSmallClockControl(); h.complete();
+    for (let i = 0; i < 15; i++) {
+        h.advance(1100); h.fresh();
+        h.snapshot(1, {GS: h.writes.at(-1).val, GP: 0, timestamp: h.time() + 8953}); h.tick();
+        h.advance(1100); h.fresh();
+        h.snapshot(1, {timestamp: h.time() + 8953});
+        h.own('Control.Targets.Battery_W', 25 + i); h.grid.gridW = -25 - i;
+        h.tick(); h.complete();
+        assert.equal(h.writes.at(-1).val, -25 - i);
+        assert.equal(h.run('batteryHeadOwners[0].liveFeedback.misses'), 0);
+        assert.equal(h.value('Devices.Battery.Heads.1.ActuatorSettled'), false);
+    }
+});
+
+test('small commands with a leading clock retain source, electrical and release checks at dispatch and at runtime', () => {
+    const cases = [
+        h => { h.advance(31000); h.fresh(); },
+        h => h.snapshot(1, {timestamp: h.time() + 8000}),
+        h => h.snapshot(1, {timestamp: h.time() + 900000}),
+        h => h.snapshot(1, {}, {from: 'system.adapter.other.0'}),
+        h => h.put('sunenergyxt500.0.heads.1.info.online', false),
+        h => h.put('sunenergyxt500.0.heads.1.control.GS', 24, {ack: false, from: 'system.adapter.other.0'}),
+        h => h.snapshot(1, {UO: 1}),
+        h => h.snapshot(1, {BF: 1}),
+        h => h.snapshot(1, {GP: -101}),
+        h => h.snapshot(1, {GS: -101}),
+        h => h.snapshot(1, {SC: 100}),
+        h => h.own('Control.Targets.Battery_W', 101),
+        h => h.own('System.RealOutputsEnabled', false),
+        h => { h.limit.budgetW = 0; },
+    ];
+    for (const change of cases) {
+        const h = startSmallClockControl();
+        h.advance(500); change(h);
+        assert.equal(h.run('batteryHeadsQueuedCheck("sunenergyxt500.0.heads.1.control.GS",-24).allowed'), false, String(change));
+        h.complete(); h.tick();
+        assert.equal(h.writes.at(-1).val, 0, String(change));
+    }
+});
+
+test('a real zero target retains the original reservation until the measured stop completes', () => {
+    const h = startSmallClockControl(); h.complete();
+    h.advance(1100); h.own('Control.Targets.Battery_W', 0); h.tick(); h.complete();
+    h.own('Control.Targets.Battery_W', 30);
+    assert.deepEqual(h.commands(), [-24, 0]);
+    assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 24);
+    for (let i = 0; i < 3; i++) {
+        h.advance(5100); h.fresh(); h.snapshot(1, {timestamp: h.time() + 8980}); h.tick();
+        if (i < 2) assert.deepEqual(h.commands(), [-24, 0]);
+    }
+    assert.notEqual(h.value('Devices.Battery.OutputUnobservedCommand_W'), 24);
+});
+
 for (const direction of [1, -1]) {
     test(`live ${direction === 1 ? 'charge' : 'discharge'} stops after ten delivered setpoints without a GS echo`, () => {
         const h = harness(1);

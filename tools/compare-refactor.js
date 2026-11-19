@@ -407,7 +407,13 @@ async function worker(tree) {
             a.startDailySummary = async () => {};
             a.dailySummary.stop = async () => {};
         }
-        a.setStateAsync = async (...args) => record({kind: 'state', args});
+        // Alpha.301 also clears the appliance chart when no programs are configured.
+        // Check that publication independently of the older ordered actuator trace.
+        const applianceCharts = [];
+        a.setStateAsync = async (...args) => {
+            if (args[0] === 'Plan.Appliances_48h_JSON') applianceCharts.push(args);
+            else record({kind: 'state', args});
+        };
         a.preloadStates = async () => {
             for (const key of ['Plan.Valid', 'Control.Valid', 'System.DataValid'])
                 a.stateCache.set(`ems.0.${key}`, {val: true, ts: 1, ack: true});
@@ -433,6 +439,19 @@ async function worker(tree) {
         a.decisionRecordDelivery = {stop: () => record({kind: 'delivery-stop'})};
         a.decisionRecordJournal = {close: async () => record({kind: 'journal-close'})};
         await a.prepareUnload({allowHandoff: false});
+        const programs = path.join(tree, 'lib/device-programs.js');
+        const hasChart = fs.existsSync(programs) && typeof require(programs).applianceForecast === 'function';
+        assert.equal(applianceCharts.length, hasChart ? 1 : 0);
+        if (hasChart) {
+            const [[, json, ack]] = applianceCharts;
+            assert.equal(ack, true);
+            const chart = JSON.parse(json);
+            assert.ok(Number.isSafeInteger(chart.updatedAt) && chart.updatedAt > 0);
+            const start = Math.floor(chart.updatedAt / 900000) * 900000;
+            assert.deepEqual(chart, {schemaVersion: 1, updatedAt: chart.updatedAt, forecastUpdatedAt: null,
+                valid: false, slotMinutes: 15, unresolvedDevices: [], devices: [],
+                series: Array.from({length: 192}, (_, i) => ({timestamp: start + i * 900000, valueW: 0, energy_kWh: 0}))});
+        }
         record({kind: 'final-cache', states: [...a.stateCache]});
     }
     finish();
