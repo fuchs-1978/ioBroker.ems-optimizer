@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.296 (2026-11-17)
+
+- Configure the grid phase of each SunEnergy head. Test all three heads and wallboxes from Admin and save a clearly detected phase after confirmed electrical return. [Release notes](docs/release-0.17.0-alpha.296.md)
+
 ## 0.17.0-alpha.295 (2026-11-17)
 
 - Optionally reserve stored energy for the next configured high tariff period. At equal prices, the plan assigns scarce energy to quarters with higher expected household demand after PV. [Release notes](docs/release-0.17.0-alpha.295.md)

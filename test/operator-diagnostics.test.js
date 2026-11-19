@@ -148,6 +148,46 @@ test('daily report uses the existing 20h period and preserves unknown sources an
     assert.equal(r.costs, null); assert.equal(r.savings, null); assert.match(r.goals, /nicht.*bewertet/);
     assert.match(dailyText(r), /EHZ elektrisch/); assert.match(dailyText(r), /unbekannt/);
 });
+
+test('battery preview stops at Berlin midnight and rereads both forecast curves on the next sample', async () => {
+    const quarter = 900000;
+    for (const start of [Date.parse('2026-03-28T22:00Z'), Date.parse('2026-10-24T21:00Z')]) {
+        // Both instants are 23:00 in Berlin on the eve of a clock change.
+        const cache = new Map(), writes = new Map();
+        const put = (id, val) => cache.set('ems.0.' + id, {val, ts: start, ack: true});
+        const diagnostics = new OperatorDiagnostics({namespace: 'ems.0', config: {batteryPresent: true},
+            getCachedState: id => cache.get(id), queueCompatState: async () => {},
+            setStateAsync: async (id, state) => writes.set(id, state.val), warnDebug(e) {throw e;}});
+        await diagnostics.initialize();
+        const s = snapshot(start);
+        s.wallboxes = [];
+        s.battery = {Present: true, minimumSoC_pct: 10, maximumSoC_pct: 100, deviceProfile: {
+            Valid: true, CapacityValid: true, DeviceMinSoC_pct: 10, DeviceMaxSoC_pct: 100, SoC_pct: 50,
+            Capacity_kWh: 15, MaxCharge_W: 2400, MaxDischarge_W: 2400}};
+        put('Plan.Valid', true); put('Plan.LastUpdate', start); put('Forecast.LastUpdate', start);
+        put('Devices.Battery.Profile.OldestSourceAt', start); put('Config.BatteryRoundTripEfficiency_pct', 100);
+        put('Config.BatteryFinalChargeReserve_min', 0);
+        put('Plan.BatteryTargetSoC_48h_JSON', JSON.stringify([{timestamp: start, value_pct: 80}]));
+        const curve = power => JSON.stringify(Array.from({length: 8}, (_, i) => ({
+            timestamp: start + i * quarter, valueW: power(i)})));
+        const report = async () => {
+            diagnostics.publish(s, {});
+            await Promise.all([...diagnostics.writer.entries.values()].map(e => e.promise));
+            return JSON.parse(writes.get('Diagnostics.Snapshot_JSON'));
+        };
+        put('Forecast.PV_48h_JSON', curve(() => 400));
+        put('Forecast.Baseload_48h_JSON', curve(() => 1000));
+        const first = await report();
+        assert.equal(first.batteryStrategy.nightBattery.houseKWh, 1);
+        assert.equal(first.display.Overview.split('\n')[0], 'Stand ' + new Date(start).toLocaleString('de-DE', {timeZone: 'Europe/Berlin'}));
+        put('Forecast.PV_48h_JSON', curve(i => i < 2 || i > 3 ? 400 : 0));
+        put('Forecast.Baseload_48h_JSON', curve(() => 3000));
+        assert.equal((await report()).batteryStrategy.nightBattery.houseKWh, 1.5);
+        put('Forecast.PV_48h_JSON', '{bad');
+        assert.equal((await report()).batteryStrategy.nightBattery.acKWh, null);
+        diagnostics.stop();
+    }
+});
 test('malformed/future/overcovered/negative daily data cannot produce a successful balance', () => {
     const d = daily().current;
     assert.equal(dailyPeriod(null, now, true), null);
