@@ -1,0 +1,9 @@
+# Alpha 303 – gemeinsame PV-Bilanz für die Wärme-Preisbrücke
+
+Der Fahrplan aus [#479](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/479) schrieb der Wärmereserve PV-Überschuss gut, der im fertigen Plan überwiegend der Batterie zugeteilt wurde. Dadurch entstanden später Netz-Wärme-Spitzen trotz freier Kapazität im günstigeren Nachtfenster.
+
+Nach der endgültigen Energiezuteilung prüft der Planer angrenzende günstigere und teurere Preisblöcke. Er verlagert bereits eingeplante Netz-Wärme begrenzt durch den tatsächlich zuvor von Konkurrenzverbrauchern belegten PV-Überschuss. Dabei bleiben die PV-Zuteilung, Batterie- und Fahrzeugtrajektorien sowie die Wärmeenergie unverändert. Zusätzliche Wärme wird nur auf bestehende reine Netz-Wärmeslots verteilt, mit möglichst gleichmäßiger Gesamt-Netzlast. Leistung, Mindestleistung, Speicherraum, Mindestreserve und konservative Phasenreserve begrenzen die Verschiebung. Unklare Preise, Lücken, fehlende Reserve oder aktive Gruppenbegrenzung verhindern den Eingriff. Gekoppelte Batterie-Preis- und Mindest-SoC-Reservefahrpläne bleiben unverändert.
+
+Die eingefrorene 192-Slot-Probe vom 19.11.2026 (relevante Preisbrücke: 23:00–05:00 und 14:30–15:30 am Folgetag) verschiebt 6,579 kWh Netz-Wärme; die Netzspitze im ersten 24-h-Abschnitt sinkt von 8,416 auf 5,143 kW. Bei 23,56 gegenüber 30,04 ct/kWh beträgt die Modellersparnis 0,426 EUR. Der Test hält PV-Nutzung, alle anderen Lasten, Wärmereserve, Verluste und Endzustand konstant. Ein weiterer Test prüft die vollständige Ausgabe des Planers. Das Diagnostikfeld `gridHeatShift` nennt verschobene Energie und Kosten auf derselben Energiebasis; je betroffenem Slot ist `dhwGridShiftW` die vorzeichenbehaftete Änderung.
+
+Die Änderung betrifft ausschließlich den Fahrplan. Sie aktiviert weder den Heizstab noch eine Netz-Wärmefreigabe und verändert keine Livegrenze. Die natürliche Wirksamkeit nach Installation ist separat zu prüfen.

@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.302",
+    "version": "0.17.0-alpha.303",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.303": {
+        "en": "Move planned grid heat to cheaper slots using the finished shared PV allocation.",
+        "de": "Geplante Netz-Wärme anhand der gemeinsamen PV-Zuteilung günstiger und mit geringerer Netzspitze einplanen.",
+        "es": "Desplaza el calor de red previsto a intervalos más baratos según la asignación fotovoltaica final.",
+        "fr": "Déplace le chauffage réseau prévu vers les plages moins chères selon l’affectation photovoltaïque finale.",
+        "it": "Sposta il riscaldamento da rete previsto nelle fasce più economiche in base alla distribuzione fotovoltaica finale.",
+        "nl": "Verplaatst geplande netwarmte naar goedkopere perioden op basis van de definitieve PV-verdeling.",
+        "pl": "Przenosi zaplanowane ogrzewanie z sieci na tańsze okresy zgodnie z końcowym przydziałem PV.",
+        "pt": "Desloca o aquecimento previsto da rede para períodos mais baratos com base na atribuição fotovoltaica final.",
+        "ru": "Переносит запланированный нагрев от сети на более дешёвые интервалы с учётом итогового распределения фотоэлектрической энергии.",
+        "uk": "Переносить заплановане нагрівання від мережі на дешевші інтервали з урахуванням остаточного розподілу сонячної енергії.",
+        "zh-cn": "根据最终光伏分配将计划中的电网供热移至电价更低的时段。"
+      },
       "0.17.0-alpha.302": {
         "en": "Continue single-head SunEnergy control up to 100 W with fresh measurements when the device clock runs ahead.",
         "de": "Bei vorgehender Geräteuhr regelt das EMS einen SunEnergy-Kopf bis 100 W mit frischen Messungen weiter.",
@@ -81,19 +94,6 @@
         "ru": "Определяет фазу сети бытового прибора по повторяющимся изменениям измеренной мощности.",
         "uk": "Визначає фазу мережі побутового приладу за повторюваними змінами виміряної потужності.",
         "zh-cn": "通过观察多次实测功率变化，被动识别各家电所接的电网相线。"
-      },
-      "0.17.0-alpha.296": {
-        "en": "Test and save battery and wallbox grid phases.",
-        "de": "Netzphasen von Speicherköpfen und Wallboxen prüfen und speichern.",
-        "es": "Comprobar y guardar las fases de red de baterías y puntos de carga.",
-        "fr": "Tester et enregistrer les phases réseau des batteries et des bornes.",
-        "it": "Verificare e salvare le fasi di rete di batterie e wallbox.",
-        "nl": "Netfasen van batterijkoppen en laadpunten testen en opslaan.",
-        "pl": "Sprawdzanie i zapisywanie faz sieci akumulatorów i ładowarek.",
-        "pt": "Testar e guardar as fases da rede de baterias e postos de carregamento.",
-        "ru": "Проверка и сохранение фаз сети аккумуляторов и зарядных станций.",
-        "uk": "Перевірка та збереження фаз мережі акумуляторів і зарядних станцій.",
-        "zh-cn": "测试并保存电池主机和充电桩的电网相位。"
       }
     },
     "titleLang": {

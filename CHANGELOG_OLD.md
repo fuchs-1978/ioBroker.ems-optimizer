@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.295 (2026-11-17)
+
+- Optionally reserve stored energy for the next configured high tariff period. At equal prices, the plan assigns scarce energy to quarters with higher expected household demand after PV. [Release notes](docs/release-0.17.0-alpha.295.md)
+
 ## 0.17.0-alpha.294 (2026-11-17)
 
 - Select the appliance power meter’s unit in Admin. Readings in W, mW or kW are converted to watts for program learning. [Power units](https://github.com/fuchs-1978/ioBroker.ems-optimizer/pull/465) · [SI symbols](https://github.com/fuchs-1978/ioBroker.ems-optimizer/pull/466)
