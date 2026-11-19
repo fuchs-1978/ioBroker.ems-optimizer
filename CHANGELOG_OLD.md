@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.294 (2026-11-17)
+
+- Select the appliance power meter’s unit in Admin. Readings in W, mW or kW are converted to watts for program learning. [Power units](https://github.com/fuchs-1978/ioBroker.ems-optimizer/pull/465) · [SI symbols](https://github.com/fuchs-1978/ioBroker.ems-optimizer/pull/466)
+
 ## 0.17.0-alpha.293 (2026-11-16)
 
 - Add an optional 50/50 Median and Lasso load forecast for planning. Each slot falls back to Median when the saved forecast pair is unavailable. [Release notes](docs/release-0.17.0-alpha.293.md)

@@ -8,7 +8,7 @@ Der **Fahrplan** rechnet für die nächsten 48 Stunden in Viertelstunden. Die **
 
 ## Installation und Aktualisierung
 
-Vorausgesetzt werden Node.js ab 22, ioBroker js-controller ab 6.0.11 und Admin ab 7.8.23. Der hier beschriebene Stand ist **0.17.0-alpha.300**. In GitHub steht der geprüfte Quellstand, in `ems-optimizer.0.System.Version` die tatsächlich laufende Version.
+Vorausgesetzt werden Node.js ab 22, ioBroker js-controller ab 6.0.11 und Admin ab 7.8.23. Der hier beschriebene Stand ist **0.17.0-alpha.302**. In GitHub steht der geprüfte Quellstand, in `ems-optimizer.0.System.Version` die tatsächlich laufende Version.
 
 1. Öffne im ioBroker-Admin **Adapter → Installation aus eigener Quelle → GitHub**. Verwende `https://github.com/fuchs-1978/ioBroker.ems-optimizer`. Wähle für eine reproduzierbare Installation den Commit eines geprüften Stands. [GitHub-Prüfläufe auf main](https://github.com/fuchs-1978/ioBroker.ems-optimizer/actions/workflows/test-and-release.yml?query=branch%3Amain)
 2. Öffne **Instanzen → ems-optimizer.0 → Einstellungen**. Bei einer weiteren Instanz lautet die Nummer entsprechend anders.
@@ -302,7 +302,7 @@ Bei einem Störungsbericht helfen laufende Version, Uhrzeit mit Zeitzone, Gerät
 
 ## Aktuelle Änderungen
 
-Alpha 300 verringert den Rechenaufwand für Fahrplan, Datenpunktzuordnung, historische Lastprofile und SQL-Aufzeichnung. [Änderungen und Messergebnisse](docs/release-0.17.0-alpha.300.md)
+Alpha 302 führt Lade- und Entladeaufträge bis 100 W bei einem einzelnen SunEnergy-Kopf auch mit vorgehender Geräteuhr nach. Das EMS prüft dabei die frischen Messungen des Kopfes. [Versionshinweise](docs/release-0.17.0-alpha.302.md)
 
 [Änderungen am aktuellen Code](README.md#changelog) · [Ältere Versionshinweise](CHANGELOG_OLD.md#deutsche-versionshistorie)
 
