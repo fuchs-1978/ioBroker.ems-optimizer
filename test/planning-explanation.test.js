@@ -37,3 +37,11 @@ test('configuration conflicts preserve disabled devices and distinguish unknown 
     assert.equal(r.status, 'conflict'); assert.ok(r.findings.some(f => f.code === 'wb0.soc.order'));
     assert.ok(r.findings.some(f => f.severity === 'unknown')); assert.ok(r.findings.some(f => f.severity === 'hint'));
 });
+
+test('a covered departure minimum is distinct from the remaining optional target', () => {
+    const g = feasibility({...w, MinimumSoC_pct: 55, TargetSoC_pct: 68}, input, now, true);
+    assert.equal(g.status, 'plan-shortfall');
+    assert.equal(g.minimumShortfallAcKWh, 0);
+    assert.ok(Math.abs(g.minimumAcRequiredKWh - 2.5 / 0.9) < 1e-9);
+    assert.ok(g.missingPlannedAcKWh > 0);
+});

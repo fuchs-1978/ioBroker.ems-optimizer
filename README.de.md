@@ -8,7 +8,7 @@ Der **Fahrplan** rechnet für die nächsten 48 Stunden in Viertelstunden. Die **
 
 ## Installation und Aktualisierung
 
-Vorausgesetzt werden Node.js ab 22, ioBroker js-controller ab 6.0.11 und Admin ab 7.8.23. Der hier beschriebene Stand ist **0.17.0-alpha.305**. In GitHub steht der geprüfte Quellstand, in `ems-optimizer.0.System.Version` die tatsächlich laufende Version.
+Vorausgesetzt werden Node.js ab 22, ioBroker js-controller ab 6.0.11 und Admin ab 7.8.23. Der hier beschriebene Stand ist **0.17.0-alpha.306**. In GitHub steht der geprüfte Quellstand, in `ems-optimizer.0.System.Version` die tatsächlich laufende Version.
 
 1. Öffne im ioBroker-Admin **Adapter → Installation aus eigener Quelle → GitHub**. Verwende `https://github.com/fuchs-1978/ioBroker.ems-optimizer`. Wähle für eine reproduzierbare Installation den Commit eines geprüften Stands. [GitHub-Prüfläufe auf main](https://github.com/fuchs-1978/ioBroker.ems-optimizer/actions/workflows/test-and-release.yml?query=branch%3Amain)
 2. Öffne **Instanzen → ems-optimizer.0 → Einstellungen**. Bei einer weiteren Instanz lautet die Nummer entsprechend anders.
@@ -161,6 +161,8 @@ Bei verzögerten Fahrzeugmeldungen kann das EMS mit **SoC aus gemessener Ladeene
 
 ### Mobilitätsreserve und vorhandene Abfahrtszeit
 
+Bei aktivierter Abfahrt reserviert das EMS die Leistung, die das Fahrzeug für seinen Mindest-SoC zum eingestellten Zeitpunkt benötigt. Reicht die PV-Leistung dafür nicht aus, darf es die Differenz aus dem Netz beziehen. Das gilt auch für eine Wallbox ohne Fahrzeugvorrang im Parallelbetrieb.
+
 Wenn das Fahrzeug oberhalb einer Sofortreserve erst später laden soll, richte die Option **Mindest-SoC bis zur Abfahrt einplanen** ein. Dazu gehören eine gültige `Vehicles.WallboxN.DepartureTime` (`HH:mm`), die Abfahrtsfreigabe, die Preis-Netzladefreigabe und eine positive `MobilityReserve_pct` unter dem Mindest-SoC. Beispiel bei 10 % Mobilitätsreserve und 30 % Mindest-SoC: Bis 10 % lädt das Fahrzeug sofort. Den Bedarf bis 30 % plant das EMS mit verfügbarer PV und den günstigsten erreichbaren Gesamtpreisen. Fehlt ein ausreichender Plan, greift die Sofortladung bis zum Mindest-SoC. Die Preisobergrenze für freiwillige Ladung gilt weiterhin bis zum Ziel-SoC. [Felder und Rückfallbedingungen](docs/admin-reference.de.md#mobilitätsreserve-und-vorhandene-abfahrtszeit)
 
 ### Start, Stopp, Übergabe und Phasenwechsel
@@ -302,7 +304,7 @@ Bei einem Störungsbericht helfen laufende Version, Uhrzeit mit Zeitzone, Gerät
 
 ## Aktuelle Änderungen
 
-Alpha 305 verschiebt geplante Netz-Wärme auch bei aktivem prognostischem Batterie-Reservefahrplan in günstigere Zeitfenster, wenn dessen Ladeleistung, SoC-Verlauf und fristgerechte Aufladekapazität unverändert bleiben. [Versionshinweise](docs/release-0.17.0-alpha.305.md)
+Alpha 306 reserviert die notwendige Ladeleistung für den Mindest-SoC zur Abfahrt im Fahrplan und in der laufenden Wallboxregelung. [Versionshinweise](docs/release-0.17.0-alpha.306.md)
 
 [Änderungen am aktuellen Code](README.md#changelog) · [Ältere Versionshinweise](CHANGELOG_OLD.md#deutsche-versionshistorie)
 

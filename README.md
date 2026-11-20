@@ -7,7 +7,7 @@
 
 **[Deutsche Schritt-für-Schritt-Anleitung für alle Admin-Reiter](README.de.md)** · [Admin field reference (German)](docs/admin-reference.de.md) · [Changelog](#changelog) · [Issue tracker](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
-EMS Optimizer is an energy management adapter for [ioBroker](https://www.iobroker.net/). It coordinates PV surplus, a home battery, up to three wallboxes and available electric heaters. It can also schedule compatible household appliances. The source build on GitHub is **0.17.0-alpha.305**. Check `System.Version` on your instance for the running build.
+EMS Optimizer is an energy management adapter for [ioBroker](https://www.iobroker.net/). It coordinates PV surplus, a home battery, up to three wallboxes and available electric heaters. It can also schedule compatible household appliances. The source build on GitHub is **0.17.0-alpha.306**. Check `System.Version` on your instance for the running build.
 
 ## How it works
 
@@ -81,6 +81,10 @@ npm run test:equivalence
 
 ## Changelog
 
+### 0.17.0-alpha.306 (2026-11-21)
+
+- Reserve the charging power needed to reach the vehicle minimum SoC by departure, including parallel charging without PV. Recheck the reservation at the wallbox output. [Release notes](docs/release-0.17.0-alpha.306.md)
+
 ### 0.17.0-alpha.305 (2026-11-20)
 
 - Reconcile planned hot-water grid heat during a forecast battery reserve only if the reserve charge trajectory and deadline capacity remain unchanged. [Release notes](docs/release-0.17.0-alpha.305.md)
@@ -108,10 +112,6 @@ npm run test:equivalence
 ### 0.17.0-alpha.299 (2026-11-18)
 
 - Schedule a newly selected program with the average measured load profile of the same appliance. After its first fully metered run, use the program’s own profile for subsequent starts. [Release notes](docs/release-0.17.0-alpha.299.md)
-
-### 0.17.0-alpha.298 (2026-11-17)
-
-- Coordinate every released appliance against running and already planned program loads. Recalculate waiting starts on each forecast and verify the forecast and device feedback immediately before dispatch. [Release notes](docs/release-0.17.0-alpha.298.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 

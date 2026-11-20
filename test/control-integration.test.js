@@ -3592,3 +3592,36 @@ test('an edited departure rejects the previous optional grid window before a new
     assert.equal(h.value('Vehicles.Wallbox0.MustCharge'), false, h.diagnostic());
     assert.equal(h.trace.at(-1).miiW, 0, h.diagnostic());
 });
+
+test('closed loop raises Mii from 6 to 9 A on grid while preferred EQE keeps charging', async () => {
+    const h = await plant({mii: true, split: false, startDelayS: 0, initialSurplusW: -350,
+        nativeConfig: {wallboxParallelChargingEnabled: true, wallboxPrioritySource: 'internal',
+            wallboxPriority: 2, wb0DeadlineEnabled: true, wb0TaperEnabled: true, dhwControlEnabled: false}});
+    h.own('Devices.MyPV_DHW.ControlEnabled', false);
+    h.own('Config.Wallbox0VehicleCapacity_kWh', 32.3);
+    h.put('DP_WB0_SOC', 56.3); h.put('DP_WB0_MIN_SOC', 100); h.put('DP_WB0_TARGET', 100);
+    h.put('DP_WB2_MIN_SOC', 80);
+    await h.advance(55);
+    assert.equal(h.physical().miiAmps, 6, h.diagnostic());
+    h.own('Vehicles.Wallbox0.DepartureTime', new Date(h.now() + (8 * 60 + 5) * 60000).toTimeString().slice(0, 5));
+    await h.advance(120);
+    assert.equal(h.physical().miiAllow, 1, h.diagnostic());
+    assert.equal(h.physical().miiAmps, 9, h.diagnostic());
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    assert.equal(h.physical().amps, 6, h.diagnostic());
+    h.own('Vehicles.Wallbox0.DepartureTime', '');
+    await h.advance(50);
+    assert.equal(h.physical().miiAmps, 6, h.diagnostic());
+});
+
+test('a price schedule that no longer covers the observed minimum restores departure charging', async () => {
+    const {h, timestamp, readyBy} = await miiReadinessPlant();
+    Object.assign(readyBy, {until: timestamp + 900000, plannedW: 0, futureAcKWh: 20});
+    const plan = () => h.own('Plan.Wallbox0_48h_JSON', JSON.stringify([{timestamp, valueW: 0, phases: 1, readyBy}]));
+    plan(); await h.advance(20);
+    assert.equal(h.value('Vehicles.Wallbox0.MustCharge'), false, h.diagnostic());
+    readyBy.futureAcKWh = 0.5;
+    plan(); await h.advance(25);
+    assert.equal(h.value('Vehicles.Wallbox0.MustCharge'), true, h.diagnostic());
+    assert.ok(h.trace.at(-1).miiW >= 1380, h.diagnostic());
+});

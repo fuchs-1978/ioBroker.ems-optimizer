@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.305",
+    "version": "0.17.0-alpha.306",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.306": {
+        "en": "Reserve charging power for the minimum vehicle SoC by departure, including when vehicles charge in parallel.",
+        "de": "Ladeleistung für den Mindest-SoC zur Abfahrt auch bei paralleler Fahrzeugladung reservieren.",
+        "es": "Reserva potencia para alcanzar la carga mínima del vehículo a la salida, también con varios vehículos en paralelo.",
+        "fr": "Réserve la puissance nécessaire au niveau de charge minimal au départ, même avec plusieurs véhicules en charge.",
+        "it": "Riserva la potenza per la carica minima del veicolo alla partenza, anche durante la ricarica in parallelo.",
+        "nl": "Reserveert laadvermogen voor de minimale acculading bij vertrek, ook wanneer meerdere auto’s tegelijk laden.",
+        "pl": "Rezerwuje moc na osiągnięcie minimalnego poziomu naładowania przed odjazdem także podczas ładowania równoległego.",
+        "pt": "Reserva potência para atingir a carga mínima à partida, mesmo com vários veículos a carregar em paralelo.",
+        "ru": "Резервирует мощность для достижения минимального заряда к отъезду, в том числе при параллельной зарядке.",
+        "uk": "Резервує потужність для досягнення мінімального заряду до від’їзду, зокрема під час паралельного заряджання.",
+        "zh-cn": "即使多辆车同时充电，也会为出发时达到最低电量预留充电功率。"
+      },
       "0.17.0-alpha.305": {
         "en": "Shift planned grid heat only when the forecast battery reserve remains unchanged.",
         "de": "Geplante Netz-Wärme auch bei unveränderter prognostischer Batteriereserve günstiger einplanen.",
@@ -81,19 +94,6 @@
         "ru": "Снижает нагрузку на процессор при чтении планов, сопоставлении точек данных, расчёте профилей нагрузки и подготовке записей SQL.",
         "uk": "Зменшує навантаження на процесор під час читання планів, зіставлення точок даних, обчислення профілів навантаження й підготовки записів SQL.",
         "zh-cn": "降低读取计划、映射数据点、计算负荷曲线和准备 SQL 记录时的 CPU 开销。"
-      },
-      "0.17.0-alpha.299": {
-        "en": "Schedule a new program using the appliance’s measured profiles and learn its own profile from the first complete run.",
-        "de": "Neue Programme mit den gemessenen Profilen desselben Geräts einplanen und beim ersten vollständigen Lauf ein eigenes Profil lernen.",
-        "es": "Elige la hora de inicio de un programa nuevo según los perfiles medidos del mismo aparato y registra su perfil propio en el primer ciclo completo.",
-        "fr": "Planifie un nouveau programme à partir des profils mesurés du même appareil et apprend son profil dès le premier cycle complet.",
-        "it": "Pianifica i nuovi programmi usando i profili misurati dello stesso apparecchio e apprende il loro profilo dal primo ciclo completo.",
-        "nl": "Plant een nieuw programma met de gemeten profielen van hetzelfde apparaat en leert het eigen profiel tijdens de eerste volledige cyclus.",
-        "pl": "Planuje nowy program na podstawie zmierzonych profili tego samego urządzenia i zapisuje jego profil po pierwszym pełnym cyklu.",
-        "pt": "Planeia um novo programa com os perfis medidos do mesmo aparelho e aprende o seu perfil no primeiro ciclo completo.",
-        "ru": "Планирует новую программу по измеренным профилям того же прибора и сохраняет её собственный профиль после первого полного цикла.",
-        "uk": "Планує нову програму за виміряними профілями того самого приладу та зберігає її власний профіль після першого повного циклу.",
-        "zh-cn": "根据同一设备已测得的负荷曲线安排新程序，并在首次完整运行后记录该程序自己的负荷曲线。"
       }
     },
     "titleLang": {
