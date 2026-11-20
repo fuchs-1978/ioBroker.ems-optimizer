@@ -363,3 +363,69 @@ test('device maximum clips manual request without admitting less than the hardwa
     assert.equal(r.cars[0][0].currentA, 8);
     assert.equal(r.cars[1][0].currentA, 6);
 });
+
+test('paced Mii departure reaches minimum with no PV alongside the preferred EQE', () => {
+    const h = fixture({wb0DeadlineEnabled: true, wb0TaperEnabled: true}, 10);
+    car(h, 0, {soc: 56.3, minimum: 100, target: 100, capacity: 32.3});
+    car(h, 2, {soc: 50, minimum: 90, capacity: 80, priority: true});
+    // The first and last slots both have a partial charging interval.
+    const departure = new Date(h.now + (8 * 60 + 7) * 60000);
+    h.put('ems.0.Vehicles.Wallbox0.DepartureTime', departure.toTimeString().slice(0, 5));
+    const r = h.plan({slots: 35});
+    assert.equal(r.cars[0][0].currentA, 9);
+    assert.equal(r.cars[2][0].currentA, 6);
+    const requiredKWh = 0.437 * 32.3 / 0.9;
+    const {plannedEnergy} = require('../lib/planning-explanation');
+    const planned = plannedEnergy(r.cars[0], h.now, +departure);
+    assert.ok(planned >= requiredKWh - 0.01, `${planned} kWh planned for ${requiredKWh} kWh required: ${r.cars[0].map(s => s.valueW)}`);
+    assert.ok(r.cars[0].every(s => s.timestamp < +departure || s.valueW === 0));
+    balance(r, 0);
+});
+
+test('phase and group protection limit a departure before discretionary priority', () => {
+    const h = fixture({wb0DeadlineEnabled: true});
+    car(h, 0, {soc: 50, minimum: 70, target: 100, capacity: 50});
+    car(h, 2, {minimum: 70, priority: true});
+    const departure = new Date(h.now + 2 * 3600000);
+    h.put('ems.0.Vehicles.Wallbox0.DepartureTime', departure.toTimeString().slice(0, 5));
+    h.put(h.run('CFG.dp.lpcState'), 'limited');
+    h.put(h.run('CFG.dp.lpcLimit'), 1840);
+    const r = h.plan({slots: 8});
+    assert.deepEqual(r.cars.map(series => series[0].currentA), [8, 0, 0]);
+    assert.ok(r.cars[0].every(s => s.valueW <= 1840));
+    assert.ok(require('../lib/planning-explanation').plannedEnergy(r.cars[0], h.now, +departure) < 10 / 0.9);
+    balance(r, 0);
+});
+
+test('confirmed three-phase departure uses three phase budgets and only the time before departure', () => {
+    const h = fixture({wb1DeadlineEnabled: true, wb1PhaseControlMode: 'script', wb1PhaseModeId: 'mode1'}, 2);
+    car(h, 1, {soc: 50, minimum: 90, target: 95, capacity: 60, phases: 3, maxA: 16});
+    h.put('mode1', 2);
+    const departure = new Date(h.now + 5 * 60000);
+    h.put('ems.0.Vehicles.Wallbox1.DepartureTime', departure.toTimeString().slice(0, 5));
+    const r = h.plan({slots: 2});
+    const slot = r.cars[1][0];
+    assert.equal(slot.currentA, 16);
+    assert.equal(slot.phases, 3);
+    assert.equal(slot.chargingUntil, +departure);
+    assert.ok(Math.abs(slot.chargingMinutes - 5) < 0.001);
+    assert.ok(Math.abs(require('../lib/planning-explanation').plannedEnergy(r.cars[1], h.now, +departure) - 0.92) < 0.001);
+    balance(r, 0);
+});
+
+for (const parallel of [false, true]) test(`two departures share time when protection allows only one running car, parallel=${parallel}`, () => {
+    const h = fixture({wb0DeadlineEnabled: true, wb2DeadlineEnabled: true, wallboxParallelChargingEnabled: parallel});
+    for (const wb of [0, 2]) {
+        car(h, wb, {soc: 50, minimum: 60, target: 60, capacity: 15, priority: wb === 2});
+        const departure = new Date(h.now + (wb === 0 ? 90 : 120) * 60000);
+        h.put(`ems.0.Vehicles.Wallbox${wb}.DepartureTime`, departure.toTimeString().slice(0, 5));
+    }
+    h.put(h.run('CFG.dp.lpcState'), 'limited');
+    h.put(h.run('CFG.dp.lpcLimit'), 2300);
+    const r = h.plan({slots: 8});
+    assert.deepEqual(r.cars.map(series => series[0].currentA), [10, 0, 0]);
+    for (const wb of [0, 2])
+        assert.ok(require('../lib/planning-explanation').plannedEnergy(r.cars[wb], h.now, h.now + (wb ? 120 : 90) * 60000) >= 1.5 / 0.9 - 0.002);
+    assert.ok(r.grid.every(slot => slot.valueW <= 2300));
+    balance(r, 0);
+});

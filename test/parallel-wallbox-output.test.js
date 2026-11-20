@@ -2617,3 +2617,28 @@ for (const value of [null, '16', 5, 16.5, 33]) test('uptake ceiling rejects malf
     h.put(id, JSON.stringify(a));
     assert.equal(h.output.parallelAllocation(0).valid, false);
 });
+
+test('departure grid grant is rechecked at the physical output and clipped by house protection', async () => {
+    for (const [permittedW, currentSoc, houseA, expected] of [
+        [2070, 56, 10, [{id: 'cmd', val: 9}]], [0, 56, 10, []],
+        [2070, 80, 10, []], [2070, 56, 49, []]
+    ]) {
+        const h = parallelSetup();
+        h.adapter.engineContext = {liveDepartureMinimumW: () => permittedW};
+        h.put('ems.0.Vehicles.Wallbox0.MinimumSoC_pct', 75);
+        h.put('ems.0.Vehicles.Wallbox0.TargetSoC_pct', 100);
+        h.put('soc', 56); h.put('soc1', 10);
+        h.put('import', 2760); h.put('export', 0);
+        await h.startParallel();
+        h.advance(6000);
+        h.grant([12, 6], {hardBudgetW: 4200});
+        const id = 'ems.0.Control.ParallelWallboxAllocation_JSON';
+        const allocation = JSON.parse(h.states.get(id).val);
+        allocation.allocations[0].departureMinimumW = 2760;
+        h.put(id, JSON.stringify(allocation));
+        h.put('soc', currentSoc); h.put('h1', houseA); h.measure(0, 6); h.measure(1, 6);
+        h.writes.length = 0; await h.output.tick();
+        assert.deepEqual(h.writes.filter(w => w.id === 'cmd' && w.val > 6), expected,
+            h.states.get('ems.0.Devices.Wallbox0.OutputStatus').val);
+    }
+});

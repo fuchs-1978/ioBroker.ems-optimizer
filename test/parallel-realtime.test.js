@@ -2383,3 +2383,46 @@ test('a genuine budget shortfall below the running 3P electrical minimum still r
     assert.equal(JSON.parse(h.states.get('ems.0.Control.Wallbox1.PhaseDecision_JSON').val).reason,
         'parallel-minimum-one-phase');
 });
+
+for (const parallel of [true, false]) test(`Mii departure can use grid with preferred EQE, parallel=${parallel}`, () => {
+    const h = engine({production: true, wb0DeadlineEnabled: true, wb0TaperEnabled: true,
+        wallboxParallelChargingEnabled: parallel, wallboxPriority: 2});
+    h.exclude(1);
+    h.put('DP_WB0_SOC', 56.3); h.put('DP_WB0_MIN_SOC', 100); h.put('DP_WB0_TARGET', 100);
+    h.put('DP_WB2_MIN_SOC', 80);
+    h.put('ems.0.Config.Wallbox0VehicleCapacity_kWh', 32.3);
+    const time = new Date(Date.now() + (8 * 60 + 5) * 60000).toTimeString().slice(0, 5);
+    const deadlineId = 'ems.0.Vehicles.Wallbox0.DepartureTime';
+    h.put(deadlineId, time);
+    h.owned(0, 6, 1330);
+    if (parallel) h.owned(2, 6);
+    h.run('updateVehicles()');
+    const result = h.update(0);
+    assert.equal(result.amps[0], 9);
+    if (parallel) {
+        assert.equal(result.amps[2], 6);
+        const grant = JSON.parse(h.states.get('ems.0.Control.ParallelWallboxAllocation_JSON').val);
+        const mii = grant.allocations.find(e => e.wb === 0);
+        assert.equal(mii.departureMinimumW, 2070);
+        assert.equal(mii.minimumW, 1380);
+        assert.equal(mii.pvBudgetW, 0);
+    }
+    assert.equal(h.run('liveDepartureMinimumW(0, 56.3, 100, 1, 230, Date.now())'), 2070);
+    assert.equal(h.run('liveDepartureMinimumW(0, 70, 70, 1, 230, Date.now())'), 0);
+    h.put(deadlineId, '');
+    assert.equal(h.run('liveDepartureMinimumW(0, 56.3, 100, 1, 230, Date.now())'), 0);
+    h.run('updateVehicles()');
+    assert.ok(h.update(0).amps[0] <= 6);
+});
+
+test('departure reservation prioritizes a feasible partial grant and honours user release', () => {
+    const h = engine({production: true, wb0DeadlineEnabled: true, wallboxPriority: 2});
+    h.exclude(1);
+    h.put('DP_WB0_MIN_SOC', 70); h.put('DP_WB2_MIN_SOC', 70);
+    h.put('ems.0.Vehicles.Wallbox0.DepartureTime', new Date(Date.now() + 3600000).toTimeString().slice(0, 5));
+    h.run('updateVehicles()');
+    assert.deepEqual(h.update(0, 1840).amps, [8, 0, 0]);
+    assert.deepEqual(h.update(0, 1000).amps, [0, 0, 0]);
+    h.put('DP_WB0_ALLOW', false); h.run('updateVehicles()');
+    assert.equal(h.update(0).amps[0], 0);
+});

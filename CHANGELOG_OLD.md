@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.298 (2026-11-17)
+
+- Coordinate every released appliance against running and already planned program loads. Recalculate waiting starts on each forecast and verify the forecast and device feedback immediately before dispatch. [Release notes](docs/release-0.17.0-alpha.298.md)
+
 ## 0.17.0-alpha.297 (2026-11-17)
 
 - Passively learn household appliance grid phases from repeated measured on/off changes. Persist per-meter evidence and display the phase and rejection reasons in Admin. Includes the battery and wallbox phase tests from alpha.296. [Release notes](docs/release-0.17.0-alpha.297.md)
