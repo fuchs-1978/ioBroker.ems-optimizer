@@ -7,7 +7,7 @@
 
 **[Deutsche Schritt-für-Schritt-Anleitung für alle Admin-Reiter](README.de.md)** · [Admin field reference (German)](docs/admin-reference.de.md) · [Changelog](#changelog) · [Issue tracker](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
-EMS Optimizer is an energy management adapter for [ioBroker](https://www.iobroker.net/). It coordinates PV surplus, a home battery, up to three wallboxes and available electric heaters. It can also schedule compatible household appliances. The source build on GitHub is **0.17.0-alpha.304**. Check `System.Version` on your instance for the running build.
+EMS Optimizer is an energy management adapter for [ioBroker](https://www.iobroker.net/). It coordinates PV surplus, a home battery, up to three wallboxes and available electric heaters. It can also schedule compatible household appliances. The source build on GitHub is **0.17.0-alpha.305**. Check `System.Version` on your instance for the running build.
 
 ## How it works
 
@@ -81,6 +81,10 @@ npm run test:equivalence
 
 ## Changelog
 
+### 0.17.0-alpha.305 (2026-11-20)
+
+- Reconcile planned hot-water grid heat during a forecast battery reserve only if the reserve charge trajectory and deadline capacity remain unchanged. [Release notes](docs/release-0.17.0-alpha.305.md)
+
 ### 0.17.0-alpha.304 (2026-11-19)
 
 - Reduce peak memory when formatting diagnostic reports and verifying SQL history packets. [Release notes](docs/release-0.17.0-alpha.304.md)
@@ -108,10 +112,6 @@ npm run test:equivalence
 ### 0.17.0-alpha.298 (2026-11-17)
 
 - Coordinate every released appliance against running and already planned program loads. Recalculate waiting starts on each forecast and verify the forecast and device feedback immediately before dispatch. [Release notes](docs/release-0.17.0-alpha.298.md)
-
-### 0.17.0-alpha.297 (2026-11-17)
-
-- Passively learn household appliance grid phases from repeated measured on/off changes. Persist per-meter evidence and display the phase and rejection reasons in Admin. Includes the battery and wallbox phase tests from alpha.296. [Release notes](docs/release-0.17.0-alpha.297.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 

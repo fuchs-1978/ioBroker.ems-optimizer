@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.304",
+    "version": "0.17.0-alpha.305",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.305": {
+        "en": "Shift planned grid heat only when the forecast battery reserve remains unchanged.",
+        "de": "Geplante Netz-Wärme auch bei unveränderter prognostischer Batteriereserve günstiger einplanen.",
+        "es": "Desplaza el calor de red previsto solo si la reserva prevista de la batería permanece intacta.",
+        "fr": "Décale le chauffage réseau prévu uniquement si la réserve de batterie prévue reste inchangée.",
+        "it": "Sposta il riscaldamento da rete previsto solo se la riserva prevista della batteria rimane invariata.",
+        "nl": "Verplaatst geplande netwarmte alleen als de voorspelde batterijreserve onveranderd blijft.",
+        "pl": "Przenosi zaplanowane ogrzewanie z sieci tylko wtedy, gdy prognozowana rezerwa akumulatora pozostaje bez zmian.",
+        "pt": "Desloca o aquecimento previsto da rede apenas se a reserva prevista da bateria permanecer inalterada.",
+        "ru": "Переносит запланированный нагрев от сети только при сохранении прогнозируемого резерва батареи.",
+        "uk": "Переносить запланований нагрів від мережі лише за незмінного прогнозованого резерву батареї.",
+        "zh-cn": "仅在预测电池备用电量保持不变时调整计划中的电网供热时段。"
+      },
       "0.17.0-alpha.304": {
         "en": "Reduce memory peaks in diagnostic reports and SQL storage verification.",
         "de": "Speicherspitzen bei Diagnoseanzeigen und beim Prüfen der SQL-Aufzeichnung reduziert.",
@@ -81,19 +94,6 @@
         "ru": "Планирует новую программу по измеренным профилям того же прибора и сохраняет её собственный профиль после первого полного цикла.",
         "uk": "Планує нову програму за виміряними профілями того самого приладу та зберігає її власний профіль після першого повного циклу.",
         "zh-cn": "根据同一设备已测得的负荷曲线安排新程序，并在首次完整运行后记录该程序自己的负荷曲线。"
-      },
-      "0.17.0-alpha.298": {
-        "en": "Coordinate all appliance starts and replan waiting programs with the latest forecast.",
-        "de": "Starts aller Haushaltsgeräte gemeinsam planen und bei neuer Prognose aktualisieren.",
-        "es": "Coordina el arranque de todos los electrodomésticos y actualiza los programas pendientes con la previsión más reciente.",
-        "fr": "Coordonne les départs de tous les appareils et recalcule les horaires selon les dernières prévisions.",
-        "it": "Coordina gli avvii di tutti gli elettrodomestici e ripianifica i programmi in attesa con le nuove previsioni.",
-        "nl": "Stemt de starttijden van alle apparaten op elkaar af en plant wachtende programma’s opnieuw bij een nieuwe prognose.",
-        "pl": "Koordynuje uruchamianie wszystkich urządzeń i ponownie planuje oczekujące programy po aktualizacji prognozy.",
-        "pt": "Coordena o arranque de todos os aparelhos e recalcula os horários com a previsão mais recente.",
-        "ru": "Согласует время запуска всех приборов и пересчитывает расписание ожидающих программ по свежему прогнозу.",
-        "uk": "Узгоджує час запуску всіх приладів і перераховує розклад програм за оновленим прогнозом.",
-        "zh-cn": "协调所有家电的启动时间，并根据最新预测重新安排等待中的程序。"
       }
     },
     "titleLang": {

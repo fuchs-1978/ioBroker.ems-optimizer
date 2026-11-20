@@ -1029,6 +1029,79 @@ test('shared-PV reconciliation is applied to the published forecast and its diag
     assert.equal(report.gridAuthorization, false);
 });
 
+test('shared-PV reconciliation preserves active forecast reserve, including a real refill', () => {
+    const h = thermalFixture({temperatures: Array(4).fill(45), demand: 25,
+        start: '2026-11-19T22:00:00Z', config: {batteryPvPriorityEnabled: true}});
+    h.run("CFG.dp.par14a = ''; CFG.dp.lpcState = ''; CFG.dp.lpcLimit = '';");
+    h.put('ems.0.Devices.Battery.Present', true);
+    h.put('ems.0.Config.BatteryCapacity_kWh', 25);
+    h.put('ems.0.Config.BatteryMinSoC_pct', 10);
+    h.put('ems.0.Config.BatterySelfConsumptionEnabled', true);
+    h.put('ems.0.Config.DHWMinTemperature_C', 20);
+    const rows = require('../docs/evidence/thermal-shared-pv-2026-11-19.json').slots.slice(12);
+    const snapshot = () => ({allocation: h.series('Allocation'), battery: h.series('BatteryPower'),
+        soc: h.series('BatterySoC'), target: h.series('BatteryTargetSoC'), report: h.report(),
+        reserve: JSON.parse(h.states.get('ems.0.Plan.BatteryForecastReserve_JSON').val)});
+    h.run('const originalReconcile = reconcileDhwPriceBridge;');
+    for (const initialSoc of [20, 19]) {
+        h.put('DP_BATTERY_SOC', initialSoc);
+        h.run('reconcileDhwPriceBridge = () => false;');
+        const data = h.plan({slots: rows.length, price: rows.map(x => x[1]),
+            pvW: rows.map(x => x[3]), houseW: rows.map(x => Math.round(x[2]))});
+        const baseline = snapshot();
+        assert.ok(baseline.reserve.durationMs > 6 * 3600000, 'actual second-pass reserve plan');
+        if (initialSoc < 20) assert.ok(baseline.battery.some(s => s.reserveGridChargeW > 0), 'reserve really charges');
+        h.run(`reconcileDhwPriceBridge = originalReconcile; buildDevicePlan(${JSON.stringify(data)});`);
+        balancedPlan(h, data);
+        const after = snapshot();
+        assert.ok(after.report.gridHeatShift?.energyKWh > 0, 'reserve-compatible heat is shifted');
+        assert.equal(after.report.gridHeatShift.batteryReservePreserved, true);
+        assert.deepEqual(after.reserve, baseline.reserve);
+        assert.deepEqual(after.battery, baseline.battery);
+        assert.deepEqual(after.soc, baseline.soc);
+        assert.deepEqual(after.target, baseline.target);
+        near(after.report.gridHeatingKWh, baseline.report.gridHeatingKWh, 'same grid heat');
+        near(after.report.pvHeatingKWh, baseline.report.pvHeatingKWh, 'same PV heat');
+        assert.ok(after.report.minimumProjectedUsableKWh >= after.report.reserveKWh - 1e-7);
+        assert.equal(after.report.gridAuthorization, false);
+        assert.ok(Math.max(...after.allocation.map(s => s.rawGridW)) <= Math.max(...baseline.allocation.map(s => s.rawGridW)) + 1e-7);
+        // A failed reserve proof must roll back every allocation and all
+        // thermal diagnostics, not just the offending slot.
+        h.run(`const verify${initialSoc} = forecastReserveHeatFits; forecastReserveHeatFits = () => false;
+            buildDevicePlan(${JSON.stringify(data)}); forecastReserveHeatFits = verify${initialSoc};`);
+        assert.deepEqual(snapshot(), baseline);
+    }
+    h.put('ems.0.Config.BatteryPriceChargingEnabled', true);
+    h.run('reconcileDhwPriceBridge = () => false;');
+    const priceData = h.plan({slots: rows.length, price: rows.map(x => x[1]),
+        pvW: rows.map(x => x[3]), houseW: rows.map(x => Math.round(x[2]))});
+    const priceBaseline = snapshot();
+    assert.ok(priceBaseline.battery.some(s => s.priceOptimized), 'price-optimized battery plan actually present');
+    h.run(`reconcileDhwPriceBridge = originalReconcile; buildDevicePlan(${JSON.stringify(priceData)});`);
+    assert.deepEqual(snapshot(), priceBaseline, 'price purchases and holds remain outside the new path');
+});
+
+test('reserve heat proof rejects loss of refill power, deadline capacity, or changed PV charging', () => {
+    const h = engine();
+    const fits = (oldHeat, newHeat, soc, deadline, pvW = 0, residualPvW = 0) => h.run(`(() => {
+        const reserve = {chargeAt: ${h.now}, deadlineAt: ${deadline ? h.now + 900000 : 0}};
+        const original = {timestamp: ${h.now}, baseW: 8000, dhwW: ${oldHeat}, heatW: 0, wbW: [0,0,0],
+            pvW: ${pvW}, residualPvW: ${residualPvW}};
+        const limit = {valid: true, budgetW: null}, options = {now: ${h.now}, maxCharge: 2400,
+            capacity: 25, efficiency: 0.9, maxSoc: 100};
+        original.forecastReserveCapW = forecastBatteryReservePowerW(original, limit, options.maxCharge);
+        const proof = {soc: ${soc}, reserveHours: 0.25, ordinaryPvW: 0,
+            ...plannedForecastReserveCharge(reserve, original, ${soc}, {...options, hours: 0.25, pvChargeW: 0})};
+        return forecastReserveHeatFits(reserve, {timestamp: ${h.now}, dhwW: ${newHeat}}, original, proof, limit, options);
+    })()`);
+    assert.equal(fits(900, 1200, 10, false), true, '1 kW refill stays feasible');
+    assert.equal(fits(900, 1800, 10, false), false, 'do not take power from actual refill');
+    assert.equal(fits(1800, 900, 10, false), false, 'do not change refill by freeing capacity either');
+    assert.equal(fits(900, 1800, 20, true), false, 'keep deadline search capacity even when SoC is already sufficient');
+    assert.equal(fits(900, 1800, 20, false), true, 'no current refill or scheduled deadline to protect');
+    assert.equal(fits(900, 2400, 10, false, 600, 600), false, 'do not reduce PV reserve charging');
+});
+
 test('stratified warm-water reserve waits for NT and forecasts tomorrow consumption and PV refill', () => {
     const h = thermalFixture();
     // Quiet tank sensors older than ten minutes are still valid under the
