@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.297 (2026-11-17)
+
+- Passively learn household appliance grid phases from repeated measured on/off changes. Persist per-meter evidence and display the phase and rejection reasons in Admin. Includes the battery and wallbox phase tests from alpha.296. [Release notes](docs/release-0.17.0-alpha.297.md)
+
 ## 0.17.0-alpha.296 (2026-11-17)
 
 - Configure the grid phase of each SunEnergy head. Test all three heads and wallboxes from Admin and save a clearly detected phase after confirmed electrical return. [Release notes](docs/release-0.17.0-alpha.296.md)
