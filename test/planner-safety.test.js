@@ -991,6 +991,71 @@ test('recorded 19 November shared-PV bridge shifts grid heat without altering ot
     t.diagnostic(JSON.stringify(r.gridHeatShift));
 });
 
+test('a minimum-reserve label does not strand movable grid heat after sufficient earlier PV competition', () => {
+    const h = engine({}, '2026-11-22T23:00:00Z');
+    // Two expensive reserve-labelled slots mix PV with grid heat. The
+    // completed allocation starts with already running cheap grid heaters;
+    // sufficient PV was previously allocated to other consumers.
+    const make = (i, heatW, heatPvW, pvW, batteryW, reason) => {
+        const baseW = 700;
+        const gridW = baseW + heatW + batteryW - pvW;
+        return {timestamp: h.now + i * 900000, price: i < 16 ? 23.56 : 30.04, priceValid: true,
+            baseW, pvW, pvAfterBaseW: Math.max(0, pvW - baseW), batteryW, batteryPvW: batteryW,
+            wallboxW: 0, wallboxPvW: 0, heatingPvW: 0,
+            dhwReason: reason, dhwW: heatW, dhwPvW: heatPvW, dhwGridW: heatW - heatPvW,
+            dhwBeforeQuantizationW: heatW, mandatoryThermalW: heatW,
+            mandatoryThermalGridW: heatW - heatPvW, mandatoryThermalRequestedW: heatW,
+            rawGridW: gridW, gridW: Math.round(gridW)};
+    };
+    const original = [
+        ...Array.from({length: 16}, (_, i) => make(i, 2500, 0, 0, 0, 'price-bridge')),
+        ...Array.from({length: 6}, (_, i) => make(i + 16, 0, 0, 2700, 2000, 'off')),
+        make(22, 4500, 1813, 2513, 0, 'minimum-reserve'),
+        make(23, 9000, 1354, 2054, 0, 'minimum-reserve'),
+    ];
+    let usable = 6, room = 26;
+    const slots = original.map(s => {
+        const consumptionKWh = 0.28125;
+        usable += s.dhwW / 4000 - consumptionKWh;
+        room += consumptionKWh - s.dhwW / 4000;
+        return {timestamp: s.timestamp, usableKWh: usable, headroomKWh: room, consumptionKWh,
+            gridKWh: s.dhwGridW / 4000, pvKWh: s.dhwPvW / 4000, reason: s.dhwReason,
+            mandatoryThermalW: s.dhwW, mandatoryThermalGridW: s.dhwGridW, mandatoryThermalRequestedW: s.dhwW};
+    });
+    const report = {valid: true, gridAuthorization: false, initialColdLayerDeficitKWh: 0,
+        initialUsableAboveMinimumKWh: 6, reserveKWh: 0.5, unmetReserveKWh: 0,
+        minimumProjectedUsableKWh: Math.min(6, ...slots.map(s => s.usableKWh)), slots};
+    const run = (a, limits = 'Infinity', proof = true) => JSON.parse(h.run(`(() => {
+        const a=${JSON.stringify(a)}, r=${JSON.stringify(report)};
+        const changed=reconcileDhwPriceBridgeWithReserve(a,r,${h.now},9000,
+            s=>({valid:true,consumptionW:${limits},phaseW:[10580-s.baseW-s.dhwW]}), {}, () => ${proof});
+        return JSON.stringify({changed,a,r});})()`));
+    const {changed, a, r} = run(original);
+    assert.equal(changed, true);
+    near(r.gridHeatShift.energyKWh, 2.58325, 'move both grid portions without moving PV');
+    near(r.gridHeatShift.savingsEUR, 0.1673946, 'same energy at the lower price');
+    assert.equal(r.gridHeatShift.batteryReservePreserved, true);
+    assert.equal(r.gridAuthorization, false);
+    near(a[22].dhwGridW, 0, 'first reserve purchase removed');
+    near(a[23].dhwGridW, 0, 'second reserve purchase removed');
+    near(Math.max(...a.map(s => s.rawGridW)), 3845.8125, 'cheap slots remain level');
+    assert.ok(r.minimumProjectedUsableKWh >= report.reserveKWh);
+    assert.ok(r.slots.every(s => s.headroomKWh >= 0));
+    near(r.slots.at(-1).usableKWh, report.slots.at(-1).usableKWh, 'end reserve unchanged');
+    a.forEach((s, i) => {
+        for (const key of ['pvW', 'baseW', 'batteryW', 'batteryPvW', 'wallboxW', 'dhwPvW'])
+            assert.equal(s[key], original[i][key]);
+        near(s.dhwW, s.dhwGridW + s.dhwPvW, 'heat balance');
+        near(s.rawGridW, s.baseW + s.dhwW + s.batteryW - s.pvW, 'grid balance');
+        if (s.dhwGridShiftW) assert.ok(s.dhwW >= 900 && s.dhwW <= 9000);
+    });
+    for (const result of [run(original, '4200'), run(original, 'Infinity', false),
+        run(original.map(s => ({...s, batteryPvW: 0})))]) {
+        assert.equal(result.changed, false, 'restriction, failed reserve proof or no prior competing PV blocks shift');
+        assert.deepEqual(result.r, report);
+    }
+});
+
 test('shared-PV reconciliation is applied to the published forecast and its diagnostics', () => {
     const h = thermalFixture({temperatures: Array(4).fill(45), demand: 25,
         start: '2026-11-19T22:00:00Z', config: {batteryPvPriorityEnabled: true}});

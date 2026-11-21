@@ -8,7 +8,7 @@ Der **Fahrplan** rechnet für die nächsten 48 Stunden in Viertelstunden. Die **
 
 ## Installation und Aktualisierung
 
-Vorausgesetzt werden Node.js ab 22, ioBroker js-controller ab 6.0.11 und Admin ab 7.8.23. Der hier beschriebene Stand ist **0.17.0-alpha.310**. In GitHub steht der geprüfte Quellstand, in `ems-optimizer.0.System.Version` die tatsächlich laufende Version.
+Vorausgesetzt werden Node.js ab 22, ioBroker js-controller ab 6.0.11 und Admin ab 7.8.23. Der hier beschriebene Stand ist **0.17.0-alpha.311**. In GitHub steht der geprüfte Quellstand, in `ems-optimizer.0.System.Version` die tatsächlich laufende Version.
 
 1. Öffne im ioBroker-Admin **Adapter → Installation aus eigener Quelle → GitHub**. Verwende `https://github.com/fuchs-1978/ioBroker.ems-optimizer`. Wähle für eine reproduzierbare Installation den Commit eines geprüften Stands. [GitHub-Prüfläufe auf main](https://github.com/fuchs-1978/ioBroker.ems-optimizer/actions/workflows/test-and-release.yml?query=branch%3Amain)
 2. Öffne **Instanzen → ems-optimizer.0 → Einstellungen**. Bei einer weiteren Instanz lautet die Nummer entsprechend anders.
@@ -303,6 +303,8 @@ Ordne die aktuelle Temperatur und den **beschreibbaren Sollwert** eines geeignet
 Bei einem Störungsbericht helfen laufende Version, Uhrzeit mit Zeitzone, Gerät, erwartetes Verhalten und ein kleiner passender Ausschnitt von Auftrag, Bestätigung und Messwert. [Diagnose und SQL](docs/admin-reference.de.md#diagnose-sql-und-datenqualität) · [Support](SUPPORT.md)
 
 ## Aktuelle Änderungen
+
+Alpha 311 berücksichtigt bei der begrenzten Wärme-Preisverschiebung auch bereits eingeplante Netz-Wärme mit Mindestreserve-Grund. Wärme-/Batteriereserve und PV-Zuteilung bleiben erhalten. [Versionshinweise](docs/release-0.17.0-alpha.311.md)
 
 Alpha 310 hält bei einer eingetragenen Abfahrt einen Teil der Fahrzeugladung für den erwarteten PV-Überschuss frei. Der Fahrplan prüft ganze Ampere, die verfügbare Netzleistung bei ausbleibender Sonne und die Energiebilanz des Hauses. [Versionshinweise](docs/release-0.17.0-alpha.310.md)
 
