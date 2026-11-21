@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.301 (2026-11-18)
+
+- Fixed start windows from remote release and appliance forecast curves. [Release notes](docs/release-0.17.0-alpha.301.md)
+
 ## 0.17.0-alpha.300 (2026-11-18)
 
 - Read the current quarter-hour directly from regular plans, reuse data point field names and daily calendar results, and reuse the compressed SQL payload when publishing a batch. [Release notes](docs/release-0.17.0-alpha.300.md)

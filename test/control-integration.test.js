@@ -3154,6 +3154,28 @@ test('a five-second SunEnergy head releases the 6 A PV start before the five-min
     assert.ok(h.trace.slice(-10).every(row => row.wbW === 1380 && row.physicalAllow === 1), h.diagnostic());
 });
 
+test('a five-second SunEnergy head settles on the PV left by the running wallbox', async () => {
+    const h = await batteryPvTransferPlant(2400, 5000);
+    h.own('Config.BatteryDeadband_W', 10);
+    h.own('Plan.BatteryPower_48h_JSON', JSON.stringify([{timestamp: h.now() - 1000,
+        valueW: 2400, requiredPvChargeW: 2400}]));
+    await h.advance(180);
+    assert.equal(h.physical().batteryW, 2400);
+    assert.equal(h.physical().allow, 0);
+
+    // The meter saw 1,076 W export with the head charging at 2,400 W.
+    // The test plant supplies the subsequent physical response to each order.
+    h.setSurplus(3476);
+    await h.advance(110);
+    assert.ok(h.trace.slice(-20).every(row => row.wbW === 1380 && row.batteryW === 2096 && row.gridW === 0), h.diagnostic());
+    const beforeDrop = h.now();
+    h.setSurplus(2850);
+    await h.advance(75);
+    assert.ok(h.trace.some(row => row.at > beforeDrop && row.at <= beforeDrop + 5000 && row.batteryTargetW < 2096),
+        'rising household demand promptly reduces the charge order');
+    assert.ok(h.trace.slice(-20).every(row => row.wbW === 1380 && row.batteryW === 1470 && row.gridW === 0), h.diagnostic());
+});
+
 test('a completed forecast stage releases the PV reservation while live charging and the wallbox continue', async () => {
     const h = await plant({battery: true, batteryHeadType: 2, batteryHeadMaxSoc: 100, batteryHeadChargeHysteresis: 5,
         startDelayS: 0, minimumRuntimeS: 0, initialSurplusW: 2500, batteryDelayMs: 5000,
