@@ -13,7 +13,7 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
     battery = false, heating = false, wallbox = true, wallboxIndex = 2, cheap = false,
     mii = false, adoptRunningMii = false, wallboxStopResponseDelayMs = 0,
     initialSurplusW = 6000, batteryPlanW = 0, lpcLimitW = null, phaseBiasW = [0, 0, 0],
-    batteryDelayMs = 2000, heatingDelayMs = 4000, dhwDelayMs = 4000,
+    batteryDelayMs = 2000, batteryHeadPollMs = 0, heatingDelayMs = 4000, dhwDelayMs = 4000,
     batteryDcFactor = 1, batteryDcPvW = 0, batteryHeadType = 1,
     batteryHeadMaxSoc = 80, batteryHeadChargeHysteresis = 0, wb2InitialPhaseMode = null,
     initialWallboxPhaseMode = wb2InitialPhaseMode,
@@ -285,11 +285,13 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         recorder = new debugModule.exports(debugAdapter);
         await recorder.initialize();
     }
+    const headResponseId = 'sunenergyxt500.0.heads.1.info.rawResponse';
     const refresh = () => {
         const wbW = wbPower();
         const miiW = miiPower();
         const gridW = heaterW + heatingW + batteryW + wbW + miiW - surplusW;
-        for (const [id, state] of states) if (state.ack && !id.startsWith('ems.0.')) put(id, state.val, {from: state.from});
+        for (const [id, state] of states) if (state.ack && !id.startsWith('ems.0.') && (!batteryHeadPollMs || id !== headResponseId))
+            put(id, state.val, {from: state.from});
         put('DP_GRID_IMPORT', Math.max(0, gridW)); put('DP_GRID_EXPORT', Math.max(0, -gridW));
         own('Actual.GridPower_W', gridW); own('Actual.MyPV_DHW_W', heaterW);
         own('Actual.MyPV_Heating_W', heatingW);
@@ -298,11 +300,13 @@ async function plant({startDelayS = 120, minimumRuntimeS = 120, split = true, di
         if (battery && config.batteryDispatchMode === 'sunenergy-heads') {
             const base = 'sunenergyxt500.0.heads.1';
             put(`${base}.info.online`, batteryHeartbeat);
-            put(`${base}.info.rawResponse`, JSON.stringify({GS: -batteryW || 0, GP: -batteryW || 0,
-                SC: states.get(mapping.DP_BATTERY_SOC)?.val ?? 50, ON: 1, MM: 0, LM: 1,
-                SI: 20, SA: batteryHeadMaxSoc, SA1: batteryHeadChargeHysteresis,
-                MG: 2400, IS: 2400, LP: 0, PK: batteryHeadType, timestamp: now}),
-            {from: 'system.adapter.sunenergyxt500.0'});
+            const previous = states.get(headResponseId);
+            if (!previous || !batteryHeadPollMs || now - previous.ts >= batteryHeadPollMs)
+                put(headResponseId, JSON.stringify({GS: -batteryW || 0, GP: -batteryW || 0,
+                    SC: states.get(mapping.DP_BATTERY_SOC)?.val ?? 50, ON: 1, MM: 0, LM: 1,
+                    SI: 20, SA: batteryHeadMaxSoc, SA1: batteryHeadChargeHysteresis,
+                    MG: 2400, IS: 2400, LP: 0, PK: batteryHeadType, timestamp: now}),
+                {from: 'system.adapter.sunenergyxt500.0'});
         }
         if (batteryHeartbeat) put(config.batteryHeartbeatId, now);
         for (const wb of [0, 1, 2]) {
