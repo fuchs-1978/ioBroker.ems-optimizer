@@ -7,7 +7,7 @@
 
 **[Deutsche Schritt-für-Schritt-Anleitung für alle Admin-Reiter](README.de.md)** · [Admin field reference (German)](docs/admin-reference.de.md) · [Changelog](#changelog) · [Issue tracker](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
-EMS Optimizer is an energy management adapter for [ioBroker](https://www.iobroker.net/). It coordinates PV surplus, a home battery, up to three wallboxes and available electric heaters. It can also schedule compatible household appliances. The source build on GitHub is **0.17.0-alpha.310**. Check `System.Version` on your instance for the running build.
+EMS Optimizer is an energy management adapter for [ioBroker](https://www.iobroker.net/). It coordinates PV surplus, a home battery, up to three wallboxes and available electric heaters. It can also schedule compatible household appliances. The source build on GitHub is **0.17.0-alpha.311**. Check `System.Version` on your instance for the running build.
 
 ## How it works
 
@@ -81,6 +81,10 @@ npm run test:equivalence
 
 ## Changelog
 
+### 0.17.0-alpha.311 (2026-11-21)
+
+- Include already planned minimum-reserve grid heat in the bounded price-bridge reconciliation, retaining PV allocation, battery reserve and heater limits. [Release notes](docs/release-0.17.0-alpha.311.md)
+
 ### 0.17.0-alpha.310 (2026-11-21)
 
 - Leave room for direct PV charging before departure when the finished plan also covers a zero-PV fallback. [Release notes](docs/release-0.17.0-alpha.310.md)
@@ -108,10 +112,6 @@ npm run test:equivalence
 ### 0.17.0-alpha.304 (2026-11-19)
 
 - Reduce peak memory when formatting diagnostic reports and verifying SQL history packets. [Release notes](docs/release-0.17.0-alpha.304.md)
-
-### 0.17.0-alpha.303 (2026-11-19)
-
-- Reconcile planned hot-water grid heat with the finished PV allocation, moving existing heat to cheaper slots without changing battery or vehicle energy. [Release notes](docs/release-0.17.0-alpha.303.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 

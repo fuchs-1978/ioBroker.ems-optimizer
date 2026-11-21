@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.303 (2026-11-19)
+
+- Reconcile planned hot-water grid heat with the finished PV allocation, moving existing heat to cheaper slots without changing battery or vehicle energy. [Release notes](docs/release-0.17.0-alpha.303.md)
+
 ## 0.17.0-alpha.302 (2026-11-19)
 
 - Continue single-head SunEnergy regulation up to 100 W when the device clock leads and original measurements keep advancing. [Release notes](docs/release-0.17.0-alpha.302.md)

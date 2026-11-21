@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.310",
+    "version": "0.17.0-alpha.311",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.311": {
+        "en": "Include already planned minimum-reserve grid heat in the bounded shift to cheaper hours while preserving heat and battery reserves.",
+        "de": "Bereits geplante Netz-Wärme mit Mindestreserve-Grund in günstigere Stunden vorziehen, sofern Wärme- und Batteriereserve erhalten bleiben.",
+        "es": "Adelanta el calor de red previsto para la reserva mínima a horas más baratas sin reducir las reservas térmica y de batería.",
+        "fr": "Avance le chauffage réseau prévu pour la réserve minimale vers les heures moins chères sans réduire les réserves thermique et de batterie.",
+        "it": "Anticipa il riscaldamento di rete previsto per la riserva minima alle ore meno costose mantenendo le riserve termica e della batteria.",
+        "nl": "Verplaatst geplande netwarmte voor de minimumreserve naar goedkopere uren met behoud van warmte- en batterijreserve.",
+        "pl": "Przesuwa zaplanowane ogrzewanie z sieci dla rezerwy minimalnej na tańsze godziny z zachowaniem rezerw ciepła i akumulatora.",
+        "pt": "Antecipa o calor de rede previsto para a reserva mínima para horas mais baratas, preservando as reservas térmica e da bateria.",
+        "ru": "Переносит запланированный сетевой нагрев для минимального резерва на более дешёвые часы с сохранением теплового и аккумуляторного резервов.",
+        "uk": "Переносить запланований мережевий нагрів для мінімального резерву на дешевші години зі збереженням теплового й акумуляторного резервів.",
+        "zh-cn": "将已计划的最低热储备电网加热移至更便宜的时段，同时保持热储备和电池储备。"
+      },
       "0.17.0-alpha.310": {
         "en": "Reserve usable PV before a vehicle departure and charge overnight only to the required interim SoC. Check the grid fallback and household energy balance.",
         "de": "Nutzbare PV vor einer Abfahrt einplanen und nachts bis zum nötigen Zwischenstand laden. Netzrückfall und Energiebilanz des Hauses prüfen.",
@@ -81,19 +94,6 @@
         "ru": "Переносит запланированный нагрев от сети только при сохранении прогнозируемого резерва батареи.",
         "uk": "Переносить запланований нагрів від мережі лише за незмінного прогнозованого резерву батареї.",
         "zh-cn": "仅在预测电池备用电量保持不变时调整计划中的电网供热时段。"
-      },
-      "0.17.0-alpha.304": {
-        "en": "Reduce memory peaks in diagnostic reports and SQL storage verification.",
-        "de": "Speicherspitzen bei Diagnoseanzeigen und beim Prüfen der SQL-Aufzeichnung reduziert.",
-        "es": "Reduce los picos de memoria de los informes de diagnóstico y de la verificación del registro SQL.",
-        "fr": "Réduit les pics de mémoire des rapports de diagnostic et de la vérification des enregistrements SQL.",
-        "it": "Riduce i picchi di memoria nei rapporti diagnostici e nella verifica delle registrazioni SQL.",
-        "nl": "Verlaagt het piekgeheugengebruik bij diagnoserapporten en bij de controle van SQL-opslag.",
-        "pl": "Zmniejsza szczytowe zużycie pamięci w raportach diagnostycznych i podczas weryfikacji zapisu w SQL.",
-        "pt": "Reduz os picos de memória nos relatórios de diagnóstico e na verificação dos registos SQL.",
-        "ru": "Снижено пиковое потребление памяти при формировании диагностических отчётов и проверке записей SQL.",
-        "uk": "Зменшено пікове споживання пам’яті під час формування діагностичних звітів і перевірки записів SQL.",
-        "zh-cn": "降低诊断报告和 SQL 存储校验的内存峰值。"
       }
     },
     "titleLang": {
