@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.308",
+    "version": "0.17.0-alpha.309",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.309": {
+        "en": "Balance SunEnergy charging against a running PV wallbox with slower head feedback. Keep a confirmed one-amp vehicle step while the measured budget covers it.",
+        "de": "Der SunEnergy-Speicher nimmt den Überschuss einer laufenden PV-Wallbox auch bei langsameren Kopfmessungen auf. Ein bestätigter 1-A-Schritt bleibt bei ausreichendem gemessenem Budget bestehen.",
+        "es": "Ajusta la carga de SunEnergy al excedente que deja el vehículo cuando la batería informa más despacio. Mantiene un incremento confirmado de 1 A si lo cubre la potencia medida.",
+        "fr": "Ajuste la charge SunEnergy au surplus disponible pendant la recharge solaire du véhicule malgré des mesures de batterie plus lentes. Maintient un palier confirmé de 1 A si la puissance mesurée le permet.",
+        "it": "Regola la carica SunEnergy sul surplus disponibile durante la ricarica solare del veicolo anche con misure della batteria più lente. Mantiene un aumento confermato di 1 A se la potenza misurata lo consente.",
+        "nl": "Stemt de SunEnergy-lading af op het overschot tijdens het zonneladen van de auto, ook bij tragere batterijmetingen. Behoudt een bevestigde stap van 1 A als het gemeten vermogen toereikend is.",
+        "pl": "Dostosowuje ładowanie magazynu SunEnergy do nadwyżki podczas ładowania auta z PV przy rzadszych pomiarach magazynu. Utrzymuje potwierdzony wzrost o 1 A, gdy pozwala na to zmierzona moc.",
+        "pt": "Ajusta a carga SunEnergy ao excedente durante o carregamento solar do veículo mesmo com leituras mais lentas da bateria. Mantém um aumento confirmado de 1 A quando a potência medida o permite.",
+        "ru": "Заряд накопителя SunEnergy учитывает остаток мощности при зарядке автомобиля от солнца и более редкие показания накопителя. Подтверждённое повышение на 1 А сохраняется при достаточной измеренной мощности.",
+        "uk": "Заряд накопичувача SunEnergy враховує надлишок під час заряджання автомобіля від сонця та рідші покази накопичувача. Підтверджене підвищення на 1 А зберігається за достатньої виміряної потужності.",
+        "zh-cn": "在车辆使用光伏充电时，即使 SunEnergy 储能的测量更新较慢，也能按剩余功率调节充电。实测功率足够时，保持车辆已确认的 1 A 电流增量。"
+      },
       "0.17.0-alpha.308": {
         "en": "Recognize two minutes of near-full PV charging power from a SunEnergy head reporting every five seconds and use the measured surplus to start the wallbox.",
         "de": "Meldet der SunEnergy-Speicher etwa alle fünf Sekunden, erkennt das EMS zwei Minuten PV-Ladung nahe der Leistungsgrenze und kann die Wallbox bei gemessenem Überschuss starten.",
@@ -81,19 +94,6 @@
         "ru": "Переносит запланированный нагрев от сети на более дешёвые интервалы с учётом итогового распределения фотоэлектрической энергии.",
         "uk": "Переносить заплановане нагрівання від мережі на дешевші інтервали з урахуванням остаточного розподілу сонячної енергії.",
         "zh-cn": "根据最终光伏分配将计划中的电网供热移至电价更低的时段。"
-      },
-      "0.17.0-alpha.302": {
-        "en": "Continue single-head SunEnergy control up to 100 W with fresh measurements when the device clock runs ahead.",
-        "de": "Bei vorgehender Geräteuhr regelt das EMS einen SunEnergy-Kopf bis 100 W mit frischen Messungen weiter.",
-        "es": "El EMS sigue regulando un cabezal SunEnergy hasta 100 W con mediciones recientes si el reloj del equipo se adelanta.",
-        "fr": "Si l’horloge de l’appareil avance, la régulation d’une tête SunEnergy se poursuit jusqu’à 100 W avec des mesures récentes.",
-        "it": "Se l’orologio del dispositivo è avanti, il controllo di una singola unità SunEnergy prosegue fino a 100 W con misure aggiornate.",
-        "nl": "Als de apparaatklok voorloopt, blijft het EMS één SunEnergy-eenheid tot 100 W bijregelen met verse metingen.",
-        "pl": "Gdy zegar urządzenia się spieszy, EMS nadal reguluje moc jednej jednostki SunEnergy do 100 W na podstawie aktualnych pomiarów.",
-        "pt": "Se o relógio do dispositivo estiver adiantado, o EMS continua a regular uma unidade SunEnergy até 100 W com medições recentes.",
-        "ru": "Если часы устройства спешат, EMS продолжает регулировать мощность одного блока SunEnergy до 100 Вт по свежим измерениям.",
-        "uk": "Якщо годинник пристрою поспішає, EMS продовжує регулювати потужність одного блока SunEnergy до 100 Вт за свіжими вимірюваннями.",
-        "zh-cn": "设备时钟超前时，EMS 可根据最新测量值继续调节单台 SunEnergy 设备，功率上限为 100 W。"
       }
     },
     "titleLang": {

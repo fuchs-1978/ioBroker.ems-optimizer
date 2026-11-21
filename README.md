@@ -7,7 +7,7 @@
 
 **[Deutsche Schritt-für-Schritt-Anleitung für alle Admin-Reiter](README.de.md)** · [Admin field reference (German)](docs/admin-reference.de.md) · [Changelog](#changelog) · [Issue tracker](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
-EMS Optimizer is an energy management adapter for [ioBroker](https://www.iobroker.net/). It coordinates PV surplus, a home battery, up to three wallboxes and available electric heaters. It can also schedule compatible household appliances. The source build on GitHub is **0.17.0-alpha.308**. Check `System.Version` on your instance for the running build.
+EMS Optimizer is an energy management adapter for [ioBroker](https://www.iobroker.net/). It coordinates PV surplus, a home battery, up to three wallboxes and available electric heaters. It can also schedule compatible household appliances. The source build on GitHub is **0.17.0-alpha.309**. Check `System.Version` on your instance for the running build.
 
 ## How it works
 
@@ -81,6 +81,10 @@ npm run test:equivalence
 
 ## Changelog
 
+### 0.17.0-alpha.309 (2026-11-21)
+
+- Settle the battery on the surplus left by a running PV wallbox when SunEnergy and grid readings arrive at different rates. Retain a confirmed one-amp vehicle increase when the meter covers the full step within the configured tolerance. [Release notes](docs/release-0.17.0-alpha.309.md)
+
 ### 0.17.0-alpha.308 (2026-11-21)
 
 - Use the SunEnergy head’s measured reporting interval to recognize two minutes of near-maximum PV charging. The wallbox checks the available export before starting. [Release notes](docs/release-0.17.0-alpha.308.md)
@@ -108,10 +112,6 @@ npm run test:equivalence
 ### 0.17.0-alpha.302 (2026-11-19)
 
 - Continue single-head SunEnergy regulation up to 100 W when the device clock leads and original measurements keep advancing. [Release notes](docs/release-0.17.0-alpha.302.md)
-
-### 0.17.0-alpha.301 (2026-11-18)
-
-- Fixed start windows from remote release and appliance forecast curves. [Release notes](docs/release-0.17.0-alpha.301.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 

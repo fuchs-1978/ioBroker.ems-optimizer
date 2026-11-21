@@ -108,6 +108,66 @@ test('issue211 integration: allocator and real electrical confirmation may share
     assert.equal(h.output.devices[2].measuredBudgetStep, null);
 });
 
+// 21 November: the EQE drew 1,450 W at 6.6 A before the 7 -> 8 A
+// command. The first confirming sample was 1,570 W / 7.2 A. The allocator
+// had already used that sample while the electrical response was pending.
+async function eqeEightAmpConfirmation({exportW = 23.6, importW = 0, currentA = 7.2, powerW = 1570} = {}) {
+    const h = await runningSixAmps(1);
+    h.put('DP_WB2_MIN_SOC', 90);
+    await issueFirstStep(h);
+    await replay(h, SECOND);
+    const stepAt = SECOND + 6000;
+    await replay(h, stepAt, {powerW: 1450, currentA: 6.6, exportW: 381.9, ackAt: stepAt - 100});
+    assert.equal(commands(h).at(-1).val, 8, diagnostic(h));
+    const ackAt = stepAt + 250;
+    await h.replayAt(ackAt + 1, frame(stepAt, {powerW: 1450, currentA: 6.6, exportW: 381.9,
+        feedback: 8, ackAt}), {allocate: false});
+    assert.equal(h.value('Devices.Wallbox2.ResponseState'), 'vehicle_response');
+    h.writes.length = 0;
+    await replay(h, stepAt + 4000, {feedback: 8, ackAt, powerW, currentA, exportW, importW});
+    return h;
+}
+
+test('a funded EQE step from 7 to 8 A survives confirmation at 7.2 A and 23.6 W export', async () => {
+    const h = await eqeEightAmpConfirmation();
+    assert.equal(allocation(h).targetA, 6, 'the allocation was calculated before confirmation');
+    assert.equal(allocation(h).responseState, 'vehicle_response');
+    assert.equal(h.value('Devices.Wallbox2.ResponseState'), 'confirmed', diagnostic(h));
+    assert.deepEqual(commands(h), [], diagnostic(h));
+    assert.equal(h.output.devices[2].lastA, 8);
+    assert.equal(budget(h).basis, 'fresh-response-allocation-hold');
+    const confirmedAt = h.now();
+    const sameSample = {feedback: 8, ackAt: confirmedAt - 3750, powerW: 1570, currentA: 7.2, exportW: 23.6};
+    await h.replayAt(confirmedAt + 500, frame(confirmedAt, sameSample), {allocate: false});
+    assert.deepEqual(commands(h), [], 'rereading the same sample cannot undo the confirmed step');
+    const next = confirmedAt + 6000;
+    await replay(h, next, {feedback: 8, ackAt: next - 100, powerW: 1720, currentA: 7.8, exportW: 12.5});
+    assert.equal(allocation(h).targetA, 8, diagnostic(h));
+    assert.deepEqual(commands(h), [], diagnostic(h));
+});
+
+for (const [label, exportW, importW] of [['5 W export', 5, 0], ['100 W import', 0, 100]]) {
+    test(`the remaining EQE step exceeds its measured budget at ${label}`, async () => {
+        const h = await eqeEightAmpConfirmation({exportW, importW});
+        assert.equal(h.value('Devices.Wallbox2.ResponseConfirmedAt'), h.now(), diagnostic(h));
+        assert.ok(commands(h).some(write => write.val < 8), diagnostic(h));
+    });
+}
+
+test('a new grid deficit or hard current cap ends the hold before the next allocation', async t => {
+    for (const reason of ['deficit', 'device limit']) await t.test(reason, async () => {
+        const h = await eqeEightAmpConfirmation();
+        assert.deepEqual(commands(h), []);
+        const at = h.now();
+        const values = {feedback: 8, ackAt: at - 3750, powerW: 1570, currentA: 7.2,
+            powerAt: at - 50, currentAt: at - 55, exportW: 23.6};
+        if (reason === 'device limit') h.config.wb2CommissioningMaxA = 6;
+        else Object.assign(values, {importW: 350, exportW: 0});
+        await h.replayAt(at + 500, frame(at + 500, values), {allocate: false});
+        assert.ok(commands(h).some(write => write.val < 8), diagnostic(h));
+    });
+});
+
 test('issue211 later1460W/6.6A and130.4W export do not recreate the6A/7A cycle', async () => {
     const h = await runningSixAmps(3);
     await issueFirstStep(h);
