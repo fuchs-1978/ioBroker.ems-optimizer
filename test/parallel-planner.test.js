@@ -6,8 +6,8 @@ const vm = require('node:vm');
 const fs = require('node:fs');
 const path = require('node:path');
 
-function fixture(config = {}, minute = 0) {
-    const now = Date.parse('2026-10-08T10:00:00Z') + minute * 60000;
+function fixture(config = {}, minute = 0, start = Date.parse('2026-10-08T10:00:00Z')) {
+    const now = start + minute * 60000;
     const states = new Map();
     const put = (id, val) => states.set(id, {val, ts: now, ack: true});
     class Clock extends Date {
@@ -443,4 +443,79 @@ test('a new forecast starts from the personal live step and keeps later simulate
     assert.equal(plan.cars[0][0].currentA, 10);
     assert.equal(h.run('JSON.stringify(liveDepartureGrants)'), before);
     balance(plan, 0);
+});
+
+const eveningStart = new Date(2026, 10, 21, 19, 30).getTime();
+const nextDeparture = eveningStart + 16.5 * 3600000;
+const solarStart = eveningStart + 57 * 900000;
+const morningSurplus = [701.5, 646.5, 575, 851.5, 1978, 1992, 1885, 1928.5, 1857.5, 1921.5, 1865, 1823, 1626.5];
+const overnightPv = [...Array(53).fill(0), ...morningSurplus.map(w => w + 1000), 3000, 3000];
+
+function departureFixture(start = eveningStart, minute = 5, soc = 81.1, config = {}) {
+    const h = fixture({...coordinatedBattery, wb2DeadlineEnabled: true, wb2CommissioningMaxA: 32, ...config}, minute, start);
+    car(h, 2, {soc, minimum: 90, target: 90, capacity: 90.6, maxA: 20, phases: 3, priority: true});
+    h.put('ems.0.Vehicles.Wallbox2.DepartureTime', new Date(nextDeparture).toTimeString().slice(0, 5));
+    h.put('ems.0.Config.WallboxStartDelay_s', 300);
+    return h;
+}
+
+test('EQE keeps PV headroom overnight and reaches the departure minimum from quantized morning PV', () => {
+    const h = departureFixture();
+    battery(h, 62, 15.06);
+    h.put('ems.0.Config.BatteryEfficiency_pct', 92);
+    car(h, 0, {soc: 27.7, minimum: 50, target: 90, capacity: 32.3});
+    car(h, 1, {soc: 50, minimum: 50, target: 90, capacity: 90});
+    const r = h.plan({houseW: 1000, pvW: overnightPv, slots: overnightPv.length});
+    const eqe = r.cars[2], proof = eqe[0].departurePv;
+    assert.ok(proof, 'a usable PV window should replace part of the overnight charge');
+    assert.equal(proof.releaseAt, solarStart);
+    assert.equal(proof.reservePct, 87.2);
+    assert.equal(proof.minimumSocPct, 90);
+    const energies = h.run('departurePvEnergy(' + JSON.stringify(eqe) + ','
+        + JSON.stringify(r.allocation) + ',' + h.now + ',' + solarStart + ',' + (nextDeparture - 900000) + ')');
+    assert.ok(Math.abs(energies.earlyGrid - (87.2 - 81.1) * 0.906 / 0.9) < 0.003);
+    assert.ok(energies.solar > 2.80);
+    assert.ok(Math.abs(energies.delivered * 0.9 / 0.906 + 81.1 - 90) < 0.003);
+    assert.ok(eqe.slice(0, 57).some((p, i) => i > 10 && p.valueW === 0));
+    assert.ok(eqe.slice(57, 65).some(p => p.valueW >= 1610));
+    assert.ok(eqe.slice(65).every(p => p.valueW === 0));
+    assert.ok(r.cars[0].every(p => !p.departurePv));
+    balance(r, overnightPv, 1000);
+
+    // Exercise the fresh-plan reader also used directly by the wallbox output.
+    h.run(fs.readFileSync(path.join(__dirname, '../lib/engine/realtime.js'), 'utf8'));
+    const policy = () => h.run('wallboxReadinessPolicy(2,90,Date.now(),null,null,87.2)');
+    assert.equal(policy()?.reservePct, 87.2);
+    h.run('updateVehicles()');
+    assert.match(h.states.get('ems.0.Vehicles.Wallbox2.Status').val, /PV-Fenster/);
+    h.put('ems.0.Vehicles.Wallbox2.DepartureTime', new Date(nextDeparture - 3600000).toTimeString().slice(0, 5));
+    assert.equal(policy(), null);
+    h.put('ems.0.Vehicles.Wallbox2.DepartureTime', new Date(nextDeparture).toTimeString().slice(0, 5));
+    h.put('ems.0.Plan.LastUpdate', h.now - 21 * 60000);
+    assert.equal(policy(), null);
+});
+
+test('the EQE completes with zero PV from the reserved overnight SoC, including the 15 minute finish margin', () => {
+    const h = departureFixture(solarStart, 0, 87.2);
+    const r = h.plan({houseW: 1000, pvW: 0, slots: 12});
+    const eqe = r.cars[2];
+    assert.ok(eqe.every(p => !p.departurePv));
+    assert.ok(eqe[0].valueW >= 1380);
+    const energy = require('../lib/planning-explanation').plannedEnergy(eqe, h.now, nextDeparture - 900000);
+    assert.ok(Math.abs(87.2 + energy * 0.9 / 0.906 - 90) < 0.01);
+});
+
+test('weak PV, local limits, manual minimum current and competing departures retain the immediate minimum', () => {
+    for (const mode of ['weak', 'limited', 'manual', 'competing', 'lowSoc']) {
+        const h = departureFixture(eveningStart, 5, mode === 'lowSoc' ? 29 : 81.1,
+            {wb0DeadlineEnabled: mode === 'competing'});
+        if (mode === 'limited') h.put('ems.0.Config.HouseConnectionWorkingLimit_A', 7);
+        if (mode === 'manual') h.put(h.run('CFG.dp.wallboxManualMinCurrent[2]'), 10);
+        if (mode === 'competing') {
+            car(h, 0, {soc: 35, minimum: 75, target: 90});
+            h.put('ems.0.Vehicles.Wallbox0.DepartureTime', new Date(nextDeparture).toTimeString().slice(0, 5));
+        }
+        const r = h.plan({houseW: 1000, pvW: mode === 'weak' ? 2300 : overnightPv, slots: overnightPv.length});
+        assert.ok(r.cars[2].every(p => !p.departurePv), mode);
+    }
 });
