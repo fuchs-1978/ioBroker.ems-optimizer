@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.311",
+    "version": "0.17.0-alpha.312",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.312": {
+        "en": "Keep the newest vehicle SoC by measurement timestamp across adapter imports, manual corrections and restarts; share its observation with price planning.",
+        "de": "Den neuesten Fahrzeug-SoC anhand des Messzeitpunkts über Adapterimporte, manuelle Korrekturen und Neustarts erhalten; dieselbe Beobachtung für die Preisplanung verwenden.",
+        "es": "Conserva el SoC más reciente por la hora de medición entre importaciones, correcciones manuales y reinicios; comparte la observación con la planificación por precio.",
+        "fr": "Conserve le SoC le plus récent selon l’heure de mesure entre imports, corrections manuelles et redémarrages ; utilise la même observation pour la planification tarifaire.",
+        "it": "Mantiene il SoC più recente in base all’ora della misura tra importazioni, correzioni manuali e riavvii; usa la stessa osservazione nella pianificazione dei prezzi.",
+        "nl": "Behoudt de nieuwste voertuig-SoC op basis van de meettijd bij imports, handmatige correcties en herstarts; gebruikt dezelfde waarneming voor prijsplanning.",
+        "pl": "Zachowuje najnowszy SoC według czasu pomiaru między importami, korektami ręcznymi i restartami; stosuje tę samą obserwację w planowaniu cenowym.",
+        "pt": "Mantém o SoC mais recente pela hora da medição entre importações, correções manuais e reinícios; usa a mesma observação no planeamento por preço.",
+        "ru": "Сохраняет новейший SoC по времени измерения при импорте, ручных исправлениях и перезапусках; использует то же наблюдение при ценовом планировании.",
+        "uk": "Зберігає найновіший SoC за часом вимірювання під час імпорту, ручних виправлень і перезапусків; використовує те саме спостереження в ціновому плануванні.",
+        "zh-cn": "按测量时间保留车辆最新电量，避免导入、手动修正和重启时回退；电价规划采用同一观测值。"
+      },
       "0.17.0-alpha.311": {
         "en": "Include already planned minimum-reserve grid heat in the bounded shift to cheaper hours while preserving heat and battery reserves.",
         "de": "Bereits geplante Netz-Wärme mit Mindestreserve-Grund in günstigere Stunden vorziehen, sofern Wärme- und Batteriereserve erhalten bleiben.",
@@ -81,19 +94,6 @@
         "ru": "Резервирует мощность для достижения минимального заряда к отъезду, в том числе при параллельной зарядке.",
         "uk": "Резервує потужність для досягнення мінімального заряду до від’їзду, зокрема під час паралельного заряджання.",
         "zh-cn": "即使多辆车同时充电，也会为出发时达到最低电量预留充电功率。"
-      },
-      "0.17.0-alpha.305": {
-        "en": "Shift planned grid heat only when the forecast battery reserve remains unchanged.",
-        "de": "Geplante Netz-Wärme auch bei unveränderter prognostischer Batteriereserve günstiger einplanen.",
-        "es": "Desplaza el calor de red previsto solo si la reserva prevista de la batería permanece intacta.",
-        "fr": "Décale le chauffage réseau prévu uniquement si la réserve de batterie prévue reste inchangée.",
-        "it": "Sposta il riscaldamento da rete previsto solo se la riserva prevista della batteria rimane invariata.",
-        "nl": "Verplaatst geplande netwarmte alleen als de voorspelde batterijreserve onveranderd blijft.",
-        "pl": "Przenosi zaplanowane ogrzewanie z sieci tylko wtedy, gdy prognozowana rezerwa akumulatora pozostaje bez zmian.",
-        "pt": "Desloca o aquecimento previsto da rede apenas se a reserva prevista da bateria permanecer inalterada.",
-        "ru": "Переносит запланированный нагрев от сети только при сохранении прогнозируемого резерва батареи.",
-        "uk": "Переносить запланований нагрів від мережі лише за незмінного прогнозованого резерву батареї.",
-        "zh-cn": "仅在预测电池备用电量保持不变时调整计划中的电网供热时段。"
       }
     },
     "titleLang": {
