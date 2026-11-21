@@ -1462,6 +1462,23 @@ test('price ledger receives reported SoC energy, not an already interpolated def
     assert.ok(h.states.get('ems.0.Vehicles.Wallbox0.SoC_pct').val>40);
 });
 
+for (const wb of [0, 1, 2]) test(`WB${wb} price planning uses the latest manual observation despite an older cloud import`, () => {
+    let now = 1800000000000;
+    const h = engine({[`wb${wb}SocEstimationEnabled`]: true, [`wb${wb}CapacityKWh`]: 50,
+        [`wb${wb}SocEfficiencyPct`]: 90}, class extends Date {static now() {return now;}});
+    h.run(`requestForecastRebuild=()=>{};CFG.dp.wallboxSocMeasuredAt[${wb}]=''`);
+    h.states.set(`DP_WB${wb}_SOC`, {val:91, ts:now-40*3600000, ack:true});
+    h.put(`DP_WB${wb}_SOC_ENERGY`, 10);
+    h.run(`updateVehicles();applyVehicleSocCorrection(${wb},{val:23,ack:false,ts:${now},q:0})`);
+    now += 30000; h.put(`DP_WB${wb}_SOC_ENERGY`, 10.5);
+    h.states.set(`DP_WB${wb}_SOC`, {val:82, ts:now-41*3600000, lc:now, ack:true});
+    h.run('globalThis.priceInputs=[];updateVehiclePriceSession=(wb,args)=>{priceInputs.push({wb,...args});return {};};updateVehicles()');
+    const input = h.run(`priceInputs.find(x=>x.wb===${wb})`);
+    assert.ok(Math.abs(input.gridEnergyKWh - (80-23)/100*50/.9) < 1e-9);
+    assert.equal(h.states.get(`ems.0.Vehicles.Wallbox${wb}.SoC_pct`).val, 23.9);
+    assert.equal(h.states.get(`ems.0.Vehicles.Wallbox${wb}.SoCReportedAt`).val, now-41*3600000);
+});
+
 for (const wb of [0,1,2]) test(`manual minimum uses internal energy-estimated SoC and stops at its target, WB${wb}`,()=>{
     let now=1800000000000;
     class Clock extends Date {static now(){return now;}}
@@ -1533,7 +1550,7 @@ test('manual correction updates target release live and never writes the foreign
     now += 1000;
     h.run(`applyVehicleSocCorrection(0, {val:20, ack:true, ts:${now}, q:0})`);
     assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.SocEstimateLedger_JSON').val, before);
-    h.put('DP_WB0_SOC', 65); h.put('DP_WB0_SOC_ENERGY', 10);
+    h.states.set('DP_WB0_SOC', {val:65, ts:now - 1000, lc:now, ack:true}); h.put('DP_WB0_SOC_ENERGY', 10);
     h.run('updateVehicles()');
     assert.equal(h.states.get('ems.0.Vehicles.Wallbox0.SoC_pct').val, 94);
     h.run(`applyVehicleSocCorrection(0, {val:94, ack:false, ts:${now}, q:0})`);
@@ -1601,7 +1618,7 @@ test('Mii keeps its release and warns through missing cloud SoC and an interrupt
     assert.equal(h.states.get(root + '.SoC_pct').val, 81.4);
     assert.equal(h.run('vehicleState(0).release'), true);
     assert.equal(h.states.get(root + '.SoCWarning').val, true, 'cloud SoC is still absent');
-    h.put('DP_WB0_SOC', 45); h.run('updateVehicles()');
+    h.states.set('DP_WB0_SOC', {val:45, ts:1800000000000, lc:now, ack:true}); h.run('updateVehicles()');
     assert.equal(h.states.get(root + '.SoC_pct').val, 81.4);
     assert.equal(h.states.get(root + '.SoCWarning').val, false);
 });

@@ -2,6 +2,14 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.305 (2026-11-20)
+
+- Reconcile planned hot-water grid heat during a forecast battery reserve only if the reserve charge trajectory and deadline capacity remain unchanged. [Release notes](docs/release-0.17.0-alpha.305.md)
+
+## 0.17.0-alpha.304 (2026-11-19)
+
+- Reduce peak memory when formatting diagnostic reports and verifying SQL history packets. [Release notes](docs/release-0.17.0-alpha.304.md)
+
 ## 0.17.0-alpha.303 (2026-11-19)
 
 - Reconcile planned hot-water grid heat with the finished PV allocation, moving existing heat to cheaper slots without changing battery or vehicle energy. [Release notes](docs/release-0.17.0-alpha.303.md)
