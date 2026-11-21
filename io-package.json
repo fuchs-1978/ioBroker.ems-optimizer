@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.309",
+    "version": "0.17.0-alpha.310",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.310": {
+        "en": "Reserve usable PV before a vehicle departure and charge overnight only to the required interim SoC. Check the grid fallback and household energy balance.",
+        "de": "Nutzbare PV vor einer Abfahrt einplanen und nachts bis zum nötigen Zwischenstand laden. Netzrückfall und Energiebilanz des Hauses prüfen.",
+        "es": "Reserva la energía solar aprovechable antes de la salida y carga por la noche hasta el nivel intermedio necesario. Comprueba el respaldo de red y el balance de la vivienda.",
+        "fr": "Réserve le solaire utilisable avant le départ et charge la nuit jusqu’au niveau intermédiaire requis. Vérifie le secours réseau et le bilan du foyer.",
+        "it": "Riserva la produzione solare utilizzabile prima della partenza e carica di notte fino al livello intermedio necessario. Verifica la disponibilità della rete e il bilancio della casa.",
+        "nl": "Reserveert bruikbare zonnestroom voor vertrek en laadt ’s nachts tot het benodigde tussenniveau. Controleert netreserve en energiebalans van het huis.",
+        "pl": "Rezerwuje dostępną energię słoneczną przed wyjazdem i ładuje nocą do wymaganego poziomu pośredniego. Sprawdza rezerwę sieci i bilans domu.",
+        "pt": "Reserva energia solar utilizável antes da partida e carrega à noite até ao nível intermédio necessário. Verifica o recurso à rede e o balanço da casa.",
+        "ru": "Учитывает доступную солнечную энергию до выезда и заряжает ночью до промежуточного уровня. Проверяет резерв сети и энергобаланс дома.",
+        "uk": "Враховує доступну сонячну енергію до виїзду й заряджає вночі до проміжного рівня. Перевіряє резерв мережі та енергобаланс будинку.",
+        "zh-cn": "为出发前可用的光伏电量留出空间，夜间充电至所需的中间电量。校验电网补电能力和家庭能源平衡。"
+      },
       "0.17.0-alpha.309": {
         "en": "Balance SunEnergy charging against a running PV wallbox with slower head feedback. Keep a confirmed one-amp vehicle step while the measured budget covers it.",
         "de": "Der SunEnergy-Speicher nimmt den Überschuss einer laufenden PV-Wallbox auch bei langsameren Kopfmessungen auf. Ein bestätigter 1-A-Schritt bleibt bei ausreichendem gemessenem Budget bestehen.",
@@ -81,19 +94,6 @@
         "ru": "Снижено пиковое потребление памяти при формировании диагностических отчётов и проверке записей SQL.",
         "uk": "Зменшено пікове споживання пам’яті під час формування діагностичних звітів і перевірки записів SQL.",
         "zh-cn": "降低诊断报告和 SQL 存储校验的内存峰值。"
-      },
-      "0.17.0-alpha.303": {
-        "en": "Move planned grid heat to cheaper slots using the finished shared PV allocation.",
-        "de": "Geplante Netz-Wärme anhand der gemeinsamen PV-Zuteilung günstiger und mit geringerer Netzspitze einplanen.",
-        "es": "Desplaza el calor de red previsto a intervalos más baratos según la asignación fotovoltaica final.",
-        "fr": "Déplace le chauffage réseau prévu vers les plages moins chères selon l’affectation photovoltaïque finale.",
-        "it": "Sposta il riscaldamento da rete previsto nelle fasce più economiche in base alla distribuzione fotovoltaica finale.",
-        "nl": "Verplaatst geplande netwarmte naar goedkopere perioden op basis van de definitieve PV-verdeling.",
-        "pl": "Przenosi zaplanowane ogrzewanie z sieci na tańsze okresy zgodnie z końcowym przydziałem PV.",
-        "pt": "Desloca o aquecimento previsto da rede para períodos mais baratos com base na atribuição fotovoltaica final.",
-        "ru": "Переносит запланированный нагрев от сети на более дешёвые интервалы с учётом итогового распределения фотоэлектрической энергии.",
-        "uk": "Переносить заплановане нагрівання від мережі на дешевші інтервали з урахуванням остаточного розподілу сонячної енергії.",
-        "zh-cn": "根据最终光伏分配将计划中的电网供热移至电价更低的时段。"
       }
     },
     "titleLang": {

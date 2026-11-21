@@ -8,7 +8,7 @@ Der **Fahrplan** rechnet für die nächsten 48 Stunden in Viertelstunden. Die **
 
 ## Installation und Aktualisierung
 
-Vorausgesetzt werden Node.js ab 22, ioBroker js-controller ab 6.0.11 und Admin ab 7.8.23. Der hier beschriebene Stand ist **0.17.0-alpha.309**. In GitHub steht der geprüfte Quellstand, in `ems-optimizer.0.System.Version` die tatsächlich laufende Version.
+Vorausgesetzt werden Node.js ab 22, ioBroker js-controller ab 6.0.11 und Admin ab 7.8.23. Der hier beschriebene Stand ist **0.17.0-alpha.310**. In GitHub steht der geprüfte Quellstand, in `ems-optimizer.0.System.Version` die tatsächlich laufende Version.
 
 1. Öffne im ioBroker-Admin **Adapter → Installation aus eigener Quelle → GitHub**. Verwende `https://github.com/fuchs-1978/ioBroker.ems-optimizer`. Wähle für eine reproduzierbare Installation den Commit eines geprüften Stands. [GitHub-Prüfläufe auf main](https://github.com/fuchs-1978/ioBroker.ems-optimizer/actions/workflows/test-and-release.yml?query=branch%3Amain)
 2. Öffne **Instanzen → ems-optimizer.0 → Einstellungen**. Bei einer weiteren Instanz lautet die Nummer entsprechend anders.
@@ -304,7 +304,7 @@ Bei einem Störungsbericht helfen laufende Version, Uhrzeit mit Zeitzone, Gerät
 
 ## Aktuelle Änderungen
 
-Alpha 309 stimmt die SunEnergy-Ladeleistung nach dem Start einer PV-Wallbox auf den verbleibenden Überschuss ab. Ein bestätigter Stromschritt am Fahrzeug bleibt bestehen, wenn die Messwerte die zusätzliche Leistung innerhalb der eingestellten Toleranz decken. [Versionshinweise](docs/release-0.17.0-alpha.309.md)
+Alpha 310 hält bei einer eingetragenen Abfahrt einen Teil der Fahrzeugladung für den erwarteten PV-Überschuss frei. Der Fahrplan prüft ganze Ampere, die verfügbare Netzleistung bei ausbleibender Sonne und die Energiebilanz des Hauses. [Versionshinweise](docs/release-0.17.0-alpha.310.md)
 
 [Änderungen am aktuellen Code](README.md#changelog) · [Ältere Versionshinweise](CHANGELOG_OLD.md#deutsche-versionshistorie)
 

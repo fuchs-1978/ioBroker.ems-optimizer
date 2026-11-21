@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.302 (2026-11-19)
+
+- Continue single-head SunEnergy regulation up to 100 W when the device clock leads and original measurements keep advancing. [Release notes](docs/release-0.17.0-alpha.302.md)
+
 ## 0.17.0-alpha.301 (2026-11-18)
 
 - Fixed start windows from remote release and appliance forecast curves. [Release notes](docs/release-0.17.0-alpha.301.md)

@@ -3666,3 +3666,37 @@ test('a price schedule that no longer covers the observed minimum restores depar
     assert.equal(h.value('Vehicles.Wallbox0.MustCharge'), true, h.diagnostic());
     assert.ok(h.trace.at(-1).miiW >= 1380, h.diagnostic());
 });
+
+test('departure PV plan stops overnight grid charging at the interim SoC and restarts after a lost forecast', async () => {
+    const h = await plant({wallbox: true, startDelayS: 0, minimumRuntimeS: 120, split: false,
+        initialSurplusW: -350, nativeConfig: {wb2DeadlineEnabled: true, wb2CommissioningMaxA: 20,
+            wallboxParallelChargingEnabled: true, dhwControlEnabled: false}});
+    h.own('Devices.MyPV_DHW.Present', false);
+    h.own('Devices.Wallbox0.Present', false);
+    h.own('Devices.MyPV_DHW.ControlEnabled', false);
+    h.own('Config.Wallbox2VehicleCapacity_kWh', 90.6);
+    h.own('Config.Wallbox2PriceChargingEnabled', false);
+    h.put('DP_WB2_MIN_SOC', 90);
+    h.put('DP_WB2_TARGET', 90);
+    h.put('DP_WB2_SOC', 86.5);
+    const start = Math.floor(h.now() / 900000) * 900000;
+    const departure = start + 21 * 900000;
+    h.own('Vehicles.Wallbox2.DepartureTime', new Date(departure).toTimeString().slice(0, 5));
+    const slots = Array.from({length: 24}, (_, i) => ({timestamp: start + i * 900000}));
+    h.engineContext.departureData = {pv: slots.map((s, i) => ({...s, valueW: i < 12 ? 0 : 2840})),
+        house: slots.map(s => ({...s, valueW: 1000})), prices: {total: slots.map(s => ({...s, value_ct_kWh: 30}))}};
+    h.run('historyReady = true; buildDevicePlan(departureData); updateVehicles()');
+    const proof = JSON.parse(h.value('Plan.Wallbox2_48h_JSON'))[0].departurePv;
+    assert.ok(proof && proof.reservePct > 86.5 && proof.reservePct < 90);
+    await h.advance(35);
+    assert.ok(h.trace.at(-1).wbW >= 1380, h.diagnostic());
+    h.put('DP_WB2_SOC', proof.reservePct + 0.1);
+    await h.advance(20);
+    assert.equal(h.value('Vehicles.Wallbox2.MustCharge'), false, h.diagnostic());
+    assert.equal(h.trace.at(-1).wbW, 0, h.diagnostic());
+    h.run('departureData.pv.forEach(p => { p.valueW = 0; }); buildDevicePlan(departureData); updateVehicles()');
+    assert.ok(!JSON.parse(h.value('Plan.Wallbox2_48h_JSON'))[0].departurePv);
+    await h.advance(30);
+    assert.equal(h.value('Vehicles.Wallbox2.MustCharge'), true, h.diagnostic());
+    assert.ok(h.trace.at(-1).wbW >= 1380, h.diagnostic());
+});
