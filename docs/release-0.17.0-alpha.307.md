@@ -1,0 +1,7 @@
+# Alpha 307 – Ruhigere Stromstufen bei der Abfahrtsladung
+
+Die Abfahrtsladung plant den Mindest-SoC weiterhin 15 Minuten vor der Abfahrt ein. Sobald dafür ein höherer Strom nötig wird, fordert das EMS ihn an. Beim Rückgang um ein Ampere behält es die höhere Stufe, bis die niedrigere das Ziel mit insgesamt 20 Minuten Reserve erreicht. Für eine Abfahrt um 08:30 Uhr wird also hochgeregelt, sobald 9 A für 08:15 Uhr zu knapp werden. Von 10 A geht es auf 9 A zurück, wenn 9 A bis 08:10 Uhr reichen. Die Rechnung berücksichtigt auch die konfigurierten Stromgrenzen am Ladeende.
+
+Die Hysterese gilt für eine zuvor dem Fahrzeug zugeteilte Stufe der Abfahrtsladung. Zusätzliche Leistung aus PV, Preisladung oder der Zeitaufteilung mit anderen Fahrzeugen begründet keinen späteren Netzbezug. Ein größerer Bedarfsrückgang, ein erreichtes Mindestziel oder eine geänderte Abfahrt werden direkt neu bewertet. Der Fahrplan, die laufende Verteilung und die Ausgangsprüfung verwenden dieselbe Rechnung. Die Wallbox prüft ihre Freigaben, Leistungsgrenzen und Rückmeldungen weiterhin bei jeder Ausgabe.
+
+Im geschlossenen Nachtmodell startet ein Fahrzeug mit 32,3 kWh um 00:55 Uhr bei 58,1 % und soll um 08:30 Uhr 100 % erreichen. Mit 90 % Ladewirkungsgrad und gemessenen 1,90 kW bei 9 A sowie 2,24 kW bei 10 A ergeben sich bis 07:03 Uhr sechs Wechsel. Der Integrationstest prüft die Befehle und die verzögerte Wallboxbestätigung für Parallel- und Einzelbetrieb sowie die Reduktion auf 8 A bei einem Netzbetreiberlimit von 1.840 W.

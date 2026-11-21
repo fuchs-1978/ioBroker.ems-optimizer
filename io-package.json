@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.306",
+    "version": "0.17.0-alpha.307",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.307": {
+        "en": "Reduce switching between adjacent departure charging currents. Increase immediately when the minimum SoC needs more time.",
+        "de": "Weniger Wechsel zwischen benachbarten Stromstufen bei Abfahrtsladung. Bei knapper Restzeit steigt der Strom sofort.",
+        "es": "Reduce los cambios entre niveles de corriente al cargar para la salida. La corriente sube en cuanto lo exige el tiempo restante.",
+        "fr": "Réduit les changements entre deux courants de charge voisins avant le départ. Le courant augmente dès que le temps restant le demande.",
+        "it": "Riduce le commutazioni tra livelli di corrente vicini prima della partenza. La corrente aumenta appena lo richiede il tempo residuo.",
+        "nl": "Minder wisselingen tussen opeenvolgende laadstromen voor vertrek. De stroom stijgt direct als de resterende tijd dat vraagt.",
+        "pl": "Ogranicza przełączanie między sąsiednimi poziomami prądu przed odjazdem. Prąd rośnie od razu, gdy wymaga tego pozostały czas.",
+        "pt": "Reduz as mudanças entre níveis de corrente próximos antes da partida. A corrente sobe assim que o tempo restante o exige.",
+        "ru": "Снижает частоту переключения между соседними ступенями тока перед отъездом. Если времени мало, ток сразу повышается.",
+        "uk": "Зменшує частоту перемикань між сусідніми рівнями струму перед від’їздом. Якщо часу мало, струм одразу зростає.",
+        "zh-cn": "减少出发前充电时相邻电流档位的频繁切换。剩余时间紧张时立即提高电流。"
+      },
       "0.17.0-alpha.306": {
         "en": "Reserve charging power for the minimum vehicle SoC by departure, including when vehicles charge in parallel.",
         "de": "Ladeleistung für den Mindest-SoC zur Abfahrt auch bei paralleler Fahrzeugladung reservieren.",
@@ -81,19 +94,6 @@
         "ru": "Добавлены окна запуска от разрешения удалённого пуска и прогнозы приборов по четвертям часа.",
         "uk": "Додано вікна запуску від дозволу дистанційного пуску та прогнози приладів за чверть години.",
         "zh-cn": "新增从远程启动授权时刻计算的启动窗口和每台设备的十五分钟预测曲线。"
-      },
-      "0.17.0-alpha.300": {
-        "en": "Reduce CPU work when reading plans, mapping data points, building load profiles and preparing SQL records.",
-        "de": "Weniger Rechenaufwand beim Lesen des Fahrplans, Zuordnen der Datenpunkte, Bilden der Lastprofile und Vorbereiten der SQL-Einträge.",
-        "es": "Reduce el uso de CPU al leer los planes, asignar puntos de datos, generar perfiles de carga y preparar registros SQL.",
-        "fr": "Réduit la charge du processeur à la lecture du planning, à l’affectation des points de données, au calcul des profils de charge et à la préparation des enregistrements SQL.",
-        "it": "Riduce il carico della CPU durante la lettura dei piani, la mappatura dei punti dati, il calcolo dei profili di carico e la preparazione dei record SQL.",
-        "nl": "Verlaagt de processorbelasting bij het lezen van de planning, het koppelen van datapunten, het berekenen van belastingsprofielen en het voorbereiden van SQL-records.",
-        "pl": "Zmniejsza obciążenie procesora przy odczycie harmonogramu, mapowaniu punktów danych, obliczaniu profili obciążenia i przygotowywaniu rekordów SQL.",
-        "pt": "Reduz a utilização da CPU na leitura dos planos, na associação dos pontos de dados, no cálculo dos perfis de carga e na preparação dos registos SQL.",
-        "ru": "Снижает нагрузку на процессор при чтении планов, сопоставлении точек данных, расчёте профилей нагрузки и подготовке записей SQL.",
-        "uk": "Зменшує навантаження на процесор під час читання планів, зіставлення точок даних, обчислення профілів навантаження й підготовки записів SQL.",
-        "zh-cn": "降低读取计划、映射数据点、计算负荷曲线和准备 SQL 记录时的 CPU 开销。"
       }
     },
     "titleLang": {

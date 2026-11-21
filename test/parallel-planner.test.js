@@ -429,3 +429,18 @@ for (const parallel of [false, true]) test(`two departures share time when prote
     assert.ok(r.grid.every(slot => slot.valueW <= 2300));
     balance(r, 0);
 });
+
+test('a new forecast starts from the personal live step and keeps later simulated grants private', () => {
+    const h = fixture({wb0DeadlineEnabled: true, wb0TaperEnabled: true});
+    car(h, 0, {soc: 93.9, minimum: 100, target: 100, capacity: 32.3});
+    const departure = new Date(h.now + 82 * 60000);
+    h.put('ems.0.Vehicles.Wallbox0.DepartureTime', departure.toTimeString().slice(0, 5));
+    assert.equal(h.plan({slots: 6}).cars[0][0].currentA, 9);
+    assert.equal(h.run('liveDepartureGrants[0]'), null);
+    h.run('liveDepartureGrants[0] = departureGrant(vehicleState(0), 2300, 2300, 1, 230, Date.now(), Date.now() + 10000)');
+    const before = h.run('JSON.stringify(liveDepartureGrants)');
+    const plan = h.plan({slots: 6});
+    assert.equal(plan.cars[0][0].currentA, 10);
+    assert.equal(h.run('JSON.stringify(liveDepartureGrants)'), before);
+    balance(plan, 0);
+});
