@@ -558,3 +558,19 @@ for (const [name, change] of [
         assert.ok(!h.writes.some(row => row.id === 'goe.allow' && row.val === 1));
     });
 }
+
+test('parallel publication caps the personal departure grant at the final whole-phase group command', async () => {
+    const h = await groupedPlant({members: [0, 2]});
+    for (const amps of [8, 0]) {
+        const grant = h.run(`(() => {
+            const targets = {wallboxA: [${amps}, 0, 0], wallboxW: [Math.round(${amps} * 221.06), 0, 0],
+                wallboxExpectedW: [2300, 0, 0], dhwW: 0};
+            const allocation = {schema: 1, order: [0], voltage: 221.06,
+                allocations: [{wb: 0, targetA: 10, phases: 1, departureMinimumW: 2210.6}]};
+            gridGroupUpdateParallelPublication(targets, allocation);
+            return allocation.allocations[0];
+        })()`);
+        assert.equal(grant.targetA, amps);
+        assert.equal(grant.departureMinimumW, amps > 0 ? amps * 221.06 : undefined);
+    }
+});
