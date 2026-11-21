@@ -7,7 +7,7 @@
 
 **[Deutsche Schritt-für-Schritt-Anleitung für alle Admin-Reiter](README.de.md)** · [Admin field reference (German)](docs/admin-reference.de.md) · [Changelog](#changelog) · [Issue tracker](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
-EMS Optimizer is an energy management adapter for [ioBroker](https://www.iobroker.net/). It coordinates PV surplus, a home battery, up to three wallboxes and available electric heaters. It can also schedule compatible household appliances. The source build on GitHub is **0.17.0-alpha.307**. Check `System.Version` on your instance for the running build.
+EMS Optimizer is an energy management adapter for [ioBroker](https://www.iobroker.net/). It coordinates PV surplus, a home battery, up to three wallboxes and available electric heaters. It can also schedule compatible household appliances. The source build on GitHub is **0.17.0-alpha.308**. Check `System.Version` on your instance for the running build.
 
 ## How it works
 
@@ -81,6 +81,10 @@ npm run test:equivalence
 
 ## Changelog
 
+### 0.17.0-alpha.308 (2026-11-21)
+
+- Use the SunEnergy head’s measured reporting interval to recognize two minutes of near-maximum PV charging. The wallbox checks the available export before starting. [Release notes](docs/release-0.17.0-alpha.308.md)
+
 ### 0.17.0-alpha.307 (2026-11-21)
 
 - Reduce cycling between adjacent departure charging currents. Increase immediately when required and release the higher step once the lower current supplies five extra minutes of headroom. [Release notes](docs/release-0.17.0-alpha.307.md)
@@ -108,10 +112,6 @@ npm run test:equivalence
 ### 0.17.0-alpha.301 (2026-11-18)
 
 - Fixed start windows from remote release and appliance forecast curves. [Release notes](docs/release-0.17.0-alpha.301.md)
-
-### 0.17.0-alpha.300 (2026-11-18)
-
-- Read the current quarter-hour directly from regular plans, reuse data point field names and daily calendar results, and reuse the compressed SQL payload when publishing a batch. [Release notes](docs/release-0.17.0-alpha.300.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 

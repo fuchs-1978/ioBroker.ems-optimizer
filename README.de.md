@@ -8,7 +8,7 @@ Der **Fahrplan** rechnet für die nächsten 48 Stunden in Viertelstunden. Die **
 
 ## Installation und Aktualisierung
 
-Vorausgesetzt werden Node.js ab 22, ioBroker js-controller ab 6.0.11 und Admin ab 7.8.23. Der hier beschriebene Stand ist **0.17.0-alpha.307**. In GitHub steht der geprüfte Quellstand, in `ems-optimizer.0.System.Version` die tatsächlich laufende Version.
+Vorausgesetzt werden Node.js ab 22, ioBroker js-controller ab 6.0.11 und Admin ab 7.8.23. Der hier beschriebene Stand ist **0.17.0-alpha.308**. In GitHub steht der geprüfte Quellstand, in `ems-optimizer.0.System.Version` die tatsächlich laufende Version.
 
 1. Öffne im ioBroker-Admin **Adapter → Installation aus eigener Quelle → GitHub**. Verwende `https://github.com/fuchs-1978/ioBroker.ems-optimizer`. Wähle für eine reproduzierbare Installation den Commit eines geprüften Stands. [GitHub-Prüfläufe auf main](https://github.com/fuchs-1978/ioBroker.ems-optimizer/actions/workflows/test-and-release.yml?query=branch%3Amain)
 2. Öffne **Instanzen → ems-optimizer.0 → Einstellungen**. Bei einer weiteren Instanz lautet die Nummer entsprechend anders.
@@ -304,7 +304,7 @@ Bei einem Störungsbericht helfen laufende Version, Uhrzeit mit Zeitzone, Gerät
 
 ## Aktuelle Änderungen
 
-Alpha 307 beruhigt die Abfahrtsladung an der Grenze zwischen zwei Stromstufen. Mehr Strom wird sofort angefordert. Eine Stufe tiefer schaltet das EMS, wenn diese fünf zusätzliche Minuten Reserve bis zum Mindest-SoC lässt. [Versionshinweise](docs/release-0.17.0-alpha.307.md)
+Alpha 308 erkennt zwei Minuten PV-Ladung nahe der Leistungsgrenze auch bei einem SunEnergy-Meldetakt von rund fünf Sekunden. Steht am Netzanschlusspunkt genug Überschuss zum Anlaufen bereit, kann die Wallbox früher starten. [Versionshinweise](docs/release-0.17.0-alpha.308.md)
 
 [Änderungen am aktuellen Code](README.md#changelog) · [Ältere Versionshinweise](CHANGELOG_OLD.md#deutsche-versionshistorie)
 

@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.300 (2026-11-18)
+
+- Read the current quarter-hour directly from regular plans, reuse data point field names and daily calendar results, and reuse the compressed SQL payload when publishing a batch. [Release notes](docs/release-0.17.0-alpha.300.md)
+
 ## 0.17.0-alpha.299 (2026-11-18)
 
 - Schedule a newly selected program with the average measured load profile of the same appliance. After its first fully metered run, use the program’s own profile for subsequent starts. [Release notes](docs/release-0.17.0-alpha.299.md)

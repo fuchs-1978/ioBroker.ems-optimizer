@@ -3090,9 +3090,9 @@ for (const phases of [1, 3]) {
     });
 }
 
-async function batteryPvTransferPlant(initialSurplusW = 2400) {
+async function batteryPvTransferPlant(initialSurplusW = 2400, batteryHeadPollMs = 0) {
     const h = await plant({battery: true, batteryHeadType: 2, split: false, startDelayS: 300,
-        minimumRuntimeS: 0, initialSurplusW, batteryDelayMs: 5000, dhwDelayMs: 9000,
+        minimumRuntimeS: 0, initialSurplusW, batteryDelayMs: 5000, batteryHeadPollMs, dhwDelayMs: 9000,
         nativeConfig: {batteryDispatchMode: 'sunenergy-heads', batteryHead1MaxChargeW: 2400,
             batteryPvPriorityEnabled: true, batteryWallboxHalfStepEnabled: true, wallboxParallelChargingEnabled: true}});
     h.own('Control.TargetGridPower_W', 0);
@@ -3134,6 +3134,25 @@ for (const {surplusW, requiredPvChargeW, startCapW, remainderW} of [
         assert.equal(h.physical().batteryW, 780, h.diagnostic());
     });
 }
+
+test('a five-second SunEnergy head releases the 6 A PV start before the five-minute timer', async () => {
+    const h = await batteryPvTransferPlant(3675, 5000);
+    h.own('Plan.BatteryPower_48h_JSON', JSON.stringify([{timestamp: h.now() - 1000,
+        valueW: 2400, requiredPvChargeW: 1348}]));
+    h.own('Config.BatteryDeadband_W', 10);
+    const initialTime = h.now();
+    await h.advance(180);
+
+    const saturated = h.trace.find(row => row.batteryW >= 2350);
+    const start = h.writes.find(w => w.id === 'goe.allow' && w.val === 1);
+    assert.ok(saturated && start, h.diagnostic());
+    assert.ok(start.at >= saturated.at + 120000 && start.at < initialTime + 180000, h.diagnostic());
+    assert.ok(h.trace.some(row => row.at <= start.at && row.wbW === 0 && row.batteryW === 2145),
+        'the battery releases the 1380 W minimum and the 150 W start reserve');
+    assert.ok(h.trace.some(row => row.at === start.at && row.gridW <= -1380),
+        'the wallbox output sees the measured export before starting');
+    assert.ok(h.trace.slice(-10).every(row => row.wbW === 1380 && row.physicalAllow === 1), h.diagnostic());
+});
 
 test('a completed forecast stage releases the PV reservation while live charging and the wallbox continue', async () => {
     const h = await plant({battery: true, batteryHeadType: 2, batteryHeadMaxSoc: 100, batteryHeadChargeHysteresis: 5,
