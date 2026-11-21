@@ -1049,9 +1049,92 @@ test('a minimum-reserve label does not strand movable grid heat after sufficient
         near(s.rawGridW, s.baseW + s.dhwW + s.batteryW - s.pvW, 'grid balance');
         if (s.dhwGridShiftW) assert.ok(s.dhwW >= 900 && s.dhwW <= 9000);
     });
-    for (const result of [run(original, '4200'), run(original, 'Infinity', false),
-        run(original.map(s => ({...s, batteryPvW: 0})))]) {
-        assert.equal(result.changed, false, 'restriction, failed reserve proof or no prior competing PV blocks shift');
+    for (const result of [run(original, '4200'), run(original, 'Infinity', false)]) {
+        assert.equal(result.changed, false, 'restriction or failed reserve proof blocks the shift');
+        assert.deepEqual(result.r, report);
+    }
+});
+
+test('21 November 22:18 forecast advances the remaining midday grid heat and keeps both reserves', () => {
+    const h = engine({}, '2026-11-22T01:15:00Z'); // first cheap heater quarter, 02:15 local
+    const initial = 12.81008375;
+    const cheapSlots = 11, midday = 41;
+    const middayHeat = [9000, 9000, 9000, 6475], middayPv = [1380.5, 1256.5, 1281.5, 1208.5];
+    // Reconstruct the 02:15–22:45 interval from the observed heat powers and
+    // tank balance. Represent the forecast's prior EV/storage PV totals in 11 slots.
+    const original = Array.from({length: 83}, (_, i) => {
+        const night = i < cheapSlots;
+        const heatW = night ? 969.06045454545 : middayHeat[i - midday] || 0;
+        const heatPvW = middayPv[i - midday] || 0;
+        const prior = i >= midday - 11 && i < midday;
+        const wallboxPvW = prior ? 3.120666666666667 * 4000 / 11 : 0;
+        const batteryPvW = prior ? 2.170799154589373 * 4000 / 11 : 0;
+        const baseW = 700, pvW = prior || heatPvW ? baseW + wallboxPvW + batteryPvW + heatPvW : 0;
+        const batteryW = night ? -baseW : batteryPvW;
+        const rawGridW = baseW + heatW + wallboxPvW + batteryW - pvW;
+        return {timestamp: h.now + i * 900000, price: night ? 23.56 : 30.04, priceValid: true,
+            baseW, pvW, pvAfterBaseW: Math.max(0, pvW - baseW), batteryW, batteryPvW,
+            wallboxW: wallboxPvW, wallboxPvW, heatingPvW: 0,
+            dhwReason: night ? 'price-bridge' : heatW ? 'minimum-reserve' : 'off',
+            dhwW: heatW, dhwPvW: heatPvW, dhwGridW: heatW - heatPvW,
+            dhwBeforeQuantizationW: heatW, mandatoryThermalW: heatW,
+            mandatoryThermalGridW: heatW - heatPvW, mandatoryThermalRequestedW: heatW,
+            rawGridW, gridW: Math.round(rawGridW)};
+    });
+    let usable = initial;
+    const slots = original.map(s => {
+        const consumptionKWh = 0.28125;
+        usable += s.dhwW / 4000 - consumptionKWh;
+        return {timestamp: s.timestamp, usableKWh: usable, headroomKWh: 32.564 - usable, consumptionKWh,
+            gridKWh: s.dhwGridW / 4000, pvKWh: s.dhwPvW / 4000, reason: s.dhwReason,
+            mandatoryThermalW: s.dhwW, mandatoryThermalGridW: s.dhwGridW, mandatoryThermalRequestedW: s.dhwW};
+    });
+    const report = {valid: true, gridAuthorization: false, initialColdLayerDeficitKWh: 0,
+        initialUsableAboveMinimumKWh: initial, reserveKWh: 0.5, unmetReserveKWh: 0,
+        minimumProjectedUsableKWh: Math.min(...slots.map(s => s.usableKWh)), slots};
+    const run = (allocation, {limit = 'Infinity', reserve = '{}', proof = 'true'} = {}) => JSON.parse(h.run(`(() => {
+        const a=${JSON.stringify(allocation)}, r=${JSON.stringify(report)};
+        const changed=reconcileDhwPriceBridgeWithReserve(a,r,${h.now},9000,
+            s=>({valid:true,consumptionW:${limit},phaseW:[10580-s.baseW-s.dhwW]}), ${reserve}, s => ${proof});
+        return JSON.stringify({changed,a,r});})()`));
+
+    // A restricted battery refill can accept the original shared-PV move but
+    // reject the extra cheap heat. Its previously proven schedule must survive.
+    const legacy = run(original, {proof: 's.price > 23.56 || s.dhwW < 3200'});
+    near(legacy.r.gridHeatShift.energyKWh, 5.29146582125604, 'shared-PV correction retained');
+    near(legacy.a[0].dhwW, 2893.2298440931, 'original cheap-slot heat');
+    near(legacy.a[midday + 2].dhwGridW, 1915.6367149758416, 'original 13:00 grid heat');
+    near(legacy.a[midday + 3].dhwGridW, 5266.5, 'original 13:15 grid heat');
+
+    for (const reserve of ['{}', 'null']) {
+        const {changed, a, r} = run(original, {reserve});
+        assert.equal(changed, true);
+        near(r.gridHeatShift.energyKWh - legacy.r.gridHeatShift.energyKWh, 1.795534178743959, 'extra cheaper kWh');
+        near(r.gridHeatShift.savingsEUR - legacy.r.gridHeatShift.savingsEUR, 0.11635061478261, 'extra euros saved');
+        assert.equal(r.gridHeatShift.batteryReservePreserved, reserve === '{}' ? true : undefined);
+        assert.equal(r.gridAuthorization, false);
+        for (const s of a.slice(0, cheapSlots)) near(s.dhwW, 3546.151363636, 'even overnight heat');
+        for (const [j, pvW] of middayPv.entries()) {
+            near(a[midday + j].dhwW, pvW, 'only the assigned PV heats water');
+            near(a[midday + j].rawGridW, 0, 'no site import at midday');
+        }
+        near(r.minimumProjectedUsableKWh, 0.5, 'minimum forecast reserve');
+        near(r.slots.at(-1).usableKWh, report.slots.at(-1).usableKWh, 'same evening reserve');
+        assert.ok(r.slots.every(s => s.headroomKWh >= 0));
+        a.forEach((s, i) => {
+            for (const key of ['pvW', 'baseW', 'batteryW', 'batteryPvW', 'wallboxW', 'wallboxPvW', 'dhwPvW'])
+                assert.equal(s[key], original[i][key]);
+            near(s.dhwW, s.dhwGridW + s.dhwPvW, 'heat balance');
+            near(s.rawGridW, s.baseW + s.dhwW + s.wallboxW + s.batteryW - s.pvW, 'grid balance');
+            if (s.dhwGridShiftW) assert.ok(original[i].dhwW > 0 && s.dhwW >= 900 && s.dhwW <= 9000);
+        });
+    }
+    const noCompetition = original.map(s => s.wallboxPvW ? {...s, pvW: s.baseW, pvAfterBaseW: 0,
+        batteryW: 0, batteryPvW: 0, wallboxW: 0, wallboxPvW: 0} : s);
+    near(run(noCompetition).a[midday + 3].dhwGridW, 0, 'confirmed grid heat can move without competing PV');
+    for (const result of [run(original, {limit: '4200'}), run(original, {proof: 'false'})]) {
+        assert.equal(result.changed, false);
+        assert.deepEqual(result.a, original);
         assert.deepEqual(result.r, report);
     }
 });

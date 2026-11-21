@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.306 (2026-11-21)
+
+- Reserve the charging power needed to reach the vehicle minimum SoC by departure, including parallel charging without PV. Recheck the reservation at the wallbox output. [Release notes](docs/release-0.17.0-alpha.306.md)
+
 ## 0.17.0-alpha.305 (2026-11-20)
 
 - Reconcile planned hot-water grid heat during a forecast battery reserve only if the reserve charge trajectory and deadline capacity remain unchanged. [Release notes](docs/release-0.17.0-alpha.305.md)

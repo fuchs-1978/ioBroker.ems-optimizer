@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.312",
+    "version": "0.17.0-alpha.313",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.313": {
+        "en": "Move remaining planned hot-water grid imports to cheaper running heater slots when tank, battery and connection limits allow. Keep the assigned solar energy for every device.",
+        "de": "Verschiebt verbleibenden Netzbezug für Warmwasser in günstigere, bereits aktive Heizviertelstunden, wenn Wärme-, Batterie- und Anschlussreserven ausreichen. Die PV-Zuteilung je Gerät bleibt erhalten.",
+        "es": "Adelanta el consumo de red previsto para agua caliente a intervalos activos más baratos si lo permiten el depósito, la batería y la conexión. Mantiene la energía solar asignada a cada equipo.",
+        "fr": "Avance les achats prévus pour l’eau chaude vers des créneaux de chauffe actifs moins chers si le ballon, la batterie et le raccordement le permettent. Préserve la part solaire de chaque appareil.",
+        "it": "Anticipa i prelievi di rete previsti per l’acqua calda nelle fasce di riscaldamento già attive e meno costose se accumulo, batteria e connessione lo consentono. Conserva la quota solare di ogni dispositivo.",
+        "nl": "Verplaatst geplande netafname voor warm water naar goedkopere, al actieve verwarmingskwartieren als het vat, de accu en de aansluiting dat toelaten. Behoudt de toegewezen zonnestroom per apparaat.",
+        "pl": "Przenosi planowany pobór z sieci na ciepłą wodę do tańszych okresów z już włączoną grzałką, gdy pozwalają na to zasobnik, akumulator i przyłącze. Zachowuje przydział energii słonecznej dla każdego urządzenia.",
+        "pt": "Antecipa o consumo previsto da rede para água quente para períodos de aquecimento já ativos e mais baratos, se o depósito, a bateria e a ligação o permitirem. Mantém a energia solar atribuída a cada aparelho.",
+        "ru": "Переносит запланированный нагрев воды от сети на более дешёвые интервалы работы нагревателя с учётом ограничений бака, аккумулятора и подключения. Сохраняет распределение солнечной энергии между устройствами.",
+        "uk": "Переносить запланований нагрів води від мережі на дешевші інтервали роботи нагрівача з урахуванням обмежень бака, акумулятора й підключення. Зберігає розподіл сонячної енергії між пристроями.",
+        "zh-cn": "在水箱、电池和接入功率允许时，将计划中剩余的热水用电移至加热器已运行且电价较低的时段。各设备分配到的光伏电量保持不变。"
+      },
       "0.17.0-alpha.312": {
         "en": "Keep the newest vehicle SoC by measurement timestamp across adapter imports, manual corrections and restarts; share its observation with price planning.",
         "de": "Den neuesten Fahrzeug-SoC anhand des Messzeitpunkts über Adapterimporte, manuelle Korrekturen und Neustarts erhalten; dieselbe Beobachtung für die Preisplanung verwenden.",
@@ -81,19 +94,6 @@
         "ru": "Снижает частоту переключения между соседними ступенями тока перед отъездом. Если времени мало, ток сразу повышается.",
         "uk": "Зменшує частоту перемикань між сусідніми рівнями струму перед від’їздом. Якщо часу мало, струм одразу зростає.",
         "zh-cn": "减少出发前充电时相邻电流档位的频繁切换。剩余时间紧张时立即提高电流。"
-      },
-      "0.17.0-alpha.306": {
-        "en": "Reserve charging power for the minimum vehicle SoC by departure, including when vehicles charge in parallel.",
-        "de": "Ladeleistung für den Mindest-SoC zur Abfahrt auch bei paralleler Fahrzeugladung reservieren.",
-        "es": "Reserva potencia para alcanzar la carga mínima del vehículo a la salida, también con varios vehículos en paralelo.",
-        "fr": "Réserve la puissance nécessaire au niveau de charge minimal au départ, même avec plusieurs véhicules en charge.",
-        "it": "Riserva la potenza per la carica minima del veicolo alla partenza, anche durante la ricarica in parallelo.",
-        "nl": "Reserveert laadvermogen voor de minimale acculading bij vertrek, ook wanneer meerdere auto’s tegelijk laden.",
-        "pl": "Rezerwuje moc na osiągnięcie minimalnego poziomu naładowania przed odjazdem także podczas ładowania równoległego.",
-        "pt": "Reserva potência para atingir a carga mínima à partida, mesmo com vários veículos a carregar em paralelo.",
-        "ru": "Резервирует мощность для достижения минимального заряда к отъезду, в том числе при параллельной зарядке.",
-        "uk": "Резервує потужність для досягнення мінімального заряду до від’їзду, зокрема під час паралельного заряджання.",
-        "zh-cn": "即使多辆车同时充电，也会为出发时达到最低电量预留充电功率。"
       }
     },
     "titleLang": {

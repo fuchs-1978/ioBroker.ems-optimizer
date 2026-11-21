@@ -7,7 +7,7 @@
 
 **[Deutsche Schritt-für-Schritt-Anleitung für alle Admin-Reiter](README.de.md)** · [Admin field reference (German)](docs/admin-reference.de.md) · [Changelog](#changelog) · [Issue tracker](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
 
-EMS Optimizer is an energy management adapter for [ioBroker](https://www.iobroker.net/). It coordinates PV surplus, a home battery, up to three wallboxes and available electric heaters. It can also schedule compatible household appliances. The source build on GitHub is **0.17.0-alpha.312**. Check `System.Version` on your instance for the running build.
+EMS Optimizer is an energy management adapter for [ioBroker](https://www.iobroker.net/). It coordinates PV surplus, a home battery, up to three wallboxes and available electric heaters. It can also schedule compatible household appliances. The source build on GitHub is **0.17.0-alpha.313**. Check `System.Version` on your instance for the running build.
 
 ## How it works
 
@@ -81,6 +81,10 @@ npm run test:equivalence
 
 ## Changelog
 
+### 0.17.0-alpha.313 (2026-11-21)
+
+- Move remaining planned hot-water grid imports to cheaper heater slots while retaining direct PV, the battery reserve and the existing connection limits. [Release notes](docs/release-0.17.0-alpha.313.md)
+
 ### 0.17.0-alpha.312 (2026-11-21)
 
 - Select vehicle SoC by the measurement timestamp, retaining newer manual corrections and observations across delayed imports and restarts. Share that observation with price planning. [Release notes](docs/release-0.17.0-alpha.312.md)
@@ -104,10 +108,6 @@ npm run test:equivalence
 ### 0.17.0-alpha.307 (2026-11-21)
 
 - Reduce cycling between adjacent departure charging currents. Increase immediately when required and release the higher step once the lower current supplies five extra minutes of headroom. [Release notes](docs/release-0.17.0-alpha.307.md)
-
-### 0.17.0-alpha.306 (2026-11-21)
-
-- Reserve the charging power needed to reach the vehicle minimum SoC by departure, including parallel charging without PV. Recheck the reservation at the wallbox output. [Release notes](docs/release-0.17.0-alpha.306.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 
