@@ -79,6 +79,10 @@ npm run test:equivalence
 
 ## Changelog
 
+### 0.17.0-alpha.316 (2026-11-22)
+
+- Keep the active wallbox charging when a verified idle peer misses a poll. Let the battery absorb measured export left after mandatory vehicle charging. [Release notes](docs/release-0.17.0-alpha.316.md)
+
 ### 0.17.0-alpha.315 (2026-11-22)
 
 - Keep an earned departure charging pause through gaps in the PV forecast. Recalculate the latest grid slot that can still deliver the minimum before departure. [Release notes](docs/release-0.17.0-alpha.315.md)
@@ -102,10 +106,6 @@ npm run test:equivalence
 ### 0.17.0-alpha.310 (2026-11-21)
 
 - Leave room for direct PV charging before departure when the finished plan also covers a zero-PV fallback. [Release notes](docs/release-0.17.0-alpha.310.md)
-
-### 0.17.0-alpha.309 (2026-11-21)
-
-- Settle the battery on the surplus left by a running PV wallbox when SunEnergy and grid readings arrive at different rates. Retain a confirmed one-amp vehicle increase when the meter covers the full step within the configured tolerance. [Release notes](docs/release-0.17.0-alpha.309.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 

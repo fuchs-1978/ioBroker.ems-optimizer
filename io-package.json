@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.315",
+    "version": "0.17.0-alpha.316",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.316": {
+        "en": "Keep other cars charging during a delayed idle wallbox poll and store measured export after mandatory vehicle charging has received its allocation.",
+        "de": "Bei verzögerter Meldung einer ruhenden Wallbox laden die anderen Autos weiter. Der Speicher nutzt gemessenen Restüberschuss während einer Fahrzeug-Pflichtladung.",
+        "es": "Mantiene la carga de los otros vehículos si se retrasa la lectura de un cargador inactivo y almacena el excedente medido después de asignar la carga obligatoria.",
+        "fr": "Maintient la recharge des autres véhicules si une borne au repos tarde à répondre et stocke le surplus mesuré après attribution de la recharge obligatoire.",
+        "it": "Mantiene in carica gli altri veicoli se una colonnina inattiva risponde in ritardo e accumula il surplus misurato dopo aver assegnato la ricarica obbligatoria.",
+        "nl": "Andere voertuigen laden door bij een vertraagde meting van een inactief laadpunt. De accu slaat het gemeten overschot na toewijzing van de verplichte laadstroom op.",
+        "pl": "Pozostałe pojazdy ładują się dalej przy opóźnionym odczycie nieczynnej ładowarki. Magazyn gromadzi zmierzoną nadwyżkę po przydzieleniu mocy obowiązkowego ładowania.",
+        "pt": "Mantém os restantes veículos em carga quando atrasa a leitura de um carregador inativo e armazena o excedente medido após atribuir a carga obrigatória.",
+        "ru": "Остальные автомобили продолжают заряжаться при задержке опроса простаивающей станции. Накопитель получает измеренный избыток после выделения мощности для обязательной зарядки.",
+        "uk": "Інші автомобілі продовжують заряджатися в разі затримки опитування неактивної станції. Накопичувач отримує виміряний надлишок після розподілу потужності для обов’язкового заряджання.",
+        "zh-cn": "空闲充电桩读数延迟时，其他车辆可继续充电。分配车辆必需的充电功率后，储能电池可吸收实测的剩余上网功率。"
+      },
       "0.17.0-alpha.315": {
         "en": "Retain an earned departure PV pause across forecast gaps while a fresh zero-solar recovery calculation covers the departure minimum.",
         "de": "Eine erreichte PV-Ladepause übersteht Prognoselücken, solange die verbleibende Netzladezeit für den Mindest-SoC bei Abfahrt ausreicht.",
@@ -81,19 +94,6 @@
         "ru": "Учитывает доступную солнечную энергию до выезда и заряжает ночью до промежуточного уровня. Проверяет резерв сети и энергобаланс дома.",
         "uk": "Враховує доступну сонячну енергію до виїзду й заряджає вночі до проміжного рівня. Перевіряє резерв мережі та енергобаланс будинку.",
         "zh-cn": "为出发前可用的光伏电量留出空间，夜间充电至所需的中间电量。校验电网补电能力和家庭能源平衡。"
-      },
-      "0.17.0-alpha.309": {
-        "en": "Balance SunEnergy charging against a running PV wallbox with slower head feedback. Keep a confirmed one-amp vehicle step while the measured budget covers it.",
-        "de": "Der SunEnergy-Speicher nimmt den Überschuss einer laufenden PV-Wallbox auch bei langsameren Kopfmessungen auf. Ein bestätigter 1-A-Schritt bleibt bei ausreichendem gemessenem Budget bestehen.",
-        "es": "Ajusta la carga de SunEnergy al excedente que deja el vehículo cuando la batería informa más despacio. Mantiene un incremento confirmado de 1 A si lo cubre la potencia medida.",
-        "fr": "Ajuste la charge SunEnergy au surplus disponible pendant la recharge solaire du véhicule malgré des mesures de batterie plus lentes. Maintient un palier confirmé de 1 A si la puissance mesurée le permet.",
-        "it": "Regola la carica SunEnergy sul surplus disponibile durante la ricarica solare del veicolo anche con misure della batteria più lente. Mantiene un aumento confermato di 1 A se la potenza misurata lo consente.",
-        "nl": "Stemt de SunEnergy-lading af op het overschot tijdens het zonneladen van de auto, ook bij tragere batterijmetingen. Behoudt een bevestigde stap van 1 A als het gemeten vermogen toereikend is.",
-        "pl": "Dostosowuje ładowanie magazynu SunEnergy do nadwyżki podczas ładowania auta z PV przy rzadszych pomiarach magazynu. Utrzymuje potwierdzony wzrost o 1 A, gdy pozwala na to zmierzona moc.",
-        "pt": "Ajusta a carga SunEnergy ao excedente durante o carregamento solar do veículo mesmo com leituras mais lentas da bateria. Mantém um aumento confirmado de 1 A quando a potência medida o permite.",
-        "ru": "Заряд накопителя SunEnergy учитывает остаток мощности при зарядке автомобиля от солнца и более редкие показания накопителя. Подтверждённое повышение на 1 А сохраняется при достаточной измеренной мощности.",
-        "uk": "Заряд накопичувача SunEnergy враховує надлишок під час заряджання автомобіля від сонця та рідші покази накопичувача. Підтверджене підвищення на 1 А зберігається за достатньої виміряної потужності.",
-        "zh-cn": "在车辆使用光伏充电时，即使 SunEnergy 储能的测量更新较慢，也能按剩余功率调节充电。实测功率足够时，保持车辆已确认的 1 A 电流增量。"
       }
     },
     "titleLang": {
