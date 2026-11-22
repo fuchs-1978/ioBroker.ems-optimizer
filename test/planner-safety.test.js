@@ -15,7 +15,8 @@ function engine(config = {}, clock = null) {
         static now() { return now; }
     }
     const put = (id, val) => states.set(id, {val, ts: now, ack: true});
-    const context = vm.createContext({vehicleSocEstimator: require('../lib/vehicle-soc-estimator'), nativeConfig: config, Date: Clock,
+    const context = vm.createContext({vehicleSocEstimator: require('../lib/vehicle-soc-estimator'),
+        meanProgramWatts: require('../lib/appliance-load').meanProgramWatts, nativeConfig: config, Date: Clock,
         getState: id => states.get(id), existsState: id => states.has(id),
         createState: (id, val) => { if (!states.has(id)) put(id, val); },
         setState: put, log: () => {}});
@@ -413,6 +414,63 @@ test('production forecast uses baseload rather than historical total house deman
         const chart = JSON.parse(h.states.get(`ems.0.Chart.${name}_48h_json_chart`).val);
         assert.deepEqual(chart, forecast(name).map(slot => ({ts: slot.timestamp, val: slot.valueW})));
     }
+});
+
+test('off-grid program starts affect the remaining house, grid and battery plan once, including across midnight', () => {
+    const h = engine({}, '2026-11-22T23:55:00+01:00');
+    h.put('ems.0.Devices.MyPV_DHW.Present', false);
+    h.run(`for (const day of DAY_TYPES) {
+        historyProfiles.houseTotal[day].fill(700); historyProfiles.baseload[day].fill(600);
+    }
+    let rebuilds = 0;
+    requestForecastRebuild = () => { rebuilds++; };
+    buildForecast();`);
+    const energy = () => h.states.get('ems.0.Plan.ExpectedImport_kWh').val;
+    const initial = energy();
+    h.run(`const quarter = Math.floor(Date.now() / 900000) * 900000;
+        const devices = [{start: quarter + 300000, watts: [900, 300]},
+            {start: quarter - 300000, watts: [600, 1200]}];
+        updateApplianceRuns(devices, Date.now()); updateApplianceRuns(devices, Date.now()); buildForecast();`);
+    assert.equal(h.run('rebuilds'), 1, 'a poll of the same running programs does not rebuild');
+    const forecast = name => JSON.parse(h.states.get(`ems.0.Forecast.${name}_48h_JSON`).val);
+    assert.deepEqual(forecast('HouseLoad').slice(0, 4).map(p => p.valueW), [2100, 2000, 800, 700]);
+    assert.ok(forecast('Baseload').every(p => p.valueW === 600));
+    const grid = h.series('GridPower');
+    assert.deepEqual(grid.slice(0, 4).map(p => p.valueW), [2700, 1900, 700, 600]);
+    assert.deepEqual(grid.slice(0, 4).map(p => p.applianceW ?? 0), [2100, 1300, 100, 0]);
+    assert.deepEqual(h.series('Allocation').slice(0, 3).map(p => p.applianceW), [2100, 1300, 100]);
+    assert.ok(Math.abs(energy() - initial - 0.525) < 0.011, 'import counts only the five remaining minutes of the first quarter');
+    h.put('ems.0.Devices.Battery.Present', true);
+    h.put('ems.0.Config.BatteryCapacity_kWh', 15);
+    h.put('DP_BATTERY_SOC', 80);
+    h.put('ems.0.Config.BatterySelfConsumptionEnabled', true);
+    h.run('buildForecast()');
+    assert.ok(h.series('BatteryPower')[0].valueW < -600);
+    assert.equal(h.series('GridPower')[0].valueW, 2700 + h.series('BatteryPower')[0].valueW);
+    h.run('updateApplianceRuns([], Date.now()); buildForecast()');
+    assert.equal(h.series('BatteryPower')[0].valueW, -600);
+    assert.ok(h.series('GridPower').every(p => !p.applianceW));
+    h.run('updateApplianceRuns(devices, Date.now() - 61000); buildForecast()');
+    assert.equal(h.series('BatteryPower')[0].valueW, -600, 'stale observations are excluded');
+});
+
+test('starting a dishwasher takes PV from the planned EV and water heater, finishing releases it again', () => {
+    const h = engine();
+    vehicle(h, {soc: 50, minimum: 20});
+    dhw(h);
+    h.run(`for (const day of DAY_TYPES) historyProfiles.baseload[day].fill(615);
+        nearTermForecast = start => ({weather: new Map(), pv: new Map([[start, [2954]]])});
+        requestForecastRebuild = buildForecast;
+        buildForecast();`);
+    assert.equal(h.series('Wallbox2')[0].valueW, 2300);
+    assert.equal(h.series('MyPV_DHW')[0].valueW, 39);
+    h.run('updateApplianceRuns([{start: Date.now(), watts: [1500]}], Date.now());');
+    assert.equal(h.series('Wallbox2')[0].valueW, 0, 'remaining solar power is below the EV minimum');
+    assert.equal(h.series('MyPV_DHW')[0].valueW, 839);
+    assert.equal(h.series('GridPower')[0].valueW, 0);
+    h.run('updateApplianceRuns([], Date.now());');
+    assert.equal(h.series('Wallbox2')[0].valueW, 2300);
+    assert.equal(h.series('MyPV_DHW')[0].valueW, 39);
 });
 
 test('DHW planner never schedules more heat than the remaining storage capacity', () => {

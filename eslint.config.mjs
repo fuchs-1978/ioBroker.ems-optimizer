@@ -56,7 +56,8 @@ export default [
             gridMeasurement: 'readonly', gridOperatorRuntime: 'readonly', batteryTemperatureReserve: 'readonly', batteryOperatingWindow: 'readonly', sunEnergyHeads: 'readonly',
             heatPumpTelemetryParser: 'readonly', SMA_GRID_MAX_AGE_MS: 'readonly'
             , getSourceUnit: 'readonly', getHeaterWriteOnlyZeroStatus: 'readonly', getActualState: 'readonly',
-            historyRetryAllowed: 'readonly', shadowElectricalResponseValid: 'readonly', normalizeWallboxPowerKW: 'readonly'
+            historyRetryAllowed: 'readonly', shadowElectricalResponseValid: 'readonly', normalizeWallboxPowerKW: 'readonly',
+            meanProgramWatts: 'readonly', applianceHistorySources: 'readonly', readApplianceHistory: 'readonly'
         }},
         rules: {'no-redeclare': ['error', {builtinGlobals: false}],
             '@typescript-eslint/no-unused-vars': ['error', {vars: 'local', ignoreRestSiblings: true, argsIgnorePattern: '^_', caughtErrors: 'none'}]}

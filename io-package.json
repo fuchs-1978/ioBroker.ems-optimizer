@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.317",
+    "version": "0.17.0-alpha.318",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.318": {
+        "en": "Include the remaining load of manually started and scheduled appliance programs in the 48-hour plan.",
+        "de": "Restlast sofort gestarteter und eingeplanter Haushaltsprogramme im 48-Stunden-Fahrplan berücksichtigen.",
+        "es": "Incluye la carga restante de los programas iniciados manualmente o programados en el plan de 48 horas.",
+        "fr": "Intègre la consommation restante des programmes lancés manuellement ou planifiés au bilan sur 48 heures.",
+        "it": "Include nel piano di 48 ore il carico residuo dei programmi avviati manualmente o pianificati.",
+        "nl": "Neemt de resterende belasting van handmatig gestarte en geplande programma’s mee in het 48-uursplan.",
+        "pl": "Plan na 48 godzin uwzględnia pozostałe zużycie programów uruchomionych ręcznie i zaplanowanych.",
+        "pt": "Inclui no plano de 48 horas a carga restante dos programas iniciados manualmente ou agendados.",
+        "ru": "Учитывает оставшуюся нагрузку запущенных вручную и запланированных программ в плане на 48 часов.",
+        "uk": "Враховує залишкове навантаження запущених вручну та запланованих програм у плані на 48 годин.",
+        "zh-cn": "在 48 小时计划中计入手动启动和已排程设备程序的剩余负荷。"
+      },
       "0.17.0-alpha.317": {
         "en": "Adaptive battery charge targets and monthly solar full charge",
         "de": "Adaptive Speicherziele und monatliche PV-Vollladung",
@@ -81,19 +94,6 @@
         "ru": "Сохраняет новейший SoC по времени измерения при импорте, ручных исправлениях и перезапусках; использует то же наблюдение при ценовом планировании.",
         "uk": "Зберігає найновіший SoC за часом вимірювання під час імпорту, ручних виправлень і перезапусків; використовує те саме спостереження в ціновому плануванні.",
         "zh-cn": "按测量时间保留车辆最新电量，避免导入、手动修正和重启时回退；电价规划采用同一观测值。"
-      },
-      "0.17.0-alpha.311": {
-        "en": "Include already planned minimum-reserve grid heat in the bounded shift to cheaper hours while preserving heat and battery reserves.",
-        "de": "Bereits geplante Netz-Wärme mit Mindestreserve-Grund in günstigere Stunden vorziehen, sofern Wärme- und Batteriereserve erhalten bleiben.",
-        "es": "Adelanta el calor de red previsto para la reserva mínima a horas más baratas sin reducir las reservas térmica y de batería.",
-        "fr": "Avance le chauffage réseau prévu pour la réserve minimale vers les heures moins chères sans réduire les réserves thermique et de batterie.",
-        "it": "Anticipa il riscaldamento di rete previsto per la riserva minima alle ore meno costose mantenendo le riserve termica e della batteria.",
-        "nl": "Verplaatst geplande netwarmte voor de minimumreserve naar goedkopere uren met behoud van warmte- en batterijreserve.",
-        "pl": "Przesuwa zaplanowane ogrzewanie z sieci dla rezerwy minimalnej na tańsze godziny z zachowaniem rezerw ciepła i akumulatora.",
-        "pt": "Antecipa o calor de rede previsto para a reserva mínima para horas mais baratas, preservando as reservas térmica e da bateria.",
-        "ru": "Переносит запланированный сетевой нагрев для минимального резерва на более дешёвые часы с сохранением теплового и аккумуляторного резервов.",
-        "uk": "Переносить запланований мережевий нагрів для мінімального резерву на дешевші години зі збереженням теплового й акумуляторного резервів.",
-        "zh-cn": "将已计划的最低热储备电网加热移至更便宜的时段，同时保持热储备和电池储备。"
       }
     },
     "titleLang": {

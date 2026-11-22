@@ -3,13 +3,15 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {createHash} = require('node:crypto');
+const vm = require('node:vm');
 const {planProgram, startDevicePrograms} = require('../lib/device-programs');
+const {createEngineContext} = require('../lib/engine-loader');
 
 const SLOT = 900000;
 const BASE = new Date(2026, 10, 17, 12, 0).getTime();
 
 function simulation(t, devices) {
-    const own = new Map(), foreign = new Map(), writes = [], warnings = [];
+    const own = new Map(), published = new Map(), foreign = new Map(), writes = [], warnings = [];
     const rows = devices.map((options, i) => ({
         name: 'Gerät ' + (i + 1), mode: 'observe', statusObject: 'status.' + i, readyValue: 'Ready',
         runningValue: 'Running', finishedValue: 'Finished', remoteObject: 'remote.' + i, remoteValue: 'true',
@@ -44,7 +46,10 @@ function simulation(t, devices) {
         async tick() {
             const done = new Promise(resolve => { complete = resolve; });
             if (timer) timer();
-            else startDevicePrograms(adapter);
+            else startDevicePrograms(adapter, (runs, at) => {
+                result.forecastRuns = runs;
+                result.onForecast?.(runs, at);
+            });
             await done;
             assert.deepEqual(warnings, []);
         }
@@ -53,7 +58,7 @@ function simulation(t, devices) {
     const adapter = {namespace, config: {devicePrograms: rows, globalWriteEnabled: true, controlEnabled: true},
         log: {warn: message => warnings.push(message)},
         setTimeout(callback, delay) { assert.equal(delay, 15000); timer = callback; complete(); },
-        async getStateAsync(id) { return {val: own.get(id)}; },
+        async getStateAsync(id) { return {val: own.get(id), ts: published.get(id)}; },
         async getStatesAsync(pattern) {
             return Object.fromEntries([...own].filter(([id]) => id.startsWith(pattern.slice(0, -1)))
                 .map(([id, val]) => [namespace + '.' + id, {val, ts: now}]));
@@ -65,7 +70,7 @@ function simulation(t, devices) {
             return {common: {type: row?.startFromSelection ? 'string' : 'boolean', write: true}};
         },
         async setObjectNotExistsAsync() {},
-        async setStateAsync(id, val) { own.set(id, val); result.afterPublish?.(id, JSON.parse(val)); },
+        async setStateAsync(id, val) { own.set(id, val); published.set(id, now); result.afterPublish?.(id, JSON.parse(val)); },
         async setForeignStateAsync(id, value, ack) { writes.push({id, value, ack}); }
     };
     result.config = adapter.config;
@@ -480,3 +485,119 @@ for (const setting of ['+0', '+-4', '+49', '+four', '25:00']) {
         assert.deepEqual(h.writes, []);
     });
 }
+
+test('a manual early start replaces the future dryer plan and runs alongside a dishwasher with remote start off', async t => {
+    const h = simulation(t, [{mode: 'automatic', programObject: 'dryerProgram'},
+        {mode: 'observe', programObject: 'selectedDish', activeProgramObject: 'activeDish'}]);
+    h.state('dryerProgram', 'Cottons');
+    h.state('selectedDish', 'Auto2');
+    h.state('remote.1', false);
+    h.forecast([0, -2000, -2000, 0]);
+    await h.tick();
+    h.profile(0, 'Cottons', [500, 300]);
+    h.profile(1, 'Auto2', [1800, 80]);
+    await h.tick();
+    assert.deepEqual(h.forecastRuns, [{start: BASE + SLOT, watts: [500, 300]}]);
+    // The last ready poll precedes a local start that clears the selected-program field.
+    h.at(BASE + 15000);
+    h.state('status.0', 'Running');
+    h.state('dryerProgram', '');
+    h.state('status.1', 'Running');
+    h.state('activeDish', 'Auto2');
+    h.state('selectedDish', 'nextSelection');
+    await h.tick();
+    const start = BASE + 15000;
+    assert.equal(h.status(0).plan, null);
+    assert.equal(h.status(0).reservation.program, 'Cottons');
+    assert.equal(h.status(1).reservation.program, 'Auto2');
+    assert.deepEqual(h.forecastRuns, [{start, watts: [500, 300]}, {start, watts: [1800, 80]}]);
+    assert.equal(JSON.parse(h.own.get('Devices.Programs.1.Announcement')), null);
+    h.restart();
+    h.config.globalWriteEnabled = false;
+    h.at(BASE + 30000);
+    await h.tick();
+    assert.deepEqual(h.forecastRuns.map(run => run.start), [start, start]);
+    h.state('status.1', 'Aborted');
+    await h.tick();
+    assert.deepEqual(h.forecastRuns, [{start, watts: [500, 300]}]);
+    h.at(BASE + 45000);
+    h.state('status.0', 'Finished');
+    await h.tick();
+    assert.deepEqual(h.forecastRuns, []);
+    h.config.globalWriteEnabled = true;
+    h.state('dryerProgram', 'Cottons');
+    h.state('status.0', 'Ready');
+    await h.tick();
+    assert.equal(h.status(0).plan, null, 'the same remote release was satisfied by the manual start');
+    assert.deepEqual(h.writes, []);
+});
+
+test('the next appliance replaces the exact embedded grid allowance when pricing its candidates', () => {
+    const grid = [0, -1000, 0].map((valueW, i) => ({timestamp: BASE + i * SLOT, valueW}));
+    const prices = grid.map(({timestamp}) => ({timestamp, value_ct_kWh: 40, valid: true}));
+    const run = {start: BASE + SLOT, watts: [600]};
+    const reference = planProgram([400], grid, prices, BASE, BASE + 3 * SLOT, [run]);
+    assert.equal(reference.plannedStartAt, BASE + SLOT);
+    assert.equal(reference.estimatedGridCost_EUR, 0);
+    const withRun = grid.map((point, i) => i === 1 ? {...point, valueW: -400, applianceW: 600} : point);
+    assert.deepEqual(planProgram([400], withRun, prices, BASE, BASE + 3 * SLOT, [run]), reference);
+    assert.deepEqual(planProgram([400], withRun, prices, BASE, BASE + 3 * SLOT, []),
+        planProgram([400], grid, prices, BASE, BASE + 3 * SLOT, []), 'feedback after cancellation');
+});
+
+test('a local run supplies load with a missing grid plan; observation previews and exhausted profiles do not reserve watts', async t => {
+    const h = simulation(t, [{mode: 'observe', programObject: 'selected'}, {mode: 'observe'}]);
+    h.state('remote.0', false);
+    h.state('selected', 'MixDry');
+    h.forecast([-2000, -2000, -2000]);
+    await h.tick();
+    assert.deepEqual(h.forecastRuns, [], 'only an observation preview is ready');
+    h.profile(0, 'Cottons', [300]);
+    h.own.set('Plan.Valid', false);
+    h.config.globalWriteEnabled = false;
+    h.state('status.0', 'Running');
+    await h.tick();
+    assert.deepEqual(h.forecastRuns, [{start: BASE, watts: [300]}]);
+    assert.equal(h.status(0).profileSource, 'deviceAverage');
+    h.at(BASE + SLOT + 1);
+    await h.tick();
+    assert.deepEqual(h.forecastRuns, []);
+    assert.equal(JSON.parse(h.own.get('Plan.Appliances_48h_JSON')).unresolvedDevices.length, 1);
+    assert.deepEqual(h.writes, []);
+});
+
+test('a manual run triggers the live engine rebuild once, then its physical end restores the grid forecast', async t => {
+    const h = simulation(t, [{profileJson: '[900,300]'}]);
+    const start = BASE + 5 * 60000;
+    h.at(BASE + 10 * 60000);
+    h.state('remote.0', false);
+    h.state('status.0', 'Running', start);
+    const local = id => id.slice('ems.0.'.length);
+    let rebuild;
+    const context = createEngineContext('ems.0', {}, {
+        Date: class extends Date { constructor(...args) { super(...(args.length ? args : [Date.now()])); } },
+        nativeConfig: h.config, gridConstraints: require('../lib/grid-constraints'), existsState: id => h.own.has(local(id)),
+        getState: id => h.own.has(local(id)) ? {val: h.own.get(local(id)), ts: Date.now(), ack: true} : null,
+        setState: (id, val) => h.own.set(local(id), val),
+        createState: (id, val) => { if (!h.own.has(local(id))) h.own.set(local(id), val); },
+        setTimeout(fn, delay) { assert.equal(delay, 5000); rebuild = fn; return 1; }, log() {}
+    });
+    vm.runInContext('createStates(); historyReady = true;', context);
+    h.onForecast = (runs, at) => context.updateApplianceRuns(runs, at);
+    const grid = () => JSON.parse(h.own.get('Plan.GridPower_48h_JSON'));
+    async function pollAndRebuild() {
+        await h.tick();
+        assert.equal(typeof rebuild, 'function');
+        rebuild(); rebuild = null;
+    }
+    await pollAndRebuild();
+    assert.equal(grid()[0].applianceW, 900);
+    assert.equal(grid()[1].applianceW, 500);
+    assert.equal(JSON.parse(h.own.get('Forecast.HouseLoad_48h_JSON'))[0].applianceW, 600);
+    await h.tick();
+    assert.equal(rebuild, null);
+    h.state('status.0', 'Finished');
+    await pollAndRebuild();
+    assert.ok(grid().every(point => !point.applianceW));
+    assert.deepEqual(h.writes, []);
+});

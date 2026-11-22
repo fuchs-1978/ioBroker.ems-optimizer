@@ -100,6 +100,22 @@ test('only matching complete flexible slots enter the baseload profile; confirme
     assert.equal(run(`profile(${JSON.stringify(result.baseloadValues)}).filter(Number.isFinite).length`), 1);
 });
 
+test('known appliance quarters clean the training rows for both models, preserving raw total and meter evidence', () => {
+    const start = Date.parse('2026-11-22T12:00:00Z'), slot = 900000;
+    const corrections = new Map([[start, 1800], [start + slot, null], [start + 2 * slot, 3500]]);
+    const meters = [{ts: start, val: 2400}, {ts: start + slot, val: 1300}, {ts: start + 2 * slot, val: 3000},
+        {ts: start + 3 * slot, val: 610}];
+    const run = engine({nativeConfig: {devicePrograms: [{mode: 'observe'}]}, getState: () => null,
+        meters, readApplianceHistory: () => corrections});
+    run("CFG.dp.houseMetersW=['house2']; CFG.dp.wallboxesKW=[]; CFG.dp.myPvDhwHistoryW=''; CFG.dp.myPvHeatingHistoryW='';");
+    const result = run('historyProfileCandidate([[], meters])');
+    assert.deepEqual(Array.from(result.house.totalValues, row => row.val), [2400, 1300, 3000, 610]);
+    assert.deepEqual(Array.from(result.house.baseloadValues, row => row.val), [600, 610]);
+    const index = run(`slotOf(${start})`);
+    assert.deepEqual(Array.from(result.profiles.houseTotal.SUNDAY.slice(index, index + 4)), [600, null, null, 610]);
+    assert.deepEqual(Array.from(result.profiles.baseload.SUNDAY.slice(index, index + 4)), [600, null, null, 610]);
+});
+
 test('history readiness requires enough cleaned samples and never skips an empty included heating source', async () => {
     const meterRows = Array.from({length: 21 * 96}, (_, i) => ({
         ts: Date.UTC(2026, 8, 21) + i * 900000, val: 5000

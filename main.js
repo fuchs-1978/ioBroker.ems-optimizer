@@ -19,6 +19,7 @@ const {SourcePowerHistory} = require("./lib/source-power-history");
 const {WeatherForecastHistory} = require("./lib/weather-forecast-history");
 const {RoomTemperatureHistory} = require("./lib/room-temperature-history");
 const {AppliancePhases, appliancePowerSourceIds} = require("./lib/appliance-phases");
+const {historyCorrections} = require("./lib/appliance-load");
 const {createEngineContext} = require("./lib/engine-loader");
 const gridConstraints = require("./lib/grid-constraints");
 const {buildNativeMapping, houseConnectionSettings, FIELD_TO_MAPPING,
@@ -168,7 +169,8 @@ class EmsOptimizer extends utils.Adapter {
         this.appliancePhasesInitialization = this.appliancePhases.initialize().catch(error =>
             this.log.warn(`Appliance phase learning unavailable: ${error.message}`));
         require("./lib/device-setpoints").startDeviceSetpoints(this);
-        require("./lib/device-programs").startDevicePrograms(this);
+        require("./lib/device-programs").startDevicePrograms(this,
+            (runs, now) => this.engineContext.updateApplianceRuns(runs, now));
         this.log.info(`EMS Optimizer ${require('./package.json').version} started; alpha outputs require explicit release`);
         // Diagnostics must never hold up actuator initialization or scheduling.
         this.debugInitialization = this.startDebug();
@@ -1093,6 +1095,9 @@ class EmsOptimizer extends utils.Adapter {
                     ? {...status, status: 'pending', reason: 'output-queue-pending'} : status;
             },
             loadComparisonAllowed() { return !adapter.unloading; },
+            readApplianceHistory() {
+                return historyCorrections(adapter.config.devicePrograms, adapter.stateCache, adapter.namespace, Date.now());
+            },
             readHistoryCache() {
                 return readHistoryCache(utils.getAbsoluteInstanceDataDir(adapter));
             },
