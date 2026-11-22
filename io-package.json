@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.313",
+    "version": "0.17.0-alpha.314",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.314": {
+        "en": "Resume SunEnergy control after a setpoint conflict when each head first reports a fresh zero setpoint and zero AC power. Recalculate the next command from current conditions.",
+        "de": "Nach einem Sollwertkonflikt genügt je SunEnergy-Kopf eine frische Meldung mit 0 W Soll- und Istleistung. Der Regler berechnet den nächsten Auftrag aus dem aktuellen Bedarf.",
+        "es": "Tras un conflicto de consigna, el control se reanuda cuando cada unidad SunEnergy confirma una consigna y una potencia CA de cero. Calcula la orden siguiente con la demanda actual.",
+        "fr": "Après un conflit de consigne, la régulation reprend dès que chaque unité SunEnergy confirme une consigne et une puissance CA nulles. La commande suivante tient compte de la demande actuelle.",
+        "it": "Dopo un conflitto sul setpoint, il controllo riprende quando ogni unità SunEnergy conferma setpoint e potenza CA a zero. Il nuovo comando tiene conto della domanda attuale.",
+        "nl": "Na een conflict over het setpoint volstaat per SunEnergy-eenheid één verse melding van 0 W voor setpoint en AC-vermogen. De regeling berekent de volgende opdracht uit de actuele vraag.",
+        "pl": "Po konflikcie nastawy sterowanie wznawia się, gdy każda jednostka SunEnergy potwierdzi zerową nastawę i zerową moc AC. Następne polecenie uwzględnia aktualne zapotrzebowanie.",
+        "pt": "Após um conflito de referência, o controlo é retomado quando cada unidade SunEnergy confirma referência e potência CA nulas. A próxima ordem reflete a procura atual.",
+        "ru": "После конфликта уставки управление возобновляется, когда каждый модуль SunEnergy передаст новую нулевую уставку и нулевую мощность переменного тока. Следующая команда учитывает текущую нагрузку.",
+        "uk": "Після конфлікту уставки керування відновлюється, коли кожен модуль SunEnergy передасть нову нульову уставку та нульову потужність змінного струму. Наступна команда враховує поточне навантаження.",
+        "zh-cn": "设定值冲突后，每台 SunEnergy 设备只需一次最新回报，确认设定值和交流功率均为零，即可恢复控制。下一条指令根据当前需求重新计算。"
+      },
       "0.17.0-alpha.313": {
         "en": "Move remaining planned hot-water grid imports to cheaper running heater slots when tank, battery and connection limits allow. Keep the assigned solar energy for every device.",
         "de": "Verschiebt verbleibenden Netzbezug für Warmwasser in günstigere, bereits aktive Heizviertelstunden, wenn Wärme-, Batterie- und Anschlussreserven ausreichen. Die PV-Zuteilung je Gerät bleibt erhalten.",
@@ -81,19 +94,6 @@
         "ru": "При измерениях SunEnergy каждые пять секунд система распознаёт две минуты солнечной зарядки накопителя вблизи предельной мощности и может включить зарядку автомобиля при измеренном избытке.",
         "uk": "За вимірювань SunEnergy кожні п’ять секунд система розпізнає дві хвилини сонячного заряджання накопичувача поблизу граничної потужності й може увімкнути зарядку автомобіля за виміряного надлишку.",
         "zh-cn": "当 SunEnergy 每五秒上报一次时，系统可识别储能电池连续两分钟以接近上限的功率利用光伏充电，并在测得有足够余电时启动车辆充电。"
-      },
-      "0.17.0-alpha.307": {
-        "en": "Reduce switching between adjacent departure charging currents. Increase immediately when the minimum SoC needs more time.",
-        "de": "Weniger Wechsel zwischen benachbarten Stromstufen bei Abfahrtsladung. Bei knapper Restzeit steigt der Strom sofort.",
-        "es": "Reduce los cambios entre niveles de corriente al cargar para la salida. La corriente sube en cuanto lo exige el tiempo restante.",
-        "fr": "Réduit les changements entre deux courants de charge voisins avant le départ. Le courant augmente dès que le temps restant le demande.",
-        "it": "Riduce le commutazioni tra livelli di corrente vicini prima della partenza. La corrente aumenta appena lo richiede il tempo residuo.",
-        "nl": "Minder wisselingen tussen opeenvolgende laadstromen voor vertrek. De stroom stijgt direct als de resterende tijd dat vraagt.",
-        "pl": "Ogranicza przełączanie między sąsiednimi poziomami prądu przed odjazdem. Prąd rośnie od razu, gdy wymaga tego pozostały czas.",
-        "pt": "Reduz as mudanças entre níveis de corrente próximos antes da partida. A corrente sobe assim que o tempo restante o exige.",
-        "ru": "Снижает частоту переключения между соседними ступенями тока перед отъездом. Если времени мало, ток сразу повышается.",
-        "uk": "Зменшує частоту перемикань між сусідніми рівнями струму перед від’їздом. Якщо часу мало, струм одразу зростає.",
-        "zh-cn": "减少出发前充电时相邻电流档位的频繁切换。剩余时间紧张时立即提高电流。"
       }
     },
     "titleLang": {
