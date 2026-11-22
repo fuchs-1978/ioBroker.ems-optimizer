@@ -3801,3 +3801,42 @@ test('the wallbox resumes charging at the certified grid slot when sunlight does
     assert.equal(h.value('Vehicles.Wallbox2.MustCharge'), true);
     assert.ok(h.physical().wbPowerW >= 1380, h.diagnostic());
 });
+
+for (const wb of [0, 1]) {
+    test(`summer 80% ceiling starts WB${wb} on measured PV and protects the forecast night reserve`, async () => {
+        const h = wb === 0 ? await daytimeMiiStoragePlant() : await daytimeEqvStoragePlant({startDelayS: 10, soc: 80});
+        h.put(h.mapping.DP_BATTERY_SOC, 80);
+        const timestamp = h.now();
+        h.own('Plan.BatteryForecastValid', true);
+        h.own('Plan.BatteryStage_48h_JSON', JSON.stringify([{timestamp, stage: 'LATE_100', target_pct: 80,
+            operatingWindow: {offsetPct: 20, ceilingPct: 80, supportFloorPct: 73}}]));
+        h.own('Plan.BatteryTargetSoC_48h_JSON', JSON.stringify([{timestamp, value_pct: 80}]));
+        await h.advance(65);
+        assert.equal(wb === 0 ? h.physical().miiAllow : h.physical().allow, 1, h.diagnostic());
+        assert.ok(h.physical().batteryW < 0, h.diagnostic());
+        h.put(h.mapping.DP_BATTERY_SOC, 73);
+        await h.advance(22);
+        assert.equal(wb === 0 ? h.physical().miiAllow : h.physical().allow, 0, h.diagnostic());
+        assert.ok(h.physical().batteryW >= 0);
+    });
+}
+
+test('real output checks apply the morning ceiling and close the late PV exception after a measured full charge', async () => {
+    const h = await daytimeMiiStoragePlant();
+    const timestamp = h.now();
+    h.own('Plan.BatteryForecastValid', true);
+    const stage = {timestamp, target_pct: 50, operatingWindow: {offsetPct: 20, ceilingPct: 80, supportFloorPct: 64}};
+    const install = () => h.own('Plan.BatteryStage_48h_JSON', JSON.stringify([stage]));
+    install();
+    h.put(h.mapping.DP_BATTERY_SOC, 60);
+    await h.advance(1);
+    assert.equal(h.run('batteryRegulationState().canCharge'), false);
+    stage.target_pct = 100;
+    stage.operatingWindow.calibrationStart = timestamp;
+    install();
+    assert.equal(h.run('batteryRegulationState().maxSoc'), 100);
+    h.own('Devices.Battery.LastFullChargeAt', h.now());
+    assert.equal(h.run('batteryRegulationState().maxSoc'), 80);
+    h.own('Plan.Valid', false);
+    assert.equal(h.run('batteryWallboxFloor(DAYTIME_STORAGE_MIN_SOC)'), 90);
+});

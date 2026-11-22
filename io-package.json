@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.316",
+    "version": "0.17.0-alpha.317",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.317": {
+        "en": "Adaptive battery charge targets and monthly solar full charge",
+        "de": "Adaptive Speicherziele und monatliche PV-Vollladung",
+        "es": "Objetivos de batería adaptativos y carga solar completa mensual",
+        "fr": "Objectifs de batterie adaptatifs et charge solaire complète mensuelle",
+        "it": "Obiettivi batteria adattivi e carica solare completa mensile",
+        "nl": "Adaptieve accudoelen en maandelijkse volledige zonnelading",
+        "pl": "Adaptacyjne cele ładowania i comiesięczne pełne ładowanie z PV",
+        "pt": "Metas adaptativas da bateria e carga solar completa mensal",
+        "ru": "Адаптивные цели и ежемесячный полный заряд от солнца",
+        "uk": "Адаптивні цілі й щомісячне повне заряджання від сонця",
+        "zh-cn": "自适应电池充电目标及每月光伏充满"
+      },
       "0.17.0-alpha.316": {
         "en": "Keep other cars charging during a delayed idle wallbox poll and store measured export after mandatory vehicle charging has received its allocation.",
         "de": "Bei verzögerter Meldung einer ruhenden Wallbox laden die anderen Autos weiter. Der Speicher nutzt gemessenen Restüberschuss während einer Fahrzeug-Pflichtladung.",
@@ -81,19 +94,6 @@
         "ru": "Переносит запланированный сетевой нагрев для минимального резерва на более дешёвые часы с сохранением теплового и аккумуляторного резервов.",
         "uk": "Переносить запланований мережевий нагрів для мінімального резерву на дешевші години зі збереженням теплового й акумуляторного резервів.",
         "zh-cn": "将已计划的最低热储备电网加热移至更便宜的时段，同时保持热储备和电池储备。"
-      },
-      "0.17.0-alpha.310": {
-        "en": "Reserve usable PV before a vehicle departure and charge overnight only to the required interim SoC. Check the grid fallback and household energy balance.",
-        "de": "Nutzbare PV vor einer Abfahrt einplanen und nachts bis zum nötigen Zwischenstand laden. Netzrückfall und Energiebilanz des Hauses prüfen.",
-        "es": "Reserva la energía solar aprovechable antes de la salida y carga por la noche hasta el nivel intermedio necesario. Comprueba el respaldo de red y el balance de la vivienda.",
-        "fr": "Réserve le solaire utilisable avant le départ et charge la nuit jusqu’au niveau intermédiaire requis. Vérifie le secours réseau et le bilan du foyer.",
-        "it": "Riserva la produzione solare utilizzabile prima della partenza e carica di notte fino al livello intermedio necessario. Verifica la disponibilità della rete e il bilancio della casa.",
-        "nl": "Reserveert bruikbare zonnestroom voor vertrek en laadt ’s nachts tot het benodigde tussenniveau. Controleert netreserve en energiebalans van het huis.",
-        "pl": "Rezerwuje dostępną energię słoneczną przed wyjazdem i ładuje nocą do wymaganego poziomu pośredniego. Sprawdza rezerwę sieci i bilans domu.",
-        "pt": "Reserva energia solar utilizável antes da partida e carrega à noite até ao nível intermédio necessário. Verifica o recurso à rede e o balanço da casa.",
-        "ru": "Учитывает доступную солнечную энергию до выезда и заряжает ночью до промежуточного уровня. Проверяет резерв сети и энергобаланс дома.",
-        "uk": "Враховує доступну сонячну енергію до виїзду й заряджає вночі до проміжного рівня. Перевіряє резерв мережі та енергобаланс будинку.",
-        "zh-cn": "为出发前可用的光伏电量留出空间，夜间充电至所需的中间电量。校验电网补电能力和家庭能源平衡。"
       }
     },
     "titleLang": {
@@ -255,6 +255,7 @@
     "batteryMorningTargetPct": 70,
     "batteryAfternoonTargetPct": 90,
     "batteryLateTargetPct": 100,
+    "batteryAdaptiveTargetsEnabled": true,
     "batteryReserveMin": 45,
     "batterySafetyPct": 80,
     "batteryEfficiencyPct": 92,

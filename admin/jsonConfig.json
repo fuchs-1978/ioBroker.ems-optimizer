@@ -7257,6 +7257,17 @@
           "lg": 3,
           "xl": 3
         },
+        "batteryAdaptiveTargetsEnabled": {
+          "type": "checkbox",
+          "label": "Adaptive battery charge targets and monthly solar full charge",
+          "default": true,
+          "newLine": true,
+          "xs": 12,
+          "sm": 9,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
         "batteryReserveMin": {
           "type": "number",
           "label": "Final charge reserve",

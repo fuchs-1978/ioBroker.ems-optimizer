@@ -15,7 +15,7 @@ function fixture(config = {}, minute = 0, start = Date.parse('2026-10-08T10:00:0
         static now() { return now; }
     }
     const context = vm.createContext({vehicleSocEstimator: require('../lib/vehicle-soc-estimator'),
-        gridConstraints: require('../lib/grid-constraints'),
+        gridConstraints: require('../lib/grid-constraints'), batteryOperatingWindow: require('../lib/battery-operating-window'),
         wallboxAllocationPolicy: require('../lib/wallbox-allocation'), nativeConfig: {wallboxParallelChargingEnabled: true,
         wb0PhaseControlMode: 'ems', wb1PhaseControlMode: 'ems', wb2PhaseControlMode: 'ems', ...config},
     Date: Clock, getState: id => states.get(id), existsState: id => states.has(id),
@@ -40,7 +40,7 @@ function fixture(config = {}, minute = 0, start = Date.parse('2026-10-08T10:00:0
         const start = Math.floor(now / 900000) * 900000;
         const pick = (value, i) => Array.isArray(value) ? value[i] : value;
         context.data = {pv: Array.from({length: slots}, (_, i) => ({timestamp: start + i * 900000, valueW: pick(pvW, i)})),
-            house: Array.from({length: slots}, (_, i) => ({valueW: pick(houseW, i)})),
+            house: Array.from({length: slots}, (_, i) => ({timestamp: start + i * 900000, valueW: pick(houseW, i)})),
             prices: {total: Array.from({length: slots}, (_, i) => ({value_ct_kWh: pick(price, i)}))}};
         run('buildDevicePlan(data)');
         return {cars: [0, 1, 2].map(wb => series(`Wallbox${wb}`)), allocation: series('Allocation'), grid: series('GridPower')};
@@ -580,4 +580,57 @@ test('weak PV, local limits, manual minimum current and competing departures ret
         const r = h.plan({houseW: 1000, pvW: mode === 'weak' ? 2300 : overnightPv, slots: overnightPv.length});
         assert.ok(r.cars[2].every(p => !p.departurePv), mode);
     }
+});
+
+function summerWindow({nightW = 500, lastFullDays = 2, disable = false, hardMax = 100, cloudy = false, startSoc = 57} = {}) {
+    const h = fixture({...coordinatedBattery, batteryAdaptiveTargetsEnabled: !disable}, 0, Date.parse('2026-07-20T04:00:00Z'));
+    battery(h, startSoc, 15);
+    h.put('ems.0.Config.BatteryMaxSoC_pct', hardMax);
+    h.put('ems.0.Config.BatterySelfConsumptionEnabled', true);
+    h.put('ems.0.Config.BatteryForecastSafetyFactor_pct', 80);
+    h.put('ems.0.Devices.Battery.LastFullChargeAt', lastFullDays ? h.now - lastFullDays * 86400000 : 0);
+    const pvW = Array.from({length: 192}, (_, i) => {
+        const hour = i % 96 / 4;
+        return hour < 14 && !(cloudy && i >= 96) ? Math.round(9000 * Math.sin((hour + 0.5) / 15 * Math.PI)) : 0;
+    });
+    const houseW = pvW.map(w => w > 0 ? 550 : nightW);
+    const plan = h.plan({pvW, houseW, slots: 192});
+    return {h, plan, info: JSON.parse(h.states.get('ems.0.Plan.BatteryOperatingWindow_JSON').val)};
+}
+
+test('two sunny days lower all three targets and still supply the same household energy', () => {
+    const {h, info} = summerWindow();
+    assert.deepEqual(info.targets, {morning: 50, afternoon: 70, late: 80});
+    assert.equal(info.offsetPct, 20);
+    assert.ok(info.lowestForecastPct >= 15);
+    assert.ok(h.series('BatterySoC').every(p => p.value_pct <= 80.01));
+    assert.equal(info.calibration, null);
+    const full = summerWindow({disable: true});
+    assert.ok(h.states.get('ems.0.Plan.ExpectedImport_kWh').val <= full.h.states.get('ems.0.Plan.ExpectedImport_kWh').val + 0.01);
+    const highStart = summerWindow({startSoc: 95});
+    assert.ok(highStart.h.series('BatterySoC')[0].value_pct > 90, 'a lower ceiling cannot discard stored energy');
+});
+
+test('larger night demand selects 90 or 100 and the 48-hour proof reacts to a cloudy following day', () => {
+    assert.equal(summerWindow({nightW: 1050}).info.offsetPct, 10);
+    assert.equal(summerWindow({nightW: 1340}).info.offsetPct, 0);
+    assert.equal(summerWindow({cloudy: true}).info.offsetPct, 0);
+    assert.equal(summerWindow({disable: true}).info.offsetPct, 0);
+});
+
+test('a due full charge uses the late solar tail once and returns to the lower ceiling the next day', () => {
+    const {h, info, plan} = summerWindow({lastFullDays: 32});
+    assert.equal(info.offsetPct, 20);
+    assert.ok(info.calibration, JSON.stringify(info));
+    const {start, end} = info.calibration;
+    assert.ok(start >= h.now + 8 * 3600000 && end <= h.now + 15 * 3600000);
+    const stages = h.series('BatteryStage'), soc = h.series('BatterySoC');
+    assert.ok(stages.filter(p => p.target_pct === 100).every(p => p.timestamp >= start && p.timestamp < end));
+    assert.ok(soc.some(p => p.timestamp >= start && p.timestamp < end && p.value_pct >= 99.9));
+    assert.ok(plan.allocation.filter(p => p.timestamp >= start && p.timestamp < end)
+        .every(p => p.batteryGridChargeW <= 1 && p.gridW <= 0));
+    assert.equal(Math.max(...stages.slice(96).map(p => p.target_pct)), 80);
+    assert.equal(h.states.get('ems.0.Devices.Battery.LastFullChargeAt').val, h.now - 32 * 86400000);
+    assert.equal(summerWindow({lastFullDays: 32, hardMax: 90}).info.calibration, null);
+    assert.ok(summerWindow({lastFullDays: 0}).info.calibration);
 });
