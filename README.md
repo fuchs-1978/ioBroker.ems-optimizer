@@ -26,7 +26,7 @@ This repository contains the development alpha. Choose a revision with successfu
 
 1. Leave the master output release off while mapping measurements. At the grid connection, a running load should increase import or reduce export.
 2. Configure the devices present, their limits and feedback. Check the readings and plan in **EMS overview**.
-3. Commission one output at a time with a low limit and one controller per actuator. Verify the command, acknowledgement, measured power and stop. Each wallbox and configured battery head also has a guided test to identify its grid phase. [Output commissioning](README.de.md#admin-allgemein) · [Guided phase test](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/468)
+3. Commission one output at a time with a low limit and one controller per actuator. Verify the command, acknowledgement, measured power and stop. Each wallbox and configured battery head has a guided grid-phase test. After a conclusive measurement and confirmed return to normal output, the EMS automatically saves the detected phase, even if it differs from the configured one. An inconclusive test keeps the current assignment. [Output commissioning](README.de.md#admin-allgemein) · [Guided phase test](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/468)
 
 ## Integrations
 
