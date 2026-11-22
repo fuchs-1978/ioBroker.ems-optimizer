@@ -44,7 +44,7 @@ h1,h2,h3,p{margin:0}h1{font-size:clamp(2.12rem,5.6vw,3.75rem);line-height:1.03;l
 .tile{display:flex;flex-direction:column;min-width:0;background:var(--card);border:1px solid var(--border);border-radius:clamp(9px,1.4vw,14px);padding:clamp(6px,1.4vw,12px);color:var(--ink);box-shadow:0 2px 5px #0a263404}
 .tile.is-active{background:var(--active);border-color:var(--active-border)}.tile.heat.is-active{background:var(--heat-wash);border-color:var(--heat-border)}
 .tile h3{font-size:clamp(.87rem,2.65vw,1.13rem);font-weight:700;letter-spacing:-.035em;line-height:1.13}
-.tile small{font-size:.75rem;font-weight:500;color:var(--muted)}.tile .location{margin:.12rem 0 .16rem}
+.tile small{font-size:.75rem;font-weight:500;color:var(--muted)}
 .art{width:100%;aspect-ratio:1.85;overflow:visible}.heat .art{aspect-ratio:2.18}.tile .level{display:flex;align-items:center;justify-content:center;gap:4px;min-height:25px;border-radius:7px;padding:3px 2px;background:var(--wash);font-weight:720;font-size:clamp(.92rem,2.6vw,1.14rem);line-height:1.14;white-space:nowrap}
 .tile.is-active .level{background:#bcebd7;color:#114f3c}.tile.heat.is-active .level{background:#ffe0aa;color:#633e0a}
 [data-theme=night] .tile.is-active .level{background:#245344;color:#b8f3d8}[data-theme=night] .tile.heat.is-active .level{background:#554129;color:#ffdea9}
@@ -66,7 +66,17 @@ button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outlin
 
 .download-link{color:var(--muted);font-size:.8rem;text-underline-offset:3px;padding:6px 1px}.download-link:focus-visible{outline:2px solid var(--accent)}
 .weather{max-width:50%;min-width:0;flex-shrink:1}.weather>div{min-width:0}.weather strong{white-space:nowrap}.weather .weather-icon{width:clamp(29px,5vw,42px);height:clamp(29px,5vw,42px);object-fit:contain;flex-shrink:0}.weather span{line-height:1.17;overflow-wrap:anywhere}
-.tile.car{position:relative}.car .location{display:flex;align-items:center;justify-content:space-between}.location svg{width:15px;height:15px}
+.tile.car{position:relative}.tile.car h3{min-height:2.26em}
+.vehicle-tools{display:flex;align-items:center;justify-content:space-between;height:23px;margin:2px 0;color:var(--muted)}
+.plug-state,.plug-state svg{display:block;width:21px;height:21px}
+.plug-state svg{stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.plug-state[data-link=on]{color:var(--green)}.edit-icon{width:15px;height:15px}
+@supports (grid-template-rows:subgrid) {
+  #cars{row-gap:0}
+  .tile.car{display:grid;grid-template-rows:subgrid;grid-row:span 7;row-gap:0}
+  .tile.car h3{min-height:0}
+  .car .art{align-self:end}
+}
 .edit-vehicle{position:absolute;z-index:1;inset:0;width:100%;border:0;border-radius:inherit;background:transparent;cursor:pointer}.edit-vehicle:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
 dialog{color:var(--ink);background:var(--card);border:1px solid var(--border);border-radius:18px;width:min(390px,calc(100% - 24px));padding:clamp(16px,4vw,24px);max-height:90dvh;overflow:auto;box-shadow:0 16px 70px #00172440}
 dialog::backdrop{background:#07182788}.dialog-head,.actions,.departure-input{display:flex;align-items:center;justify-content:space-between;gap:10px}.dialog-head h2{margin:.16rem 0 0;font-size:1.65rem}.dialog-head small,#departure-help{color:var(--muted)}.dialog-head small{font-size:.85rem}
@@ -80,7 +90,6 @@ dialog input{font:inherit;color:var(--ink);font-size:1.03rem}.departure-label{di
 .soc-heading{margin:0 0 8px}.soc-heading h3,#mii-goals-heading{margin:0;font-size:1.02rem}.soc-heading span,#mii-soc-status{color:var(--muted);font-size:.86rem}
 .soc-entry{margin-top:4px}.soc-entry .goal-input{margin:0;flex:1;min-width:0}.soc-entry button{background:#14654f;color:#fff;font-weight:650;flex-shrink:0}
 .soc-entry button:disabled{opacity:.5;cursor:default}#mii-soc-status{margin:7px 0 0;overflow-wrap:anywhere}#mii-soc-status:empty{display:none}
-.car .location{align-items:flex-start;gap:2px}.location svg{flex-shrink:0}
 .vehicle-info{margin-top:6px;padding-top:6px;border-top:1px solid var(--border);text-align:center;line-height:1.22;overflow-wrap:anywhere}
 .vehicle-info[hidden]{display:none}.vehicle-status{display:block;font-size:.87rem;font-weight:640}
 .vehicle-info small{display:block;font-size:.78rem;margin-top:3px}.vehicle-info .vehicle-priority{color:var(--green);font-weight:650}
@@ -111,16 +120,16 @@ dialog .priority-choice input{width:1.2rem;height:1.2rem;margin:0;accent-color:v
 <symbol id="chp-night-art" viewBox="49 474 143 134"><g clip-path="url(#cut-chp-night)"><use href="#art-night"/></g></symbol>
 <clipPath id="cut-mii-day"><path d="M39 1017Q38 992 46 977L64 942Q70 930 82 927L88 925 80 909 84 906 94 923Q127 916 155 921 183 921 201 936L226 953 250 963Q266 967 269 985L271 1014Q271 1027 266 1029L256 1032Q251 1046 235 1047 216 1048 208 1031L108 1031Q101 1046 86 1047 67 1049 59 1033L44 1029Z"/></clipPath>
 <clipPath id="cut-mii-night"><path d="M39 1017Q38 992 46 977L64 942Q70 930 82 927L88 925 80 909 84 906 94 923Q127 916 155 921 183 921 201 936L226 953 250 963Q266 967 269 985L271 1014Q271 1027 266 1029L256 1032Q251 1046 235 1047 216 1048 208 1031L108 1031Q101 1046 86 1047 67 1049 59 1033L44 1029Z"/></clipPath>
-<symbol id="mii-day-art" viewBox="28 896 253 155"><g clip-path="url(#cut-mii-day)"><use href="#art-day"/></g></symbol>
-<symbol id="mii-night-art" viewBox="28 896 253 155"><g clip-path="url(#cut-mii-night)"><use href="#art-night"/></g></symbol>
+<symbol id="mii-day-art" viewBox="28 896 253 152" preserveAspectRatio="xMidYMax meet"><g clip-path="url(#cut-mii-day)"><use href="#art-day"/></g></symbol>
+<symbol id="mii-night-art" viewBox="28 896 253 152" preserveAspectRatio="xMidYMax meet"><g clip-path="url(#cut-mii-night)"><use href="#art-night"/></g></symbol>
 <clipPath id="cut-eqv-day"><path d="M310 1015 314 963 318 930Q320 909 339 907 421 903 524 906 546 906 563 915L609 951Q636 957 648 968 656 976 658 992L660 1014Q658 1025 651 1029L634 1032Q625 1046 607 1047 589 1048 578 1031L407 1031Q399 1047 378 1047 360 1048 348 1031L318 1029Q310 1026 310 1015Z"/></clipPath>
 <clipPath id="cut-eqv-night"><path d="M322 1013 327 946Q330 918 350 914 425 909 528 912 550 912 577 928L610 954 643 969Q653 975 655 992L657 1014Q656 1026 649 1030L638 1031Q629 1047 612 1047 592 1047 585 1031L400 1031Q392 1048 374 1048 354 1047 347 1032L326 1030Z"/></clipPath>
-<symbol id="eqv-day-art" viewBox="305 900 360 151"><g clip-path="url(#cut-eqv-day)"><use href="#art-day"/></g></symbol>
-<symbol id="eqv-night-art" viewBox="305 900 360 151"><g clip-path="url(#cut-eqv-night)"><use href="#art-night"/></g></symbol>
+<symbol id="eqv-day-art" viewBox="305 900 360 148" preserveAspectRatio="xMidYMax meet"><g clip-path="url(#cut-eqv-day)"><use href="#art-day"/></g></symbol>
+<symbol id="eqv-night-art" viewBox="305 900 360 148" preserveAspectRatio="xMidYMax meet"><g clip-path="url(#cut-eqv-night)"><use href="#art-night"/></g></symbol>
 <clipPath id="cut-eqe-day"><path d="M685 997 689 963 694 953 718 928 712 927 714 921Q773 906 837 911 873 912 886 922L929 945Q966 948 989 960 1001 966 1005 986L1009 1009Q1008 1021 1001 1024L984 1026Q975 1047 949 1047 929 1046 918 1029L784 1029Q774 1047 750 1047 727 1048 715 1026L696 1022Q685 1018 685 1008Z"/></clipPath>
 <clipPath id="cut-eqe-night"><path d="M685 997 689 963 694 953 718 928 712 927 714 921Q773 906 837 911 873 912 886 922L929 945Q966 948 989 960 1001 966 1005 986L1009 1009Q1008 1021 1001 1024L984 1026Q975 1047 949 1047 929 1046 918 1029L784 1029Q774 1047 750 1047 727 1048 715 1026L696 1022Q685 1018 685 1008Z"/></clipPath>
-<symbol id="eqe-day-art" viewBox="678 909 341 143"><g clip-path="url(#cut-eqe-day)"><use href="#art-day"/></g></symbol>
-<symbol id="eqe-night-art" viewBox="678 909 341 143"><g clip-path="url(#cut-eqe-night)"><use href="#art-night"/></g></symbol>
+<symbol id="eqe-day-art" viewBox="678 909 341 139" preserveAspectRatio="xMidYMax meet"><g clip-path="url(#cut-eqe-day)"><use href="#art-day"/></g></symbol>
+<symbol id="eqe-night-art" viewBox="678 909 341 139" preserveAspectRatio="xMidYMax meet"><g clip-path="url(#cut-eqe-night)"><use href="#art-night"/></g></symbol>
 <clipPath id="cut-hp-day"><path d="M79 1388Q79 1376 92 1375L266 1375Q280 1375 280 1387L280 1496Q280 1508 270 1509L265 1510 265 1518 243 1518 243 1510 115 1510 115 1518 94 1518 94 1510 90 1510Q79 1510 79 1498Z"/></clipPath>
 <clipPath id="cut-hp-night"><path d="M79 1388Q79 1376 92 1375L266 1375Q280 1375 280 1387L280 1496Q280 1508 270 1509L265 1510 265 1518 243 1518 243 1510 115 1510 115 1518 94 1518 94 1510 90 1510Q79 1510 79 1498Z"/></clipPath>
 <symbol id="hp-day-art" viewBox="67 1367 223 158"><g clip-path="url(#cut-hp-day)"><use href="#art-day"/></g></symbol>
@@ -133,6 +142,9 @@ dialog .priority-choice input{width:1.2rem;height:1.2rem;margin:0;accent-color:v
 <clipPath id="cut-buffer-night"><path d="M800 1505 800 1389Q800 1373 817 1366 852 1354 890 1367 906 1374 907 1388L906 1501Q905 1509 898 1513L898 1522 891 1523 886 1514 822 1514 819 1523 812 1523 811 1514Q802 1510 800 1505Z"/></clipPath>
 <symbol id="buffer-day-art" viewBox="785 1349 137 181"><g clip-path="url(#cut-buffer-day)"><use href="#art-day"/></g></symbol>
 <symbol id="buffer-night-art" viewBox="785 1349 137 181"><g clip-path="url(#cut-buffer-night)"><use href="#art-night"/></g></symbol>
+  <symbol id="plug-on" viewBox="0 0 24 24"><path d="M8.5 2.5v5m7-5v5M5 8h14M7 8v3.5a5 5 0 0 0 10 0V8m-5 8.5v2a3 3 0 0 0 3 3h2"/></symbol>
+  <symbol id="plug-off" viewBox="0 0 24 24"><path d="M8.5 2.5v1.7m7-1.7v5M12 8h7m-2 0v3.5q0 1.1-.35 1.9M5 8h1.5m.5 2v1.5a5 5 0 0 0 7.4 4.4M12 16.5v2a3 3 0 0 0 3 3h2M3 3l18 18"/></symbol>
+  <symbol id="plug-unknown" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.7"/><path d="M9.5 9.3a2.6 2.6 0 1 1 4.1 2.1c-1.3.9-1.6 1.4-1.6 2.6m0 2.7v.2"/></symbol>
   <symbol id="sun" viewBox="0 0 40 40"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M20 2v5m0 26v5M2 20h5m26 0h5M7.2 7.2l3.6 3.6m18.4 18.4 3.6 3.6M7.2 32.8l3.6-3.6m18.4-18.4 3.6-3.6"/></g><circle cx="20" cy="20" r="9.4" fill="currentColor"/></symbol>
   <symbol id="moon" viewBox="0 0 40 40"><path fill="currentColor" d="M28 3.8A17 17 0 1 0 36.2 27 15.2 15.2 0 0 1 28 3.8Z"/></symbol>
   <symbol id="cloud" viewBox="0 0 40 40"><path d="M9 29a6.4 6.4 0 0 1-.1-12.8 9.8 9.8 0 0 1 18.9-1.7A7.4 7.4 0 1 1 30 29Z" fill="#b6cbd9" stroke="#527287" stroke-width="1.6"/></symbol>
@@ -194,15 +206,24 @@ dialog .priority-choice input{width:1.2rem;height:1.2rem;margin:0;accent-color:v
    <div class="data-status"><span class="data-dot" aria-hidden="true"></span><span id="connection" role="status">Verbinde mit ioBroker …</span><time id="stamp"></time></div>
   </section>
   <div class="consumers">
-   <section aria-labelledby="wall-heading"><h2 id="wall-heading">Wallboxen</h2><div class="device-grid" id="cars"><article class="tile car" id="wb0"><h3>SEAT Mii</h3><small class="location"><span>WB 0<span class="connected" hidden> · angesteckt</span></span><svg aria-hidden="true" viewBox="0 0 20 20"><path d="m4 13-.8 3.7 3.8-.9L16 6.8 13.2 4Z M11.8 5.4l2.8 2.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></small><button type="button" class="edit-vehicle" data-vehicle="0" aria-label="Ladeeinstellungen für SEAT Mii bearbeiten" aria-haspopup="dialog" aria-describedby="wb0-info"></button>
+   <section aria-labelledby="wall-heading"><h2 id="wall-heading">Wallboxen</h2><div class="device-grid" id="cars"><article class="tile car" id="wb0"><h3>SEAT Mii</h3><div class="vehicle-tools">
+<span class="plug-state" id="wb0-plug" role="img" aria-label="Anschlussstatus unbekannt"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#plug-unknown"/></svg></span>
+<svg class="edit-icon" aria-hidden="true" viewBox="0 0 20 20"><path d="m4 13-.8 3.7 3.8-.9L16 6.8 13.2 4Z M11.8 5.4l2.8 2.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></div>
+<button type="button" class="edit-vehicle" data-vehicle="0" aria-label="Ladeeinstellungen für SEAT Mii bearbeiten" aria-haspopup="dialog" aria-describedby="wb0-plug wb0-info"></button>
 <svg class="art" aria-hidden="true" viewBox="0 0 120 65"><use data-art="mii" href="#mii-day-art" x="7.0" y="1" width="106" height="62"/></svg>
 <svg class="mini-flow" viewBox="0 0 100 10" aria-hidden="true"><g class="route" data-branch="wb0"><path d="M2 5 H98"/></g></svg>
 <div class="level">—</div><div class="charge"><span class="soc-icon" aria-hidden="true"><i></i></span><span class="soc-value">—</span><small class="soc-unit">SoC</small></div><div class="vehicle-info" id="wb0-info"><strong class="vehicle-status"></strong><small class="vehicle-plan" hidden></small><small class="vehicle-priority" hidden>★ Vorrang</small></div></article>
-<article class="tile car" id="wb1"><h3>Mercedes EQV</h3><small class="location"><span>WB 1<span class="connected" hidden> · angesteckt</span></span><svg aria-hidden="true" viewBox="0 0 20 20"><path d="m4 13-.8 3.7 3.8-.9L16 6.8 13.2 4Z M11.8 5.4l2.8 2.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></small><button type="button" class="edit-vehicle" data-vehicle="1" aria-label="Ladeeinstellungen für Mercedes EQV bearbeiten" aria-haspopup="dialog" aria-describedby="wb1-info"></button>
+<article class="tile car" id="wb1"><h3>Mercedes EQV</h3><div class="vehicle-tools">
+<span class="plug-state" id="wb1-plug" role="img" aria-label="Anschlussstatus unbekannt"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#plug-unknown"/></svg></span>
+<svg class="edit-icon" aria-hidden="true" viewBox="0 0 20 20"><path d="m4 13-.8 3.7 3.8-.9L16 6.8 13.2 4Z M11.8 5.4l2.8 2.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></div>
+<button type="button" class="edit-vehicle" data-vehicle="1" aria-label="Ladeeinstellungen für Mercedes EQV bearbeiten" aria-haspopup="dialog" aria-describedby="wb1-plug wb1-info"></button>
 <svg class="art" aria-hidden="true" viewBox="0 0 120 65"><use data-art="eqv" href="#eqv-day-art" x="0.0" y="1" width="120" height="62"/></svg>
 <svg class="mini-flow" viewBox="0 0 100 10" aria-hidden="true"><g class="route" data-branch="wb1"><path d="M2 5 H98"/></g></svg>
 <div class="level">—</div><div class="charge"><span class="soc-icon" aria-hidden="true"><i></i></span><span class="soc-value">—</span><small class="soc-unit">SoC</small></div><div class="vehicle-info" id="wb1-info"><strong class="vehicle-status"></strong><small class="vehicle-plan" hidden></small><small class="vehicle-priority" hidden>★ Vorrang</small></div></article>
-<article class="tile car" id="wb2"><h3>EQE 350+ SUV</h3><small class="location"><span>WB 2<span class="connected" hidden> · angesteckt</span></span><svg aria-hidden="true" viewBox="0 0 20 20"><path d="m4 13-.8 3.7 3.8-.9L16 6.8 13.2 4Z M11.8 5.4l2.8 2.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></small><button type="button" class="edit-vehicle" data-vehicle="2" aria-label="Ladeeinstellungen für EQE 350+ SUV bearbeiten" aria-haspopup="dialog" aria-describedby="wb2-info"></button>
+<article class="tile car" id="wb2"><h3>EQE 350+ SUV</h3><div class="vehicle-tools">
+<span class="plug-state" id="wb2-plug" role="img" aria-label="Anschlussstatus unbekannt"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#plug-unknown"/></svg></span>
+<svg class="edit-icon" aria-hidden="true" viewBox="0 0 20 20"><path d="m4 13-.8 3.7 3.8-.9L16 6.8 13.2 4Z M11.8 5.4l2.8 2.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></div>
+<button type="button" class="edit-vehicle" data-vehicle="2" aria-label="Ladeeinstellungen für EQE 350+ SUV bearbeiten" aria-haspopup="dialog" aria-describedby="wb2-plug wb2-info"></button>
 <svg class="art" aria-hidden="true" viewBox="0 0 120 65"><use data-art="eqe" href="#eqe-day-art" x="1.0" y="1" width="118" height="62"/></svg>
 <svg class="mini-flow" viewBox="0 0 100 10" aria-hidden="true"><g class="route" data-branch="wb2"><path d="M2 5 H98"/></g></svg>
 <div class="level">—</div><div class="charge"><span class="soc-icon" aria-hidden="true"><i></i></span><span class="soc-value">—</span><small class="soc-unit">SoC</small></div><div class="vehicle-info" id="wb2-info"><strong class="vehicle-status"></strong><small class="vehicle-plan" hidden></small><small class="vehicle-priority" hidden>★ Vorrang</small></div></article></div></section>
@@ -825,14 +846,27 @@ function renderWeather(now,day) {
   $("weather").title=[wx.tempSource,wx.text?"Wetter für Bolzum: "+wx.text:"",wx.period].filter(Boolean).join(" · ");
 }
 function renderCarStatus(tile, car, fresh, selected, now) {
-  const status = fresh && car.present === true ? car.status || "" : "";
+  const connection = fresh && car.present === true ? car.connected : null;
+  const link = connection === true ? "on" : connection === false ? "off" : "unknown";
+  const plug = tile.querySelector(".plug-state");
+  if (plug.dataset.link !== link) {
+    const label = {on:"Angesteckt", off:"Abgesteckt", unknown:"Anschlussstatus unbekannt"}[link];
+    plug.dataset.link = link;
+    plug.setAttribute("aria-label",label);
+    plug.querySelector("use").setAttribute("href","#plug-" + link);
+    tile.querySelector(".edit-vehicle").title = label + " · Ladeeinstellungen öffnen";
+    const dialog = $("vehicle-dialog");
+    if (dialog.open && dialog.dataset.vehicle === tile.id) put("vehicle-tag",label);
+  }
+  const rawStatus = fresh && car.present === true ? car.status || "" : "";
+  const status = ["Abgesteckt","Angesteckt","Anschlussstatus fehlt"].includes(rawStatus) ? "" : rawStatus;
+  const hasPlan = fresh && isNumber(car.plannedAt) && car.plannedAt > now;
   const info = tile.querySelector(".vehicle-info");
-  info.hidden = !status && !selected;
+  info.hidden = !status && !hasPlan && !selected;
   info.dataset.kind = ({"Ladeziel erreicht":"done","Wartet auf PV":"pv","Lädt":"charging"})[status] || "";
   tile.querySelector(".vehicle-status").textContent = status;
-  tile.querySelector(".connected").hidden = !fresh || car.connected !== true || status === "Angesteckt";
   const plan = tile.querySelector(".vehicle-plan");
-  plan.hidden = !fresh || !isNumber(car.plannedAt) || car.plannedAt <= now;
+  plan.hidden = !hasPlan;
   plan.textContent = plan.hidden ? "" : "Geplant " + scheduleTime(car.plannedAt, now);
   tile.querySelector(".vehicle-priority").hidden = !selected;
 }
@@ -1162,7 +1196,8 @@ async function openGoals(i) {
   if (goalDialog.open) return;
   const epoch = ++editorEpoch;
   openVehicle = i;
-  $("vehicle-tag").textContent = "Wallbox " + i + (i === 0 ? "" : " · Ladeziele");
+  goalDialog.dataset.vehicle = "wb" + i;
+  $("vehicle-tag").textContent = $(goalDialog.dataset.vehicle + "-plug").getAttribute("aria-label");
   $("mii-goals-heading").hidden = miiForm.hidden = i !== 0;
   $("save-goals").textContent = "Speichern";
   miiReference = null;
