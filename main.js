@@ -30,6 +30,7 @@ const {MarketPrices} = require("./lib/market-prices");
 const heatPumpTelemetryParser = require("./lib/heatpump-telemetry");
 const {normalizeWallboxPowerKW} = require("./lib/wallbox-measurement");
 const batteryTemperatureReserve = require("./lib/battery-temperature-reserve");
+const batteryOperatingWindow = require("./lib/battery-operating-window");
 const sunEnergyHeads = require("./lib/sunenergy-heads");
 const {readHistoryCache, writeHistoryCache} = require("./lib/history-cache");
 const {journalDirectory} = require("./lib/journal-location");
@@ -962,7 +963,7 @@ class EmsOptimizer extends utils.Adapter {
                     const state = this.runEngine('batteryRegulationState()');
                     if (!state.eligible || (value < 0 ? !state.canCharge : !state.canDischarge))
                         throw Object.assign(new Error(`Speicher vor Ausgabe gesperrt: ${state.reason}`),
-                            {code: state.eligible && value > 0 && state.forecastReserve ? 'BATTERY_LIVE_REPLAN' : undefined});
+                            {code: state.eligible && (value > 0 && state.forecastReserve || value < 0 && state.operatingWindow) ? 'BATTERY_LIVE_REPLAN' : undefined});
                     // GS uses the opposite sign to the internal allocation.
                     // A limit can shrink while a previously valid command is
                     // queued, without changing its release or direction.
@@ -1072,7 +1073,7 @@ class EmsOptimizer extends utils.Adapter {
             gridConstraints,
             heatPumpTelemetryParser,
             normalizeWallboxPowerKW,
-            batteryTemperatureReserve,
+            batteryTemperatureReserve, batteryOperatingWindow,
             sunEnergyHeads,
             Infinity,
             NaN,

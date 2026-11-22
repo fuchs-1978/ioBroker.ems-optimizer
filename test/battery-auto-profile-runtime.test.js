@@ -235,3 +235,30 @@ test('real SOC above a newly applied device charging ceiling is not erased by ei
         assert.ok(h.series('BatterySoC').every(x => x.value_pct === 95), String(priceEnabled));
     }
 });
+
+test('full charge requires fresh, settled measurements from every installed pack and survives a restart', () => {
+    const h = engine();
+    const t = h.run('Date.now()');
+    const read = (age, overrides = {}) => {
+        for (const i of [1, 2]) h.snapshot(i, {SC: 100, SC0: 100, SC1: 100, ON: 2, BP: 10, timestamp: t + age,
+            ...(i === 2 ? overrides : {})}, {from: 'system.adapter.sunenergyxt500.0'});
+        h.run('batteryPlanningProfile()');
+    };
+    read(0);
+    h.advance(15000); read(15000, {SC1: 98});
+    h.advance(15000); read(30000, {SC1: undefined});
+    h.advance(15000); read(45000, {BP: 400});
+    assert.equal(h.value('Devices.Battery.LastFullChargeAt'), 0);
+    h.advance(15000); read(60000);
+    h.advance(30000); read(60000); // Re-reading an old frame cannot advance the confirmation.
+    assert.equal(h.value('Devices.Battery.LastFullChargeAt'), 0);
+    read(90000);
+    assert.equal(h.value('Devices.Battery.LastFullChargeAt'), t + 90000);
+    h.advance(10000); read(100000);
+    assert.equal(h.value('Devices.Battery.LastFullChargeAt'), t + 90000);
+    const restart = engine();
+    restart.advance(110000);
+    restart.own('Devices.Battery.LastFullChargeAt', t + 90000);
+    assert.equal(restart.run('measuredBatteryFullAt(Date.now())'), t + 90000);
+    assert.deepEqual(h.writes, []);
+});

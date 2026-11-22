@@ -79,6 +79,10 @@ npm run test:equivalence
 
 ## Changelog
 
+### 0.17.0-alpha.317 (2026-11-22)
+
+- Lower battery charge targets when the 48-hour plan covers the night and car departures. Use late PV for a monthly full charge. [Release notes](docs/release-0.17.0-alpha.317.md)
+
 ### 0.17.0-alpha.316 (2026-11-22)
 
 - Keep the active wallbox charging when a verified idle peer misses a poll. Let the battery absorb measured export left after mandatory vehicle charging. [Release notes](docs/release-0.17.0-alpha.316.md)
@@ -102,10 +106,6 @@ npm run test:equivalence
 ### 0.17.0-alpha.311 (2026-11-21)
 
 - Include already planned minimum-reserve grid heat in the bounded price-bridge reconciliation, retaining PV allocation, battery reserve and heater limits. [Release notes](docs/release-0.17.0-alpha.311.md)
-
-### 0.17.0-alpha.310 (2026-11-21)
-
-- Leave room for direct PV charging before departure when the finished plan also covers a zero-PV fallback. [Release notes](docs/release-0.17.0-alpha.310.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 

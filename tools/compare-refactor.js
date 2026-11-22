@@ -200,6 +200,8 @@ async function worker(tree) {
     // still have to appear in the trace.
     const inactiveReserveDefaults = new Map([
         ['ems.0.Plan.BatteryForecastReserve_JSON', '{}'],
+        ['ems.0.Plan.BatteryOperatingWindow_JSON', '{}'],
+        ['ems.0.Devices.Battery.LastFullChargeAt', 0],
         ['ems.0.Control.BatteryForecastReserveCharge_W', 0],
         ['ems.0.Control.BatteryForecastReserveGridCharge_W', 0],
         ['ems.0.Control.BatteryReserveGridCharge_W', 0]
