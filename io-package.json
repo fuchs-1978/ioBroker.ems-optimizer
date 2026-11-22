@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.318",
+    "version": "0.17.0-alpha.319",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.319": {
+        "en": "Use a proven continuous idle window for planned hot-water grid heat without changing device allocations or live releases.",
+        "de": "Geplante Netz-Warmwasserwärme auf ein nachgewiesen freies zusammenhängendes Zeitfenster verteilen, ohne Gerätezuteilungen oder Livefreigaben zu ändern.",
+        "es": "Distribuye el calentamiento de agua previsto en un intervalo libre continuo verificado sin cambiar las asignaciones ni los permisos reales.",
+        "fr": "Répartit le chauffage d’eau prévu sur une plage libre continue vérifiée sans modifier les allocations ni les autorisations réelles.",
+        "it": "Distribuisce il riscaldamento dell’acqua previsto in una finestra libera continua verificata senza modificare le allocazioni o le autorizzazioni reali.",
+        "nl": "Verdeelt geplande netverwarming van warm water over een bewezen vrij tijdvenster zonder apparaattoewijzingen of livevrijgaven te wijzigen.",
+        "pl": "Rozkłada planowane ogrzewanie wody na sprawdzone ciągłe wolne okno bez zmiany przydziałów urządzeń ani uprawnień.",
+        "pt": "Distribui o aquecimento de água previsto num intervalo livre contínuo verificado sem alterar as atribuições ou permissões reais.",
+        "ru": "Распределяет запланированный нагрев воды по проверенному непрерывному свободному интервалу без изменения назначений и разрешений.",
+        "uk": "Розподіляє запланований нагрів води на перевірений безперервний вільний період без зміни розподілу та дозволів.",
+        "zh-cn": "将计划热水用电分配到经验证的连续空闲时段，不改变设备分配或实际授权。"
+      },
       "0.17.0-alpha.318": {
         "en": "Include the remaining load of manually started and scheduled appliance programs in the 48-hour plan.",
         "de": "Restlast sofort gestarteter und eingeplanter Haushaltsprogramme im 48-Stunden-Fahrplan berücksichtigen.",
@@ -81,19 +94,6 @@
         "ru": "Переносит запланированный нагрев воды от сети на более дешёвые интервалы работы нагревателя с учётом ограничений бака, аккумулятора и подключения. Сохраняет распределение солнечной энергии между устройствами.",
         "uk": "Переносить запланований нагрів води від мережі на дешевші інтервали роботи нагрівача з урахуванням обмежень бака, акумулятора й підключення. Зберігає розподіл сонячної енергії між пристроями.",
         "zh-cn": "在水箱、电池和接入功率允许时，将计划中剩余的热水用电移至加热器已运行且电价较低的时段。各设备分配到的光伏电量保持不变。"
-      },
-      "0.17.0-alpha.312": {
-        "en": "Keep the newest vehicle SoC by measurement timestamp across adapter imports, manual corrections and restarts; share its observation with price planning.",
-        "de": "Den neuesten Fahrzeug-SoC anhand des Messzeitpunkts über Adapterimporte, manuelle Korrekturen und Neustarts erhalten; dieselbe Beobachtung für die Preisplanung verwenden.",
-        "es": "Conserva el SoC más reciente por la hora de medición entre importaciones, correcciones manuales y reinicios; comparte la observación con la planificación por precio.",
-        "fr": "Conserve le SoC le plus récent selon l’heure de mesure entre imports, corrections manuelles et redémarrages ; utilise la même observation pour la planification tarifaire.",
-        "it": "Mantiene il SoC più recente in base all’ora della misura tra importazioni, correzioni manuali e riavvii; usa la stessa osservazione nella pianificazione dei prezzi.",
-        "nl": "Behoudt de nieuwste voertuig-SoC op basis van de meettijd bij imports, handmatige correcties en herstarts; gebruikt dezelfde waarneming voor prijsplanning.",
-        "pl": "Zachowuje najnowszy SoC według czasu pomiaru między importami, korektami ręcznymi i restartami; stosuje tę samą obserwację w planowaniu cenowym.",
-        "pt": "Mantém o SoC mais recente pela hora da medição entre importações, correções manuais e reinícios; usa a mesma observação no planeamento por preço.",
-        "ru": "Сохраняет новейший SoC по времени измерения при импорте, ручных исправлениях и перезапусках; использует то же наблюдение при ценовом планировании.",
-        "uk": "Зберігає найновіший SoC за часом вимірювання під час імпорту, ручних виправлень і перезапусків; використовує те саме спостереження в ціновому плануванні.",
-        "zh-cn": "按测量时间保留车辆最新电量，避免导入、手动修正和重启时回退；电价规划采用同一观测值。"
       }
     },
     "titleLang": {

@@ -1197,6 +1197,74 @@ test('21 November 22:18 forecast advances the remaining midday grid heat and kee
     }
 });
 
+test('22 November: an isolated cheap bridge and expensive heat use one proven idle window', () => {
+    const e = require('../docs/evidence/thermal-idle-slots-2026-11-22.json');
+    const h = engine({}, new Date(e.observedPlanAt).toISOString());
+    const records = (columns, rows) => rows.map(row => Object.fromEntries(columns.map((key, i) => [key, row[i]])));
+    const original = records(e.slotColumns, e.slots);
+    const report = {...e.report, slots: records(e.thermalColumns, e.thermal)};
+    const run = (a = original, r = report, limits = 'Infinity', reserve = false, proof = true) =>
+        JSON.parse(h.run(`(() => {
+            const a=${JSON.stringify(a)}, r=${JSON.stringify(r)};
+            const limits=s=>({valid:true,consumptionW:${limits},phaseW:[10580-s.baseW-s.wallboxW-s.dhwW-s.heatingW-Math.max(0,s.batteryW)]});
+            const changed=${reserve ? 'reconcileDhwPriceBridgeWithReserve(a,r,' : 'reconcileDhwIdleBridge(a,r,'}${e.observedPlanAt},9000,limits${reserve ? ',{},()=>'+proof : ''});
+            return JSON.stringify({changed,a,r});
+        })()`));
+    const replay = run(original, report, 'Infinity', true);
+    assert.equal(replay.r.gridHeatShift?.idleBridge, true, 'published reconciliation runs the new pass');
+    assert.equal(replay.r.gridHeatShift.batteryReservePreserved, true);
+    near(Math.max(...replay.a.map(s => s.rawGridW)), 3663.6520192307685, 'reserve-verified whole-plan peak');
+    const {changed, a, r} = run();
+    assert.equal(changed, true);
+    assert.equal(a[12].dhwW, 0, 'isolated 23:00 pulse removed');
+    for (let i = 23; i < 36; i++) near(a[i].dhwW, 2859.1520192307685, 'one continuous new window');
+    for (let i = 74; i < 79; i++) near(a[i].dhwGridW, 0, 'only previous PV heat remains');
+    near(Math.max(...a.map(s => s.rawGridW)), 3663.6520192307685, 'whole-plan peak falls');
+    near(r.gridHeatShift.energyKWh, 9.2922440625, 'equal heat');
+    near(r.gridHeatShift.savingsEUR, 0.47221341525, 'only the higher-price energy saves cost');
+    assert.equal(r.gridAuthorization, false);
+    assert.equal(r.gridHeatShift.idleBridge, true);
+    near(r.slots.at(-1).usableKWh, report.slots.at(-1).usableKWh, 'same ending heat');
+    assert.ok(r.slots.every(s => s.usableKWh >= report.reserveKWh - 1e-7 && s.headroomKWh >= -1e-7));
+    a.forEach((s, i) => {
+        for (const key of ['pvW', 'baseW', 'batteryW', 'batteryPvW', 'wallboxW', 'dhwPvW', 'heatingW'])
+            assert.equal(s[key], original[i][key], `unchanged ${key} at ${i}`);
+        near(s.dhwW, s.dhwGridW + s.dhwPvW, 'heat source balance');
+        near(r.slots[i].gridKWh, s.dhwGridW * Math.min(0.25, Math.max(0, (s.timestamp + 900000 - e.observedPlanAt) / 3600000)) / 1000, 'grid heat integral');
+        if (s.dhwGridShiftW) assert.ok(s.dhwW === 0 || s.dhwW >= 900 - 1e-7 && s.dhwW <= 9000 + 1e-7);
+    });
+    for (const [reason, blocked] of [
+        ['group cap', run(original, report, '4200')],
+        ['cold layer', run(original, {...report, initialColdLayerDeficitKWh: 0.1})],
+        ['delayed reserve', run(original, {...report, slots: report.slots.map((s, i) => i === 13 ? {...s, usableKWh: 1} : s)})],
+        ['headroom', run(original, {...report, slots: report.slots.map((s, i) => i === 30 ? {...s, headroomKWh: 0} : s)})],
+        ['unknown reserve target', run(original, {...report, slots: report.slots.map((s, i) => i === 13 ? {...s, thermalReserveTargetKWh: null} : s)})],
+        ['competing battery', run(original.map((s, i) => i >= 23 && i < 36 ? {...s, batteryW: -100} : s))],
+        ['price gap', run(original.map((s, i) => i === 28 ? {...s, priceValid: false} : s))],
+        ['reserve replay', run(original, report, 'Infinity', true, false)],
+    ]) assert.equal(blocked.changed, false, reason);
+
+    // Stored heat replaces the isolated pulse, so the cheap block contains
+    // no active heater at all. The future demand/thermal balance is identical.
+    const pulse = original[12].dhwGridW;
+    const heatKeys = ['dhwW', 'dhwGridW', 'dhwBeforeQuantizationW',
+        'mandatoryThermalW', 'mandatoryThermalGridW', 'mandatoryThermalRequestedW'];
+    const zeroKeys = Object.fromEntries(heatKeys.map(k => [k, 0]));
+    const allOff = original.map((s, i) => i === 12
+        ? {...s, ...zeroKeys, dhwReason: 'off', rawGridW: s.rawGridW - pulse, gridW: s.gridW - pulse} : s);
+    const allOffReport = {...report,
+        initialUsableAboveMinimumKWh: report.initialUsableAboveMinimumKWh + pulse / 4000,
+        initialHeadroomKWh: report.initialHeadroomKWh - pulse / 4000,
+        gridHeatingKWh: report.gridHeatingKWh - pulse / 4000,
+        slots: report.slots.map((s, i) => i === 12
+            ? {...s, gridKWh: 0, reason: 'off', mandatoryThermalW: 0, mandatoryThermalGridW: 0, mandatoryThermalRequestedW: 0}
+            : i < 12 ? {...s, usableKWh: s.usableKWh + pulse / 4000, headroomKWh: s.headroomKWh - pulse / 4000} : s)};
+    const result = run(allOff, allOffReport);
+    assert.equal(result.changed, true, 'previously completely idle cheap heating block');
+    near(result.r.gridHeatShift.energyKWh, 7.2872440625, 'only previously planned expensive heat');
+    near(result.r.gridHeatShift.savingsEUR, 0.47221341525, 'same price saving');
+});
+
 test('shared-PV reconciliation is applied to the published forecast and its diagnostics', () => {
     const h = thermalFixture({temperatures: Array(4).fill(45), demand: 25,
         start: '2026-11-19T22:00:00Z', config: {batteryPvPriorityEnabled: true}});
