@@ -400,9 +400,15 @@ function vehicleStatus(w, connected, watts, control) {
   if (w.Release === false) return "Keine Ladefreigabe";
   if (watts !== 0 || control?.Valid !== true) return "Angesteckt";
   const output = String(w.OutputStatus || "");
-  if (control.GridOperatorLimitActive && /limit|budget|netzbetreiber/i.test(output)) return "Netzlimit aktiv";
-  const waitingForEnergy = w.allocation?.reason === "limit-below-minimum" ||
-    /kein Startbudget|PV.?(?:Überschuss|Ueberschuss)|[Mm]indestleistung.*(?:fehlt|unterschritten)/i.test(output);
+  if (control.GridOperatorLimitActive && /netzbetreiber|netzlimit|§\s*14a|EEBUS/i.test(output)) return "Netzlimit aktiv";
+  const allocation = w.allocation;
+  const pvBudget = nonnegative(allocation?.pvBudgetW);
+  const threshold = nonnegative(allocation?.start?.startThresholdW) ?? nonnegative(w.MinimumPower_W);
+  const limited = allocation?.valid === true && allocation.reason === "limit-below-minimum";
+  const noPvBudget = limited && pvBudget !== null && threshold > 0 && pvBudget < threshold;
+  if (limited && pvBudget >= threshold && threshold > 0 && isNumber(allocation?.safetyBudgetW) &&
+      allocation.safetyBudgetW < threshold) return "Leistung begrenzt";
+  const waitingForEnergy = noPvBudget || /wartet auf PV|(?:zu wenig|fehlender) PV.?(?:Überschuss|Ueberschuss)/i.test(output);
   if (w.MustCharge !== true && w.Release === true && /^PV-flexibel/i.test(w.Status || "") && waitingForEnergy) return "Wartet auf PV";
   return "Angesteckt";
 }
