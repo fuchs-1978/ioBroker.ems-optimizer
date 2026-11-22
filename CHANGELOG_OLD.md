@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.313 (2026-11-21)
+
+- Move remaining planned hot-water grid imports to cheaper heater slots while retaining direct PV, the battery reserve and the existing connection limits. [Release notes](docs/release-0.17.0-alpha.313.md)
+
 ## 0.17.0-alpha.312 (2026-11-21)
 
 - Select vehicle SoC by the measurement timestamp, retaining newer manual corrections and observations across delayed imports and restarts. Share that observation with price planning. [Release notes](docs/release-0.17.0-alpha.312.md)

@@ -81,6 +81,10 @@ npm run test:equivalence
 
 ## Changelog
 
+### 0.17.0-alpha.320 (2026-11-22)
+
+- In the coordinated SunEnergy forecast, share otherwise exported PV with an eligible car in whole-amp steps; retain hard battery, thermal and connection reserves. [Release notes](docs/release-0.17.0-alpha.320.md)
+
 ### 0.17.0-alpha.319 (2026-11-22)
 
 - Redistribute planned grid heat to a proven contiguous idle window when thermal, connection and battery reserves permit. [Release notes](docs/release-0.17.0-alpha.319.md)
@@ -104,10 +108,6 @@ npm run test:equivalence
 ### 0.17.0-alpha.314 (2026-11-22)
 
 - Resume normal battery dispatch after a GS conflict on the first fresh SunEnergy report confirming zero setpoint and AC power per head. Recheck current demand and limits before the next command. [Release notes](docs/release-0.17.0-alpha.314.md)
-
-### 0.17.0-alpha.313 (2026-11-21)
-
-- Move remaining planned hot-water grid imports to cheaper heater slots while retaining direct PV, the battery reserve and the existing connection limits. [Release notes](docs/release-0.17.0-alpha.313.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 
