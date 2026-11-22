@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.312 (2026-11-21)
+
+- Select vehicle SoC by the measurement timestamp, retaining newer manual corrections and observations across delayed imports and restarts. Share that observation with price planning. [Release notes](docs/release-0.17.0-alpha.312.md)
+
 ## 0.17.0-alpha.311 (2026-11-21)
 
 - Include already planned minimum-reserve grid heat in the bounded price-bridge reconciliation, retaining PV allocation, battery reserve and heater limits. [Release notes](docs/release-0.17.0-alpha.311.md)

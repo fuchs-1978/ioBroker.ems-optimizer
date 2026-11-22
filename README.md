@@ -81,6 +81,10 @@ npm run test:equivalence
 
 ## Changelog
 
+### 0.17.0-alpha.319 (2026-11-22)
+
+- Redistribute planned grid heat to a proven contiguous idle window when thermal, connection and battery reserves permit. [Release notes](docs/release-0.17.0-alpha.319.md)
+
 ### 0.17.0-alpha.318 (2026-11-22)
 
 - Account for the remaining program load of directly started and scheduled household appliances in the house, battery, EV, hot-water and grid forecasts. [Release notes](docs/release-0.17.0-alpha.318.md)
@@ -104,10 +108,6 @@ npm run test:equivalence
 ### 0.17.0-alpha.313 (2026-11-21)
 
 - Move remaining planned hot-water grid imports to cheaper heater slots while retaining direct PV, the battery reserve and the existing connection limits. [Release notes](docs/release-0.17.0-alpha.313.md)
-
-### 0.17.0-alpha.312 (2026-11-21)
-
-- Select vehicle SoC by the measurement timestamp, retaining newer manual corrections and observations across delayed imports and restarts. Share that observation with price planning. [Release notes](docs/release-0.17.0-alpha.312.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 
