@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.308 (2026-11-21)
+
+- Use the SunEnergy head’s measured reporting interval to recognize two minutes of near-maximum PV charging. The wallbox checks the available export before starting. [Release notes](docs/release-0.17.0-alpha.308.md)
+
 ## 0.17.0-alpha.307 (2026-11-21)
 
 - Reduce cycling between adjacent departure charging currents. Increase immediately when required and release the higher step once the lower current supplies five extra minutes of headroom. [Release notes](docs/release-0.17.0-alpha.307.md)

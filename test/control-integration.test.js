@@ -3667,7 +3667,7 @@ test('a price schedule that no longer covers the observed minimum restores depar
     assert.ok(h.trace.at(-1).miiW >= 1380, h.diagnostic());
 });
 
-test('departure PV plan stops overnight grid charging at the interim SoC and restarts after a lost forecast', async () => {
+test('an earned departure PV pause survives a lost forecast and releases an earlier edited departure', async () => {
     const h = await plant({wallbox: true, startDelayS: 0, minimumRuntimeS: 120, split: false,
         initialSurplusW: -350, nativeConfig: {wb2DeadlineEnabled: true, wb2CommissioningMaxA: 20,
             wallboxParallelChargingEnabled: true, dhwControlEnabled: false}});
@@ -3695,8 +3695,43 @@ test('departure PV plan stops overnight grid charging at the interim SoC and res
     assert.equal(h.value('Vehicles.Wallbox2.MustCharge'), false, h.diagnostic());
     assert.equal(h.trace.at(-1).wbW, 0, h.diagnostic());
     h.run('departureData.pv.forEach(p => { p.valueW = 0; }); buildDevicePlan(departureData); updateVehicles()');
-    assert.ok(!JSON.parse(h.value('Plan.Wallbox2_48h_JSON'))[0].departurePv);
+    const backup = JSON.parse(h.value('Plan.Wallbox2_48h_JSON'))[0].departurePv;
+    assert.ok(backup.backupUntil > backup.releaseAt && backup.releaseAt > h.now());
+    await h.advance(30);
+    assert.equal(h.value('Vehicles.Wallbox2.MustCharge'), false, h.diagnostic());
+    assert.equal(h.physical().wbPowerW, 0, h.diagnostic());
+    h.setSurplus(6000);
+    await h.advance(35);
+    assert.equal(h.value('Vehicles.Wallbox2.MustCharge'), false);
+    assert.ok(h.physical().wbPowerW >= 1380, h.diagnostic());
+    h.setSurplus(-350);
+    h.own('Vehicles.Wallbox2.DepartureTime', new Date(start + 900000).toTimeString().slice(0, 5));
     await h.advance(30);
     assert.equal(h.value('Vehicles.Wallbox2.MustCharge'), true, h.diagnostic());
     assert.ok(h.trace.at(-1).wbW >= 1380, h.diagnostic());
+});
+
+test('the wallbox resumes charging at the certified grid slot when sunlight does not arrive', async () => {
+    const start = Date.UTC(2026, 10, 22, 7);
+    const h = await plant({initialTime: start + 14 * 60000, wallbox: true, startDelayS: 0, split: false,
+        initialSurplusW: -350, nativeConfig: {wb2DeadlineEnabled: true, wb2CommissioningMaxA: 20,
+            wallboxParallelChargingEnabled: true, dhwControlEnabled: false}});
+    h.own('Devices.MyPV_DHW.Present', false);
+    h.own('Devices.Wallbox0.Present', false);
+    h.put('DP_WB2_MIN_SOC', 90); h.put('DP_WB2_TARGET', 90); h.put('DP_WB2_SOC', 88.5);
+    h.own('Config.Wallbox2VehicleCapacity_kWh', 90.6);
+    h.own('Vehicles.Wallbox2.DepartureTime', new Date(start + 8 * 900000).toTimeString().slice(0, 5));
+    const slots = Array.from({length: 10}, (_, i) => ({timestamp: start + i * 900000}));
+    h.engineContext.departureData = {pv: slots.map((s, i) => ({...s, valueW: i < 4 ? 0 : 5200})),
+        house: slots.map(s => ({...s, valueW: 1000})), prices: {total: slots.map(s => ({...s, value_ct_kWh: 30}))}};
+    h.run('historyReady = true; buildDevicePlan(departureData); updateVehicles()');
+    h.run('departureData.pv.forEach(p => { p.valueW = 0; }); buildDevicePlan(departureData); updateVehicles()');
+    const fallback = JSON.parse(h.value('Plan.Wallbox2_48h_JSON'))[0].departurePv;
+    assert.equal(fallback?.releaseAt, start + 900000);
+    await h.advance(56);
+    assert.equal(h.physical().wbPowerW, 0, h.diagnostic());
+    assert.equal(h.value('Vehicles.Wallbox2.MustCharge'), false);
+    await h.advance(35);
+    assert.equal(h.value('Vehicles.Wallbox2.MustCharge'), true);
+    assert.ok(h.physical().wbPowerW >= 1380, h.diagnostic());
 });

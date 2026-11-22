@@ -1017,6 +1017,8 @@ Externe Preisreihen müssen echte Zeitintervalle enthalten, kein einzelner aktue
 
 ### Keine unbeabsichtigte Nachtladung
 
+Bei aktiver Abfahrt kann der EMS eine erreichte PV-Ladepause trotz wechselnder Prognose halten. Unter `Vehicles.WallboxN.Status` steht dann der abgesicherte Nachladebeginn. Er berücksichtigt die restliche Energie, den Mindestladestrom, die Startwartezeit und die verfügbaren Anschlussreserven. [Beispiel und Berechnung](release-0.17.0-alpha.315.md)
+
 Für Fahrzeuge jeweils Preis-Netzladung und Abfahrts-Netzladung prüfen; Mindest-SoC und manueller Mindeststrom können trotzdem Netzbedarf erzeugen. Für Batterie eigene Netzladefreigabe prüfen. Für Wärme „Günstigpreisheizen“ und gemeinsames Netzbudget prüfen. „Preisladung AUS“ allein bedeutet nicht, dass jeder andere ausdrücklich konfigurierte Pflichtbedarf ebenfalls AUS ist. Prognosebalken sind erwartete Planung, keine tatsächlich erteilte Freigabe.
 
 ### Priorität aus dem Webinterface

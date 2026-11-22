@@ -15,6 +15,7 @@ function fixture(config = {}, minute = 0, start = Date.parse('2026-10-08T10:00:0
         static now() { return now; }
     }
     const context = vm.createContext({vehicleSocEstimator: require('../lib/vehicle-soc-estimator'),
+        gridConstraints: require('../lib/grid-constraints'),
         wallboxAllocationPolicy: require('../lib/wallbox-allocation'), nativeConfig: {wallboxParallelChargingEnabled: true,
         wb0PhaseControlMode: 'ems', wb1PhaseControlMode: 'ems', wb2PhaseControlMode: 'ems', ...config},
     Date: Clock, getState: id => states.get(id), existsState: id => states.has(id),
@@ -503,6 +504,67 @@ test('the EQE completes with zero PV from the reserved overnight SoC, including 
     assert.ok(eqe[0].valueW >= 1380);
     const energy = require('../lib/planning-explanation').plannedEnergy(eqe, h.now, nextDeparture - 900000);
     assert.ok(Math.abs(87.2 + energy * 0.9 / 0.906 - 90) < 0.01);
+});
+
+function rollingDeparture() {
+    const now = new Date(2026, 10, 22, 3, 4).getTime();
+    const h = departureFixture(now, 0, 88.1);
+    h.run(fs.readFileSync(path.join(__dirname, '../lib/engine/realtime.js'), 'utf8'));
+    const pv = Array.from({length: 40}, (_, i) => i >= 27 && i < 35 ? 3600 : 0);
+    const plan = h.plan({pvW: pv, houseW: 1000, slots: pv.length});
+    const initial = plan.cars[2][0].departurePv;
+    assert.ok(initial && initial.reservePct <= 88.1 && initial.releaseAt === solarStart);
+    const rebuild = () => { h.run('buildDevicePlan(data); updateVehicles()'); return h.series('Wallbox2'); };
+    return {h, initial, rebuild};
+}
+
+test('03:04 EQE rebuild gives a missing dark PV sample zero watts and keeps the 09:45 window', () => {
+    const {h, initial, rebuild} = rollingDeparture();
+    h.run("data.pv[1].source = 'unavailable'; data.pv[1].valueW = 6000");
+    const result = rebuild();
+    assert.equal(result[0].departurePv.releaseAt, initial.releaseAt);
+    assert.equal(result[0].departurePv.backupUntil, undefined);
+    assert.equal(h.series('Allocation')[1].pvW, 0);
+    assert.ok(result.slice(0, 27).every(slot => slot.valueW === 0));
+    assert.equal(h.states.get('ems.0.Vehicles.Wallbox2.MustCharge').val, false);
+});
+
+test('a zero-PV fallback covers the measured night deficit at minimum current before 11:45', () => {
+    const {h, rebuild} = rollingDeparture();
+    h.run('data.pv.forEach(p => { p.valueW = 0; })');
+    const eqe = rebuild(), hold = eqe[0].departurePv;
+    const finish = nextDeparture - 15 * 60000;
+    const need = (90 - 88.1) * 90.6 / 90;
+    assert.equal(hold.releaseAt, solarStart);
+    assert.equal(hold.backupUntil, finish);
+    assert.equal(hold.backupMinimumW, 1380);
+    assert.equal(hold.backupAcKWh, (finish - solarStart - 300000) * 1380 * 0.8 / 3600000000);
+    assert.ok(hold.backupAcKWh >= need && hold.backupAcKWh - 0.25 * 1.38 * 0.8 < need);
+    assert.ok(eqe.filter(s => s.timestamp < hold.releaseAt).every(s => s.valueW === 0));
+    const energy = require('../lib/planning-explanation').plannedEnergy(eqe, h.now, finish);
+    assert.ok(Math.abs(energy - need) < 0.003);
+    assert.equal(rebuild()[0].departurePv.releaseAt, hold.releaseAt);
+    assert.match(h.states.get('ems.0.Vehicles.Wallbox2.Status').val, /Nachladung ab 09:45/);
+});
+
+test('a previous solar plan cannot defer an unearned pause, a new session, a competing departure or unsafe recovery', () => {
+    for (const reason of ['below reserve', 'replug', 'departure edit', 'mobile reserve', 'manual', 'grid limit', 'house gap', 'competing']) {
+        const {h, initial, rebuild} = rollingDeparture();
+        h.run('data.pv.forEach(p => { p.valueW = 0; })');
+        if (reason === 'below reserve') h.put(h.run('CFG.dp.wallboxSoc[2]'), initial.reservePct - 0.1);
+        if (reason === 'replug') h.states.get('ems.0.Vehicles.Wallbox2.Connected').lc = h.now - 1;
+        if (reason === 'departure edit') h.put('ems.0.Vehicles.Wallbox2.DepartureTime', '11:45');
+        if (reason === 'mobile reserve') h.put('ems.0.Vehicles.Wallbox2.MobilityReserve_pct', 89);
+        if (reason === 'manual') h.put(h.run('CFG.dp.wallboxManualMinCurrent[2]'), 10);
+        if (reason === 'grid limit') h.put('ems.0.Config.HouseConnectionWorkingLimit_A', 8);
+        if (reason === 'house gap') h.run('data.house[8].valueW = null');
+        if (reason === 'competing') {
+            h.run('nativeConfig.wb0DeadlineEnabled = true');
+            car(h, 0, {soc: 40, minimum: 60});
+            h.put('ems.0.Vehicles.Wallbox0.DepartureTime', '11:00');
+        }
+        assert.ok(rebuild().every(slot => !slot.departurePv), reason);
+    }
 });
 
 test('weak PV, local limits, manual minimum current and competing departures retain the immediate minimum', () => {
