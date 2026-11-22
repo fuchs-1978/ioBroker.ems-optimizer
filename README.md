@@ -79,6 +79,10 @@ npm run test:equivalence
 
 ## Changelog
 
+### 0.17.0-alpha.315 (2026-11-22)
+
+- Keep an earned departure charging pause through gaps in the PV forecast. Recalculate the latest grid slot that can still deliver the minimum before departure. [Release notes](docs/release-0.17.0-alpha.315.md)
+
 ### 0.17.0-alpha.314 (2026-11-22)
 
 - Resume normal battery dispatch after a GS conflict on the first fresh SunEnergy report confirming zero setpoint and AC power per head. Recheck current demand and limits before the next command. [Release notes](docs/release-0.17.0-alpha.314.md)
@@ -102,10 +106,6 @@ npm run test:equivalence
 ### 0.17.0-alpha.309 (2026-11-21)
 
 - Settle the battery on the surplus left by a running PV wallbox when SunEnergy and grid readings arrive at different rates. Retain a confirmed one-amp vehicle increase when the meter covers the full step within the configured tolerance. [Release notes](docs/release-0.17.0-alpha.309.md)
-
-### 0.17.0-alpha.308 (2026-11-21)
-
-- Use the SunEnergy head’s measured reporting interval to recognize two minutes of near-maximum PV charging. The wallbox checks the available export before starting. [Release notes](docs/release-0.17.0-alpha.308.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 

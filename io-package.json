@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.314",
+    "version": "0.17.0-alpha.315",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.315": {
+        "en": "Retain an earned departure PV pause across forecast gaps while a fresh zero-solar recovery calculation covers the departure minimum.",
+        "de": "Eine erreichte PV-Ladepause übersteht Prognoselücken, solange die verbleibende Netzladezeit für den Mindest-SoC bei Abfahrt ausreicht.",
+        "es": "Mantiene una pausa de carga solar ya alcanzada si una nueva previsión sin sol confirma que se puede alcanzar la carga mínima antes de salir.",
+        "fr": "Conserve une pause de recharge solaire déjà atteinte si un nouveau calcul sans soleil garantit la charge minimale avant le départ.",
+        "it": "Mantiene una pausa di ricarica solare già raggiunta se un nuovo calcolo senza sole conferma la carica minima entro la partenza.",
+        "nl": "Behoudt een bereikte laadpauze bij ontbrekende zonneprognoses zolang de minimale lading voor vertrek ook zonder zon haalbaar blijft.",
+        "pl": "Utrzymuje rozpoczętą przerwę w ładowaniu przy lukach prognozy PV, jeśli bez słońca nadal można osiągnąć minimum przed wyjazdem.",
+        "pt": "Mantém uma pausa de carregamento solar já atingida se um novo cálculo sem sol confirmar a carga mínima antes da partida.",
+        "ru": "Сохраняет начатую паузу солнечной зарядки при пропусках прогноза, если заряд от сети всё ещё обеспечит минимум к отъезду.",
+        "uk": "Зберігає розпочату паузу сонячного заряджання за прогалин прогнозу, якщо заряд від мережі ще забезпечує мінімум до від’їзду.",
+        "zh-cn": "光伏预测有缺失时，若重新计算确认仅靠电网也能在出发前达到最低电量，则保留已开始的充电暂停。"
+      },
       "0.17.0-alpha.314": {
         "en": "Resume SunEnergy control after a setpoint conflict when each head first reports a fresh zero setpoint and zero AC power. Recalculate the next command from current conditions.",
         "de": "Nach einem Sollwertkonflikt genügt je SunEnergy-Kopf eine frische Meldung mit 0 W Soll- und Istleistung. Der Regler berechnet den nächsten Auftrag aus dem aktuellen Bedarf.",
@@ -81,19 +94,6 @@
         "ru": "Заряд накопителя SunEnergy учитывает остаток мощности при зарядке автомобиля от солнца и более редкие показания накопителя. Подтверждённое повышение на 1 А сохраняется при достаточной измеренной мощности.",
         "uk": "Заряд накопичувача SunEnergy враховує надлишок під час заряджання автомобіля від сонця та рідші покази накопичувача. Підтверджене підвищення на 1 А зберігається за достатньої виміряної потужності.",
         "zh-cn": "在车辆使用光伏充电时，即使 SunEnergy 储能的测量更新较慢，也能按剩余功率调节充电。实测功率足够时，保持车辆已确认的 1 A 电流增量。"
-      },
-      "0.17.0-alpha.308": {
-        "en": "Recognize two minutes of near-full PV charging power from a SunEnergy head reporting every five seconds and use the measured surplus to start the wallbox.",
-        "de": "Meldet der SunEnergy-Speicher etwa alle fünf Sekunden, erkennt das EMS zwei Minuten PV-Ladung nahe der Leistungsgrenze und kann die Wallbox bei gemessenem Überschuss starten.",
-        "es": "Con lecturas de SunEnergy cada cinco segundos, el EMS reconoce dos minutos de carga solar cerca de la potencia máxima y puede iniciar la carga del vehículo con el excedente medido.",
-        "fr": "Avec des mesures SunEnergy toutes les cinq secondes, le système détecte deux minutes de charge solaire proche de la puissance maximale et peut démarrer la borne avec le surplus mesuré.",
-        "it": "Con misure SunEnergy ogni cinque secondi, il sistema rileva due minuti di carica solare vicina alla potenza massima e può avviare la wallbox con il surplus misurato.",
-        "nl": "Bij SunEnergy-metingen om de vijf seconden herkent het EMS twee minuten zonneladen nabij het maximale vermogen en kan het de laadpaal starten met het gemeten overschot.",
-        "pl": "Przy pomiarach SunEnergy co pięć sekund system rozpoznaje dwie minuty ładowania z PV blisko mocy maksymalnej i może uruchomić ładowarkę przy zmierzonej nadwyżce.",
-        "pt": "Com leituras SunEnergy a cada cinco segundos, o sistema reconhece dois minutos de carga solar perto da potência máxima e pode iniciar o carregador com o excedente medido.",
-        "ru": "При измерениях SunEnergy каждые пять секунд система распознаёт две минуты солнечной зарядки накопителя вблизи предельной мощности и может включить зарядку автомобиля при измеренном избытке.",
-        "uk": "За вимірювань SunEnergy кожні п’ять секунд система розпізнає дві хвилини сонячного заряджання накопичувача поблизу граничної потужності й може увімкнути зарядку автомобіля за виміряного надлишку.",
-        "zh-cn": "当 SunEnergy 每五秒上报一次时，系统可识别储能电池连续两分钟以接近上限的功率利用光伏充电，并在测得有足够余电时启动车辆充电。"
       }
     },
     "titleLang": {
