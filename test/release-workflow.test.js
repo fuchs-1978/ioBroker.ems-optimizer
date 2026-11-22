@@ -16,7 +16,7 @@ for (const scenario of ['new', 'existing-release', 'existing-tag', 'moved-main',
     test(`release shell preserves existing publications and fails closed: ${scenario}`, () => {
         const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ems-release-check-'));
         try {
-            const shim = `#!${process.execPath}
+            const shim = `#!/usr/bin/env node
 const fs = require('node:fs');
 const args = process.argv.slice(2), scenario = process.env.SCENARIO;
 fs.appendFileSync(process.env.CALLS, JSON.stringify({tool:process.env.TOOL,args})+'\\n');
@@ -41,7 +41,8 @@ else if (scenario === 'publish-failure') process.exit(1);
                 fs.writeFileSync(file, shim.replaceAll('process.env.TOOL', JSON.stringify(tool)), {mode: 0o700});
             }
             const calls = path.join(directory, 'calls.jsonl');
-            const result = spawnSync('bash', ['-c', script], {encoding: 'utf8', env: {...process.env,
+            const bash = process.platform === 'win32' ? path.join(process.env.ProgramFiles, 'Git', 'bin', 'bash.exe') : 'bash';
+            const result = spawnSync(bash, ['-c', script], {encoding: 'utf8', env: {...process.env,
                 PATH: directory + path.delimiter + process.env.PATH, SCENARIO: scenario, CALLS: calls,
                 RELEASE_VERSION: '0.17.0-alpha.999', GITHUB_SHA: 'current',
                 GITHUB_REPOSITORY: 'test/ems', RUNNER_TEMP: directory}});

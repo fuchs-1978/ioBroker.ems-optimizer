@@ -28,6 +28,23 @@ function adapter(adapterCore = {}) {
     return instance;
 }
 
+test('engine timeouts release their handles and suppress callbacks once unloading starts', () => {
+    const a = adapter();
+    let fire;
+    a.runtimeTimers = {setTimeout(callback) { fire = callback; return 17; }};
+    const calls = [];
+    assert.equal(a.scheduleEngineTimeout((...args) => calls.push(args), 500, 'first', 2), 17);
+    assert.ok(a.timers.has(17));
+    fire();
+    assert.deepEqual(calls, [['first', 2]]);
+    assert.equal(a.timers.size, 0);
+    a.scheduleEngineTimeout(() => calls.push('late'), 500);
+    a.unloading = true;
+    fire();
+    assert.deepEqual(calls, [['first', 2]]);
+    assert.equal(a.timers.size, 0);
+});
+
 test('recorder reuses its mapping and observes the first notification after in-place configuration changes', t => {
     const a = adapter();
     const config = a.config;

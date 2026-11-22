@@ -11,8 +11,13 @@ const {execFileSync} = require('node:child_process');
 
 const root = path.resolve(__dirname, '..');
 const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ems-packed-'));
-const npm = (args, cwd) => execFileSync('npm', args, {cwd, encoding: 'utf8',
-    env: {...process.env, npm_config_update_notifier: 'false'}});
+function npm(args, cwd) {
+    // npm supplies the path to its JS entry point when run through test:artifact.
+    const cli = process.env.npm_execpath;
+    return execFileSync(cli ? process.execPath : 'npm', cli ? [cli, ...args] : args, {
+        cwd, encoding: 'utf8', env: {...process.env, npm_config_update_notifier: 'false'}
+    });
+}
 try {
     const packed = JSON.parse(npm(['pack', '--json', '--pack-destination', directory], root))[0];
     assert.ok(packed.files.some(file => file.path === 'lib/wallbox-allocation.js'));
@@ -23,6 +28,12 @@ try {
     assert.ok(packed.files.some(file => file.path === 'lib/grid-operator-runtime.js'));
     assert.ok(packed.files.some(file => file.path === 'lib/engine/grid-operator-control.js'));
     assert.ok(!packed.files.some(file => /^(test|node_modules|\.github)\//.test(file.path)));
+    assert.ok(!packed.files.some(file => file.path.startsWith('docs/issue-audit/') ||
+        ['CHANGELOG_OLD.md', 'eslint.config.mjs', 'prettier.config.mjs'].includes(file.path)));
+    for (const required of ['config.example.json', 'README.de.md', 'SUPPORT.md', 'admin/jsonConfig.json',
+        'docs/phase-follower-v2.md', 'tools/decode-decision-records.js']) {
+        assert.ok(packed.files.some(file => file.path === required), required);
+    }
     fs.writeFileSync(path.join(directory, 'package.json'), '{"name":"ems-artifact-check","private":true}');
     npm(['install', '--omit=dev', '--package-lock=false', '--no-audit', '--no-fund',
         path.join(directory, packed.filename)], directory);

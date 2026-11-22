@@ -2,6 +2,8 @@
 
 [English overview](README.md) · [Admin-Feldreferenz](docs/admin-reference.de.md) · [Versionsänderungen](README.md#changelog) · [Offene Arbeiten auf GitHub](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36)
 
+**Entwicklungs-Alpha für Testinstallationen.** Für den produktiven Einsatz ist der Adapter noch nicht freigegeben. Für einen Testlauf können alle Stellfreigaben ausgeschaltet bleiben.
+
 EMS Optimizer hilft, den eigenen Strom für Hausbatterie, E-Autos und elektrische Heizstäbe zu nutzen. Mit angeschlossenen Preis- und Prognosequellen kann er bestimmte Verbräuche in günstige Zeitfenster verschieben. Du entscheidest je Gerät, ob es in der Planung auftaucht und ob das EMS es steuern darf.
 
 Der **Fahrplan** rechnet für die nächsten 48 Stunden in Viertelstunden. Die **Echtzeitregelung** prüft laufend, was an der Anlage gerade möglich ist. Zieht eine Wolke vor die PV-Anlage, begrenzen die aktuellen Messwerte die Leistung auch bei einem sonnigen Fahrplan. Die beiden Ebenen findest du in der EMS-Übersicht.
@@ -10,7 +12,7 @@ Der **Fahrplan** rechnet für die nächsten 48 Stunden in Viertelstunden. Die **
 
 Vorausgesetzt werden Node.js ab 22, ioBroker js-controller ab 6.0.11 und Admin ab 7.8.23. Die aktuelle Entwicklungsfassung steht im Changelog. Die auf deiner Instanz laufende Version siehst du unter `ems-optimizer.0.System.Version`. [Versionsstand auf main](README.md#changelog)
 
-1. Öffne im ioBroker-Admin **Adapter → Installation aus eigener Quelle → GitHub**. Verwende `https://github.com/fuchs-1978/ioBroker.ems-optimizer`. Wähle für eine reproduzierbare Installation den Commit eines geprüften Stands. [GitHub-Prüfläufe auf main](https://github.com/fuchs-1978/ioBroker.ems-optimizer/actions/workflows/test-and-release.yml?query=branch%3Amain)
+1. Prüfe für deine Testinstanz den Versionsstand und das zugehörige Testergebnis. Die folgenden Schritte beschreiben die Einrichtung nach der Installation. [GitHub-Prüfläufe auf main](https://github.com/fuchs-1978/ioBroker.ems-optimizer/actions/workflows/test-and-release.yml?query=branch%3Amain)
 2. Öffne **Instanzen → ems-optimizer.0 → Einstellungen**. Bei einer weiteren Instanz lautet die Nummer entsprechend anders.
 3. Beginne bei **Allgemein**, **Netzanschluss / §14a / EEBUS** und **Messwerte**. Lass die Master-Freigabe beim Einrichten aus. Schalte in den jeweiligen Reitern **vorhanden** für Geräte aus, die deine Anlage nicht hat.
 4. Ergänze **Historie und Prognose** sowie **Preise & Tarife**, wenn du einen Fahrplan nutzen willst. Richte anschließend einen realen Ausgang ein, etwa eine Wallbox mit einer bewusst niedrigen Inbetriebnahmegrenze.

@@ -1,24 +1,31 @@
 name: Test and Release
 
-# Tag pushes are validated too. Publishing remains a separate explicit action.
 on:
   push:
-    branches: ['**']
-    tags: ['v*']
+    branches: [main, '**']
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-**'
   pull_request: {}
+  workflow_dispatch:
+    inputs:
+      publish_to_npm:
+        description: Publish the selected version tag to npm after all tests pass
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 concurrency:
-  group: test-${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   check-and-lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: ioBroker/testing-action-check@v1
+      - uses: ioBroker/testing-action-check@v2
         with:
           node-version: '24'
           lint: true
@@ -27,22 +34,62 @@ jobs:
 
   adapter-tests:
     needs: check-and-lint
-    name: Node.js ${{ matrix.node-version }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         node-version: [22, 24, 26]
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
+      - name: Preserve repository line endings for byte-exact fixtures
+        if: runner.os == 'Windows'
+        run: git config --global core.autocrlf false
       - uses: ioBroker/testing-action-adapter@v1
         with:
           node-version: ${{ matrix.node-version }}
           os: ${{ matrix.os }}
       - name: Fetch historical comparison bases
+        shell: bash
         run: |
           if [ "$(git rev-parse --is-shallow-repository)" = true ]; then
             git fetch --unshallow --tags
           fi
       - run: npm run test:artifact
       - run: npm run test:equivalence
+
+  deploy:
+    needs: [check-and-lint, adapter-tests]
+    if: github.event_name == 'workflow_dispatch' && inputs.publish_to_npm && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - name: Verify the tag and choose its npm channel
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor HEAD origin/main
+          test "$(git rev-parse HEAD)" = "$(git rev-parse "${GITHUB_REF}^{commit}")"
+          node - <<'JS'
+          const assert = require('node:assert/strict');
+          const fs = require('node:fs');
+          const version = require('./package.json').version;
+          assert.match(version, /^\d+\.\d+\.\d+(?:-alpha\.\d+)?$/);
+          assert.equal(process.env.GITHUB_REF_NAME, 'v' + version);
+          assert.equal(require('./io-package.json').common.version, version);
+          const channel = version.includes('-alpha.') ? 'alpha' : 'latest';
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, 'channel=' + channel + '\n');
+          JS
+      - name: Publish the tested package using npm trusted publishing
+        env:
+          DIST_TAG: ${{ steps.release.outputs.channel }}
+        run: npm publish --registry=https://registry.npmjs.org --provenance --tag "$DIST_TAG"

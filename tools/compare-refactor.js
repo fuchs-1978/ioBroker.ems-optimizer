@@ -663,8 +663,8 @@ async function main() {
     try {
         const baseline = path.join(directory, 'baseline'); fs.mkdirSync(baseline);
         const archive = execFileSync('git', ['archive', revision], {cwd: root, maxBuffer: 32 * 1024 * 1024});
-        execFileSync('tar', ['-x', '-C', baseline], {input: archive});
-        fs.symlinkSync(path.join(root, 'node_modules'), path.join(baseline, 'node_modules'), 'dir');
+        execFileSync('tar', ['-xf', '-', '-C', baseline], {input: archive});
+        fs.symlinkSync(path.join(root, 'node_modules'), path.join(baseline, 'node_modules'), 'junction');
         const reports = [];
         for (const [name, tree] of [['before', baseline], ['after', root]]) {
             const report = path.join(directory, name + '.json');
