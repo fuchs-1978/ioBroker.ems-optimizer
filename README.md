@@ -6,7 +6,7 @@
 
 **[Deutsche Anleitung und Einrichtung](README.de.md)** · [Admin field reference (German)](docs/admin-reference.de.md) · [Changelog](#changelog) · [Roadmap](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36)
 
-EMS Optimizer uses PV forecasts, household demand and electricity prices to plan when to charge a battery or car, heat water, or start an appliance. During operation it allocates power from measurements at the grid connection and each participating device.
+This ioBroker adapter uses PV forecasts, household demand and electricity prices to plan when to charge a battery or car, heat water, or start an appliance. During operation it allocates power from measurements at the grid connection and each participating device.
 
 ## How it works
 
@@ -26,18 +26,18 @@ This repository contains the development alpha. Choose a revision with successfu
 
 1. Leave the master output release off while mapping measurements. At the grid connection, a running load should increase import or reduce export.
 2. Configure the devices present, their limits and feedback. Check the readings and plan in **EMS overview**.
-3. Commission one output at a time with a low limit and one controller per actuator. Verify the command, acknowledgement, measured power and stop. [Output commissioning](README.de.md#admin-allgemein)
+3. Commission one output at a time with a low limit and one controller per actuator. Verify the command, acknowledgement, measured power and stop. Each wallbox and configured battery head also has a guided test to identify its grid phase. [Output commissioning](README.de.md#admin-allgemein) · [Guided phase test](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/468)
 
 ## Integrations
 
 | Device | What you can configure and verify |
 | --- | --- |
-| Grid and PV | Separate import and export at the connection point, per-phase measurements, inverter generation and optional monthly PV correction factors per array. [Grid and operator limits](README.de.md#admin-netzanschluss--14a--eebus) · [PV correction](README.de.md#admin-pv-korrektur) |
-| Up to three go-e wallboxes | PV charging, immediate minimum charge, departure targets, price charging and parallel operation. The adapter can request a phase change through a separately installed phase follower. Confirm current on the active phases. [Wallbox setup](README.de.md#admin-wallboxen-allgemein) · [Phase follower](docs/phase-follower-v2.md) |
+| Grid and generation | Map import, export and phase measurements from a meter such as the SMA Energy Meter. Map PV inverter output and optional CHP generation separately. Monthly PV correction factors apply per array. [Grid and operator limits](README.de.md#admin-netzanschluss--14a--eebus) · [PV correction](README.de.md#admin-pv-korrektur) |
+| Up to three go-e wallboxes | PV charging, immediate minimum charge, departure targets, price charging and parallel operation. Map go-e charging power in **kW** and phase currents in **A**. Dynamic phase switching requires a separately installed phase script. [Wallbox setup](README.de.md#admin-wallboxen-allgemein) · [Phase follower](docs/phase-follower-v2.md) |
 | SunEnergy XT500 | Charge and discharge control with one to three heads. Each head reports its setpoint (`GS`) and measured AC power (`GP`). At the grid connection you can check the resulting change. [Battery setup and limits](README.de.md#admin-batteriespeicher) |
 | my-PV heaters | Domestic hot water and a separate heating buffer each use their own power command and feedback. Tank temperatures, available power and releases determine whether a planned heating slot can run. [Hot water](README.de.md#admin-warmwasser-heizstab) · [Heating buffer](README.de.md#admin-heizpuffer) |
-| Heat pump | Read electrical power, temperatures and actual SG Ready status. The EMS publishes recommendations for comparison with the heat pump's own controller. [Heat-pump setup](README.de.md#admin-wärmepumpe) |
-| Household appliances | Schedule a dishwasher or dryer through its device adapter. A temperature-controlled appliance with a writable setpoint and feedback can also use a PV or low-price window. [Devices](README.de.md#admin-geräte) |
+| Heat pump | Map electrical power, temperatures and actual SG Ready status from a compatible integration, for example Stiebel Eltron WPM/ISG. The EMS publishes recommendations for comparison with the heat pump's own controller. [Heat-pump setup](README.de.md#admin-wärmepumpe) |
+| Household appliances | Siemens dishwasher and AEG dryer runs have supplied measured program profiles. Remote start requires a suitable device interface and release. A refrigerator with a writable temperature setpoint and feedback can use a PV or low-price window. [Device setup](README.de.md#admin-geräte) · [Measured runs](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/445) |
 
 ## Household appliances
 

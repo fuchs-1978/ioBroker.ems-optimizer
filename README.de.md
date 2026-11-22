@@ -84,7 +84,7 @@ Trage bei **Physische Hausanschlusssicherung je Phase** den Anlagenwert ein. Die
 | Vorhandener Eingang | Einstellung und Kontrolle |
 | --- | --- |
 | §14a-Binärkontakt | Datenpunkt, Schaltlogik und Budgetquelle passend zur Anlage zuordnen. Das Signal und das gemeinsame Limit müssen in der Diagnose im erwarteten Zustand erscheinen. |
-| EEBUS | Zusammengehörige Datenpunkte für **LPC.state** und **LPC.limit** verwenden. Die optionalen LPP-Datenpunkte gehören zur getrennten Erzeugungsseite. |
+| EEBUS | Zusammengehörige Datenpunkte für **LPC.state** und **LPC.limit** verwenden. Die optionalen LPP-Datenpunkte gehören zur getrennten Erzeugungsseite. Sobald ein LPC-Eingang konfiguriert ist, sperrt der aktuelle Adapter die zusätzliche Gruppen-Netzbezugsbilanz (`groupNet`). |
 | Deklarierte Gruppen-Netzbezugsbilanz | Benötigt eine erklärte gemeinsame AC-Messgrenze, vollständige zeitlich passende Quellen für die Gruppe und die konfigurierte Erfassung von Speichern. Die Felder gehören zur Inbetriebnahme einer solchen Gruppe. |
 
 **Preise & Tarife** bestimmt den Kostenvergleich. Dieser Reiter bestimmt die im Betrieb einzuhaltenden elektrischen Budgets. Prüfe vor Stellfreigabe das Verhalten im Normalbetrieb und bei aktivem Begrenzungssignal. [Budgetquellen, Phasen und Messgrenzen](docs/admin-reference.de.md#admin-netzanschluss--14a--eebus) · [LPC-Integration #166](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/166)
