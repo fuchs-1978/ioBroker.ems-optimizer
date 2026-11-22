@@ -3,7 +3,8 @@
   "version": "0.17.0-alpha.321",
   "description": "Forecast-based energy management and device control for ioBroker",
   "author": {
-    "name": "fuchs-1978"
+    "name": "Carsten Reineke",
+    "email": "ems-optimizer@proton.me"
   },
   "homepage": "https://github.com/fuchs-1978/ioBroker.ems-optimizer",
   "license": "MIT",

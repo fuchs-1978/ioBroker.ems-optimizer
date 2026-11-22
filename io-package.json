@@ -123,7 +123,7 @@
       "zh-cn": "基于预测的能源管理与设备控制"
     },
     "authors": [
-      "fuchs-1978"
+      "Carsten Reineke <ems-optimizer@proton.me>"
     ],
     "licenseInformation": {
       "type": "free",

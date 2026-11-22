@@ -83,7 +83,7 @@ npm run test:equivalence
 
 ## Changelog
 
-### 0.17.0-alpha.321 (2026-11-22)
+### 0.17.0-alpha.321 (2026-11-23)
 
 - Test the adapter across Linux, Windows and macOS. Prepare the npm package and document the current alpha test status. [Release notes](docs/release-0.17.0-alpha.321.md)
 
@@ -119,6 +119,6 @@ Report bugs and feature requests through [GitHub Issues](https://github.com/fuch
 
 ## License
 
-Copyright (c) 2026 Carsten Reineke
+Copyright (c) 2026 Carsten Reineke <ems-optimizer@proton.me>
 
 [MIT License](LICENSE)

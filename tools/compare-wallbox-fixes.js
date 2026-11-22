@@ -267,7 +267,7 @@ async function worker(tree, fixed) {
 
 async function main() {
     if (process.argv[2] === '--worker') {
-        const report = await worker(path.resolve(process.argv[3]), process.argv[4] === 'fixed');
+        const report = await worker(fs.realpathSync(process.argv[3]), process.argv[4] === 'fixed');
         fs.writeFileSync(process.argv[5], JSON.stringify(report) + '\n');
         return;
     }

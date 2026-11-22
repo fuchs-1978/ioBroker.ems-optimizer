@@ -45,16 +45,25 @@ async function worker(tree) {
     const admissionSource = path.join(tree, 'lib/engine/dhw-controller.js');
     const heaterOutputSource = path.join(tree, 'lib/engine/dhw-output.js');
     const recorderSource = path.join(tree, 'lib/debug-recorder.js');
+    const journalSource = path.join(tree, 'lib/decision-record-journal.js');
     const probeSources = new Set(['wallbox-output.js', 'diagnostic-source-contract.js'].map(name => path.join(tree, 'lib', name)));
     fs.readFileSync = (filename, options) => {
         const data = readSource(filename, options);
+        // The historical journal predates Windows support. Open its two sync
+        // handles with write access on NTFS. All fsync calls and failures
+        // remain part of the replay, including recovery after an interrupted write.
+        if (process.platform === 'win32' && tree !== root && String(filename) === journalSource) {
+            const source = String(data).replace(/(const handle = await this\.fs\.open\((?:this\.directory|file), )'r'(\);\s*try \{ await handle\.sync\(\);)/g, "$1'r+'$2");
+            return typeof data === 'string' ? source : Buffer.from(source);
+        }
         if (!versionSources.has(String(filename)) && String(filename) !== admissionSource
             && String(filename) !== recorderSource && String(filename) !== heaterOutputSource && !probeSources.has(String(filename))) return data;
+        const basename = path.basename(String(filename));
         let pinned = String(data).replaceAll(adapterVersion, '0.17.0-alpha.96');
         // alpha.167 introduces three unused production configuration slots.
         // Give the historical fixture exactly the same zero-valued objects;
         // retain all writes, input values and allocator decisions in the trace.
-        if (String(filename).endsWith('/core.js') && !pinned.includes('MobilityReserve_pct')) {
+        if (basename === 'core.js' && !pinned.includes('MobilityReserve_pct')) {
             const anchor = "        configDef(`${r}.Vehicles.Wallbox${wb}.DepartureTime`, '06:00', 'string', 'text', '', `Abfahrtszeit Wallbox ${wb}`);";
             assert.equal(pinned.split(anchor).length, 2);
             pinned = pinned.replace(anchor, anchor + "\n        configDef(`${r}.Vehicles.Wallbox${wb}.MobilityReserve_pct`, 0, 'number', 'level', '%', `Mobilitaetsreserve Wallbox ${wb}; 0 deaktiviert; aktuell Strategie-Vorschau, keine produktive Sofortladefreigabe`);");
@@ -63,7 +72,7 @@ async function worker(tree) {
         // per vehicle. Define exactly the same slots in the immutable fixture;
         // keep every event and checkpoint in the comparison, including their
         // initial values. Manual-correction behavior is tested separately.
-        if (String(filename).endsWith('/core.js') && !pinned.includes('SoCCorrection_pct')) {
+        if (basename === 'core.js' && !pinned.includes('SoCCorrection_pct')) {
             const anchor = "        stateDef(`${r}.Vehicles.Wallbox${wb}.SocEstimateLedger_JSON`, '', 'string', 'json', '', 'Persistente SoC-Schaetzbasis');";
             assert.equal(pinned.split(anchor).length, 2);
             pinned = pinned.replace(anchor, [
@@ -79,7 +88,7 @@ async function worker(tree) {
         // fixture their exact disabled defaults; all production and diagnostic
         // events still remain in the ordered trace. Enabled behavior has its
         // own comparison tests and cannot feed the production plan.
-        if (String(filename).endsWith('/core.js') && !pinned.includes('Forecast.LoadComparison.Ready')) {
+        if (basename === 'core.js' && !pinned.includes('Forecast.LoadComparison.Ready')) {
             const anchor = "    stateDef(`${r}.Forecast.PV_48h_JSON`";
             assert.equal(pinned.split(anchor).length, 2);
             const current = readSource(path.join(root, 'lib/engine/core.js'), 'utf8');
@@ -88,7 +97,7 @@ async function worker(tree) {
             assert.ok(start >= 0 && end > start);
             pinned = pinned.replace(anchor, current.slice(start, end) + anchor);
         }
-        if (String(filename).endsWith('/bootstrap.js') && !pinned.includes('Forecast.LoadComparison.Ready')) {
+        if (basename === 'bootstrap.js' && !pinned.includes('Forecast.LoadComparison.Ready')) {
             const current = readSource(path.join(root, 'lib/engine/bootstrap.js'), 'utf8');
             const start = current.indexOf('// Comparison readiness');
             const end = current.indexOf('// Rebuild all vehicle', start);
@@ -99,7 +108,7 @@ async function worker(tree) {
         // The startup-order fixture records bootstrap source text without
         // executing it. Align the new command subscriptions there too; no
         // correction commands are injected into historical control scenarios.
-        if (String(filename).endsWith('/bootstrap.js') && !pinned.includes('SoCCorrection_pct')) {
+        if (basename === 'bootstrap.js' && !pinned.includes('SoCCorrection_pct')) {
             pinned += "\n[0, 1, 2].forEach(wb => {\n"
                 + "    on({id: `${CFG.root}.Vehicles.Wallbox${wb}.SoCCorrection_pct`, change: 'any'},\n"
                 + "        ({state}) => applyVehicleSocCorrection(wb, state));\n});\n";
@@ -109,12 +118,12 @@ async function worker(tree) {
         if (!pinned.includes('BatteryHighTariffReserveEnabled')) {
             const coreAnchor = "    configDef(`${r}.Config.BatteryPriceChargingEnabled`, false, 'boolean', 'switch.enable', '', 'Preisabhängiges Netzladen des Speichers erlauben');";
             const bootstrapAnchor = '    `${CFG.root}.Config.BatteryPriceChargingEnabled`,';
-            if (String(filename).endsWith('/core.js')) {
+            if (basename === 'core.js') {
                 assert.equal(pinned.split(coreAnchor).length, 2);
                 pinned = pinned.replace(coreAnchor, coreAnchor
                     + "\n    configDef(`${r}.Config.BatteryHighTariffReserveEnabled`, false, 'boolean', 'switch.enable', '', 'Vorhandene Speicherenergie für das nächste Hochfenster einplanen');");
             }
-            if (String(filename).endsWith('/bootstrap.js')) {
+            if (basename === 'bootstrap.js') {
                 assert.equal(pinned.split(bootstrapAnchor).length, 2);
                 pinned = pinned.replace(bootstrapAnchor, bootstrapAnchor + '\n    `${CFG.root}.Config.BatteryHighTariffReserveEnabled`,');
             }
@@ -122,14 +131,14 @@ async function worker(tree) {
         // alpha.155 represents an unknown initial vehicle SoC as null. Align
         // only the object default; observed reports and all control writes
         // still come from the respective production tree.
-        if (String(filename).endsWith('/core.js')) pinned = pinned.replace(
+        if (basename === 'core.js') pinned = pinned.replace(
             'stateDef(`${r}.Vehicles.Wallbox${wb}.SoC_pct`, 0,',
             'stateDef(`${r}.Vehicles.Wallbox${wb}.SoC_pct`, null,');
         // alpha.138 adds one passive state definition. Supply that same
         // unknown diagnostic slot to the historical fixture, rather than
         // dropping state writes/checkpoints or relaxing command comparison.
         // Its evaluated values and status/context are tested independently.
-        if (String(filename).endsWith('/core.js') && !pinned.includes('MinimumAdmissionPower_W')) {
+        if (basename === 'core.js' && !pinned.includes('MinimumAdmissionPower_W')) {
             const anchor = "    stateDef(`${r}.Devices.MyPV_DHW.TemperaturePowerLimit_W`, 0, 'number', 'value.power', 'W', 'Temperaturabhaengige Leistungsgrenze');";
             assert.equal(pinned.split(anchor).length, 2);
             pinned = pinned.replace(anchor, anchor + "\n    stateDef(`${r}.Devices.MyPV_DHW.MinimumAdmissionPower_W`, null, 'number', 'value.power', 'W', 'Schichtungsabhaengige Mindestleistung; null bei unbekannten Temperaturen, keine Leistungsfreigabe');");
@@ -653,7 +662,7 @@ async function worker(tree) {
 
 async function main() {
     if (process.argv[2] === '--worker') {
-        const report = await worker(path.resolve(process.argv[3]));
+        const report = await worker(fs.realpathSync(process.argv[3]));
         fs.writeFileSync(process.argv[4], JSON.stringify(report, null, 2) + '\n');
         return;
     }

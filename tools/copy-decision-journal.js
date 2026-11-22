@@ -4,10 +4,10 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const {createHash} = require('node:crypto');
 const Journal = require('../lib/decision-record-journal');
+const {syncJournalPath} = require('../lib/journal-location');
 const hash = value => createHash('sha256').update(value).digest('hex');
 const allowed = /^(?:\d{16}\.(?:json|tmp|retired|retire-tmp)|\d{16}-\d{16}\.(?:segment|segment-tmp)|health\.json|verification\.json|\.health\.tmp|\.verification\.tmp|\.ems-journal-copy-ready)$/;
 const MAX_FILE = 8 * 1024 * 1024 + 8192, MAX_TOTAL = 256 * 1024 * 1024;
-async function syncDirectory(directory) {const h = await fs.open(directory, 'r'); try {await h.sync();} finally {await h.close();}}
 async function bounded(file) {
     const stat = await fs.lstat(file);
     if (!stat.isFile() || stat.size > MAX_FILE) throw new Error('Not a bounded regular journal file');
@@ -29,7 +29,7 @@ async function copyJournal({source, destination, namespace = 'ems-optimizer.0', 
     if (names.length > 2 * 65536 + 512 || names.some(name => !allowed.test(name)))
         throw new Error('Unknown files or journal capacity exceeded; source retained for inspection');
     await fs.mkdir(destination, {mode: 0o700}); // Never overwrite or chmod an existing destination.
-    await syncDirectory(parent);
+    await syncJournalPath(parent);
     const snapshot = new Map(); let totalBytes = 0, exportedRecords = 0;
     const parser = new Journal({directory: realSource});
     const write = async (name, data, mtime) => {
@@ -39,7 +39,7 @@ async function copyJournal({source, destination, namespace = 'ems-optimizer.0', 
         try {await h.writeFile(data); await h.sync();} finally {await h.close();}
         await fs.utimes(file, mtime, mtime);
         // Preserve age metadata durably too, before making the copy eligible.
-        h = await fs.open(file, 'r'); try {await h.sync();} finally {await h.close();}
+        await syncJournalPath(file);
         if (!(await bounded(file)).data.equals(data)) throw new Error('Copied bytes failed verification');
     };
     for (const name of names) {
@@ -59,7 +59,7 @@ async function copyJournal({source, destination, namespace = 'ems-optimizer.0', 
             }
         } else await write(name, original.data, original.mtime);
     }
-    await syncDirectory(destination);
+    await syncJournalPath(destination);
     if (JSON.stringify((await fs.readdir(realSource)).sort()) !== JSON.stringify(names)) throw new Error('Source journal changed during copy');
     for (const [name, digest] of snapshot)
         if (hash((await bounded(path.join(realSource, name))).data) !== digest) throw new Error('Source journal changed during copy');
@@ -71,7 +71,7 @@ async function copyJournal({source, destination, namespace = 'ems-optimizer.0', 
         throw new Error('Copied journal requires inspection; relocation marker not created');
     } finally {await check.close();}
     const ready = Buffer.from(JSON.stringify({schema: 1, namespace, kind: 'verified-offline-journal-copy'}));
-    await write('.ems-journal-copy-ready', ready, new Date()); await syncDirectory(destination);
+    await write('.ems-journal-copy-ready', ready, new Date()); await syncJournalPath(destination);
     return {filesCopied: names.length, bytesRead: totalBytes, exportedRecords, recordsRetained: check.health().records,
         pendingSqlFence: check.health().sqlVerificationPending, format: legacy ? 'legacy' : 'preserved', sourceUnchanged: true};
 }

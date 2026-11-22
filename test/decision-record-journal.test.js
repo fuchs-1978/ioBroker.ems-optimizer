@@ -142,7 +142,7 @@ test('failed durability is explicit, bounded on disk, and recoverable without cl
     let failDirectorySync = true;
     const fileSystem = {...fs, open: async (file, flags, mode) => {
         const handle = await fs.open(file, flags, mode);
-        if (file !== dir || flags !== 'r') return handle;
+        if (file !== dir) return handle;
         return {sync: async () => {
             if (failDirectorySync) {failDirectorySync = false; throw new Error('simulated directory sync failure');}
             await handle.sync();
@@ -167,10 +167,12 @@ test('failed durability is explicit, bounded on disk, and recoverable without cl
 
 test('pre-append queue losses survive restart and an existing spool is private', async t => {
     const dir = await directory(t);
-    await fs.chmod(dir, 0o777);
+    if (process.platform !== 'win32') await fs.chmod(dir, 0o777);
     const first = new DecisionRecordJournal({directory: dir});
     await first.initialize();
-    assert.equal((await fs.stat(dir)).mode & 0o777, 0o700);
+    const stat = await fs.stat(dir);
+    assert.ok(stat.isDirectory());
+    if (process.platform !== 'win32') assert.equal(stat.mode & 0o777, 0o700);
     first.reportLoss('bounded raw-frame queue full before append');
     first.reportLoss('bounded raw-frame byte capacity exceeded');
     await first.close();
@@ -210,7 +212,7 @@ test('a complete temporary after failed file fsync needs successful file fsync b
     failTemporarySync = false;
     const recovered = new DecisionRecordJournal({directory: dir, fileSystem});
     await recovered.initialize();
-    assert.equal(syncs.at(-1).flags, 'r', 'recovery fsyncs the existing original file');
+    assert.equal(syncs.at(-1).flags, process.platform === 'win32' ? 'r+' : 'r', 'recovery opens the existing original without truncating it');
     assert.equal(links.length, 1);
     assert.equal(recovered.health().recoveredRecords, 1);
     assert.deepEqual((await recovered.readBatch()).map(entry => entry.payload), [payload(1)]);
@@ -222,7 +224,7 @@ test('confirmed SQL proof remains explicit if directory durability fails after a
     let failDirectorySync = false;
     const fileSystem = {...fs, open: async (file, flags, mode) => {
         const handle = await fs.open(file, flags, mode);
-        if (file !== dir || flags !== 'r') return handle;
+        if (file !== dir) return handle;
         return {sync: async () => {
             if (failDirectorySync) {failDirectorySync = false; throw new Error('cleanup directory sync failed');}
             await handle.sync();
