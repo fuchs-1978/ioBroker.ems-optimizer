@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.309 (2026-11-21)
+
+- Settle the battery on the surplus left by a running PV wallbox when SunEnergy and grid readings arrive at different rates. Retain a confirmed one-amp vehicle increase when the meter covers the full step within the configured tolerance. [Release notes](docs/release-0.17.0-alpha.309.md)
+
 ## 0.17.0-alpha.308 (2026-11-21)
 
 - Use the SunEnergy head’s measured reporting interval to recognize two minutes of near-maximum PV charging. The wallbox checks the available export before starting. [Release notes](docs/release-0.17.0-alpha.308.md)

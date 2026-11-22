@@ -806,6 +806,32 @@ for (const [name, kw, quality, valid] of [
         !valid, h.diagnostic());
 });
 
+test('a 30.3-second poll gap on the idle Mii preserves the EQE release in coordinated parallel operation', async () => {
+    const h = await plant({battery: true, mii: true, split: false, startDelayS: 0, initialSurplusW: 4300,
+        nativeConfig: {wallboxParallelChargingEnabled: true, dhwControlEnabled: false}});
+    h.put('DP_WB0_SOC', 100);
+    h.put('DP_WB2_SOC', 90);
+    h.put('DP_WB2_MIN_SOC', 95);
+    h.put('DP_WB2_TARGET', 100);
+    await h.advance(65);
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    const before = h.now(), at = before + 1000;
+    const zero = ['goe0.allow', 'DP_WB0_POWER', 'DP_WB0_L1_A', 'DP_WB0_L2_A', 'DP_WB0_L3_A']
+        .map(id => [id, 0, {ts: at - 30300, lc: at - 50000, q: 0}]);
+    await h.replayAt(at, zero);
+    assert.equal(h.run('coordinatedConsumptionLoads().valid'), true);
+    assert.equal(h.run('coordinatedPhaseReservations("Wallbox2").valid'), true);
+    const grant = JSON.parse(h.value('Control.ParallelWallboxAllocation_JSON'));
+    assert.deepEqual(grant.isolatedIdleWallboxes, [0]);
+    assert.equal(grant.allocations.find(entry => entry.wb === 0).targetA, 0);
+    assert.ok(grant.allocations.find(entry => entry.wb === 2).targetA >= 6);
+    assert.ok(!h.writes.some(row => row.id === 'goe.allow' && row.val === 0 && row.at > before));
+    // A stale nonzero phase contradicts the OFF proof even though total power reads zero.
+    await h.replayAt(at + 1000, [...zero, ['DP_WB0_L1_A', 2, {ts: at - 30300}]]);
+    assert.equal(h.value('Control.Valid'), false);
+    assert.ok(h.writes.some(row => row.id === 'goe.allow' && row.val === 0 && row.at > at));
+});
+
 test('parallel priority defers a new handoff while donor phase preparation is pending', async () => {
     for (const phaseFlag of ['PhaseSwitchPending', 'PhaseTransitionActive']) {
         const h = await plant({mii: true, startDelayS: 300, minimumRuntimeS: 600,
@@ -2071,7 +2097,7 @@ test('every below-minimum car pauses battery discharge and the battery returns a
     });
 });
 
-test('battery charging waits for the last below-minimum car to finish', async () => {
+test('surplus above two mandatory cars at their commissioning limits goes to storage', async () => {
     const h = await plant({battery: true, mii: true, startDelayS: 0, split: false, initialSurplusW: 4200,
         nativeConfig: {batteryPvPriorityEnabled: true, wallboxParallelChargingEnabled: true,
             dhwControlEnabled: false, wb0CommissioningMaxA: 6, wb2CommissioningMaxA: 6}});
@@ -2079,18 +2105,58 @@ test('battery charging waits for the last below-minimum car to finish', async ()
     h.own('Control.TargetGridPower_W', 0);
     h.put('DP_WB0_SOC', 10);
     h.put('DP_WB2_SOC', 10);
-    await h.advance(35);
+    await h.advance(70);
     assert.equal(h.physical().miiAllow, 1, h.diagnostic());
     assert.equal(h.physical().allow, 1, h.diagnostic());
-    assert.equal(h.physical().batteryW, 0, h.diagnostic());
+    assert.equal(h.physical().miiPowerW + h.physical().wbPowerW, 2760);
+    assert.equal(h.physical().batteryW, 1440, h.diagnostic());
+    assert.equal(h.trace.at(-1).gridW, 0);
+    assert.ok(h.trace.every(row => !row.batteryW || row.miiW > 0 && row.wbW > 0));
     h.put('DP_WB2_SOC', 20);
     await h.advance(10);
-    assert.equal(h.value('Control.Targets.Battery_W'), 0);
+    assert.equal(h.value('Control.Targets.Battery_W'), 1440);
+    assert.equal(h.value('Control.BatteryPVReserve_W'), 0);
     h.put('DP_WB0_SOC', 20);
     await h.advance(26);
     assert.ok(h.physical().batteryW > 0, h.diagnostic());
     assert.equal(h.value('Control.BatteryPVReserve_W'), 2400);
 });
+
+for (const mode of ['single-head', 'sunenergy-heads'])
+    test(`mandatory EQE takes its allocation before the battery absorbs 562 W of export (${mode})`, async () => {
+        const h = await plant({battery: true, mii: true, startDelayS: 0, split: false, initialSurplusW: 5162,
+            nativeConfig: {batteryDispatchMode: mode, batteryPvPriorityEnabled: true, wallboxParallelChargingEnabled: true,
+                dhwControlEnabled: false, wb2CommissioningMaxA: 20}});
+        h.own('Vehicles.Wallbox2.MaxCurrent1P_A', 20);
+        h.own('Control.TargetGridPower_W', 0);
+        h.own('Config.BatteryFineStep_W', 1000);
+        h.put('DP_WB0_SOC', 100);
+        h.put('DP_WB2_SOC', 92);
+        h.put('DP_WB2_MIN_SOC', 95);
+        h.put('DP_WB2_TARGET', 100);
+        h.put(h.mapping.DP_BATTERY_SOC, 57);
+        for (let second = 0; second < 140; second++) {
+            await h.advance(1);
+            if (h.physical().wbPowerW === 4600 && h.physical().batteryW === 562) break;
+        }
+        assert.equal(h.physical().wbPowerW, 4600, h.diagnostic());
+        assert.equal(h.physical().batteryW, 562, h.diagnostic());
+        assert.equal(h.trace.at(-1).gridW, 0);
+        assert.equal(h.value('Control.BatteryPriceGridCharge_W'), 0);
+        assert.equal(h.value('Control.BatteryPVReserve_W'), 0);
+        assert.ok(h.trace.every(row => row.batteryW >= 0 && (!row.batteryW || row.wbW > 0)));
+        h.setSurplus(1500);
+        await h.replayAt(h.now() + 1, [], {allocate: false, output: false});
+        // The allocator still shows the previous grant when the newer meter sample arrives.
+        assert.equal(h.value('Control.Targets.Battery_W'), 562);
+        assert.equal(h.run('batteryVehicleSurplusCapW(batteryRegulationState())'), 0);
+        assert.equal(h.run(mode === 'sunenergy-heads' ? 'batteryHeadsBudget(batteryHeadsRegulationState()).targetW'
+            : 'checkQueuedElectricalOutput("Battery",-562).allowed'), mode === 'sunenergy-heads' ? 0 : false);
+        await h.advance(35);
+        assert.equal(h.physical().allow, 1);
+        assert.equal(h.physical().batteryW, 0);
+        assert.ok(h.trace.every(row => row.batteryW >= 0));
+    });
 
 function publishForecastReserve(h, {chargeAt = h.now(), deadlineAt = 0} = {}) {
     h.own('Plan.BatteryForecastValid', true);
