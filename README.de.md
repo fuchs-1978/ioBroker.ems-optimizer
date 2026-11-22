@@ -8,7 +8,7 @@ Der **Fahrplan** rechnet für die nächsten 48 Stunden in Viertelstunden. Die **
 
 ## Installation und Aktualisierung
 
-Vorausgesetzt werden Node.js ab 22, ioBroker js-controller ab 6.0.11 und Admin ab 7.8.23. Der hier beschriebene Stand ist **0.17.0-alpha.314**. In GitHub steht der geprüfte Quellstand, in `ems-optimizer.0.System.Version` die tatsächlich laufende Version.
+Vorausgesetzt werden Node.js ab 22, ioBroker js-controller ab 6.0.11 und Admin ab 7.8.23. Die aktuelle Entwicklungsfassung steht im Changelog. Die auf deiner Instanz laufende Version siehst du unter `ems-optimizer.0.System.Version`. [Versionsstand auf main](README.md#changelog)
 
 1. Öffne im ioBroker-Admin **Adapter → Installation aus eigener Quelle → GitHub**. Verwende `https://github.com/fuchs-1978/ioBroker.ems-optimizer`. Wähle für eine reproduzierbare Installation den Commit eines geprüften Stands. [GitHub-Prüfläufe auf main](https://github.com/fuchs-1978/ioBroker.ems-optimizer/actions/workflows/test-and-release.yml?query=branch%3Amain)
 2. Öffne **Instanzen → ems-optimizer.0 → Einstellungen**. Bei einer weiteren Instanz lautet die Nummer entsprechend anders.
@@ -56,7 +56,7 @@ In **Objekte** kannst du Einheiten, Zustände und Zeitstempel ansehen. Ein als o
 
 ## Admin: EMS-Übersicht
 
-Dieser Reiter zeigt Ergebnisse und Gründe. Einstellungen bleiben in den jeweiligen Gerätereiter.
+Hier siehst du die Ergebnisse und die Gründe für die aktuelle Zuteilung. Einstellungen änderst du im jeweiligen Gerätereiter.
 
 | Anzeige | Was du dort prüfst |
 | --- | --- |
@@ -148,7 +148,7 @@ Die drei Wallbox-Reiter haben dieselbe Vorgehensweise. Die Reiternamen sind vorg
 | Bereich | Einrichten und prüfen |
 | --- | --- |
 | Fahrzeug und Verbindung | **SoC-Datenpunkt** des Fahrzeugs in %, **Fahrzeug-Verbindungsstatus** der Wallbox und gegebenenfalls **Ladefreigabe durch Benutzer** zuordnen. An- und Abstecken muss in der Diagnose erkennbar sein. |
-| Messung | Gemessene Ladeleistung in W sowie die gemessenen Ströme und Phasen zuordnen. Beim Test müssen sich Istleistung und Strom passend zum Fahrzeug ändern. |
+| Messung | Für `wbNPowerId` erwartet das EMS die go-e-Ladeleistung in **kW**, etwa `go-e.N.energy.power`. Die Phasenströme werden in **A** zugeordnet. Prüfe beide bei einer laufenden Ladung. |
 | Stromgrenzen | Tatsächliche 1P-/3P-Minima und -Maxima sowie Leistungslimit von Wallbox, Fahrzeug und Installation eintragen. **Von Wallbox L1 verwendete Netzphase** und **Feste Phasen im Produktivbetrieb** prüfen. |
 | go-e-Ausgang | **Beschreibbarer go-e-Strom (amperePV)** und **beschreibbare go-e-Freigabe (allow_charging, 0/1)** getrennt von **bestätigtem go-e-Strom (ampere)**, Verbindung und Fehlercode zuordnen. Die Rückmeldung und die elektrische Reaktion beim Start und Stopp ablesen. |
 | Phasenumschaltung | Für einen festen Betrieb **Dynamischen 1-/3-Phasenbetrieb** aus lassen. Beim dynamischen Betrieb schaltet ein geeignetes externes Skript entweder nach eigener Führung oder nach EMS-Vorgabe. Nur eine Instanz führt den Phasenwechsel. Prüfe bestätigten go-e-Phasenmodus und realen Strom je Phase. |
@@ -157,11 +157,15 @@ Die drei Wallbox-Reiter haben dieselbe Vorgehensweise. Die Reiternamen sind vorg
 
 Wähle bei **Quelle der SoC-Grenzen**, ob die Grenzwerte im Admin oder aus zugeordneten Datenpunkten kommen. **Mindest-SoC** ist der Bedarf für Pflichtladung. **Ziel-SoC** ist die Grenze, bis zu der mit PV oder ausdrücklich erlaubtem Netzladen weitergeladen werden kann. Beispiel mit gültiger Ladefreigabe und ausreichender Leistung bei 18 % Ist, 20 % Minimum und 80 % Ziel: zuerst bis 20 % laden, die weitere Ladung folgt der gewählten Strategie.
 
-Bei verzögerten Fahrzeugmeldungen kann das EMS mit **SoC aus gemessener Ladeenergie schätzen** den Füllstand fortschreiben. Dafür braucht es einen echten Fahrzeug-SoC, die nutzbare Fahrzeugkapazität und einen zugeordneten AC-Ladeenergiezähler in kWh. Nach bestätigtem Abstecken beginnt die nächste Sitzung wieder auf Basis der Fahrzeugmeldung. Die Werte `SoC_pct`, `ReportedSoC_pct` und `EstimatedSoC_pct` unterscheiden den wirksamen, gemeldeten und geschätzten Füllstand unter `Vehicles.WallboxN`. [SoC-Vertrag, Zeitstempel und manuelle Korrektur](docs/admin-reference.de.md#optionale-soc-schätzung-aus-ladeenergie-alle-drei-fahrzeuge)
+Bei verzögerten Fahrzeugmeldungen kann **SoC aus gemessener Ladeenergie schätzen** den Ladestand zwischen zwei Fahrzeugmessungen fortschreiben. Dafür braucht das EMS einen echten Fahrzeug-SoC, die nutzbare Akkukapazität und einen zugeordneten AC-Ladeenergiezähler in kWh. Unter `Vehicles.WallboxN` zeigt `ReportedSoC_pct` den eingegangenen Fahrzeugwert, `EstimatedSoC_pct` die Schätzung und `SoC_pct` den wirksamen Ladestand.
+
+Für Fahrzeugmeldung und manuelle Korrektur zählt der **Messzeitpunkt**. Ohne separates Messzeitobjekt verwendet das EMS das native `ts` der SoC-Quelle. Der Treiber muss dort die Fahrzeugmesszeit liefern. Bei gleicher Zeit hat die manuelle Korrektur Vorrang. Ein neuerer Fahrzeugwert kann sie auch mit niedrigerem SoC ablösen. Abstecken beendet die Fortschreibung aus der bisherigen Ladeenergie. Der letzte maßgebliche SoC bleibt über Abstecken und Neustart hinweg vor älteren Meldungen geschützt. [Zeitstempel, Zähler und manuelle Korrektur](docs/admin-reference.de.md#optionale-soc-schätzung-aus-ladeenergie-alle-drei-fahrzeuge)
 
 ### Mobilitätsreserve und vorhandene Abfahrtszeit
 
-Bei aktivierter Abfahrt reserviert das EMS die Leistung, die das Fahrzeug für seinen Mindest-SoC zum eingestellten Zeitpunkt benötigt. Reicht die PV-Leistung dafür nicht aus, darf es die Differenz aus dem Netz beziehen. Das gilt auch für eine Wallbox ohne Fahrzeugvorrang im Parallelbetrieb.
+Bei aktivierter Abfahrt reserviert das EMS die Leistung, die das Fahrzeug für seinen Mindest-SoC zum eingestellten Zeitpunkt benötigt. Reicht die PV-Leistung dafür nicht aus, darf es die Differenz aus dem Netz beziehen. Das gilt auch für eine Wallbox ohne Fahrzeugvorrang im Parallelbetrieb. Die Rechnung zielt auf den Abschluss 15 Minuten vor Abfahrt und berücksichtigt die eingestellten Stromgrenzen am Ladeende.
+
+**PV vor Abfahrt bei ausgeschalteter Preisladung.** Bei geeignetem Fahrplan lädt das Auto nachts nur bis zum nötigen Zwischenstand. Das EMS rechnet höchstens 80 % der bis zur Abfahrt nutzbaren PV an und prüft, ob das Mindestziel auch bei vollständigem PV-Ausfall mit der verbleibenden Netzladezeit erreichbar wäre. Den Zwischenstand und den Beginn des PV-Fensters findest du in `Plan.WallboxN_48h_JSON` unter `departurePv.reservePct` und `departurePv.releaseAt`. Manuelle Mindestströme und Ladestufen bei tiefem SoC können unmittelbar Leistung anfordern. [Abfahrtsladung](docs/release-0.17.0-alpha.306.md) · [PV-Fenster und Rückfall](docs/release-0.17.0-alpha.310.md)
 
 Wenn das Fahrzeug oberhalb einer Sofortreserve erst später laden soll, richte die Option **Mindest-SoC bis zur Abfahrt einplanen** ein. Dazu gehören eine gültige `Vehicles.WallboxN.DepartureTime` (`HH:mm`), die Abfahrtsfreigabe, die Preis-Netzladefreigabe und eine positive `MobilityReserve_pct` unter dem Mindest-SoC. Beispiel bei 10 % Mobilitätsreserve und 30 % Mindest-SoC: Bis 10 % lädt das Fahrzeug sofort. Den Bedarf bis 30 % plant das EMS mit verfügbarer PV und den günstigsten erreichbaren Gesamtpreisen. Fehlt ein ausreichender Plan, greift die Sofortladung bis zum Mindest-SoC. Die Preisobergrenze für freiwillige Ladung gilt weiterhin bis zum Ziel-SoC. [Felder und Rückfallbedingungen](docs/admin-reference.de.md#mobilitätsreserve-und-vorhandene-abfahrtszeit)
 
@@ -186,7 +190,9 @@ Der Warmwasser-Heizstab erwärmt Trinkwasser im Speicher. Die **Mindesttemperatu
 3. Wenn **Gemeinsamen Verteiler für Wallbox und Warmwasser verwenden** aktiv ist, gilt der **Warmwasseranteil** im gemeinsamen Leistungsbereich. Bei 50 % hängen die tatsächlichen Watt weiter von Wallbox-Mindeststrom, den Ein-/Ausschaltschwellen und dem nutzbaren Heizbudget ab. Eine laufende Mindestladung und Pflichtwärme können bei ausreichender Leistung und geeigneter oberer Warmwassertemperatur zusammenlaufen.
 4. Prüfe den ersten Stelltest mit niedriger **Leistungsgrenze für die produktive Inbetriebnahme**. Vergleiche Sollwert, drei Ist-Ausgänge, Freigabe und Fühler. Ein eingeplanter Heizblock im Tarifplan benötigt eine tatsächliche Leistungsfreigabe.
 
-Der EMS-Plan kann Wärme vor einem teureren Zeitfenster aufbauen und nötige Wärme zwischen gleich teuren Viertelstunden verteilen. Der optionale Notbetrieb braucht einen passenden separaten Sensor und eine bewusst konfigurierte Einschalttemperatur. [Heizstab-Felder, Temperaturkennlinie und Rückmeldung](docs/admin-reference.de.md#admin-warmwasser-heizstab) · [Wärmeplanung](docs/release-0.17.0-alpha.284.md)
+Eine Spitze im Warmwasserfahrplan lässt sich in `Plan.DHWThermalDiagnostics_JSON` nachvollziehen. Unter `gridHeatShift` steht, wie viel bereits geplante Netzheizung in frühere, günstigere Heizviertelstunden verschoben wurde. Tankvolumen, Mindestwärmereserve, Batteriereserve und verfügbare Anschlussleistung begrenzen die Verschiebung. Ob der Heizstab tatsächlich Netzstrom nutzen darf, stellst du unter **Wärmestrategie** ein. [Beispiel mit Netz- und PV-Anteil](docs/release-0.17.0-alpha.313.md)
+
+Der optionale Notbetrieb braucht einen passenden separaten Sensor und eine bewusst konfigurierte Einschalttemperatur. [Heizstab-Felder, Temperaturkennlinie und Rückmeldung](docs/admin-reference.de.md#admin-warmwasser-heizstab)
 
 ## Admin: Heizpuffer
 
@@ -225,6 +231,8 @@ Liegt der gemessene SoC bei aktiver Prognosereserve unter 20 %, lädt das EMS be
 - **Speicherenergie für das nächste Hochtariffenster reservieren** hält gespeicherte Energie für die erwartete Hauslast im nächsten eingestellten Hochfenster zurück. Bei gleichem Preis bevorzugt der Fahrplan Viertelstunden mit höherer erwarteter Last nach PV. Der Regler entlädt nach dem gemessenen Bedarf. Aktiviere die Option, wenn die zeitabhängigen Netzentgelte für deinen Anschluss gelten. [Beispiel und Diagnose](docs/release-0.17.0-alpha.295.md)
 - **Speicher-Netzladen in ausgewählten günstigen Zeiten erlauben** steuert die optionale Preisladung und lässt sich separat einschalten. Prüfe Preisobergrenze, Preis-Ziel-SoC und Mindestersparnis nach Speicherverlusten. Die Schutz-Nachladung der Prognosereserve folgt der oben beschriebenen eigenen Freigabelogik.
 - **Totband der Speicher-Netzregelung**, Schrittweite und Rückmeldefrist bestimmen das Verhalten bei kleinen Änderungen. Prüfe zunächst die Geschwindigkeit deiner Netz- und Gerätemessung. Das Totband ist eine Toleranz in W. Die Kopfauswahl und der Geräte-Wiederanlauf verwenden eigene SoC-Abstände in Prozentpunkten.
+
+**Wiederanlauf nach GS-Konflikt.** Nach dem gesendeten Nullbefehl muss jeder konfigurierte Kopf in einer frischen Originalmeldung zugleich `GS = 0 W` und `GP = 0 W` bestätigen. Sobald alle Köpfe den Stillstand bestätigt haben, kann das EMS den nächsten Auftrag aus der aktuellen Netzleistung und den wirksamen Grenzen berechnen. `Devices.Battery.OutputStatus` zeigt den Grund, falls der Speicher weiter wartet. [Zeitfolge am Speicherkopf](docs/release-0.17.0-alpha.314.md)
 
 Zur Diagnose zeigen `Plan.BatteryForecastReserve_JSON` die erwartete Unterschreitungsdauer und `Control.BatteryForecastReserveCharge_W` sowie `Control.BatteryForecastReserveGridCharge_W` die zugeteilte Gesamt- und Netzladeleistung. [Speicher-Nullregelung und Diagnose](docs/admin-reference.de.md#live-regelung-des-speichers)
 
@@ -281,10 +289,14 @@ Die beiden Tabellen nutzen vorhandene ioBroker-Geräteobjekte. Art und Werte der
 1. Lege für Geschirrspüler oder Trockner eine Zeile im Modus **Beobachten** an. Ordne das Objekt für die Fernstartfreigabe samt Wert, das Statusobjekt und dessen genaue Werte für bereit, läuft und fertig zu. Der JSON-Freigabewert kann zum Beispiel `true`, `1` oder `"Ready"` sein. Prüfe Wert und Typ im Objektbaum.
 2. Für **Gewähltes Programm starten** ordnest du das Objekt der Programmauswahl und das passende beschreibbare Startobjekt zu. Ein vorhandenes Objekt für das aktive Programm unterstützt die Zuordnung zur tatsächlichen Ausführung. Aktivierte Fernstartfunktion am Gerät, bestätigter Bereitstatus und Programmauswahl müssen zusammenpassen.
 3. Ordne eine historisierte Geräte-Leistungsmessung mit der passenden Einheit **W**, **mW** oder **kW** zu. Hat das Gerät noch kein gemessenes Programmprofil, starte ein beliebiges Programm einmal manuell und lass es vollständig durchlaufen. Danach kann das EMS auch ein erstmals gewähltes Programm per Fernstart einplanen. Dafür nutzt es je Viertelstunde den Mittelwert der bekannten Programmprofile dieses Geräts. Den tatsächlichen Verbrauch lernt es unter der ausgeführten Programmkennung. Schon beim nächsten Fernstart verwendet es das eigene Profil, sobald eine vollständige Messung vorliegt. Unter `Devices.ProgramProfiles` prüfst du Programm, Anzahl der gemessenen Läufe und Energie. Bei einer Zeile ohne Programmauswahl kannst du ein festes Viertelstundenprofil vorgeben, zum Beispiel `[1000, 500, 100, 0]`. Dieses Beispiel steht für eine Stunde mit etwa 0,4 kWh.
-4. Gib falls gewünscht **Fertig bis** im Format `HH:mm` nach der lokalen Uhr des ioBroker-Hosts an. Prüfe unter `Devices.Programs.N` den geplanten Start und die geschätzten Kosten gegenüber dem Sofortstart.
+4. Wähle bei Bedarf ein Zeitfenster. `06:00` bedeutet **bis 06:00 Uhr fertig** (Ortszeit des ioBroker-Hosts). `+4` bedeutet **innerhalb von vier Stunden nach der Fernstartfreigabe starten**. Dieses Fenster läuft auch bei Neuplanung, Programmwechsel und Neustart ab der ursprünglichen Freigabe. Unter `Devices.Programs.N` stehen der geplante Start und die geschätzten Kosten gegenüber dem Sofortstart.
 5. Setze **Automatisch** erst nach dem Zuordnungs- und Profiltest. Mit Master und aktiver Echtzeitregelung prüft das EMS bei der Planung und unmittelbar vor dem Start die zugehörige Fernstartfreigabe, den Status und das gewählte Programm. Die laufende Leistungsaufnahme bestätigt den realen Start. `Devices.Programs.N.Announcement` liefert in diesem Modus Ansagedaten, die ein eigenes Skript etwa für Alexa ausgeben kann.
 
 Alle freigegebenen Geräte der Programmtabelle teilen sich denselben prognostizierten Überschuss. Das EMS berücksichtigt zuerst laufende Programme und bereits gesendete Starts mit ihrem verbleibenden Lastprofil. Unter den wartenden Automatikgeräten hat die frühere Fernstartfreigabe Vorrang. Bei Gleichstand entscheidet die Tabellenreihenfolge. Die Startzeiten werden im 15-Sekunden-Zyklus anhand der aktuellen Prognose neu berechnet. Zwei Geräte können gleichzeitig laufen, wenn der Überschuss für beide reicht oder das gemeinsame Zeitfenster günstiger ist. Ein bereits laufendes Gerät im Modus **Beobachten** zählt ebenfalls mit. Unter `Devices.Programs.N` findest du den neuen Start in `plan.plannedStartAt` und den verwendeten Prognosestand in `plan.forecastUpdatedAt`. [Gemeinsame Planung und Startprüfung](docs/release-0.17.0-alpha.298.md)
+
+<a name="geräte-relatives-startfenster-und-diagrammkurven-alpha301"></a>
+
+Für ein Diagramm liefert `Plan.Appliances_48h_JSON` je Gerät den stabilen `deviceKey`, Programm, Start, Ende und eine Viertelstundenreihe mit mittlerer Leistung (`valueW`) und Energie (`energy_kWh`). Die Summenreihe umfasst eingeplante, gestartete und laufende Geräte. Vorschauen tragen `scheduled: false`. Unter `unresolvedDevices` stehen laufende Geräte ohne verwertbares Restprofil. Wenn der Hauszähler ein Gerät mitmisst, ist seine Last in der gemessenen Hauslast schon enthalten. [Gerätekurven und Zeitfenster](docs/release-0.17.0-alpha.301.md)
 
 ### Temperatur-Sollwertoptimierung
 
@@ -304,24 +316,8 @@ Bei einem Störungsbericht helfen laufende Version, Uhrzeit mit Zeitzone, Gerät
 
 ## Aktuelle Änderungen
 
-Alpha 314 gibt den SunEnergy-Regler nach einem Sollwertkonflikt automatisch frei, sobald jeder konfigurierte Kopf den Stillstand einmal frisch bestätigt. Danach entscheidet der aktuelle Bedarf über den nächsten Auftrag. [Versionshinweise](docs/release-0.17.0-alpha.314.md)
-
-Alpha 313 verschiebt verbleibenden Netzbezug für Warmwasser in bereits geplante, günstigere Heizviertelstunden. Dabei prüft der Fahrplan den Platz im Warmwasserspeicher, die Batteriereserve und die Anschlussleistung. Die zugeteilte PV-Energie für Autos, Batterie und Warmwasser bleibt erhalten. [Versionshinweise](docs/release-0.17.0-alpha.313.md)
-
-Alpha 312 wählt den Fahrzeug-SoC anhand des Messzeitpunkts. Ältere Adaptermeldungen verdrängen weder eine neuere Fahrzeugmessung noch eine manuelle Korrektur. Der Vergleich bleibt bei einem Neustart erhalten und gilt auch für die Preisplanung. [Versionshinweise](docs/release-0.17.0-alpha.312.md)
-
-Alpha 311 berücksichtigt bei der begrenzten Wärme-Preisverschiebung auch bereits eingeplante Netz-Wärme mit Mindestreserve-Grund. Wärme-/Batteriereserve und PV-Zuteilung bleiben erhalten. [Versionshinweise](docs/release-0.17.0-alpha.311.md)
-
-Alpha 310 hält bei einer eingetragenen Abfahrt einen Teil der Fahrzeugladung für den erwarteten PV-Überschuss frei. Der Fahrplan prüft ganze Ampere, die verfügbare Netzleistung bei ausbleibender Sonne und die Energiebilanz des Hauses. [Versionshinweise](docs/release-0.17.0-alpha.310.md)
-
-[Änderungen am aktuellen Code](README.md#changelog) · [Ältere Versionshinweise](CHANGELOG_OLD.md#deutsche-versionshistorie)
+Die jüngsten Änderungen stehen mit Datum und Link zum jeweiligen Versionshinweis im englischen Changelog. Die Versionshinweise erläutern die Betriebsbedingungen und enthalten Rechen- oder Messbeispiele. [Aktuelles Changelog](README.md#changelog) · [Ältere Versionshinweise](CHANGELOG_OLD.md#deutsche-versionshistorie)
 
 ## Offene Arbeiten
 
 Die [Roadmap #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) verlinkt aktuelle Integrationen, tatsächliche Anlagenprüfungen und datierte Betriebsberichte. Eine gute erste Anlaufstelle für Anzeigefehler ist [Admin-Abnahme #26](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/26).
-
-### Geräte: relatives Startfenster und Diagrammkurven (Alpha.301)
-
-Im bisherigen Feld **Fertig bis** gilt `06:00` weiterhin als Fertigstellungstermin. `+4` bedeutet dagegen: spätestens vier Stunden nach der Fernstartfreigabe starten. Die Laufzeit folgt danach. Neuplanung, Programmwechsel und Neustart verlängern das Fenster nicht. Eine neue Fernstartfreigabe setzt einen neuen Beginn. Nach Ablauf wird ohne neue Freigabe kein Start ausgelöst.
-
-Für Diagramme liefert `ems-optimizer.0.Plan.Appliances_48h_JSON` unter `devices` je Gerät den Namen, das Programm, den Start und eine `series` mit mittlerer Leistung `valueW` in W sowie `energy_kWh` je Viertelstunde. Der stabile `deviceKey` identifiziert das Gerät auch nach einer Änderung der Tabellenreihenfolge. Die oberste `series` summiert eingeplante und laufende Geräte; reine Vorschauen (`scheduled: false`) werden nicht addiert. `unresolvedDevices` nennt laufende Geräte ohne verbleibendes brauchbares Profil. Diese zusätzliche Gerätesumme nicht nochmals auf bereits entsprechend ergänzte Hauslastkurven addieren.
