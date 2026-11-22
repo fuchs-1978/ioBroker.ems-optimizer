@@ -1,74 +1,72 @@
+# EMS Optimizer for ioBroker
+
 ![EMS Optimizer logo](admin/ems-optimizer.png)
 
-# EMS Optimizer
+[![Test and Release](https://github.com/fuchs-1978/ioBroker.ems-optimizer/actions/workflows/test-and-release.yml/badge.svg?branch=main)](https://github.com/fuchs-1978/ioBroker.ems-optimizer/actions/workflows/test-and-release.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-[![Test and Release](https://github.com/fuchs-1978/ioBroker.ems-optimizer/actions/workflows/test-and-release.yml/badge.svg?branch=main)](https://github.com/fuchs-1978/ioBroker.ems-optimizer/actions/workflows/test-and-release.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+**[Deutsche Anleitung und Einrichtung](README.de.md)** · [Admin field reference (German)](docs/admin-reference.de.md) · [Changelog](#changelog) · [Roadmap](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36)
 
-**[Deutsche Schritt-für-Schritt-Anleitung für alle Admin-Reiter](README.de.md)** · [Admin field reference (German)](docs/admin-reference.de.md) · [Changelog](#changelog) · [Issue tracker](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues)
-
-EMS Optimizer is an energy management adapter for [ioBroker](https://www.iobroker.net/). It coordinates PV surplus, a home battery, up to three wallboxes and available electric heaters. It can also schedule compatible household appliances. The source build on GitHub is **0.17.0-alpha.314**. Check `System.Version` on your instance for the running build.
+This ioBroker adapter uses PV forecasts, household demand and electricity prices to plan when to charge a battery or car, heat water, or start an appliance. During operation it allocates power from measurements at the grid connection and each participating device.
 
 ## How it works
 
-- **The plan** estimates the next 48 hours in 15-minute slots from generation, household consumption, device needs and available electricity prices. The price comparison uses the gross energy price including applicable grid charges.
-- **The live controller** allocates power from current measurements. It considers user and device releases, current per-phase and grid-operator limits, the battery and vehicle state of charge, and heater temperatures. When the plan is unavailable, valid live measurements can still support ordinary allocation. Planned price charging and price-based heating resume with a valid plan.
-- **Device control** requires the relevant releases and a supported, commissioned device interface. Heat-pump telemetry and SG Ready recommendations are read-only. Phase changes on a go-e charger require a separate supported phase script. [Device setup](README.de.md#die-admin-reiter-in-bildschirmreihenfolge) · [Phase follower](docs/phase-follower-v2.md)
-
-## Household appliances
-
-In **Devices**, add one program row per appliance. Choose the unit of its power meter (**W**, **mW** or **kW**). In **Observe**, a full measured run can teach the EMS the selected program’s quarter-hour load profile. For a newly selected program, the EMS schedules its first run using the average of the same appliance’s measured program profiles. Once that run finishes with complete power readings, the next start uses its own measured profile. The device status shows the planned start under `Devices.Programs.N`.
-
-In **Automatic**, all ready devices with remote start enabled share the same forecast. Running programs and previously sent starts reserve their remaining load first. The EMS then plans waiting devices in the order they were released. Two programs can overlap when their combined load fits the available PV surplus or the tariff makes that timing cheaper. Every 15 seconds the EMS replans waiting starts. Immediately before sending a command it checks the device, its release, the deadline and the forecast again. [Scheduling and status fields](docs/release-0.17.0-alpha.298.md)
-
-The **Devices** tab also displays each metered appliance’s grid phase. The EMS learns it from repeated measured load changes. The phase is read-only. Wallboxes and battery heads have their own active phase tests. [Appliance phase detection](docs/release-0.17.0-alpha.297.md) · [Wallbox and battery tests](docs/release-0.17.0-alpha.296.md)
+| Question | What the adapter uses |
+| --- | --- |
+| When should a device run? | A rolling 48-hour plan in 15-minute slots. It considers PV, household load, vehicle departures, stored energy and the gross electricity price including applicable grid charges. |
+| How much power is available now? | Grid import and export, per-phase limits, operator limits, device feedback, temperatures and state of charge (SoC). With fresh measurements, ordinary live allocation can continue through a forecast outage. Price-based charging and heating require a valid plan. |
+| What did the device actually do? | **EMS overview** shows requests and reasons. Compare the device acknowledgement with measured current or AC power to confirm a start, power change or stop. |
 
 ## Requirements
 
-- Node.js 22 or newer, ioBroker js-controller 6.0.11 or newer and Admin 7.8.23 or newer. Automated checks cover Node.js 22, 24 and 26.
-- Confirmed PV and grid measurements in watts. Use the actual device status, limits and feedback for each output you enable.
+Node.js 22 or newer, ioBroker js-controller 6.0.11 or newer and Admin 7.8.23 or newer. The adapter needs PV and grid measurements in watts. Connect history, forecast and tariff sources for the planning features you use. [Runtime requirements](docs/runtime-requirements.md) · [Measurement inputs](README.de.md#admin-messwerte)
 
 ## Installation and setup
 
-To install this development alpha from a tested revision on GitHub, follow these steps.
+This repository contains the development alpha. Choose a revision with successful checks and follow the installation steps in the German guide. After an update, read `ems-optimizer.0.System.Version` for the version running on your instance. [Installation and updates](README.de.md#installation-und-aktualisierung) · [Checks on main](https://github.com/fuchs-1978/ioBroker.ems-optimizer/actions/workflows/test-and-release.yml?query=branch%3Amain)
 
-1. In ioBroker Admin open **Adapters → Install from custom source → GitHub**. Enter `https://github.com/fuchs-1978/ioBroker.ems-optimizer`. Select a tested commit for a reproducible installation. [Checks for main](https://github.com/fuchs-1978/ioBroker.ems-optimizer/actions/workflows/test-and-release.yml?query=branch%3Amain)
-2. Open the instance settings under **Instances → ems-optimizer.0**. Leave the master output release off while mapping measurements and limits. Disable any device that is absent.
-3. Add the forecast, history and price sources you intend to use. Check the measured grid balance, device status and plan on **EMS overview**.
-4. Commission one output at a time with a low commissioning limit and one controller per actuator. Check command, device acknowledgement and actual current or power. Confirm the stop before giving that actuator to another controller. [Commissioning steps](README.de.md#admin-allgemein)
-
-## Configuration
-
-The German guide follows the actual Admin tab order and shows how to enter and verify each setting. The field reference adds object IDs, units, defaults and advanced options. State fields take full ioBroker object IDs. Use the settings and protection limits of the actual installation.
-
-| Task | Where to start |
-| --- | --- |
-| Connect measurements and protection limits | [Grid connection / §14a / EEBUS](README.de.md#admin-netzanschluss--14a--eebus) · [Measurements](README.de.md#admin-messwerte) |
-| Build a plan or correct a PV forecast | [History and forecast](README.de.md#admin-historie-und-prognose) · [PV correction](README.de.md#admin-pv-korrektur) · [Prices and tariffs](README.de.md#admin-preise-und-tarife) |
-| Configure EV charging | [Shared wallbox settings](README.de.md#admin-wallboxen-allgemein) · [Individual vehicle and charger settings](README.de.md#admin-wallbox-0--miie-up) |
-| Configure home storage | [Battery capacity, head allocation, SoC reserves and setpoints](README.de.md#admin-batteriespeicher) |
-| Configure thermal functions | [Domestic hot water](README.de.md#admin-warmwasser-heizstab) · [Heating buffer](README.de.md#admin-heizpuffer) · [Heat-pump advice](README.de.md#admin-wärmepumpe) · [Heating strategy](README.de.md#admin-wärmestrategie) |
-| Schedule appliances and optimize device temperatures | [Devices](README.de.md#admin-geräte) |
-| Investigate a missing or unexpected command | [EMS overview](README.de.md#admin-ems-übersicht) · [Troubleshooting](README.de.md#typische-einrichtung-und-fehlersuche) |
+1. Leave the master output release off while mapping measurements. At the grid connection, a running load should increase import or reduce export.
+2. Configure the devices present, their limits and feedback. Check the readings and plan in **EMS overview**.
+3. Commission one output at a time with a low limit and one controller per actuator. Verify the command, acknowledgement, measured power and stop. Each wallbox and configured battery head also has a guided test to identify its grid phase. [Output commissioning](README.de.md#admin-allgemein) · [Guided phase test](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/468)
 
 ## Integrations
 
-- **Grid and PV readings** come from the configured ioBroker objects, for example an SMA meter and inverter integration. Check the meter boundary and the signs of import and export.
-- **Wallboxes** use the mapped go-e current and release outputs with independent feedback. [Wallbox contract](docs/admin-reference.de.md#produktiver-wallboxausgang)
-- **Electric heaters** use dedicated my-PV power commands and measured output for each heating circuit. [Hot-water heater](docs/admin-reference.de.md#admin-warmwasser-heizstab) · [Heating buffer](docs/admin-reference.de.md#admin-heizpuffer)
-- **SunEnergy XT500 batteries** use the standard driver. The head distribution mode reads each configured head and supports one to three heads. [Driver modes, limits and signs](docs/admin-reference.de.md#sunenergy-standardadapter-mit-13-köpfen)
-- **Heat pumps and appliances** use the objects exposed by the configured ioBroker adapters. Check actual device support and feedback before commissioning. [Heat-pump inputs](docs/admin-reference.de.md#admin-wärmepumpe) · [Appliance inputs](docs/admin-reference.de.md#admin-geräte)
+| Device | What you can configure and verify |
+| --- | --- |
+| Grid and generation | Map import, export and phase measurements from a meter such as the SMA Energy Meter. Map PV inverter output and optional CHP generation separately. Monthly PV correction factors apply per array. [Grid and operator limits](README.de.md#admin-netzanschluss--14a--eebus) · [PV correction](README.de.md#admin-pv-korrektur) |
+| Up to three go-e wallboxes | PV charging, immediate minimum charge, departure targets, price charging and parallel operation. Map go-e charging power in **kW** and phase currents in **A**. Dynamic phase switching requires a separately installed phase script. [Wallbox setup](README.de.md#admin-wallboxen-allgemein) · [Phase follower](docs/phase-follower-v2.md) |
+| SunEnergy XT500 | Charge and discharge control with one to three heads. Each head reports its setpoint (`GS`) and measured AC power (`GP`). At the grid connection you can check the resulting change. [Battery setup and limits](README.de.md#admin-batteriespeicher) |
+| my-PV heaters | Domestic hot water and a separate heating buffer each use their own power command and feedback. Tank temperatures, available power and releases determine whether a planned heating slot can run. [Hot water](README.de.md#admin-warmwasser-heizstab) · [Heating buffer](README.de.md#admin-heizpuffer) |
+| Heat pump | Map electrical power, temperatures and actual SG Ready status from a compatible integration, for example Stiebel Eltron WPM/ISG. The EMS publishes recommendations for comparison with the heat pump's own controller. [Heat-pump setup](README.de.md#admin-wärmepumpe) |
+| Household appliances | Siemens dishwasher and AEG dryer runs have supplied measured program profiles. Remote start requires a suitable device interface and release. A refrigerator with a writable temperature setpoint and feedback can use a PV or low-price window. [Device setup](README.de.md#admin-geräte) · [Measured runs](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/445) |
+
+## Household appliances
+
+Start in **Observe** with a metered program run. The EMS learns the quarter-hour profile from a complete run. A new program can use the average of known profiles from the same appliance until it has its own measurements. In **Automatic**, running and dispatched programs reserve their remaining load before waiting devices are scheduled. The EMS checks remote-start permission, readiness and the selected program again before sending a start command.
+
+Use `06:00` for a **finish time** or `+4` to **start within four hours** of enabling remote start. Look in `Devices.Programs.N` for the scheduled start and in `Plan.Appliances_48h_JSON` for the individual appliance curves. [Setup and profile fields](README.de.md#programmplanung-für-haushaltsgeräte)
+
+## Configuration
+
+The German guide follows all 19 Admin tabs in screen order. The reference lists object IDs, units and defaults. [Admin tabs](README.de.md#die-admin-reiter-in-bildschirmreihenfolge) · [Field reference](docs/admin-reference.de.md)
+
+For the household load forecast, choose the historical median or enable the forecast comparison and select the 50/50 median–Lasso blend. With the blend selected, each quarter-hour uses a matching stored forecast pair when available and the median otherwise. [History and forecast](README.de.md#admin-historie-und-prognose) · [Prices and tariffs](README.de.md#admin-preise-und-tarife)
 
 ## Diagnostics
 
-Open **EMS overview** for current reasons, plan feasibility and estimated daily energy. Under **Objects**, start with `ems-optimizer.0.System.Version`, `Plan.Valid`, `Control.Valid` and the relevant `Devices.*` states. For a command, compare the time and value of the request, the acknowledgement and an independent measurement. Recorder capture, exact SQL delivery and external historical availability describe three different stages. [Diagnostic fields and SQL](docs/admin-reference.de.md#diagnose-sql-und-datenqualität)
+State names below are relative to the instance, for example `ems-optimizer.0`.
 
-The [roadmap](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) points to work still in progress and the dated operational evidence. Use [Support](SUPPORT.md) when reporting an issue.
+| When you see this | Where to look |
+| --- | --- |
+| A device is planned but idle | `Plan.Valid`, `Control.Valid`, **EMS overview** and the relevant `Devices.*` status show plan validity, live allocation and release conditions. |
+| A car charges before the expected PV window | Check minimum SoC, manual current, low-SoC steps and departure. In `Plan.WallboxN_48h_JSON`, `departurePv` records an accepted deferral and the PV window. [Departure charging](README.de.md#mobilitätsreserve-und-vorhandene-abfahrtszeit) |
+| A battery stops after a setpoint conflict | Compare the sent command, each head's fresh `GS` and `GP`, and `Devices.Battery.OutputStatus`. [Battery feedback and restart](docs/admin-reference.de.md#live-regelung-des-speichers) |
+| A daily total looks incomplete | Check the covered time and gaps. Recorder capture, exact SQL confirmation and external retrieval have separate diagnostic states. [Data quality](docs/admin-reference.de.md#diagnose-sql-und-datenqualität) |
 
 ## Development
 
 ```sh
 npm ci
+npm run lint
 npm run check:admin
 npm run test:metadata
 npm test
@@ -77,7 +75,7 @@ npm run test:artifact
 npm run test:equivalence
 ```
 
-[Admin translations](docs/translations.md) · [Repository checks #316](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/316)
+[Admin translations](docs/translations.md) · [Repository checker follow-up](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/316)
 
 ## Changelog
 
