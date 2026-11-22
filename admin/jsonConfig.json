@@ -8888,6 +8888,12 @@
               ]
             },
             {
+              "type": "checkbox",
+              "attr": "includedInSubmeters",
+              "title": "Appliance power is included in the household submeters",
+              "default": false
+            },
+            {
               "type": "text",
               "attr": "finishBy",
               "title": "Finish by (HH:mm) or start within (+hours)",

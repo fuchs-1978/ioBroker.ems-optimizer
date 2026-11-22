@@ -43,6 +43,8 @@ This repository contains the development alpha. Choose a revision with successfu
 
 Start in **Observe** with a metered program run. The EMS learns the quarter-hour profile from a complete run. A new program can use the average of known profiles from the same appliance until it has its own measurements. In **Automatic**, running and dispatched programs reserve their remaining load before waiting devices are scheduled. The EMS checks remote-start permission, readiness and the selected program again before sending a start command.
 
+A manual start reserves the remaining program profile at the actual start time. The central plan includes this demand when allocating PV, storage and flexible loads.
+
 Use `06:00` for a **finish time** or `+4` to **start within four hours** of enabling remote start. Look in `Devices.Programs.N` for the scheduled start and in `Plan.Appliances_48h_JSON` for the individual appliance curves. [Setup and profile fields](README.de.md#programmplanung-für-haushaltsgeräte)
 
 ## Configuration
@@ -79,6 +81,10 @@ npm run test:equivalence
 
 ## Changelog
 
+### 0.17.0-alpha.318 (2026-11-22)
+
+- Account for the remaining program load of directly started and scheduled household appliances in the house, battery, EV, hot-water and grid forecasts. [Release notes](docs/release-0.17.0-alpha.318.md)
+
 ### 0.17.0-alpha.317 (2026-11-22)
 
 - Lower battery charge targets when the 48-hour plan covers the night and car departures. Use late PV for a monthly full charge. [Release notes](docs/release-0.17.0-alpha.317.md)
@@ -102,10 +108,6 @@ npm run test:equivalence
 ### 0.17.0-alpha.312 (2026-11-21)
 
 - Select vehicle SoC by the measurement timestamp, retaining newer manual corrections and observations across delayed imports and restarts. Share that observation with price planning. [Release notes](docs/release-0.17.0-alpha.312.md)
-
-### 0.17.0-alpha.311 (2026-11-21)
-
-- Include already planned minimum-reserve grid heat in the bounded price-bridge reconciliation, retaining PV allocation, battery reserve and heater limits. [Release notes](docs/release-0.17.0-alpha.311.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 

@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.311 (2026-11-21)
+
+- Include already planned minimum-reserve grid heat in the bounded price-bridge reconciliation, retaining PV allocation, battery reserve and heater limits. [Release notes](docs/release-0.17.0-alpha.311.md)
+
 ## 0.17.0-alpha.310 (2026-11-21)
 
 - Leave room for direct PV charging before departure when the finished plan also covers a zero-PV fallback. [Release notes](docs/release-0.17.0-alpha.310.md)
