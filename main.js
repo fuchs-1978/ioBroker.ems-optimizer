@@ -1046,6 +1046,15 @@ class EmsOptimizer extends utils.Adapter {
         }
     }
 
+    scheduleEngineTimeout(callback, delay, ...args) {
+        const timer = this.runtimeTimers.setTimeout(() => {
+            this.timers.delete(timer);
+            if (!this.unloading) callback(...args);
+        }, delay);
+        this.timers.add(timer);
+        return timer;
+    }
+
     async startEngine() {
         const mapping = this.readMapping();
         const adapter = this;
@@ -1148,14 +1157,7 @@ class EmsOptimizer extends utils.Adapter {
                 const fn = typeof adapter.log[level] === "function" ? level : "info";
                 adapter.log[fn](String(message));
             },
-            setTimeout(callback, delay, ...args) {
-                const timer = adapter.runtimeTimers.setTimeout(() => {
-                    adapter.timers.delete(timer);
-                    if (!adapter.unloading) callback(...args);
-                }, delay);
-                adapter.timers.add(timer);
-                return timer;
-            },
+            setTimeout: this.scheduleEngineTimeout.bind(this),
             clearTimeout(timer) {
                 adapter.runtimeTimers.clearTimeout(timer);
                 adapter.timers.delete(timer);

@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.314 (2026-11-22)
+
+- Resume normal battery dispatch after a GS conflict on the first fresh SunEnergy report confirming zero setpoint and AC power per head. Recheck current demand and limits before the next command. [Release notes](docs/release-0.17.0-alpha.314.md)
+
 ## 0.17.0-alpha.313 (2026-11-21)
 
 - Move remaining planned hot-water grid imports to cheaper heater slots while retaining direct PV, the battery reserve and the existing connection limits. [Release notes](docs/release-0.17.0-alpha.313.md)

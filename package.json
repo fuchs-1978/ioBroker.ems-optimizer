@@ -1,9 +1,10 @@
 {
   "name": "iobroker.ems-optimizer",
-  "version": "0.17.0-alpha.320",
+  "version": "0.17.0-alpha.321",
   "description": "Forecast-based energy management and device control for ioBroker",
   "author": {
-    "name": "fuchs-1978"
+    "name": "Carsten Reineke",
+    "email": "ems-optimizer@proton.me"
   },
   "homepage": "https://github.com/fuchs-1978/ioBroker.ems-optimizer",
   "license": "MIT",
@@ -16,6 +17,21 @@
     "forecast"
   ],
   "main": "main.js",
+  "files": [
+    "main.js",
+    "io-package.json",
+    "config.example.json",
+    "admin/",
+    "lib/",
+    "tools/",
+    "examples/",
+    "docs/*.md",
+    "docs/evidence/",
+    "docs/patches/",
+    "docs/releases/",
+    "README.de.md",
+    "SUPPORT.md"
+  ],
   "engines": {
     "node": ">=22"
   },
@@ -39,7 +55,7 @@
   },
   "devDependencies": {
     "@iobroker/eslint-config": "2.3.4",
-    "@iobroker/testing": "^6.3.0"
+    "@iobroker/testing": "^6.3.2"
   },
   "repository": {
     "type": "git",

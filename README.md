@@ -6,6 +6,8 @@
 
 **[Deutsche Anleitung und Einrichtung](README.de.md)** · [Admin field reference (German)](docs/admin-reference.de.md) · [Changelog](#changelog) · [Roadmap](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36)
 
+**Development alpha for test installations only.** Production use is not recommended. All actuator outputs can remain disabled during evaluation.
+
 This ioBroker adapter uses PV forecasts, household demand and electricity prices to plan when to charge a battery or car, heat water, or start an appliance. During operation it allocates power from measurements at the grid connection and each participating device.
 
 ## How it works
@@ -22,7 +24,7 @@ Node.js 22 or newer, ioBroker js-controller 6.0.11 or newer and Admin 7.8.23 or 
 
 ## Installation and setup
 
-This repository contains the development alpha. Choose a revision with successful checks and follow the installation steps in the German guide. After an update, read `ems-optimizer.0.System.Version` for the version running on your instance. [Installation and updates](README.de.md#installation-und-aktualisierung) · [Checks on main](https://github.com/fuchs-1978/ioBroker.ems-optimizer/actions/workflows/test-and-release.yml?query=branch%3Amain)
+Check the test results for the revision you are evaluating. After an update, read `ems-optimizer.0.System.Version` for the version running on your instance. [Setup and updates](README.de.md#installation-und-aktualisierung) · [Checks on main](https://github.com/fuchs-1978/ioBroker.ems-optimizer/actions/workflows/test-and-release.yml?query=branch%3Amain)
 
 1. Leave the master output release off while mapping measurements. At the grid connection, a running load should increase import or reduce export.
 2. Configure the devices present, their limits and feedback. Check the readings and plan in **EMS overview**.
@@ -81,6 +83,10 @@ npm run test:equivalence
 
 ## Changelog
 
+### 0.17.0-alpha.321 (2026-11-23)
+
+- Test the adapter across Linux, Windows and macOS. Prepare the npm package and document the current alpha test status. [Release notes](docs/release-0.17.0-alpha.321.md)
+
 ### 0.17.0-alpha.320 (2026-11-22)
 
 - In the coordinated SunEnergy forecast, share otherwise exported PV with an eligible car in whole-amp steps; retain hard battery, thermal and connection reserves. [Release notes](docs/release-0.17.0-alpha.320.md)
@@ -105,10 +111,6 @@ npm run test:equivalence
 
 - Keep an earned departure charging pause through gaps in the PV forecast. Recalculate the latest grid slot that can still deliver the minimum before departure. [Release notes](docs/release-0.17.0-alpha.315.md)
 
-### 0.17.0-alpha.314 (2026-11-22)
-
-- Resume normal battery dispatch after a GS conflict on the first fresh SunEnergy report confirming zero setpoint and AC power per head. Recheck current demand and limits before the next command. [Release notes](docs/release-0.17.0-alpha.314.md)
-
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 
 ## Support
@@ -117,6 +119,6 @@ Report bugs and feature requests through [GitHub Issues](https://github.com/fuch
 
 ## License
 
-Copyright (c) 2026 Carsten Reineke
+Copyright (c) 2026 Carsten Reineke <ems-optimizer@proton.me>
 
 [MIT License](LICENSE)
