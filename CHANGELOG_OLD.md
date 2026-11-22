@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.307 (2026-11-21)
+
+- Reduce cycling between adjacent departure charging currents. Increase immediately when required and release the higher step once the lower current supplies five extra minutes of headroom. [Release notes](docs/release-0.17.0-alpha.307.md)
+
 ## 0.17.0-alpha.306 (2026-11-21)
 
 - Reserve the charging power needed to reach the vehicle minimum SoC by departure, including parallel charging without PV. Recheck the reservation at the wallbox output. [Release notes](docs/release-0.17.0-alpha.306.md)
