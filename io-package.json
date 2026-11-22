@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.319",
+    "version": "0.17.0-alpha.320",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.320": {
+        "en": "Share forecast PV between a saturated SunEnergy battery and whole-amp vehicle steps while retaining hard reserves.",
+        "de": "PV-Prognose bei ausgeschöpfter SunEnergy-Ladeleistung flexibel mit Fahrzeugen in ganzen Ampere-Schritten teilen; feste Reserven bleiben wirksam.",
+        "es": "Reparte la energía solar prevista entre la batería SunEnergy saturada y el vehículo en amperios enteros, conservando las reservas.",
+        "fr": "Partage le surplus solaire prévu entre la batterie SunEnergy saturée et le véhicule par ampères entiers, en conservant les réserves.",
+        "it": "Ripartisce il surplus solare previsto tra la batteria SunEnergy satura e il veicolo in ampere interi, mantenendo le riserve.",
+        "nl": "Verdeelt voorspeld PV-overschot tussen een SunEnergy-accu op maximaal laadvermogen en de auto in hele ampères, met behoud van reserves.",
+        "pl": "Dzieli prognozowaną nadwyżkę PV między akumulator SunEnergy i pojazd w pełnych amperach, zachowując rezerwy.",
+        "pt": "Reparte a energia solar prevista entre a bateria SunEnergy saturada e o veículo em amperes inteiros, preservando as reservas.",
+        "ru": "Распределяет прогнозируемый избыток солнца между батареей SunEnergy и автомобилем шагами целых ампер, сохраняя резервы.",
+        "uk": "Розподіляє прогнозований надлишок сонячної енергії між батареєю SunEnergy й автомобілем цілими амперами, зберігаючи резерви.",
+        "zh-cn": "在 SunEnergy 电池充电功率达到上限时，按整安培分配预测光伏剩余功率给车辆，并保留硬性储备。"
+      },
       "0.17.0-alpha.319": {
         "en": "Use a proven continuous idle window for planned hot-water grid heat without changing device allocations or live releases.",
         "de": "Geplante Netz-Warmwasserwärme auf ein nachgewiesen freies zusammenhängendes Zeitfenster verteilen, ohne Gerätezuteilungen oder Livefreigaben zu ändern.",
@@ -81,19 +94,6 @@
         "ru": "После конфликта уставки управление возобновляется, когда каждый модуль SunEnergy передаст новую нулевую уставку и нулевую мощность переменного тока. Следующая команда учитывает текущую нагрузку.",
         "uk": "Після конфлікту уставки керування відновлюється, коли кожен модуль SunEnergy передасть нову нульову уставку та нульову потужність змінного струму. Наступна команда враховує поточне навантаження.",
         "zh-cn": "设定值冲突后，每台 SunEnergy 设备只需一次最新回报，确认设定值和交流功率均为零，即可恢复控制。下一条指令根据当前需求重新计算。"
-      },
-      "0.17.0-alpha.313": {
-        "en": "Move remaining planned hot-water grid imports to cheaper running heater slots when tank, battery and connection limits allow. Keep the assigned solar energy for every device.",
-        "de": "Verschiebt verbleibenden Netzbezug für Warmwasser in günstigere, bereits aktive Heizviertelstunden, wenn Wärme-, Batterie- und Anschlussreserven ausreichen. Die PV-Zuteilung je Gerät bleibt erhalten.",
-        "es": "Adelanta el consumo de red previsto para agua caliente a intervalos activos más baratos si lo permiten el depósito, la batería y la conexión. Mantiene la energía solar asignada a cada equipo.",
-        "fr": "Avance les achats prévus pour l’eau chaude vers des créneaux de chauffe actifs moins chers si le ballon, la batterie et le raccordement le permettent. Préserve la part solaire de chaque appareil.",
-        "it": "Anticipa i prelievi di rete previsti per l’acqua calda nelle fasce di riscaldamento già attive e meno costose se accumulo, batteria e connessione lo consentono. Conserva la quota solare di ogni dispositivo.",
-        "nl": "Verplaatst geplande netafname voor warm water naar goedkopere, al actieve verwarmingskwartieren als het vat, de accu en de aansluiting dat toelaten. Behoudt de toegewezen zonnestroom per apparaat.",
-        "pl": "Przenosi planowany pobór z sieci na ciepłą wodę do tańszych okresów z już włączoną grzałką, gdy pozwalają na to zasobnik, akumulator i przyłącze. Zachowuje przydział energii słonecznej dla każdego urządzenia.",
-        "pt": "Antecipa o consumo previsto da rede para água quente para períodos de aquecimento já ativos e mais baratos, se o depósito, a bateria e a ligação o permitirem. Mantém a energia solar atribuída a cada aparelho.",
-        "ru": "Переносит запланированный нагрев воды от сети на более дешёвые интервалы работы нагревателя с учётом ограничений бака, аккумулятора и подключения. Сохраняет распределение солнечной энергии между устройствами.",
-        "uk": "Переносить запланований нагрів води від мережі на дешевші інтервали роботи нагрівача з урахуванням обмежень бака, акумулятора й підключення. Зберігає розподіл сонячної енергії між пристроями.",
-        "zh-cn": "在水箱、电池和接入功率允许时，将计划中剩余的热水用电移至加热器已运行且电价较低的时段。各设备分配到的光伏电量保持不变。"
       }
     },
     "titleLang": {

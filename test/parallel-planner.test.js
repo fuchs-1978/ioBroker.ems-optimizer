@@ -127,6 +127,50 @@ test('forecast protects the storage deadline and the minimum SoC from an early w
     assert.equal(h.series('BatteryPower')[0].requiredPvChargeW, 0);
 });
 
+test('SunEnergy forecast shares a saturated battery with one-phase whole-amp vehicle steps', () => {
+    const h = fixture({...coordinatedBattery, batteryDispatchMode: 'sunenergy-heads', batteryPresent: true,
+        wb0ControlEnabled: true});
+    battery(h, 24, 15);
+    car(h, 0, {soc: 54, minimum: 50, target: 90, capacity: 32});
+    h.run(`function batteryHeadsMode() { return true; }
+        function batteryPlanningProfile() { return {valid:true, capacityValid:true, capacityKWh:15,
+            soc:24, deviceMinSoc:20, deviceMaxSoc:100, maxChargeW:2400, maxDischargeW:2400}; }`);
+    // Four morning slots from the 23 November forecast, then two
+    // increasing PV slots and a falling edge. House load already deducted.
+    const pvW = [3272.5, 3240.5, 3240.5, 3162, 3850, 4100, 2400];
+    const r = h.plan({pvW, slots: pvW.length});
+    assert.deepEqual(r.cars[0].map(s => s.currentA), [6, 6, 6, 6, 7, 8, 0]);
+    assert.deepEqual(r.allocation.map(s => s.batteryW), [1892.5, 1860.5, 1860.5, 1782, 2240, 2260, 2400]);
+    assert.ok(r.grid.every(s => Math.abs(s.valueW) <= 1), 'no modeled import or export');
+    assert.ok(h.series('BatterySoC').every(s => s.value_pct >= 20), 'device reserve remains binding');
+    balance(r, pvW);
+
+    // The hard floor (not the soft target) still blocks sharing.
+    h.run('batteryPlanningProfile = () => ({valid:true,capacityValid:true,capacityKWh:15,soc:20,deviceMinSoc:20,deviceMaxSoc:100,maxChargeW:2400,maxDischargeW:2400})');
+    const floor = h.plan({pvW: 3272.5, slots: 1});
+    assert.equal(floor.cars[0][0].currentA, 0);
+    assert.equal(floor.allocation[0].batteryW, 2400);
+    h.run('batteryPlanningProfile = () => ({valid:true,capacityValid:true,capacityKWh:15,soc:24,deviceMinSoc:20,deviceMaxSoc:100,maxChargeW:2400,maxDischargeW:2400})');
+    h.put(h.run('CFG.dp.lpcState'), 'limited');
+    const constrained = h.plan({pvW: 3272.5, slots: 1});
+    assert.equal(constrained.cars[0][0].currentA, 0, 'no special sharing under a group limit');
+    h.put(h.run('CFG.dp.lpcState'), 'unlimitedControlled');
+    h.put('ems.0.Devices.MyPV_DHW.Present', true);
+    h.put('ems.0.Config.DHWMinTemperature_C', 40);
+    h.put('ems.0.Config.DHWTargetTemperature_C', 70);
+    h.put('ems.0.Config.DHWParallelDistributionEnabled', true);
+    h.put(h.run('CFG.dp.dhwParallelRelease'), true);
+    for (const id of h.run('CFG.dp.dhwTemps')) h.put(id, 55);
+    const warm = h.plan({pvW: 3272.5, slots: 1});
+    assert.equal(warm.cars[0][0].currentA, 6);
+    assert.equal(warm.allocation[0].dhwW, 0, 'optional heat stays behind battery and vehicle');
+    for (const id of h.run('CFG.dp.dhwTemps')) h.put(id, 35);
+    const cold = h.plan({pvW: 3272.5, slots: 1});
+    assert.ok(cold.allocation[0].mandatoryThermalW > 0, 'cold service request preserved');
+    assert.ok(cold.allocation[0].dhwW >= Math.min(3272.5, cold.allocation[0].mandatoryThermalW));
+    balance(cold, 3272.5);
+});
+
 test('forecast fills the configured stages and starts the final charge earlier for a weak PV tail', () => {
     const h = fixture(coordinatedBattery);
     battery(h, 60, 10);
