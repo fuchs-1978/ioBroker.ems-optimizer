@@ -1619,6 +1619,46 @@ async function runningSunEnergyPvWallbox() {
     return h;
 }
 
+test('a running Mii keeps its 6 A PV allocation through a full battery charge request and stops on a real shortage', async () => {
+    const h = await plant({mii: true, wallbox: false, battery: true, batteryHeadType: 2, split: false,
+        initialSurplusW: 4250, startDelayS: 0, minimumRuntimeS: 0, batteryHeadPollMs: 5000,
+        wallboxUptakeA: (wb, amps) => wb === 0 ? amps - 60 / 230 : amps,
+        nativeConfig: {batteryDispatchMode: 'sunenergy-heads', batteryPvPriorityEnabled: true,
+            batteryWallboxHalfStepEnabled: true, wallboxParallelChargingEnabled: true, wallboxStopDelayS: 600,
+            dhwControlEnabled: false, wb0CommissioningMaxA: 6}});
+    h.own('Control.TargetGridPower_W', 0);
+    h.own('Config.BatteryDeadband_W', 10);
+    h.put(h.mapping.DP_BATTERY_SOC, 29);
+    h.put('DP_WB0_MIN_SOC', 50);
+    h.put('DP_WB0_SOC', 55);
+    const timestamp = h.now() - 1000;
+    h.own('Plan.BatteryTargetSoC_48h_JSON', JSON.stringify([{timestamp, value_pct: 80}]));
+    h.own('Plan.BatteryPower_48h_JSON', JSON.stringify([{timestamp, valueW: 2400, requiredPvChargeW: 2400, gridChargeW: 0}]));
+    await h.advance(90);
+    assert.equal(h.physical().miiAllow, 1, h.diagnostic());
+    const before = h.writes.length;
+
+    // At 09:07 the Mii was drawing 1,320 W on a 1,380 W command. A full
+    // 2,400 W battery reservation left only 880 W of the 3,280 W PV budget.
+    h.setSurplus(3280);
+    await h.advance(620);
+    assert.equal(h.writes.slice(before).filter(w => w.id === 'goe0.allow' && w.val === 0).length, 0,
+        'a battery reservation must not time out an already PV-funded charge');
+    assert.equal(h.value('Control.Targets.Wallbox0_A'), 6, h.diagnostic());
+    assert.equal(h.value('Devices.Wallbox0.StopDelayActive'), false, h.diagnostic());
+    assert.equal(h.physical().miiPowerW, 1320, h.diagnostic());
+    assert.ok(Math.abs(h.physical().batteryW - 1960) <= 10, h.diagnostic());
+    assert.ok(h.trace.slice(-20).every(row => Math.abs(row.gridW) <= 10), h.diagnostic());
+
+    h.setSurplus(820);
+    await h.advance(10);
+    assert.equal(h.value('Devices.Wallbox0.StopDelayActive'), true, h.diagnostic());
+    assert.equal(h.physical().miiAllow, 1);
+    await h.advance(605);
+    assert.equal(h.physical().miiAllow, 0, h.diagnostic());
+    assert.match(h.value('Devices.Wallbox0.LastStopReason'), /unter Mindeststrom/);
+});
+
 async function lateBatteryHandoffPlant({surplusW = 2450, wallboxPlanW = 0} = {}) {
     const slot = Date.UTC(2026, 10, 14, 13, 15);
     const h = await plant({mii: true, wallbox: false, battery: true, batteryHeadType: 2, batteryHeadMaxSoc: 100,
@@ -3288,7 +3328,15 @@ test('a five-second SunEnergy head releases the 6 A PV start before the five-min
         valueW: 2400, requiredPvChargeW: 1348}]));
     h.own('Config.BatteryDeadband_W', 10);
     const initialTime = h.now();
-    await h.advance(180);
+    await h.advance(40);
+    const qualificationUntil = () => JSON.parse(h.value('Control.Wallbox2.AllocationDiagnostics_JSON')).start?.batteryPvQualificationUntil;
+    const until = qualificationUntil();
+    assert.ok(until > h.now() && until <= initialTime + 150000, 'the waiting car reports the battery observation deadline');
+    assert.equal(JSON.parse(h.value('Control.Wallbox0.AllocationDiagnostics_JSON')).start?.batteryPvQualificationUntil, undefined);
+    await h.advance(5);
+    assert.equal(qualificationUntil(), until, 'polling does not restart the two-minute observation');
+    await h.advance(135);
+    assert.equal(qualificationUntil(), undefined, 'completed qualification clears independently of the wallbox start timer');
 
     const saturated = h.trace.find(row => row.batteryW >= 2350);
     const start = h.writes.find(w => w.id === 'goe.allow' && w.val === 1);

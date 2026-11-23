@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.324",
+    "version": "0.17.0-alpha.325",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.325": {
+        "en": "Keep a running solar EV charge at minimum current when measured surplus covers it. Allocate the remaining power to battery charging.",
+        "de": "Eine laufende PV-Fahrzeugladung behält ihren Mindeststrom, wenn der gemessene Überschuss dafür ausreicht. Der Speicher lädt mit der verbleibenden Leistung.",
+        "es": "Mantiene la corriente mínima de un vehículo que ya carga con energía solar si el excedente medido es suficiente. La potencia restante carga la batería.",
+        "fr": "Maintient le courant minimal d’un véhicule déjà en charge solaire si le surplus mesuré suffit. La puissance restante recharge la batterie.",
+        "it": "Mantiene la corrente minima di un veicolo già in carica con il fotovoltaico quando il surplus misurato è sufficiente. La potenza residua ricarica la batteria.",
+        "nl": "Behoudt de minimale laadstroom van een auto die al op zonnestroom laadt als het gemeten overschot volstaat. Het resterende vermogen gaat naar de thuisaccu.",
+        "pl": "Utrzymuje minimalny prąd trwającego ładowania samochodu z fotowoltaiki, gdy zmierzona nadwyżka wystarcza. Pozostała moc ładuje domowy magazyn energii.",
+        "pt": "Mantém a corrente mínima de um veículo que já carrega com energia solar quando o excedente medido é suficiente. A potência restante carrega a bateria.",
+        "ru": "Сохраняет минимальный ток уже идущей зарядки электромобиля от солнца, если измеренного избытка мощности хватает. Оставшаяся мощность идёт на зарядку домашнего аккумулятора.",
+        "uk": "Підтримує мінімальний струм заряджання електромобіля від сонця, якщо виміряного надлишку потужності вистачає. Решта потужності заряджає домашній акумулятор.",
+        "zh-cn": "当实测光伏余电充足时，维持正在充电的电动汽车的最低充电电流。剩余功率用于给家庭储能电池充电。"
+      },
       "0.17.0-alpha.324": {
         "en": "Increase current on a running EV in successive ampere steps when later PV export would still fill the battery.",
         "de": "Plant bei verbleibender Einspeisung weitere Ampere-Stufen für ein bereits ladendes Auto ein und prüft jede Stufe anhand der aktuellen Messwerte.",
@@ -81,19 +94,6 @@
         "ru": "Распределяет запланированный нагрев воды по проверенному непрерывному свободному интервалу без изменения назначений и разрешений.",
         "uk": "Розподіляє запланований нагрів води на перевірений безперервний вільний період без зміни розподілу та дозволів.",
         "zh-cn": "将计划热水用电分配到经验证的连续空闲时段，不改变设备分配或实际授权。"
-      },
-      "0.17.0-alpha.318": {
-        "en": "Include the remaining load of manually started and scheduled appliance programs in the 48-hour plan.",
-        "de": "Restlast sofort gestarteter und eingeplanter Haushaltsprogramme im 48-Stunden-Fahrplan berücksichtigen.",
-        "es": "Incluye la carga restante de los programas iniciados manualmente o programados en el plan de 48 horas.",
-        "fr": "Intègre la consommation restante des programmes lancés manuellement ou planifiés au bilan sur 48 heures.",
-        "it": "Include nel piano di 48 ore il carico residuo dei programmi avviati manualmente o pianificati.",
-        "nl": "Neemt de resterende belasting van handmatig gestarte en geplande programma’s mee in het 48-uursplan.",
-        "pl": "Plan na 48 godzin uwzględnia pozostałe zużycie programów uruchomionych ręcznie i zaplanowanych.",
-        "pt": "Inclui no plano de 48 horas a carga restante dos programas iniciados manualmente ou agendados.",
-        "ru": "Учитывает оставшуюся нагрузку запущенных вручную и запланированных программ в плане на 48 часов.",
-        "uk": "Враховує залишкове навантаження запущених вручну та запланованих програм у плані на 48 годин.",
-        "zh-cn": "在 48 小时计划中计入手动启动和已排程设备程序的剩余负荷。"
       }
     },
     "titleLang": {
