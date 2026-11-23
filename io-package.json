@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.326",
+    "version": "0.17.0-alpha.327",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.327": {
+        "en": "Plan an earlier minimum-current EV charge when later solar surplus can fully replenish the displaced battery charge.",
+        "de": "Plant einen früheren Mindeststrom für das Auto, wenn späterer PV-Überschuss die verschobene Speicherladung vollständig nachholen kann.",
+        "es": "Planifica una carga mínima anticipada del vehículo si el excedente solar posterior permite recuperar toda la carga de la batería desplazada.",
+        "fr": "Planifie une charge minimale anticipée du véhicule si le surplus solaire ultérieur permet de récupérer entièrement la charge de la batterie reportée.",
+        "it": "Pianifica una ricarica anticipata del veicolo alla corrente minima se il surplus solare successivo recupera tutta la carica della batteria posticipata.",
+        "nl": "Plan eerder laden van de auto op minimumstroom als later zonneoverschot de uitgestelde acculading volledig kan inhalen.",
+        "pl": "Planuje wcześniejsze ładowanie samochodu minimalnym prądem, jeśli późniejsza nadwyżka PV pozwala uzupełnić całą przesuniętą energię akumulatora.",
+        "pt": "Planeia uma carga antecipada do veículo à corrente mínima se o excedente solar posterior recuperar toda a carga adiada da bateria.",
+        "ru": "Планирует более раннюю зарядку автомобиля минимальным током, если последующий избыток солнца полностью восполнит отложенную зарядку батареи.",
+        "uk": "Планує раніше заряджання автомобіля мінімальним струмом, якщо подальший надлишок сонця повністю компенсує відкладене заряджання батареї.",
+        "zh-cn": "当后续光伏余电可完全补回延后的储能充电时，提前规划车辆最小电流充电。"
+      },
       "0.17.0-alpha.326": {
         "en": "Transfer an exclusive charge to a vehicle below minimum SoC as soon as the previous wallbox confirms it is off and draws no current. Show running wallbox countdowns in the dashboard.",
         "de": "Eine exklusive Ladezuteilung geht an das Fahrzeug unter Mindest-SoC, sobald die vorige Wallbox AUS und Stromfreiheit bestätigt. Das Dashboard zählt aktive Wallbox-Timer herunter.",
@@ -81,19 +94,6 @@
         "ru": "Тестирует адаптер в Linux, Windows и macOS и готовит пакет к проверке ioBroker.",
         "uk": "Тестує адаптер у Linux, Windows і macOS та готує пакет до перевірки ioBroker.",
         "zh-cn": "在 Linux、Windows 和 macOS 上测试适配器，并准备提交软件包供 ioBroker 审核。"
-      },
-      "0.17.0-alpha.320": {
-        "en": "Share forecast PV between a saturated SunEnergy battery and whole-amp vehicle steps while retaining hard reserves.",
-        "de": "PV-Prognose bei ausgeschöpfter SunEnergy-Ladeleistung flexibel mit Fahrzeugen in ganzen Ampere-Schritten teilen; feste Reserven bleiben wirksam.",
-        "es": "Reparte la energía solar prevista entre la batería SunEnergy saturada y el vehículo en amperios enteros, conservando las reservas.",
-        "fr": "Partage le surplus solaire prévu entre la batterie SunEnergy saturée et le véhicule par ampères entiers, en conservant les réserves.",
-        "it": "Ripartisce il surplus solare previsto tra la batteria SunEnergy satura e il veicolo in ampere interi, mantenendo le riserve.",
-        "nl": "Verdeelt voorspeld PV-overschot tussen een SunEnergy-accu op maximaal laadvermogen en de auto in hele ampères, met behoud van reserves.",
-        "pl": "Dzieli prognozowaną nadwyżkę PV między akumulator SunEnergy i pojazd w pełnych amperach, zachowując rezerwy.",
-        "pt": "Reparte a energia solar prevista entre a bateria SunEnergy saturada e o veículo em amperes inteiros, preservando as reservas.",
-        "ru": "Распределяет прогнозируемый избыток солнца между батареей SunEnergy и автомобилем шагами целых ампер, сохраняя резервы.",
-        "uk": "Розподіляє прогнозований надлишок сонячної енергії між батареєю SunEnergy й автомобілем цілими амперами, зберігаючи резерви.",
-        "zh-cn": "在 SunEnergy 电池充电功率达到上限时，按整安培分配预测光伏剩余功率给车辆，并保留硬性储备。"
       }
     },
     "titleLang": {
