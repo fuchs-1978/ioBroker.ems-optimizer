@@ -90,7 +90,7 @@ const coordinatedBattery = {batteryPvPriorityEnabled: true, batteryWallboxHalfSt
 
 function headroomFixture(soc, config = {}, minute = 0) {
     const h = fixture({...coordinatedBattery, batteryPresent: true, batteryDispatchMode: 'sunenergy-heads',
-        wb0ControlEnabled: true, ...config}, minute);
+        wb0ControlEnabled: true, wb0CommissioningMaxA: 32, ...config}, minute);
     battery(h, soc, 15.06);
     h.run(`function batteryHeadsMode() { return true; }
         function batteryPlanningProfile() { return {valid:true, capacityValid:true, capacityKWh:15.06,
@@ -121,6 +121,61 @@ test('late full-battery spill repays an earlier running EV step exactly, includi
     const from = carPlan[0].pvHeadroom.from;
     assert.equal(h.run(`currentPlanItem('Wallbox0', ${from - 1}).valueW`), 1610);
     assert.equal(h.run(`currentPlanItem('Wallbox0', ${from}).valueW`), 1840);
+});
+
+test('the 15:30 spill left by fourteen 1 A increments funds a second step, including its partial quarter', () => {
+    // Afternoon PV left after the house load. The original battery trajectory
+    // could still accept 35.64 W in the first quarter before reaching 100%.
+    const tail = [1054.5, 993, 1036.5, 1115], baselineTailW = 35.64;
+    const pvW = [...Array(14).fill(4000), ...tail];
+    const initialSoc = 100 - (14 * 2390 + baselineTailW) * 0.25 / 15060 * 100;
+    const plan = maxA => {
+        const h = headroomFixture(initialSoc, {wb0CommissioningMaxA: maxA});
+        const result = h.plan({pvW, slots: pvW.length});
+        balance(result, pvW);
+        return {h, ...result};
+    };
+    const limited = plan(8);
+    assert.ok(Math.abs(limited.allocation.at(-1).rawGridW + 943.36) < 1e-6);
+    assert.ok(limited.cars[0].every(p => p.currentA <= 8));
+
+    const {h, allocation, cars} = plan(32);
+    const extraWh = allocation.reduce((sum, a) => sum + (a.pvHeadroomWallboxW || 0) * 0.25, 0);
+    const storedWh = allocation.reduce((sum, a) => sum + (a.pvHeadroomBatteryW || 0) * 0.25, 0);
+    assert.ok(Math.abs(extraWh - 805 - 943.36 * 0.25) < 1e-6);
+    assert.ok(Math.abs(storedWh - extraWh) < 1e-6);
+    assert.ok(allocation.every(a => Math.abs(a.rawGridW) < 1e-6));
+    assert.ok(allocation.slice(0, 14).every(a => a.batteryW >= 1200));
+    assert.equal(allocation.at(-1).batteryW, 1115);
+    assert.equal(h.series('BatterySoC').at(-1).value_pct, 100);
+    const raised = cars[0].filter(p => p.currentA === 9);
+    assert.equal(raised.length, 5);
+    assert.ok(raised.every(p => p.pvHeadroom.baseA === 7 && p.chargingMinutes === 15));
+    assert.ok(raised.slice(1).every(p => p.pvHeadroom.from === p.timestamp));
+    const from = raised[0].pvHeadroom.from;
+    assert.ok(from > raised[0].timestamp && from < raised[0].timestamp + 900000);
+    h.run(fs.readFileSync(path.join(__dirname, '../lib/engine/realtime.js'), 'utf8'));
+    assert.equal(h.run(`currentPlanItem('Wallbox0', ${from - 1}).currentA`), 8);
+    assert.equal(h.run(`currentPlanItem('Wallbox0', ${from}).currentA`), 9);
+    assert.ok(cars[0].slice(14).every(p => p.currentA === 0));
+});
+
+test('additional ampere steps share one vehicle energy budget and preserve minimum battery charging power', () => {
+    const pvW = [...Array(10).fill(3000), ...Array(6).fill(1100)];
+    const run = capacity => {
+        const h = headroomFixture(100 - 1620 * 2.5 / 15060 * 100);
+        car(h, 0, {soc: 70, minimum: 50, target: 90, capacity});
+        const result = h.plan({pvW, slots: pvW.length});
+        balance(result, pvW);
+        return result;
+    };
+    const ample = run(50);
+    assert.ok(ample.cars[0].slice(0, 10).every(p => p.currentA === 7));
+    assert.ok(ample.allocation.slice(0, 10).every(a => a.batteryW === 1390));
+    assert.ok(ample.allocation.some(a => a.rawGridW < -1), 'a second step would breach the 1200 W floor');
+    const limited = run(16);
+    const kWh = limited.allocation.reduce((sum, a) => sum + a.wallboxW * 0.25 * 0.9 / 1000, 0);
+    assert.ok(Math.abs(kWh - 3.2) < 1e-6, 'recoverable PV cannot expand the target SoC');
 });
 
 test('headroom requires recoverable future PV, ongoing flexible demand and current-limit clearance', () => {

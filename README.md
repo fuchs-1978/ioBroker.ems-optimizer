@@ -83,6 +83,10 @@ npm run test:equivalence
 
 ## Changelog
 
+### 0.17.0-alpha.324 (2026-11-23)
+
+- Raise a running EV by further whole-amp steps when the first pass leaves PV export at a full battery. Verify each step against live measurements and vehicle feedback. [Release notes](docs/release-0.17.0-alpha.324.md)
+
 ### 0.17.0-alpha.323 (2026-11-23)
 
 - Add per-appliance ECharts JSON forecast data points. [Release notes](docs/release-0.17.0-alpha.323.md)
@@ -106,14 +110,6 @@ npm run test:equivalence
 ### 0.17.0-alpha.318 (2026-11-22)
 
 - Account for the remaining program load of directly started and scheduled household appliances in the house, battery, EV, hot-water and grid forecasts. [Release notes](docs/release-0.17.0-alpha.318.md)
-
-### 0.17.0-alpha.317 (2026-11-22)
-
-- Lower battery charge targets when the 48-hour plan covers the night and car departures. Use late PV for a monthly full charge. [Release notes](docs/release-0.17.0-alpha.317.md)
-
-### 0.17.0-alpha.316 (2026-11-22)
-
-- Keep the active wallbox charging when a verified idle peer misses a poll. Let the battery absorb measured export left after mandatory vehicle charging. [Release notes](docs/release-0.17.0-alpha.316.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 

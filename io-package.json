@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.323",
+    "version": "0.17.0-alpha.324",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.324": {
+        "en": "Increase current on a running EV in successive ampere steps when later PV export would still fill the battery.",
+        "de": "Plant bei verbleibender Einspeisung weitere Ampere-Stufen für ein bereits ladendes Auto ein und prüft jede Stufe anhand der aktuellen Messwerte.",
+        "es": "Aumenta la corriente de un vehículo en carga en pasos sucesivos de un amperio cuando se prevé un excedente solar con la batería llena.",
+        "fr": "Augmente la charge d’un véhicule déjà en charge par paliers successifs d’un ampère si un surplus solaire est prévu lorsque la batterie sera pleine.",
+        "it": "Aumenta la corrente di un veicolo già in carica a passi di un ampere quando è previsto un surplus solare a batteria piena.",
+        "nl": "Verhoogt de laadstroom van een voertuig dat al laadt in stappen van één ampère als bij een volle accu later nog teruglevering wordt verwacht.",
+        "pl": "Podnosi prąd ładowania pojazdu w kolejnych krokach po jednym amperze, gdy po naładowaniu akumulatora spodziewana jest nadwyżka energii słonecznej.",
+        "pt": "Aumenta a corrente de um veículo já em carga em passos de um ampere quando se prevê um excedente solar com a bateria cheia.",
+        "ru": "Поэтапно повышает ток зарядки автомобиля на один ампер, если после заполнения накопителя ожидается избыток солнечной энергии.",
+        "uk": "Поетапно збільшує струм заряджання автомобіля на один ампер, якщо після заповнення накопичувача очікується надлишок сонячної енергії.",
+        "zh-cn": "若预计储能电池充满后仍有光伏电力回送电网，可逐次将正在充电的电动汽车电流提高一安培。"
+      },
       "0.17.0-alpha.323": {
         "en": "Publish a separate ECharts forecast JSON for each program appliance.",
         "de": "Für jedes Programmgerät ein eigenes Prognose-JSON für ECharts bereitstellen.",
@@ -81,19 +94,6 @@
         "ru": "Учитывает оставшуюся нагрузку запущенных вручную и запланированных программ в плане на 48 часов.",
         "uk": "Враховує залишкове навантаження запущених вручну та запланованих програм у плані на 48 годин.",
         "zh-cn": "在 48 小时计划中计入手动启动和已排程设备程序的剩余负荷。"
-      },
-      "0.17.0-alpha.317": {
-        "en": "Adaptive battery charge targets and monthly solar full charge",
-        "de": "Adaptive Speicherziele und monatliche PV-Vollladung",
-        "es": "Objetivos de batería adaptativos y carga solar completa mensual",
-        "fr": "Objectifs de batterie adaptatifs et charge solaire complète mensuelle",
-        "it": "Obiettivi batteria adattivi e carica solare completa mensile",
-        "nl": "Adaptieve accudoelen en maandelijkse volledige zonnelading",
-        "pl": "Adaptacyjne cele ładowania i comiesięczne pełne ładowanie z PV",
-        "pt": "Metas adaptativas da bateria e carga solar completa mensal",
-        "ru": "Адаптивные цели и ежемесячный полный заряд от солнца",
-        "uk": "Адаптивні цілі й щомісячне повне заряджання від сонця",
-        "zh-cn": "自适应电池充电目标及每月光伏充满"
       }
     },
     "titleLang": {
