@@ -83,6 +83,10 @@ npm run test:equivalence
 
 ## Changelog
 
+### 0.17.0-alpha.325 (2026-11-23)
+
+- Keep a running PV charge at minimum current while measured surplus covers it. Give the home battery the remaining power. [Release notes](docs/release-0.17.0-alpha.325.md)
+
 ### 0.17.0-alpha.324 (2026-11-23)
 
 - Raise a running EV by further whole-amp steps when the first pass leaves PV export at a full battery. Verify each step against live measurements and vehicle feedback. [Release notes](docs/release-0.17.0-alpha.324.md)
@@ -106,10 +110,6 @@ npm run test:equivalence
 ### 0.17.0-alpha.319 (2026-11-22)
 
 - Redistribute planned grid heat to a proven contiguous idle window when thermal, connection and battery reserves permit. [Release notes](docs/release-0.17.0-alpha.319.md)
-
-### 0.17.0-alpha.318 (2026-11-22)
-
-- Account for the remaining program load of directly started and scheduled household appliances in the house, battery, EV, hot-water and grid forecasts. [Release notes](docs/release-0.17.0-alpha.318.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 
