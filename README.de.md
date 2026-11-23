@@ -327,3 +327,7 @@ Die jüngsten Änderungen stehen mit Datum und Link zum jeweiligen Versionshinwe
 ## Offene Arbeiten
 
 Die [Roadmap #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) verlinkt aktuelle Integrationen, tatsächliche Anlagenprüfungen und datierte Betriebsberichte. Eine gute erste Anlaufstelle für Anzeigefehler ist [Admin-Abnahme #26](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/26).
+
+### Einzelne Geräteprognosen in ECharts (Alpha.323)
+
+In ECharts eine Datenreihe hinzufügen, Datenquelle **JSON** auswählen und `ems-optimizer.0.Chart.DeviceProgram1_48h_json_chart` für die erste Gerätezeile bzw. `ems-optimizer.0.Chart.DeviceProgram2_48h_json_chart` für die zweite eintragen. Einheit **W**, Faktor **1**, Darstellung Linie oder Stufenlinie. Die Nummer entspricht der Reihenfolge unter Geräte → Programmplanung. Die JSONs liefern direkt `ts` und `val`; SQL-Aufzeichnung und Umwandlungsskript werden nicht benötigt. Zurückgenommene Pläne werden entfernt, Beobachten-Vorschauen nicht als eingeplante Last gezeigt.

@@ -3195,3 +3195,7 @@ Prepare a persistent per-vehicle mobility reserve, default 0 percent (off), in t
 ### 0.17.0-alpha.294
 
 - Configure the unit of appliance power measurements.
+
+## 0.17.0-alpha.316
+
+- Keep other cars charging during a delayed idle wallbox poll and store measured export after mandatory vehicle charging has received its allocation.

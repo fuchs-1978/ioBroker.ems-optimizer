@@ -601,3 +601,35 @@ test('a manual run triggers the live engine rebuild once, then its physical end 
     assert.ok(grid().every(point => !point.applianceW));
     assert.deepEqual(h.writes, []);
 });
+
+test('individual ECharts JSON mirrors scheduled quarter-hour curves and clears cancelled plans', async t => {
+    const h = simulation(t, [{mode: 'automatic'}, {mode: 'observe'}]);
+    h.forecast([0, -1000, -1000]);
+    await h.tick();
+    const read = n => JSON.parse(h.own.get(`Chart.DeviceProgram${n}_48h_json_chart`));
+    const payload = JSON.parse(h.own.get('Plan.Appliances_48h_JSON'));
+    assert.deepEqual(read(1), payload.devices.find(d => d.id === 'Devices.Programs.1').series
+        .map(slot => ({ts: slot.timestamp, val: slot.valueW})));
+    assert.equal(read(1).length, 192);
+    assert.deepEqual(read(2), []); // Observation preview is not a committed plan.
+    h.state('remote.0', false);
+    await h.tick();
+    assert.equal(read(1).length, 192);
+    assert.ok(read(1).every(slot => slot.val === 0));
+    h.at(BASE + 21 * 60000);
+    await h.tick();
+    assert.deepEqual(read(1), []);
+});
+
+test('individual ECharts JSON includes manual running loads and omits unresolved loads', async t => {
+    const h = simulation(t, [{mode: 'observe'}]);
+    h.state('status.0', 'Running', BASE - SLOT / 2);
+    h.forecast([0, 0, 0]);
+    await h.tick();
+    const read = () => JSON.parse(h.own.get('Chart.DeviceProgram1_48h_json_chart'));
+    assert.equal(read()[0].val, 500);
+    h.at(BASE + SLOT);
+    h.forecast([0, 0, 0]);
+    await h.tick();
+    assert.deepEqual(read(), []);
+});

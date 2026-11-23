@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.322",
+    "version": "0.17.0-alpha.323",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.323": {
+        "en": "Publish a separate ECharts forecast JSON for each program appliance.",
+        "de": "Für jedes Programmgerät ein eigenes Prognose-JSON für ECharts bereitstellen.",
+        "es": "Publica un JSON de previsión independiente para ECharts por cada aparato.",
+        "fr": "Publie un JSON de prévision ECharts distinct pour chaque appareil.",
+        "it": "Pubblica un JSON di previsione ECharts separato per ogni apparecchio.",
+        "nl": "Publiceert een afzonderlijk ECharts-prognose-JSON voor elk apparaat.",
+        "pl": "Publikuje osobny JSON prognozy ECharts dla każdego urządzenia.",
+        "pt": "Publica um JSON de previsão ECharts separado para cada aparelho.",
+        "ru": "Публикует отдельный JSON прогноза ECharts для каждого прибора.",
+        "uk": "Публікує окремий JSON прогнозу ECharts для кожного приладу.",
+        "zh-cn": "为每台程序设备发布独立的 ECharts 预测 JSON。"
+      },
       "0.17.0-alpha.322": {
         "en": "Charge a running EV earlier to make room for later PV surplus. Allocate small remaining surpluses to active hot-water heating.",
         "de": "Ein bereits ladendes Auto nimmt früher PV-Strom auf und schafft Platz im Speicher. Kleine Restüberschüsse gehen an die laufende Warmwasserbereitung.",
@@ -81,19 +94,6 @@
         "ru": "Адаптивные цели и ежемесячный полный заряд от солнца",
         "uk": "Адаптивні цілі й щомісячне повне заряджання від сонця",
         "zh-cn": "自适应电池充电目标及每月光伏充满"
-      },
-      "0.17.0-alpha.316": {
-        "en": "Keep other cars charging during a delayed idle wallbox poll and store measured export after mandatory vehicle charging has received its allocation.",
-        "de": "Bei verzögerter Meldung einer ruhenden Wallbox laden die anderen Autos weiter. Der Speicher nutzt gemessenen Restüberschuss während einer Fahrzeug-Pflichtladung.",
-        "es": "Mantiene la carga de los otros vehículos si se retrasa la lectura de un cargador inactivo y almacena el excedente medido después de asignar la carga obligatoria.",
-        "fr": "Maintient la recharge des autres véhicules si une borne au repos tarde à répondre et stocke le surplus mesuré après attribution de la recharge obligatoire.",
-        "it": "Mantiene in carica gli altri veicoli se una colonnina inattiva risponde in ritardo e accumula il surplus misurato dopo aver assegnato la ricarica obbligatoria.",
-        "nl": "Andere voertuigen laden door bij een vertraagde meting van een inactief laadpunt. De accu slaat het gemeten overschot na toewijzing van de verplichte laadstroom op.",
-        "pl": "Pozostałe pojazdy ładują się dalej przy opóźnionym odczycie nieczynnej ładowarki. Magazyn gromadzi zmierzoną nadwyżkę po przydzieleniu mocy obowiązkowego ładowania.",
-        "pt": "Mantém os restantes veículos em carga quando atrasa a leitura de um carregador inativo e armazena o excedente medido após atribuir a carga obrigatória.",
-        "ru": "Остальные автомобили продолжают заряжаться при задержке опроса простаивающей станции. Накопитель получает измеренный избыток после выделения мощности для обязательной зарядки.",
-        "uk": "Інші автомобілі продовжують заряджатися в разі затримки опитування неактивної станції. Накопичувач отримує виміряний надлишок після розподілу потужності для обов’язкового заряджання.",
-        "zh-cn": "空闲充电桩读数延迟时，其他车辆可继续充电。分配车辆必需的充电功率后，储能电池可吸收实测的剩余上网功率。"
       }
     },
     "titleLang": {

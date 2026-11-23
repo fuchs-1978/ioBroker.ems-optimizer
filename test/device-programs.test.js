@@ -54,3 +54,15 @@ test('normalizes milliwatts and kilowatts before learning', () => {
     assert.deepEqual(learnProfile(series(600000), start, start + 900000, 'mW'), expected);
     assert.deepEqual(learnProfile(series(0.6), start, start + 900000, 'kW'), expected);
 });
+
+test('disabled configuration clears per-row and removed-row ECharts JSON on restart', async () => {
+    const writes = new Map();
+    startDevicePrograms({namespace: 'ems-optimizer.0', config: {devicePrograms: [{mode: 'off'}]},
+        async getStatesAsync() { return {'ems-optimizer.0.Chart.DeviceProgram2_48h_json_chart': {val: '[{"ts":1,"val":100}]'}}; },
+        async setObjectNotExistsAsync() {},
+        async setStateAsync(id, val) { writes.set(id, JSON.parse(val)); },
+        log: {warn: message => assert.fail(message)}});
+    await new Promise(resolve => setImmediate(resolve));
+    assert.deepEqual(writes.get('Chart.DeviceProgram1_48h_json_chart'), []);
+    assert.deepEqual(writes.get('Chart.DeviceProgram2_48h_json_chart'), []);
+});
