@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.320 (2026-11-22)
+
+- In the coordinated SunEnergy forecast, share otherwise exported PV with an eligible car in whole-amp steps; retain hard battery, thermal and connection reserves. [Release notes](docs/release-0.17.0-alpha.320.md)
+
 ## 0.17.0-alpha.319 (2026-11-22)
 
 - Redistribute planned grid heat to a proven contiguous idle window when thermal, connection and battery reserves permit. [Release notes](docs/release-0.17.0-alpha.319.md)

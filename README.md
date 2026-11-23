@@ -83,6 +83,10 @@ npm run test:equivalence
 
 ## Changelog
 
+### 0.17.0-alpha.327 (2026-11-23)
+
+- Plan an earlier minimum-current EV start when later otherwise exported PV can fully replenish the displaced battery charge. Keep live qualification and protection unchanged. [Release notes](docs/release-0.17.0-alpha.327.md)
+
 ### 0.17.0-alpha.326 (2026-11-23)
 
 - Hand an exclusive charging allocation to a below-minimum EV after confirmed shutdown of its peer. Show live start, minimum-run and stop countdowns in the dashboard. [Release notes](docs/release-0.17.0-alpha.326.md)
@@ -106,10 +110,6 @@ npm run test:equivalence
 ### 0.17.0-alpha.321 (2026-11-23)
 
 - Test the adapter across Linux, Windows and macOS. Prepare the npm package and document the current alpha test status. [Release notes](docs/release-0.17.0-alpha.321.md)
-
-### 0.17.0-alpha.320 (2026-11-22)
-
-- In the coordinated SunEnergy forecast, share otherwise exported PV with an eligible car in whole-amp steps; retain hard battery, thermal and connection reserves. [Release notes](docs/release-0.17.0-alpha.320.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 

@@ -101,6 +101,34 @@ function headroomFixture(soc, config = {}, minute = 0) {
     return h;
 }
 
+test('full storage spill funds an earlier minimum-current EV start without battery discharge', () => {
+    const pvW = [1871, 846, 758, 0];
+    const initialSoc = 100 - 1522 * 0.25 / 15060 * 100;
+    const h = headroomFixture(initialSoc);
+    const r = h.plan({pvW, slots: pvW.length});
+    assert.equal(r.cars[0][0].currentA, 6);
+    assert.equal(r.cars[0][0].valueW, 1380);
+    assert.equal(r.allocation[0].batteryW, 491);
+    assert.equal(r.allocation[0].pvHeadroomStartW, 1380);
+    assert.ok(r.allocation.every(a => a.batteryW >= 0 && a.batteryGridChargeW === 0 && a.wallboxGridW === 0));
+    assert.ok(Math.abs(r.allocation.reduce((sum, a) => sum + (a.pvHeadroomBatteryW || 0), 0) - 1031) < 1e-6);
+    assert.ok(Math.abs(r.allocation.reduce((sum, a) => sum + Math.max(0, -a.rawGridW) * 0.25, 0) - 143.25) < 1e-6);
+    assert.equal(h.series('BatterySoC').at(-1).value_pct, 100);
+    balance(r, pvW);
+});
+
+test('an idle EV stays idle without enough later spill or with an active hard limit', () => {
+    for (const [pvW, config, limited] of [[[1871, 100, 0], {}], [[1871, 846, 758, 0], {wb0CommissioningMaxA: 5}],
+        [[1871, 846, 758, 0], {}, true]]) {
+        const h = headroomFixture(100 - 1522 * 0.25 / 15060 * 100, config);
+        if (limited) h.put(h.run('CFG.dp.lpcState'), 'limited');
+        const r = h.plan({pvW, slots: pvW.length});
+        assert.equal(r.cars[0][0].valueW, 0);
+        assert.equal(r.allocation[0].pvHeadroomStartW, undefined);
+        balance(r, pvW);
+    }
+});
+
 test('late full-battery spill repays an earlier running EV step exactly, including its short first increment', () => {
     const pvW = [...Array(10).fill(4000), 993, 1036.5, 1115, 0];
     const h = headroomFixture(100 - (2390 * 10 + 980) * 0.25 / 15060 * 100);
