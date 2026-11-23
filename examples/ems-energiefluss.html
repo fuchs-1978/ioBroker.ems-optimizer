@@ -92,6 +92,8 @@ dialog input{font:inherit;color:var(--ink);font-size:1.03rem}.departure-label{di
 .soc-entry button:disabled{opacity:.5;cursor:default}#mii-soc-status{margin:7px 0 0;overflow-wrap:anywhere}#mii-soc-status:empty{display:none}
 .vehicle-info{margin-top:6px;padding-top:6px;border-top:1px solid var(--border);text-align:center;line-height:1.22;overflow-wrap:anywhere}
 .vehicle-info[hidden]{display:none}.vehicle-status{display:block;font-size:.87rem;font-weight:640}
+.vehicle-countdown{display:block;margin-top:2px;font-size:1rem;font-weight:650;font-variant-numeric:tabular-nums;white-space:nowrap}
+.storage-countdown,.wallbox-countdown{font-weight:650;font-variant-numeric:tabular-nums;white-space:nowrap}
 .vehicle-info small{display:block;font-size:.78rem;margin-top:3px}.vehicle-info .vehicle-priority{color:var(--green);font-weight:650}
 .vehicle-info[data-kind=done] .vehicle-status,.vehicle-info[data-kind=charging] .vehicle-status{color:var(--green)}
 .vehicle-info[data-kind=pv] .vehicle-status{color:var(--heat)}
@@ -212,21 +214,21 @@ dialog .priority-choice input{width:1.2rem;height:1.2rem;margin:0;accent-color:v
 <button type="button" class="edit-vehicle" data-vehicle="0" aria-label="Ladeeinstellungen für SEAT Mii bearbeiten" aria-haspopup="dialog" aria-describedby="wb0-plug wb0-info"></button>
 <svg class="art" aria-hidden="true" viewBox="0 0 120 65"><use data-art="mii" href="#mii-day-art" x="7.0" y="1" width="106" height="62"/></svg>
 <svg class="mini-flow" viewBox="0 0 100 10" aria-hidden="true"><g class="route" data-branch="wb0"><path d="M2 5 H98"/></g></svg>
-<div class="level">—</div><div class="charge"><span class="soc-icon" aria-hidden="true"><i></i></span><span class="soc-value">—</span><small class="soc-unit">SoC</small></div><div class="vehicle-info" id="wb0-info"><strong class="vehicle-status"></strong><small class="vehicle-plan" hidden></small><small class="vehicle-priority" hidden>★ Vorrang</small></div></article>
+<div class="level">—</div><div class="charge"><span class="soc-icon" aria-hidden="true"><i></i></span><span class="soc-value">—</span><small class="soc-unit">SoC</small></div><div class="vehicle-info" id="wb0-info"><strong class="vehicle-status"></strong><span class="vehicle-countdown" role="timer" aria-label="Restzeit in Minuten und Sekunden" hidden></span><small class="vehicle-stop" hidden>Abschaltverzögerung <span class="wallbox-countdown" role="timer" aria-label="Verbleibende Abschaltverzögerung"></span></small><small class="vehicle-minimum" hidden>Mindestlaufzeit <span class="wallbox-countdown" role="timer" aria-label="Verbleibende Mindestlaufzeit"></span></small><small class="vehicle-storage-check" hidden>Speicherprüfung <span class="storage-countdown" role="timer" aria-label="Verbleibende Prüfzeit in Minuten und Sekunden"></span></small><small class="vehicle-plan" hidden></small><small class="vehicle-priority" hidden>★ Vorrang</small></div></article>
 <article class="tile car" id="wb1"><h3>Mercedes EQV&nbsp;300</h3><div class="vehicle-tools">
 <span class="plug-state" id="wb1-plug" role="img" aria-label="Anschlussstatus unbekannt"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#plug-unknown"/></svg></span>
 <svg class="edit-icon" aria-hidden="true" viewBox="0 0 20 20"><path d="m4 13-.8 3.7 3.8-.9L16 6.8 13.2 4Z M11.8 5.4l2.8 2.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></div>
 <button type="button" class="edit-vehicle" data-vehicle="1" aria-label="Ladeeinstellungen für Mercedes EQV 300 bearbeiten" aria-haspopup="dialog" aria-describedby="wb1-plug wb1-info"></button>
 <svg class="art" aria-hidden="true" viewBox="0 0 120 65"><use data-art="eqv" href="#eqv-day-art" x="0.0" y="1" width="120" height="62"/></svg>
 <svg class="mini-flow" viewBox="0 0 100 10" aria-hidden="true"><g class="route" data-branch="wb1"><path d="M2 5 H98"/></g></svg>
-<div class="level">—</div><div class="charge"><span class="soc-icon" aria-hidden="true"><i></i></span><span class="soc-value">—</span><small class="soc-unit">SoC</small></div><div class="vehicle-info" id="wb1-info"><strong class="vehicle-status"></strong><small class="vehicle-plan" hidden></small><small class="vehicle-priority" hidden>★ Vorrang</small></div></article>
+<div class="level">—</div><div class="charge"><span class="soc-icon" aria-hidden="true"><i></i></span><span class="soc-value">—</span><small class="soc-unit">SoC</small></div><div class="vehicle-info" id="wb1-info"><strong class="vehicle-status"></strong><span class="vehicle-countdown" role="timer" aria-label="Restzeit in Minuten und Sekunden" hidden></span><small class="vehicle-stop" hidden>Abschaltverzögerung <span class="wallbox-countdown" role="timer" aria-label="Verbleibende Abschaltverzögerung"></span></small><small class="vehicle-minimum" hidden>Mindestlaufzeit <span class="wallbox-countdown" role="timer" aria-label="Verbleibende Mindestlaufzeit"></span></small><small class="vehicle-storage-check" hidden>Speicherprüfung <span class="storage-countdown" role="timer" aria-label="Verbleibende Prüfzeit in Minuten und Sekunden"></span></small><small class="vehicle-plan" hidden></small><small class="vehicle-priority" hidden>★ Vorrang</small></div></article>
 <article class="tile car" id="wb2"><h3>Mercedes EQE&nbsp;350</h3><div class="vehicle-tools">
 <span class="plug-state" id="wb2-plug" role="img" aria-label="Anschlussstatus unbekannt"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#plug-unknown"/></svg></span>
 <svg class="edit-icon" aria-hidden="true" viewBox="0 0 20 20"><path d="m4 13-.8 3.7 3.8-.9L16 6.8 13.2 4Z M11.8 5.4l2.8 2.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></div>
 <button type="button" class="edit-vehicle" data-vehicle="2" aria-label="Ladeeinstellungen für Mercedes EQE 350 bearbeiten" aria-haspopup="dialog" aria-describedby="wb2-plug wb2-info"></button>
 <svg class="art" aria-hidden="true" viewBox="0 0 120 65"><use data-art="eqe" href="#eqe-day-art" x="1.0" y="1" width="118" height="62"/></svg>
 <svg class="mini-flow" viewBox="0 0 100 10" aria-hidden="true"><g class="route" data-branch="wb2"><path d="M2 5 H98"/></g></svg>
-<div class="level">—</div><div class="charge"><span class="soc-icon" aria-hidden="true"><i></i></span><span class="soc-value">—</span><small class="soc-unit">SoC</small></div><div class="vehicle-info" id="wb2-info"><strong class="vehicle-status"></strong><small class="vehicle-plan" hidden></small><small class="vehicle-priority" hidden>★ Vorrang</small></div></article></div></section>
+<div class="level">—</div><div class="charge"><span class="soc-icon" aria-hidden="true"><i></i></span><span class="soc-value">—</span><small class="soc-unit">SoC</small></div><div class="vehicle-info" id="wb2-info"><strong class="vehicle-status"></strong><span class="vehicle-countdown" role="timer" aria-label="Restzeit in Minuten und Sekunden" hidden></span><small class="vehicle-stop" hidden>Abschaltverzögerung <span class="wallbox-countdown" role="timer" aria-label="Verbleibende Abschaltverzögerung"></span></small><small class="vehicle-minimum" hidden>Mindestlaufzeit <span class="wallbox-countdown" role="timer" aria-label="Verbleibende Mindestlaufzeit"></span></small><small class="vehicle-storage-check" hidden>Speicherprüfung <span class="storage-countdown" role="timer" aria-label="Verbleibende Prüfzeit in Minuten und Sekunden"></span></small><small class="vehicle-plan" hidden></small><small class="vehicle-priority" hidden>★ Vorrang</small></div></article></div></section>
    <div id="dishwasher" class="appliance-row" role="group" aria-label="Geschirrspüler" hidden>
     <svg viewBox="0 0 30 34" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="2" width="24" height="29" rx="3"/><path d="M3 10h24M7 6h5m7 0h.4m3.1 0h.4M8 25h14m-11-3-2-7m6 7-2-8m6 8-2-8"/></svg>
     <div><strong>Geschirrspüler</strong><small id="dishwasher-status"></small></div>
@@ -440,8 +442,17 @@ function vehicleDevice(wallbox, now, control) {
   const note = wallbox.SoCValid !== true ? "zuletzt" : estimate.includes("manual") ? "korrigiert" : estimate.includes("estimate") ? "fortgeschrieben" : "";
   const car = wallbox.measurements?.car;
   const connected = measured(car,now) && [1,2,3,4].includes(car.val) && typeof wallbox.Connected === "boolean" ? wallbox.Connected : null;
+  const status = vehicleStatus(wallbox, connected, power, control);
+  const allocation = wallbox.allocation;
+  const until = allocation?.start?.batteryPvQualificationUntil;
+  const batteryCheckUntil = connected === true && power === 0 && wallbox.Release === true && control?.Valid === true
+    && ["Angesteckt","Wartet auf PV","Startverzögerung"].includes(status) && allocation?.valid === true
+    && allocation.preferred === true && timely(allocation.timestamp, now, SNAPSHOT_MAX_AGE)
+    && isNumber(until) && until > now ? until : null;
   return {...device(power, true, percentage(wallbox.SoC_pct), note), connected,
-    status:vehicleStatus(wallbox, connected, power, control)};
+    status, startDelayUntil:wallbox.startDelayUntil, batteryCheckUntil,
+    stopDelayUntil:connected === true && !wallbox.OutputFault ? wallbox.stopDelayUntil : null,
+    minimumRunUntil:connected === true && !wallbox.OutputFault ? wallbox.minimumRunUntil : null};
 }
 
 function heaterDevice(heater, outputs, now) {
@@ -547,6 +558,19 @@ function planGoalWrites(before,after) {
   return [...limits,"time"].filter(key=>before[key]!==after[key]);
 }
 
+function wallboxDelayIds(i) {
+  return {start:vehiclePath(i,"StartDelayRemaining_s"), minimum:vehiclePath(i,"MinimumRunTimeRemaining_s"),
+    stop:INSTANCE + ".Devices.Wallbox" + i + ".StopDelayRemaining_s"};
+}
+
+// Anchor the deadline to the EMS measurement. Polling the same value never restarts the clock.
+function wallboxDelay(active, sample, snapshotAt, now) {
+  const valid = validState(sample) && sample.ack === true && Number.isInteger(sample.val)
+    && sample.val >= 0 && timely(sample.ts, now, SNAPSHOT_MAX_AGE);
+  const running = valid && sample.ts > snapshotAt ? sample.val > 0 : active === true;
+  return {active:running, until:running && valid && sample.val > 0 ? sample.ts + 1000 * sample.val : null};
+}
+
 function fastIds(s) {
   if (!s) return [];
   const m = s.measurements;
@@ -554,7 +578,7 @@ function fastIds(s) {
   const ids = s.control?.priorityRequest?.external?.id === PRIORITY_ID ? [PRIORITY_ID] : [];
   for (const w of s.wallboxes) if (w.Present && w.wb >= 0 && w.wb <= 2) {
     devices.push(w.measurements?.power);
-    ids.push(vehiclePath(w.wb, "SoC_pct"));
+    ids.push(vehiclePath(w.wb, "SoC_pct"), ...Object.values(wallboxDelayIds(w.wb)));
   }
   if (s.ehz?.Present) devices.push(...(m.ehzOutputs ?? []));
   if (s.heating?.Present) devices.push(...(s.heating.measurements?.outputs ?? []));
@@ -587,7 +611,14 @@ function withFastReadings(s, raw, now) {
     useTime(meter);
     const soc=raw[vehiclePath(w.wb,"SoC_pct")];
     const newerSoc=validState(soc)&&soc.ts>=s.ts&&percentage(soc.val)!==null&&w.SoCValid===true;
+    const ids = wallboxDelayIds(w.wb);
+    const start = wallboxDelay(w.StartDelayActive, raw[ids.start], s.ts, now);
+    const stop = wallboxDelay(w.StopDelayActive, raw[ids.stop], s.ts, now);
+    const minimum = wallboxDelay(w.MinimumRunTimeActive, raw[ids.minimum], s.ts, now);
     return {...w,measurements:{...w.measurements,power:meter},
+      StartDelayActive:start.active, startDelayUntil:start.until,
+      stopDelayUntil:stop.until, minimumRunUntil:minimum.until,
+
       actual_W:scale!==null&&measured(meter,now)?meter.val*scale:w.actual_W,
       SoC_pct:newerSoc?soc.val:w.SoC_pct};
   });
@@ -845,6 +876,18 @@ function renderWeather(now,day) {
   put("weather-caption",wx.text?"Außen · "+wx.text:wx.code!==null||url||health==="loading"?"Außen":"Außen · Wetter fehlt");
   $("weather").title=[wx.tempSource,wx.text?"Wetter für Bolzum: "+wx.text:"",wx.period].filter(Boolean).join(" · ");
 }
+function renderCountdown(field, until, now) {
+  const seconds = isNumber(until) ? Math.ceil((until - now) / 1000) : 0;
+  const text = seconds > 0 ? String(Math.floor(seconds / 60)).padStart(2, "0") + ":" +
+    String(seconds % 60).padStart(2, "0") : "";
+  if (field.textContent !== text) field.textContent = text;
+  field.hidden = !text;
+}
+function renderRunningCountdown(row, until, now) {
+  const field = row.querySelector(".wallbox-countdown");
+  renderCountdown(field, until, now);
+  row.hidden = field.hidden;
+}
 function renderCarStatus(tile, car, fresh, selected, now) {
   const connection = fresh && car.present === true ? car.connected : null;
   const link = connection === true ? "on" : connection === false ? "off" : "unknown";
@@ -861,10 +904,17 @@ function renderCarStatus(tile, car, fresh, selected, now) {
   const rawStatus = fresh && car.present === true ? car.status || "" : "";
   const status = ["Abgesteckt","Angesteckt","Anschlussstatus fehlt"].includes(rawStatus) ? "" : rawStatus;
   const hasPlan = fresh && isNumber(car.plannedAt) && car.plannedAt > now;
+  const hasBatteryCheck = fresh && isNumber(car.batteryCheckUntil) && car.batteryCheckUntil > now;
   const info = tile.querySelector(".vehicle-info");
-  info.hidden = !status && !hasPlan && !selected;
+  const hasRunningTimer = fresh && (car.stopDelayUntil > now || car.minimumRunUntil > now);
+  info.hidden = !status && !hasPlan && !selected && !hasBatteryCheck && !hasRunningTimer;
   info.dataset.kind = ({"Ladeziel erreicht":"done","Wartet auf PV":"pv","Lädt":"charging"})[status] || "";
   tile.querySelector(".vehicle-status").textContent = status;
+  renderCountdown(tile.querySelector(".vehicle-countdown"), status === "Startverzögerung" ? car.startDelayUntil : null, now);
+  renderRunningCountdown(tile.querySelector(".vehicle-stop"), fresh ? car.stopDelayUntil : null, now);
+  renderRunningCountdown(tile.querySelector(".vehicle-minimum"), fresh ? car.minimumRunUntil : null, now);
+  tile.querySelector(".vehicle-storage-check").hidden = !hasBatteryCheck;
+  renderCountdown(tile.querySelector(".storage-countdown"), hasBatteryCheck ? car.batteryCheckUntil : null, now);
   const plan = tile.querySelector(".vehicle-plan");
   plan.hidden = !hasPlan;
   plan.textContent = plan.hidden ? "" : "Geplant " + scheduleTime(car.plannedAt, now);
@@ -1091,9 +1141,15 @@ if(demo) {
   // A suspended adapter or a slow HTTP request must not keep stale arrows moving.
   setInterval(()=>{
     if(document.hidden) return;
-    if(health==="live" && !timely(model.ts,Date.now(),SNAPSHOT_MAX_AGE)) {
+    const now = Date.now();
+    if(health==="live" && !timely(model.ts,now,SNAPSHOT_MAX_AGE)) {
       health="old";render();
-    } else if(isDayAtBolzum(Date.now())!==lastTheme) render();
+    } else if(isDayAtBolzum(now)!==lastTheme) render();
+    else if(health==="live") model.boxes.forEach((car, i) => {
+      if ([car.startDelayUntil, car.stopDelayUntil, car.minimumRunUntil, car.batteryCheckUntil].some(isNumber)) {
+        renderCarStatus($("wb" + i), car, true, i === model.priority, now);
+      }
+    });
   },1000);
 }
 motionButton();

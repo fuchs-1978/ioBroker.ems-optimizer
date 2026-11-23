@@ -83,6 +83,10 @@ npm run test:equivalence
 
 ## Changelog
 
+### 0.17.0-alpha.326 (2026-11-23)
+
+- Hand an exclusive charging allocation to a below-minimum EV after confirmed shutdown of its peer. Show live start, minimum-run and stop countdowns in the dashboard. [Release notes](docs/release-0.17.0-alpha.326.md)
+
 ### 0.17.0-alpha.325 (2026-11-23)
 
 - Keep a running PV charge at minimum current while measured surplus covers it. Give the home battery the remaining power. [Release notes](docs/release-0.17.0-alpha.325.md)
@@ -106,10 +110,6 @@ npm run test:equivalence
 ### 0.17.0-alpha.320 (2026-11-22)
 
 - In the coordinated SunEnergy forecast, share otherwise exported PV with an eligible car in whole-amp steps; retain hard battery, thermal and connection reserves. [Release notes](docs/release-0.17.0-alpha.320.md)
-
-### 0.17.0-alpha.319 (2026-11-22)
-
-- Redistribute planned grid heat to a proven contiguous idle window when thermal, connection and battery reserves permit. [Release notes](docs/release-0.17.0-alpha.319.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 
