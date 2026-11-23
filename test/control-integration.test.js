@@ -1518,6 +1518,73 @@ test('SunEnergy bridges a 300 W PV dip without resetting the wallbox stop delay'
     assert.ok(h.physical().batteryW >= 0, h.diagnostic());
 });
 
+test('a running Mii takes one forecast ampere from measured battery charging and releases it on a PV drop', async () => {
+    const h = await plant({battery: true, batteryHeadType: 2, batteryHeadMaxSoc: 100, mii: true,
+        wallbox: false, split: false, initialSurplusW: 4050, startDelayS: 0, minimumRuntimeS: 0, sourceQuality: 0,
+        nativeConfig: {batteryDispatchMode: 'sunenergy-heads', batteryPvPriorityEnabled: true,
+            batteryWallboxHalfStepEnabled: true, wallboxParallelChargingEnabled: true,
+            dhwControlEnabled: false, wb0CommissioningMaxA: 16}});
+    h.own('Devices.MyPV_DHW.ControlEnabled', false);
+    h.own('Control.TargetGridPower_W', 0);
+    h.own('Config.BatteryMaxSoC_pct', 100);
+    h.own('Config.WallboxStartReserve_W', 0);
+    h.own('Config.BatteryFineStep_W', 600);
+    h.put(h.mapping.DP_BATTERY_SOC, 45);
+    h.put('DP_WB0_MIN_SOC', 50);
+    h.put('DP_WB0_SOC', 60);
+    const timestamp = h.now();
+    const publish = (name, point) => h.own(`Plan.${name}_48h_JSON`, JSON.stringify([{timestamp, ...point}]));
+    publish('BatteryTargetSoC', {value_pct: 90});
+    publish('BatteryPower', {valueW: 2400, requiredPvChargeW: 2400, gridChargeW: 0});
+    publish('Wallbox0', {valueW: 1610, currentA: 7, phases: 1});
+    await h.advance(160);
+    assert.equal(h.physical().miiPowerW, 1610, h.diagnostic());
+    publish('Wallbox0', {valueW: 1840, currentA: 8, phases: 1, pvHeadroom: {baseA: 7, stepW: 230, from: timestamp}});
+    publish('BatteryPower', {valueW: 2210, requiredPvChargeW: 2210, gridChargeW: 0});
+    await h.advance(45);
+    assert.ok(h.trace.slice(-20).every(s => s.miiW === 1840 && s.batteryW === 2210 && s.gridW === 0), h.diagnostic());
+    assert.equal(h.value('Devices.Wallbox0.ResponseState'), 'confirmed');
+    h.setSurplus(3000);
+    await h.advance(36);
+    assert.ok(h.physical().miiPowerW < 1840 && h.physical().batteryW > 0, h.diagnostic());
+    assert.equal(h.trace.at(-1).gridW, 0);
+});
+
+test('active warm-water output trims a measured surplus within the actuator resolution; an idle heater stays idle', async () => {
+    const h = await plant({battery: true, batteryHeadType: 2, batteryHeadMaxSoc: 100, wallbox: false,
+        split: false, initialSurplusW: 3525, minimumRuntimeS: 0, sourceQuality: 0,
+        nativeConfig: {batteryDispatchMode: 'sunenergy-heads', batteryPvPriorityEnabled: true,
+            batteryWallboxHalfStepEnabled: false, wallboxParallelChargingEnabled: true, dhwPresent: true, dhwControlEnabled: true}});
+    h.own('Control.TargetGridPower_W', 0);
+    h.own('Config.BatteryMaxSoC_pct', 100);
+    h.own('Config.BatteryFineStep_W', 600);
+    h.own('Config.DHWCommissioningMaxPower_W', 9000);
+    h.own('Config.DHWMinTemperature_C', 40);
+    h.own('Config.DHWTargetTemperature_C', 76);
+    h.put(h.mapping.DP_BATTERY_SOC, 45);
+    for (const sensor of [1, 2, 3, 4]) h.put(`DP_DHW_TEMP${sensor}`, 55);
+    const timestamp = h.now();
+    const publish = (name, point) => h.own(`Plan.${name}_48h_JSON`, JSON.stringify([{timestamp, ...point}]));
+    publish('BatteryTargetSoC', {value_pct: 90});
+    publish('BatteryPower', {valueW: 2400, requiredPvChargeW: 2400, gridChargeW: 0});
+    publish('MyPV_DHW', {valueW: 1125});
+    await h.advance(130);
+    assert.equal(h.physical().heaterW, 1100, h.diagnostic());
+    h.config.batteryWallboxHalfStepEnabled = true;
+    h.setSurplus(3647);
+    publish('MyPV_DHW', {valueW: 1247, pvTrimW: 122});
+    await h.advance(70);
+    assert.equal(h.physical().heaterW, 1200, h.diagnostic());
+    assert.equal(h.physical().batteryW, 2400);
+    assert.equal(h.trace.at(-1).gridW, -47);
+    h.setSurplus(2750);
+    await h.advance(70);
+    assert.equal(h.physical().heaterW, 0);
+    h.setSurplus(3647);
+    await h.advance(40);
+    assert.equal(h.physical().heaterW, 0, 'a PV trim never starts an idle hot-water output');
+});
+
 async function runningSunEnergyPvWallbox() {
     const h = await plant({battery: true, batteryHeadType: 2, batteryHeadMaxSoc: 100,
         split: false, initialSurplusW: 3170, startDelayS: 0, minimumRuntimeS: 0,

@@ -1,6 +1,6 @@
 {
   "name": "iobroker.ems-optimizer",
-  "version": "0.17.0-alpha.321",
+  "version": "0.17.0-alpha.322",
   "description": "Forecast-based energy management and device control for ioBroker",
   "author": {
     "name": "Carsten Reineke",

@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.321",
+    "version": "0.17.0-alpha.322",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.322": {
+        "en": "Charge a running EV earlier to make room for later PV surplus. Allocate small remaining surpluses to active hot-water heating.",
+        "de": "Ein bereits ladendes Auto nimmt früher PV-Strom auf und schafft Platz im Speicher. Kleine Restüberschüsse gehen an die laufende Warmwasserbereitung.",
+        "es": "Adelanta la carga solar de un vehículo en carga para dejar espacio en la batería. Los pequeños excedentes alimentan el calentamiento de agua activo.",
+        "fr": "Augmente plus tôt la charge solaire d’un véhicule déjà en charge pour libérer de la capacité de stockage. Les petits excédents alimentent le chauffe-eau en service.",
+        "it": "Aumenta prima la ricarica solare di un veicolo già in carica per lasciare spazio nella batteria. I piccoli surplus alimentano lo scaldacqua in funzione.",
+        "nl": "Laad een voertuig dat al laadt eerder met extra zonnestroom om ruimte in de accu te houden. Kleine overschotten gaan naar de actieve warmwaterbereiding.",
+        "pl": "Zwiększa wcześniej moc ładowania pojazdu, aby zachować miejsce na późniejszą nadwyżkę PV. Małe nadwyżki trafiają do pracującej grzałki wody.",
+        "pt": "Antecipa a carga solar de um veículo já em carregamento para deixar espaço na bateria. Pequenos excedentes alimentam o aquecimento de água em funcionamento.",
+        "ru": "Заранее увеличивает мощность зарядки автомобиля, чтобы сохранить место для последующего избытка солнечной энергии. Малые излишки получает работающий водонагреватель.",
+        "uk": "Завчасно збільшує потужність заряджання автомобіля, щоб залишити місце для наступного надлишку сонячної енергії. Невеликі надлишки отримує ввімкнений водонагрівач.",
+        "zh-cn": "提前提高正在充电的电动汽车的充电功率，为稍后的光伏余电留出储能空间。少量剩余电力用于正在运行的热水器。"
+      },
       "0.17.0-alpha.321": {
         "en": "Test the adapter on Linux, Windows and macOS and prepare the package for ioBroker review.",
         "de": "Adapter unter Linux, Windows und macOS testen und das Paket für die ioBroker-Prüfung vorbereiten.",
@@ -81,19 +94,6 @@
         "ru": "Остальные автомобили продолжают заряжаться при задержке опроса простаивающей станции. Накопитель получает измеренный избыток после выделения мощности для обязательной зарядки.",
         "uk": "Інші автомобілі продовжують заряджатися в разі затримки опитування неактивної станції. Накопичувач отримує виміряний надлишок після розподілу потужності для обов’язкового заряджання.",
         "zh-cn": "空闲充电桩读数延迟时，其他车辆可继续充电。分配车辆必需的充电功率后，储能电池可吸收实测的剩余上网功率。"
-      },
-      "0.17.0-alpha.315": {
-        "en": "Retain an earned departure PV pause across forecast gaps while a fresh zero-solar recovery calculation covers the departure minimum.",
-        "de": "Eine erreichte PV-Ladepause übersteht Prognoselücken, solange die verbleibende Netzladezeit für den Mindest-SoC bei Abfahrt ausreicht.",
-        "es": "Mantiene una pausa de carga solar ya alcanzada si una nueva previsión sin sol confirma que se puede alcanzar la carga mínima antes de salir.",
-        "fr": "Conserve une pause de recharge solaire déjà atteinte si un nouveau calcul sans soleil garantit la charge minimale avant le départ.",
-        "it": "Mantiene una pausa di ricarica solare già raggiunta se un nuovo calcolo senza sole conferma la carica minima entro la partenza.",
-        "nl": "Behoudt een bereikte laadpauze bij ontbrekende zonneprognoses zolang de minimale lading voor vertrek ook zonder zon haalbaar blijft.",
-        "pl": "Utrzymuje rozpoczętą przerwę w ładowaniu przy lukach prognozy PV, jeśli bez słońca nadal można osiągnąć minimum przed wyjazdem.",
-        "pt": "Mantém uma pausa de carregamento solar já atingida se um novo cálculo sem sol confirmar a carga mínima antes da partida.",
-        "ru": "Сохраняет начатую паузу солнечной зарядки при пропусках прогноза, если заряд от сети всё ещё обеспечит минимум к отъезду.",
-        "uk": "Зберігає розпочату паузу сонячного заряджання за прогалин прогнозу, якщо заряд від мережі ще забезпечує мінімум до від’їзду.",
-        "zh-cn": "光伏预测有缺失时，若重新计算确认仅靠电网也能在出发前达到最低电量，则保留已开始的充电暂停。"
       }
     },
     "titleLang": {
