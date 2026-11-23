@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.315 (2026-11-22)
+
+- Keep an earned departure charging pause through gaps in the PV forecast. Recalculate the latest grid slot that can still deliver the minimum before departure. [Release notes](docs/release-0.17.0-alpha.315.md)
+
 ## 0.17.0-alpha.314 (2026-11-22)
 
 - Resume normal battery dispatch after a GS conflict on the first fresh SunEnergy report confirming zero setpoint and AC power per head. Recheck current demand and limits before the next command. [Release notes](docs/release-0.17.0-alpha.314.md)

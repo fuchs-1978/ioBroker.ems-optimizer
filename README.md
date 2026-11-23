@@ -83,6 +83,10 @@ npm run test:equivalence
 
 ## Changelog
 
+### 0.17.0-alpha.322 (2026-11-23)
+
+- Reserve battery capacity for later PV surplus by raising current on a running EV. Use leftover PV at the battery power limit for active hot-water heating. [Release notes](docs/release-0.17.0-alpha.322.md)
+
 ### 0.17.0-alpha.321 (2026-11-23)
 
 - Test the adapter across Linux, Windows and macOS. Prepare the npm package and document the current alpha test status. [Release notes](docs/release-0.17.0-alpha.321.md)
@@ -106,10 +110,6 @@ npm run test:equivalence
 ### 0.17.0-alpha.316 (2026-11-22)
 
 - Keep the active wallbox charging when a verified idle peer misses a poll. Let the battery absorb measured export left after mandatory vehicle charging. [Release notes](docs/release-0.17.0-alpha.316.md)
-
-### 0.17.0-alpha.315 (2026-11-22)
-
-- Keep an earned departure charging pause through gaps in the PV forecast. Recalculate the latest grid slot that can still deliver the minimum before departure. [Release notes](docs/release-0.17.0-alpha.315.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 

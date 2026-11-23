@@ -88,6 +88,82 @@ function battery(h, soc, capacity = 5.02) {
 
 const coordinatedBattery = {batteryPvPriorityEnabled: true, batteryWallboxHalfStepEnabled: true};
 
+function headroomFixture(soc, config = {}, minute = 0) {
+    const h = fixture({...coordinatedBattery, batteryPresent: true, batteryDispatchMode: 'sunenergy-heads',
+        wb0ControlEnabled: true, ...config}, minute);
+    battery(h, soc, 15.06);
+    h.run(`function batteryHeadsMode() { return true; }
+        function batteryPlanningProfile() { return {valid:true, capacityValid:true, capacityKWh:15.06,
+            soc:${soc}, deviceMinSoc:20, deviceMaxSoc:100, maxChargeW:2400, maxDischargeW:2400}; }`);
+    h.put('ems.0.Config.BatteryRoundTripEfficiency_pct', 0);
+    for (const stage of ['Morning', 'Afternoon', 'Late']) h.put(`ems.0.Config.Battery${stage}TargetSoC_pct`, 100);
+    car(h, 0, {soc: 54, minimum: 50, target: 90, capacity: 32});
+    return h;
+}
+
+test('late full-battery spill repays an earlier running EV step exactly, including its short first increment', () => {
+    const pvW = [...Array(10).fill(4000), 993, 1036.5, 1115, 0];
+    const h = headroomFixture(100 - (2390 * 10 + 980) * 0.25 / 15060 * 100);
+    const result = h.plan({pvW, slots: pvW.length});
+    const carPlan = result.cars[0], allocations = result.allocation;
+    const carWh = allocations.reduce((sum, a) => sum + (a.pvHeadroomWallboxW || 0) / 4, 0);
+    const recoveredWh = allocations.reduce((sum, a) => sum + (a.pvHeadroomBatteryW || 0) / 4, 0);
+    assert.ok(Math.abs(carWh - 541.125) < 1e-6);
+    assert.ok(Math.abs(recoveredWh - carWh) < 1e-6);
+    assert.ok(carPlan.slice(0, 10).every(p => p.currentA === 8 && p.pvHeadroom.baseA === 7 && p.chargingMinutes === 15));
+    assert.ok(carPlan[0].pvHeadroom.from > carPlan[0].timestamp);
+    assert.ok(carPlan.slice(1, 10).every(p => p.pvHeadroom.from === p.timestamp));
+    assert.ok(carPlan.slice(10).every(p => p.currentA === 0));
+    assert.ok(allocations.every(a => Math.abs(a.rawGridW) < 1e-6 && a.batteryW <= 2400));
+    assert.equal(h.series('BatterySoC').at(-1).value_pct, 100);
+    balance(result, pvW);
+    h.run(fs.readFileSync(path.join(__dirname, '../lib/engine/realtime.js'), 'utf8'));
+    const from = carPlan[0].pvHeadroom.from;
+    assert.equal(h.run(`currentPlanItem('Wallbox0', ${from - 1}).valueW`), 1610);
+    assert.equal(h.run(`currentPlanItem('Wallbox0', ${from}).valueW`), 1840);
+});
+
+test('headroom requires recoverable future PV, ongoing flexible demand and current-limit clearance', () => {
+    for (const condition of ['no spill', 'intervening deficit', 'commissioning cap', 'target reached', 'grid limit']) {
+        const h = headroomFixture(condition === 'intervening deficit' ? 91 : 94,
+            condition === 'commissioning cap' ? {wb0CommissioningMaxA: 7} : {});
+        if (condition === 'target reached') car(h, 0, {soc: 89.5, target: 90, minimum: 50, capacity: 32});
+        if (condition === 'grid limit') h.put(h.run('CFG.dp.lpcState'), 'limited');
+        const pvW = condition === 'no spill' ? [4000, 0] : [4000, 4000, 0, 1100, 1100];
+        if (condition !== 'intervening deficit' && pvW.length > 2) pvW[2] = 1100;
+        const r = h.plan({pvW, houseW: condition === 'intervening deficit' ? [0, 0, 800, 0, 0] : 0, slots: pvW.length});
+        assert.ok(r.cars[0].every(p => !p.pvHeadroom), condition);
+        balance(r, pvW, condition === 'intervening deficit' ? [0, 0, 800, 0, 0] : 0);
+    }
+});
+
+test('running hot water takes only residual PV at the storage AC ceiling and respects heat and connection caps', () => {
+    for (const [rest, limit, expected] of [[94, 9000, 94], [122, 9000, 122], [47, 9000, 47], [122, 1180, 55], [0, 9000, 0]]) {
+        const h = headroomFixture(45);
+        h.put('ems.0.Devices.MyPV_DHW.Present', true);
+        h.put('ems.0.Config.DHWMinTemperature_C', 48);
+        h.put('ems.0.Config.DHWTargetTemperature_C', 76);
+        h.put('ems.0.Config.DHWDailyDemand_kWh', 25);
+        h.put('ems.0.Config.DHWStandingLoss_kWh_day', 2);
+        h.put('ems.0.Config.DHWCommissioningMaxPower_W', limit);
+        for (const id of h.run('CFG.dp.dhwTemps')) h.put(id, 48);
+        const pvW = 1125 + 2400 + rest;
+        const result = h.plan({pvW, slots: 1}), a = result.allocation[0];
+        assert.equal(a.mandatoryThermalW, 1125);
+        assert.equal(a.dhwPvTrimW || 0, expected);
+        assert.equal(a.batteryPvW, 2400);
+        assert.equal(a.dhwW, 1125 + expected);
+        assert.equal(result.grid[0].valueW, expected - rest);
+        assert.equal(h.series('MyPV_DHW')[0].valueW, a.dhwW);
+        balance(result, pvW);
+        h.put(h.run('CFG.dp.lpcState'), 'limited');
+        assert.equal(h.plan({pvW, slots: 1}).allocation[0].dhwPvTrimW, undefined);
+        h.put(h.run('CFG.dp.lpcState'), 'unlimitedControlled');
+        for (const id of h.run('CFG.dp.dhwTemps')) h.put(id, 76);
+        assert.equal(h.plan({pvW, slots: 1}).allocation[0].dhwW, 0);
+    }
+});
+
 for (const phases of [1, 3]) {
     test(`forecast shares PV with a ${phases}P wallbox at minimum without missing the storage target`, () => {
         const h = fixture({...coordinatedBattery, wb2PhaseControlMode: 'script'});
