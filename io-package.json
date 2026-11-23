@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.325",
+    "version": "0.17.0-alpha.326",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.326": {
+        "en": "Transfer an exclusive charge to a vehicle below minimum SoC as soon as the previous wallbox confirms it is off and draws no current. Show running wallbox countdowns in the dashboard.",
+        "de": "Eine exklusive Ladezuteilung geht an das Fahrzeug unter Mindest-SoC, sobald die vorige Wallbox AUS und Stromfreiheit bestätigt. Das Dashboard zählt aktive Wallbox-Timer herunter.",
+        "es": "La carga exclusiva pasa al vehículo por debajo del nivel mínimo cuando el cargador anterior confirma la desconexión y el cese de corriente. El panel muestra las cuentas atrás activas.",
+        "fr": "La charge exclusive passe au véhicule sous son seuil minimal dès que la borne précédente est arrêtée et que le courant est nul. Le tableau de bord affiche les comptes à rebours actifs.",
+        "it": "La ricarica esclusiva passa al veicolo sotto la soglia minima quando la precedente wallbox conferma lo spegnimento e la corrente è nulla. Il pannello mostra i conti alla rovescia attivi.",
+        "nl": "De exclusieve laadbeurt gaat naar het voertuig onder het minimumlaadniveau zodra de vorige laadpaal uit staat en geen stroom meer levert. Het dashboard toont de actieve afteltimers.",
+        "pl": "Ładowanie przechodzi na pojazd poniżej minimalnego poziomu po potwierdzeniu wyłączenia poprzedniej ładowarki i zaniku prądu. Panel wyświetla aktywne liczniki czasu.",
+        "pt": "O carregamento exclusivo passa para o veículo abaixo do nível mínimo assim que o posto anterior confirma o desligamento e a corrente cessa. O painel mostra as contagens decrescentes ativas.",
+        "ru": "Зарядка переходит к автомобилю с уровнем ниже минимума после подтверждения отключения предыдущей станции и прекращения тока. Панель показывает обратный отсчёт активных таймеров.",
+        "uk": "Заряджання переходить до автомобіля з рівнем нижче мінімуму після підтвердження вимкнення попередньої станції та припинення струму. Панель показує зворотний відлік активних таймерів.",
+        "zh-cn": "上一台充电桩确认关闭且电流归零后，独占充电立即切换至低于最低电量的车辆。仪表板显示运行中的充电倒计时。"
+      },
       "0.17.0-alpha.325": {
         "en": "Keep a running solar EV charge at minimum current when measured surplus covers it. Allocate the remaining power to battery charging.",
         "de": "Eine laufende PV-Fahrzeugladung behält ihren Mindeststrom, wenn der gemessene Überschuss dafür ausreicht. Der Speicher lädt mit der verbleibenden Leistung.",
@@ -81,19 +94,6 @@
         "ru": "Распределяет прогнозируемый избыток солнца между батареей SunEnergy и автомобилем шагами целых ампер, сохраняя резервы.",
         "uk": "Розподіляє прогнозований надлишок сонячної енергії між батареєю SunEnergy й автомобілем цілими амперами, зберігаючи резерви.",
         "zh-cn": "在 SunEnergy 电池充电功率达到上限时，按整安培分配预测光伏剩余功率给车辆，并保留硬性储备。"
-      },
-      "0.17.0-alpha.319": {
-        "en": "Use a proven continuous idle window for planned hot-water grid heat without changing device allocations or live releases.",
-        "de": "Geplante Netz-Warmwasserwärme auf ein nachgewiesen freies zusammenhängendes Zeitfenster verteilen, ohne Gerätezuteilungen oder Livefreigaben zu ändern.",
-        "es": "Distribuye el calentamiento de agua previsto en un intervalo libre continuo verificado sin cambiar las asignaciones ni los permisos reales.",
-        "fr": "Répartit le chauffage d’eau prévu sur une plage libre continue vérifiée sans modifier les allocations ni les autorisations réelles.",
-        "it": "Distribuisce il riscaldamento dell’acqua previsto in una finestra libera continua verificata senza modificare le allocazioni o le autorizzazioni reali.",
-        "nl": "Verdeelt geplande netverwarming van warm water over een bewezen vrij tijdvenster zonder apparaattoewijzingen of livevrijgaven te wijzigen.",
-        "pl": "Rozkłada planowane ogrzewanie wody na sprawdzone ciągłe wolne okno bez zmiany przydziałów urządzeń ani uprawnień.",
-        "pt": "Distribui o aquecimento de água previsto num intervalo livre contínuo verificado sem alterar as atribuições ou permissões reais.",
-        "ru": "Распределяет запланированный нагрев воды по проверенному непрерывному свободному интервалу без изменения назначений и разрешений.",
-        "uk": "Розподіляє запланований нагрів води на перевірений безперервний вільний період без зміни розподілу та дозволів.",
-        "zh-cn": "将计划热水用电分配到经验证的连续空闲时段，不改变设备分配或实际授权。"
       }
     },
     "titleLang": {

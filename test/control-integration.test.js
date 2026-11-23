@@ -260,6 +260,56 @@ test('parallel priority handoff replaces above-minimum Mii before 600s hold and 
         .every(row => !(row.physicalAllow === 1 && row.miiAllow === 1)), 'no permission overlap during transfer');
 });
 
+for (const scenario of ['confirmed stop', 'missing OFF', 'two funded cars']) {
+    test(`parallel minimum-SoC handoff from running EQV to returning Mii: ${scenario}`, async () => {
+        const h = await plant({wallboxIndex: 1, mii: true, split: false, startDelayS: 300, minimumRuntimeS: 600,
+            initialSurplusW: 1750, wallboxStopResponseDelayMs: 10000,
+            nativeConfig: {wallboxParallelChargingEnabled: true, wallboxStopDelayS: 600}});
+        h.own('Config.WallboxParallelChargingEnabled', true);
+        h.own('Config.WallboxStopDelay_s', 600);
+        h.own('Config.WallboxStartReserve_W', 150);
+        h.put('DP_WB_PRIORITY', 0); // same preference before and after the Mii returns
+        h.put('DP_WB0_CAR', 1);
+        h.put('DP_WB0_MIN_SOC', 50);
+        h.put('DP_WB1_MIN_SOC', 50);
+        h.put('DP_WB1_SOC', 55);
+        await h.advance(348);
+        assert.equal(h.physical().allow, 1, 'the optional EQV is charging');
+        assert.equal(h.physical().miiAllow, 0);
+        const at = h.now();
+        h.setSurplus(scenario === 'two funded cars' ? 7500 : 3300);
+        if (scenario === 'missing OFF') h.setWallboxStopAck(1, false);
+        h.put('DP_WB0_SOC', 48);
+        h.put('DP_WB0_CAR', 2);
+        await h.advance(scenario === 'missing OFF' ? 625 : 55);
+        const off = h.writes.find(w => w.at > at && w.id === 'goe.allow' && w.val === 0);
+        const on = h.writes.find(w => w.at > at && w.id === 'goe0.allow' && w.val === 1);
+        if (scenario === 'two funded cars') {
+            assert.ok(on && !off, 'independently funded parallel charging remains possible');
+            assert.ok(h.physical().wbPowerW > 20 && h.physical().miiPowerW > 20);
+            h.setSurplus(1650);
+            await h.advance(8);
+            const allocation = JSON.parse(h.value('Control.ParallelWallboxAllocation_JSON'));
+            const eqv = allocation.allocations.find(entry => entry.wb === 1);
+            assert.equal(eqv.targetA, 0);
+            assert.equal(eqv.authorized, true, 'an ordinary dip during established parallel charging keeps its timer');
+            return;
+        }
+        assert.ok(off && off.at <= at + 6000, 'an exclusive allocation must withdraw the donor at once');
+        assert.ok(h.trace.filter(t => t.at > at).every(t =>
+            !(t.wbW > 20 && t.miiW > 20) && !(t.physicalAllow === 1 && t.miiAllow === 1)));
+        if (scenario === 'missing OFF') {
+            assert.equal(on, undefined, 'the recipient cannot start with unconfirmed donor OFF');
+            return;
+        }
+        const quiet = h.trace.find(t => t.at >= off.at && t.physicalAllow === 0 && t.wbW === 0);
+        assert.ok(quiet && on && on.at >= quiet.at && on.at < at + 55000,
+            'physical quiet must precede prompt recipient release');
+        assert.ok(h.trace.some(t => t.at > off.at && t.physicalAllow === 0 && t.wbW > 20),
+            'the vehicle still draws power after the OFF acknowledgement');
+    });
+}
+
 test('parallel priority handoff cannot release recipient while donor OFF acknowledgement is missing', async () => {
     const h = await plant({mii: true, startDelayS: 300, minimumRuntimeS: 600,
         split: false, initialSurplusW: 3000});

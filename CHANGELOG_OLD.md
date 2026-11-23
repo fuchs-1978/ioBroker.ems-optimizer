@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.319 (2026-11-22)
+
+- Redistribute planned grid heat to a proven contiguous idle window when thermal, connection and battery reserves permit. [Release notes](docs/release-0.17.0-alpha.319.md)
+
 ## 0.17.0-alpha.318 (2026-11-22)
 
 - Account for the remaining program load of directly started and scheduled household appliances in the house, battery, EV, hot-water and grid forecasts. [Release notes](docs/release-0.17.0-alpha.318.md)
