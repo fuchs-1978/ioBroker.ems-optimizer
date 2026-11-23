@@ -1518,7 +1518,7 @@ test('SunEnergy bridges a 300 W PV dip without resetting the wallbox stop delay'
     assert.ok(h.physical().batteryW >= 0, h.diagnostic());
 });
 
-test('a running Mii takes one forecast ampere from measured battery charging and releases it on a PV drop', async () => {
+test('a running Mii takes successive forecast amperes after each response and releases them on a PV drop', async () => {
     const h = await plant({battery: true, batteryHeadType: 2, batteryHeadMaxSoc: 100, mii: true,
         wallbox: false, split: false, initialSurplusW: 4050, startDelayS: 0, minimumRuntimeS: 0, sourceQuality: 0,
         nativeConfig: {batteryDispatchMode: 'sunenergy-heads', batteryPvPriorityEnabled: true,
@@ -1544,6 +1544,20 @@ test('a running Mii takes one forecast ampere from measured battery charging and
     await h.advance(45);
     assert.ok(h.trace.slice(-20).every(s => s.miiW === 1840 && s.batteryW === 2210 && s.gridW === 0), h.diagnostic());
     assert.equal(h.value('Devices.Wallbox0.ResponseState'), 'confirmed');
+    const before = h.writes.length;
+    const commands = () => h.writes.slice(before).filter(w => w.id === 'goe0.cmd').map(w => w.val);
+    h.setWallboxCurrentAck(0, false);
+    publish('Wallbox0', {valueW: 2300, currentA: 10, phases: 1, pvHeadroom: {baseA: 7, stepW: 230, from: timestamp}});
+    publish('BatteryPower', {valueW: 1750, requiredPvChargeW: 1750, gridChargeW: 0});
+    for (let t = 0; t < 15 && !commands().length; t++) await h.advance(1);
+    await h.advance(7);
+    assert.deepEqual(commands(), [9], 'no 10 A request while 9 A is awaiting feedback');
+    assert.equal(h.physical().miiAmps, 8);
+    h.setWallboxCurrentAck(0, true);
+    h.setWallboxPhysical(0, {amps: 9});
+    await h.advance(50);
+    assert.deepEqual([...new Set(commands())], [9, 10]);
+    assert.ok(h.trace.slice(-15).every(s => s.miiW === 2300 && s.batteryW === 1750 && s.gridW === 0), h.diagnostic());
     h.setSurplus(3000);
     await h.advance(36);
     assert.ok(h.physical().miiPowerW < 1840 && h.physical().batteryW > 0, h.diagnostic());
