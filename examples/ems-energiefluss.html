@@ -213,17 +213,17 @@ dialog .priority-choice input{width:1.2rem;height:1.2rem;margin:0;accent-color:v
 <svg class="art" aria-hidden="true" viewBox="0 0 120 65"><use data-art="mii" href="#mii-day-art" x="7.0" y="1" width="106" height="62"/></svg>
 <svg class="mini-flow" viewBox="0 0 100 10" aria-hidden="true"><g class="route" data-branch="wb0"><path d="M2 5 H98"/></g></svg>
 <div class="level">—</div><div class="charge"><span class="soc-icon" aria-hidden="true"><i></i></span><span class="soc-value">—</span><small class="soc-unit">SoC</small></div><div class="vehicle-info" id="wb0-info"><strong class="vehicle-status"></strong><small class="vehicle-plan" hidden></small><small class="vehicle-priority" hidden>★ Vorrang</small></div></article>
-<article class="tile car" id="wb1"><h3>Mercedes EQV</h3><div class="vehicle-tools">
+<article class="tile car" id="wb1"><h3>Mercedes EQV&nbsp;300</h3><div class="vehicle-tools">
 <span class="plug-state" id="wb1-plug" role="img" aria-label="Anschlussstatus unbekannt"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#plug-unknown"/></svg></span>
 <svg class="edit-icon" aria-hidden="true" viewBox="0 0 20 20"><path d="m4 13-.8 3.7 3.8-.9L16 6.8 13.2 4Z M11.8 5.4l2.8 2.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></div>
-<button type="button" class="edit-vehicle" data-vehicle="1" aria-label="Ladeeinstellungen für Mercedes EQV bearbeiten" aria-haspopup="dialog" aria-describedby="wb1-plug wb1-info"></button>
+<button type="button" class="edit-vehicle" data-vehicle="1" aria-label="Ladeeinstellungen für Mercedes EQV 300 bearbeiten" aria-haspopup="dialog" aria-describedby="wb1-plug wb1-info"></button>
 <svg class="art" aria-hidden="true" viewBox="0 0 120 65"><use data-art="eqv" href="#eqv-day-art" x="0.0" y="1" width="120" height="62"/></svg>
 <svg class="mini-flow" viewBox="0 0 100 10" aria-hidden="true"><g class="route" data-branch="wb1"><path d="M2 5 H98"/></g></svg>
 <div class="level">—</div><div class="charge"><span class="soc-icon" aria-hidden="true"><i></i></span><span class="soc-value">—</span><small class="soc-unit">SoC</small></div><div class="vehicle-info" id="wb1-info"><strong class="vehicle-status"></strong><small class="vehicle-plan" hidden></small><small class="vehicle-priority" hidden>★ Vorrang</small></div></article>
-<article class="tile car" id="wb2"><h3>EQE 350+ SUV</h3><div class="vehicle-tools">
+<article class="tile car" id="wb2"><h3>Mercedes EQE&nbsp;350</h3><div class="vehicle-tools">
 <span class="plug-state" id="wb2-plug" role="img" aria-label="Anschlussstatus unbekannt"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#plug-unknown"/></svg></span>
 <svg class="edit-icon" aria-hidden="true" viewBox="0 0 20 20"><path d="m4 13-.8 3.7 3.8-.9L16 6.8 13.2 4Z M11.8 5.4l2.8 2.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></div>
-<button type="button" class="edit-vehicle" data-vehicle="2" aria-label="Ladeeinstellungen für EQE 350+ SUV bearbeiten" aria-haspopup="dialog" aria-describedby="wb2-plug wb2-info"></button>
+<button type="button" class="edit-vehicle" data-vehicle="2" aria-label="Ladeeinstellungen für Mercedes EQE 350 bearbeiten" aria-haspopup="dialog" aria-describedby="wb2-plug wb2-info"></button>
 <svg class="art" aria-hidden="true" viewBox="0 0 120 65"><use data-art="eqe" href="#eqe-day-art" x="1.0" y="1" width="118" height="62"/></svg>
 <svg class="mini-flow" viewBox="0 0 100 10" aria-hidden="true"><g class="route" data-branch="wb2"><path d="M2 5 H98"/></g></svg>
 <div class="level">—</div><div class="charge"><span class="soc-icon" aria-hidden="true"><i></i></span><span class="soc-value">—</span><small class="soc-unit">SoC</small></div><div class="vehicle-info" id="wb2-info"><strong class="vehicle-status"></strong><small class="vehicle-plan" hidden></small><small class="vehicle-priority" hidden>★ Vorrang</small></div></article></div></section>
@@ -481,7 +481,7 @@ function fromSnapshot(s, extra, now) {
   };
 }
 
-const VEHICLE_NAMES = ["SEAT Mii", "Mercedes EQV", "EQE 350+ SUV"];
+const VEHICLE_NAMES = ["SEAT Mii", "Mercedes EQV 300", "Mercedes EQE 350"];
 const MARKER_ID = INSTANCE + ".Debug.LastUpdate";
 const CAR_PLANS_ID = INSTANCE + ".Plan.WallboxStatus_JSON";
 // This installation uses program row 1 for the dishwasher. Check its name before displaying it.
