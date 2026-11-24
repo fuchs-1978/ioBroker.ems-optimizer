@@ -83,6 +83,10 @@ npm run test:equivalence
 
 ## Changelog
 
+### 0.17.0-alpha.328 (2026-11-24)
+
+- Keep a running PV charge at its minimum current when later export can replenish the home battery before the current stage ends. Use remaining export for whole-amp increases. [Release notes](docs/release-0.17.0-alpha.328.md)
+
 ### 0.17.0-alpha.327 (2026-11-23)
 
 - Plan an earlier minimum-current EV start when later otherwise exported PV can fully replenish the displaced battery charge. Keep live qualification and protection unchanged. [Release notes](docs/release-0.17.0-alpha.327.md)
@@ -106,10 +110,6 @@ npm run test:equivalence
 ### 0.17.0-alpha.322 (2026-11-23)
 
 - Reserve battery capacity for later PV surplus by raising current on a running EV. Use leftover PV at the battery power limit for active hot-water heating. [Release notes](docs/release-0.17.0-alpha.322.md)
-
-### 0.17.0-alpha.321 (2026-11-23)
-
-- Test the adapter across Linux, Windows and macOS. Prepare the npm package and document the current alpha test status. [Release notes](docs/release-0.17.0-alpha.321.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 

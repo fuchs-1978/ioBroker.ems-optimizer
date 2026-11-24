@@ -15,6 +15,7 @@ function fixture(config = {}, minute = 0, start = Date.parse('2026-10-08T10:00:0
         static now() { return now; }
     }
     const context = vm.createContext({vehicleSocEstimator: require('../lib/vehicle-soc-estimator'),
+        normalizeWallboxPowerKW: require('../lib/wallbox-measurement').normalizeWallboxPowerKW,
         gridConstraints: require('../lib/grid-constraints'), batteryOperatingWindow: require('../lib/battery-operating-window'),
         wallboxAllocationPolicy: require('../lib/wallbox-allocation'), nativeConfig: {wallboxParallelChargingEnabled: true,
         wb0PhaseControlMode: 'ems', wb1PhaseControlMode: 'ems', wb2PhaseControlMode: 'ems', ...config},
@@ -88,9 +89,9 @@ function battery(h, soc, capacity = 5.02) {
 
 const coordinatedBattery = {batteryPvPriorityEnabled: true, batteryWallboxHalfStepEnabled: true};
 
-function headroomFixture(soc, config = {}, minute = 0) {
+function headroomFixture(soc, config = {}, minute = 0, start) {
     const h = fixture({...coordinatedBattery, batteryPresent: true, batteryDispatchMode: 'sunenergy-heads',
-        wb0ControlEnabled: true, wb0CommissioningMaxA: 32, ...config}, minute);
+        wb0ControlEnabled: true, wb0CommissioningMaxA: 32, ...config}, minute, start);
     battery(h, soc, 15.06);
     h.run(`function batteryHeadsMode() { return true; }
         function batteryPlanningProfile() { return {valid:true, capacityValid:true, capacityKWh:15.06,
@@ -100,6 +101,90 @@ function headroomFixture(soc, config = {}, minute = 0) {
     car(h, 0, {soc: 54, minimum: 50, target: 90, capacity: 32});
     return h;
 }
+
+function morningEqvPlan({spill = true, minutesIntoGap = null, configure} = {}) {
+    // Forecast from 24 November, 07:47 CET. The first interval starts at 10:00.
+    const pvW = [3716, 3761, 3990, 3925, 4220, 4641, 4843, 4651, 4651, 4651, 4651, 3874, 3874];
+    const houseW = [880, 809, 879, 777, 820, 813, 1423, 1084, 1219, 1499, 1294, 913, 860];
+    if (!spill) {
+        // Keep 13, 13, 14 and 16 A of car demand but use up the four export remainders.
+        [121, 158, 180, 148].forEach((watts, i) => { houseW[i + 2] += watts; });
+        // There is ample surplus at the *next* target. It cannot fund the morning minimum.
+        pvW.push(...Array(10).fill(3874), ...Array(4).fill(1100));
+        houseW.push(...Array(10).fill(809), ...Array(4).fill(850));
+    }
+    const efficiency = Math.sqrt(0.85);
+    const gapChargeW = 1958.1858187433247;
+    const whToTarget = minutesIntoGap === null ? (1456 + gapChargeW) / 4 : gapChargeW * (15 - minutesIntoGap) / 60;
+    const startSoc = 70 - whToTarget * efficiency / 15060 * 100;
+    const start = Date.parse('2026-11-24T10:00:00+01:00');
+    if (minutesIntoGap !== null) { pvW.shift(); houseW.shift(); }
+    const h = headroomFixture(startSoc, {wb1ControlEnabled: true, wb1CommissioningMaxA: 32,
+        wb1DeadlineEnabled: true, wb1PhaseModeId: 'test.eqv.phaseMode'}, minutesIntoGap ?? 0,
+        minutesIntoGap === null ? start : start + 900000);
+    h.put('ems.0.Devices.Wallbox0.Present', false);
+    car(h, 1, {soc: 53, minimum: 50, target: 90, capacity: 90, phases: 3});
+    h.put('ems.0.Vehicles.Wallbox1.DepartureTime', '');
+    h.put('test.eqv.phaseMode', 1);
+    h.put('ems.0.Config.Wallbox1MaxPower_W', 11000);
+    h.put('ems.0.Vehicles.Wallbox1.MaxCurrent3P_A', 16);
+    h.put('ems.0.Config.BatteryMorningTargetSoC_pct', 70);
+    h.put('ems.0.Config.BatteryAfternoonTargetSoC_pct', 90);
+    h.put('ems.0.Config.BatteryRoundTripEfficiency_pct', 85);
+    if (configure) configure(h);
+    const result = h.plan({pvW, houseW, slots: pvW.length});
+    balance(result, pvW, houseW);
+    return {h, ...result};
+}
+
+test('the EQV keeps 6 A at 10:15 and repays the 70% stage from later same-morning export', () => {
+    const {h, cars, allocation, grid} = morningEqvPlan();
+    assert.deepEqual(cars[1].slice(0, 6).map(p => p.currentA), [7, 6, 13, 13, 14, 16]);
+    assert.equal(cars[1][0].pvHeadroom.baseA, 6);
+    assert.equal(cars[1][1].chargingMinutes, 15);
+    assert.equal(allocation[1].wallboxW, 1380);
+    assert.equal(allocation[1].wallboxPvAvailableW, 1380);
+    assert.equal(allocation[1].batteryW, 1572);
+    assert.ok(grid.slice(0, 6).every(p => p.valueW === 0));
+    assert.deepEqual(allocation.slice(2, 6).map(p => p.pvHeadroomBatteryW), [121, 158, 180, 148]);
+    const displacedWh = (allocation[0].pvHeadroomWallboxW + allocation[1].pvHeadroomWallboxW) / 4;
+    assert.ok(Math.abs(displacedWh - 151.75) < 1e-6);
+    assert.ok(h.series('BatterySoC')[1].value_pct < 70);
+    assert.equal(h.series('BatterySoC')[5].value_pct, 70);
+    assert.equal(h.series('BatteryStage')[5].target_pct, 70);
+    assert.ok(h.series('BatteryStage')[6].target_pct > 70);
+    assert.ok(allocation.slice(0, 6).every(p => p.batteryW >= 0 && p.batteryW <= 2400
+        && p.batteryGridChargeW === 0 && p.wallboxGridW === 0 && p.rawGridW <= 1e-7));
+});
+
+test('the EQV gap stays when the displaced charge cannot be repaid before the storage stage changes', () => {
+    const {h, cars, allocation} = morningEqvPlan({spill: false});
+    assert.equal(cars[1][1].currentA, 0);
+    assert.ok(allocation[1].batteryW >= 1958);
+    assert.equal(h.series('BatterySoC')[1].value_pct, 70);
+    const laterRecoveredWh = allocation.slice(6).reduce((sum, p) => sum + (p.pvHeadroomBatteryW || 0) / 4, 0);
+    assert.ok(laterRecoveredWh > 97, 'sufficient export is available only after the morning deadline');
+});
+
+test('a mid-quarter rebuild only continues an owned, freshly metered EQV for the remaining minutes', () => {
+    for (const feedback of ['fresh', 'stale', 'unowned']) {
+        const {cars, allocation} = morningEqvPlan({minutesIntoGap: 5, configure: h => {
+            h.run(fs.readFileSync(path.join(__dirname, '../lib/engine/dhw-controller.js'), 'utf8'));
+            h.put('ems.0.Devices.Wallbox1.OutputOwned', feedback !== 'unowned');
+            const meter = h.run('CFG.dp.wallboxesKW[1]');
+            h.put(meter, 1.32);
+            if (feedback === 'stale') h.states.get(meter).ts = h.now - 60000;
+        }});
+        const expectedMinutes = feedback === 'fresh' ? 10 : 0;
+        assert.equal(cars[1][0].chargingMinutes, expectedMinutes, feedback);
+        assert.equal(cars[1][0].currentA, expectedMinutes ? 6 : 0, feedback);
+        if (expectedMinutes) {
+            assert.equal(allocation[0].gridW, 0);
+            const recoveredWh = allocation.slice(1, 5).reduce((sum, p) => sum + (p.pvHeadroomBatteryW || 0) / 4, 0);
+            assert.ok(Math.abs(recoveredWh - allocation[0].pvHeadroomWallboxW * 10 / 60) < 1e-6);
+        }
+    }
+});
 
 test('full storage spill funds an earlier minimum-current EV start without battery discharge', () => {
     const pvW = [1871, 846, 758, 0];
