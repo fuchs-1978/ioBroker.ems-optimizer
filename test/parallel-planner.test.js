@@ -332,6 +332,43 @@ test('running hot water takes only residual PV at the storage AC ceiling and res
     }
 });
 
+test('with every car unplugged the forecast heats idle water only from usable overflow at full AC charge', () => {
+    const h = headroomFixture(59);
+    h.run(fs.readFileSync(path.join(__dirname, '../lib/engine/dhw-controller.js'), 'utf8'));
+    for (const wb of [0, 1, 2]) car(h, wb, {connected: false});
+    h.put('ems.0.Devices.MyPV_DHW.Present', true);
+    h.put('ems.0.Config.DHWTargetTemperature_C', 76);
+    h.put('ems.0.Config.DHWCommissioningMaxPower_W', 9000);
+    const temps = h.run('CFG.dp.dhwTemps');
+    [36.8, 50, 60, 64.5].forEach((temp, i) => h.put(temps[i], temp));
+    const pvW = [4540, 3400, 3299, 2200];
+    const r = h.plan({pvW, slots: pvW.length});
+    balance(r, pvW);
+    assert.deepEqual(r.allocation.map(a => a.batteryW), [2400, 2400, 2400, 2200]);
+    assert.deepEqual(r.allocation.map(a => a.mandatoryThermalW), [0, 0, 0, 0]);
+    assert.deepEqual(h.series('MyPV_DHW').map(a => a.valueW), [2100, 1000, 0, 0]);
+    assert.equal(r.allocation[0].dhwReason, 'pv-storage-overflow');
+    assert.equal(h.series('MyPV_DHW')[0].pvTrimW, undefined, 'this forecast cannot authorize a running trim after a car plugs in');
+    assert.deepEqual(r.grid.map(a => a.valueW), [-40, 0, -899, 0]);
+    h.put('ems.0.Config.WallboxParallelChargingEnabled', false);
+    assert.equal(h.plan({pvW: 4540, slots: 1}).allocation[0].dhwW, 2100);
+    h.put('ems.0.Config.WallboxParallelChargingEnabled', true);
+    h.put('ems.0.Config.DHWCommissioningMaxPower_W', 1650);
+    assert.equal(h.plan({pvW: 4540, slots: 1}).allocation[0].dhwW, 1600);
+    h.put(h.run('CFG.dp.lpcState'), 'limited');
+    assert.equal(h.plan({pvW: 4540, slots: 1}).allocation[0].dhwW, 0);
+    h.put(h.run('CFG.dp.lpcState'), 'unlimitedControlled');
+    const carId = h.run('CFG.dp.wallboxCar[1]');
+    h.put(carId, 4);
+    assert.equal(h.plan({pvW: 4540, slots: 1}).allocation[0].dhwW, 0);
+    h.put(carId, 1);
+    h.states.get(carId).ts -= 60000;
+    assert.equal(h.plan({pvW: 4540, slots: 1}).allocation[0].dhwW, 0);
+    h.put(carId, 1);
+    for (const id of temps) h.put(id, 76);
+    assert.equal(h.plan({pvW: 4540, slots: 1}).allocation[0].dhwW, 0);
+});
+
 for (const phases of [1, 3]) {
     test(`forecast shares PV with a ${phases}P wallbox at minimum without missing the storage target`, () => {
         const h = fixture({...coordinatedBattery, wb2PhaseControlMode: 'script'});
