@@ -1649,6 +1649,61 @@ test('active warm-water output trims a measured surplus within the actuator reso
     assert.equal(h.physical().heaterW, 0, 'a PV trim never starts an idle hot-water output');
 });
 
+test('empty wallboxes give measured storage overflow to idle hot water and reclaim it when conditions change', async () => {
+    const h = await plant({battery: true, batteryHeadType: 2, batteryHeadMaxSoc: 100,
+        split: false, initialSurplusW: 4540, batteryPlanW: 2370, batteryDelayMs: 5000, sourceQuality: 0,
+        nativeConfig: {batteryDispatchMode: 'sunenergy-heads', batteryPvPriorityEnabled: true,
+            batteryWallboxHalfStepEnabled: true, wallboxParallelChargingEnabled: true, dhwPresent: true}});
+    h.own('Control.TargetGridPower_W', 0);
+    h.own('Config.BatteryMaxSoC_pct', 100);
+    h.own('Config.BatteryFineStep_W', 600);
+    h.own('Config.DHWCommissioningMaxPower_W', 9000);
+    h.own('Config.DHWMinTemperature_C', 40);
+    h.own('Config.DHWTargetTemperature_C', 76);
+    h.put(h.mapping.DP_BATTERY_SOC, 59);
+    for (const [i, temp] of [36.8, 50, 60, 64.5].entries()) h.put(`DP_DHW_TEMP${i + 1}`, temp);
+    h.own('Plan.MyPV_DHW_48h_JSON', JSON.stringify([{timestamp: h.now(), valueW: 0}]));
+    for (const wb of [0, 1, 2]) h.put(`DP_WB${wb}_CAR`, 1);
+    await h.advance(5);
+    assert.equal(h.physical().heaterW, 0, 'a battery command is not measured AC charging');
+    await h.advance(100);
+    assert.equal(h.value('Devices.MyPV_DHW.MustHeat'), false);
+    assert.equal(h.value('Devices.MyPV_DHW.MinimumAdmissionPower_W'), 900);
+    assert.ok(h.trace.slice(-15).every(s => s.batteryW === 2400 && s.heaterW === 2100 && s.gridW === -40), h.diagnostic());
+    h.setBatteryPower(2399);
+    await h.replayAt(h.now());
+    assert.equal(h.value('Control.Targets.MyPV_DHW_W'), 2100, '2399 W of measured AC charge leaves the final watt for storage');
+    h.setBatteryPower(2400);
+    h.setSurplus(3400);
+    await h.advance(60);
+    assert.ok(h.trace.slice(-10).every(s => s.batteryW === 2400 && s.heaterW === 1000 && s.gridW === 0), h.diagnostic());
+    h.setSurplus(3150);
+    await h.advance(35);
+    assert.equal(h.physical().heaterW, 0, '750 W is below the stratified tank minimum');
+    assert.equal(h.physical().batteryW, 2400);
+    h.setSurplus(4540);
+    await h.advance(40);
+    assert.equal(h.physical().heaterW, 2100);
+    h.setBatteryPower(1800);
+    await h.replayAt(h.now());
+    assert.equal(h.value('Control.Targets.MyPV_DHW_W'), 0, 'the battery can still take the surplus');
+    h.setBatteryPower(2400);
+    await h.advance(30);
+    assert.equal(h.physical().heaterW, 2100);
+    h.put('DP_WB0_CAR', 4); // Connected, including an unselected wallbox with no charging release.
+    await h.advance(20);
+    assert.equal(h.physical().heaterW, 0, h.diagnostic());
+    assert.equal(h.value('Control.AllowHeaterGridImport'), false);
+    for (const status of [{ack: false}, {q: 64}, {ts: h.now() - 60000}]) {
+        await h.replayAt(h.now(), [['DP_WB0_CAR', 1, status]]);
+        assert.equal(h.value('Control.Targets.MyPV_DHW_W'), 0, JSON.stringify(status));
+    }
+    await h.replayAt(h.now(), [['DP_WB0_CAR', 1], ['goe.connection', false]]);
+    assert.equal(h.value('Control.Targets.MyPV_DHW_W'), 0, 'offline wallbox');
+    await h.replayAt(h.now(), [['goe.connection', true], ['DP_DHW_TEMP4', 90]]);
+    assert.equal(h.value('Control.Targets.MyPV_DHW_W'), 0, 'hot tank');
+});
+
 async function runningSunEnergyPvWallbox() {
     const h = await plant({battery: true, batteryHeadType: 2, batteryHeadMaxSoc: 100,
         split: false, initialSurplusW: 3170, startDelayS: 0, minimumRuntimeS: 0,

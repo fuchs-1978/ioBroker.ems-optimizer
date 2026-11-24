@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.328",
+    "version": "0.17.0-alpha.329",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.329": {
+        "en": "Heat domestic water with surplus power when all cars are unplugged and the home battery is charging at its AC limit.",
+        "de": "Der Warmwasser-Heizstab nutzt den Überschuss, wenn alle Autos abgesteckt sind und der Hausspeicher mit voller AC-Leistung lädt.",
+        "es": "Calienta agua sanitaria con el excedente cuando todos los vehículos están desconectados y la batería doméstica carga a su potencia máxima de CA.",
+        "fr": "Chauffe l’eau sanitaire avec le surplus lorsque tous les véhicules sont débranchés et que la batterie domestique charge à sa puissance maximale en courant alternatif.",
+        "it": "Scalda l’acqua sanitaria con l’energia in eccesso quando tutti i veicoli sono scollegati e la batteria di casa si carica alla massima potenza in corrente alternata.",
+        "nl": "Verwarmt tapwater met het overschot als alle auto’s zijn losgekoppeld en de thuisaccu op het maximale AC-vermogen laadt.",
+        "pl": "Nadwyżka energii ogrzewa wodę użytkową, gdy wszystkie samochody są odłączone, a domowy magazyn ładuje się z maksymalną mocą AC.",
+        "pt": "Aquece a água sanitária com o excedente quando todos os veículos estão desligados e a bateria doméstica carrega à potência máxima em corrente alternada.",
+        "ru": "Направляет избыток энергии на подогрев воды, когда все автомобили отключены, а домашний аккумулятор заряжается на предельной мощности по переменному току.",
+        "uk": "Спрямовує надлишок енергії на підігрів води, коли всі автомобілі від’єднані, а домашня батарея заряджається з максимальною потужністю змінного струму.",
+        "zh-cn": "当所有车辆都已拔下充电插头且家庭储能以最大交流功率充电时，利用剩余电力加热生活用水。"
+      },
       "0.17.0-alpha.328": {
         "en": "Keep a PV charge running when later surplus can replenish the home battery before its next charge target.",
         "de": "Der Fahrplan führt die PV-Ladung des Autos fort, wenn späterer Überschuss die Speicherladung vor dem nächsten Stufenziel nachholen kann.",
@@ -81,19 +94,6 @@
         "ru": "Публикует отдельный JSON прогноза ECharts для каждого прибора.",
         "uk": "Публікує окремий JSON прогнозу ECharts для кожного приладу.",
         "zh-cn": "为每台程序设备发布独立的 ECharts 预测 JSON。"
-      },
-      "0.17.0-alpha.322": {
-        "en": "Charge a running EV earlier to make room for later PV surplus. Allocate small remaining surpluses to active hot-water heating.",
-        "de": "Ein bereits ladendes Auto nimmt früher PV-Strom auf und schafft Platz im Speicher. Kleine Restüberschüsse gehen an die laufende Warmwasserbereitung.",
-        "es": "Adelanta la carga solar de un vehículo en carga para dejar espacio en la batería. Los pequeños excedentes alimentan el calentamiento de agua activo.",
-        "fr": "Augmente plus tôt la charge solaire d’un véhicule déjà en charge pour libérer de la capacité de stockage. Les petits excédents alimentent le chauffe-eau en service.",
-        "it": "Aumenta prima la ricarica solare di un veicolo già in carica per lasciare spazio nella batteria. I piccoli surplus alimentano lo scaldacqua in funzione.",
-        "nl": "Laad een voertuig dat al laadt eerder met extra zonnestroom om ruimte in de accu te houden. Kleine overschotten gaan naar de actieve warmwaterbereiding.",
-        "pl": "Zwiększa wcześniej moc ładowania pojazdu, aby zachować miejsce na późniejszą nadwyżkę PV. Małe nadwyżki trafiają do pracującej grzałki wody.",
-        "pt": "Antecipa a carga solar de um veículo já em carregamento para deixar espaço na bateria. Pequenos excedentes alimentam o aquecimento de água em funcionamento.",
-        "ru": "Заранее увеличивает мощность зарядки автомобиля, чтобы сохранить место для последующего избытка солнечной энергии. Малые излишки получает работающий водонагреватель.",
-        "uk": "Завчасно збільшує потужність заряджання автомобіля, щоб залишити місце для наступного надлишку сонячної енергії. Невеликі надлишки отримує ввімкнений водонагрівач.",
-        "zh-cn": "提前提高正在充电的电动汽车的充电功率，为稍后的光伏余电留出储能空间。少量剩余电力用于正在运行的热水器。"
       }
     },
     "titleLang": {

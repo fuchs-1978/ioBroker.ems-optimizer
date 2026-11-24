@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.322 (2026-11-23)
+
+- Reserve battery capacity for later PV surplus by raising current on a running EV. Use leftover PV at the battery power limit for active hot-water heating. [Release notes](docs/release-0.17.0-alpha.322.md)
+
 ## 0.17.0-alpha.321 (2026-11-23)
 
 - Test the adapter across Linux, Windows and macOS. Prepare the npm package and document the current alpha test status. [Release notes](docs/release-0.17.0-alpha.321.md)
