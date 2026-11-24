@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.323 (2026-11-23)
+
+- Add per-appliance ECharts JSON forecast data points. [Release notes](docs/release-0.17.0-alpha.323.md)
+
 ## 0.17.0-alpha.322 (2026-11-23)
 
 - Reserve battery capacity for later PV surplus by raising current on a running EV. Use leftover PV at the battery power limit for active hot-water heating. [Release notes](docs/release-0.17.0-alpha.322.md)
