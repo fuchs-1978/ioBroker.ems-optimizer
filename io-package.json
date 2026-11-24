@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.327",
+    "version": "0.17.0-alpha.328",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.328": {
+        "en": "Keep a PV charge running when later surplus can replenish the home battery before its next charge target.",
+        "de": "Der Fahrplan führt die PV-Ladung des Autos fort, wenn späterer Überschuss die Speicherladung vor dem nächsten Stufenziel nachholen kann.",
+        "es": "Mantiene la carga solar del vehículo si el excedente posterior permite recuperar la carga de la batería doméstica antes del siguiente objetivo.",
+        "fr": "Maintient la recharge solaire du véhicule si le surplus ultérieur permet de recharger la batterie domestique avant le prochain palier.",
+        "it": "Mantiene attiva la ricarica solare del veicolo se il surplus successivo può reintegrare la ricarica della batteria domestica entro il prossimo obiettivo.",
+        "nl": "Houdt het laden op zonnestroom gaande als later overschot de thuisaccu vóór het volgende laaddoel kan bijladen.",
+        "pl": "Utrzymuje ładowanie samochodu z fotowoltaiki, gdy późniejsza nadwyżka pozwala uzupełnić energię domowego magazynu przed kolejnym celem ładowania.",
+        "pt": "Mantém o carregamento solar do veículo se o excedente posterior permitir repor a carga da bateria doméstica antes da próxima meta.",
+        "ru": "Продолжает зарядку автомобиля от солнца, если последующий избыток энергии позволит пополнить домашний аккумулятор до следующего целевого уровня.",
+        "uk": "Продовжує заряджання автомобіля від сонця, якщо подальший надлишок енергії дасть змогу поповнити домашню батарею до наступного цільового рівня.",
+        "zh-cn": "如果后续光伏余电能在下一个充电目标前补足家庭储能，则继续为车辆充电。"
+      },
       "0.17.0-alpha.327": {
         "en": "Plan an earlier minimum-current EV charge when later solar surplus can fully replenish the displaced battery charge.",
         "de": "Plant einen früheren Mindeststrom für das Auto, wenn späterer PV-Überschuss die verschobene Speicherladung vollständig nachholen kann.",
@@ -81,19 +94,6 @@
         "ru": "Заранее увеличивает мощность зарядки автомобиля, чтобы сохранить место для последующего избытка солнечной энергии. Малые излишки получает работающий водонагреватель.",
         "uk": "Завчасно збільшує потужність заряджання автомобіля, щоб залишити місце для наступного надлишку сонячної енергії. Невеликі надлишки отримує ввімкнений водонагрівач.",
         "zh-cn": "提前提高正在充电的电动汽车的充电功率，为稍后的光伏余电留出储能空间。少量剩余电力用于正在运行的热水器。"
-      },
-      "0.17.0-alpha.321": {
-        "en": "Test the adapter on Linux, Windows and macOS and prepare the package for ioBroker review.",
-        "de": "Adapter unter Linux, Windows und macOS testen und das Paket für die ioBroker-Prüfung vorbereiten.",
-        "es": "Prueba el adaptador en Linux, Windows y macOS y prepara el paquete para la revisión de ioBroker.",
-        "fr": "Teste l’adaptateur sous Linux, Windows et macOS et prépare le paquet pour la revue ioBroker.",
-        "it": "Verifica l’adattatore su Linux, Windows e macOS e prepara il pacchetto per la revisione ioBroker.",
-        "nl": "Test de adapter op Linux, Windows en macOS en bereid het pakket voor op de ioBroker-beoordeling.",
-        "pl": "Testuje adapter w systemach Linux, Windows i macOS i przygotowuje pakiet do przeglądu ioBroker.",
-        "pt": "Testa o adaptador em Linux, Windows e macOS e prepara o pacote para a revisão do ioBroker.",
-        "ru": "Тестирует адаптер в Linux, Windows и macOS и готовит пакет к проверке ioBroker.",
-        "uk": "Тестує адаптер у Linux, Windows і macOS та готує пакет до перевірки ioBroker.",
-        "zh-cn": "在 Linux、Windows 和 macOS 上测试适配器，并准备提交软件包供 ioBroker 审核。"
       }
     },
     "titleLang": {
