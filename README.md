@@ -83,6 +83,10 @@ npm run test:equivalence
 
 ## Changelog
 
+### 0.17.0-alpha.330 (2026-11-24)
+
+- Keep surplus hot-water heating running when measured battery charging power dips. Reserve enough power for full storage charging and use the remaining measured surplus for domestic hot water. [Release notes](docs/release-0.17.0-alpha.330.md)
+
 ### 0.17.0-alpha.329 (2026-11-24)
 
 - Use surplus power for domestic hot water when every car is unplugged and the battery is charging at its AC limit. Include the usable heat in the forecast. [Release notes](docs/release-0.17.0-alpha.329.md)
@@ -106,10 +110,6 @@ npm run test:equivalence
 ### 0.17.0-alpha.324 (2026-11-23)
 
 - Raise a running EV by further whole-amp steps when the first pass leaves PV export at a full battery. Verify each step against live measurements and vehicle feedback. [Release notes](docs/release-0.17.0-alpha.324.md)
-
-### 0.17.0-alpha.323 (2026-11-23)
-
-- Add per-appliance ECharts JSON forecast data points. [Release notes](docs/release-0.17.0-alpha.323.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 

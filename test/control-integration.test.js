@@ -1649,12 +1649,14 @@ test('active warm-water output trims a measured surplus within the actuator reso
     assert.equal(h.physical().heaterW, 0, 'a PV trim never starts an idle hot-water output');
 });
 
-test('empty wallboxes give measured storage overflow to idle hot water and reclaim it when conditions change', async () => {
+async function unpluggedSunEnergyDhw(initialSurplusW = 4540) {
     const h = await plant({battery: true, batteryHeadType: 2, batteryHeadMaxSoc: 100,
-        split: false, initialSurplusW: 4540, batteryPlanW: 2370, batteryDelayMs: 5000, sourceQuality: 0,
+        wallboxIndex: 1, split: false, initialSurplusW, batteryPlanW: 2370, batteryDelayMs: 5000, sourceQuality: 0,
         nativeConfig: {batteryDispatchMode: 'sunenergy-heads', batteryPvPriorityEnabled: true,
             batteryWallboxHalfStepEnabled: true, wallboxParallelChargingEnabled: true, dhwPresent: true}});
     h.own('Control.TargetGridPower_W', 0);
+    h.own('Control.Deadband_W', 100);
+    h.own('Config.BatteryDeadband_W', 10);
     h.own('Config.BatteryMaxSoC_pct', 100);
     h.own('Config.BatteryFineStep_W', 600);
     h.own('Config.DHWCommissioningMaxPower_W', 9000);
@@ -1664,6 +1666,11 @@ test('empty wallboxes give measured storage overflow to idle hot water and recla
     for (const [i, temp] of [36.8, 50, 60, 64.5].entries()) h.put(`DP_DHW_TEMP${i + 1}`, temp);
     h.own('Plan.MyPV_DHW_48h_JSON', JSON.stringify([{timestamp: h.now(), valueW: 0}]));
     for (const wb of [0, 1, 2]) h.put(`DP_WB${wb}_CAR`, 1);
+    return h;
+}
+
+test('empty wallboxes give measured storage overflow to idle hot water and reclaim it when conditions change', async () => {
+    const h = await unpluggedSunEnergyDhw();
     await h.advance(5);
     assert.equal(h.physical().heaterW, 0, 'a battery command is not measured AC charging');
     await h.advance(100);
@@ -1686,7 +1693,7 @@ test('empty wallboxes give measured storage overflow to idle hot water and recla
     assert.equal(h.physical().heaterW, 2100);
     h.setBatteryPower(1800);
     await h.replayAt(h.now());
-    assert.equal(h.value('Control.Targets.MyPV_DHW_W'), 0, 'the battery can still take the surplus');
+    assert.equal(h.value('Control.Targets.MyPV_DHW_W'), 2100, '600 W remain available to bring storage back to 2400 W');
     h.setBatteryPower(2400);
     await h.advance(30);
     assert.equal(h.physical().heaterW, 2100);
@@ -1702,6 +1709,68 @@ test('empty wallboxes give measured storage overflow to idle hot water and recla
     assert.equal(h.value('Control.Targets.MyPV_DHW_W'), 0, 'offline wallbox');
     await h.replayAt(h.now(), [['goe.connection', true], ['DP_DHW_TEMP4', 90]]);
     assert.equal(h.value('Control.Targets.MyPV_DHW_W'), 0, 'hot tank');
+});
+
+test('hot water follows the measured residual across storage dips and yields to the returning EQV', async () => {
+    const h = await unpluggedSunEnergyDhw(4900);
+    await h.advance(100);
+    assert.equal(h.physical().heaterW, 2500);
+    const gsId = h.config.batterySetpointId;
+    const rawId = gsId.replace('.control.GS', '.info.rawResponse');
+    const driver = {from: 'system.adapter.sunenergyxt500.0'};
+    const frame = (chargeW, reportedChargeW, heaterW, gridW) => {
+        const at = h.now() + 1000;
+        const raw = {...JSON.parse(h.states.get(rawId).val), GS: -reportedChargeW, GP: -chargeW, timestamp: at};
+        return h.replayAt(at, [[gsId, -reportedChargeW, driver], [rawId, JSON.stringify(raw), driver],
+            ['DP_DHW_OUTPUT1', heaterW], ['DP_GRID_IMPORT', Math.max(0, gridW)], ['DP_GRID_EXPORT', Math.max(0, -gridW)]]);
+    };
+    // 24 November, 10:06:35 and 10:14:35. A 25 or 60 W charge shortfall
+    // still leaves more than 2.5 kW for the running AC THOR.
+    await frame(2400, 2400, 2600, 34);
+    assert.equal(h.value('Devices.Battery.OutputCommandInternal_W'), 2366);
+    for (const [chargeW, gsW, heaterW, gridW] of [[2375, 2366, 2476, -136], [2340, 2400, 2568, -70]]) {
+        await frame(chargeW, gsW, heaterW, gridW);
+        assert.equal(h.value('Control.Targets.MyPV_DHW_W'), 2500);
+        assert.equal(h.value('Devices.MyPV_DHW.OutputCommand_W'), 2500);
+        assert.equal(h.value('Control.Targets.Battery_W'), 2400);
+    }
+    await frame(2155, 2400, 2500, 245);
+    assert.equal(h.value('Control.Targets.MyPV_DHW_W'), 2000, 'deduct both grid import and the missing 245 W of charging');
+    await frame(2155, 2400, 2000, 1000);
+    assert.equal(h.value('Devices.MyPV_DHW.OutputCommand_W'), 0, '755 W cannot sustain the 900 W minimum');
+
+    // 10:10:20. An idle heater may recover after the inverter echoes its
+    // full charge request. Its slower AC response still needs 245 W.
+    const requestedChargeW = () => h.value('Devices.Battery.OutputCommandInternal_W');
+    let lastEchoW = requestedChargeW();
+    for (let tick = 0; tick < 5 && requestedChargeW() < 2400; tick++) {
+        lastEchoW = requestedChargeW();
+        await frame(2155, lastEchoW, 0, -2892);
+        assert.equal(h.value('Control.Targets.MyPV_DHW_W'), 0);
+    }
+    assert.equal(requestedChargeW(), 2400);
+    await frame(2155, lastEchoW, 0, -2892);
+    assert.equal(h.value('Control.Targets.MyPV_DHW_W'), 0, 'no new start on an unconfirmed full charge request');
+    await frame(0, 2400, 0, -2892);
+    assert.equal(h.value('Control.Targets.MyPV_DHW_W'), 0, 'a full setpoint alone does not prove AC charging');
+    await frame(2155, 2400, 0, -2892);
+    assert.equal(h.value('Control.Targets.MyPV_DHW_W'), 2600);
+    assert.equal(h.value('Control.Targets.Battery_W'), 2400);
+    assert.equal(h.value('Control.AllowHeaterGridImport'), false);
+    for (const chargeW of [2155, 2213, 2351, 2399, 2375]) {
+        await frame(chargeW, 2400, 2600, chargeW + 2600 - 5047);
+        assert.equal(h.value('Control.Targets.MyPV_DHW_W'), 2600);
+        assert.ok(h.value('Devices.MyPV_DHW.OutputCommand_W') > 0);
+    }
+    await h.advance(35);
+    assert.ok(h.physical().heaterW > 0, h.diagnostic());
+    h.put('DP_WB1_SOC', 33);
+    h.put('DP_WB1_MIN_SOC', 50);
+    h.put('DP_WB1_CAR', 4);
+    await h.advance(6);
+    assert.equal(h.value('Vehicles.Wallbox1.MustCharge'), true);
+    assert.equal(h.value('Control.Targets.MyPV_DHW_W'), 0);
+    assert.equal(h.value('Devices.MyPV_DHW.OutputCommand_W'), 0);
 });
 
 async function runningSunEnergyPvWallbox() {

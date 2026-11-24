@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.329",
+    "version": "0.17.0-alpha.330",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.330": {
+        "en": "Keep surplus hot-water heating running through fluctuations in battery charging power. Reserve the remaining charging capacity for storage.",
+        "de": "Der Warmwasser-Heizstab läuft bei schwankender Speicherladeleistung mit dem verbleibenden Überschuss weiter. Die fehlende Ladeleistung bleibt für den Speicher reserviert.",
+        "es": "Mantiene el calentamiento de agua con excedentes cuando fluctúa la potencia de carga de la batería. Reserva la potencia que falta para la batería.",
+        "fr": "Maintient le chauffage de l’eau sanitaire avec le surplus quand la puissance de charge de la batterie fluctue. La puissance de charge restante est réservée à la batterie.",
+        "it": "Continua a scaldare l’acqua sanitaria con il surplus quando varia la potenza di carica della batteria. Riserva alla batteria la potenza di carica residua.",
+        "nl": "Blijft tapwater verwarmen met het overschot als het laadvermogen van de thuisaccu schommelt. Het resterende laadvermogen blijft beschikbaar voor de accu.",
+        "pl": "Podgrzewa wodę użytkową nadwyżką energii także przy wahaniach mocy ładowania magazynu. Brakująca moc pozostaje zarezerwowana dla magazynu.",
+        "pt": "Mantém o aquecimento de água com o excedente quando a potência de carga da bateria oscila. Reserva a potência de carga restante para a bateria.",
+        "ru": "Продолжает нагревать воду избытком энергии при колебаниях мощности зарядки аккумулятора. Недостающая мощность остаётся зарезервированной для зарядки.",
+        "uk": "Продовжує нагрівати воду надлишком енергії, коли потужність заряджання акумулятора коливається. Решта потужності заряджання залишається в резерві для акумулятора.",
+        "zh-cn": "当储能电池的充电功率波动时，继续利用余电加热生活用水，并为电池预留补足充电所需的功率。"
+      },
       "0.17.0-alpha.329": {
         "en": "Heat domestic water with surplus power when all cars are unplugged and the home battery is charging at its AC limit.",
         "de": "Der Warmwasser-Heizstab nutzt den Überschuss, wenn alle Autos abgesteckt sind und der Hausspeicher mit voller AC-Leistung lädt.",
@@ -81,19 +94,6 @@
         "ru": "Поэтапно повышает ток зарядки автомобиля на один ампер, если после заполнения накопителя ожидается избыток солнечной энергии.",
         "uk": "Поетапно збільшує струм заряджання автомобіля на один ампер, якщо після заповнення накопичувача очікується надлишок сонячної енергії.",
         "zh-cn": "若预计储能电池充满后仍有光伏电力回送电网，可逐次将正在充电的电动汽车电流提高一安培。"
-      },
-      "0.17.0-alpha.323": {
-        "en": "Publish a separate ECharts forecast JSON for each program appliance.",
-        "de": "Für jedes Programmgerät ein eigenes Prognose-JSON für ECharts bereitstellen.",
-        "es": "Publica un JSON de previsión independiente para ECharts por cada aparato.",
-        "fr": "Publie un JSON de prévision ECharts distinct pour chaque appareil.",
-        "it": "Pubblica un JSON di previsione ECharts separato per ogni apparecchio.",
-        "nl": "Publiceert een afzonderlijk ECharts-prognose-JSON voor elk apparaat.",
-        "pl": "Publikuje osobny JSON prognozy ECharts dla każdego urządzenia.",
-        "pt": "Publica um JSON de previsão ECharts separado para cada aparelho.",
-        "ru": "Публикует отдельный JSON прогноза ECharts для каждого прибора.",
-        "uk": "Публікує окремий JSON прогнозу ECharts для кожного приладу.",
-        "zh-cn": "为每台程序设备发布独立的 ECharts 预测 JSON。"
       }
     },
     "titleLang": {
