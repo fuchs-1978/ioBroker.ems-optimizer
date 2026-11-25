@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.332",
+    "version": "0.17.0-alpha.333",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.333": {
+        "en": "Keep the confirmed EV charging current during a wallbox data gap while grid measurements and operating limits allow it.",
+        "de": "Bei einer Messlücke der Wallbox bleibt der bestätigte Ladestrom erhalten, solange Netzmesswerte und Betriebsgrenzen dies zulassen.",
+        "es": "Durante una interrupción de las mediciones de la wallbox se mantiene la corriente de carga confirmada si lo permiten las mediciones de red y los límites de funcionamiento.",
+        "fr": "En cas d’interruption des mesures de la borne, le courant de charge confirmé est maintenu si les mesures du réseau et les limites de fonctionnement le permettent.",
+        "it": "Se mancano le misure della wallbox, la corrente di carica confermata viene mantenuta finché le misure di rete e i limiti operativi lo consentono.",
+        "nl": "Bij ontbrekende wallboxmetingen blijft de bevestigde laadstroom gehandhaafd zolang de netmetingen en bedrijfsgrenzen dit toelaten.",
+        "pl": "Podczas przerwy w pomiarach ładowarki potwierdzony prąd ładowania jest utrzymywany, o ile pozwalają na to pomiary sieci i limity pracy.",
+        "pt": "Durante uma interrupção das medições da wallbox, a corrente de carga confirmada é mantida enquanto as medições da rede e os limites operacionais o permitirem.",
+        "ru": "При пропуске измерений зарядной станции подтверждённый ток зарядки сохраняется, пока это позволяют измерения сети и рабочие ограничения.",
+        "uk": "За відсутності вимірювань зарядної станції підтверджений струм заряджання зберігається, доки це дозволяють вимірювання мережі та робочі обмеження.",
+        "zh-cn": "充电桩测量中断时，只要电网测量值和运行限值允许，就保持已确认的充电电流。"
+      },
       "0.17.0-alpha.332": {
         "en": "Use fresh SunEnergy readings and grid measurements to regulate a single battery head with a clock lead of up to ten seconds.",
         "de": "Die Einzelkopfregelung nutzt frische SunEnergy- und Netzmessungen bei bis zu zehn Sekunden Vorlauf der Gerätezeit.",
@@ -81,19 +94,6 @@
         "ru": "Планирует более раннюю зарядку автомобиля минимальным током, если последующий избыток солнца полностью восполнит отложенную зарядку батареи.",
         "uk": "Планує раніше заряджання автомобіля мінімальним струмом, якщо подальший надлишок сонця повністю компенсує відкладене заряджання батареї.",
         "zh-cn": "当后续光伏余电可完全补回延后的储能充电时，提前规划车辆最小电流充电。"
-      },
-      "0.17.0-alpha.326": {
-        "en": "Transfer an exclusive charge to a vehicle below minimum SoC as soon as the previous wallbox confirms it is off and draws no current. Show running wallbox countdowns in the dashboard.",
-        "de": "Eine exklusive Ladezuteilung geht an das Fahrzeug unter Mindest-SoC, sobald die vorige Wallbox AUS und Stromfreiheit bestätigt. Das Dashboard zählt aktive Wallbox-Timer herunter.",
-        "es": "La carga exclusiva pasa al vehículo por debajo del nivel mínimo cuando el cargador anterior confirma la desconexión y el cese de corriente. El panel muestra las cuentas atrás activas.",
-        "fr": "La charge exclusive passe au véhicule sous son seuil minimal dès que la borne précédente est arrêtée et que le courant est nul. Le tableau de bord affiche les comptes à rebours actifs.",
-        "it": "La ricarica esclusiva passa al veicolo sotto la soglia minima quando la precedente wallbox conferma lo spegnimento e la corrente è nulla. Il pannello mostra i conti alla rovescia attivi.",
-        "nl": "De exclusieve laadbeurt gaat naar het voertuig onder het minimumlaadniveau zodra de vorige laadpaal uit staat en geen stroom meer levert. Het dashboard toont de actieve afteltimers.",
-        "pl": "Ładowanie przechodzi na pojazd poniżej minimalnego poziomu po potwierdzeniu wyłączenia poprzedniej ładowarki i zaniku prądu. Panel wyświetla aktywne liczniki czasu.",
-        "pt": "O carregamento exclusivo passa para o veículo abaixo do nível mínimo assim que o posto anterior confirma o desligamento e a corrente cessa. O painel mostra as contagens decrescentes ativas.",
-        "ru": "Зарядка переходит к автомобилю с уровнем ниже минимума после подтверждения отключения предыдущей станции и прекращения тока. Панель показывает обратный отсчёт активных таймеров.",
-        "uk": "Заряджання переходить до автомобіля з рівнем нижче мінімуму після підтвердження вимкнення попередньої станції та припинення струму. Панель показує зворотний відлік активних таймерів.",
-        "zh-cn": "上一台充电桩确认关闭且电流归零后，独占充电立即切换至低于最低电量的车辆。仪表板显示运行中的充电倒计时。"
       }
     },
     "titleLang": {
