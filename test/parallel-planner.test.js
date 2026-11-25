@@ -161,7 +161,9 @@ test('the EQV gap stays when the displaced charge cannot be repaid before the st
     const {h, cars, allocation} = morningEqvPlan({spill: false});
     assert.equal(cars[1][1].currentA, 0);
     assert.ok(allocation[1].batteryW >= 1958);
-    assert.equal(h.series('BatterySoC')[1].value_pct, 70);
+    assert.equal(h.series('BatteryStage')[1].target_pct, 70);
+    assert.equal(h.series('BatterySoC')[1].value_pct, 70.3);
+    assert.ok(allocation[1].batteryStageSurplusPvW > 0, 'unused PV is still available to storage after the stage');
     const laterRecoveredWh = allocation.slice(6).reduce((sum, p) => sum + (p.pvHeadroomBatteryW || 0) / 4, 0);
     assert.ok(laterRecoveredWh > 97, 'sufficient export is available only after the morning deadline');
 });
@@ -330,6 +332,43 @@ test('running hot water takes only residual PV at the storage AC ceiling and res
         for (const id of h.run('CFG.dp.dhwTemps')) h.put(id, 76);
         assert.equal(h.plan({pvW, slots: 1}).allocation[0].dhwW, 0);
     }
+});
+
+test('26 November: the battery takes the midday PV left below EV minimum after reaching the 90% stage', () => {
+    const h = headroomFixture(85.6, {wb2ControlEnabled: true}, 0, Date.parse('2026-11-26T12:30:00+01:00'));
+    car(h, 0, {connected: false});
+    car(h, 2, {soc: 40, minimum: 30, target: 90, phases: 1});
+    h.put('ems.0.Config.BatteryMorningTargetSoC_pct', 70);
+    h.put('ems.0.Config.BatteryAfternoonTargetSoC_pct', 90);
+    h.put('ems.0.Config.BatteryEfficiency_pct', 92);
+    h.put('ems.0.Devices.MyPV_DHW.Present', true);
+    h.put('ems.0.Config.DHWMinTemperature_C', 20);
+    h.put('ems.0.Config.DHWTargetTemperature_C', 76);
+    h.put('ems.0.Config.DHWDailyDemand_kWh', 25);
+    h.put('ems.0.Config.DHWStandingLoss_kWh_day', 2);
+    h.put('ems.0.Config.DHWForecastReserve_kWh', 0.5);
+    for (const id of h.run('CFG.dp.dhwTemps')) h.put(id, 20 + 0.5 / 0.5815);
+    const pvW = [4888, ...Array(4).fill(3810), ...Array(4).fill(2863), ...Array(6).fill(2117), 958, 0];
+    const houseW = [1370, 1086, 1316, 1501, 1462, 1126, 1093, 1149, 948, ...Array(6).fill(850), 862, 1000];
+    const run = () => h.plan({pvW, houseW, slots: pvW.length});
+    const result = run();
+    balance(result, pvW, houseW);
+    assert.equal(h.series('BatteryStage')[1].target_pct, 90);
+    assert.ok(h.series('BatterySoC')[1].value_pct > 90);
+    assert.ok(result.allocation.slice(1, 5).every(s => s.batteryStageSurplusPvW > 0 && s.dhwGridW === 0));
+    assert.deepEqual(h.series('BatteryPower').slice(0, 5).map(s => s.valueW), [2393, 1599, 1369, 1184, 1223]);
+    assert.ok(result.grid.slice(0, 5).every(s => s.valueW === 0));
+    assert.ok(result.cars.every(c => c.slice(0, 5).every(p => p.valueW === 0)));
+    assert.ok(h.series('BatterySoC').every(s => s.value_pct <= 100));
+    h.put('ems.0.Config.BatteryMaxSoC_pct', 90);
+    h.put('ems.0.Config.DHWControllerMaxPower_W', 1125);
+    const capped = run();
+    balance(capped, pvW, houseW);
+    assert.ok(h.series('BatterySoC').every(s => s.value_pct <= 90));
+    assert.ok(capped.grid[2].valueW < 0, 'genuine export remains visible at the configured maximum');
+    h.put('ems.0.Config.BatteryMaxSoC_pct', 100);
+    h.put(h.run('CFG.dp.lpcState'), 'limited');
+    assert.ok(run().allocation.every(s => !s.batteryStageSurplusPvW));
 });
 
 test('with every car unplugged the forecast heats idle water only from usable overflow at full AC charge', () => {

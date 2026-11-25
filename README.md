@@ -83,6 +83,10 @@ npm run test:equivalence
 
 ## Changelog
 
+### 0.17.0-alpha.334 (2026-11-25)
+
+- Respect the thermal grid budget in each forecast quarter and when shifting hot-water heating. Plan residual PV charging after an intermediate SunEnergy target when the battery has spare capacity. [Release notes](docs/release-0.17.0-alpha.334.md)
+
 ### 0.17.0-alpha.333 (2026-11-25)
 
 - Hold an established EV charging current through a gap in wallbox readings while the grid meter and operating limits permit it. [Release notes](docs/release-0.17.0-alpha.333.md)
@@ -106,10 +110,6 @@ npm run test:equivalence
 ### 0.17.0-alpha.328 (2026-11-24)
 
 - Keep a running PV charge at its minimum current when later export can replenish the home battery before the current stage ends. Use remaining export for whole-amp increases. [Release notes](docs/release-0.17.0-alpha.328.md)
-
-### 0.17.0-alpha.327 (2026-11-23)
-
-- Plan an earlier minimum-current EV start when later otherwise exported PV can fully replenish the displaced battery charge. Keep live qualification and protection unchanged. [Release notes](docs/release-0.17.0-alpha.327.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 

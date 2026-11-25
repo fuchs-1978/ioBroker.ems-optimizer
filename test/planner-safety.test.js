@@ -35,10 +35,13 @@ function engine(config = {}, clock = null) {
     put('ems.0.Devices.MyPV_Heating.Present', false);
     const plan = ({pvW = 10000, houseW = 0, price = 28.89, slots = 8, offsetMin = 0, gridLevels = []} = {}) => {
         const at = (value, i) => Array.isArray(value) ? value[i] : value;
+        const thermal = run('thermalPriceSettings()');
+        const thermalAllowed = run('thermalPriceAllowed');
         const data = {
             pv: Array.from({length: slots}, (_, i) => ({timestamp: now + offsetMin * 60000 + i * 900000, valueW: at(pvW, i)})),
             house: Array.from({length: slots}, (_, i) => ({valueW: at(houseW, i)})),
-            prices: {total: Array.from({length: slots}, (_, i) => ({value_ct_kWh: at(price, i)})),
+            prices: {total: Array.from({length: slots}, (_, i) => ({timestamp: now + offsetMin * 60000 + i * 900000,
+                value_ct_kWh: at(price, i), thermalGridLimitW: thermalAllowed(at(price, i), true, thermal) ? thermal.gridMaxW : 0})),
                 grid: gridLevels.map(level => ({level}))}
         };
         run(`buildDevicePlan(${JSON.stringify(data)})`);
@@ -758,6 +761,10 @@ test('disabled phase switching ignores retained three-phase feedback in a fixed 
 function thermalFixture({temperatures = [35.9, 40.1, 48.1, 55.2], demand = 20, loss = 2,
     reserve = 0.5, start = '2026-10-03T19:15:00Z', config = {}} = {}) {
     const h = engine(config, start);
+    // The bridge replays below exercise an explicitly authorized grid-heating tariff.
+    h.put('ems.0.Config.ThermalCheapPriceEnabled', true);
+    h.put('ems.0.Config.ThermalCheapPriceMax_ct_kWh', 60);
+    h.put('ems.0.Config.ThermalCheapGridMax_W', 9000);
     h.put('ems.0.Devices.MyPV_DHW.Present', true);
     h.put('ems.0.Config.DHWMinTemperature_C', 40);
     h.put('ems.0.Config.DHWTargetTemperature_C', 76);
@@ -997,7 +1004,7 @@ test('recorded 19 November shared-PV bridge shifts grid heat without altering ot
         // The saved evidence identifies the first night's and afternoon's
         // price-bridge slots. Other reasons are unknown and ineligible here.
         const knownBridge = i >= 12 && i < 36 || i >= 74 && i < 78;
-        return {...x, priceValid: true, pvAfterBaseW: Math.max(0, x.pvW - x.baseW),
+        return {...x, priceValid: true, thermalGridLimitW: 9000, heatingGridW: 0, pvAfterBaseW: Math.max(0, x.pvW - x.baseW),
             dhwReason: knownBridge ? 'price-bridge' : 'unclassified', dhwBeforeQuantizationW: x.dhwW,
             mandatoryThermalW: x.dhwW, mandatoryThermalGridW: x.dhwGridW, mandatoryThermalRequestedW: x.dhwW,
             wallboxPvW: 0, heatingPvW: 0, gridW: Math.round(x.rawGridW)};
@@ -1060,7 +1067,7 @@ test('a minimum-reserve label does not strand movable grid heat after sufficient
         const gridW = baseW + heatW + batteryW - pvW;
         return {timestamp: h.now + i * 900000, price: i < 16 ? 23.56 : 30.04, priceValid: true,
             baseW, pvW, pvAfterBaseW: Math.max(0, pvW - baseW), batteryW, batteryPvW: batteryW,
-            wallboxW: 0, wallboxPvW: 0, heatingPvW: 0,
+            wallboxW: 0, wallboxPvW: 0, heatingPvW: 0, thermalGridLimitW: 9000, heatingGridW: 0,
             dhwReason: reason, dhwW: heatW, dhwPvW: heatPvW, dhwGridW: heatW - heatPvW,
             dhwBeforeQuantizationW: heatW, mandatoryThermalW: heatW,
             mandatoryThermalGridW: heatW - heatPvW, mandatoryThermalRequestedW: heatW,
@@ -1133,7 +1140,7 @@ test('21 November 22:18 forecast advances the remaining midday grid heat and kee
         const rawGridW = baseW + heatW + wallboxPvW + batteryW - pvW;
         return {timestamp: h.now + i * 900000, price: night ? 23.56 : 30.04, priceValid: true,
             baseW, pvW, pvAfterBaseW: Math.max(0, pvW - baseW), batteryW, batteryPvW,
-            wallboxW: wallboxPvW, wallboxPvW, heatingPvW: 0,
+            wallboxW: wallboxPvW, wallboxPvW, heatingPvW: 0, thermalGridLimitW: 9000, heatingGridW: 0,
             dhwReason: night ? 'price-bridge' : heatW ? 'minimum-reserve' : 'off',
             dhwW: heatW, dhwPvW: heatPvW, dhwGridW: heatW - heatPvW,
             dhwBeforeQuantizationW: heatW, mandatoryThermalW: heatW,
@@ -1191,6 +1198,11 @@ test('21 November 22:18 forecast advances the remaining midday grid heat and kee
     const noCompetition = original.map(s => s.wallboxPvW ? {...s, pvW: s.baseW, pvAfterBaseW: 0,
         batteryW: 0, batteryPvW: 0, wallboxW: 0, wallboxPvW: 0} : s);
     near(run(noCompetition).a[midday + 3].dhwGridW, 0, 'confirmed grid heat can move without competing PV');
+    const capped = original.map((s, i) => i < cheapSlots ? {...s, thermalGridLimitW: i === 0 ? s.dhwGridW : 1100} : s);
+    const shifted = run(capped);
+    assert.ok(shifted.changed);
+    assert.equal(shifted.a[0].dhwGridW, capped[0].dhwGridW);
+    assert.ok(shifted.a.slice(1, cheapSlots).every(s => s.dhwGridW <= 1100 + 1e-7));
     for (const result of [run(original, {limit: '4200'}), run(original, {proof: 'false'})]) {
         assert.equal(result.changed, false);
         assert.deepEqual(result.a, original);
@@ -1202,7 +1214,7 @@ test('22 November: an isolated cheap bridge and expensive heat use one proven id
     const e = require('../docs/evidence/thermal-idle-slots-2026-11-22.json');
     const h = engine({}, new Date(e.observedPlanAt).toISOString());
     const records = (columns, rows) => rows.map(row => Object.fromEntries(columns.map((key, i) => [key, row[i]])));
-    const original = records(e.slotColumns, e.slots);
+    const original = records(e.slotColumns, e.slots).map(s => ({...s, thermalGridLimitW: 9000}));
     const report = {...e.report, slots: records(e.thermalColumns, e.thermal)};
     const run = (a = original, r = report, limits = 'Infinity', reserve = false, proof = true) =>
         JSON.parse(h.run(`(() => {
@@ -1236,6 +1248,8 @@ test('22 November: an isolated cheap bridge and expensive heat use one proven id
     });
     for (const [reason, blocked] of [
         ['group cap', run(original, report, '4200')],
+        ['idle receivers without authorized grid power', run(original.map(s =>
+            s.dhwReason === 'off' ? {...s, thermalGridLimitW: 0} : s))],
         ['cold layer', run(original, {...report, initialColdLayerDeficitKWh: 0.1})],
         ['delayed reserve', run(original, {...report, slots: report.slots.map((s, i) => i === 13 ? {...s, usableKWh: 1} : s)})],
         ['headroom', run(original, {...report, slots: report.slots.map((s, i) => i === 30 ? {...s, headroomKWh: 0} : s)})],

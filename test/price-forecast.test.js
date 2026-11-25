@@ -413,6 +413,84 @@ test('forecast and thermal use one calculation and identical series quality, tim
     assert.equal(h.forecast().energy[0].source, 'fixed');
 });
 
+test('25 November at 23:00: a low network fee cannot create unapproved heater import', () => {
+    const h = schedule({}, '2026-11-25T17:15:00+01:00');
+    for (let wb = 0; wb < 3; wb++) h.own(`Devices.Wallbox${wb}.Present`, false);
+    h.own('Devices.Battery.Present', false);
+    h.own('Devices.MyPV_DHW.Present', true);
+    h.own('Devices.MyPV_Heating.Present', false);
+    h.own('Config.DHWVolume_l', 500);
+    h.own('Config.DHWMinTemperature_C', 20);
+    h.own('Config.DHWTargetTemperature_C', 76);
+    h.own('Config.DHWDailyDemand_kWh', 25);
+    h.own('Config.DHWStandingLoss_kWh_day', 2);
+    h.own('Config.DHWForecastReserve_kWh', 0.5);
+    for (const id of h.run('CFG.dp.dhwTemps')) h.put(id, 51.425);
+    const late = Date.parse('2026-11-25T23:00:00+01:00');
+    const sun = Date.parse('2026-11-26T09:45:00+01:00');
+    const read = name => JSON.parse(h.states.get(`ems.0.Plan.${name}_JSON`).val);
+    const plan = (enabled, capW) => {
+        h.own('Config.ThermalCheapPriceEnabled', enabled);
+        h.own('Config.ThermalCheapGridMax_W', capW);
+        h.own('Config.ThermalCheapPriceMax_ct_kWh', 24);
+        const prices = h.forecast();
+        const pv = prices.total.map(({timestamp}) => ({timestamp, valueW: timestamp >= sun && timestamp < sun + 6 * 3600000 ? 4888 : 0}));
+        // Hold all non-heater demand at its recorded total in the disputed quarter.
+        const house = pv.map(p => ({valueW: p.timestamp === late ? 829 + 1883.688 : 829}));
+        h.run(`buildDevicePlan(${JSON.stringify({pv, house, prices})})`);
+        return read('Allocation_48h');
+    };
+    for (const [enabled, capW] of [[false, 0], [false, 9000], [true, 0]]) {
+        const slots = plan(enabled, capW), index = slots.findIndex(s => s.timestamp === late);
+        assert.equal(slots[index].price, 23.56);
+        assert.equal(slots[index - 1].price, 30.04);
+        assert.ok(slots[index].mandatoryThermalRequestedW > 0);
+        assert.equal(slots[index].gridW, 2713);
+        assert.equal(read('GridPower_48h')[index].valueW, 2713);
+        assert.equal(read('MyPV_DHW_48h')[index].valueW, 0);
+        assert.ok(slots.every(s => s.dhwGridW === 0 && !s.dhwGridShiftW));
+        const report = read('DHWThermalDiagnostics');
+        assert.equal(report.gridHeatingKWh, 0);
+        assert.ok(report.unmetReserveKWh > 0 && report.pvHeatingKWh > 0);
+        assert.ok(report.slots.every(s => s.gridKWh === 0));
+    }
+    const slots = plan(true, 1200);
+    assert.ok(slots.some(s => s.dhwGridW === 1200));
+    assert.ok(slots.every(s => s.dhwGridW <= (s.price <= 24 ? 1200 : 0) + 1e-7));
+    assert.ok(read('DHWThermalDiagnostics').gridHeatingKWh > 0);
+});
+
+test('thermal watts use the unrounded price, fixed tariff consent and the remaining shared heater budget', () => {
+    const h = engine();
+    h.own('Config.ThermalCheapPriceEnabled', true);
+    h.own('Config.ThermalCheapGridMax_W', 1200);
+    h.own('Config.ThermalCheapPriceMax_ct_kWh', 24);
+    h.own('Config.FixedEnergyComponent_ct_kWh', 23);
+    h.own('Config.FixedGridFee_ct_kWh', 1);
+    assert.equal(h.forecast().total[0].thermalGridLimitW, 0);
+    h.own('Config.ThermalCheapFixedTariffAllowed', true);
+    assert.equal(h.forecast().total[0].thermalGridLimitW, 1200);
+    h.own('Config.FixedEnergyComponent_ct_kWh', 23.0004);
+    assert.equal(h.forecast().total[0].value_ct_kWh, 24);
+    assert.equal(h.forecast().total[0].thermalGridLimitW, 0);
+    assert.equal(h.run('evaluateThermalPricePolicy().cheapAllowed'), false);
+    h.own('Config.FixedEnergyComponent_ct_kWh', 23);
+    for (let wb = 0; wb < 3; wb++) h.own(`Devices.Wallbox${wb}.Present`, false);
+    h.own('Devices.Battery.Present', false);
+    h.own('Devices.MyPV_DHW.Present', true);
+    h.own('Devices.MyPV_Heating.Present', true);
+    h.own('Config.HeatingBufferTemperature_C', 20);
+    h.own('Config.DHWControllerMaxPower_W', 1000);
+    for (const id of h.run('CFG.dp.dhwTemps')) h.put(id, 30);
+    const prices = h.forecast(), pv = [{timestamp: h.now(), valueW: 900}], house = [{valueW: 500}];
+    h.run(`buildDevicePlan(${JSON.stringify({prices, pv, house})})`);
+    const [s] = JSON.parse(h.states.get('ems.0.Plan.Allocation_48h_JSON').val);
+    assert.equal(s.dhwPvW, 400);
+    assert.equal(s.dhwGridW, 600);
+    assert.equal(s.heatingGridW, 600);
+    assert.equal(s.gridW, 1200);
+});
+
 test('planner never turns a missing price into grid heat or cheap battery charging; PV planning remains usable', () => {
     const h = engine();
     for (let wb = 0; wb < 3; wb++) h.own(`Devices.Wallbox${wb}.Present`, false);

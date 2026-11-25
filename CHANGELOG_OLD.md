@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.327 (2026-11-23)
+
+- Plan an earlier minimum-current EV start when later otherwise exported PV can fully replenish the displaced battery charge. Keep live qualification and protection unchanged. [Release notes](docs/release-0.17.0-alpha.327.md)
+
 ## 0.17.0-alpha.326 (2026-11-23)
 
 - Hand an exclusive charging allocation to a below-minimum EV after confirmed shutdown of its peer. Show live start, minimum-run and stop countdowns in the dashboard. [Release notes](docs/release-0.17.0-alpha.326.md)
