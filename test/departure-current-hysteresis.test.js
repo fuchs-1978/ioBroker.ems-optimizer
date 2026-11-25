@@ -6,9 +6,9 @@ const {plant} = require('./control-plant');
 
 const at = (hour, minute, second = 0) => new Date(2026, 10, 21, hour, minute, second).getTime();
 
-async function departurePlant(parallel = true) {
+async function departurePlant(parallel = true, initialTime = at(7, 6, 54)) {
     const h = await plant({mii: true, wallbox: false, split: false, startDelayS: 0, minimumRuntimeS: 0,
-        initialTime: at(7, 6, 54), initialSurplusW: -350, lpcLimitW: 3680,
+        initialTime, initialSurplusW: -350, lpcLimitW: 3680,
         nativeConfig: {wallboxParallelChargingEnabled: parallel, wb0DeadlineEnabled: true, wb0TaperEnabled: true,
             dhwControlEnabled: false}});
     h.own('Devices.MyPV_DHW.ControlEnabled', false);
@@ -20,6 +20,26 @@ async function departurePlant(parallel = true) {
     h.run('updateVehicles()');
     return h;
 }
+
+for (const parallel of [true, false]) test(`Mii above 75% before departure stays off without surplus, parallel=${parallel}`, async () => {
+    const h = await departurePlant(parallel, at(6, 37));
+    h.own('Vehicles.Wallbox0.DepartureTime', '07:00');
+    h.put('DP_WB0_MIN_SOC', 75);
+    h.put('DP_WB0_SOC', 81.4);
+    await h.advance(40);
+    assert.equal(h.value('Vehicles.Wallbox0.MustCharge'), false);
+    assert.equal(h.value('Control.Targets.Wallbox0_A'), 0);
+    assert.equal(h.physical().miiAllow, 0);
+    assert.ok(!h.writes.some(w => w.id === 'goe0.allow' && w.val === 1));
+    h.put('DP_WB0_SOC', 74.9);
+    await h.advance(40);
+    assert.equal(h.physical().miiAllow, 1);
+    assert.equal(h.physical().miiAmps, 6);
+    h.put('DP_WB0_SOC', 75);
+    await h.advance(10);
+    assert.equal(h.value('Vehicles.Wallbox0.MustCharge'), false);
+    assert.equal(h.physical().miiAllow, 0);
+});
 
 for (const parallel of [true, false]) test(`departure at the 9/10 A boundary reaches the actual output, parallel=${parallel}`, async () => {
     const h = await departurePlant(parallel);

@@ -297,7 +297,7 @@ test('manual choice overrides old minimum-SoC, mandatory deadline and manual-cur
         const h=manualHandoffEngine();
         if(cause==='minimum')h.put('DP_WB2_SOC',10);
         if(cause==='deadline'){
-            h.run('nativeConfig.wb2DeadlineEnabled=true');
+            h.run('nativeConfig.wb2DeadlineEnabled=true; nativeConfig.wb2DeadlineTargetSocEnabled=true');
             const departure=new Date(Date.now()+5*60000);
             h.put('ems.0.Vehicles.Wallbox2.DepartureTime',
                 `${String(departure.getHours()).padStart(2,'0')}:${String(departure.getMinutes()).padStart(2,'0')}`);

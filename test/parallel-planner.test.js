@@ -690,6 +690,37 @@ test('device maximum clips manual request without admitting less than the hardwa
     assert.equal(r.cars[1][0].currentA, 6);
 });
 
+for (const parallel of [false, true]) test(`07:00 Mii departure buys only the missing minimum, parallel=${parallel}`, () => {
+    const start = new Date(2026, 10, 25, 6, 30).getTime();
+    const h = fixture({wb0DeadlineEnabled: true, wallboxParallelChargingEnabled: parallel}, 7, start);
+    h.put('ems.0.Vehicles.Wallbox0.DepartureTime', '07:00');
+    for (const soc of [81.4, 75, 74.9]) {
+        car(h, 0, {soc, minimum: 75, target: 100, capacity: 32.3});
+        const r = h.plan({pvW: 0, price: 30.04, slots: 3});
+        assert.equal(h.run('vehicleState(0).mustCharge'), soc < 75, `SoC ${soc}`);
+        const expectedKWh = Math.max(0, 75 - soc) * 32.3 / 100 / 0.9;
+        const acKWh = require('../lib/planning-explanation').plannedEnergy(r.cars[0], h.now, start + 1800000);
+        assert.ok(Math.abs(acKWh - expectedKWh) < 0.0002, `${soc}%: ${acKWh} kWh for ${expectedKWh} kWh needed`);
+        assert.ok(r.cars[0].slice(1).every(point => point.valueW === 0));
+        if (soc >= 75) assert.equal(h.run('vehicleState(0).latestStartTimestamp'), 0);
+        balance(r, 0);
+    }
+    car(h, 0, {soc: 81.4, minimum: 75, target: 100, capacity: 32.3});
+    const solar = h.plan({pvW: 3000, slots: 3});
+    assert.ok(solar.cars[0][0].valueW >= 1380);
+    assert.equal(solar.cars[0][2].valueW, 0, 'vehicle availability still ends at 07:00');
+    assert.ok(solar.allocation.every(slot => slot.wallboxGridW === 0));
+
+    h.run('nativeConfig.wb0DeadlineTargetSocEnabled = true');
+    const target = h.plan({pvW: 0, slots: 3});
+    assert.equal(h.run('vehicleState(0).mustCharge'), true);
+    assert.ok(target.allocation[0].wallboxGridW >= 1380);
+    assert.equal(target.cars[0][2].valueW, 0);
+    h.run('nativeConfig.wb0DeadlineEnabled = false');
+    assert.ok(h.plan({pvW: 0}).cars[0].every(slot => slot.valueW === 0),
+        'retaining the target checkbox cannot authorize grid charging with departure disabled');
+});
+
 test('paced Mii departure reaches minimum with no PV alongside the preferred EQE', () => {
     const h = fixture({wb0DeadlineEnabled: true, wb0TaperEnabled: true}, 10);
     car(h, 0, {soc: 56.3, minimum: 100, target: 100, capacity: 32.3});

@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.330",
+    "version": "0.17.0-alpha.331",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.331": {
+        "en": "Departure charging stops at the minimum vehicle SoC. Grid charging to the upper target requires a separate per-vehicle option.",
+        "de": "Die Abfahrtsladung endet am Mindest-SoC. Netzladung bis zum oberen Ziel lässt sich je Fahrzeug zusätzlich freigeben.",
+        "es": "La carga para la salida termina en el SoC mínimo. La carga desde la red hasta el objetivo superior requiere una opción adicional por vehículo.",
+        "fr": "La recharge pour le départ s’arrête au niveau minimal. Une option par véhicule autorise la recharge sur le réseau jusqu’à la cible supérieure.",
+        "it": "La ricarica per la partenza termina al SoC minimo. Un’opzione per veicolo consente la ricarica dalla rete fino all’obiettivo superiore.",
+        "nl": "Laden voor vertrek stopt bij de minimale laadstatus. Netladen tot de hogere doellaadstatus is per voertuig apart in te schakelen.",
+        "pl": "Ładowanie przed wyjazdem kończy się po osiągnięciu minimalnego poziomu. Dodatkowa opcja dla każdego pojazdu pozwala ładować z sieci do wyższego celu.",
+        "pt": "O carregamento para a partida termina no estado de carga mínimo. Uma opção por veículo permite carregar pela rede até ao objetivo superior.",
+        "ru": "Зарядка к отъезду завершается на минимальном уровне. Для каждого автомобиля можно отдельно разрешить зарядку от сети до верхней цели.",
+        "uk": "Заряджання до від’їзду завершується на мінімальному рівні. Для кожного автомобіля можна окремо дозволити заряджання від мережі до верхньої цілі.",
+        "zh-cn": "出发充电在达到最低电量时结束。每辆车都可单独启用电网充电至更高目标电量的选项。"
+      },
       "0.17.0-alpha.330": {
         "en": "Keep surplus hot-water heating running through fluctuations in battery charging power. Reserve the remaining charging capacity for storage.",
         "de": "Der Warmwasser-Heizstab läuft bei schwankender Speicherladeleistung mit dem verbleibenden Überschuss weiter. Die fehlende Ladeleistung bleibt für den Speicher reserviert.",
@@ -81,19 +94,6 @@
         "ru": "Сохраняет минимальный ток уже идущей зарядки электромобиля от солнца, если измеренного избытка мощности хватает. Оставшаяся мощность идёт на зарядку домашнего аккумулятора.",
         "uk": "Підтримує мінімальний струм заряджання електромобіля від сонця, якщо виміряного надлишку потужності вистачає. Решта потужності заряджає домашній акумулятор.",
         "zh-cn": "当实测光伏余电充足时，维持正在充电的电动汽车的最低充电电流。剩余功率用于给家庭储能电池充电。"
-      },
-      "0.17.0-alpha.324": {
-        "en": "Increase current on a running EV in successive ampere steps when later PV export would still fill the battery.",
-        "de": "Plant bei verbleibender Einspeisung weitere Ampere-Stufen für ein bereits ladendes Auto ein und prüft jede Stufe anhand der aktuellen Messwerte.",
-        "es": "Aumenta la corriente de un vehículo en carga en pasos sucesivos de un amperio cuando se prevé un excedente solar con la batería llena.",
-        "fr": "Augmente la charge d’un véhicule déjà en charge par paliers successifs d’un ampère si un surplus solaire est prévu lorsque la batterie sera pleine.",
-        "it": "Aumenta la corrente di un veicolo già in carica a passi di un ampere quando è previsto un surplus solare a batteria piena.",
-        "nl": "Verhoogt de laadstroom van een voertuig dat al laadt in stappen van één ampère als bij een volle accu later nog teruglevering wordt verwacht.",
-        "pl": "Podnosi prąd ładowania pojazdu w kolejnych krokach po jednym amperze, gdy po naładowaniu akumulatora spodziewana jest nadwyżka energii słonecznej.",
-        "pt": "Aumenta a corrente de um veículo já em carga em passos de um ampere quando se prevê um excedente solar com a bateria cheia.",
-        "ru": "Поэтапно повышает ток зарядки автомобиля на один ампер, если после заполнения накопителя ожидается избыток солнечной энергии.",
-        "uk": "Поетапно збільшує струм заряджання автомобіля на один ампер, якщо після заповнення накопичувача очікується надлишок сонячної енергії.",
-        "zh-cn": "若预计储能电池充满后仍有光伏电力回送电网，可逐次将正在充电的电动汽车电流提高一安培。"
       }
     },
     "titleLang": {
@@ -661,6 +661,7 @@
     "wb0MinSocPct": 20,
     "wb0TargetSocPct": 80,
     "wb0DeadlineEnabled": false,
+    "wb0DeadlineTargetSocEnabled": false,
     "wb0TaperEnabled": false,
     "wb0Taper1DeltaPct": 5,
     "wb0Taper1MaxA": 13,
@@ -690,6 +691,7 @@
     "wb1MinSocPct": 20,
     "wb1TargetSocPct": 80,
     "wb1DeadlineEnabled": false,
+    "wb1DeadlineTargetSocEnabled": false,
     "wb1TaperEnabled": false,
     "wb1Taper1DeltaPct": 5,
     "wb1Taper1MaxA": 13,
@@ -719,6 +721,7 @@
     "wb2MinSocPct": 20,
     "wb2TargetSocPct": 80,
     "wb2DeadlineEnabled": false,
+    "wb2DeadlineTargetSocEnabled": false,
     "wb2TaperEnabled": false,
     "wb2Taper1DeltaPct": 5,
     "wb2Taper1MaxA": 13,
