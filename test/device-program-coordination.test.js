@@ -32,7 +32,7 @@ function simulation(t, devices) {
             timestamp: BASE + i * SLOT, value_ct_kWh, valid: true
         }))));
     }
-    const result = {own, rows, writes, state, forecast, afterPublish: null, history: [], historyReads: [],
+    const result = {own, rows, writes, warnings, state, forecast, afterPublish: null, history: [], historyReads: [],
         status: i => JSON.parse(own.get('Devices.Programs.' + (i + 1))),
         at(value) { now = value; },
         restart() { timer = null; },
@@ -51,7 +51,7 @@ function simulation(t, devices) {
                 result.onForecast?.(runs, at);
             });
             await done;
-            assert.deepEqual(warnings, []);
+            if (!result.allowWarnings) assert.deepEqual(warnings, []);
         }
     };
     const namespace = 'ems-optimizer.0';
@@ -71,7 +71,10 @@ function simulation(t, devices) {
         },
         async setObjectNotExistsAsync() {},
         async setStateAsync(id, val) { own.set(id, val); published.set(id, now); result.afterPublish?.(id, JSON.parse(val)); },
-        async setForeignStateAsync(id, value, ack) { writes.push({id, value, ack}); }
+        async setForeignStateAsync(id, value, ack) {
+            writes.push({id, value, ack});
+            if (result.writeError) throw new Error(result.writeError);
+        }
     };
     result.config = adapter.config;
     return result;
@@ -632,4 +635,147 @@ test('individual ECharts JSON includes manual running loads and omits unresolved
     h.forecast([0, 0, 0]);
     await h.tick();
     assert.deepEqual(read(), []);
+});
+
+
+test('three starts at 0/15/30 minutes, final failure at 35 minutes, persisted across restarts', async t => {
+    const h = simulation(t, [{mode: 'automatic', profileJson: '[1000,1000,1000,1000]'}]);
+    h.forecast(Array(12).fill(-1000));
+    await h.tick();
+    assert.equal(h.status(0).startAttempt.attempts, 1);
+    for (const [minutes, attempts] of [[14.99, 1], [15, 2], [29.99, 2], [30, 3], [34.99, 3]]) {
+        h.restart();
+        h.at(BASE + minutes * 60000);
+        await h.tick();
+        assert.equal(h.writes.length, attempts);
+        assert.equal(h.status(0).startAttempt.status, 'waiting');
+        assert.equal(h.status(0).startAttempt.firstSentAt, BASE);
+    }
+    h.allowWarnings = true;
+    h.at(BASE + 35 * 60000);
+    await h.tick();
+    assert.equal(h.writes.length, 3);
+    assert.equal(h.status(0).startAttempt.status, 'failed');
+    assert.equal(h.status(0).reservation, null);
+    assert.equal(h.warnings.length, 1);
+    const announcement = JSON.parse(h.own.get('Devices.Programs.1.Announcement'));
+    assert.match(announcement.text, /drei Startversuchen/);
+    h.restart();
+    h.at(BASE + 60 * 60000);
+    await h.tick();
+    assert.equal(h.writes.length, 3);
+    assert.equal(h.warnings.length, 1);
+    assert.equal(JSON.parse(h.own.get('Devices.Programs.1.Announcement')).id, announcement.id);
+});
+
+for (const minutes of [1, 16, 31, 36]) {
+    test(`actual running confirmation at minute ${minutes} prevents all further starts`, async t => {
+        const h = simulation(t, [{mode: 'automatic'}]);
+        h.forecast(Array(12).fill(-1000));
+        await h.tick();
+        h.at(BASE + minutes * 60000);
+        h.state('status.0', 'Running');
+        await h.tick();
+        assert.equal(h.status(0).startAttempt.status, 'confirmed');
+        h.at(BASE + 70 * 60000);
+        await h.tick();
+        assert.equal(h.writes.length, 1);
+    });
+}
+
+for (const change of ['program', 'remote', 'mode', 'permission', 'command']) {
+    test(`pending retry is cancelled when ${change} changes`, async t => {
+        const h = simulation(t, [{mode: 'automatic', programObject: 'selected.0'}]);
+        h.state('selected.0', 'Cotton');
+        h.forecast(Array(12).fill(-1000));
+        await h.tick();
+        h.profile(0, 'Cotton', [1000]);
+        await h.tick();
+        if (change === 'program') h.state('selected.0', 'Eco');
+        if (change === 'remote') h.state('remote.0', false);
+        if (change === 'mode') h.rows[0].mode = 'observe';
+        if (change === 'permission') h.config.globalWriteEnabled = false;
+        if (change === 'command') h.rows[0].startValue = 'false';
+        h.at(BASE + 15 * 60000);
+        await h.tick();
+        assert.equal(h.writes.length, 1);
+        assert.equal(h.status(0).startAttempt.status, 'cancelled');
+    });
+}
+
+test('retry uses the persisted selected program and keeps a short profile reserved', async t => {
+    const h = simulation(t, [{mode: 'automatic', startFromSelection: true, programObject: 'selected.0'}]);
+    h.state('selected.0', 'Cotton');
+    h.forecast(Array(12).fill(-1000));
+    await h.tick();
+    h.profile(0, 'Cotton', [1000]);
+    await h.tick();
+    h.at(BASE + 15 * 60000);
+    await h.tick();
+    assert.deepEqual(h.writes.map(w => w.value), ['Cotton', 'Cotton']);
+    assert.equal(h.status(0).reservation.start, BASE + 15 * 60000);
+});
+
+test('an elapsed start window fails clearly', async t => {
+    const h = simulation(t, [{mode: 'automatic', finishBy: '+1'}]);
+    h.forecast(Array(12).fill(-1000));
+    await h.tick();
+    h.allowWarnings = true;
+    h.at(BASE + 61 * 60000);
+    await h.tick();
+    assert.equal(h.writes.length, 1);
+    assert.equal(h.status(0).startAttempt.status, 'failed');
+    assert.match(h.status(0).startAttempt.error, /Startfenster/);
+});
+
+
+test('missing or unknown operating feedback never triggers an unsafe retry', async t => {
+    const h = simulation(t, [{mode: 'automatic'}]);
+    h.forecast(Array(12).fill(-1000));
+    await h.tick();
+    h.state('status.0', 'Unknown');
+    h.allowWarnings = true;
+    h.at(BASE + 15 * 60000);
+    await h.tick();
+    assert.equal(h.writes.length, 1);
+    assert.equal(h.status(0).startAttempt.status, 'failed');
+});
+
+
+test('a manual start during retry persistence prevents the duplicate command', async t => {
+    const h = simulation(t, [{mode: 'automatic'}]);
+    h.forecast(Array(12).fill(-1000));
+    await h.tick();
+    h.at(BASE + 15 * 60000);
+    h.afterPublish = (id, status) => {
+        if (id === 'Devices.Programs.1' && status.startAttempt?.attempts === 2) h.state('status.0', 'Running');
+    };
+    await h.tick();
+    assert.equal(h.writes.length, 1);
+    await h.tick();
+    assert.equal(h.status(0).startAttempt.status, 'confirmed');
+});
+
+
+test('a transport exception retains the attempt and retries only after fifteen minutes', async t => {
+    const h = simulation(t, [{mode: 'automatic'}]);
+    h.forecast(Array(12).fill(-1000));
+    h.writeError = 'device offline';
+    await h.tick();
+    assert.equal(h.status(0).startAttempt.writeError, 'device offline');
+    h.restart();
+    h.at(BASE + 14 * 60000);
+    await h.tick();
+    assert.equal(h.writes.length, 1);
+    h.writeError = null;
+    h.at(BASE + 15 * 60000);
+    await h.tick();
+    assert.equal(h.writes.length, 2);
+    h.at(BASE + 16 * 60000);
+    h.state('status.0', 'Running');
+    await h.tick();
+    h.at(BASE + 35 * 60000);
+    await h.tick();
+    assert.equal(h.status(0).startAttempt.status, 'confirmed');
+    assert.equal(h.writes.length, 2);
 });
