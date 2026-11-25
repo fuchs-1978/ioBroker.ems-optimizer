@@ -83,6 +83,10 @@ npm run test:equivalence
 
 ## Changelog
 
+### 0.17.0-alpha.333 (2026-11-25)
+
+- Hold an established EV charging current through a gap in wallbox readings while the grid meter and operating limits permit it. [Release notes](docs/release-0.17.0-alpha.333.md)
+
 ### 0.17.0-alpha.332 (2026-11-25)
 
 - Regulate a single SunEnergy head with up to ten seconds of clock lead using successive device readings and a fresh grid measurement. [Release notes](docs/release-0.17.0-alpha.332.md)
@@ -106,10 +110,6 @@ npm run test:equivalence
 ### 0.17.0-alpha.327 (2026-11-23)
 
 - Plan an earlier minimum-current EV start when later otherwise exported PV can fully replenish the displaced battery charge. Keep live qualification and protection unchanged. [Release notes](docs/release-0.17.0-alpha.327.md)
-
-### 0.17.0-alpha.326 (2026-11-23)
-
-- Hand an exclusive charging allocation to a below-minimum EV after confirmed shutdown of its peer. Show live start, minimum-run and stop countdowns in the dashboard. [Release notes](docs/release-0.17.0-alpha.326.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 

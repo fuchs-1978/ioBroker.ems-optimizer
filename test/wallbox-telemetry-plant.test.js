@@ -3,6 +3,104 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {plant} = require('./control-plant');
 
+async function runningEqvWithMeterGap() {
+    const h = await plant({wallboxIndex: 1, battery: true, mii: true, split: false,
+        startDelayS: 0, initialSurplusW: 220, initialWallboxPhaseMode: 1,
+        wallboxUptakeA: (_wb, amps) => amps - 0.4,
+        nativeConfig: {wallboxParallelChargingEnabled: true, wb1CommissioningMaxA: 6,
+            wb2Present: true, wb2AllowOutputId: 'goe2.allow'}});
+    h.own('Devices.Wallbox2.Present', true);
+    h.put('goe2.allow', 0);
+    h.put('DP_WB0_CAR', 1);
+    h.put('DP_WB0_SOC', 100);
+    h.put('DP_WB1_SOC', 50.3);
+    h.put('DP_WB1_MIN_SOC', 60);
+    await h.advance(90);
+    assert.equal(h.value('Devices.Wallbox1.ResponseState'), 'confirmed', h.diagnostic());
+    assert.equal(h.value('Devices.Wallbox1.OutputCommand_A'), 6);
+    const at = h.now() + 1000;
+    // Three independent go-e polls at the ages recorded on 25 November at 15:34:24.
+    const ages = [35576, 31704, 35111];
+    const samples = [];
+    for (const wb of [0, 1, 2]) {
+        const ids = [`DP_WB${wb}_POWER`, ...[1, 2, 3].map(p => `DP_WB${wb}_L${p}_A`)];
+        const prefix = ['goe0', 'goe', 'goe2'][wb];
+        ids.push(prefix + '.allow');
+        if (wb === 1) ids.push('goe.error', 'goe.feedback', 'DP_WB1_CAR');
+        for (const id of ids) samples.push([id, h.states.get(id).val,
+            {ack: true, q: 0, ts: at - ages[wb], lc: at - 70000}]);
+    }
+    h.writes.length = 0;
+    return {h, at, samples};
+}
+
+test('25 November EQV minimum charge holds 6 A through a shared go-e poll gap and staggered recovery', async () => {
+    const {h, at, samples} = await runningEqvWithMeterGap();
+    await h.replayAt(at, samples);
+    assert.equal(h.value('Control.Valid'), false, 'no new allocation may spend the missing load');
+    assert.equal(h.value('Devices.Wallbox1.OutputActive'), true, h.value('Devices.Wallbox1.OutputStatus'));
+    assert.match(h.value('Devices.Wallbox1.OutputStatus'), /TELEMETRIE/);
+    assert.ok(h.value('Devices.Wallbox1.OutputReservedPower_W') >= 1380);
+    assert.equal(h.states.get('DP_WB1_POWER').ts, at - 31704);
+    await h.replayAt(at + 3000, samples.map(([id, val]) => [id, val]), {allocate: false});
+    assert.equal(h.value('Devices.Wallbox1.OutputActive'), true, h.value('Devices.Wallbox1.OutputStatus'));
+    await h.replayAt(at + 5000);
+    assert.equal(h.value('Control.Valid'), true);
+    assert.equal(h.value('Control.Targets.Wallbox1_A'), 6);
+    assert.equal(h.physical().allow, 1);
+    assert.ok(!h.writes.some(w => ['goe.allow', 'goe.cmd', 'goe0.allow', 'goe0.cmd'].includes(w.id)),
+        'the held command needs neither OFF/ON nor a new current request');
+});
+
+test('the EQV output can run before the allocator and holds its original reserve while protection updates', async () => {
+    const {h, at, samples} = await runningEqvWithMeterGap();
+    await h.replayAt(at, samples, {allocate: false});
+    await h.replayAt(at + 1000, samples);
+    await h.replayAt(at + 65000, samples);
+    assert.equal(h.value('Devices.Wallbox1.OutputActive'), true, h.value('Devices.Wallbox1.OutputStatus'));
+    assert.equal(h.states.get('DP_WB1_POWER').ts, at - 31704);
+    assert.ok(h.value('Devices.Wallbox1.OutputReservedPower_W') >= 1380);
+    assert.ok(!h.writes.some(w => ['goe.allow', 'goe.cmd', 'goe0.allow', 'goe0.cmd'].includes(w.id)));
+});
+
+test('an EQV hold needs a live controller and a confirmed charging session', async () => {
+    for (const lost of ['controller', 'session']) {
+        const {h, at, samples} = await runningEqvWithMeterGap();
+        await h.replayAt(at, samples);
+        if (lost === 'session') h.output.telemetryBridgeProofs.delete(h.output.devices[1]);
+        await h.replayAt(at + (lost === 'controller' ? 11000 : 1000), samples, {allocate: false});
+        assert.ok(h.writes.some(w => w.id === 'goe.allow' && w.val === 0), lost);
+        assert.equal(h.value('Devices.Wallbox1.OutputActive'), false, lost);
+    }
+});
+
+for (const [name, id, value, invalid] of [
+    ['stale grid meter', 'DP_GRID_IMPORT', 1000, {ts: 1}],
+    ['phase overload', 'DP_DHW_HA_L1_CURRENT_A', 100],
+    ['house connection trip', 'DP_HA_CRITICAL', true],
+    ['new grid operator limit', 'lpc.limit', 1000],
+    ['loss of user release', 'DP_WB1_ALLOW', false],
+    ['go-e fault', 'goe.error', 1],
+    ['bad own phase current', 'DP_WB1_L1_A', 5.5, {q: 64}],
+    ['unconfirmed own power', 'DP_WB1_POWER', 1.29, {ack: false}],
+    ['contradictory idle peer current', 'DP_WB2_L1_A', 3, {ts: 1}],
+    ['invalid water-heater meter', 'DP_DHW_OUTPUT1', 0, {q: 64}],
+]) test(`coordinated EQV poll gap stops for ${name}`, async () => {
+    const {h, at, samples} = await runningEqvWithMeterGap();
+    await h.replayAt(at, samples);
+    assert.equal(h.value('Devices.Wallbox1.OutputActive'), true);
+    if (id === 'lpc.limit') {
+        h.mapping.DP_LPC_STATE = 'lpc.state';
+        h.mapping.DP_LPC_LIMIT = id;
+        h.run("CFG.dp.lpcState='lpc.state';CFG.dp.lpcLimit='lpc.limit'");
+        h.put('lpc.state', 'limited');
+    }
+    await h.replayAt(at + 1000, [...samples, [id, value, invalid]]);
+    assert.equal(h.value('Devices.Wallbox1.OutputActive'), false, h.value('Devices.Wallbox1.OutputStatus'));
+    assert.ok(h.writes.some(w => w.id === 'goe.allow' && w.val === 0));
+    assert.ok(!h.writes.some(w => w.id === 'goe.allow' && w.val === 1));
+});
+
 for (const groupNet of [false, true]) for (const parallel of [false, true]) for (const split of [false, true]) test(`real allocator retains running charger across telemetry gap, groupNet=${groupNet}, parallel=${parallel}, heater=${split}`, async () => {
     const h = await plant({startDelayS: 0, split, initialSurplusW: split ? 6000 : 3000,
         sourceQuality: groupNet ? 0 : undefined,
