@@ -83,6 +83,10 @@ npm run test:equivalence
 
 ## Changelog
 
+### 0.17.0-alpha.332 (2026-11-25)
+
+- Regulate a single SunEnergy head with up to ten seconds of clock lead using successive device readings and a fresh grid measurement. [Release notes](docs/release-0.17.0-alpha.332.md)
+
 ### 0.17.0-alpha.331 (2026-11-25)
 
 - Limit departure grid charging to the vehicle minimum. Each wallbox can explicitly allow grid charging to the upper target. [Release notes](docs/release-0.17.0-alpha.331.md)
@@ -106,10 +110,6 @@ npm run test:equivalence
 ### 0.17.0-alpha.326 (2026-11-23)
 
 - Hand an exclusive charging allocation to a below-minimum EV after confirmed shutdown of its peer. Show live start, minimum-run and stop countdowns in the dashboard. [Release notes](docs/release-0.17.0-alpha.326.md)
-
-### 0.17.0-alpha.325 (2026-11-23)
-
-- Keep a running PV charge at minimum current while measured surplus covers it. Give the home battery the remaining power. [Release notes](docs/release-0.17.0-alpha.325.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 

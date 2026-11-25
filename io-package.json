@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.331",
+    "version": "0.17.0-alpha.332",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.332": {
+        "en": "Use fresh SunEnergy readings and grid measurements to regulate a single battery head with a clock lead of up to ten seconds.",
+        "de": "Die Einzelkopfregelung nutzt frische SunEnergy- und Netzmessungen bei bis zu zehn Sekunden Vorlauf der Gerätezeit.",
+        "es": "La regulación de un cabezal usa mediciones recientes de SunEnergy y de la red si el reloj se adelanta hasta diez segundos.",
+        "fr": "La régulation d’une seule tête utilise des mesures récentes de SunEnergy et du réseau lorsque son horloge avance de dix secondes au maximum.",
+        "it": "La regolazione di una singola unità usa misure recenti di SunEnergy e della rete con un anticipo dell’orologio fino a dieci secondi.",
+        "nl": "De regeling van één SunEnergy-eenheid gebruikt actuele apparaat- en netmetingen bij een klok die tot tien seconden voorloopt.",
+        "pl": "Sterowanie jednym modułem SunEnergy wykorzystuje świeże pomiary urządzenia i sieci przy zegarze wyprzedzającym o maksymalnie dziesięć sekund.",
+        "pt": "O controlo de uma unidade SunEnergy usa medições recentes do equipamento e da rede quando o relógio se adianta até dez segundos.",
+        "ru": "Для управления одним модулем SunEnergy используются свежие измерения устройства и сети при опережении часов до десяти секунд.",
+        "uk": "Для керування одним модулем SunEnergy використовуються свіжі вимірювання пристрою та мережі за випередження годинника до десяти секунд.",
+        "zh-cn": "当设备时钟最多快十秒时，单机头控制使用最新的 SunEnergy 和电网测量值。"
+      },
       "0.17.0-alpha.331": {
         "en": "Departure charging stops at the minimum vehicle SoC. Grid charging to the upper target requires a separate per-vehicle option.",
         "de": "Die Abfahrtsladung endet am Mindest-SoC. Netzladung bis zum oberen Ziel lässt sich je Fahrzeug zusätzlich freigeben.",
@@ -81,19 +94,6 @@
         "ru": "Зарядка переходит к автомобилю с уровнем ниже минимума после подтверждения отключения предыдущей станции и прекращения тока. Панель показывает обратный отсчёт активных таймеров.",
         "uk": "Заряджання переходить до автомобіля з рівнем нижче мінімуму після підтвердження вимкнення попередньої станції та припинення струму. Панель показує зворотний відлік активних таймерів.",
         "zh-cn": "上一台充电桩确认关闭且电流归零后，独占充电立即切换至低于最低电量的车辆。仪表板显示运行中的充电倒计时。"
-      },
-      "0.17.0-alpha.325": {
-        "en": "Keep a running solar EV charge at minimum current when measured surplus covers it. Allocate the remaining power to battery charging.",
-        "de": "Eine laufende PV-Fahrzeugladung behält ihren Mindeststrom, wenn der gemessene Überschuss dafür ausreicht. Der Speicher lädt mit der verbleibenden Leistung.",
-        "es": "Mantiene la corriente mínima de un vehículo que ya carga con energía solar si el excedente medido es suficiente. La potencia restante carga la batería.",
-        "fr": "Maintient le courant minimal d’un véhicule déjà en charge solaire si le surplus mesuré suffit. La puissance restante recharge la batterie.",
-        "it": "Mantiene la corrente minima di un veicolo già in carica con il fotovoltaico quando il surplus misurato è sufficiente. La potenza residua ricarica la batteria.",
-        "nl": "Behoudt de minimale laadstroom van een auto die al op zonnestroom laadt als het gemeten overschot volstaat. Het resterende vermogen gaat naar de thuisaccu.",
-        "pl": "Utrzymuje minimalny prąd trwającego ładowania samochodu z fotowoltaiki, gdy zmierzona nadwyżka wystarcza. Pozostała moc ładuje domowy magazyn energii.",
-        "pt": "Mantém a corrente mínima de um veículo que já carrega com energia solar quando o excedente medido é suficiente. A potência restante carrega a bateria.",
-        "ru": "Сохраняет минимальный ток уже идущей зарядки электромобиля от солнца, если измеренного избытка мощности хватает. Оставшаяся мощность идёт на зарядку домашнего аккумулятора.",
-        "uk": "Підтримує мінімальний струм заряджання електромобіля від сонця, якщо виміряного надлишку потужності вистачає. Решта потужності заряджає домашній акумулятор.",
-        "zh-cn": "当实测光伏余电充足时，维持正在充电的电动汽车的最低充电电流。剩余功率用于给家庭储能电池充电。"
       }
     },
     "titleLang": {

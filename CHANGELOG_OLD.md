@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.325 (2026-11-23)
+
+- Keep a running PV charge at minimum current while measured surplus covers it. Give the home battery the remaining power. [Release notes](docs/release-0.17.0-alpha.325.md)
+
 ## 0.17.0-alpha.324 (2026-11-23)
 
 - Raise a running EV by further whole-amp steps when the first pass leaves PV export at a full battery. Verify each step against live measurements and vehicle feedback. [Release notes](docs/release-0.17.0-alpha.324.md)
