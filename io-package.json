@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.334",
+    "version": "0.17.0-alpha.335",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.335": {
+        "en": "Confirm appliance starts, retry after 15 and 30 minutes, then report failure after another five minutes. Persist attempts across restarts.",
+        "de": "Gerätestarts bestätigen, nach 15 und 30 Minuten erneut versuchen und nach weiteren fünf Minuten einen Fehler melden. Versuche bleiben über Neustarts erhalten.",
+        "es": "Confirma el inicio, reintenta a los 15 y 30 minutos e informa de un fallo cinco minutos después. Conserva los intentos tras reiniciar.",
+        "fr": "Confirme le démarrage, réessaie après 15 et 30 minutes et signale un échec cinq minutes plus tard. Conserve les tentatives après redémarrage.",
+        "it": "Conferma gli avvii, riprova dopo 15 e 30 minuti e segnala un errore dopo altri cinque minuti. Conserva i tentativi ai riavvii.",
+        "nl": "Bevestig de start, probeer opnieuw na 15 en 30 minuten en meld vijf minuten later een fout. Bewaar pogingen bij herstart.",
+        "pl": "Potwierdza start, ponawia po 15 i 30 minutach, a po kolejnych pięciu minutach zgłasza błąd. Zachowuje próby po restarcie.",
+        "pt": "Confirma o arranque, repete após 15 e 30 minutos e informa uma falha cinco minutos depois. Mantém as tentativas após reiniciar.",
+        "ru": "Подтверждение запуска, повторные попытки через 15 и 30 минут и сообщение об ошибке ещё через пять минут. Сохранение попыток при перезапуске.",
+        "uk": "Підтвердження запуску, повторні спроби через 15 і 30 хвилин та повідомлення про помилку ще через п’ять хвилин. Збереження спроб після перезапуску.",
+        "zh-cn": "确认设备启动，在15和30分钟后重试，再过5分钟未启动则报错。重启后保留尝试记录。"
+      },
       "0.17.0-alpha.334": {
         "en": "Apply the grid-heating price permission and shared power limit to every forecast interval and to rescheduled hot-water heating. After an intermediate storage target, allocate unclaimed PV to the battery.",
         "de": "Der Fahrplan berücksichtigt Preisfreigabe und gemeinsame Leistungsgrenze für Netzheizung in jeder Viertelstunde und beim Verschieben von Warmwasserladungen. Nach einem Speicherzwischenziel lädt der Akku mit verbleibendem PV-Überschuss.",
@@ -81,19 +94,6 @@
         "ru": "Направляет избыток энергии на подогрев воды, когда все автомобили отключены, а домашний аккумулятор заряжается на предельной мощности по переменному току.",
         "uk": "Спрямовує надлишок енергії на підігрів води, коли всі автомобілі від’єднані, а домашня батарея заряджається з максимальною потужністю змінного струму.",
         "zh-cn": "当所有车辆都已拔下充电插头且家庭储能以最大交流功率充电时，利用剩余电力加热生活用水。"
-      },
-      "0.17.0-alpha.328": {
-        "en": "Keep a PV charge running when later surplus can replenish the home battery before its next charge target.",
-        "de": "Der Fahrplan führt die PV-Ladung des Autos fort, wenn späterer Überschuss die Speicherladung vor dem nächsten Stufenziel nachholen kann.",
-        "es": "Mantiene la carga solar del vehículo si el excedente posterior permite recuperar la carga de la batería doméstica antes del siguiente objetivo.",
-        "fr": "Maintient la recharge solaire du véhicule si le surplus ultérieur permet de recharger la batterie domestique avant le prochain palier.",
-        "it": "Mantiene attiva la ricarica solare del veicolo se il surplus successivo può reintegrare la ricarica della batteria domestica entro il prossimo obiettivo.",
-        "nl": "Houdt het laden op zonnestroom gaande als later overschot de thuisaccu vóór het volgende laaddoel kan bijladen.",
-        "pl": "Utrzymuje ładowanie samochodu z fotowoltaiki, gdy późniejsza nadwyżka pozwala uzupełnić energię domowego magazynu przed kolejnym celem ładowania.",
-        "pt": "Mantém o carregamento solar do veículo se o excedente posterior permitir repor a carga da bateria doméstica antes da próxima meta.",
-        "ru": "Продолжает зарядку автомобиля от солнца, если последующий избыток энергии позволит пополнить домашний аккумулятор до следующего целевого уровня.",
-        "uk": "Продовжує заряджання автомобіля від сонця, якщо подальший надлишок енергії дасть змогу поповнити домашню батарею до наступного цільового рівня.",
-        "zh-cn": "如果后续光伏余电能在下一个充电目标前补足家庭储能，则继续为车辆充电。"
       }
     },
     "titleLang": {

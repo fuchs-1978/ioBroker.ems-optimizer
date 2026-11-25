@@ -3243,3 +3243,7 @@ Prepare a persistent per-vehicle mobility reserve, default 0 percent (off), in t
 ## 0.17.0-alpha.316
 
 - Keep other cars charging during a delayed idle wallbox poll and store measured export after mandatory vehicle charging has received its allocation.
+
+### 0.17.0-alpha.328
+
+- Keep a PV charge running when later surplus can replenish the home battery before its next charge target.
