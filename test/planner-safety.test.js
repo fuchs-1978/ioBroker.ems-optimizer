@@ -282,7 +282,8 @@ test('mandatory and deadline phase limits cannot release requested grid power as
         {name: 'deadline three-phase cap', deadline: true,
             options: {soc: 50, minimum: 20, maximum3pA: 6, departure: '12:15'}, expectedW: 4140}
     ]) {
-        const h = engine({wb2DeadlineEnabled: Boolean(scenario.deadline), wb2LowSocStepsEnabled: false});
+        const h = engine({wb2DeadlineEnabled: Boolean(scenario.deadline), wb2DeadlineTargetSocEnabled: true,
+            wb2LowSocStepsEnabled: false});
         vehicle(h, scenario.options);
         dhw(h);
         const data = h.plan({pvW: 1000, houseW: 500, slots: 1});
@@ -487,7 +488,7 @@ test('DHW planner never schedules more heat than the remaining storage capacity'
 });
 
 test('future enabled departure deadline enters forecast and charges at feasible deadline power', () => {
-    const h = engine({wb0DeadlineEnabled: true, wb0LowSocStepsEnabled: false});
+    const h = engine({wb0DeadlineEnabled: true, wb0DeadlineTargetSocEnabled: true, wb0LowSocStepsEnabled: false});
     h.put('ems.0.Devices.MyPV_DHW.Present', false);
     h.put('ems.0.Devices.Wallbox0.Present', true);
     h.put('DP_WB0_CAR', 2);
@@ -655,7 +656,7 @@ test('automatic forecast stops mandatory grid energy at the simulated minimum So
 
 test('manual choice overrides another vehicle deadline while automatic mode retains deadline precedence', () => {
     for (const manual of [false, true]) {
-        const h = engine({wallboxPriority: manual ? 0 : -1, wb1DeadlineEnabled: true});
+        const h = engine({wallboxPriority: manual ? 0 : -1, wb1DeadlineEnabled: true, wb1DeadlineTargetSocEnabled: true});
         h.put('ems.0.Devices.MyPV_DHW.Present', false);
         vehicle(h, {wb: 0, soc: 50, minimum: 20, target: 80, capacityKWh: 50,
             maximumW: 3680, maximum1pA: 16, maximumPhases: 1, phaseSwitch: false});

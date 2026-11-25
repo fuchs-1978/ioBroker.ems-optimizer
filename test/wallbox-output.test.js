@@ -755,18 +755,23 @@ test('minimum completion does not revoke a currently authorized grid-price sessi
     assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, true);
 });
 
-test('minimum completion preserves separate manual-minimum and deadline obligations', async t => {
-    for (const obligation of ['manual', 'deadline']) await t.test(obligation, async () => {
+test('minimum completion requires separate manual or explicit target-departure permission to keep buying', async t => {
+    for (const obligation of ['manual', 'target departure', 'ordinary departure']) await t.test(obligation, async () => {
         const h = await runningMinimumGridCharge();
         if (obligation === 'manual') h.put('ems.0.Vehicles.Wallbox0.ManualMinimumCurrent_A', 6);
         else {
             h.config.wb0DeadlineEnabled = true;
+            h.config.wb0DeadlineTargetSocEnabled = obligation === 'target departure';
             h.put('ems.0.Vehicles.Wallbox0.MustCharge', true);
         }
         h.advance(1000); h.put('soc', 20); h.put('ems.0.Control.Targets.Wallbox0_W', 0);
         await h.output.tick();
-        assert.deepEqual(h.writes, []);
-        assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, true);
+        if (obligation === 'ordinary departure') {
+            assert.deepEqual(h.writes, [{id: 'allow', val: 0}], 'a stale MustCharge cannot revive a completed minimum');
+        } else {
+            assert.deepEqual(h.writes, []);
+            assert.equal(h.states.get('ems.0.Devices.Wallbox0.OutputActive').val, true);
+        }
     });
 });
 

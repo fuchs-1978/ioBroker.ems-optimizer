@@ -138,6 +138,7 @@
   "Minimum SoC: charge immediately": "Minimum SoC: charge immediately",
   "Target SoC: PV charging above minimum": "Target SoC: PV charging above minimum",
   "Allow grid charging to target before departure": "Allow grid charging to target before departure",
+  "Secure the minimum SoC by departure": "Secure the minimum SoC by departure",
   "Reduce current near target SoC": "Reduce current near target SoC",
   "Stage 1: distance below target": "Stage 1: distance below target",
   "Stage 1: maximum current per phase": "Stage 1: maximum current per phase",
