@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.333",
+    "version": "0.17.0-alpha.334",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.334": {
+        "en": "Apply the grid-heating price permission and shared power limit to every forecast interval and to rescheduled hot-water heating. After an intermediate storage target, allocate unclaimed PV to the battery.",
+        "de": "Der Fahrplan berücksichtigt Preisfreigabe und gemeinsame Leistungsgrenze für Netzheizung in jeder Viertelstunde und beim Verschieben von Warmwasserladungen. Nach einem Speicherzwischenziel lädt der Akku mit verbleibendem PV-Überschuss.",
+        "es": "El plan aplica la autorización por precio y el límite de potencia compartido a la calefacción con energía de la red en cada intervalo y al reprogramar el agua caliente. Tras un objetivo intermedio, se asigna a la batería el excedente solar disponible.",
+        "fr": "Le planning applique les conditions tarifaires et la limite de puissance commune du chauffage sur le réseau à chaque intervalle et lors du déplacement de la chauffe de l’eau. Après un objectif de charge intermédiaire, le surplus photovoltaïque disponible est affecté à la batterie.",
+        "it": "Il piano applica il consenso tariffario e il limite di potenza condiviso per il riscaldamento da rete in ogni intervallo e quando riprogramma l’acqua calda. Dopo un obiettivo intermedio, il surplus fotovoltaico disponibile viene destinato alla batteria.",
+        "nl": "Het plan past de tarieftoestemming en de gedeelde vermogensgrens voor netverwarming toe in elk kwartier en bij het verschuiven van de warmwaterbereiding. Na een tussentijds laaddoel gaat het resterende zonneoverschot naar de accu.",
+        "pl": "Plan uwzględnia zgodę taryfową i wspólny limit mocy ogrzewania z sieci w każdym kwadransie oraz przy przesuwaniu podgrzewania wody. Po osiągnięciu pośredniego celu ładowania pozostała nadwyżka energii słonecznej trafia do akumulatora.",
+        "pt": "O plano aplica a autorização por preço e o limite de potência partilhado para aquecimento pela rede em cada intervalo e ao reagendar o aquecimento da água. Após uma meta de carga intermédia, o excedente solar disponível é atribuído à bateria.",
+        "ru": "План учитывает разрешённую цену и общий предел мощности нагрева от сети для каждого интервала и при переносе нагрева воды. После промежуточной цели заряда свободный избыток солнечной энергии направляется в аккумулятор.",
+        "uk": "План враховує дозволену ціну та спільне обмеження потужності нагрівання від мережі в кожному інтервалі й під час перенесення нагрівання води. Після досягнення проміжної цілі заряду вільний надлишок сонячної енергії спрямовується в акумулятор.",
+        "zh-cn": "规划在每个时段及调整热水加热时间时，均遵守电网供热的电价许可和共用功率限制。达到中间充电目标后，剩余光伏电量可继续充入电池。"
+      },
       "0.17.0-alpha.333": {
         "en": "Keep the confirmed EV charging current during a wallbox data gap while grid measurements and operating limits allow it.",
         "de": "Bei einer Messlücke der Wallbox bleibt der bestätigte Ladestrom erhalten, solange Netzmesswerte und Betriebsgrenzen dies zulassen.",
@@ -81,19 +94,6 @@
         "ru": "Продолжает зарядку автомобиля от солнца, если последующий избыток энергии позволит пополнить домашний аккумулятор до следующего целевого уровня.",
         "uk": "Продовжує заряджання автомобіля від сонця, якщо подальший надлишок енергії дасть змогу поповнити домашню батарею до наступного цільового рівня.",
         "zh-cn": "如果后续光伏余电能在下一个充电目标前补足家庭储能，则继续为车辆充电。"
-      },
-      "0.17.0-alpha.327": {
-        "en": "Plan an earlier minimum-current EV charge when later solar surplus can fully replenish the displaced battery charge.",
-        "de": "Plant einen früheren Mindeststrom für das Auto, wenn späterer PV-Überschuss die verschobene Speicherladung vollständig nachholen kann.",
-        "es": "Planifica una carga mínima anticipada del vehículo si el excedente solar posterior permite recuperar toda la carga de la batería desplazada.",
-        "fr": "Planifie une charge minimale anticipée du véhicule si le surplus solaire ultérieur permet de récupérer entièrement la charge de la batterie reportée.",
-        "it": "Pianifica una ricarica anticipata del veicolo alla corrente minima se il surplus solare successivo recupera tutta la carica della batteria posticipata.",
-        "nl": "Plan eerder laden van de auto op minimumstroom als later zonneoverschot de uitgestelde acculading volledig kan inhalen.",
-        "pl": "Planuje wcześniejsze ładowanie samochodu minimalnym prądem, jeśli późniejsza nadwyżka PV pozwala uzupełnić całą przesuniętą energię akumulatora.",
-        "pt": "Planeia uma carga antecipada do veículo à corrente mínima se o excedente solar posterior recuperar toda a carga adiada da bateria.",
-        "ru": "Планирует более раннюю зарядку автомобиля минимальным током, если последующий избыток солнца полностью восполнит отложенную зарядку батареи.",
-        "uk": "Планує раніше заряджання автомобіля мінімальним струмом, якщо подальший надлишок сонця повністю компенсує відкладене заряджання батареї.",
-        "zh-cn": "当后续光伏余电可完全补回延后的储能充电时，提前规划车辆最小电流充电。"
       }
     },
     "titleLang": {

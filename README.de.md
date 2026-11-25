@@ -198,6 +198,8 @@ Der Warmwasser-Heizstab erwärmt Trinkwasser im Speicher. Die **Mindesttemperatu
 3. Wenn **Gemeinsamen Verteiler für Wallbox und Warmwasser verwenden** aktiv ist, gilt der **Warmwasseranteil** im gemeinsamen Leistungsbereich. Bei 50 % hängen die tatsächlichen Watt weiter von Wallbox-Mindeststrom, den Ein-/Ausschaltschwellen und dem nutzbaren Heizbudget ab. Eine laufende Mindestladung und Pflichtwärme können bei ausreichender Leistung und geeigneter oberer Warmwassertemperatur zusammenlaufen.
 4. Prüfe den ersten Stelltest mit niedriger **Leistungsgrenze für die produktive Inbetriebnahme**. Vergleiche Sollwert, drei Ist-Ausgänge, Freigabe und Fühler. Ein eingeplanter Heizblock im Tarifplan benötigt eine tatsächliche Leistungsfreigabe.
 
+In jeder Viertelstunde zeigt `Plan.Allocation_48h_JSON` die zulässige Netzleistung für Wärme (`thermalGridLimitW`) und den tatsächlich eingeplanten Netzanteil für Warmwasser (`dhwGridW`). Bei 0 W kann der Heizstab weiter PV-Überschuss nutzen. Ein ungedeckter Bedarf bleibt in der Wärmebilanz sichtbar.
+
 Eine Spitze im Warmwasserfahrplan lässt sich in `Plan.DHWThermalDiagnostics_JSON` nachvollziehen. Unter `gridHeatShift` steht, wie viel bereits geplante Netzheizung in frühere, günstigere Heizviertelstunden verschoben wurde. Tankvolumen, Mindestwärmereserve, Batteriereserve und verfügbare Anschlussleistung begrenzen die Verschiebung. Ob der Heizstab tatsächlich Netzstrom nutzen darf, stellst du unter **Wärmestrategie** ein. [Beispiel mit Netz- und PV-Anteil](docs/release-0.17.0-alpha.313.md)
 
 Der optionale Notbetrieb braucht einen passenden separaten Sensor und eine bewusst konfigurierte Einschalttemperatur. [Heizstab-Felder, Temperaturkennlinie und Rückmeldung](docs/admin-reference.de.md#admin-warmwasser-heizstab)
