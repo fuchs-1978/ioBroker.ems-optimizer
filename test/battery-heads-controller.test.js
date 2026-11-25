@@ -2168,6 +2168,118 @@ function startSmallClockControl(target = 24, gridW = -target, gpW = 0) {
     return h;
 }
 
+function clockedHead(targetW, leadMs) {
+    const h = harness(1, new Map(), {batteryHead1MaxDischargeW: 2400});
+    h.own('Control.CoordinationActive', true);
+    h.own('Config.BatteryFineStep_W', 600);
+    h.own('Control.Targets.Battery_W', targetW);
+    h.grid.gridW = targetW < 0 ? 2622 : -2622;
+    h.snapshot(1, {PK: 2, MG: 2400, IS: 2400, SC: 64, timestamp: h.time() + leadMs});
+    h.tick();
+    assert.deepEqual(h.commands(), [], 'a single original cannot start a clocked order');
+    return h;
+}
+
+function nextClockedRead(h, leadMs, values = {}) {
+    h.advance(5100);
+    h.fresh();
+    h.snapshot(1, {timestamp: h.time() + leadMs, ...values});
+    h.tick();
+}
+
+test('25 November household import ramps to 2400 W with a 4.4 to 4.7 second clock lead', () => {
+    const h = clockedHead(-2400, 4369);
+    h.own('Config.BatteryMinSoC_pct', 20);
+    for (const gs of [0, 600, 1200, 1800]) {
+        h.grid.gridW = 2622 - gs;
+        nextClockedRead(h, 4683, {GS: gs, GP: gs});
+        assert.equal(h.commands().at(-1), gs + 600, h.value('Devices.Battery.OutputStatus'));
+        assert.equal(h.run(`batteryHeadsQueuedCheck("sunenergyxt500.0.heads.1.control.GS", ${gs + 600}).allowed`), true);
+        h.complete();
+    }
+    nextClockedRead(h, 4700, {GS: 2400, GP: 2396});
+    assert.equal(h.value('Devices.Battery.Heads.1.ActuatorSettled'), false);
+    h.advance(4800); h.fresh(); h.tick(); // same original now appears to have a normal timestamp
+    assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), -2400);
+    nextClockedRead(h, 4700, {GS: 2400, GP: 2396});
+    assert.equal(h.value('Devices.Battery.Heads.1.ActuatorSettled'), true);
+    assert.deepEqual(h.commands(), [600, 1200, 1800, 2400]);
+});
+
+test('high power accepts two original readings at exactly ten seconds lead in either direction', () => {
+    for (const target of [600, -600]) {
+        const h = clockedHead(target, 10000);
+        nextClockedRead(h, 10000);
+        assert.deepEqual(h.commands(), [-target]);
+        assert.equal(h.run(`batteryHeadsQueuedCheck("sunenergyxt500.0.heads.1.control.GS", ${-target}).allowed`), true);
+        h.complete();
+        nextClockedRead(h, 10001);
+        assert.deepEqual(h.commands(), [-target, 0]);
+    }
+});
+
+test('an original exceeding ten seconds stays ineligible on replay and needs two in-range readings to recover', () => {
+    const h = clockedHead(-2400, 10001);
+    nextClockedRead(h, 10001);
+    h.advance(2000); h.fresh(); h.tick();
+    assert.deepEqual(h.commands(), []);
+    nextClockedRead(h, 9999);
+    assert.deepEqual(h.commands(), []);
+    nextClockedRead(h, 9999);
+    assert.deepEqual(h.commands(), [600]);
+});
+
+test('a fresh SMA pair is required to start, dispatch and keep a higher clocked order', () => {
+    const h = clockedHead(-600, 4700);
+    h.grid.held = true;
+    nextClockedRead(h, 4700);
+    assert.deepEqual(h.commands(), []);
+    h.grid.held = false; h.tick();
+    assert.deepEqual(h.commands(), [600]);
+    h.grid.valid = false;
+    assert.equal(h.run('batteryHeadsQueuedCheck("sunenergyxt500.0.heads.1.control.GS", 600).allowed'), false);
+    h.complete(); h.tick();
+    assert.deepEqual(h.commands(), [600, 0]);
+});
+
+test('a clocked delivery still needs two original post-write readings when device time returns to normal', () => {
+    const h = clockedHead(-600, 4700);
+    nextClockedRead(h, 4700);
+    h.complete();
+    nextClockedRead(h, 0, {GS: 600, GP: 600});
+    assert.equal(h.value('Devices.Battery.OutputUnobservedCommand_W'), -600);
+    h.advance(1100); h.fresh(); h.tick();
+    assert.equal(h.value('Devices.Battery.Heads.1.ActuatorSettled'), false);
+    nextClockedRead(h, 0);
+    assert.equal(h.value('Devices.Battery.Heads.1.ActuatorSettled'), true);
+    assert.deepEqual(h.commands(), [600]);
+});
+
+test('replaying the same clocked reading cannot indefinitely renew a higher order', () => {
+    const h = clockedHead(600, 4700);
+    nextClockedRead(h, 4700);
+    h.complete();
+    h.advance(31000); h.fresh(); h.tick();
+    assert.deepEqual(h.commands(), [-600, 0]);
+    assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 600);
+});
+
+test('republished zero readings cannot release the previous high charging reservation', () => {
+    const h = clockedHead(600, 4700);
+    nextClockedRead(h, 4700); h.complete();
+    h.own('Control.Targets.Battery_W', 0); h.tick(); h.complete();
+    assert.deepEqual(h.commands(), [-600, 0]);
+    nextClockedRead(h, 4700, {GS: 0, GP: 0});
+    for (let i = 0; i < 3; i++) {
+        h.advance(5000); h.fresh(); h.tick();
+        assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 600);
+    }
+    nextClockedRead(h, 4700);
+    nextClockedRead(h, 4700);
+    assert.equal(h.value('Devices.Battery.OutputOwned'), false);
+    assert.equal(h.value('Devices.Battery.OutputReservedCharge_W'), 0);
+});
+
 for (const direction of [1, -1]) {
     test(`small live ${direction > 0 ? 'charge' : 'discharge'} follows new targets with the observed nine-second clock lead`, () => {
         // Recorded charging start: 43.2 W grid export still included 19 W of discharge.
@@ -2184,8 +2296,8 @@ for (const direction of [1, -1]) {
         }
         assert.ok(h.writes.every(w => w.val * direction < 0));
         assert.equal(h.value('Devices.Battery.Heads.1.ActuatorSettled'), false);
-        h.advance(1100); h.own('Control.Targets.Battery_W', 101 * direction); h.tick();
-        assert.equal(h.writes.at(-1).val, 0);
+        h.advance(1100); h.grid.gridW = -101 * direction; h.own('Control.Targets.Battery_W', 101 * direction); h.tick();
+        assert.equal(h.writes.at(-1).val, -101 * direction);
     });
 }
 
@@ -2257,7 +2369,7 @@ test('small commands with a leading clock retain source, electrical and release 
         h => h.snapshot(1, {GP: -101}),
         h => h.snapshot(1, {GS: -101}),
         h => h.snapshot(1, {SC: 100}),
-        h => h.own('Control.Targets.Battery_W', 101),
+        h => { h.own('Control.Targets.Battery_W', 101); h.grid.held = true; },
         h => h.own('System.RealOutputsEnabled', false),
         h => { h.limit.budgetW = 0; },
     ];
