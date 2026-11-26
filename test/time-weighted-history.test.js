@@ -163,6 +163,33 @@ test('an unprovably complete raw quarter fails explicitly rather than caching a 
     await assert.rejects(h.run("getHistoryChunked('dense',0,900000)"), /Abfragelimit/);
     assert.equal(h.run("historySourceCache.get(CFG.sqlInstance+':dense:power').values.length"), 0);
 });
+test('all SQL pages share the strictest hold and conflicting overlap stays invalid', async () => {
+    let calls = 0;
+    const h = harness({page: () => {
+        calls++;
+        if (calls === 1) return Object.assign([], {responseLength: 10000, maxGapMs: 1});
+        if (calls === 2) return Object.assign([{ts: 0, val: 400}, ...heartbeats(180000, STEP, 400)], {maxGapMs: STEP});
+        return Object.assign(heartbeats(STEP, 3 * STEP, 800).reverse(), {maxGapMs: 95000});
+    }});
+    h.run('getHistory = page');
+    const result = await h.run("getTimeWeightedHistory('meter',0,2700000,true)");
+    assert.equal(calls, 3);
+    assert.deepEqual(JSON.parse(JSON.stringify(result)), [{ts: 2 * STEP, val: 800}]);
+});
+
+test('daily appends and overlapping repairs preserve sorting and the last reading for each timestamp', async () => {
+    const h = harness({readDay: (id, start) => start === 0 ? [{ts: 0, val: 1}] : start === DAY
+        ? [{ts: DAY + STEP, val: 2}, {ts: DAY, val: 3}, {ts: String(DAY), val: 4}]
+        : [{ts: start, val: 5}]});
+    h.run('getHistory = readDay');
+    const query = "getHistoryChunked('temp',0,3*86400000,'average')";
+    const first = JSON.parse(JSON.stringify(await h.run(query)));
+    assert.deepEqual(first, [{ts: 0, val: 1}, {ts: String(DAY), val: 4}, {ts: DAY + STEP, val: 2}, {ts: 2 * DAY, val: 5}]);
+    h.run(`const restored = historySourceCache.get(historySourceKey('temp','average',false));
+        restored.values = [...restored.values.reverse(), {ts:0,val:9}]; restored.empty = [[86400000,2*86400000]];`);
+    const second = JSON.parse(JSON.stringify(await h.run(query)));
+    assert.deepEqual(second, [{ts: 0, val: 9}, ...first.slice(1), {ts: 3 * DAY - 2 * STEP, val: 5}]);
+});
 test('daily raw chunks cover boundaries and a cached refresh reads only the overlapping tail', async () => {
     const calls = [], rows = heartbeats(-60000, 3 * DAY, 400);
     const h = harness({historySourceSettings: async () => ({enabled: true, changesRelogInterval: 60}),
