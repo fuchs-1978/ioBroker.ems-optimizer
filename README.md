@@ -83,6 +83,10 @@ npm run test:equivalence
 
 ## Changelog
 
+### 0.17.0-alpha.338 (2026-11-26)
+
+- Set a one-off departure date, local time and optional charge target in the web dashboard. Allow grid charging to that target for the individual trip. [Release notes](docs/release-0.17.0-alpha.338.md)
+
 ### 0.17.0-alpha.337 (2026-11-26)
 
 - When one car is charging to its minimum, qualify multi-amp PV current swings against 45 seconds of sustained surplus. [Release notes](docs/release-0.17.0-alpha.337.md)
@@ -110,10 +114,6 @@ npm run test:equivalence
 ### 0.17.0-alpha.331 (2026-11-25)
 
 - Limit departure grid charging to the vehicle minimum. Each wallbox can explicitly allow grid charging to the upper target. [Release notes](docs/release-0.17.0-alpha.331.md)
-
-### 0.17.0-alpha.330 (2026-11-24)
-
-- Keep surplus hot-water heating running when measured battery charging power dips. Reserve enough power for full storage charging and use the remaining measured surplus for domestic hot water. [Release notes](docs/release-0.17.0-alpha.330.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 

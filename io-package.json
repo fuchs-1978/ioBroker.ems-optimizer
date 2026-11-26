@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.337",
+    "version": "0.17.0-alpha.338",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.338": {
+        "en": "Set a one-off departure several days ahead with a date, local time and optional charge target in the web dashboard. Grid charging to that target can be allowed for this trip.",
+        "de": "Im Web-Dashboard lässt sich eine einmalige Abfahrt mehrere Tage im Voraus mit Datum, Ortszeit und optionalem Abfahrts-SoC eintragen. Netzladung bis zu diesem Ziel kann für die einzelne Fahrt freigegeben werden.",
+        "es": "El panel web permite programar una salida con varios días de antelación, con fecha, hora local y un nivel de carga opcional. Se puede autorizar la carga de red para ese viaje.",
+        "fr": "Le tableau de bord permet de prévoir un départ plusieurs jours à l’avance avec une date, une heure locale et un niveau de charge facultatif. La recharge sur le réseau peut être autorisée pour ce trajet.",
+        "it": "Nel pannello web si può programmare una singola partenza con diversi giorni di anticipo, indicando data, ora locale e carica desiderata. La ricarica dalla rete può essere autorizzata per quel viaggio.",
+        "nl": "Plan in het webdashboard een eenmalig vertrek dagen van tevoren met datum, lokale tijd en een optioneel laadniveau. Laden via het net tot dat niveau kan voor deze rit worden toegestaan.",
+        "pl": "W panelu można z kilkudniowym wyprzedzeniem zaplanować jednorazowy wyjazd, podając datę, czas lokalny i opcjonalny poziom naładowania. Ładowanie z sieci można włączyć dla tej podróży.",
+        "pt": "O painel web permite agendar uma partida com vários dias de antecedência, com data, hora local e nível de carga opcional. É possível autorizar a carga pela rede para essa viagem.",
+        "ru": "В веб-панели можно за несколько дней задать дату, местное время и желаемый уровень заряда для одной поездки. Для неё можно отдельно разрешить зарядку от сети.",
+        "uk": "У вебпанелі можна за кілька днів задати дату, місцевий час і бажаний рівень заряду для однієї поїздки. Для неї можна окремо дозволити заряджання від мережі.",
+        "zh-cn": "可在网页面板中提前数天为单次出发设置日期、当地时间和可选目标电量，并可仅为该行程允许从电网充至目标电量。"
+      },
       "0.17.0-alpha.337": {
         "en": "When one car is charging to its minimum, the controller filters multi-amp current swings using 45 seconds of sustained solar surplus. Reductions and the required minimum take effect immediately.",
         "de": "Lädt ein Auto allein bis zum Mindest-SoC, dämpft das EMS Schwankungen um mehrere Ampere. Zum Erhöhen braucht es 45 Sekunden anhaltenden Überschuss. Reduzierungen und der erforderliche Mindeststrom gelten sofort.",
@@ -81,19 +94,6 @@
         "ru": "Для управления одним модулем SunEnergy используются свежие измерения устройства и сети при опережении часов до десяти секунд.",
         "uk": "Для керування одним модулем SunEnergy використовуються свіжі вимірювання пристрою та мережі за випередження годинника до десяти секунд.",
         "zh-cn": "当设备时钟最多快十秒时，单机头控制使用最新的 SunEnergy 和电网测量值。"
-      },
-      "0.17.0-alpha.331": {
-        "en": "Departure charging stops at the minimum vehicle SoC. Grid charging to the upper target requires a separate per-vehicle option.",
-        "de": "Die Abfahrtsladung endet am Mindest-SoC. Netzladung bis zum oberen Ziel lässt sich je Fahrzeug zusätzlich freigeben.",
-        "es": "La carga para la salida termina en el SoC mínimo. La carga desde la red hasta el objetivo superior requiere una opción adicional por vehículo.",
-        "fr": "La recharge pour le départ s’arrête au niveau minimal. Une option par véhicule autorise la recharge sur le réseau jusqu’à la cible supérieure.",
-        "it": "La ricarica per la partenza termina al SoC minimo. Un’opzione per veicolo consente la ricarica dalla rete fino all’obiettivo superiore.",
-        "nl": "Laden voor vertrek stopt bij de minimale laadstatus. Netladen tot de hogere doellaadstatus is per voertuig apart in te schakelen.",
-        "pl": "Ładowanie przed wyjazdem kończy się po osiągnięciu minimalnego poziomu. Dodatkowa opcja dla każdego pojazdu pozwala ładować z sieci do wyższego celu.",
-        "pt": "O carregamento para a partida termina no estado de carga mínimo. Uma opção por veículo permite carregar pela rede até ao objetivo superior.",
-        "ru": "Зарядка к отъезду завершается на минимальном уровне. Для каждого автомобиля можно отдельно разрешить зарядку от сети до верхней цели.",
-        "uk": "Заряджання до від’їзду завершується на мінімальному рівні. Для кожного автомобіля можна окремо дозволити заряджання від мережі до верхньої цілі.",
-        "zh-cn": "出发充电在达到最低电量时结束。每辆车都可单独启用电网充电至更高目标电量的选项。"
       }
     },
     "titleLang": {

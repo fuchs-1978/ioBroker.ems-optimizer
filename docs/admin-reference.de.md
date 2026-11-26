@@ -1122,6 +1122,8 @@ Seit alpha.186 bekommt die eigentliche Recorder-Historienprüfung bei erkannter 
 
 ## Mobilitätsreserve und vorhandene Abfahrtszeit
 
+Das Web-Dashboard kann pro Wallbox einen einmaligen Termin mit Datum und Ortszeit in `Vehicles.WallboxN.DepartureTrip_JSON` speichern. Ein optionaler Abfahrts-SoC und die Netzfreigabe gelten für diesen Termin. `Vehicles.WallboxN.DeparturePlan_JSON` meldet die wirksamen Ladeziele und den Beginn der eingeplanten Nachladung. Der Termin kann auch außerhalb der rollierenden 48-Stunden-Prognose liegen. [Bedienung und Datenformat](release-0.17.0-alpha.338.md)
+
 Je Fahrzeug liegt im Objektbaum der beschreibbare State `ems-optimizer.0.Vehicles.Wallbox0.MobilityReserve_pct` (analog Wallbox1/Wallbox2). Vorgabe **0 % = aus**; bestehende Eingaben bleiben bei Neustart/Update erhalten. Gültig sind Zahlen von 0 bis 100; die Vorschau begrenzt das Reserve-Ziel zusätzlich auf den Fahrzeug-Mindest-SoC. Ungültige Werte bleiben unbekannt. Die Reserve ist ein Teil des Mindestbedarfs und wird nicht als zusätzliche Nachtenergie addiert.
 
 Die vorhandenen `Vehicles.WallboxN.DepartureTime`-States verwenden `HH:MM`; `DepartureTimestamp` ist der daraus berechnete nächste Termin. Zusätzlich muss die bestehende Abfahrts-/Fristfunktion für das Fahrzeug eingeschaltet sein. Eine leere Zeit ist keine feste Abfahrt. Es werden keine Zeiten automatisch gesetzt oder vorhandene Einstellungen überschrieben.

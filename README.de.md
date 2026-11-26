@@ -167,6 +167,8 @@ Für Fahrzeugmeldung und manuelle Korrektur zählt der **Messzeitpunkt**. Ohne s
 
 ### Mobilitätsreserve und vorhandene Abfahrtszeit
 
+Im Web-Dashboard öffnet ein Klick auf die Fahrzeugkachel die Ladeziele. Für eine einzelne Fahrt kannst du **Abfahrtsdatum**, **Abfahrtszeit** und **Abfahrts-SoC** eintragen. Mit der Netzfreigabe für diesen Termin darf das EMS fehlende Energie bis zum Fahrtziel aus dem Netz ergänzen. Nach dem Termin gelten wieder die normalen SoC-Grenzen. [Beispiel und Datenpunkte](docs/release-0.17.0-alpha.338.md)
+
 Bei aktivierter Abfahrt reserviert das EMS die Leistung, die das Fahrzeug für seinen Mindest-SoC zum eingestellten Zeitpunkt benötigt. Reicht die PV-Leistung dafür nicht aus, darf es die Differenz aus dem Netz beziehen. Das gilt auch für eine Wallbox ohne Fahrzeugvorrang im Parallelbetrieb. Die Rechnung zielt auf den Abschluss 15 Minuten vor Abfahrt und berücksichtigt die eingestellten Stromgrenzen am Ladeende.
 
 Ab Alpha 331 beendet der erreichte Mindest-SoC die reguläre Abfahrtsladung. Bei 75 % Minimum und 100 % Ziel kann das Fahrzeug oberhalb von 75 % weiter mit PV-Überschuss laden. Wer zur Abfahrt auch den oberen Zielwert aus dem Netz anstrebt, aktiviert an der gewünschten Wallbox **Zusätzlich bis zum Ziel-SoC aus dem Netz laden**. Beim Update ist dieser Schalter aus.

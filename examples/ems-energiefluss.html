@@ -82,7 +82,7 @@ dialog{color:var(--ink);background:var(--card);border:1px solid var(--border);bo
 dialog::backdrop{background:#07182788}.dialog-head,.actions,.departure-input{display:flex;align-items:center;justify-content:space-between;gap:10px}.dialog-head h2{margin:.16rem 0 0;font-size:1.65rem}.dialog-head small,#departure-help{color:var(--muted)}.dialog-head small{font-size:.85rem}
 dialog button{background:var(--wash);color:var(--ink);border:1px solid var(--border);border-radius:8px;min-height:42px;padding:5px 12px;cursor:pointer}.close-dialog{font-size:1.45rem;line-height:1;min-width:42px}.goal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}dialog fieldset{padding:0;margin:20px 0 0;border:0;min-width:0}dialog label{font-size:.95rem;font-weight:650}
 .goal-input,.departure-input input{display:flex;align-items:center;border:1px solid var(--border);background:var(--page-top);border-radius:8px;padding:6px 9px;min-height:43px}.goal-input{margin-top:4px}.goal-input span{color:var(--muted)}.goal-input input{background:transparent;border:0;width:100%;min-width:0}.goal-input:focus-within,.departure-input input:focus-visible{outline:2px solid var(--accent)}
-dialog input{font:inherit;color:var(--ink);font-size:1.03rem}.departure-label{display:block;margin:16px 0 4px}.departure-input input{flex:1;min-width:0}.departure-input button{flex-shrink:0;font-size:.84rem}
+.trip-fields{margin-top:12px}.trip-fields .goal-input input{box-sizing:border-box;max-width:100%}dialog input{font:inherit;color:var(--ink);font-size:1.03rem}.departure-label{display:block;margin:16px 0 4px}.departure-input input{flex:1;min-width:0}.departure-input button{flex-shrink:0;font-size:.84rem}
 #departure-help,#goal-status{font-size:.85rem;margin-top:7px}#goal-status{min-height:1.25em;color:var(--muted);margin-top:16px}#goal-status[data-error=true]{color:#a24728}[data-theme=night] #goal-status[data-error=true]{color:#ffc199}
 .actions{justify-content:flex-end;margin-top:12px}.actions [type=submit]{background:#14654f;color:white;font-weight:650;border-color:transparent}.actions button:disabled{opacity:.5;cursor:default}
 #mii-soc-form{padding:16px 0;margin:0 0 15px;border-bottom:1px solid var(--border)}
@@ -214,21 +214,21 @@ dialog .priority-choice input{width:1.2rem;height:1.2rem;margin:0;accent-color:v
 <button type="button" class="edit-vehicle" data-vehicle="0" aria-label="Ladeeinstellungen für SEAT Mii bearbeiten" aria-haspopup="dialog" aria-describedby="wb0-plug wb0-info"></button>
 <svg class="art" aria-hidden="true" viewBox="0 0 120 65"><use data-art="mii" href="#mii-day-art" x="7.0" y="1" width="106" height="62"/></svg>
 <svg class="mini-flow" viewBox="0 0 100 10" aria-hidden="true"><g class="route" data-branch="wb0"><path d="M2 5 H98"/></g></svg>
-<div class="level">—</div><div class="charge"><span class="soc-icon" aria-hidden="true"><i></i></span><span class="soc-value">—</span><small class="soc-unit">SoC</small></div><div class="vehicle-info" id="wb0-info"><strong class="vehicle-status"></strong><span class="vehicle-countdown" role="timer" aria-label="Restzeit in Minuten und Sekunden" hidden></span><small class="vehicle-stop" hidden>Abschaltverzögerung <span class="wallbox-countdown" role="timer" aria-label="Verbleibende Abschaltverzögerung"></span></small><small class="vehicle-minimum" hidden>Mindestlaufzeit <span class="wallbox-countdown" role="timer" aria-label="Verbleibende Mindestlaufzeit"></span></small><small class="vehicle-storage-check" hidden>Speicherprüfung <span class="storage-countdown" role="timer" aria-label="Verbleibende Prüfzeit in Minuten und Sekunden"></span></small><small class="vehicle-plan" hidden></small><small class="vehicle-priority" hidden>★ Vorrang</small></div></article>
+<div class="level">—</div><div class="charge"><span class="soc-icon" aria-hidden="true"><i></i></span><span class="soc-value">—</span><small class="soc-unit">SoC</small></div><div class="vehicle-info" id="wb0-info"><strong class="vehicle-status"></strong><span class="vehicle-countdown" role="timer" aria-label="Restzeit in Minuten und Sekunden" hidden></span><small class="vehicle-stop" hidden>Abschaltverzögerung <span class="wallbox-countdown" role="timer" aria-label="Verbleibende Abschaltverzögerung"></span></small><small class="vehicle-minimum" hidden>Mindestlaufzeit <span class="wallbox-countdown" role="timer" aria-label="Verbleibende Mindestlaufzeit"></span></small><small class="vehicle-storage-check" hidden>Speicherprüfung <span class="storage-countdown" role="timer" aria-label="Verbleibende Prüfzeit in Minuten und Sekunden"></span></small><small class="vehicle-departure" hidden></small><small class="vehicle-plan" hidden></small><small class="vehicle-priority" hidden>★ Vorrang</small></div></article>
 <article class="tile car" id="wb1"><h3>Mercedes EQV&nbsp;300</h3><div class="vehicle-tools">
 <span class="plug-state" id="wb1-plug" role="img" aria-label="Anschlussstatus unbekannt"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#plug-unknown"/></svg></span>
 <svg class="edit-icon" aria-hidden="true" viewBox="0 0 20 20"><path d="m4 13-.8 3.7 3.8-.9L16 6.8 13.2 4Z M11.8 5.4l2.8 2.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></div>
 <button type="button" class="edit-vehicle" data-vehicle="1" aria-label="Ladeeinstellungen für Mercedes EQV 300 bearbeiten" aria-haspopup="dialog" aria-describedby="wb1-plug wb1-info"></button>
 <svg class="art" aria-hidden="true" viewBox="0 0 120 65"><use data-art="eqv" href="#eqv-day-art" x="0.0" y="1" width="120" height="62"/></svg>
 <svg class="mini-flow" viewBox="0 0 100 10" aria-hidden="true"><g class="route" data-branch="wb1"><path d="M2 5 H98"/></g></svg>
-<div class="level">—</div><div class="charge"><span class="soc-icon" aria-hidden="true"><i></i></span><span class="soc-value">—</span><small class="soc-unit">SoC</small></div><div class="vehicle-info" id="wb1-info"><strong class="vehicle-status"></strong><span class="vehicle-countdown" role="timer" aria-label="Restzeit in Minuten und Sekunden" hidden></span><small class="vehicle-stop" hidden>Abschaltverzögerung <span class="wallbox-countdown" role="timer" aria-label="Verbleibende Abschaltverzögerung"></span></small><small class="vehicle-minimum" hidden>Mindestlaufzeit <span class="wallbox-countdown" role="timer" aria-label="Verbleibende Mindestlaufzeit"></span></small><small class="vehicle-storage-check" hidden>Speicherprüfung <span class="storage-countdown" role="timer" aria-label="Verbleibende Prüfzeit in Minuten und Sekunden"></span></small><small class="vehicle-plan" hidden></small><small class="vehicle-priority" hidden>★ Vorrang</small></div></article>
+<div class="level">—</div><div class="charge"><span class="soc-icon" aria-hidden="true"><i></i></span><span class="soc-value">—</span><small class="soc-unit">SoC</small></div><div class="vehicle-info" id="wb1-info"><strong class="vehicle-status"></strong><span class="vehicle-countdown" role="timer" aria-label="Restzeit in Minuten und Sekunden" hidden></span><small class="vehicle-stop" hidden>Abschaltverzögerung <span class="wallbox-countdown" role="timer" aria-label="Verbleibende Abschaltverzögerung"></span></small><small class="vehicle-minimum" hidden>Mindestlaufzeit <span class="wallbox-countdown" role="timer" aria-label="Verbleibende Mindestlaufzeit"></span></small><small class="vehicle-storage-check" hidden>Speicherprüfung <span class="storage-countdown" role="timer" aria-label="Verbleibende Prüfzeit in Minuten und Sekunden"></span></small><small class="vehicle-departure" hidden></small><small class="vehicle-plan" hidden></small><small class="vehicle-priority" hidden>★ Vorrang</small></div></article>
 <article class="tile car" id="wb2"><h3>Mercedes EQE&nbsp;350</h3><div class="vehicle-tools">
 <span class="plug-state" id="wb2-plug" role="img" aria-label="Anschlussstatus unbekannt"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#plug-unknown"/></svg></span>
 <svg class="edit-icon" aria-hidden="true" viewBox="0 0 20 20"><path d="m4 13-.8 3.7 3.8-.9L16 6.8 13.2 4Z M11.8 5.4l2.8 2.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></div>
 <button type="button" class="edit-vehicle" data-vehicle="2" aria-label="Ladeeinstellungen für Mercedes EQE 350 bearbeiten" aria-haspopup="dialog" aria-describedby="wb2-plug wb2-info"></button>
 <svg class="art" aria-hidden="true" viewBox="0 0 120 65"><use data-art="eqe" href="#eqe-day-art" x="1.0" y="1" width="118" height="62"/></svg>
 <svg class="mini-flow" viewBox="0 0 100 10" aria-hidden="true"><g class="route" data-branch="wb2"><path d="M2 5 H98"/></g></svg>
-<div class="level">—</div><div class="charge"><span class="soc-icon" aria-hidden="true"><i></i></span><span class="soc-value">—</span><small class="soc-unit">SoC</small></div><div class="vehicle-info" id="wb2-info"><strong class="vehicle-status"></strong><span class="vehicle-countdown" role="timer" aria-label="Restzeit in Minuten und Sekunden" hidden></span><small class="vehicle-stop" hidden>Abschaltverzögerung <span class="wallbox-countdown" role="timer" aria-label="Verbleibende Abschaltverzögerung"></span></small><small class="vehicle-minimum" hidden>Mindestlaufzeit <span class="wallbox-countdown" role="timer" aria-label="Verbleibende Mindestlaufzeit"></span></small><small class="vehicle-storage-check" hidden>Speicherprüfung <span class="storage-countdown" role="timer" aria-label="Verbleibende Prüfzeit in Minuten und Sekunden"></span></small><small class="vehicle-plan" hidden></small><small class="vehicle-priority" hidden>★ Vorrang</small></div></article></div></section>
+<div class="level">—</div><div class="charge"><span class="soc-icon" aria-hidden="true"><i></i></span><span class="soc-value">—</span><small class="soc-unit">SoC</small></div><div class="vehicle-info" id="wb2-info"><strong class="vehicle-status"></strong><span class="vehicle-countdown" role="timer" aria-label="Restzeit in Minuten und Sekunden" hidden></span><small class="vehicle-stop" hidden>Abschaltverzögerung <span class="wallbox-countdown" role="timer" aria-label="Verbleibende Abschaltverzögerung"></span></small><small class="vehicle-minimum" hidden>Mindestlaufzeit <span class="wallbox-countdown" role="timer" aria-label="Verbleibende Mindestlaufzeit"></span></small><small class="vehicle-storage-check" hidden>Speicherprüfung <span class="storage-countdown" role="timer" aria-label="Verbleibende Prüfzeit in Minuten und Sekunden"></span></small><small class="vehicle-departure" hidden></small><small class="vehicle-plan" hidden></small><small class="vehicle-priority" hidden>★ Vorrang</small></div></article></div></section>
    <div id="dishwasher" class="appliance-row" role="group" aria-label="Geschirrspüler" hidden>
     <svg viewBox="0 0 30 34" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="2" width="24" height="29" rx="3"/><path d="M3 10h24M7 6h5m7 0h.4m3.1 0h.4M8 25h14m-11-3-2-7m6 7-2-8m6 8-2-8"/></svg>
     <div><strong>Geschirrspüler</strong><small id="dishwasher-status"></small></div>
@@ -270,8 +270,13 @@ dialog .priority-choice input{width:1.2rem;height:1.2rem;margin:0;accent-color:v
     <label for="goal-min">Mindest-SoC <span class="goal-input"><input id="goal-min" type="number" inputmode="numeric" min="0" max="100" step="1" required><span>%</span></span></label>
     <label for="goal-max">Maximal-SoC <span class="goal-input"><input id="goal-max" type="number" inputmode="numeric" min="0" max="100" step="1" required><span>%</span></span></label>
    </div>
-   <label for="goal-time" class="departure-label">Abfahrt</label><div class="departure-input"><input id="goal-time" type="time" step="60" aria-describedby="departure-help"><button id="clear-time" type="button">Zeit löschen</button></div>
-   <p id="departure-help">Uhrzeit für die nächste Abfahrt. Leer lassen, wenn keine Abfahrt geplant ist.</p>
+   <label for="goal-time" class="departure-label">Abfahrtszeit</label><div class="departure-input"><input id="goal-time" type="time" step="60" aria-describedby="departure-help"><button id="clear-time" type="button">Abfahrt löschen</button></div>
+   <div class="goal-grid trip-fields">
+    <label for="goal-date">Abfahrtsdatum <span class="goal-input"><input id="goal-date" type="date" aria-describedby="departure-help"></span></label>
+    <label for="goal-trip-soc">Abfahrts-SoC <span class="goal-input"><input id="goal-trip-soc" type="number" inputmode="numeric" min="0" max="100" step="1" placeholder="optional"><span>%</span></span></label>
+   </div>
+   <label class="priority-choice" for="goal-trip-grid"><input type="checkbox" id="goal-trip-grid">Netzladung für diesen Termin bis zum Abfahrts-SoC erlauben</label>
+   <p id="departure-help" aria-live="polite"></p>
    <label class="priority-choice" for="goal-priority"><input type="checkbox" id="goal-priority" aria-describedby="priority-help" disabled>Dieses Fahrzeug bevorzugt laden</label>
    <p id="priority-help"></p>
   </fieldset>
@@ -450,7 +455,7 @@ function vehicleDevice(wallbox, now, control) {
     && allocation.preferred === true && timely(allocation.timestamp, now, SNAPSHOT_MAX_AGE)
     && isNumber(until) && until > now ? until : null;
   return {...device(power, true, percentage(wallbox.SoC_pct), note), connected,
-    status, startDelayUntil:wallbox.startDelayUntil, batteryCheckUntil,
+    status, departurePlan:wallbox.departurePlan, startDelayUntil:wallbox.startDelayUntil, batteryCheckUntil,
     stopDelayUntil:connected === true && !wallbox.OutputFault ? wallbox.stopDelayUntil : null,
     minimumRunUntil:connected === true && !wallbox.OutputFault ? wallbox.minimumRunUntil : null};
 }
@@ -540,14 +545,39 @@ const hpKeys = ["Devices.HeatPump.Power_W", "Devices.HeatPump.PowerValid"];
 function vehiclePath(i, key) { return INSTANCE + ".Vehicles.Wallbox" + i + "." + key; }
 function goalIds(i) {
   if(!Number.isInteger(i)||i<0||i>=VEHICLE_NAMES.length) throw Error("Unbekannte Wallbox");
-  return {min:"javascript.0.ev.socmin"+i,max:"javascript.0.ev.socmax"+i,time:vehiclePath(i,"DepartureTime")};
+  return {min:"javascript.0.ev.socmin"+i,max:"javascript.0.ev.socmax"+i,time:vehiclePath(i,"DepartureTime"),trip:vehiclePath(i,"DepartureTrip_JSON")};
 }
 function normalizedDeparture(value) {
   if(typeof value!=="string") return null;
   const time=value.trim();
   return time===""||/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(time)?time:null;
 }
+function goalTripText(g) {
+  return g.date ? JSON.stringify({date:g.date, time:g.time, soc:g.tripSoc ?? null, allowGrid:g.allowGrid === true}) : "";
+}
+function readGoalJson(state) {
+  if (!validState(state) || typeof state.val !== "string" || !state.val) return null;
+  try { return JSON.parse(state.val); } catch { return null; }
+}
+function tripSummary(date,time,soc) {
+  const [year,month,day] = date.split("-");
+  return day+"."+month+"."+year+", "+time+" Uhr"+(soc == null ? "" : " · "+soc+" %");
+}
+function localDepartureMinute(zone, instant = new Date()) {
+  const parts = new Intl.DateTimeFormat("de-DE",{timeZone:zone || "Europe/Berlin", year:"numeric", month:"2-digit",
+    day:"2-digit", hour:"2-digit", minute:"2-digit", hourCycle:"h23"}).formatToParts(instant);
+  const v = Object.fromEntries(parts.map(p=>[p.type,p.value]));
+  return v.year+"-"+v.month+"-"+v.day+"T"+v.hour+":"+v.minute;
+}
 function validateGoals(goals) {
+  if (goals.date) {
+    const utc = new Date(goals.date+"T12:00:00Z");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(goals.date) || !Number.isFinite(utc.getTime()) || utc.toISOString().slice(0,10)!==goals.date)
+      throw Error("Bitte ein gültiges Abfahrtsdatum wählen.");
+    if (!goals.time) throw Error("Für eine datierte Abfahrt bitte die Uhrzeit eintragen.");
+    if (goals.tripSoc != null && (!Number.isInteger(goals.tripSoc) || goals.tripSoc < goals.min || goals.tripSoc > 100))
+      throw Error("Der Abfahrts-SoC muss zwischen Mindest-SoC und 100 % liegen.");
+  }
   if(goals.editLimits && (!Number.isInteger(goals.min)||!Number.isInteger(goals.max)||percentage(goals.min)===null||percentage(goals.max)===null)) throw Error("Bitte ganze Prozentwerte zwischen 0 und 100 eingeben.");
   if(goals.editLimits && goals.min>goals.max) throw Error("Der Mindest-SoC muss kleiner oder gleich dem Maximal-SoC sein.");
   if(normalizedDeparture(goals.time)===null) throw Error("Bitte eine Abfahrtszeit zwischen 00:00 und 23:59 eingeben oder das Feld leeren.");
@@ -555,7 +585,23 @@ function validateGoals(goals) {
 function planGoalWrites(before,after) {
   validateGoals(after);
   const limits=after.editLimits?(after.min>before.max?["max","min"]:["min","max"]):[];
-  return [...limits,"time"].filter(key=>before[key]!==after[key]);
+  if (after.date && goalTripText(before)!==goalTripText(after)) {
+    const clock = after.date+"T"+after.time, zone = after.plan?.zone;
+    if (clock <= localDepartureMinute(zone)) throw Error("Bitte einen Abfahrtstermin in der Zukunft wählen.");
+    // Try the UTC offsets on both sides of a possible clock change in the EMS zone.
+    const nominal = Date.parse(clock+"Z");
+    const exists = [-86400000,86400000].some(delta => {
+      const probe = nominal+delta, offset = Date.parse(localDepartureMinute(zone,probe)+"Z")-probe;
+      return localDepartureMinute(zone,nominal-offset)===clock;
+    });
+    if (!exists) throw Error("Diese Ortszeit entfällt durch die Zeitumstellung. Bitte eine andere Uhrzeit wählen.");
+  }
+  const keys = limits.filter(key=>before[key]!==after[key]);
+  if (after.date) {
+    if (goalTripText(before)!==goalTripText(after)) keys.push("trip");
+  } else if (before.date) keys.push("time","trip");
+  else if (before.time!==after.time) keys.push("time");
+  return keys;
 }
 
 function wallboxDelayIds(i) {
@@ -578,7 +624,7 @@ function fastIds(s) {
   const ids = s.control?.priorityRequest?.external?.id === PRIORITY_ID ? [PRIORITY_ID] : [];
   for (const w of s.wallboxes) if (w.Present && w.wb >= 0 && w.wb <= 2) {
     devices.push(w.measurements?.power);
-    ids.push(vehiclePath(w.wb, "SoC_pct"), ...Object.values(wallboxDelayIds(w.wb)));
+    ids.push(vehiclePath(w.wb, "SoC_pct"), vehiclePath(w.wb, "DeparturePlan_JSON"), ...Object.values(wallboxDelayIds(w.wb)));
   }
   if (s.ehz?.Present) devices.push(...(m.ehzOutputs ?? []));
   if (s.heating?.Present) devices.push(...(s.heating.measurements?.outputs ?? []));
@@ -615,7 +661,7 @@ function withFastReadings(s, raw, now) {
     const start = wallboxDelay(w.StartDelayActive, raw[ids.start], s.ts, now);
     const stop = wallboxDelay(w.StopDelayActive, raw[ids.stop], s.ts, now);
     const minimum = wallboxDelay(w.MinimumRunTimeActive, raw[ids.minimum], s.ts, now);
-    return {...w,measurements:{...w.measurements,power:meter},
+    return {...w,departurePlan:readGoalJson(raw[vehiclePath(w.wb,"DeparturePlan_JSON")]),measurements:{...w.measurements,power:meter},
       StartDelayActive:start.active, startDelayUntil:start.until,
       stopDelayUntil:stop.until, minimumRunUntil:minimum.until,
 
@@ -740,7 +786,7 @@ let lastFrame = 0;
 let model = emptyModel();
 let exampleMiiSoc = null;
 let examplePriority = 2;
-const sampleGoals = VEHICLE_NAMES.map((_,i) => ({min:50, max:i === 1 ? 80 : 90, time:"", editLimits:true}));
+const sampleGoals = VEHICLE_NAMES.map((_,i) => ({min:50, max:i === 1 ? 80 : 90, time:"", editLimits:true,date:"",tripSoc:null,allowGrid:false,tripEnabled:true,controlEnabled:true,gridDefault:false}));
 let health = "loading";
 let fetchController = null;
 let pollTimer = null;
@@ -907,7 +953,13 @@ function renderCarStatus(tile, car, fresh, selected, now) {
   const hasBatteryCheck = fresh && isNumber(car.batteryCheckUntil) && car.batteryCheckUntil > now;
   const info = tile.querySelector(".vehicle-info");
   const hasRunningTimer = fresh && (car.stopDelayUntil > now || car.minimumRunUntil > now);
-  info.hidden = !status && !hasPlan && !selected && !hasBatteryCheck && !hasRunningTimer;
+  const trip = car.departurePlan;
+  const hasTrip = fresh && trip?.at > now && typeof trip.clock === "string";
+  const departureLine = tile.querySelector(".vehicle-departure");
+  departureLine.hidden = !hasTrip;
+  departureLine.textContent = hasTrip ? "Abfahrt "+tripSummary(trip.clock.slice(0,10),trip.clock.slice(11),trip.requestedSoc ?? trip.gridGoal) +
+    (trip.requestedSoc > trip.gridGoal ? " · Netz bis "+trip.gridGoal+" %" : "") : "";
+  info.hidden = !hasTrip && !status && !hasPlan && !selected && !hasBatteryCheck && !hasRunningTimer;
   info.dataset.kind = ({"Ladeziel erreicht":"done","Wartet auf PV":"pv","Lädt":"charging"})[status] || "";
   tile.querySelector(".vehicle-status").textContent = status;
   renderCountdown(tile.querySelector(".vehicle-countdown"), status === "Startverzögerung" ? car.startDelayUntil : null, now);
@@ -1115,8 +1167,12 @@ function setExample() {
   }
   model.priority=examplePriority;
   for (const [i,car] of model.boxes.entries()) {
+    const goal = sampleGoals[i];
+    if (goal.date && goal.time) car.departurePlan = {clock:goal.date+"T"+goal.time,
+      at:new Date(goal.date+"T"+goal.time).getTime(), target:goal.tripSoc ?? goal.max, requestedSoc:goal.tripSoc,
+      gridGoal:goal.allowGrid ? goal.tripSoc ?? goal.max : goal.min};
     if (!car.connected || car.watts > 0) continue;
-    if (car.soc >= sampleGoals[i].max) {car.status="Ladeziel erreicht"; delete car.plannedAt;}
+    if (car.soc >= (goal.tripSoc ?? goal.max)) {car.status="Ladeziel erreicht"; delete car.plannedAt;}
     else if (car.status==="Ladeziel erreicht") car.status="Angesteckt";
   }
   health="example";render();
@@ -1158,6 +1214,7 @@ const goalDialog = $("vehicle-dialog");
 const goalForm = $("goals-form");
 const goalInputs = {min:$("goal-min"), max:$("goal-max"), time:$("goal-time")};
 const goalKeys = ["min", "max", "time"];
+const tripDate = $("goal-date"), tripSoc = $("goal-trip-soc"), tripGrid = $("goal-trip-grid");
 const priorityInput = $("goal-priority");
 const mappingNote = "Die SoC-Quelle hat sich geändert. Die Abfahrtszeit kannst du hier bearbeiten.";
 let openVehicle = null;
@@ -1191,32 +1248,43 @@ async function readVehicleGoals(i) {
   if (demo) return {...sampleGoals[i], priority:examplePriority, editPriority:true};
   if (!fileStore) throw Error("Zum Einstellen bitte das Dashboard im ioBroker-Webadapter öffnen.");
   const signal = AbortSignal.timeout(4500);
-  const [data, source, departure, low, high, preference] = await Promise.all([
+  const [data, source, departure, low, high, preference, bookingState, planState] = await Promise.all([
     settingsSnapshot(signal),
     optionalState(vehiclePath(i, "SocLimitsSource"), signal),
     readState(ids.time, signal), optionalState(ids.min, signal), optionalState(ids.max, signal),
-    optionalState(PRIORITY_ID, signal)
+    optionalState(PRIORITY_ID, signal), optionalState(ids.trip, signal), optionalState(vehiclePath(i,"DeparturePlan_JSON"), signal)
   ]);
   if (!timely(data.ts, Date.now(), SNAPSHOT_MAX_AGE)) throw Error("Der EMS-Messstand ist veraltet. Bitte später erneut öffnen.");
   const wb = data.wallboxes.find(w => w.wb === i);
   if (wb?.Present !== true) throw Error("Diese Wallbox ist im EMS deaktiviert.");
   const editLimits = validState(source) && source.val === "external" &&
     wb.inputSources?.minimumSoc?.id === ids.min && wb.inputSources?.targetSoc?.id === ids.max;
+  const plan = readGoalJson(planState);
+  const booking = readGoalJson(bookingState);
+  const tripEnabled = Boolean(validState(bookingState) && typeof plan?.controlEnabled === "boolean");
+  if (validState(bookingState) && bookingState.val && (!booking || typeof booking.date!=="string" || normalizedDeparture(booking.time)===null))
+    throw Error("Die gespeicherte Abfahrt hat ein ungültiges Format. Bitte im EMS prüfen.");
   const min = editLimits ? percentage(settingsValue(low)) : percentage(wb.MinimumSoC_pct);
-  const max = editLimits ? percentage(settingsValue(high)) : percentage(wb.TargetSoC_pct);
-  const time = normalizedDeparture(settingsValue(departure));
+  const max = editLimits ? percentage(settingsValue(high)) : percentage(plan?.configuredMax ?? wb.TargetSoC_pct);
+  const time = normalizedDeparture(booking?.time ?? settingsValue(departure));
   if (time === null) throw Error("Die vorhandene Abfahrt hat ein anderes Zeitformat. Bitte im EMS prüfen.");
-  return {min, max, time, editLimits:Boolean(editLimits), ...vehiclePriority(data,preference,Date.now())};
+  return {min, max, time, date:booking?.date ?? "", tripSoc:booking?.soc ?? null,
+    allowGrid:booking?.allowGrid ?? (plan?.gridDefault === true), tripEnabled,
+    gridDefault:plan?.gridDefault === true, controlEnabled:plan?.controlEnabled === true, plan,
+    editLimits:Boolean(editLimits), ...vehiclePriority(data,preference,Date.now())};
 }
 function draftGoals() {
   return {
+    ...goalBaseline, date:tripDate.value, tripSoc:tripDate.value && tripSoc.value!=="" ? tripSoc.valueAsNumber : null,
+    allowGrid:tripDate.value ? tripGrid.checked : goalBaseline.gridDefault,
     min:goalBaseline.editLimits ? goalInputs.min.valueAsNumber : goalBaseline.min,
     max:goalBaseline.editLimits ? goalInputs.max.valueAsNumber : goalBaseline.max,
     time:goalInputs.time.value, editLimits:goalBaseline.editLimits
   };
 }
 function sameGoals(a, b) {
-  return a.editLimits === b.editLimits && a.time === b.time &&
+  return a.editLimits === b.editLimits && a.time === b.time && (a.date ?? "") === (b.date ?? "") &&
+    (!a.date || (a.tripSoc === b.tripSoc && a.allowGrid === b.allowGrid)) &&
     (!a.editLimits || (a.min === b.min && a.max === b.max));
 }
 function requestedPriority() {
@@ -1231,7 +1299,20 @@ function syncGoalButtons() {
   $("apply-mii-soc").disabled = miiInput.disabled || percentage(miiInput.valueAsNumber) === null;
   $("goal-fields").disabled = !goalBaseline || savingVehicle;
   goalInputs.min.disabled = goalInputs.max.disabled = !goalBaseline?.editLimits;
-  $("clear-time").disabled = !goalInputs.time.value;
+  tripDate.disabled = !goalBaseline?.tripEnabled || !goalBaseline.controlEnabled || savingVehicle;
+  tripSoc.disabled = tripGrid.disabled = tripDate.disabled || !tripDate.value;
+  $("clear-time").disabled = !goalInputs.time.value && !tripDate.value;
+  const plan = goalBaseline?.plan;
+  $("departure-help").textContent = !goalBaseline ? "" : !goalBaseline.tripEnabled
+    ? "Datierte Abfahrten benötigen EMS ab Alpha 338." : !goalBaseline.controlEnabled
+    ? "Für einen Termin die Abfahrtsregel dieser Wallbox im EMS-Admin aktivieren." : !tripDate.value
+    ? "Ohne Datum gilt die nächste eingestellte Uhrzeit. Datum und Uhrzeit legen einen einmaligen Termin fest."
+    : tripDate.value+"T"+goalInputs.time.value <= localDepartureMinute(plan?.zone) ? "Dieser Termin ist abgelaufen. Du kannst ihn ersetzen oder löschen."
+    : (tripSoc.value ? "Das Fahrtziel gilt einmalig, auch über dem normalen Maximal-SoC." : "Ohne Abfahrts-SoC gelten die normalen Ladeziele.") +
+      (tripGrid.checked ? " Fehlende Energie darf aus dem Netz kommen." : " Oberhalb des Mindest-SoC ist PV-Überschuss vorgesehen.") +
+      (plan?.latestStart > 0 && plan.clock===tripDate.value+"T"+goalInputs.time.value &&
+        plan.target===(tripSoc.value==="" ? goalBaseline.max : tripSoc.valueAsNumber) && plan.allowGrid===tripGrid.checked
+        ? " Eingeplante Nachladung ab "+scheduleTime(plan.latestStart,Date.now())+"." : "");
   priorityInput.disabled = !goalBaseline?.editPriority || savingVehicle;
   $("save-goals").disabled = !goalBaseline || savingVehicle || (sameGoals(goalBaseline, draftGoals()) && requestedPriority() === null);
   $("cancel-goals").disabled = goalDialog.querySelector(".close-dialog").disabled = savingVehicle;
@@ -1239,6 +1320,8 @@ function syncGoalButtons() {
 function fillGoals(goals) {
   goalBaseline = goals;
   for (const key of goalKeys) goalInputs[key].value = goals?.[key] ?? "";
+  tripDate.value = goals?.date ?? ""; tripSoc.value = goals?.tripSoc ?? "";
+  tripGrid.checked = goals?.allowGrid === true;
   priorityInput.checked = Boolean(goals && goals.priority === openVehicle);
   priorityInput.indeterminate = Boolean(goals && goals.priority === null);
   const preference = goals?.priority;
@@ -1277,7 +1360,7 @@ async function writeVehicleGoal(i, key, value) {
   const ids = goalIds(i);
   const correction = i === 0 && key === "correction" && percentage(value) !== null;
   const preference = key === "priority" && (value === i || value === -1);
-  if (demo || !fileStore || (!goalKeys.includes(key) && !correction && !preference)) throw Error("Unbekanntes Schreibziel.");
+  if (demo || !fileStore || (!goalKeys.includes(key) && key!=="trip" && !correction && !preference)) throw Error("Unbekanntes Schreibziel.");
   const id = preference ? PRIORITY_ID : correction ? miiCommand : ids[key];
   const response = await fetch(basePath + "/state/" + encodeURIComponent(id), {
     method:"POST", credentials:"same-origin", cache:"no-store", signal:AbortSignal.timeout(4500),
@@ -1289,17 +1372,17 @@ async function writeVehicleGoal(i, key, value) {
 }
 function readbackMessage(actual) {
   return "Zurückgelesen: " + (actual.min ?? "—") + " % / " + (actual.max ?? "—") +
-    " %, " + (actual.time ? "Abfahrt " + actual.time + " Uhr." : "keine Abfahrt.") +
+    " %, " + (actual.date ? "Abfahrt "+tripSummary(actual.date,actual.time,actual.tripSoc)+"." : actual.time ? "Abfahrt " + actual.time + " Uhr." : "keine Abfahrt.") +
     (actual.priority === null ? "" : actual.priority === -1 ? " Automatische Fahrzeugauswahl." : " Vorrang für " + VEHICLE_NAMES[actual.priority] + ".");
 }
 goalForm.addEventListener("submit", async event => {
   event.preventDefault();
   if (!goalBaseline || savingVehicle || openVehicle === null) return;
   const desired = draftGoals();
-  try { validateGoals(desired); }
-  catch (err) { goalMessage(err.message, true); return; }
   const initial = goalBaseline;
-  const keys = planGoalWrites(initial, desired);
+  let keys;
+  try { keys = planGoalWrites(initial, desired); }
+  catch (err) { goalMessage(err.message, true); return; }
   const priority = requestedPriority();
   if (!keys.length && priority === null) return;
   const i = openVehicle;
@@ -1331,7 +1414,7 @@ goalForm.addEventListener("submit", async event => {
     }
     writing = true;
     goalMessage("Änderungen werden gespeichert …");
-    for (const key of keys) await writeVehicleGoal(i, key, desired[key]);
+    for (const key of keys) await writeVehicleGoal(i, key, key==="trip" ? goalTripText(desired) : desired[key]);
     if (priority !== null) {
       const latest = keys.length ? await readVehicleGoals(i) : current;
       if (priorityConflict(initial,latest,priority)) {
@@ -1370,6 +1453,7 @@ goalForm.addEventListener("input", () => {
   syncGoalButtons();
 });
 $("clear-time").addEventListener("click", () => {
+  tripDate.value = ""; tripSoc.value = ""; tripGrid.checked = goalBaseline?.gridDefault === true;
   goalInputs.time.value = "";
   goalInputs.time.dispatchEvent(new Event("input", {bubbles:true}));
 });

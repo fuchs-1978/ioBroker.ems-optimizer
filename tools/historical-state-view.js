@@ -13,7 +13,9 @@ const path = require('node:path');
 // alpha.312 persists source-clock selection even with energy estimation off.
 // Its ledger intentionally differs from the old empty record. Source-time and
 // vehicle tests assert the new record; actuator decisions remain compared here.
-const newState = id => typeof id === 'string' && /^ems\.0\.(?:Control\.PhaseTest(?:_JSON|Status)|Devices\.(?:Wallbox[012]|Battery\.Heads\.[123])\.PhaseTest(?:_JSON|Status)|Control\.PlanFallback(?:Active|Status)|Vehicles\.Wallbox[012]\.(?:SoCStale|SoCAge_s|SoCReportedAt|SoCStatus|SocEstimateLedger_JSON)|Devices\.Wallbox[012]\.(?:Error5Resume_JSON|NoDrawPause_JSON|NoDrawPaused|NoDrawElapsed_s|NoDrawRemaining_s|NoDrawRetryAfter))$/.test(id);
+// The booking and its five-day planning diagnostics have dedicated plant tests.
+// Historical fixtures contain no bookings. Keep all of their actuator and SoC states.
+const newState = id => typeof id === 'string' && /^ems\.0\.(?:Control\.PhaseTest(?:_JSON|Status)|Devices\.(?:Wallbox[012]|Battery\.Heads\.[123])\.PhaseTest(?:_JSON|Status)|Control\.PlanFallback(?:Active|Status)|Vehicles\.Wallbox[012]\.(?:SoCStale|SoCAge_s|SoCReportedAt|SoCStatus|SocEstimateLedger_JSON|DepartureTrip_JSON|DeparturePlan_JSON)|Devices\.Wallbox[012]\.(?:Error5Resume_JSON|NoDrawPause_JSON|NoDrawPaused|NoDrawElapsed_s|NoDrawRemaining_s|NoDrawRetryAfter))$/.test(id);
 const privateFields = new Set(['noDrawPauseLoaded', 'noDrawPause', 'noDrawObservation',
     'error5Resume', 'error5ResumeSourceValid', 'error5LastDrawAt', 'error5LastDrawPhases']);
 

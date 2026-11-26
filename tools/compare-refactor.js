@@ -68,6 +68,14 @@ async function worker(tree) {
             assert.equal(pinned.split(anchor).length, 2);
             pinned = pinned.replace(anchor, anchor + "\n        configDef(`${r}.Vehicles.Wallbox${wb}.MobilityReserve_pct`, 0, 'number', 'level', '%', `Mobilitaetsreserve Wallbox ${wb}; 0 deaktiviert; aktuell Strategie-Vorschau, keine produktive Sofortladefreigabe`);");
         }
+        // The startup fixture records bootstrap source. The old controller receives
+        // the same idle subscription, with no booking injected in these scenarios.
+        if (basename === 'bootstrap.js' && !pinned.includes('DepartureTrip_JSON')) {
+            const anchor = '    `${CFG.root}.Vehicles.Wallbox0.DepartureTime`,';
+            assert.equal(pinned.split(anchor).length, 2);
+            pinned = pinned.replace(anchor,
+                '    ...[0, 1, 2].map(wb => `${CFG.root}.Vehicles.Wallbox${wb}.DepartureTrip_JSON`),\n' + anchor);
+        }
         // alpha.171 adds five initially inactive SoC command/diagnostic slots
         // per vehicle. Define exactly the same slots in the immutable fixture;
         // keep every event and checkpoint in the comparison, including their
