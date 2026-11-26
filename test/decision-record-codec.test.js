@@ -18,6 +18,25 @@ function fixture(seq = 1, extra = {}) {
 }
 function normalize(value) { return JSON.parse(JSON.stringify(value)); }
 
+test('delta paths and operation order are stable across sibling arrays and objects', () => {
+    const encoder = new DecisionRecordEncoder(), decoder = new DecisionRecordDecoder();
+    const before = fixture(1, {extra: {old: true, rows: [[10, 20], {value: 30}], label: 'a'}});
+    const after = {...before, timestamp: 2000, recordSequence: 2,
+        extra: {rows: [[11, 21], {value: 31}], label: 'b', empty: []}};
+    decoder.decode(encoder.encode(before));
+    const delta = encoder.encode(after);
+    assert.equal(delta.frameType, 'delta');
+    assert.deepEqual(delta.ops, [
+        {op: 'delete', path: ['extra', 'old']},
+        {op: 'set', path: ['extra', 'rows', 0, 0], value: 11},
+        {op: 'set', path: ['extra', 'rows', 0, 1], value: 21},
+        {op: 'set', path: ['extra', 'rows', 1, 'value'], value: 31},
+        {op: 'set', path: ['extra', 'label'], value: 'b'},
+        {op: 'set', path: ['extra', 'empty'], value: []}
+    ]);
+    assert.deepEqual(decoder.decode(delta), normalize(after));
+});
+
 test('replay exactly restores clocks, real feedback, commands and JSON persistence semantics', () => {
     const encoder = new DecisionRecordEncoder();
     const decoder = new DecisionRecordDecoder();

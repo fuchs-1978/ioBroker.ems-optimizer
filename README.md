@@ -83,6 +83,10 @@ npm run test:equivalence
 
 ## Changelog
 
+### 0.17.0-alpha.339 (2026-11-26)
+
+- Use less memory to aggregate dense SQL measurements, build multi-day history and record diagnostics. [Release notes](docs/release-0.17.0-alpha.339.md)
+
 ### 0.17.0-alpha.338 (2026-11-26)
 
 - Set a one-off departure date, local time and optional charge target in the web dashboard. Allow grid charging to that target for the individual trip. [Release notes](docs/release-0.17.0-alpha.338.md)
@@ -110,10 +114,6 @@ npm run test:equivalence
 ### 0.17.0-alpha.332 (2026-11-25)
 
 - Regulate a single SunEnergy head with up to ten seconds of clock lead using successive device readings and a fresh grid measurement. [Release notes](docs/release-0.17.0-alpha.332.md)
-
-### 0.17.0-alpha.331 (2026-11-25)
-
-- Limit departure grid charging to the vehicle minimum. Each wallbox can explicitly allow grid charging to the upper target. [Release notes](docs/release-0.17.0-alpha.331.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 

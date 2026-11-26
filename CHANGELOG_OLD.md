@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.331 (2026-11-25)
+
+- Limit departure grid charging to the vehicle minimum. Each wallbox can explicitly allow grid charging to the upper target. [Release notes](docs/release-0.17.0-alpha.331.md)
+
 ## 0.17.0-alpha.330 (2026-11-24)
 
 - Keep surplus hot-water heating running when measured battery charging power dips. Reserve enough power for full storage charging and use the remaining measured surplus for domestic hot water. [Release notes](docs/release-0.17.0-alpha.330.md)

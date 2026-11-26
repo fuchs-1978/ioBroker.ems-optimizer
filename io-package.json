@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.338",
+    "version": "0.17.0-alpha.339",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.339": {
+        "en": "Reduce peak memory while reading dense SQL history and building multi-day profiles. Diagnostic recording allocates less temporary memory per cycle.",
+        "de": "Geringerer RAM-Spitzenbedarf beim Einlesen dichter SQL-Daten und beim Aufbau der mehrtägigen Historie. Die Diagnoseaufzeichnung benötigt pro Zyklus weniger temporären Speicher.",
+        "es": "Se reduce el pico de memoria al leer datos SQL densos y al construir el historial de varios días. El registro de diagnóstico usa menos memoria temporal por ciclo.",
+        "fr": "Réduction du pic de mémoire lors de la lecture de données SQL denses et de la construction de l’historique sur plusieurs jours. Le diagnostic utilise moins de mémoire temporaire par cycle.",
+        "it": "Picco di memoria ridotto durante la lettura di dati SQL densi e la costruzione dello storico su più giorni. La registrazione diagnostica usa meno memoria temporanea per ciclo.",
+        "nl": "Lager piekgeheugengebruik bij het inlezen van dicht bemonsterde SQL-gegevens en het opbouwen van de meerdaagse historie. Diagnostische registratie gebruikt per cyclus minder tijdelijk geheugen.",
+        "pl": "Mniejsze szczytowe zużycie pamięci przy odczycie gęstych danych SQL i budowaniu wielodniowej historii. Diagnostyka zużywa mniej pamięci tymczasowej w każdym cyklu.",
+        "pt": "Menor pico de memória na leitura de dados SQL densos e na construção do histórico de vários dias. O registo de diagnóstico usa menos memória temporária por ciclo.",
+        "ru": "Снижен пик потребления памяти при чтении частых замеров SQL и построении истории за несколько дней. Для записи диагностики требуется меньше временной памяти на цикл.",
+        "uk": "Знижено пікове споживання пам’яті під час читання частих вимірів SQL і побудови історії за кілька днів. Запис діагностики використовує менше тимчасової пам’яті за цикл.",
+        "zh-cn": "降低了读取高密度 SQL 数据和构建多日历史记录时的内存峰值。每个周期记录诊断信息所需的临时内存更少。"
+      },
       "0.17.0-alpha.338": {
         "en": "Set a one-off departure several days ahead with a date, local time and optional charge target in the web dashboard. Grid charging to that target can be allowed for this trip.",
         "de": "Im Web-Dashboard lässt sich eine einmalige Abfahrt mehrere Tage im Voraus mit Datum, Ortszeit und optionalem Abfahrts-SoC eintragen. Netzladung bis zu diesem Ziel kann für die einzelne Fahrt freigegeben werden.",
@@ -81,19 +94,6 @@
         "ru": "При пропуске измерений зарядной станции подтверждённый ток зарядки сохраняется, пока это позволяют измерения сети и рабочие ограничения.",
         "uk": "За відсутності вимірювань зарядної станції підтверджений струм заряджання зберігається, доки це дозволяють вимірювання мережі та робочі обмеження.",
         "zh-cn": "充电桩测量中断时，只要电网测量值和运行限值允许，就保持已确认的充电电流。"
-      },
-      "0.17.0-alpha.332": {
-        "en": "Use fresh SunEnergy readings and grid measurements to regulate a single battery head with a clock lead of up to ten seconds.",
-        "de": "Die Einzelkopfregelung nutzt frische SunEnergy- und Netzmessungen bei bis zu zehn Sekunden Vorlauf der Gerätezeit.",
-        "es": "La regulación de un cabezal usa mediciones recientes de SunEnergy y de la red si el reloj se adelanta hasta diez segundos.",
-        "fr": "La régulation d’une seule tête utilise des mesures récentes de SunEnergy et du réseau lorsque son horloge avance de dix secondes au maximum.",
-        "it": "La regolazione di una singola unità usa misure recenti di SunEnergy e della rete con un anticipo dell’orologio fino a dieci secondi.",
-        "nl": "De regeling van één SunEnergy-eenheid gebruikt actuele apparaat- en netmetingen bij een klok die tot tien seconden voorloopt.",
-        "pl": "Sterowanie jednym modułem SunEnergy wykorzystuje świeże pomiary urządzenia i sieci przy zegarze wyprzedzającym o maksymalnie dziesięć sekund.",
-        "pt": "O controlo de uma unidade SunEnergy usa medições recentes do equipamento e da rede quando o relógio se adianta até dez segundos.",
-        "ru": "Для управления одним модулем SunEnergy используются свежие измерения устройства и сети при опережении часов до десяти секунд.",
-        "uk": "Для керування одним модулем SunEnergy використовуються свіжі вимірювання пристрою та мережі за випередження годинника до десяти секунд.",
-        "zh-cn": "当设备时钟最多快十秒时，单机头控制使用最新的 SunEnergy 和电网测量值。"
       }
     },
     "titleLang": {
