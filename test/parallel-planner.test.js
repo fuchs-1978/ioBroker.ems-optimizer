@@ -1132,3 +1132,42 @@ test('a due full charge uses the late solar tail once and returns to the lower c
     assert.equal(summerWindow({lastFullDays: 32, hardMax: 90}).info.calibration, null);
     assert.ok(summerWindow({lastFullDays: 0}).info.calibration);
 });
+
+test('Mii, EQV and EQE each reach their own 100% target for the same Monday departure', () => {
+    const departure = new Date('2026-11-30T06:00').getTime();
+    const booking = {date: '2026-11-30', time: '06:00', soc: 100, allowGrid: true};
+    const profiles = [
+        {soc: 74, minimum: 70, target: 100, capacity: 32.3, maxA: 32},
+        {soc: 73, minimum: 69, target: 90, capacity: 90, maxA: 32},
+        {soc: 76, minimum: 45, target: 90, capacity: 90.6, maxA: 20}
+    ];
+    const config = {};
+    for (const [wb, profile] of profiles.entries()) {
+        config[`wb${wb}DeadlineEnabled`] = true;
+        config[`wb${wb}MinimumSocByDepartureEnabled`] = true;
+        config[`wb${wb}CommissioningMaxA`] = profile.maxA;
+        config[`wb${wb}SinglePhaseGridPhase`] = 1;
+    }
+    const h = fixture(config, 0, departure - 36 * 3600000);
+    h.put('ems.0.Config.HouseConnectionWorkingLimit_A', 30);
+    h.put('ems.0.Config.VehicleChargingEfficiency_pct', 90);
+    for (const [wb, profile] of profiles.entries()) {
+        car(h, wb, profile);
+        h.put(`ems.0.Vehicles.Wallbox${wb}.MobilityReserve_pct`, 20);
+        h.put(`ems.0.Vehicles.Wallbox${wb}.DepartureTrip_JSON`, JSON.stringify(booking));
+    }
+    const forecast = () => h.plan({pvW: 0, houseW: 600, slots: 192});
+    const all = forecast();
+    balance(all, 0, 600);
+    for (const [wb, profile] of profiles.entries()) {
+        const points = all.cars[wb];
+        assert.ok(points.every(p => !p.valueW || p.timestamp < departure));
+        const kWh = points.reduce((total, p) => total + p.valueW / 4000, 0);
+        const need = (100 - profile.soc) * profile.capacity / 90;
+        assert.ok(Math.abs(kWh - need) < 0.05, `WB${wb}: ${kWh} kWh planned, ${need} kWh needed`);
+    }
+    h.put('ems.0.Vehicles.Wallbox1.DepartureTrip_JSON', JSON.stringify({...booking, allowGrid: false}));
+    const changed = forecast();
+    assert.ok(changed.cars[1].every(p => p.valueW === 0), 'EQV above its minimum waits for PV');
+    for (const wb of [0, 2]) assert.ok(changed.cars[wb].some(p => p.valueW > 0), 'other bookings retain grid permission');
+});

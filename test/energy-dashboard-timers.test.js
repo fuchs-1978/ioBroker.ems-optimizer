@@ -15,9 +15,10 @@ function section(from, to) {
 const dashboard = vm.runInNewContext([
     section('const isNumber =', 'function parseState('),
     section('function vehiclePath(', '\n'),
+    section('function normalizedDeparture(', 'function wallboxDelayIds('),
     section('function wallboxDelayIds(', 'function fastIds('),
     section('function renderCountdown(', 'function renderCarStatus('),
-    '({wallboxDelayIds, wallboxDelay, renderRunningCountdown})'
+    '({wallboxDelayIds, wallboxDelay, renderRunningCountdown, planGoalWrites, goalTripText})'
 ].join('\n'), {INSTANCE: 'ems-optimizer.0', SNAPSHOT_MAX_AGE: 30000});
 
 test('vehicle timers use the correct controller channels for each wallbox', () => {
@@ -53,4 +54,20 @@ test('the EQV stop countdown advances without new measurements and clears on can
         assert.equal(row.hidden, true);
     }
     assert.equal(dashboard.wallboxDelay(false, sample, ts + 1, ts + 1).until, null);
+});
+
+test('one-off dashboard booking saves all settings in one write and can return to an empty or time-only departure', () => {
+    const before = {min: 45, max: 90, time: '', date: '', tripSoc: null, editLimits: true};
+    const after = {...before, date: '2096-11-30', time: '06:00', tripSoc: 100, allowGrid: true, plan: {zone: 'Europe/Berlin'}};
+    const writes = (from, to) => Array.from(dashboard.planGoalWrites(from, to));
+    assert.deepEqual(writes(before, after), ['trip']);
+    assert.deepEqual(JSON.parse(dashboard.goalTripText(after)), {date: after.date, time: '06:00', soc: 100, allowGrid: true});
+    assert.deepEqual(writes(after, after), []);
+    assert.deepEqual(writes(after, before), ['time', 'trip']);
+    assert.deepEqual(writes(before, {...before, time: '06:00'}), ['time']);
+    assert.throws(() => writes(before, {...after, date: '2020-01-01'}), /Zukunft/);
+    assert.throws(() => writes(before, {...after, date: '2096-02-30'}), /gültiges Abfahrtsdatum/);
+    assert.throws(() => writes(before, {...after, time: ''}), /Uhrzeit/);
+    assert.throws(() => writes(before, {...after, tripSoc: 44}), /Mindest-SoC/);
+    assert.throws(() => writes(before, {...after, date: '2096-03-25', time: '02:30'}), /Zeitumstellung/);
 });

@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.330 (2026-11-24)
+
+- Keep surplus hot-water heating running when measured battery charging power dips. Reserve enough power for full storage charging and use the remaining measured surplus for domestic hot water. [Release notes](docs/release-0.17.0-alpha.330.md)
+
 ## 0.17.0-alpha.329 (2026-11-24)
 
 - Use surplus power for domestic hot water when every car is unplugged and the battery is charging at its AC limit. Include the usable heat in the forecast. [Release notes](docs/release-0.17.0-alpha.329.md)
