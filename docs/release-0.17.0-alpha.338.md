@@ -6,6 +6,8 @@
 
 Der Abfahrts-SoC ist optional. Ein Fahrzeug mit 45 % Mindest-SoC und 90 % Maximal-SoC kann für eine einzelne Fahrt auf 100 % laden. Ohne die Netzfreigabe darf das EMS für diesen Termin bis 45 % aus dem Netz laden und darüber PV-Überschuss nutzen. Nach der Abfahrt gilt wieder das normale Ziel von 90 %. Die Kachel zeigt den aktiven Termin und das Ladeziel.
 
+Wenn mehrere Autos gleichzeitig abfahren, speichere den Termin auf jeder betroffenen Fahrzeugkachel. Mii, EQV und EQE haben jeweils eine eigene Netzfreigabe. Das EMS verteilt die verfügbare Leistung auf die Fahrzeuge mit Ladebedarf.
+
 ## Vom Eintragen bis zur Abfahrt
 
 Der Termin kann mehrere Tage in der Zukunft liegen. Das EMS aktualisiert seine rollierende 48-Stunden-Prognose, berücksichtigt nutzbaren PV-Überschuss und berechnet aus der fehlenden Energie den spätesten Ladebeginn. Dabei berücksichtigt es unter anderem Ladeverluste, Stromgrenzen, Ladestromreduzierung in der Nähe des Ziels, weitere Fahrzeuge mit anstehender Abfahrt sowie 15 Minuten Zeitreserve. Die Nachladung beginnt früher, wenn weniger Leistung verfügbar ist. Bei aktivierter Preisladung kann der Preisfahrplan geeignete Stunden innerhalb seines Einkaufsfensters nutzen.
