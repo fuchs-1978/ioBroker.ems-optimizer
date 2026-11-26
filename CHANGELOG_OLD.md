@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.328 (2026-11-24)
+
+- Keep a running PV charge at its minimum current when later export can replenish the home battery before the current stage ends. Use remaining export for whole-amp increases. [Release notes](docs/release-0.17.0-alpha.328.md)
+
 ## 0.17.0-alpha.327 (2026-11-23)
 
 - Plan an earlier minimum-current EV start when later otherwise exported PV can fully replenish the displaced battery charge. Keep live qualification and protection unchanged. [Release notes](docs/release-0.17.0-alpha.327.md)

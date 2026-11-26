@@ -3220,6 +3220,17 @@
           "lg": 6,
           "xl": 6
         },
+        "wb0MinimumSocByDepartureEnabled": {
+          "type": "checkbox",
+          "label": "Plan minimum vehicle SoC by departure",
+          "default": false,
+          "sm": 12,
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
+        },
         "wb0DeadlineTargetSocEnabled": {
           "type": "checkbox",
           "label": "Allow grid charging to target before departure",
@@ -3307,17 +3318,6 @@
         "wb0PriceChargingEnabled": {
           "type": "checkbox",
           "label": "Allow vehicle grid charging in selected low-price periods",
-          "default": false,
-          "sm": 12,
-          "newLine": true,
-          "xs": 12,
-          "md": 12,
-          "lg": 12,
-          "xl": 12
-        },
-        "wb0MinimumSocByDepartureEnabled": {
-          "type": "checkbox",
-          "label": "Plan minimum vehicle SoC by departure",
           "default": false,
           "sm": 12,
           "newLine": true,
@@ -4100,6 +4100,17 @@
           "lg": 6,
           "xl": 6
         },
+        "wb1MinimumSocByDepartureEnabled": {
+          "type": "checkbox",
+          "label": "Plan minimum vehicle SoC by departure",
+          "default": false,
+          "sm": 12,
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
+        },
         "wb1DeadlineTargetSocEnabled": {
           "type": "checkbox",
           "label": "Allow grid charging to target before departure",
@@ -4187,17 +4198,6 @@
         "wb1PriceChargingEnabled": {
           "type": "checkbox",
           "label": "Allow vehicle grid charging in selected low-price periods",
-          "default": false,
-          "sm": 12,
-          "newLine": true,
-          "xs": 12,
-          "md": 12,
-          "lg": 12,
-          "xl": 12
-        },
-        "wb1MinimumSocByDepartureEnabled": {
-          "type": "checkbox",
-          "label": "Plan minimum vehicle SoC by departure",
           "default": false,
           "sm": 12,
           "newLine": true,
@@ -4980,6 +4980,17 @@
           "lg": 6,
           "xl": 6
         },
+        "wb2MinimumSocByDepartureEnabled": {
+          "type": "checkbox",
+          "label": "Plan minimum vehicle SoC by departure",
+          "default": false,
+          "sm": 12,
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
+        },
         "wb2DeadlineTargetSocEnabled": {
           "type": "checkbox",
           "label": "Allow grid charging to target before departure",
@@ -5067,17 +5078,6 @@
         "wb2PriceChargingEnabled": {
           "type": "checkbox",
           "label": "Allow vehicle grid charging in selected low-price periods",
-          "default": false,
-          "sm": 12,
-          "newLine": true,
-          "xs": 12,
-          "md": 12,
-          "lg": 12,
-          "xl": 12
-        },
-        "wb2MinimumSocByDepartureEnabled": {
-          "type": "checkbox",
-          "label": "Plan minimum vehicle SoC by departure",
           "default": false,
           "sm": 12,
           "newLine": true,

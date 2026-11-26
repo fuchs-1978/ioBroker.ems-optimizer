@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.335",
+    "version": "0.17.0-alpha.336",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.336": {
+        "en": "With price charging off, a car can use surplus PV and wait for a reserved grid slot to reach its departure minimum. Cars without a departure time charge to their minimum first.",
+        "de": "Bei ausgeschalteter Preisladung nutzt das Auto mit Abfahrtszeit überschüssige PV und lädt bei Bedarf rechtzeitig bis zum Mindest-SoC nach. Fahrzeuge ohne Termin haben bis zu ihrem Mindest-SoC Vorrang.",
+        "es": "Con la carga por precio desactivada, el coche con hora de salida usa el excedente solar y reserva tiempo para alcanzar la carga mínima. Los coches sin horario tienen prioridad hasta su mínimo.",
+        "fr": "Quand la recharge selon le tarif est désactivée, le véhicule avec une heure de départ utilise le surplus solaire et garde un créneau pour atteindre sa charge minimale. Les véhicules sans horaire passent en premier jusqu’à leur minimum.",
+        "it": "Con la ricarica in base al prezzo disattivata, l’auto con partenza programmata sfrutta il surplus solare e riserva il tempo per raggiungere la carica minima. Le auto senza orario hanno la precedenza fino al minimo.",
+        "nl": "Als prijsgestuurd laden uitstaat, gebruikt de auto met vertrektijd het zonneoverschot en reserveert hij tijd om het laadminimum te halen. Auto’s zonder vertrektijd krijgen voorrang tot hun minimum.",
+        "pl": "Przy wyłączonym ładowaniu według cen auto z godziną odjazdu wykorzystuje nadwyżkę PV i rezerwuje czas na osiągnięcie minimalnego poziomu naładowania. Auta bez godziny odjazdu mają pierwszeństwo do swojego minimum.",
+        "pt": "Com o carregamento por preço desligado, o veículo com hora de partida utiliza o excedente solar e reserva tempo para atingir o mínimo. Os veículos sem hora de partida têm prioridade até ao seu mínimo.",
+        "ru": "При выключенной зарядке по тарифу автомобиль с заданным временем отъезда использует избыток солнечной энергии и резервирует время для зарядки до минимума. Машины без времени отъезда заряжаются до своего минимума первыми.",
+        "uk": "Коли заряджання за тарифом вимкнено, авто із заданим часом виїзду використовує надлишок сонячної енергії та резервує час для заряджання до мінімуму. Авто без часу виїзду мають пріоритет до свого мінімуму.",
+        "zh-cn": "关闭按电价充电后，设置了出发时间的车辆可以利用光伏余电，并预留时段补足最低电量。未设置出发时间的车辆优先充到最低电量。"
+      },
       "0.17.0-alpha.335": {
         "en": "Confirm appliance starts, retry after 15 and 30 minutes, then report failure after another five minutes. Persist attempts across restarts.",
         "de": "Gerätestarts bestätigen, nach 15 und 30 Minuten erneut versuchen und nach weiteren fünf Minuten einen Fehler melden. Versuche bleiben über Neustarts erhalten.",
@@ -81,19 +94,6 @@
         "ru": "Продолжает нагревать воду избытком энергии при колебаниях мощности зарядки аккумулятора. Недостающая мощность остаётся зарезервированной для зарядки.",
         "uk": "Продовжує нагрівати воду надлишком енергії, коли потужність заряджання акумулятора коливається. Решта потужності заряджання залишається в резерві для акумулятора.",
         "zh-cn": "当储能电池的充电功率波动时，继续利用余电加热生活用水，并为电池预留补足充电所需的功率。"
-      },
-      "0.17.0-alpha.329": {
-        "en": "Heat domestic water with surplus power when all cars are unplugged and the home battery is charging at its AC limit.",
-        "de": "Der Warmwasser-Heizstab nutzt den Überschuss, wenn alle Autos abgesteckt sind und der Hausspeicher mit voller AC-Leistung lädt.",
-        "es": "Calienta agua sanitaria con el excedente cuando todos los vehículos están desconectados y la batería doméstica carga a su potencia máxima de CA.",
-        "fr": "Chauffe l’eau sanitaire avec le surplus lorsque tous les véhicules sont débranchés et que la batterie domestique charge à sa puissance maximale en courant alternatif.",
-        "it": "Scalda l’acqua sanitaria con l’energia in eccesso quando tutti i veicoli sono scollegati e la batteria di casa si carica alla massima potenza in corrente alternata.",
-        "nl": "Verwarmt tapwater met het overschot als alle auto’s zijn losgekoppeld en de thuisaccu op het maximale AC-vermogen laadt.",
-        "pl": "Nadwyżka energii ogrzewa wodę użytkową, gdy wszystkie samochody są odłączone, a domowy magazyn ładuje się z maksymalną mocą AC.",
-        "pt": "Aquece a água sanitária com o excedente quando todos os veículos estão desligados e a bateria doméstica carrega à potência máxima em corrente alternada.",
-        "ru": "Направляет избыток энергии на подогрев воды, когда все автомобили отключены, а домашний аккумулятор заряжается на предельной мощности по переменному току.",
-        "uk": "Спрямовує надлишок енергії на підігрів води, коли всі автомобілі від’єднані, а домашня батарея заряджається з максимальною потужністю змінного струму.",
-        "zh-cn": "当所有车辆都已拔下充电插头且家庭储能以最大交流功率充电时，利用剩余电力加热生活用水。"
       }
     },
     "titleLang": {

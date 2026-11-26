@@ -4080,6 +4080,66 @@ test('an earned departure PV pause survives a lost forecast and releases an earl
     assert.ok(h.trace.at(-1).wbW >= 1380, h.diagnostic());
 });
 
+async function eqvDeparturePlant({initialTime, initialSurplusW, soc, count}) {
+    const h = await plant({initialTime, initialSurplusW, wallboxIndex: 1, mii: true, startDelayS: 0,
+        split: false, nativeConfig: {wb1DeadlineEnabled: true, wb1MinimumSocByDepartureEnabled: true,
+            wallboxParallelChargingEnabled: true, dhwControlEnabled: false}});
+    h.own('Devices.MyPV_DHW.Present', false);
+    h.own('Config.WallboxParallelChargingEnabled', true);
+    h.put('DP_WB_PRIORITY', 1);
+    h.put('DP_WB0_MIN_SOC', 50); h.put('DP_WB0_SOC', 42);
+    h.put('DP_WB1_MIN_SOC', 70); h.put('DP_WB1_TARGET', 90); h.put('DP_WB1_SOC', soc);
+    h.own('Config.Wallbox1VehicleCapacity_kWh', 90);
+    h.own('Config.Wallbox1PriceChargingEnabled', false);
+    h.own('Vehicles.Wallbox1.MobilityReserve_pct', 20);
+    h.own('Vehicles.Wallbox1.DepartureTime', '07:00');
+    const rebuild = () => {
+        const first = Math.floor(h.now() / 900000) * 900000;
+        const slots = Array.from({length: count}, (_, i) => ({timestamp: first + i * 900000}));
+        h.engineContext.departureData = {pv: slots.map(s => ({...s, valueW: 0})),
+            house: slots.map(s => ({...s, valueW: 900})), prices: {total: slots.map(s => ({...s, value_ct_kWh: 30}))}};
+        h.run('historyReady = true; buildDevicePlan(departureData); updateVehicles()');
+        return JSON.parse(h.value('Plan.Wallbox1_48h_JSON'))[0].departurePv;
+    };
+    return {h, rebuild};
+}
+
+test('the untimed car charges first and a price-disabled EQV starts its booked minimum without another plan', async () => {
+    const start = new Date(2026, 10, 26, 5, 0).getTime();
+    const {h, rebuild} = await eqvDeparturePlant({initialTime: start + 14 * 60000, initialSurplusW: -350,
+        soc: 68.5, count: 10});
+    assert.equal(rebuild()?.releaseAt, start + 900000);
+    await h.advance(45);
+    assert.equal(h.value('Vehicles.Wallbox1.MustCharge'), false);
+    assert.equal(h.physical().wbPowerW, 0, h.diagnostic());
+    assert.ok(h.physical().miiPowerW >= 1380, h.diagnostic());
+    await h.advance(45);
+    assert.equal(h.value('Vehicles.Wallbox1.MustCharge'), true);
+    assert.ok(h.physical().wbPowerW >= 1380, h.diagnostic());
+    h.put('DP_WB1_SOC', 69.7);
+    assert.equal(rebuild()?.releaseAt, start + 900000, 'progress on the booked grid charge must not re-arm a later pause');
+    await h.advance(25);
+    assert.ok(h.physical().wbPowerW >= 1380, h.diagnostic());
+    h.put('DP_WB1_SOC', 70);
+    await h.advance(25);
+    assert.equal(h.physical().wbPowerW, 0, h.diagnostic());
+    assert.ok(h.physical().miiPowerW >= 1380, h.diagnostic());
+});
+
+test('the booked EQV yields limited measured PV to the untimed car and can share the remaining surplus', async () => {
+    const {h, rebuild} = await eqvDeparturePlant({initialTime: new Date(2026, 10, 26, 9, 15).getTime(),
+        initialSurplusW: 3000, soc: 60.3, count: 92});
+    assert.equal(rebuild()?.minimumByDeparture, true);
+    await h.advance(65);
+    assert.equal(h.value('Control.SelectedWallbox'), 0);
+    assert.ok(h.physical().miiPowerW > 1380 && h.physical().wbPowerW === 0, h.diagnostic());
+    h.setSurplus(8000);
+    await h.advance(75);
+    assert.ok(h.physical().miiPowerW >= 1380 && h.physical().wbPowerW >= 1380, h.diagnostic());
+    assert.ok(h.physical().miiPowerW + h.physical().wbPowerW <= 8000);
+    assert.equal(h.value('Vehicles.Wallbox1.MustCharge'), false);
+});
+
 test('the wallbox resumes charging at the certified grid slot when sunlight does not arrive', async () => {
     const start = Date.UTC(2026, 10, 22, 7);
     const h = await plant({initialTime: start + 14 * 60000, wallbox: true, startDelayS: 0, split: false,

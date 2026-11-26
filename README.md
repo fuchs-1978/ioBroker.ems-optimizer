@@ -83,6 +83,10 @@ npm run test:equivalence
 
 ## Changelog
 
+### 0.17.0-alpha.336 (2026-11-26)
+
+- With price charging off, schedule the departure minimum against a PV-independent grid slot. Give untimed cars priority up to their minimum and use surplus PV whenever available. [Release notes](docs/release-0.17.0-alpha.336.md)
+
 ### 0.17.0-alpha.335 (2026-11-25)
 
 - Confirm appliance starts with retries after 15 and 30 minutes and an error after another five minutes. Persist confirmation state across restarts. [Release notes](docs/release-0.17.0-alpha.335.md)
@@ -110,10 +114,6 @@ npm run test:equivalence
 ### 0.17.0-alpha.329 (2026-11-24)
 
 - Use surplus power for domestic hot water when every car is unplugged and the battery is charging at its AC limit. Include the usable heat in the forecast. [Release notes](docs/release-0.17.0-alpha.329.md)
-
-### 0.17.0-alpha.328 (2026-11-24)
-
-- Keep a running PV charge at its minimum current when later export can replenish the home battery before the current stage ends. Use remaining export for whole-amp increases. [Release notes](docs/release-0.17.0-alpha.328.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 
