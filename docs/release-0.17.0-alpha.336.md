@@ -1,0 +1,11 @@
+# Alpha 336 – Mindestladung mit und ohne Abfahrtszeit
+
+Bei ausgeschalteter Preisladung plant der EMS Optimizer den Mindest-SoC auf Wunsch bis zur Abfahrt ein. Ein angeschlossenes Auto ohne Termin erhält bis zu seinem Mindest-SoC zuerst Ladeleistung. Ein Auto mit Termin kann mitladen, sobald dafür PV-Überschuss übrig ist oder seine eigene Abfahrt es erfordert.
+
+Dazu müssen am Auto mit Termin die Abfahrtsregel und **Mindest-SoC bis zur Abfahrt einplanen** aktiv sein. Die Mobilitätsreserve muss größer als null und kleiner als der Mindest-SoC sein. Unter dieser Reserve lädt das Fahrzeug sofort. Ein manueller Mindeststrom oder eine aktive Ladestufe bei niedrigem SoC hat ebenfalls Vorrang. Die zusätzliche Netzladung bis zum oberen Ziel hat eine eigene Freigabe.
+
+Der Planer sucht rückwärts ab 15 Minuten vor der Abfahrt ein zusammenhängendes Ladefenster. Er berücksichtigt Ladeverluste, Anlaufzeit, Hauslast, andere Wallboxen, Wärmebedarf und die geltenden Anschluss- und Verbrauchsgrenzen. Er rechnet höchstens 80 % der Energie bei Mindeststrom als gesichert an. Der Fahrplan muss mit der finalen Lastverteilung den Mindest-SoC erreichen. Fehlt dieses Fenster oder gibt es mehrere offene Abfahrtsminima, sichert das EMS den Bedarf mit der regulären Mindestladung. Eine bereits fällige Nachladung läuft bis zum Mindeststand weiter, solange die Betriebsgrenzen das zulassen.
+
+Bei einem Aufschub erscheint die Uhrzeit der abgesicherten Nachladung im Fahrzeugstatus. Im Fahrplan enthält `Plan.WallboxN_48h_JSON` den Zeitpunkt in `departurePv.releaseAt` und die Kennzeichnung `departurePv.minimumByDeparture`. Bei neuem Stecken, geänderter Abfahrtszeit oder veraltetem Plan prüft der Regler die Voraussetzungen erneut.
+
+Im Prüffall hat der EQE 38 % bei 50 % Mindest-SoC und keine Abfahrtszeit. Der EQV hat 60,3 % bei 70 % Mindest-SoC, 20 % Mobilitätsreserve und Abfahrt am nächsten Morgen um 07:00 Uhr. Er braucht bei 90 kWh Kapazität und 90 % Ladewirkungsgrad noch 9,7 kWh AC. Ohne PV lädt zunächst der EQE. Der EQV erreicht seinen Mindeststand im Modell bis 06:45 Uhr. Weitere Prüffälle decken nutzbaren PV-Überschuss, gleichzeitige Pflichtladung bei kurzer Frist und das Ein- und Ausschalten am simulierten Wallboxausgang ab.

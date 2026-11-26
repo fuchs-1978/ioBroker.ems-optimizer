@@ -847,6 +847,109 @@ const solarStart = eveningStart + 57 * 900000;
 const morningSurplus = [701.5, 646.5, 575, 851.5, 1978, 1992, 1885, 1928.5, 1857.5, 1921.5, 1865, 1823, 1626.5];
 const overnightPv = [...Array(53).fill(0), ...morningSurplus.map(w => w + 1000), 3000, 3000];
 
+function twoCarsWithOneDeparture({soc = 60.3, reserve = 20, time = '07:00', enabled = true, config = {}} = {}) {
+    const h = fixture({wb1DeadlineEnabled: true, wb1MinimumSocByDepartureEnabled: enabled,
+        wb1CommissioningMaxA: 32, wb2DeadlineEnabled: true, wb2MinimumSocByDepartureEnabled: true,
+        ...config}, 2, new Date(2026, 10, 26, 9, 15).getTime());
+    car(h, 1, {soc, minimum: 70, target: 90, capacity: 90, phases: 3, priority: true});
+    car(h, 2, {soc: 38, minimum: 50, target: 90, capacity: 90.6, phases: 3});
+    h.put('ems.0.Vehicles.Wallbox1.DepartureTime', time);
+    h.put('ems.0.Vehicles.Wallbox2.DepartureTime', '');
+    for (const wb of [1, 2]) {
+        h.put(`ems.0.Vehicles.Wallbox${wb}.MobilityReserve_pct`, reserve);
+        h.put(`ems.0.Config.Wallbox${wb}PriceChargingEnabled`, false);
+    }
+    h.run(fs.readFileSync(path.join(__dirname, '../lib/engine/realtime.js'), 'utf8'));
+    return h;
+}
+
+test('EQE without a time charges first and the EQV reaches 70% by 07:00 even with no PV or price charging', () => {
+    const h = twoCarsWithOneDeparture();
+    const r = h.plan({houseW: 900, slots: 92});
+    const [eqv, eqe] = r.cars.slice(1);
+    const hold = eqv[0].departurePv;
+    assert.equal(hold?.minimumByDeparture, true);
+    const finish = new Date(2026, 10, 27, 6, 45).getTime();
+    const need = (70 - 60.3) * 90 / 90;
+    assert.equal(hold.backupUntil, finish);
+    assert.ok(hold.releaseAt > h.now && hold.backupAcKWh >= need);
+    assert.ok(eqe[0].currentA >= 6 && eqe.every(p => !p.departurePv));
+    assert.ok(eqv.filter(p => p.timestamp < hold.releaseAt).every(p => p.valueW === 0));
+    const energy = require('../lib/planning-explanation').plannedEnergy;
+    assert.ok(Math.abs(energy(eqv, h.now, finish) - need) < 0.003);
+    assert.ok(eqv.every(p => !p.priceOptimized && p.gridChargeW === 0));
+    assert.ok(eqv.filter(p => p.timestamp >= finish).every(p => p.valueW === 0));
+    h.run('updateVehicles()');
+    assert.equal(h.states.get('ems.0.Vehicles.Wallbox1.MustCharge').val, false);
+    assert.equal(h.states.get('ems.0.Vehicles.Wallbox2.MustCharge').val, true);
+    assert.match(h.states.get('ems.0.Vehicles.Wallbox1.Status').val, /Nachladung ab/);
+    balance(r, 0, 900);
+});
+
+test('exclusive charging serves the untimed EQE first despite a manual preference for the booked EQV', () => {
+    const h = twoCarsWithOneDeparture({config: {wallboxParallelChargingEnabled: false}});
+    const r = h.plan({houseW: 900, slots: 92});
+    assert.ok(r.cars[1][0].departurePv?.minimumByDeparture);
+    assert.equal(r.cars[1][0].valueW, 0);
+    assert.ok(r.cars[2][0].currentA >= 6);
+    assert.ok(r.cars[1].every((p, i) => !p.valueW || !r.cars[2][i].valueW));
+});
+
+test('spare PV can charge the booked EQV alongside the untimed EQE before the grid start', () => {
+    const h = twoCarsWithOneDeparture();
+    h.put('ems.0.Config.Wallbox2MaxPower_W', 3680);
+    const pv = Array.from({length: 92}, (_, i) => i === 4 ? 3900 : i >= 5 && i < 9 ? 11600 : 0);
+    const r = h.plan({houseW: 900, pvW: pv, slots: pv.length});
+    const [eqv, eqe] = r.cars.slice(1);
+    const hold = eqv[0].departurePv;
+    assert.ok(hold?.minimumByDeparture);
+    assert.equal(eqv[0].valueW, 0);
+    assert.equal(eqv[4].valueW, 0, 'the manually preferred EQV waits while the untimed EQE can use all 3 kW');
+    assert.ok(eqe[4].valueW > 2760);
+    assert.ok(eqv.some((p, i) => p.timestamp < hold.releaseAt && p.currentA >= 6 && eqe[i].currentA >= 6
+        && r.allocation[i].wallboxGridW === 0));
+    assert.ok(eqv.every((p, i) => p.timestamp >= hold.releaseAt || p.valueW === 0 || r.allocation[i].wallboxGridW === 0));
+    balance(r, pv, 900);
+});
+
+test('the minimum stays immediate for an empty or tight departure, inactive reserve, invalid inputs and overrides', () => {
+    for (const [reason, settings] of Object.entries({untimed: {time: ''}, urgent: {time: '10:00'},
+        unchecked: {enabled: false}, disabled: {reserve: 0}, below: {soc: 19, config: {wb1LowSocStepsEnabled: false}},
+        upperTarget: {config: {wb1DeadlineTargetSocEnabled: true}}, lowSocBoost: {soc: 49},
+        manual: {}, invalidReserve: {}, gridLimit: {}})) {
+        const h = twoCarsWithOneDeparture(settings);
+        if (reason === 'manual') h.put(h.run('CFG.dp.wallboxManualMinCurrent[1]'), 10);
+        if (reason === 'invalidReserve') h.states.get('ems.0.Vehicles.Wallbox1.MobilityReserve_pct').q = 1;
+        if (reason === 'gridLimit') h.put('ems.0.Config.HouseConnectionWorkingLimit_A', 8);
+        const r = h.plan({houseW: 900, slots: 92});
+        assert.ok(r.cars[1].every(p => !p.departurePv), reason);
+        h.run('updateVehicles()');
+        assert.equal(h.states.get('ems.0.Vehicles.Wallbox1.MustCharge').val, true, reason);
+        if (reason !== 'gridLimit') assert.ok(r.cars[1][0].currentA >= 6 && r.cars[2][0].currentA >= 6, reason);
+    }
+});
+
+test('a booked minimum rechecks the reserve, departure, connection and permission at the output', () => {
+    const h = twoCarsWithOneDeparture();
+    h.plan({houseW: 900, slots: 92});
+    const policy = () => h.run('wallboxReadinessPolicy(1,70,Date.now(),null,null,60.3)');
+    assert.equal(policy()?.reservePct, 20);
+    h.put('ems.0.Vehicles.Wallbox1.MobilityReserve_pct', 15);
+    assert.equal(policy(), null);
+    h.put('ems.0.Vehicles.Wallbox1.MobilityReserve_pct', 20);
+    h.put('ems.0.Vehicles.Wallbox1.DepartureTime', '10:00');
+    assert.equal(policy(), null);
+    h.put('ems.0.Vehicles.Wallbox1.DepartureTime', '07:00');
+    h.run('nativeConfig.wb1MinimumSocByDepartureEnabled = false');
+    assert.equal(policy(), null);
+    h.run('buildDevicePlan(data)');
+    assert.ok(h.series('Wallbox1').every(p => !p.departurePv));
+    h.run('nativeConfig.wb1MinimumSocByDepartureEnabled = true; buildDevicePlan(data)');
+    assert.equal(policy()?.reservePct, 20);
+    h.states.get('ems.0.Vehicles.Wallbox1.Connected').lc = h.now - 1000;
+    assert.equal(policy(), null);
+});
+
 function departureFixture(start = eveningStart, minute = 5, soc = 81.1, config = {}) {
     const h = fixture({...coordinatedBattery, wb2DeadlineEnabled: true, wb2CommissioningMaxA: 32, ...config}, minute, start);
     car(h, 2, {soc, minimum: 90, target: 90, capacity: 90.6, maxA: 20, phases: 3, priority: true});
