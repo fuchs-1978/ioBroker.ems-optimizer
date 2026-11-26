@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.329 (2026-11-24)
+
+- Use surplus power for domestic hot water when every car is unplugged and the battery is charging at its AC limit. Include the usable heat in the forecast. [Release notes](docs/release-0.17.0-alpha.329.md)
+
 ## 0.17.0-alpha.328 (2026-11-24)
 
 - Keep a running PV charge at its minimum current when later export can replenish the home battery before the current stage ends. Use remaining export for whole-amp increases. [Release notes](docs/release-0.17.0-alpha.328.md)

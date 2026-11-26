@@ -4,6 +4,51 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {plant} = require('./control-plant');
 
+test('EQE minimum charging rejects brief surplus pulses and uses sustained PV steps', async () => {
+    const h = await plant({initialSurplusW: 500, startDelayS: 0, split: false,
+        nativeConfig: {wallboxParallelChargingEnabled: true, dhwControlEnabled: false}});
+    h.own('Devices.MyPV_DHW.Present', false);
+    h.own('Devices.Wallbox0.Present', false);
+    h.own('Config.Wallbox2PriceChargingEnabled', false);
+    h.put('DP_WB2_MIN_SOC', 50);
+    h.put('DP_WB2_SOC', 37);
+    await h.advance(30);
+    assert.equal(h.physical().wbPowerW, 6 * 230);
+    const start = h.trace.length;
+    for (const duration of [4, 8, 32, 40, 6]) {
+        h.setSurplus(2900);
+        await h.advance(duration);
+        h.setSurplus(500);
+        await h.advance(8);
+    }
+    assert.deepEqual([...new Set(h.trace.slice(start).map(t => t.wbW))], [6 * 230]);
+
+    // The first eight amps are supported throughout. Higher steps each need
+    // their own uninterrupted surplus, even if one brief peak reaches 12 A.
+    h.setSurplus(2000);
+    await h.advance(28);
+    h.setSurplus(2900);
+    await h.advance(12);
+    assert.equal(h.physical().amps, 6);
+    h.setSurplus(2000);
+    await h.advance(20);
+    assert.equal(h.physical().amps, 8);
+    h.setSurplus(2900);
+    await h.advance(85);
+    assert.equal(h.physical().amps, 12);
+    h.setSurplus(500);
+    await h.advance(6);
+    assert.equal(h.physical().wbPowerW, 6 * 230);
+    assert.ok(h.trace.slice(start).every(t => t.physicalAllow === 1));
+
+    h.put('DP_WB2_AMIN', 10);
+    await h.advance(12);
+    assert.equal(h.value('Control.Targets.Wallbox2_W'), 10 * 230, 'manual minimum applies within the qualification window');
+    h.put('DP_HA_CRITICAL', true);
+    await h.advance(1);
+    assert.equal(h.value('Control.Targets.Wallbox2_W'), 0, 'house connection protection acts on the next tick');
+});
+
 test('NVP diagnostic mode cannot oscillate the output-owner mode during a quiet plant', async () => {
     const h = await plant({wallbox: false, mii: true, initialSurplusW: 0});
     h.run('dhwOutputStatus(false, 0, "idle")');

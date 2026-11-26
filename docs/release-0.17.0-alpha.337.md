@@ -1,0 +1,9 @@
+# 0.17.0-alpha.337
+
+Am 26. November wechselte die Wallbox des EQE zwischen 12:29 und 12:35 Uhr 49-mal den Stromsollwert. Das Fahrzeug lud einphasig unter seinem Mindest-SoC. Die Hauslast wechselte wiederholt innerhalb weniger Sekunden. In den sechs Minuten gab es 16 Abschnitte oberhalb von 6 A. Der längste dauerte rund 40 Sekunden.
+
+Lädt im Parallelbetrieb ein Fahrzeug allein bis zum Mindest-SoC und schwankt der verfügbare Ladestrom um mehrere Ampere, prüft das EMS nach einem Rückgang den verfügbaren Überschuss. Ein zweites Fahrzeug kann dabei angeschlossen sein. Sobald eine weitere Wallbox Leistung beansprucht, greift die gemeinsame Verteilung. Eine zusätzliche Ampere-Stufe wird freigegeben, wenn der Überschuss sie 45 Sekunden durchgehend deckt. Reicht die Leistung dauerhaft für 8 A und kurzzeitig für 12 A, können die 8 A nach Ablauf der Frist genutzt werden. Sinkt die verfügbare Leistung, darf der Regler den Strom im nächsten Regeltakt reduzieren. Eine einzelne, durch Messwerte gedeckte 1-A-Korrektur kann das EMS bei ruhigem Betrieb direkt freigeben.
+
+Der Mindeststrom für ein Fahrzeug unter seinem Mindest-SoC steht sofort zur Verfügung, soweit die Anschlussgrenzen es erlauben. Ein manueller Mindeststrom und eine fällige Abfahrtsladung haben Vorrang. Während das EMS auf ausreichend Überschuss wartet, zeigt `Control.WallboxN.AllocationDiagnostics_JSON` den Grund `minimum-pv-rise-delay` und die kurzzeitig mögliche Stromstufe in `unqualifiedTargetA`.
+
+Im Anlagentest bleibt die simulierte Wallbox bei Überschusspulsen von 4 bis 40 Sekunden durchgehend auf 6 A. Bei anhaltendem Überschuss erreicht sie erst 8 A und dann 12 A. Fällt der Überschuss weg, lädt sie weiter mit 6 A. Ein weiterer Prüffall unterbricht die Messreihe und prüft, dass erst eine neue Folge frischer Netzmessungen höhere Ströme freigibt.

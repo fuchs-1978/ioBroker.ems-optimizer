@@ -1306,6 +1306,25 @@ test('planner external binary budget uses the same 15-second quality gate as the
     assert.equal(h.run('currentConsumptionLimit().budgetW'),0);
 });
 
+test('minimum PV rises require consecutive fresh meter readings after a held pair or a control gap', () => {
+    const h = engine({production: true});
+    const qualify = h.run('qualifyMinimumPvRise');
+    const start = Date.now();
+    const sample = (second, amps, {meterSecond = second, held = false} = {}) =>
+        qualify(2, amps, amps, 6, 6, 1, start + second * 1000,
+            {valid: true, held, sourceTs: [start + meterSecond * 1000, start + meterSecond * 1000]});
+    assert.equal(sample(0, 6), 6);
+    for (let t = 1; t <= 40; t++) assert.equal(sample(t, 12), 6);
+    assert.equal(sample(41, 12, {held: true}), 6);
+    for (let t = 42; t <= 80; t++) assert.equal(sample(t, 12), 6);
+    assert.equal(sample(100, 12), 6, 'the missed cycles reset the observation');
+    for (let t = 101; t <= 150; t++) assert.equal(sample(t, 12, {meterSecond: 100}), 6);
+    for (let t = 151; t < 196; t++) assert.equal(sample(t, 12), 6);
+    assert.equal(sample(196, 12), 12);
+    assert.equal(sample(197, 6), 6);
+    assert.equal(sample(198, 12), 6, 'a new pulse cannot reuse the earlier qualification');
+});
+
 // Live EQV signature: 1 A down/up at a nominal PV ceiling while below minimum SoC.
 test('mandatory charging holds a confirmed PV-funded current across the nominal ceiling', () => {
     for (const wb of [0, 1, 2]) {

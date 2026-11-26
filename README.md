@@ -83,6 +83,10 @@ npm run test:equivalence
 
 ## Changelog
 
+### 0.17.0-alpha.337 (2026-11-26)
+
+- When one car is charging to its minimum, qualify multi-amp PV current swings against 45 seconds of sustained surplus. [Release notes](docs/release-0.17.0-alpha.337.md)
+
 ### 0.17.0-alpha.336 (2026-11-26)
 
 - With price charging off, schedule the departure minimum against a PV-independent grid slot. Give untimed cars priority up to their minimum and use surplus PV whenever available. [Release notes](docs/release-0.17.0-alpha.336.md)
@@ -110,10 +114,6 @@ npm run test:equivalence
 ### 0.17.0-alpha.330 (2026-11-24)
 
 - Keep surplus hot-water heating running when measured battery charging power dips. Reserve enough power for full storage charging and use the remaining measured surplus for domestic hot water. [Release notes](docs/release-0.17.0-alpha.330.md)
-
-### 0.17.0-alpha.329 (2026-11-24)
-
-- Use surplus power for domestic hot water when every car is unplugged and the battery is charging at its AC limit. Include the usable heat in the forecast. [Release notes](docs/release-0.17.0-alpha.329.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 
