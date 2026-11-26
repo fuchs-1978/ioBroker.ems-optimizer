@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.336",
+    "version": "0.17.0-alpha.337",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.337": {
+        "en": "When one car is charging to its minimum, the controller filters multi-amp current swings using 45 seconds of sustained solar surplus. Reductions and the required minimum take effect immediately.",
+        "de": "Lädt ein Auto allein bis zum Mindest-SoC, dämpft das EMS Schwankungen um mehrere Ampere. Zum Erhöhen braucht es 45 Sekunden anhaltenden Überschuss. Reduzierungen und der erforderliche Mindeststrom gelten sofort.",
+        "es": "Si un solo coche carga hasta el mínimo, las oscilaciones de varios amperios se filtran con 45 segundos de excedente solar continuo. Las reducciones y el mínimo requerido se aplican de inmediato.",
+        "fr": "Quand un seul véhicule charge jusqu’au minimum, le régulateur filtre les variations de plusieurs ampères en exigeant 45 secondes de surplus solaire continu. Les réductions et le minimum requis sont immédiats.",
+        "it": "Quando una sola auto carica fino al minimo, il regolatore attenua le oscillazioni di più ampere richiedendo 45 secondi di surplus solare continuo. Le riduzioni e il minimo richiesto si applicano subito.",
+        "nl": "Als één auto tot het minimum laadt, dempt de regeling schommelingen van meerdere ampères door 45 seconden zonneoverschot af te wachten. Verlagingen en de minimumstroom gelden direct.",
+        "pl": "Gdy tylko jedno auto ładuje się do minimum, regulator tłumi wahania o kilka amperów, wymagając 45 sekund ciągłej nadwyżki energii słonecznej. Obniżenie prądu i wymagane minimum obowiązują od razu.",
+        "pt": "Quando apenas um veículo carrega até ao mínimo, o regulador atenua oscilações de vários amperes exigindo 45 segundos de excedente solar contínuo. As reduções e o mínimo necessário são imediatos.",
+        "ru": "Если только один автомобиль заряжается до минимума, регулятор сглаживает колебания тока на несколько ампер. Для повышения нужен устойчивый избыток солнечной энергии в течение 45 секунд. Снижение тока и требуемый минимум действуют сразу.",
+        "uk": "Коли лише одне авто заряджається до мінімуму, регулятор згладжує коливання струму на кілька амперів. Для підвищення потрібен сталий надлишок сонячної енергії протягом 45 секунд. Зниження струму та потрібний мінімум діють одразу.",
+        "zh-cn": "只有一辆车充电至最低电量时，控制器会平抑数安培的电流波动。太阳能余量持续 45 秒后才会提高电流。降低电流和所需的最低电流立即生效。"
+      },
       "0.17.0-alpha.336": {
         "en": "With price charging off, a car can use surplus PV and wait for a reserved grid slot to reach its departure minimum. Cars without a departure time charge to their minimum first.",
         "de": "Bei ausgeschalteter Preisladung nutzt das Auto mit Abfahrtszeit überschüssige PV und lädt bei Bedarf rechtzeitig bis zum Mindest-SoC nach. Fahrzeuge ohne Termin haben bis zu ihrem Mindest-SoC Vorrang.",
@@ -81,19 +94,6 @@
         "ru": "Зарядка к отъезду завершается на минимальном уровне. Для каждого автомобиля можно отдельно разрешить зарядку от сети до верхней цели.",
         "uk": "Заряджання до від’їзду завершується на мінімальному рівні. Для кожного автомобіля можна окремо дозволити заряджання від мережі до верхньої цілі.",
         "zh-cn": "出发充电在达到最低电量时结束。每辆车都可单独启用电网充电至更高目标电量的选项。"
-      },
-      "0.17.0-alpha.330": {
-        "en": "Keep surplus hot-water heating running through fluctuations in battery charging power. Reserve the remaining charging capacity for storage.",
-        "de": "Der Warmwasser-Heizstab läuft bei schwankender Speicherladeleistung mit dem verbleibenden Überschuss weiter. Die fehlende Ladeleistung bleibt für den Speicher reserviert.",
-        "es": "Mantiene el calentamiento de agua con excedentes cuando fluctúa la potencia de carga de la batería. Reserva la potencia que falta para la batería.",
-        "fr": "Maintient le chauffage de l’eau sanitaire avec le surplus quand la puissance de charge de la batterie fluctue. La puissance de charge restante est réservée à la batterie.",
-        "it": "Continua a scaldare l’acqua sanitaria con il surplus quando varia la potenza di carica della batteria. Riserva alla batteria la potenza di carica residua.",
-        "nl": "Blijft tapwater verwarmen met het overschot als het laadvermogen van de thuisaccu schommelt. Het resterende laadvermogen blijft beschikbaar voor de accu.",
-        "pl": "Podgrzewa wodę użytkową nadwyżką energii także przy wahaniach mocy ładowania magazynu. Brakująca moc pozostaje zarezerwowana dla magazynu.",
-        "pt": "Mantém o aquecimento de água com o excedente quando a potência de carga da bateria oscila. Reserva a potência de carga restante para a bateria.",
-        "ru": "Продолжает нагревать воду избытком энергии при колебаниях мощности зарядки аккумулятора. Недостающая мощность остаётся зарезервированной для зарядки.",
-        "uk": "Продовжує нагрівати воду надлишком енергії, коли потужність заряджання акумулятора коливається. Решта потужності заряджання залишається в резерві для акумулятора.",
-        "zh-cn": "当储能电池的充电功率波动时，继续利用余电加热生活用水，并为电池预留补足充电所需的功率。"
       }
     },
     "titleLang": {

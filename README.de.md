@@ -177,6 +177,8 @@ Mit **Mindest-SoC bis zur Abfahrt einplanen** kannst du die Ladung oberhalb der 
 
 ### Start, Stopp, Übergabe und Phasenwechsel
 
+Lädt im Parallelbetrieb ein Auto allein bis zum Mindest-SoC und schwankt der verfügbare Strom um mehrere Ampere, braucht jede zusätzliche PV-Stufe nach einem Rückgang 45 Sekunden durchgehenden Überschuss. Bei sinkendem Überschuss kann das EMS den Strom sofort wieder senken. [Prüffall EQE](docs/release-0.17.0-alpha.337.md)
+
 Bei einer Lücke in den Leistungsmeldungen der go-e-Wallboxen kann ein bereits ladendes Fahrzeug mit seinem bestätigten Strom weiterladen. Das EMS reserviert die Leistung und prüft Netzbezug, Einspeisung, jede Hausanschlussphase und die Netzbetreibergrenzen. Sind diese Prüfungen erfolgreich, hält die Wallbox den Strom bis zur nächsten gültigen Zuteilung. [Beispiel mit dem EQV bei 6 A](docs/release-0.17.0-alpha.333.md)
 
 Aktiviere nach dem Zuordnen **Regelfreigabe Wallbox N** und **Wallboxausgang freigeben** mit passender **Stromgrenze für die produktive Inbetriebnahme**. Prüfe unter `Devices.WallboxN` den Auftrag und die Bestätigung und am Messwert den tatsächlichen Ladestrom. Wartet das nächste Fahrzeug, muss die bisherige Leistung zuerst physisch reduziert oder beendet und das Budget freigegeben sein. [Wallbox-Felder und Abnahmeschritte](docs/admin-reference.de.md#admin-wallbox-0-1-und-2) · [Phasenfolger](docs/phase-follower-v2.md)
