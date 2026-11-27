@@ -1,6 +1,8 @@
 'use strict';
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
+// The plant and its Modul 3 tariff both use German local time.
+process.env.TZ = 'Europe/Berlin';
 const {plant} = require('./control-plant');
 
 const date = text => new Date(text).getTime();
