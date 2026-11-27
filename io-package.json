@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.339",
+    "version": "0.17.0-alpha.340",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.340": {
+        "en": "After a daily battery target has been reached, the forecast stores surplus PV left by the car and house, even if the battery has since discharged.",
+        "de": "Nach Erreichen eines Tagesziels plant das EMS freien PV-Überschuss für den Speicher ein, auch wenn sein Ladestand inzwischen gesunken ist.",
+        "es": "Tras alcanzar el objetivo diario de la batería, la previsión asigna a la batería el excedente solar que dejan la vivienda y el coche, incluso si se ha descargado después.",
+        "fr": "Une fois la cible du jour atteinte, la prévision affecte à la batterie le surplus solaire restant après la maison et la voiture, même si la batterie s’est déchargée depuis.",
+        "it": "Dopo il raggiungimento di un obiettivo giornaliero, la previsione assegna alla batteria il surplus fotovoltaico rimasto dopo casa e auto, anche se nel frattempo si è scaricata.",
+        "nl": "Na het bereiken van een dagdoel plant het EMS het zonneoverschot van huis en auto in voor de accu, ook als de laadtoestand intussen is gedaald.",
+        "pl": "Po osiągnięciu dziennego celu prognoza przeznacza na ładowanie magazynu nadwyżkę PV pozostałą po zasileniu domu i auta, nawet po późniejszym rozładowaniu magazynu.",
+        "pt": "Após atingir uma meta diária, a previsão destina à bateria o excedente solar disponível após o consumo da casa e do carro, mesmo que a bateria entretanto se tenha descarregado.",
+        "ru": "После достижения дневной цели прогноз направляет оставшийся после потребления дома и автомобиля избыток солнечной энергии в аккумулятор, даже если он успел разрядиться.",
+        "uk": "Після досягнення денної цілі прогноз спрямовує залишок сонячної енергії після споживання будинку й автомобіля до акумулятора, навіть якщо він уже частково розрядився.",
+        "zh-cn": "达到当天的电池充电目标后，即使电池随后放电，预测仍会安排电池吸收家庭和电动车用电后的剩余光伏电力。"
+      },
       "0.17.0-alpha.339": {
         "en": "Reduce peak memory while reading dense SQL history and building multi-day profiles. Diagnostic recording allocates less temporary memory per cycle.",
         "de": "Geringerer RAM-Spitzenbedarf beim Einlesen dichter SQL-Daten und beim Aufbau der mehrtägigen Historie. Die Diagnoseaufzeichnung benötigt pro Zyklus weniger temporären Speicher.",
@@ -81,19 +94,6 @@
         "ru": "План учитывает разрешённую цену и общий предел мощности нагрева от сети для каждого интервала и при переносе нагрева воды. После промежуточной цели заряда свободный избыток солнечной энергии направляется в аккумулятор.",
         "uk": "План враховує дозволену ціну та спільне обмеження потужності нагрівання від мережі в кожному інтервалі й під час перенесення нагрівання води. Після досягнення проміжної цілі заряду вільний надлишок сонячної енергії спрямовується в акумулятор.",
         "zh-cn": "规划在每个时段及调整热水加热时间时，均遵守电网供热的电价许可和共用功率限制。达到中间充电目标后，剩余光伏电量可继续充入电池。"
-      },
-      "0.17.0-alpha.333": {
-        "en": "Keep the confirmed EV charging current during a wallbox data gap while grid measurements and operating limits allow it.",
-        "de": "Bei einer Messlücke der Wallbox bleibt der bestätigte Ladestrom erhalten, solange Netzmesswerte und Betriebsgrenzen dies zulassen.",
-        "es": "Durante una interrupción de las mediciones de la wallbox se mantiene la corriente de carga confirmada si lo permiten las mediciones de red y los límites de funcionamiento.",
-        "fr": "En cas d’interruption des mesures de la borne, le courant de charge confirmé est maintenu si les mesures du réseau et les limites de fonctionnement le permettent.",
-        "it": "Se mancano le misure della wallbox, la corrente di carica confermata viene mantenuta finché le misure di rete e i limiti operativi lo consentono.",
-        "nl": "Bij ontbrekende wallboxmetingen blijft de bevestigde laadstroom gehandhaafd zolang de netmetingen en bedrijfsgrenzen dit toelaten.",
-        "pl": "Podczas przerwy w pomiarach ładowarki potwierdzony prąd ładowania jest utrzymywany, o ile pozwalają na to pomiary sieci i limity pracy.",
-        "pt": "Durante uma interrupção das medições da wallbox, a corrente de carga confirmada é mantida enquanto as medições da rede e os limites operacionais o permitirem.",
-        "ru": "При пропуске измерений зарядной станции подтверждённый ток зарядки сохраняется, пока это позволяют измерения сети и рабочие ограничения.",
-        "uk": "За відсутності вимірювань зарядної станції підтверджений струм заряджання зберігається, доки це дозволяють вимірювання мережі та робочі обмеження.",
-        "zh-cn": "充电桩测量中断时，只要电网测量值和运行限值允许，就保持已确认的充电电流。"
       }
     },
     "titleLang": {
