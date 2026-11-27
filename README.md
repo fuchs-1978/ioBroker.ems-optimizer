@@ -83,6 +83,10 @@ npm run test:equivalence
 
 ## Changelog
 
+### 0.17.0-alpha.342 (2026-11-27)
+
+- Let the home battery absorb surplus PV during the wallbox start delay. The car starts when the meter confirms sufficient power. [Release notes](docs/release-0.17.0-alpha.342.md)
+
 ### 0.17.0-alpha.341 (2026-11-27)
 
 - Keep a running EQV at 6 A through a forecast PV dip with up to 0.5 kWh of battery support per gap. [Release notes](docs/release-0.17.0-alpha.341.md)
@@ -110,10 +114,6 @@ npm run test:equivalence
 ### 0.17.0-alpha.335 (2026-11-25)
 
 - Confirm appliance starts with retries after 15 and 30 minutes and an error after another five minutes. Persist confirmation state across restarts. [Release notes](docs/release-0.17.0-alpha.335.md)
-
-### 0.17.0-alpha.334 (2026-11-25)
-
-- Respect the thermal grid budget in each forecast quarter and when shifting hot-water heating. Plan residual PV charging after an intermediate SunEnergy target when the battery has spare capacity. [Release notes](docs/release-0.17.0-alpha.334.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 

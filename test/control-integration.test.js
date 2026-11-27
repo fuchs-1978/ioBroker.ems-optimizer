@@ -2128,6 +2128,74 @@ async function daytimeEqvStoragePlant({startDelayS = 300, surplusW = 800, soc = 
     return h;
 }
 
+async function eqvPvStartCountdownPlant() {
+    const h = await daytimeEqvStoragePlant({startDelayS: 300, surplusW: 1800, soc: 52});
+    const timestamp = h.now();
+    h.own('Control.BatteryPVReachedTarget_JSON', JSON.stringify({day: h.run('localDateKey(new Date())'), target: 70}));
+    h.own('Plan.BatteryForecastValid', true);
+    h.own('Plan.BatteryTargetSoC_48h_JSON', JSON.stringify([{timestamp, value_pct: 70}]));
+    h.own('Plan.Wallbox1_48h_JSON', JSON.stringify([{timestamp, valueW: 2070, phases: 1, currentA: 9, gridChargeW: 0}]));
+    return h;
+}
+
+test('storage absorbs the 1800 W surplus throughout the five-minute EQV start delay', async () => {
+    const h = await eqvPvStartCountdownPlant();
+    const start = h.now();
+    await h.advance(300);
+    assert.equal(h.physical().allow, 0);
+    assert.ok(h.trace.filter(row => row.at >= start + 15000).every(row =>
+        row.batteryW === 1800 && row.gridW === 0 && row.wbW === 0), h.diagnostic());
+    assert.ok(h.value('Vehicles.Wallbox1.StartDelayRemaining_s') > 0);
+    const exportWh = h.trace.reduce((wh, row) => wh + Math.max(0, -row.gridW) / 3600, 0);
+    assert.ok(exportWh <= 3, `export during startup and countdown: ${exportWh} Wh`);
+    await h.advance(45);
+    const starts = h.writes.filter(w => w.id === 'goe.allow' && w.val === 1);
+    assert.equal(starts.length, 1, h.diagnostic());
+    assert.ok(starts[0].at >= start + 300000 && starts[0].at <= start + 330000);
+    assert.ok(h.physical().wbPowerW >= 1380);
+    assert.ok(h.trace.every(row => row.gridW <= 0), h.diagnostic());
+});
+
+test('a PV start waits for measured battery reduction after its countdown expires', async () => {
+    const h = await eqvPvStartCountdownPlant();
+    await h.advance(280);
+    h.setBatteryResponse(false);
+    await h.advance(45);
+    assert.equal(h.value('Vehicles.Wallbox1.StartDelayRemaining_s'), 0);
+    assert.equal(h.value('Control.Targets.Battery_W'), 0);
+    assert.equal(h.physical().batteryW, 1800);
+    assert.equal(h.physical().allow, 0, h.diagnostic());
+    h.setBatteryResponse(true);
+    h.setBatteryPower(0);
+    await h.advance(30);
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    assert.ok(h.physical().wbPowerW >= 1380);
+    assert.ok(h.trace.every(row => row.gridW <= 0));
+});
+
+test('a PV drop resets the EQV start delay while storage tracks only the available solar power', async () => {
+    const h = await eqvPvStartCountdownPlant();
+    h.own('Control.TargetGridPower_W', 100);
+    await h.advance(110);
+    assert.equal(h.physical().batteryW, 1800);
+    h.own('Control.TargetGridPower_W', 0);
+    h.setSurplus(900);
+    await h.advance(30);
+    assert.equal(h.value('Vehicles.Wallbox1.StartDelayRemaining_s'), 0);
+    assert.equal(h.physical().allow, 0);
+    assert.equal(h.physical().batteryW, 900);
+    h.setSurplus(1800);
+    const recovered = h.now();
+    await h.advance(290);
+    assert.equal(h.physical().allow, 0);
+    assert.equal(h.physical().batteryW, 1800);
+    await h.advance(40);
+    const starts = h.writes.filter(w => w.id === 'goe.allow' && w.val === 1);
+    assert.equal(starts.length, 1, h.diagnostic());
+    assert.ok(starts[0].at >= recovered + 300000);
+    assert.ok(h.physical().wbPowerW >= 1380);
+});
+
 test('a running EQV at 50% home SoC crosses the planned 49 W dip and returns to PV without restarting', async () => {
     const h = await daytimeEqvStoragePlant({startDelayS: 10, surplusW: 1610, soc: 50});
     const from = h.now();
