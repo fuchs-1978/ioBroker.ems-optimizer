@@ -181,7 +181,7 @@ Unter **Wallboxen allgemein → Zeitpunkt für den geplanten Mindest-SoC** ist *
 | --- | --- |
 | Mobilitätsreserve | Sobald das freigegebene Fahrzeug angeschlossen ist und unter der Reserve liegt, fordert es Ladeleistung an. |
 | Mindest-SoC | Bis zum nächsten Morgen um 06:00 Uhr Ortszeit. Das EMS nutzt verfügbaren PV-Überschuss und bevorzugt günstige Tarifviertelstunden, einschließlich Modul 3. Ohne verwertbaren Preisunterschied beginnt die Nachladung rechtzeitig anhand des verbleibenden Energiebedarfs. |
-| Maximal-SoC | Das normale obere Ladeziel für die flexible EMS-Ladung, etwa mit PV-Überschuss. |
+| Maximal-SoC | Bis zu dieser Grenze kann das Fahrzeug überschüssigen Eigenstrom laden, etwa aus der PV oder beim Mii auch aus dem BHKW. Günstigen Netzstrom darf das EMS oberhalb des Minimums einplanen, wenn die Preisladung für diese Wallbox eingeschaltet ist. |
 | Abfahrts-SoC | Ein eigenes einmaliges Ziel mit Datum und Uhrzeit. Die Buchung bleibt beim Abstecken erhalten. Mit Netzfreigabe plant das EMS auch den fehlenden Netzbezug für diesen Termin. |
 
 Kommt ein Fahrzeug mit 25 % zurück, fordert es bei 30 % Reserve sofort die ersten fünf Prozentpunkte an. Bei 50 % Minimum lassen sich die weiteren 20 Prozentpunkte bis 06:00 Uhr einplanen, auch bei ausgeschalteter optionaler Preisladung. Stehen Reserve und Minimum beide auf 50 %, fordert das Fahrzeug den gesamten Bedarf bis 50 % sofort an. Bleibt es über 06:00 Uhr angeschlossen, holt es einen offenen Mindestbedarf nach. [Beispiele und Einstellungen](docs/release-0.17.0-alpha.344.md)

@@ -6,4 +6,4 @@ Include the adapter version, relevant event times with timezone, affected vehicl
 
 For direct contact with the maintainer, write to <ems-optimizer@proton.me>.
 
-Passing software tests, a GitHub release and installation on a plant are separate facts. npm publication and ioBroker Latest admission remain explicitly deferred.
+Testers can install the published development build from the npm `alpha` channel. The release checklist tracks admission to the ioBroker adapter catalog. [Installation guide](README.md#installation-and-setup) · [Release checklist #316](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/316)

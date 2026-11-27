@@ -49,7 +49,7 @@ The standalone dashboard shows live power flows and opens each vehicle’s setti
 | --- | --- |
 | Mobility reserve | A connected, enabled car below its reserve requests power immediately. |
 | Minimum SoC | With morning scheduling enabled for that wallbox, the EMS aims for 06:00 local time. It can use PV or cheaper tariff intervals, including time-dependent grid charges. |
-| Maximum SoC | The normal upper limit for flexible charging, for example from surplus PV. |
+| Maximum SoC | The upper limit for charging from surplus generation. The Mii can also use measured CHP surplus. Above the minimum, the EMS can buy power in low-price periods when price-based grid charging is enabled for that wallbox. |
 | Departure SoC | A one-off target for the booked date and time. The booking survives unplugging. Its grid-charging option allows a top-up to the trip target, which can exceed the everyday maximum. |
 
 A car arriving at 25% with a 30% reserve, 50% minimum and 80% maximum requests the first five percentage points immediately. It can schedule the next twenty before morning. Equal reserve and minimum make the whole minimum immediate. [Schedule settings and example](docs/release-0.17.0-alpha.344.md)
@@ -128,7 +128,13 @@ npm run test:equivalence
 
 - When one car is charging to its minimum, qualify multi-amp PV current swings against 45 seconds of sustained surplus. [Release notes](docs/release-0.17.0-alpha.337.md)
 
-[Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
+Versions between these entries are listed in the [changelog archive](CHANGELOG_OLD.md).
+
+### 0.17.0-alpha.331 (2026-11-25)
+
+- The regular departure charge ends at the vehicle’s minimum SoC. PV can continue charging to the normal target. Charging to that upper target from the grid requires the wallbox’s separate permission. [Release notes](docs/release-0.17.0-alpha.331.md)
+
+[Earlier releases](CHANGELOG_OLD.md) cover the full version history and commissioning limits.
 
 ## Support
 
