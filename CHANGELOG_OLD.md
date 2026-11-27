@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.333 (2026-11-25)
+
+- Hold an established EV charging current through a gap in wallbox readings while the grid meter and operating limits permit it. [Release notes](docs/release-0.17.0-alpha.333.md)
+
 ## 0.17.0-alpha.332 (2026-11-25)
 
 - Regulate a single SunEnergy head with up to ten seconds of clock lead using successive device readings and a fresh grid measurement. [Release notes](docs/release-0.17.0-alpha.332.md)

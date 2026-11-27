@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.340",
+    "version": "0.17.0-alpha.341",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.341": {
+        "en": "Keep an already charging EQV at 6 A across a forecast PV dip using up to 0.5 kWh from the home battery.",
+        "de": "Ein bereits ladender EQV kann eine prognostizierte PV-Lücke bei 6 A mit bis zu 0,5 kWh aus dem Hausspeicher überbrücken.",
+        "es": "Un EQV que ya está cargando puede mantener 6 A durante una bajada de producción solar con hasta 0,5 kWh de la batería doméstica.",
+        "fr": "Un EQV en charge peut rester à 6 A pendant une baisse de production solaire grâce à un maximum de 0,5 kWh de la batterie domestique.",
+        "it": "Un EQV già in carica può mantenere 6 A durante un calo della produzione fotovoltaica usando fino a 0,5 kWh dalla batteria domestica.",
+        "nl": "Een ladende EQV kan bij een voorspelde daling van het PV-vermogen op 6 A blijven laden met maximaal 0,5 kWh uit de thuisaccu.",
+        "pl": "Ładujący się EQV może utrzymać 6 A przy prognozowanym spadku produkcji PV, pobierając do 0,5 kWh z domowego magazynu energii.",
+        "pt": "Um EQV em carregamento pode manter 6 A durante uma queda prevista na produção solar com até 0,5 kWh da bateria doméstica.",
+        "ru": "При прогнозируемом спаде солнечной генерации уже заряжающийся EQV может поддерживать ток 6 А за счёт домашней батареи с лимитом 0,5 кВт·ч.",
+        "uk": "Під час прогнозованого спаду сонячної генерації EQV, що вже заряджається, може підтримувати струм 6 А, використовуючи до 0,5 кВт·год із домашньої батареї.",
+        "zh-cn": "已在充电的 EQV 可在预计的光伏发电低谷期间维持 6 A，每次最多使用 0.5 kWh 家庭储能。"
+      },
       "0.17.0-alpha.340": {
         "en": "After a daily battery target has been reached, the forecast stores surplus PV left by the car and house, even if the battery has since discharged.",
         "de": "Nach Erreichen eines Tagesziels plant das EMS freien PV-Überschuss für den Speicher ein, auch wenn sein Ladestand inzwischen gesunken ist.",
@@ -81,19 +94,6 @@
         "ru": "Подтверждение запуска, повторные попытки через 15 и 30 минут и сообщение об ошибке ещё через пять минут. Сохранение попыток при перезапуске.",
         "uk": "Підтвердження запуску, повторні спроби через 15 і 30 хвилин та повідомлення про помилку ще через п’ять хвилин. Збереження спроб після перезапуску.",
         "zh-cn": "确认设备启动，在15和30分钟后重试，再过5分钟未启动则报错。重启后保留尝试记录。"
-      },
-      "0.17.0-alpha.334": {
-        "en": "Apply the grid-heating price permission and shared power limit to every forecast interval and to rescheduled hot-water heating. After an intermediate storage target, allocate unclaimed PV to the battery.",
-        "de": "Der Fahrplan berücksichtigt Preisfreigabe und gemeinsame Leistungsgrenze für Netzheizung in jeder Viertelstunde und beim Verschieben von Warmwasserladungen. Nach einem Speicherzwischenziel lädt der Akku mit verbleibendem PV-Überschuss.",
-        "es": "El plan aplica la autorización por precio y el límite de potencia compartido a la calefacción con energía de la red en cada intervalo y al reprogramar el agua caliente. Tras un objetivo intermedio, se asigna a la batería el excedente solar disponible.",
-        "fr": "Le planning applique les conditions tarifaires et la limite de puissance commune du chauffage sur le réseau à chaque intervalle et lors du déplacement de la chauffe de l’eau. Après un objectif de charge intermédiaire, le surplus photovoltaïque disponible est affecté à la batterie.",
-        "it": "Il piano applica il consenso tariffario e il limite di potenza condiviso per il riscaldamento da rete in ogni intervallo e quando riprogramma l’acqua calda. Dopo un obiettivo intermedio, il surplus fotovoltaico disponibile viene destinato alla batteria.",
-        "nl": "Het plan past de tarieftoestemming en de gedeelde vermogensgrens voor netverwarming toe in elk kwartier en bij het verschuiven van de warmwaterbereiding. Na een tussentijds laaddoel gaat het resterende zonneoverschot naar de accu.",
-        "pl": "Plan uwzględnia zgodę taryfową i wspólny limit mocy ogrzewania z sieci w każdym kwadransie oraz przy przesuwaniu podgrzewania wody. Po osiągnięciu pośredniego celu ładowania pozostała nadwyżka energii słonecznej trafia do akumulatora.",
-        "pt": "O plano aplica a autorização por preço e o limite de potência partilhado para aquecimento pela rede em cada intervalo e ao reagendar o aquecimento da água. Após uma meta de carga intermédia, o excedente solar disponível é atribuído à bateria.",
-        "ru": "План учитывает разрешённую цену и общий предел мощности нагрева от сети для каждого интервала и при переносе нагрева воды. После промежуточной цели заряда свободный избыток солнечной энергии направляется в аккумулятор.",
-        "uk": "План враховує дозволену ціну та спільне обмеження потужності нагрівання від мережі в кожному інтервалі й під час перенесення нагрівання води. Після досягнення проміжної цілі заряду вільний надлишок сонячної енергії спрямовується в акумулятор.",
-        "zh-cn": "规划在每个时段及调整热水加热时间时，均遵守电网供热的电价许可和共用功率限制。达到中间充电目标后，剩余光伏电量可继续充入电池。"
       }
     },
     "titleLang": {
