@@ -2138,6 +2138,126 @@ async function eqvPvStartCountdownPlant() {
     return h;
 }
 
+async function eqvBatteryTelemetryPlant({start = true, parallel = true, groupNet = false} = {}) {
+    const h = await daytimeEqvStoragePlant({startDelayS: 10, surplusW: 3340, soc: 52});
+    h.config.wb1CommissioningMaxA = 6;
+    h.config.wallboxParallelChargingEnabled = parallel;
+    if (groupNet) {
+        Object.assign(h.config, {par14aAccountingMode: 'groupNet', par14aGroupId: 'group',
+            par14aBoundaryId: 'site', par14aSiteScope: 'whole-site-ac', par14aId: 'group.contact',
+            par14aBudgetMode: 'fixed', par14aLimitW: 4200});
+        h.put('group.contact', false);
+    }
+    const timestamp = h.now();
+    h.own('Control.BatteryPVReachedTarget_JSON', JSON.stringify({day: h.run('localDateKey(new Date())'), target: 70}));
+    h.own('Plan.BatteryForecastValid', true);
+    h.own('Plan.BatteryTargetSoC_48h_JSON', JSON.stringify([{timestamp, value_pct: 70}]));
+    h.own('Plan.Wallbox1_48h_JSON', JSON.stringify([{timestamp, valueW: 1380, phases: 1, currentA: 6, gridChargeW: 0}]));
+    if (start) {
+        await h.advance(60);
+        assert.equal(h.value('Devices.Wallbox1.ResponseState'), 'confirmed', h.diagnostic());
+        assert.equal(h.physical().wbPowerW, 1380, h.diagnostic());
+    }
+    return h;
+}
+
+for (const parallel of [true, false]) for (const allocate of [false, true]) test(`running EQV holds 6 A through an isolated battery outage, parallel=${parallel}, allocator first=${allocate}`, async () => {
+    const h = await eqvBatteryTelemetryPlant({parallel, groupNet: true});
+    const before = h.writes.length;
+    h.setBatteryHeartbeat(false);
+    await h.replayAt(h.now() + 500, [], {allocate});
+    assert.match(h.value('Devices.Wallbox1.OutputStatus'), /Speicherrueckmeldung/);
+    await h.advance(8);
+    assert.equal(h.value('Control.Valid'), false);
+    assert.equal(h.run('coordinatedPhaseReservations("Wallbox1").valid'), false);
+    h.setSurplus(350);
+    await h.advance(12);
+    assert.ok(h.trace.at(-1).gridW > 0, h.diagnostic());
+    assert.equal(h.physical().wbPowerW, 1380, h.diagnostic());
+    if (parallel && !allocate) {
+        h.config.wb1CommissioningMaxA = 16;
+        h.setSurplus(6000);
+        await h.advance(305);
+        assert.equal(h.physical().wbPowerW, 1380, h.diagnostic());
+        h.config.wb1CommissioningMaxA = 6;
+    }
+    h.setSurplus(3340);
+    h.setBatteryHeartbeat(true);
+    await h.advance(30);
+    assert.equal(h.value('Control.Valid'), true);
+    assert.equal(h.physical().wbPowerW, 1380);
+    assert.ok(!h.writes.slice(before).some(w => ['goe.allow', 'goe.cmd', 'goe.phase'].includes(w.id)),
+        JSON.stringify(h.writes.slice(before)));
+});
+
+test('battery telemetry loss cannot start an idle EQV or override grid and vehicle interlocks', async () => {
+    const idle = await eqvBatteryTelemetryPlant({start: false});
+    idle.setBatteryHeartbeat(false);
+    await idle.advance(40);
+    assert.ok(!idle.writes.some(w => w.id === 'goe.allow' && w.val === 1));
+    for (const [id, val, extra] of [
+        ['DP_HA_CRITICAL', true], ['DP_GRID_IMPORT', 0, {q: 0x20}],
+        ['DP_DHW_HA_L1_CURRENT_A', 48], ['DP_DHW_HA_L2_CURRENT_A', 0, {ack: false}],
+        ['DP_WB1_ALLOW', false], ['goe.error', 5]
+    ]) {
+        const h = await eqvBatteryTelemetryPlant();
+        h.setBatteryHeartbeat(false);
+        await h.advance(5);
+        assert.equal(h.physical().wbPowerW, 1380, id);
+        const before = h.writes.length;
+        await h.replayAt(h.now() + 1000, [[id, val, extra || {}]]);
+        assert.ok(h.writes.slice(before).some(w => w.id === 'goe.allow' && w.val === 0),
+            `${id}: ${h.value('Devices.Wallbox1.OutputStatus')}`);
+    }
+});
+
+test('storage outage reserves the blind head on its grid phase and counts the measured EQV only once', async () => {
+    const h = await eqvBatteryTelemetryPlant();
+    h.config.batteryHead1GridPhase = 2;
+    h.setBatteryHeartbeat(false);
+    await h.replayAt(h.now() + 1000, [['DP_DHW_HA_L1_CURRENT_A', 48]]);
+    assert.match(h.value('Devices.Wallbox1.OutputStatus'), /Speicherrueckmeldung/);
+    const reserve = h.run('coordinatedPhaseReservations("Wallbox1", [], true)');
+    assert.deepEqual(Array.from(reserve.batteryW), [0, 4800, 0]);
+    const before = h.writes.length;
+    await h.replayAt(h.now() + 1000, [['DP_DHW_HA_L2_CURRENT_A', 32]]);
+    assert.ok(h.writes.slice(before).some(w => w.id === 'goe.allow' && w.val === 0));
+});
+
+test('storage loss cannot revive a withdrawn wallbox allocation before the output consumes it', async () => {
+    const h = await eqvBatteryTelemetryPlant();
+    const id = 'Control.ParallelWallboxAllocation_JSON';
+    const allocation = JSON.parse(h.value(id));
+    const eqv = allocation.allocations.find(entry => entry.wb === 1);
+    Object.assign(eqv, {authorized: false, targetA: 0});
+    h.own(id, JSON.stringify(allocation));
+    h.setBatteryHeartbeat(false);
+    const before = h.writes.length;
+    await h.replayAt(h.now() + 500);
+    assert.deepEqual(JSON.parse(h.value(id)).heldWallboxes, []);
+    assert.ok(h.writes.slice(before).some(w => w.id === 'goe.allow' && w.val === 0));
+});
+
+test('stale storage measurements hold a verified session, invalid input and an active operator limit revoke it', async () => {
+    for (const reason of ['storage payload', 'withdrawn limit evidence', 'stale phase', 'second missing load']) {
+        const h = await eqvBatteryTelemetryPlant({groupNet: true});
+        const raw = 'sunenergyxt500.0.heads.1.info.rawResponse';
+        const at = h.now() + 1000;
+        const stale = [raw, h.states.get(raw).val, {ts: at - 600000}];
+        await h.replayAt(at, [stale]);
+        assert.match(h.value('Devices.Wallbox1.OutputStatus'), /Speicherrueckmeldung/);
+        let samples;
+        if (reason === 'storage payload') samples = [[raw, '{broken']];
+        if (reason === 'withdrawn limit evidence') samples = [stale, ['group.contact', true]];
+        if (reason === 'stale phase') samples = [stale, ['DP_DHW_HA_L3_CURRENT_A', 1, {ts: at - 31000}]];
+        if (reason === 'second missing load') samples = [stale, ['DP_WB1_POWER', 1.38, {ts: at - 60000}]];
+        const before = h.writes.length;
+        await h.replayAt(at + 1000, samples);
+        assert.ok(h.writes.slice(before).some(w => w.id === 'goe.allow' && w.val === 0),
+            `${reason}: ${h.value('Devices.Wallbox1.OutputStatus')}`);
+    }
+});
+
 test('storage absorbs the 1800 W surplus throughout the five-minute EQV start delay', async () => {
     const h = await eqvPvStartCountdownPlant();
     const start = h.now();

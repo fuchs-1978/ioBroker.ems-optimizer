@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.335 (2026-11-25)
+
+- Confirm appliance starts with retries after 15 and 30 minutes and an error after another five minutes. Persist confirmation state across restarts. [Release notes](docs/release-0.17.0-alpha.335.md)
+
 ## 0.17.0-alpha.334 (2026-11-25)
 
 - Respect the thermal grid budget in each forecast quarter and when shifting hot-water heating. Plan residual PV charging after an intermediate SunEnergy target when the battery has spare capacity. [Release notes](docs/release-0.17.0-alpha.334.md)

@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.342",
+    "version": "0.17.0-alpha.343",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.343": {
+        "en": "Keep a confirmed EV charging current during a SunEnergy telemetry outage while fresh grid and phase measurements permit it.",
+        "de": "Bei einer SunEnergy-Messlücke hält die Wallbox den bestätigten Ladestrom, solange die aktuellen NVP- und Phasenmessungen das zulassen.",
+        "es": "Durante una interrupción de la telemetría de SunEnergy, el cargador mantiene la corriente confirmada mientras las mediciones de red y de fase lo permitan.",
+        "fr": "En cas de perte de la télémétrie SunEnergy, la borne maintient le courant de charge confirmé tant que les mesures du réseau et des phases le permettent.",
+        "it": "Se manca la telemetria SunEnergy, la wallbox mantiene la corrente di carica confermata finché le misure di rete e delle singole fasi lo consentono.",
+        "nl": "Bij uitval van de SunEnergy-telemetrie houdt de laadpaal de bevestigde laadstroom aan zolang de actuele net- en fasemetingen dat toelaten.",
+        "pl": "Gdy zabraknie danych z magazynu SunEnergy, ładowarka utrzymuje potwierdzony prąd ładowania, o ile pozwalają na to aktualne pomiary sieci i poszczególnych faz.",
+        "pt": "Se a telemetria SunEnergy falhar, o carregador mantém a corrente confirmada enquanto as medições da rede e das fases o permitirem.",
+        "ru": "При потере телеметрии SunEnergy зарядная станция поддерживает подтверждённый ток, пока это позволяют актуальные измерения сети и отдельных фаз.",
+        "uk": "У разі втрати телеметрії SunEnergy зарядна станція підтримує підтверджений струм, доки це дозволяють актуальні вимірювання мережі та окремих фаз.",
+        "zh-cn": "SunEnergy 遥测中断时，只要最新的并网点和各相测量结果允许，充电桩就会保持已确认的充电电流。"
+      },
       "0.17.0-alpha.342": {
         "en": "Store measured surplus PV during the wallbox start delay. Charging starts once the grid meter confirms that the battery has released the required power.",
         "de": "Der Speicher nimmt während der Wallbox-Startverzögerung den gemessenen PV-Überschuss auf. Das Auto startet, sobald der Netzzähler die freigegebene Leistung bestätigt.",
@@ -81,19 +94,6 @@
         "ru": "Если только один автомобиль заряжается до минимума, регулятор сглаживает колебания тока на несколько ампер. Для повышения нужен устойчивый избыток солнечной энергии в течение 45 секунд. Снижение тока и требуемый минимум действуют сразу.",
         "uk": "Коли лише одне авто заряджається до мінімуму, регулятор згладжує коливання струму на кілька амперів. Для підвищення потрібен сталий надлишок сонячної енергії протягом 45 секунд. Зниження струму та потрібний мінімум діють одразу.",
         "zh-cn": "只有一辆车充电至最低电量时，控制器会平抑数安培的电流波动。太阳能余量持续 45 秒后才会提高电流。降低电流和所需的最低电流立即生效。"
-      },
-      "0.17.0-alpha.336": {
-        "en": "With price charging off, a car can use surplus PV and wait for a reserved grid slot to reach its departure minimum. Cars without a departure time charge to their minimum first.",
-        "de": "Bei ausgeschalteter Preisladung nutzt das Auto mit Abfahrtszeit überschüssige PV und lädt bei Bedarf rechtzeitig bis zum Mindest-SoC nach. Fahrzeuge ohne Termin haben bis zu ihrem Mindest-SoC Vorrang.",
-        "es": "Con la carga por precio desactivada, el coche con hora de salida usa el excedente solar y reserva tiempo para alcanzar la carga mínima. Los coches sin horario tienen prioridad hasta su mínimo.",
-        "fr": "Quand la recharge selon le tarif est désactivée, le véhicule avec une heure de départ utilise le surplus solaire et garde un créneau pour atteindre sa charge minimale. Les véhicules sans horaire passent en premier jusqu’à leur minimum.",
-        "it": "Con la ricarica in base al prezzo disattivata, l’auto con partenza programmata sfrutta il surplus solare e riserva il tempo per raggiungere la carica minima. Le auto senza orario hanno la precedenza fino al minimo.",
-        "nl": "Als prijsgestuurd laden uitstaat, gebruikt de auto met vertrektijd het zonneoverschot en reserveert hij tijd om het laadminimum te halen. Auto’s zonder vertrektijd krijgen voorrang tot hun minimum.",
-        "pl": "Przy wyłączonym ładowaniu według cen auto z godziną odjazdu wykorzystuje nadwyżkę PV i rezerwuje czas na osiągnięcie minimalnego poziomu naładowania. Auta bez godziny odjazdu mają pierwszeństwo do swojego minimum.",
-        "pt": "Com o carregamento por preço desligado, o veículo com hora de partida utiliza o excedente solar e reserva tempo para atingir o mínimo. Os veículos sem hora de partida têm prioridade até ao seu mínimo.",
-        "ru": "При выключенной зарядке по тарифу автомобиль с заданным временем отъезда использует избыток солнечной энергии и резервирует время для зарядки до минимума. Машины без времени отъезда заряжаются до своего минимума первыми.",
-        "uk": "Коли заряджання за тарифом вимкнено, авто із заданим часом виїзду використовує надлишок сонячної енергії та резервує час для заряджання до мінімуму. Авто без часу виїзду мають пріоритет до свого мінімуму.",
-        "zh-cn": "关闭按电价充电后，设置了出发时间的车辆可以利用光伏余电，并预留时段补足最低电量。未设置出发时间的车辆优先充到最低电量。"
       }
     },
     "titleLang": {
