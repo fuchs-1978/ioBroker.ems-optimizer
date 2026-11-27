@@ -79,15 +79,15 @@ button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outlin
 }
 .edit-vehicle{position:absolute;z-index:1;inset:0;width:100%;border:0;border-radius:inherit;background:transparent;cursor:pointer}.edit-vehicle:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
 dialog{color:var(--ink);background:var(--card);border:1px solid var(--border);border-radius:18px;width:min(390px,calc(100% - 24px));padding:clamp(16px,4vw,24px);max-height:90dvh;overflow:auto;box-shadow:0 16px 70px #00172440}
-dialog::backdrop{background:#07182788}.dialog-head,.actions,.departure-input{display:flex;align-items:center;justify-content:space-between;gap:10px}.dialog-head h2{margin:.16rem 0 0;font-size:1.65rem}.dialog-head small,#departure-help{color:var(--muted)}.dialog-head small{font-size:.85rem}
-dialog button{background:var(--wash);color:var(--ink);border:1px solid var(--border);border-radius:8px;min-height:42px;padding:5px 12px;cursor:pointer}.close-dialog{font-size:1.45rem;line-height:1;min-width:42px}.goal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}dialog fieldset{padding:0;margin:20px 0 0;border:0;min-width:0}dialog label{font-size:.95rem;font-weight:650}
-.goal-input,.departure-input input{display:flex;align-items:center;border:1px solid var(--border);background:var(--page-top);border-radius:8px;padding:6px 9px;min-height:43px}.goal-input{margin-top:4px}.goal-input span{color:var(--muted)}.goal-input input{background:transparent;border:0;width:100%;min-width:0}.goal-input:focus-within,.departure-input input:focus-visible{outline:2px solid var(--accent)}
-.trip-fields{margin-top:12px}.trip-fields .goal-input input{box-sizing:border-box;max-width:100%}dialog input{font:inherit;color:var(--ink);font-size:1.03rem}.departure-label{display:block;margin:16px 0 4px}.departure-input input{flex:1;min-width:0}.departure-input button{flex-shrink:0;font-size:.84rem}
+dialog::backdrop{background:#07182788}.dialog-head,.actions{display:flex;align-items:center;justify-content:space-between;gap:10px}.dialog-head h2{margin:.16rem 0 0;font-size:1.65rem}.dialog-head small,#departure-help{color:var(--muted)}.dialog-head small{font-size:.85rem}
+dialog button{background:var(--wash);color:var(--ink);border:1px solid var(--border);border-radius:8px;min-height:42px;padding:5px 12px;cursor:pointer}.close-dialog{font-size:1.45rem;line-height:1;min-width:42px}dialog fieldset{padding:0;margin:20px 0 0;border:0;min-width:0}dialog label{font-size:.95rem;font-weight:650}
+.goal-input{display:flex;align-items:center;border:1px solid var(--border);background:var(--page-top);border-radius:8px;padding:6px 9px;min-height:43px}.goal-input{margin-top:4px}.goal-input span{color:var(--muted)}.goal-input input{background:transparent;border:0;width:100%;min-width:0}.goal-input:focus-within{outline:2px solid var(--accent)}
+dialog input{font:inherit;color:var(--ink);font-size:1.03rem}
 #departure-help,#goal-status{font-size:.85rem;margin-top:7px}#goal-status{min-height:1.25em;color:var(--muted);margin-top:16px}#goal-status[data-error=true]{color:#a24728}[data-theme=night] #goal-status[data-error=true]{color:#ffc199}
 .actions{justify-content:flex-end;margin-top:12px}.actions [type=submit]{background:#14654f;color:white;font-weight:650;border-color:transparent}.actions button:disabled{opacity:.5;cursor:default}
-#mii-soc-form{padding:16px 0;margin:0 0 15px;border-bottom:1px solid var(--border)}
+#mii-soc-form{padding:14px 0}
 .soc-heading,.soc-entry{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.soc-heading{margin:0 0 8px}.soc-heading h3,#mii-goals-heading{margin:0;font-size:1.02rem}.soc-heading span,#mii-soc-status{color:var(--muted);font-size:.86rem}
+.soc-heading{margin:0 0 8px}.soc-heading h3{margin:0;font-size:1.02rem}.soc-heading span,#mii-soc-status{color:var(--muted);font-size:.86rem}
 .soc-entry{margin-top:4px}.soc-entry .goal-input{margin:0;flex:1;min-width:0}.soc-entry button{background:#14654f;color:#fff;font-weight:650;flex-shrink:0}
 .soc-entry button:disabled{opacity:.5;cursor:default}#mii-soc-status{margin:7px 0 0;overflow-wrap:anywhere}#mii-soc-status:empty{display:none}
 .vehicle-info{margin-top:6px;padding-top:6px;border-top:1px solid var(--border);text-align:center;line-height:1.22;overflow-wrap:anywhere}
@@ -104,9 +104,45 @@ dialog button{background:var(--wash);color:var(--ink);border:1px solid var(--bor
 .priority-choice{margin-top:.7rem;display:flex;align-items:center;gap:.6rem;min-height:44px;cursor:pointer}
 dialog .priority-choice input{width:1.2rem;height:1.2rem;margin:0;accent-color:var(--accent);flex:none}
 #priority-help{font-size:.83rem;color:var(--muted)}#priority-help:empty{display:none}
-#mii-soc-status[data-error=true]{color:#a24728}[data-theme=night] #mii-soc-status[data-error=true]{color:#ffc199}#mii-goals-heading:not([hidden])+fieldset{margin-top:9px}
-.goal-grid.charge-limits{grid-template-columns:repeat(3,minmax(0,1fr))}
-@media(max-width:520px){.goal-grid.charge-limits{grid-template-columns:1fr 1fr}.charge-limits label:first-child{grid-column:1 / -1}}
+#mii-soc-status[data-error=true]{color:#a24728}[data-theme=night] #mii-soc-status[data-error=true]{color:#ffc199}
+#vehicle-dialog {
+  --dialog-inset: clamp(14px, 4vw, 22px);
+  width: min(28rem, calc(100% - 20px));
+  max-height: min(92dvh, calc(100dvh - 16px));
+  padding: 0;
+  overflow: hidden;
+}
+#vehicle-dialog[open] { display: flex; flex-direction: column; }
+#vehicle-dialog > .dialog-head { padding: 14px var(--dialog-inset) 12px; border-bottom: 1px solid var(--border); flex: none; }
+#vehicle-dialog .close-dialog { flex: none; }
+.vehicle-settings-body { min-height: 0; padding: 0 var(--dialog-inset); overflow-y: auto; overscroll-behavior: contain; }
+#goal-fields { margin: 0; }
+.vehicle-settings-group { padding: 14px 0; }
+.vehicle-settings-group + .vehicle-settings-group, #mii-soc-form { border-top: 1px solid var(--border); }
+.vehicle-section-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.vehicle-settings-group h3 { font-size: 1.05rem; line-height: 1.3; }
+#clear-time { background: transparent; border-color: transparent; color: var(--muted); font-size: .88rem; min-height: 40px; }
+#clear-time:not(:disabled):hover, #clear-time:focus-visible { background: var(--wash); color: var(--ink); }
+#clear-time:disabled { opacity: .55; }
+.vehicle-fields { display: grid; gap: 8px; }
+.vehicle-field { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.12fr); align-items: center; gap: 10px; }
+.vehicle-field > span:first-child { hyphens: auto; overflow-wrap: anywhere; }
+.vehicle-field small:not([hidden]) { display: block; color: var(--muted); font-size: .8rem; font-weight: 500; }
+.vehicle-field .goal-input { min-width: 0; min-height: 44px; margin: 0; }
+.vehicle-field input { max-width: 100%; }
+.vehicle-settings-group .priority-choice { margin-top: 8px; }
+.vehicle-settings-group p { margin: 2px 0 0; }
+#departure-help:empty { display: none; }
+.vehicle-settings-footer { flex: none; padding: 10px var(--dialog-inset) max(10px, env(safe-area-inset-bottom)); border-top: 1px solid var(--border); }
+.vehicle-settings-footer .actions { margin: 0; }
+.vehicle-settings-footer #goal-status { margin: 0 0 8px; min-height: 0; }
+.vehicle-settings-footer #goal-status:empty { display: none; }
+@media (max-width: 320px) {
+  .vehicle-field { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 6px; }
+}
+@media (max-width: 285px) {
+  .vehicle-field { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+}
 </style>
 </head>
 <body>
@@ -259,33 +295,45 @@ dialog .priority-choice input{width:1.2rem;height:1.2rem;margin:0;accent-color:v
 </main>
 <dialog id="vehicle-dialog" aria-labelledby="vehicle-title">
  <header class="dialog-head"><div><small id="vehicle-tag"></small><h2 id="vehicle-title">Ladeziele</h2></div><button class="close-dialog" aria-label="Schließen" type="button">×</button></header>
- <form id="mii-soc-form" hidden>
-  <div class="soc-heading"><h3>SoC-Korrektur</h3><span id="mii-current-soc"></span></div>
-  <label for="mii-soc">Am Mii abgelesener Ladestand</label>
-  <div class="soc-entry"><span class="goal-input"><input id="mii-soc" type="number" inputmode="decimal" min="0" max="100" step="any" required disabled><span>%</span></span><button id="apply-mii-soc" type="submit" disabled>SoC übernehmen</button></div>
-  <p id="mii-soc-status" role="status" aria-live="polite"></p>
- </form>
- <form id="goals-form">
-  <h3 id="mii-goals-heading" hidden>Ladeziele</h3>
-  <fieldset id="goal-fields" disabled>
-   <div class="goal-grid charge-limits">
-    <label for="goal-reserve">Mobilitätsreserve <span class="goal-input"><input id="goal-reserve" type="number" inputmode="numeric" min="0" max="100" step="1" required><span>%</span></span></label>
-    <label for="goal-min"><span id="goal-min-label">Mindest-SoC</span> <span class="goal-input"><input id="goal-min" type="number" inputmode="numeric" min="0" max="100" step="1" required><span>%</span></span></label>
-    <label for="goal-max">Maximal-SoC <span class="goal-input"><input id="goal-max" type="number" inputmode="numeric" min="0" max="100" step="1" required><span>%</span></span></label>
-   </div>
-   <label for="goal-time" class="departure-label">Abfahrtszeit</label><div class="departure-input"><input id="goal-time" type="time" step="60" aria-describedby="departure-help"><button id="clear-time" type="button">Abfahrt löschen</button></div>
-   <div class="goal-grid trip-fields">
-    <label for="goal-date">Abfahrtsdatum <span class="goal-input"><input id="goal-date" type="date" aria-describedby="departure-help"></span></label>
-    <label for="goal-trip-soc">Abfahrts-SoC <span class="goal-input"><input id="goal-trip-soc" type="number" inputmode="numeric" min="0" max="100" step="1" placeholder="optional"><span>%</span></span></label>
-   </div>
-   <label class="priority-choice" for="goal-trip-grid"><input type="checkbox" id="goal-trip-grid">Netzladung für diesen Termin bis zum Abfahrts-SoC erlauben</label>
-   <p id="departure-help" aria-live="polite"></p>
-   <label class="priority-choice" for="goal-priority"><input type="checkbox" id="goal-priority" aria-describedby="priority-help" disabled>Dieses Fahrzeug bevorzugt laden</label>
-   <p id="priority-help"></p>
-  </fieldset>
+ <div class="vehicle-settings-body">
+  <form id="goals-form">
+   <fieldset id="goal-fields" disabled>
+    <section class="vehicle-settings-group" aria-labelledby="departure-heading">
+     <div class="vehicle-section-head">
+      <h3 id="departure-heading">Geplante Abfahrt</h3>
+      <button id="clear-time" type="button" aria-label="Abfahrt löschen">Löschen</button>
+     </div>
+     <div class="vehicle-fields">
+      <label class="vehicle-field" for="goal-date"><span>Datum</span><span class="goal-input"><input id="goal-date" type="date" aria-describedby="departure-help"></span></label>
+      <label class="vehicle-field" for="goal-time"><span>Uhrzeit</span><span class="goal-input"><input id="goal-time" type="time" step="60" aria-describedby="departure-help"></span></label>
+      <label class="vehicle-field" for="goal-trip-soc"><span>Abfahrts-SoC</span><span class="goal-input"><input id="goal-trip-soc" type="number" inputmode="numeric" min="0" max="100" step="1" placeholder="optional"><span>%</span></span></label>
+     </div>
+     <label class="priority-choice" for="goal-trip-grid"><input type="checkbox" id="goal-trip-grid">Netzladung bis zum Abfahrts-SoC erlauben</label>
+     <p id="departure-help" aria-live="polite"></p>
+    </section>
+    <section class="vehicle-settings-group" aria-labelledby="limits-heading">
+     <div class="vehicle-section-head"><h3 id="limits-heading">Ladegrenzen</h3></div>
+     <div class="vehicle-fields">
+      <label class="vehicle-field" for="goal-reserve"><span>Mobilitäts&shy;reserve</span><span class="goal-input"><input id="goal-reserve" type="number" inputmode="numeric" min="0" max="100" step="1" required><span>%</span></span></label>
+      <label class="vehicle-field" for="goal-min"><span>Mindest-SoC<small id="goal-min-time" hidden>bis 06:00 Uhr</small></span><span class="goal-input"><input id="goal-min" type="number" inputmode="numeric" min="0" max="100" step="1" required><span>%</span></span></label>
+      <label class="vehicle-field" for="goal-max"><span>Maximal-SoC</span><span class="goal-input"><input id="goal-max" type="number" inputmode="numeric" min="0" max="100" step="1" required><span>%</span></span></label>
+     </div>
+     <label class="priority-choice" for="goal-priority"><input type="checkbox" id="goal-priority" aria-describedby="priority-help" disabled>Dieses Fahrzeug bevorzugt laden</label>
+     <p id="priority-help"></p>
+    </section>
+   </fieldset>
+  </form>
+  <form id="mii-soc-form" hidden>
+   <div class="soc-heading"><h3>SoC-Korrektur</h3><span id="mii-current-soc"></span></div>
+   <label for="mii-soc">Am Mii abgelesener Ladestand</label>
+   <div class="soc-entry"><span class="goal-input"><input id="mii-soc" type="number" inputmode="decimal" min="0" max="100" step="any" required disabled><span>%</span></span><button id="apply-mii-soc" type="submit" disabled>SoC übernehmen</button></div>
+   <p id="mii-soc-status" role="status" aria-live="polite"></p>
+  </form>
+ </div>
+ <footer class="vehicle-settings-footer">
   <p id="goal-status" role="status" aria-live="polite"></p>
-  <div class="actions"><button type="button" id="cancel-goals">Schließen</button><button type="submit" id="save-goals" disabled>Speichern</button></div>
- </form>
+  <div class="actions"><button type="button" id="cancel-goals">Schließen</button><button type="submit" form="goals-form" id="save-goals" disabled>Speichern</button></div>
+ </footer>
 </dialog>
 <script>
 "use strict";
@@ -1318,24 +1366,35 @@ function syncGoalButtons() {
   tripDate.disabled = !goalBaseline?.tripEnabled || !goalBaseline.controlEnabled || savingVehicle;
   goalInputs.reserve.disabled = !goalBaseline?.editReserve || savingVehicle;
   goalInputs.reserve.max = goalInputs.min.value || "100";
-  $("goal-min-label").textContent = goalBaseline?.morning ? "Mindest-SoC bis 06:00" : "Mindest-SoC";
+  $("goal-min-time").hidden = !goalBaseline?.morning;
   goalInputs.time.disabled = Boolean(goalBaseline?.morning && (!tripDate.value || tripDate.disabled));
   tripSoc.required = Boolean(goalBaseline?.morning && tripDate.value && goalTripText(goalBaseline) !== goalTripText(draftGoals()));
   tripSoc.placeholder = goalBaseline?.morning ? "" : "optional";
   tripSoc.disabled = tripGrid.disabled = tripDate.disabled || !tripDate.value;
   $("clear-time").disabled = !goalInputs.time.value && !tripDate.value;
   const plan = goalBaseline?.plan;
-  $("departure-help").textContent = !goalBaseline ? "" : !goalBaseline.tripEnabled
-    ? "Datierte Abfahrten benötigen EMS ab Alpha 338." : !goalBaseline.controlEnabled
-    ? "Für einen Termin die Abfahrtsregel dieser Wallbox im EMS-Admin aktivieren." : !tripDate.value
-    ? (goalBaseline.morning ? "Für ein Fahrtziel Abfahrtsdatum, Uhrzeit und Abfahrts-SoC eintragen."
-      : "Ohne Datum gilt die nächste eingestellte Uhrzeit. Datum und Uhrzeit legen einen einmaligen Termin fest.")
-    : tripDate.value+"T"+goalInputs.time.value <= localDepartureMinute(plan?.zone) ? "Dieser Termin ist abgelaufen. Du kannst ihn ersetzen oder löschen."
-    : (tripSoc.value ? "Das Fahrtziel gilt einmalig, auch über dem normalen Maximal-SoC." : goalBaseline.morning ? "Für diesen Termin bitte den Abfahrts-SoC eintragen." : "Ohne Abfahrts-SoC gelten die normalen Ladeziele.") +
-      (tripGrid.checked ? " Fehlende Energie darf aus dem Netz kommen." : " Oberhalb des Mindest-SoC ist PV-Überschuss vorgesehen.") +
-      (plan?.latestStart > 0 && plan.clock===tripDate.value+"T"+goalInputs.time.value &&
-        plan.target===(tripSoc.value==="" ? goalBaseline.max : tripSoc.valueAsNumber) && plan.allowGrid===tripGrid.checked
-        ? " Eingeplante Nachladung ab "+scheduleTime(plan.latestStart,Date.now())+"." : "");
+  const clock = tripDate.value + "T" + goalInputs.time.value;
+  const target = tripSoc.value === "" ? goalBaseline?.max : tripSoc.valueAsNumber;
+  const planned = plan?.latestStart > 0 && plan.clock === clock && plan.target === target && plan.allowGrid === tripGrid.checked;
+  let hint = "";
+  if (goalBaseline) {
+    if (!goalBaseline.tripEnabled) hint = "Datierte Abfahrten benötigen EMS ab Alpha 338.";
+    else if (!goalBaseline.controlEnabled) hint = "Für einen Termin die Abfahrtsregel dieser Wallbox im EMS-Admin aktivieren.";
+    else if (!tripDate.value) hint = goalBaseline.morning ? "Datum wählen, um Uhrzeit und Abfahrts-SoC einzutragen."
+      : "Ohne Datum gilt die nächste eingestellte Uhrzeit. Mit Datum gilt die Abfahrt einmalig.";
+    else if (!goalInputs.time.value) hint = "Bitte eine Abfahrtszeit wählen.";
+    else if (clock <= localDepartureMinute(plan?.zone)) hint = "Dieser Termin ist abgelaufen. Du kannst ihn ersetzen oder löschen.";
+    else if (tripSoc.value === "" && goalBaseline.morning) hint = "Bitte den Abfahrts-SoC eintragen.";
+    else {
+      const notes = [];
+      if (tripSoc.value === "") notes.push("Ohne Abfahrts-SoC gelten die normalen Ladeziele.");
+      else if (isNumber(goalBaseline.max) && target > goalBaseline.max) notes.push("Das höhere Ladeziel gilt nur für diese Abfahrt.");
+      if (!tripGrid.checked && isNumber(goalBaseline.min) && target > goalBaseline.min) notes.push("Oberhalb des Mindest-SoC ist PV-Überschuss vorgesehen.");
+      if (planned) notes.push("Geplante Nachladung ab " + scheduleTime(plan.latestStart, Date.now()) + ".");
+      hint = notes.join(" ");
+    }
+  }
+  $("departure-help").textContent = hint;
   priorityInput.disabled = !goalBaseline?.editPriority || savingVehicle;
   $("save-goals").disabled = !goalBaseline || savingVehicle || (sameGoals(goalBaseline, draftGoals()) && requestedPriority() === null);
   $("cancel-goals").disabled = goalDialog.querySelector(".close-dialog").disabled = savingVehicle;
@@ -1360,7 +1419,7 @@ async function openGoals(i) {
   openVehicle = i;
   goalDialog.dataset.vehicle = "wb" + i;
   $("vehicle-tag").textContent = $(goalDialog.dataset.vehicle + "-plug").getAttribute("aria-label");
-  $("mii-goals-heading").hidden = miiForm.hidden = i !== 0;
+  miiForm.hidden = i !== 0;
   $("save-goals").textContent = "Speichern";
   miiReference = null;
   miiInput.value = "";
@@ -1369,6 +1428,7 @@ async function openGoals(i) {
   fillGoals(null);
   goalMessage(demo ? "Beispielwerte werden geladen …" : "Ladeziele werden aus ioBroker gelesen …");
   goalDialog.showModal();
+  goalDialog.querySelector(".vehicle-settings-body").scrollTop = 0;
   if (i === 0) loadMiiCorrection(epoch);
   try {
     const goals = await readVehicleGoals(i);
