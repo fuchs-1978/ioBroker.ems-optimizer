@@ -371,6 +371,52 @@ test('26 November: the battery takes the midday PV left below EV minimum after r
     assert.ok(run().allocation.every(s => !s.batteryStageSurplusPvW));
 });
 
+test('27 November: the EQV keeps its PV slots and storage takes the remainder below the already reached morning target', () => {
+    const start = Date.parse('2026-11-27T09:45:00+01:00');
+    const h = headroomFixture(42.7, {wb1ControlEnabled: true, wb1DeadlineEnabled: true, wb1CommissioningMaxA: 32}, 0, start);
+    car(h, 0, {connected: false});
+    car(h, 1, {soc: 70, minimum: 50, target: 90, capacity: 90});
+    h.put('ems.0.Vehicles.Wallbox1.DepartureTrip_JSON', JSON.stringify({date: '2026-11-30', time: '06:00', soc: 100, allowGrid: true}));
+    h.put('ems.0.Config.BatteryMorningTargetSoC_pct', 70);
+    h.put('ems.0.Config.BatteryAfternoonTargetSoC_pct', 90);
+    h.put('ems.0.Config.BatteryRoundTripEfficiency_pct', 85);
+    const mark = JSON.stringify({day: h.run('localDateKey(new Date())'), target: 70});
+    h.put('ems.0.Control.BatteryPVReachedTarget_JSON', mark);
+    const pvW = [1978, 2364, 2625, 2968, 2960, 2678, 2747, 2747, 2951, 2951, 2951, 2951,
+        3211, 3211, 3211, 3211, 2364, 2364, 2364, 2364, 1724, 1724, 1724, 1724, 672];
+    const houseW = [986, 828, 1028, 865, 902, 923, 876, 1045, 959, 1117, 1620, 1114,
+        1163, 1136, 1551, 2308, 1574, 1523, 988, 914, 966, 847, 818, 1075, 1023];
+    const r = h.plan({pvW, houseW, slots: pvW.length});
+    balance(r, pvW, houseW);
+    assert.deepEqual(r.cars[1].slice(0, 13).map(point => point.currentA), [0, 6, 6, 9, 8, 7, 8, 7, 8, 7, 0, 7, 0]);
+    const power = h.series('BatteryPower');
+    for (const [i, watts] of [[0, 992], [1, 156], [10, 1331], [11, 227]]) {
+        assert.equal(power[i].valueW, watts);
+        assert.equal(power[i].requiredPvChargeW, 0, 'leftover PV does not reserve priority over the EV');
+        assert.equal(r.allocation[i].batteryStageSurplusPvW, watts);
+    }
+    assert.ok(r.grid.slice(0, 24).every(point => point.valueW === 0));
+    assert.equal(h.series('BatteryStage')[12].target_pct, 90);
+    assert.equal(power[12].valueW, 2048);
+    assert.ok(h.series('BatterySoC')[11].value_pct < 70);
+    assert.equal(h.states.get('ems.0.Control.BatteryPVReachedTarget_JSON').val, mark);
+});
+
+test('a stage reached within the simulation permits residual charge after discharge and resets at local midnight', () => {
+    const start = new Date(2026, 10, 26, 23, 0).getTime();
+    const h = headroomFixture(70, {}, 0, start);
+    for (const stage of ['Morning', 'Afternoon', 'Late']) h.put(`ems.0.Config.Battery${stage}TargetSoC_pct`, 70);
+    h.put('ems.0.Config.BatterySelfConsumptionEnabled', true);
+    const pvW = [0, 0, 1837, 1331, 1837], houseW = [2000, 2000, 0, 0, 0];
+    const r = h.plan({pvW, houseW, slots: pvW.length});
+    balance(r, pvW, houseW);
+    assert.deepEqual(r.cars[0].map(s => s.valueW), [0, 0, 1610, 0, 0]);
+    assert.deepEqual(h.series('BatteryPower').map(s => s.valueW), [-2000, -2000, 227, 1331, 1837]);
+    assert.ok(r.grid.every(s => s.valueW === 0));
+    assert.equal(r.allocation[4].batteryStageSurplusPvW, undefined, 'the new day reserves its own stage first');
+    assert.equal(h.states.get('ems.0.Control.BatteryPVReachedTarget_JSON')?.val ?? '{}', '{}');
+});
+
 test('with every car unplugged the forecast heats idle water only from usable overflow at full AC charge', () => {
     const h = headroomFixture(59);
     h.run(fs.readFileSync(path.join(__dirname, '../lib/engine/dhw-controller.js'), 'utf8'));

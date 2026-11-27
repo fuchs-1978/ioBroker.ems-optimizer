@@ -83,6 +83,10 @@ npm run test:equivalence
 
 ## Changelog
 
+### 0.17.0-alpha.340 (2026-11-27)
+
+- Forecast battery charging from surplus PV left by the house and car after a daily charge target has been reached, including after a later discharge. [Release notes](docs/release-0.17.0-alpha.340.md)
+
 ### 0.17.0-alpha.339 (2026-11-26)
 
 - Use less memory to aggregate dense SQL measurements, build multi-day history and record diagnostics. [Release notes](docs/release-0.17.0-alpha.339.md)
@@ -110,10 +114,6 @@ npm run test:equivalence
 ### 0.17.0-alpha.333 (2026-11-25)
 
 - Hold an established EV charging current through a gap in wallbox readings while the grid meter and operating limits permit it. [Release notes](docs/release-0.17.0-alpha.333.md)
-
-### 0.17.0-alpha.332 (2026-11-25)
-
-- Regulate a single SunEnergy head with up to ten seconds of clock lead using successive device readings and a fresh grid measurement. [Release notes](docs/release-0.17.0-alpha.332.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 
