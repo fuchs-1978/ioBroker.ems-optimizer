@@ -220,7 +220,7 @@ test('real departure remains fixed after expiry, repeated forecasts and restart'
 
 test('explicit readiness departure edits update the same price session before the observer tick', () => {
     for (const newTime of ['05:30', '07:00']) {
-        const h = fixture({wb0DeadlineEnabled: true, wb0MinimumSocByDepartureEnabled: true, wb0MinSocPct: 50});
+        const h = fixture({wallboxMinimumSchedule: 'departure', wb0DeadlineEnabled: true, wb0MinimumSocByDepartureEnabled: true, wb0MinSocPct: 50});
         h.own('Vehicles.Wallbox0.MobilityReserve_pct', 30);
         h.own('Vehicles.Wallbox0.DepartureTime', '06:00');
         h.put('DP_WB0_SOC', 40);
@@ -247,7 +247,7 @@ test('explicit readiness departure edits update the same price session before th
 });
 
 test('readiness deadline edits preserve metering across a cleared time and keep the new deadline after rollover', () => {
-    const h = fixture({wb0DeadlineEnabled: true, wb0MinimumSocByDepartureEnabled: true});
+    const h = fixture({wallboxMinimumSchedule: 'departure', wb0DeadlineEnabled: true, wb0MinimumSocByDepartureEnabled: true});
     h.own('Vehicles.Wallbox0.DepartureTime', '06:00');
     h.put('DP_WB0_SOC', 40);
     const first = h.update();
@@ -275,7 +275,7 @@ test('readiness deadline edits preserve metering across a cleared time and keep 
 });
 
 test('readiness SoC keeps measured energy through unchanged app polls and excludes a telemetry gap', () => {
-    const h = fixture({wb0DeadlineEnabled: true, wb0MinimumSocByDepartureEnabled: true, wb0MinSocPct: 53});
+    const h = fixture({wallboxMinimumSchedule: 'departure', wb0DeadlineEnabled: true, wb0MinimumSocByDepartureEnabled: true, wb0MinSocPct: 53});
     h.own('Config.Wallbox0VehicleCapacity_kWh', 32.3);
     h.own('Config.VehicleChargingEfficiency_pct', 90);
     h.own('Vehicles.Wallbox0.DepartureTime', '06:00');

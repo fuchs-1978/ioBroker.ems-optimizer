@@ -10,7 +10,7 @@ const booking = (extra = {}) => JSON.stringify({date: '2026-11-30', time: '06:00
 async function tripPlant(extra = {}) {
     const h = await plant({initialTime: day('2026-11-26'), initialSurplusW: 0, startDelayS: 0, split: false,
         nativeConfig: {wallboxParallelChargingEnabled: true, dhwControlEnabled: false, wb2DeadlineEnabled: true,
-            wb2MinimumSocByDepartureEnabled: true, wb2CommissioningMaxA: 20, ...extra}});
+            wallboxMinimumSchedule: 'departure', wb2MinimumSocByDepartureEnabled: true, wb2CommissioningMaxA: 20, ...extra}});
     h.own('Devices.MyPV_DHW.Present', false);
     h.own('Devices.Wallbox0.Present', false);
     h.own('Config.Wallbox2VehicleCapacity_kWh', 90.6);

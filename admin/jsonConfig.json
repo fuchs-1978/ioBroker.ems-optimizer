@@ -2496,6 +2496,27 @@
           "lg": 12,
           "xl": 12
         },
+        "wallboxMinimumSchedule": {
+          "type": "select",
+          "label": "Deadline for the scheduled minimum SoC",
+          "default": "morning",
+          "options": [
+            {
+              "value": "morning",
+              "label": "Daily at 06:00"
+            },
+            {
+              "value": "departure",
+              "label": "Configured departure time"
+            }
+          ],
+          "newLine": true,
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
         "wallboxPrioritySource": {
           "type": "select",
           "label": "Priority source",
@@ -3222,7 +3243,7 @@
         },
         "wb0MinimumSocByDepartureEnabled": {
           "type": "checkbox",
-          "label": "Plan minimum vehicle SoC by departure",
+          "label": "Schedule minimum vehicle SoC",
           "default": false,
           "sm": 12,
           "newLine": true,
@@ -4102,7 +4123,7 @@
         },
         "wb1MinimumSocByDepartureEnabled": {
           "type": "checkbox",
-          "label": "Plan minimum vehicle SoC by departure",
+          "label": "Schedule minimum vehicle SoC",
           "default": false,
           "sm": 12,
           "newLine": true,
@@ -4982,7 +5003,7 @@
         },
         "wb2MinimumSocByDepartureEnabled": {
           "type": "checkbox",
-          "label": "Plan minimum vehicle SoC by departure",
+          "label": "Schedule minimum vehicle SoC",
           "default": false,
           "sm": 12,
           "newLine": true,

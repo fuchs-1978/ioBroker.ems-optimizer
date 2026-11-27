@@ -1122,6 +1122,10 @@ Seit alpha.186 bekommt die eigentliche Recorder-Historienprüfung bei erkannter 
 
 ## Mobilitätsreserve und vorhandene Abfahrtszeit
 
+Ab Alpha 344 ist **Täglich um 06:00 Uhr** die Voreinstellung für die aktivierte Mindest-SoC-Planung. In diesem Modus stellt das Dashboard die jeweilige Mobilitätsreserve als sofortige Ladegrenze ein. Eine Reserve von 0 % lässt den gesamten Mindestbedarf bis zum nächsten Morgen planen. Aktive Tarifdaten einschließlich Modul 3 bestimmen die bevorzugten Viertelstunden. Der einmalige Termin verwendet Datum, Uhrzeit und einen eigenen Abfahrts-SoC. [Morgenminimum und Beispiele](release-0.17.0-alpha.344.md)
+
+Die folgenden Absätze beschreiben die Auswahl **Eingestellte Abfahrtszeit** unter **Wallboxen allgemein**.
+
 Das Web-Dashboard kann pro Wallbox einen einmaligen Termin mit Datum und Ortszeit in `Vehicles.WallboxN.DepartureTrip_JSON` speichern. Ein optionaler Abfahrts-SoC und die Netzfreigabe gelten für diesen Termin. `Vehicles.WallboxN.DeparturePlan_JSON` meldet die wirksamen Ladeziele und den Beginn der eingeplanten Nachladung. Der Termin kann auch außerhalb der rollierenden 48-Stunden-Prognose liegen. [Bedienung und Datenformat](release-0.17.0-alpha.338.md)
 
 Je Fahrzeug liegt im Objektbaum der beschreibbare State `ems-optimizer.0.Vehicles.Wallbox0.MobilityReserve_pct` (analog Wallbox1/Wallbox2). Vorgabe **0 % = aus**; bestehende Eingaben bleiben bei Neustart/Update erhalten. Gültig sind Zahlen von 0 bis 100; die Vorschau begrenzt das Reserve-Ziel zusätzlich auf den Fahrzeug-Mindest-SoC. Ungültige Werte bleiben unbekannt. Die Reserve ist ein Teil des Mindestbedarfs und wird nicht als zusätzliche Nachtenergie addiert.
@@ -1130,7 +1134,7 @@ Die vorhandenen `Vehicles.WallboxN.DepartureTime`-States verwenden `HH:MM`; `Dep
 
 Bei aktiver Abfahrt mit bekanntem SoC berechnet das EMS den nötigen Ladestrom aus Restenergie, Ladeverlusten und verfügbarer Zeit. Es plant mit 15 Minuten Reserve. Bei ausgeschalteter Preisladung kann ein qualifiziertes PV-Fenster einen Teil der Ladung übernehmen. Der Fahrplan prüft dazu auch den Fall ohne PV. Ein angenommener Aufschub erscheint vor dem Fenster in `Plan.WallboxN_48h_JSON` unter `departurePv`. [Leistungsbedarf](release-0.17.0-alpha.306.md) · [Stromstufen](release-0.17.0-alpha.307.md) · [PV vor der Abfahrt](release-0.17.0-alpha.310.md)
 
-**Mindest-SoC bis zur Abfahrt einplanen** (`wb0MinimumSocByDepartureEnabled`, analog WB1/WB2) ist pro Fahrzeug zunächst ausgeschaltet. Zum Aktivieren gehören die Abfahrtsfreigabe, eine gültige Abfahrtszeit und eine Mobilitätsreserve größer null und kleiner als der Mindest-SoC. Unter der Mobilitätsreserve fordert das Auto sofort Ladeleistung an.
+**Mindest-SoC des Fahrzeugs einplanen** (`wb0MinimumSocByDepartureEnabled`, analog WB1/WB2) ist pro Fahrzeug zunächst ausgeschaltet. Zum Aktivieren gehören die Abfahrtsfreigabe, eine gültige Abfahrtszeit und eine Mobilitätsreserve größer null und kleiner als der Mindest-SoC. Unter der Mobilitätsreserve fordert das Auto sofort Ladeleistung an.
 
 Bei ausgeschalteter Preisladung und ausgeschalteter Zusatzladung zum oberen Ziel kann das Auto oberhalb der Reserve auf PV warten. Das EMS reserviert dazu ein zusammenhängendes Zeitfenster, in dem die fehlende Energie auch ohne Sonne bei Mindeststrom verfügbar ist. Solange dieses Fenster gesichert ist, erhält ein Fahrzeug ohne Termin bis zu seinem Minimum Vorrang. Überschuss, den es nicht aufnehmen kann, steht auch dem Fahrzeug mit Termin zur Verfügung. Das EMS zeigt den Beginn der abgesicherten Nachladung im Fahrzeugstatus. Bei knappem Zeitfenster übernimmt die reguläre Abfahrtsladung. [Details und Beispiel](release-0.17.0-alpha.336.md)
 

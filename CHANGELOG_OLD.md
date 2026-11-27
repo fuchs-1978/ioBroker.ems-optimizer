@@ -2,6 +2,10 @@
 
 Older release summaries for EMS Optimizer. See [README.md](README.md#changelog) for the current release.
 
+## 0.17.0-alpha.336 (2026-11-26)
+
+- With price charging off, schedule the departure minimum against a PV-independent grid slot. Give untimed cars priority up to their minimum and use surplus PV whenever available. [Release notes](docs/release-0.17.0-alpha.336.md)
+
 ## 0.17.0-alpha.335 (2026-11-25)
 
 - Confirm appliance starts with retries after 15 and 30 minutes and an error after another five minutes. Persist confirmation state across restarts. [Release notes](docs/release-0.17.0-alpha.335.md)

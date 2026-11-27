@@ -74,7 +74,8 @@ async function worker(tree) {
             const anchor = '    `${CFG.root}.Vehicles.Wallbox0.DepartureTime`,';
             assert.equal(pinned.split(anchor).length, 2);
             pinned = pinned.replace(anchor,
-                '    ...[0, 1, 2].map(wb => `${CFG.root}.Vehicles.Wallbox${wb}.DepartureTrip_JSON`),\n' + anchor);
+                '    ...[0, 1, 2].map(wb => `${CFG.root}.Vehicles.Wallbox${wb}.DepartureTrip_JSON`),\n' +
+                '    ...[0, 1, 2].map(wb => `${CFG.root}.Vehicles.Wallbox${wb}.MobilityReserve_pct`),\n' + anchor);
         }
         // alpha.171 adds five initially inactive SoC command/diagnostic slots
         // per vehicle. Define exactly the same slots in the immutable fixture;
