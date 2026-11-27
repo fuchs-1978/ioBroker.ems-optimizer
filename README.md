@@ -83,6 +83,10 @@ npm run test:equivalence
 
 ## Changelog
 
+### 0.17.0-alpha.343 (2026-11-27)
+
+- Keep an established EV charging current through a SunEnergy telemetry outage while current grid measurements and phase limits permit it. [Release notes](docs/release-0.17.0-alpha.343.md)
+
 ### 0.17.0-alpha.342 (2026-11-27)
 
 - Let the home battery absorb surplus PV during the wallbox start delay. The car starts when the meter confirms sufficient power. [Release notes](docs/release-0.17.0-alpha.342.md)
@@ -110,10 +114,6 @@ npm run test:equivalence
 ### 0.17.0-alpha.336 (2026-11-26)
 
 - With price charging off, schedule the departure minimum against a PV-independent grid slot. Give untimed cars priority up to their minimum and use surplus PV whenever available. [Release notes](docs/release-0.17.0-alpha.336.md)
-
-### 0.17.0-alpha.335 (2026-11-25)
-
-- Confirm appliance starts with retries after 15 and 30 minutes and an error after another five minutes. Persist confirmation state across restarts. [Release notes](docs/release-0.17.0-alpha.335.md)
 
 [Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
 
