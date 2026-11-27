@@ -49,7 +49,7 @@ The standalone dashboard shows live power flows and opens each vehicle’s setti
 | --- | --- |
 | Mobility reserve | A connected, enabled car below its reserve requests power immediately. |
 | Minimum SoC | With morning scheduling enabled for that wallbox, the EMS aims for 06:00 local time. It can use PV or cheaper tariff intervals, including time-dependent grid charges. |
-| Maximum SoC | The normal upper limit for flexible charging, for example from surplus PV. |
+| Maximum SoC | The upper limit for charging from surplus generation. The Mii can also use measured CHP surplus. Above the minimum, the EMS can buy power in low-price periods when price-based grid charging is enabled for that wallbox. |
 | Departure SoC | A one-off target for the booked date and time. The booking survives unplugging. Its grid-charging option allows a top-up to the trip target, which can exceed the everyday maximum. |
 
 A car arriving at 25% with a 30% reserve, 50% minimum and 80% maximum requests the first five percentage points immediately. It can schedule the next twenty before morning. Equal reserve and minimum make the whole minimum immediate. [Schedule settings and example](docs/release-0.17.0-alpha.344.md)
