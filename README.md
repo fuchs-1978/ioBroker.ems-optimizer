@@ -128,7 +128,13 @@ npm run test:equivalence
 
 - When one car is charging to its minimum, qualify multi-amp PV current swings against 45 seconds of sustained surplus. [Release notes](docs/release-0.17.0-alpha.337.md)
 
-[Earlier releases](CHANGELOG_OLD.md) and their linked release notes contain the historical changes and commissioning limits.
+Versions between these entries are listed in the [changelog archive](CHANGELOG_OLD.md).
+
+### 0.17.0-alpha.331 (2026-11-25)
+
+- The regular departure charge ends at the vehicle’s minimum SoC. PV can continue charging to the normal target. Charging to that upper target from the grid requires the wallbox’s separate permission. [Release notes](docs/release-0.17.0-alpha.331.md)
+
+[Earlier releases](CHANGELOG_OLD.md) cover the full version history and commissioning limits.
 
 ## Support
 
