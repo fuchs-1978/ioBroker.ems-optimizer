@@ -2,7 +2,7 @@
 
 [English overview](README.md) · [Admin-Feldreferenz](docs/admin-reference.de.md) · [Versionsänderungen](README.md#changelog) · [Offene Arbeiten auf GitHub](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36)
 
-**Entwicklungs-Alpha für Testinstallationen.** Für den produktiven Einsatz ist der Adapter noch nicht freigegeben. Für einen Testlauf können alle Stellfreigaben ausgeschaltet bleiben.
+**Entwicklungs-Alpha für Testinstallationen.** Zum Einstieg kannst du bei ausgeschalteten Stellfreigaben die Messwerte und den Fahrplan deiner Anlage prüfen.
 
 EMS Optimizer hilft, den eigenen Strom für Hausbatterie, E-Autos und elektrische Heizstäbe zu nutzen. Mit angeschlossenen Preis- und Prognosequellen kann er bestimmte Verbräuche in günstige Zeitfenster verschieben. Du entscheidest je Gerät, ob es in der Planung auftaucht und ob das EMS es steuern darf.
 
@@ -10,14 +10,20 @@ Der **Fahrplan** rechnet für die nächsten 48 Stunden in Viertelstunden. Die **
 
 ## Installation und Aktualisierung
 
-Vorausgesetzt werden Node.js ab 22, ioBroker js-controller ab 6.0.11 und Admin ab 7.8.23. Die aktuelle Entwicklungsfassung steht im Changelog. Die auf deiner Instanz laufende Version siehst du unter `ems-optimizer.0.System.Version`. [Versionsstand auf main](README.md#changelog)
+Vorausgesetzt werden Node.js ab 22, ioBroker js-controller ab 6.0.11 und Admin ab 7.8.23. Der veröffentlichte Testkanal heißt `iobroker.ems-optimizer@alpha`. Die dort verfügbare Version steht auf npm, die Änderungen auf `main` im Changelog. [Veröffentlichte npm-Versionen](https://www.npmjs.com/package/iobroker.ems-optimizer?activeTab=versions) · [Changelog](README.md#changelog)
 
-1. Prüfe für deine Testinstanz den Versionsstand und das zugehörige Testergebnis. Die folgenden Schritte beschreiben die Einrichtung nach der Installation. [GitHub-Prüfläufe auf main](https://github.com/fuchs-1978/ioBroker.ems-optimizer/actions/workflows/test-and-release.yml?query=branch%3Amain)
+1. Öffne im ioBroker-Admin unter **Adapter** im Expertenmodus den Installationsdialog und wähle **Benutzerdefiniert**. Trage `iobroker.ems-optimizer@alpha` ein. Für eine bestimmte Fassung verwende die vollständige Version, zum Beispiel `iobroker.ems-optimizer@0.17.0-alpha.344`. Lege bei der Erstinstallation eine Instanz an, falls der Dialog das nicht bereits erledigt hat.
 2. Öffne **Instanzen → ems-optimizer.0 → Einstellungen**. Bei einer weiteren Instanz lautet die Nummer entsprechend anders.
 3. Beginne bei **Allgemein**, **Netzanschluss / §14a / EEBUS** und **Messwerte**. Lass die Master-Freigabe beim Einrichten aus. Schalte in den jeweiligen Reitern **vorhanden** für Geräte aus, die deine Anlage nicht hat.
 4. Ergänze **Historie und Prognose** sowie **Preise & Tarife**, wenn du einen Fahrplan nutzen willst. Richte anschließend einen realen Ausgang ein, etwa eine Wallbox mit einer bewusst niedrigen Inbetriebnahmegrenze.
 5. Speichere und prüfe unter **EMS-Übersicht** die Messwerte, Hinweise und Gerätezuordnung. Erst danach folgt die [Freigabe des einzelnen Ausgangs](#admin-allgemein).
-6. Prüfe nach einem Update `System.Version` und die wirksamen Einstellungen. Zeigt der Prozess noch die alte Version, starte die Instanz neu und prüfe erneut. [Laufzeitvoraussetzungen](docs/runtime-requirements.md)
+6. Prüfe nach einem Update `ems-optimizer.0.System.Version` und die wirksamen Einstellungen. Zeigt der Prozess noch die alte Version, starte die Instanz neu und prüfe erneut. [Laufzeitvoraussetzungen](docs/runtime-requirements.md)
+
+## Energiefluss-Dashboard
+
+1. Lade die HTML-Datei aus dem Paketordner `examples` im ioBroker-Admin unter **Dateien → 0_userdata.0** hoch. Ruf sie über deinen Webadapter unter `/0_userdata.0/ems-energiefluss.html` auf. Lokal geöffnete Dateien und die Option `?demo` zeigen Beispieldaten. [Dashboard-Datei](examples/ems-energiefluss.html)
+2. Das Beispiel verwendet `ems-optimizer.0` und eine konkrete Fahrzeug- und Quellenzuordnung. Prüfe die IDs in der Datei für deine Anlage. Die Seite liest aktuelle Zustände gesammelt über den Webadapter und einzelne Werte über dessen HTTP-Schnittstelle. Beim Speichern schreibt sie die geänderten Einstellungen mit `ack: false` und liest sie zur Kontrolle zurück.
+3. Tippe auf eine Fahrzeugkachel. Oben unter **Geplante Abfahrt** stehen Datum, Uhrzeit, Abfahrts-SoC und Netzfreigabe. Unter **Ladegrenzen** stehen Mobilitätsreserve, Mindest- und Maximal-SoC. Min und Max sind im Beispiel bearbeitbar, wenn das EMS dieselben externen Grenzwert-Datenpunkte verwendet. [Wann das Fahrzeug lädt](#mobilitätsreserve-morgenminimum-und-abfahrts-soc)
 
 ## So liest man die Admin-Anleitung
 
@@ -157,17 +163,19 @@ Die drei Wallbox-Reiter haben dieselbe Vorgehensweise. Die Reiternamen sind vorg
 
 ### Fahrzeug-SoC und Sitzungswechsel
 
-Wähle bei **Quelle der SoC-Grenzen**, ob die Grenzwerte im Admin oder aus zugeordneten Datenpunkten kommen. **Mindest-SoC** ist der Bedarf für Pflichtladung. **Ziel-SoC** ist die Grenze, bis zu der mit PV oder ausdrücklich erlaubtem Netzladen weitergeladen werden kann. Beispiel mit gültiger Ladefreigabe und ausreichender Leistung bei 18 % Ist, 20 % Minimum und 80 % Ziel: zuerst bis 20 % laden, die weitere Ladung folgt der gewählten Strategie.
+Wähle bei **Quelle der SoC-Grenzen**, ob die Werte im Admin stehen oder aus zugeordneten Datenpunkten kommen. Der **Ziel-SoC** im Admin entspricht dem normalen **Maximal-SoC** im Dashboard. Wann das Fahrzeug sein Minimum erreichen soll, legt die aktivierte Mindest-SoC-Planung fest.
 
-Bei eingetragener Abfahrt kann der EMS einen Teil der Ladung für die erwartete PV-Erzeugung freihalten. Entfällt ein PV-Fenster nach Erreichen des Zwischen-SoC, zeigt der Fahrzeugstatus den abgesicherten Beginn der Nachladung an. [Rechenbeispiel](docs/release-0.17.0-alpha.315.md)
+Bei eingetragener Abfahrt kann das EMS einen Teil der Ladung für die erwartete PV-Erzeugung freihalten. Entfällt ein PV-Fenster nach Erreichen des Zwischen-SoC, zeigt der Fahrzeugstatus den abgesicherten Beginn der Nachladung an. [Rechenbeispiel](docs/release-0.17.0-alpha.315.md)
 
 Bei verzögerten Fahrzeugmeldungen kann **SoC aus gemessener Ladeenergie schätzen** den Ladestand zwischen zwei Fahrzeugmessungen fortschreiben. Dafür braucht das EMS einen echten Fahrzeug-SoC, die nutzbare Akkukapazität und einen zugeordneten AC-Ladeenergiezähler in kWh. Unter `Vehicles.WallboxN` zeigt `ReportedSoC_pct` den eingegangenen Fahrzeugwert, `EstimatedSoC_pct` die Schätzung und `SoC_pct` den wirksamen Ladestand.
 
 Für Fahrzeugmeldung und manuelle Korrektur zählt der **Messzeitpunkt**. Ohne separates Messzeitobjekt verwendet das EMS das native `ts` der SoC-Quelle. Der Treiber muss dort die Fahrzeugmesszeit liefern. Bei gleicher Zeit hat die manuelle Korrektur Vorrang. Ein neuerer Fahrzeugwert kann sie auch mit niedrigerem SoC ablösen. Abstecken beendet die Fortschreibung aus der bisherigen Ladeenergie. Der letzte maßgebliche SoC bleibt über Abstecken und Neustart hinweg vor älteren Meldungen geschützt. [Zeitstempel, Zähler und manuelle Korrektur](docs/admin-reference.de.md#optionale-soc-schätzung-aus-ladeenergie-alle-drei-fahrzeuge)
 
+<a name="mobilitätsreserve-und-vorhandene-abfahrtszeit"></a>
+
 ### Mobilitätsreserve, Morgenminimum und Abfahrts-SoC
 
-Unter **Wallboxen allgemein → Zeitpunkt für den geplanten Mindest-SoC** ist **Täglich um 06:00 Uhr** voreingestellt. Aktiviere **Mindest-SoC des Fahrzeugs einplanen** an der jeweiligen Wallbox. In der Fahrzeugkachel des Energiefluss-Dashboards kannst du die Mobilitätsreserve zwischen 0 % und dem Mindest-SoC einstellen.
+Unter **Wallboxen allgemein → Zeitpunkt für den geplanten Mindest-SoC** ist **Täglich um 06:00 Uhr** voreingestellt. Aktiviere **Mindest-SoC des Fahrzeugs einplanen** an der jeweiligen Wallbox. Dieser Schalter ist bei einer neuen Instanz zunächst aus. In der Fahrzeugkachel des Energiefluss-Dashboards kannst du die Mobilitätsreserve zwischen 0 % und dem Mindest-SoC einstellen.
 
 | Ladeziel | Verhalten |
 | --- | --- |
@@ -176,13 +184,13 @@ Unter **Wallboxen allgemein → Zeitpunkt für den geplanten Mindest-SoC** ist *
 | Maximal-SoC | Das normale obere Ladeziel für die flexible EMS-Ladung, etwa mit PV-Überschuss. |
 | Abfahrts-SoC | Ein eigenes einmaliges Ziel mit Datum und Uhrzeit. Die Buchung bleibt beim Abstecken erhalten. Mit Netzfreigabe plant das EMS auch den fehlenden Netzbezug für diesen Termin. |
 
-Sind Reserve und Mindest-SoC gleich, wird der gesamte Mindestbedarf sofort angefordert. [Beispiele und Einstellungen](docs/release-0.17.0-alpha.344.md)
+Kommt ein Fahrzeug mit 25 % zurück, fordert es bei 30 % Reserve sofort die ersten fünf Prozentpunkte an. Bei 50 % Minimum lassen sich die weiteren 20 Prozentpunkte bis 06:00 Uhr einplanen, auch bei ausgeschalteter optionaler Preisladung. Stehen Reserve und Minimum beide auf 50 %, fordert das Fahrzeug den gesamten Bedarf bis 50 % sofort an. Bleibt es über 06:00 Uhr angeschlossen, holt es einen offenen Mindestbedarf nach. [Beispiele und Einstellungen](docs/release-0.17.0-alpha.344.md)
 
 ### Alternative mit eingestellter Abfahrtszeit
 
 Die folgenden Einstellungen gelten bei **Zeitpunkt für den geplanten Mindest-SoC → Eingestellte Abfahrtszeit**.
 
-Im Web-Dashboard öffnet ein Klick auf die Fahrzeugkachel die Ladeziele. Für eine einzelne Fahrt kannst du **Abfahrtsdatum**, **Abfahrtszeit** und **Abfahrts-SoC** eintragen. Mit der Netzfreigabe für diesen Termin darf das EMS fehlende Energie bis zum Fahrtziel aus dem Netz ergänzen. Nach dem Termin gelten wieder die normalen SoC-Grenzen. [Beispiel und Datenpunkte](docs/release-0.17.0-alpha.338.md)
+In diesem Modus kannst du auch eine Uhrzeit ohne Datum für das nächste Vorkommen verwenden. Bei einem datierten Termin ist der Abfahrts-SoC hier optional. [Abfahrtsregel und Datenpunkte](docs/release-0.17.0-alpha.338.md)
 
 Bei aktivierter Abfahrt reserviert das EMS die Leistung, die das Fahrzeug für seinen Mindest-SoC zum eingestellten Zeitpunkt benötigt. Reicht die PV-Leistung dafür nicht aus, darf es die Differenz aus dem Netz beziehen. Das gilt auch für eine Wallbox ohne Fahrzeugvorrang im Parallelbetrieb. Die Rechnung zielt auf den Abschluss 15 Minuten vor Abfahrt und berücksichtigt die eingestellten Stromgrenzen am Ladeende.
 
@@ -321,7 +329,9 @@ Die beiden Tabellen nutzen vorhandene ioBroker-Geräteobjekte. Art und Werte der
 2. Für **Gewähltes Programm starten** ordnest du das Objekt der Programmauswahl und das passende beschreibbare Startobjekt zu. Ein vorhandenes Objekt für das aktive Programm unterstützt die Zuordnung zur tatsächlichen Ausführung. Aktivierte Fernstartfunktion am Gerät, bestätigter Bereitstatus und Programmauswahl müssen zusammenpassen.
 3. Ordne eine historisierte Geräte-Leistungsmessung mit der passenden Einheit **W**, **mW** oder **kW** zu. Hat das Gerät noch kein gemessenes Programmprofil, starte ein beliebiges Programm einmal manuell und lass es vollständig durchlaufen. Danach kann das EMS auch ein erstmals gewähltes Programm per Fernstart einplanen. Dafür nutzt es je Viertelstunde den Mittelwert der bekannten Programmprofile dieses Geräts. Den tatsächlichen Verbrauch lernt es unter der ausgeführten Programmkennung. Schon beim nächsten Fernstart verwendet es das eigene Profil, sobald eine vollständige Messung vorliegt. Unter `Devices.ProgramProfiles` prüfst du Programm, Anzahl der gemessenen Läufe und Energie. Bei einer Zeile ohne Programmauswahl kannst du ein festes Viertelstundenprofil vorgeben, zum Beispiel `[1000, 500, 100, 0]`. Dieses Beispiel steht für eine Stunde mit etwa 0,4 kWh.
 4. Wähle bei Bedarf ein Zeitfenster. `06:00` bedeutet **bis 06:00 Uhr fertig** (Ortszeit des ioBroker-Hosts). `+4` bedeutet **innerhalb von vier Stunden nach der Fernstartfreigabe starten**. Dieses Fenster läuft auch bei Neuplanung, Programmwechsel und Neustart ab der ursprünglichen Freigabe. Unter `Devices.Programs.N` stehen der geplante Start und die geschätzten Kosten gegenüber dem Sofortstart.
-5. Setze **Automatisch** erst nach dem Zuordnungs- und Profiltest. Mit Master und aktiver Echtzeitregelung prüft das EMS bei der Planung und unmittelbar vor dem Start die zugehörige Fernstartfreigabe, den Status und das gewählte Programm. Die laufende Leistungsaufnahme bestätigt den realen Start. `Devices.Programs.N.Announcement` liefert in diesem Modus Ansagedaten, die ein eigenes Skript etwa für Alexa ausgeben kann.
+5. Setze **Automatisch** erst nach dem Zuordnungs- und Profiltest. Mit Master und aktiver Echtzeitregelung prüft das EMS bei der Planung und unmittelbar vor dem Start die zugehörige Fernstartfreigabe, den Status und das gewählte Programm. Das EMS bestätigt den Start über die konfigurierte Betriebsrückmeldung. Am Leistungsmesspunkt kannst du unabhängig sehen, wann die Maschine tatsächlich Leistung aufgenommen hat. `Devices.Programs.N.Announcement` liefert in diesem Modus Ansagedaten, die ein eigenes Skript etwa für Alexa ausgeben kann.
+
+Bleibt das Gerät bereit, darf das EMS nach 15 und nach weiteren 15 Minuten erneut starten. Vor jedem Versuch prüft es Freigabe, Bereitschaft, Programm und Zeitfenster. Fehlt fünf Minuten nach dem dritten Versuch die Laufmeldung, findest du den Fehler im Feld `startAttempt` des JSON-Zustands `Devices.Programs.N`. [Zeitfolge und Fehleranzeige](docs/release-0.17.0-alpha.335.md)
 
 Alle freigegebenen Geräte der Programmtabelle teilen sich denselben prognostizierten Überschuss. Das EMS berücksichtigt zuerst laufende Programme und bereits gesendete Starts mit ihrem verbleibenden Lastprofil. Unter den wartenden Automatikgeräten hat die frühere Fernstartfreigabe Vorrang. Bei Gleichstand entscheidet die Tabellenreihenfolge. Die Startzeiten werden im 15-Sekunden-Zyklus anhand der aktuellen Prognose neu berechnet. Zwei Geräte können gleichzeitig laufen, wenn der Überschuss für beide reicht oder das gemeinsame Zeitfenster günstiger ist. Ein bereits laufendes Gerät im Modus **Beobachten** zählt ebenfalls mit. Unter `Devices.Programs.N` findest du den neuen Start in `plan.plannedStartAt` und den verwendeten Prognosestand in `plan.forecastUpdatedAt`. [Gemeinsame Planung und Startprüfung](docs/release-0.17.0-alpha.298.md)
 
@@ -330,6 +340,12 @@ Alle freigegebenen Geräte der Programmtabelle teilen sich denselben prognostizi
 Für ein Diagramm liefert `Plan.Appliances_48h_JSON` je Gerät den stabilen `deviceKey`, Programm, Start, Ende und eine Viertelstundenreihe mit mittlerer Leistung (`valueW`) und Energie (`energy_kWh`). Die Summenreihe umfasst eingeplante, gestartete und laufende Geräte. Vorschauen tragen `scheduled: false`. Unter `unresolvedDevices` stehen laufende Geräte ohne verwertbares Restprofil. Wenn der Hauszähler ein Gerät mitmisst, ist seine Last in der gemessenen Hauslast schon enthalten. [Gerätekurven und Zeitfenster](docs/release-0.17.0-alpha.301.md)
 
 Startest du ein Programm direkt am Gerät, übernimmt der 48-Stunden-Fahrplan sein Restprofil mit der gemeldeten Startzeit. So berechnen Speicher, Wallboxen und Warmwasser den verfügbaren PV-Überschuss neu. Unter `Plan.Allocation_48h_JSON` zeigt `applianceW` den bereits in `baseW` enthaltenen Programmanteil. Misst ein konfigurierter Haus-Unterzähler das Gerät mit, kannst du das in der Programmzeile bestätigen. Dann zieht das EMS vollständig gemessene Programmlast beim Lernen der Grundlast ab. [Rechenbeispiel und Messzuordnung](docs/release-0.17.0-alpha.318.md)
+
+<a name="einzelne-geräteprognosen-in-echarts-alpha323"></a>
+
+### Geräteprognosen in ECharts
+
+Wähle beim Anlegen der Datenreihe **JSON** als Datenquelle. Für die erste Zeile der Geräteplanung verwendest du `ems-optimizer.0.Chart.DeviceProgram1_48h_json_chart`, für die zweite `ems-optimizer.0.Chart.DeviceProgram2_48h_json_chart`. Wähle **W**, Faktor **1** und eine Linie oder Stufenlinie. Werden die Gerätezeilen umsortiert, ändert sich die Zuordnung der Nummern. [Datenformat und Beispiele](docs/release-0.17.0-alpha.323.md)
 
 ### Temperatur-Sollwertoptimierung
 
@@ -341,7 +357,7 @@ Ordne die aktuelle Temperatur und den **beschreibbaren Sollwert** eines geeignet
 | --- | --- |
 | Die Übersicht meldet fehlende Daten | **Messwerte**, richtige Instanz, Einheit, Aktualität und Bestätigung. Bei verbundenen Quellen den zugehörigen Originalstatus prüfen. |
 | Ein Gerät steht im Fahrplan und bleibt aus | **Allgemein** und Gerätereiter, dann Geräte-, Benutzer- oder Fernstartfreigabe, aktuelle Begrenzungen und vorhandene Leistung prüfen. |
-| Das Auto lädt aus dem Netz, obwohl wenig PV da ist | **Wallbox N** prüfen. Unter Mindest-SoC kann Pflichtladung greifen. Zusätzliche Gründe sind manuelle Mindeststromvorgabe, Abfahrts- oder Preisfreigabe. |
+| Das Auto lädt aus dem Netz, obwohl wenig PV da ist | Fahrzeug-SoC mit der Sofortreserve vergleichen. Danach Morgenminimum, Freigabe für den gebuchten Termin, manuelle Stromvorgabe und Preisladung prüfen. [Ladeziele](#mobilitätsreserve-morgenminimum-und-abfahrts-soc) |
 | Der Speicher entlädt nicht | **Batteriespeicher** und `Devices.Battery.EffectiveMinimumSoC_pct` prüfen. Dazu kommen eine mögliche Fahrzeug-Pflichtladung, Geräte-SoC, Wiederanlaufgrenze und Rückmeldung. |
 | Die passende Ladung beginnt später | Überschuss, Startwartezeit, priorisierte Geräte, bestehende Leistung und mögliche Tarif-/SoC-Ziele in der Übersicht prüfen. |
 
@@ -353,8 +369,4 @@ Die jüngsten Änderungen stehen mit Datum und Link zum jeweiligen Versionshinwe
 
 ## Offene Arbeiten
 
-Die [Roadmap #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) verlinkt aktuelle Integrationen, tatsächliche Anlagenprüfungen und datierte Betriebsberichte. Eine gute erste Anlaufstelle für Anzeigefehler ist [Admin-Abnahme #26](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/26).
-
-### Einzelne Geräteprognosen in ECharts (Alpha.323)
-
-In ECharts eine Datenreihe hinzufügen, Datenquelle **JSON** auswählen und `ems-optimizer.0.Chart.DeviceProgram1_48h_json_chart` für die erste Gerätezeile bzw. `ems-optimizer.0.Chart.DeviceProgram2_48h_json_chart` für die zweite eintragen. Einheit **W**, Faktor **1**, Darstellung Linie oder Stufenlinie. Die Nummer entspricht der Reihenfolge unter Geräte → Programmplanung. Die JSONs liefern direkt `ts` und `val`; SQL-Aufzeichnung und Umwandlungsskript werden nicht benötigt. Zurückgenommene Pläne werden entfernt, Beobachten-Vorschauen nicht als eingeplante Last gezeigt.
+Die Roadmap ordnet offene Funktionen und Anlagenprüfungen den zuständigen Issues zu und verlinkt die abgeschlossenen Tagesberichte. Die Einrichtung im Browser und die Diagnoseanzeigen werden in der Admin-Abnahme verfolgt. [Roadmap #36](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36) · [Admin-Abnahme #26](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/26)

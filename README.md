@@ -6,7 +6,7 @@
 
 **[Deutsche Anleitung und Einrichtung](README.de.md)** · [Admin field reference (German)](docs/admin-reference.de.md) · [Changelog](#changelog) · [Roadmap](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/36)
 
-**Development alpha for test installations only.** Production use is not recommended. All actuator outputs can remain disabled during evaluation.
+**Development alpha for test installations.** Start with actuator outputs disabled and check the live measurements before commissioning a device. [Published versions on npm](https://www.npmjs.com/package/iobroker.ems-optimizer?activeTab=versions)
 
 This ioBroker adapter uses PV forecasts, household demand and electricity prices to plan when to charge a battery or car, heat water, or start an appliance. During operation it allocates power from measurements at the grid connection and each participating device.
 
@@ -24,7 +24,7 @@ Node.js 22 or newer, ioBroker js-controller 6.0.11 or newer and Admin 7.8.23 or 
 
 ## Installation and setup
 
-Check the test results for the revision you are evaluating. After an update, read `ems-optimizer.0.System.Version` for the version running on your instance. [Setup and updates](README.de.md#installation-und-aktualisierung) · [Checks on main](https://github.com/fuchs-1978/ioBroker.ems-optimizer/actions/workflows/test-and-release.yml?query=branch%3Amain)
+The published test channel is `iobroker.ems-optimizer@alpha`. In ioBroker Admin, open the custom installation dialog under **Adapters** and enter that package specifier. For a reproducible installation, use the full version, for example `iobroker.ems-optimizer@0.17.0-alpha.344`. Read `ems-optimizer.0.System.Version` to verify the running version. [German setup guide](README.de.md#installation-und-aktualisierung) · [GitHub releases](https://github.com/fuchs-1978/ioBroker.ems-optimizer/releases)
 
 1. Leave the master output release off while mapping measurements. At the grid connection, a running load should increase import or reduce export.
 2. Configure the devices present, their limits and feedback. Check the readings and plan in **EMS overview**.
@@ -35,19 +35,32 @@ Check the test results for the revision you are evaluating. After an update, rea
 | Device | What you can configure and verify |
 | --- | --- |
 | Grid and generation | Map import, export and phase measurements from a meter such as the SMA Energy Meter. Map PV inverter output and optional CHP generation separately. Monthly PV correction factors apply per array. [Grid and operator limits](README.de.md#admin-netzanschluss--14a--eebus) · [PV correction](README.de.md#admin-pv-korrektur) |
-| Up to three go-e wallboxes | PV charging, immediate minimum charge, departure targets, price charging and parallel operation. Map go-e charging power in **kW** and phase currents in **A**. Dynamic phase switching requires a separately installed phase script. [Wallbox setup](README.de.md#admin-wallboxen-allgemein) · [Phase follower](docs/phase-follower-v2.md) |
+| Up to three go-e wallboxes | Immediate mobility reserve, a scheduled morning minimum, flexible PV charging and one-off departure targets. Several cars can charge in parallel within the available power. Map go-e charging power in **kW** and phase currents in **A**. Dynamic phase switching requires a separately installed phase script. [Wallbox setup](README.de.md#admin-wallboxen-allgemein) · [Phase follower](docs/phase-follower-v2.md) |
 | SunEnergy XT500 | Charge and discharge control with one to three heads. Each head reports its setpoint (`GS`) and measured AC power (`GP`). At the grid connection you can check the resulting change. [Battery setup and limits](README.de.md#admin-batteriespeicher) |
 | my-PV heaters | Domestic hot water and a separate heating buffer each use their own power command and feedback. Tank temperatures, available power and releases determine whether a planned heating slot can run. [Hot water](README.de.md#admin-warmwasser-heizstab) · [Heating buffer](README.de.md#admin-heizpuffer) |
 | Heat pump | Map electrical power, temperatures and actual SG Ready status from a compatible integration, for example Stiebel Eltron WPM/ISG. The EMS publishes recommendations for comparison with the heat pump's own controller. [Heat-pump setup](README.de.md#admin-wärmepumpe) |
 | Household appliances | Siemens dishwasher and AEG dryer runs have supplied measured program profiles. Remote start requires a suitable device interface and release. A refrigerator with a writable temperature setpoint and feedback can use a PV or low-price window. [Device setup](README.de.md#admin-geräte) · [Measured runs](https://github.com/fuchs-1978/ioBroker.ems-optimizer/issues/445) |
 
+## Energy dashboard and vehicle charging
+
+The standalone dashboard shows live power flows and opens each vehicle’s settings from its card. Set the next trip at the top and keep everyday charge limits below it. Opening the HTML file locally shows sample data. For live use, serve it from the ioBroker web adapter and check its instance and object mappings. [Dashboard file](examples/ems-energiefluss.html) · [Setup and data access](README.de.md#energiefluss-dashboard)
+
+| Vehicle setting | When it charges |
+| --- | --- |
+| Mobility reserve | A connected, enabled car below its reserve requests power immediately. |
+| Minimum SoC | With morning scheduling enabled for that wallbox, the EMS aims for 06:00 local time. It can use PV or cheaper tariff intervals, including time-dependent grid charges. |
+| Maximum SoC | The normal upper limit for flexible charging, for example from surplus PV. |
+| Departure SoC | A one-off target for the booked date and time. The booking survives unplugging. Its grid-charging option allows a top-up to the trip target, which can exceed the everyday maximum. |
+
+A car arriving at 25% with a 30% reserve, 50% minimum and 80% maximum requests the first five percentage points immediately. It can schedule the next twenty before morning. Equal reserve and minimum make the whole minimum immediate. [Schedule settings and example](docs/release-0.17.0-alpha.344.md)
+
 ## Household appliances
 
-Start in **Observe** with a metered program run. The EMS learns the quarter-hour profile from a complete run. A new program can use the average of known profiles from the same appliance until it has its own measurements. In **Automatic**, running and dispatched programs reserve their remaining load before waiting devices are scheduled. The EMS checks remote-start permission, readiness and the selected program again before sending a start command.
+Start in **Observe** with a metered program run. The EMS learns the quarter-hour profile from a complete run. A new program can use the average of known profiles from the same appliance until it has its own measurements. In **Automatic**, running and dispatched programs reserve their remaining load before waiting devices are scheduled. The EMS checks remote-start permission, readiness and program selection before dispatch. The configured running status confirms the start. If the appliance still reports ready and the window remains open, the EMS can retry after 15 and 30 minutes. Five minutes after an unconfirmed third attempt it records an error in the `startAttempt` field of the `Devices.Programs.N` JSON. [Start confirmation](docs/release-0.17.0-alpha.335.md)
 
 A manual start reserves the remaining program profile at the actual start time. The central plan includes this demand when allocating PV, storage and flexible loads.
 
-Use `06:00` for a **finish time** or `+4` to **start within four hours** of enabling remote start. Look in `Devices.Programs.N` for the scheduled start and in `Plan.Appliances_48h_JSON` for the individual appliance curves. [Setup and profile fields](README.de.md#programmplanung-für-haushaltsgeräte)
+Use `06:00` for a **finish time** or `+4` to **start within four hours** of enabling remote start. The `Devices.Programs.N` JSON contains the scheduled start. For ECharts, use `Chart.DeviceProgramN_48h_json_chart`, where N is the one-based device row. The shared plan is in `Plan.Appliances_48h_JSON`. [Setup](README.de.md#programmplanung-für-haushaltsgeräte) · [ECharts settings](README.de.md#geräteprognosen-in-echarts)
 
 ## Configuration
 
@@ -62,7 +75,7 @@ State names below are relative to the instance, for example `ems-optimizer.0`.
 | When you see this | Where to look |
 | --- | --- |
 | A device is planned but idle | `Plan.Valid`, `Control.Valid`, **EMS overview** and the relevant `Devices.*` status show plan validity, live allocation and release conditions. |
-| A car charges before the expected PV window | Check minimum SoC, manual current, low-SoC steps and departure. In `Plan.WallboxN_48h_JSON`, `departurePv` records an accepted deferral and the PV window. [Departure charging](README.de.md#mobilitätsreserve-und-vorhandene-abfahrtszeit) |
+| A car charges before the expected PV window | Compare the current SoC with the immediate reserve, the morning deadline and the booked trip’s grid permission. Also check manual current and low-SoC steps. The effective trip is in `Vehicles.WallboxN.DeparturePlan_JSON`. [Vehicle charge settings](README.de.md#mobilitätsreserve-morgenminimum-und-abfahrts-soc) |
 | A battery stops after a setpoint conflict | Compare the sent command, each head's fresh `GS` and `GP`, and `Devices.Battery.OutputStatus`. [Battery feedback and restart](docs/admin-reference.de.md#live-regelung-des-speichers) |
 | A daily total looks incomplete | Check the covered time and gaps. Recorder capture, exact SQL confirmation and external retrieval have separate diagnostic states. [Data quality](docs/admin-reference.de.md#diagnose-sql-und-datenqualität) |
 
