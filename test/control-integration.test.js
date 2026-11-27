@@ -2128,6 +2128,63 @@ async function daytimeEqvStoragePlant({startDelayS = 300, surplusW = 800, soc = 
     return h;
 }
 
+test('a running EQV at 50% home SoC crosses the planned 49 W dip and returns to PV without restarting', async () => {
+    const h = await daytimeEqvStoragePlant({startDelayS: 10, surplusW: 1610, soc: 50});
+    const from = h.now();
+    const ordinary = {timestamp: from, valueW: 1610, phases: 1, currentA: 7, gridChargeW: 0};
+    const gap = {from, capsW: [600]};
+    h.own('Plan.BatteryForecastValid', true);
+    h.own('Plan.BatteryTargetSoC_48h_JSON', JSON.stringify([{timestamp: from, value_pct: 70}]));
+    h.own('Control.BatteryPVReachedTarget_JSON', JSON.stringify({day: h.run('localDateKey(new Date())'), target: 70}));
+    h.own('Plan.Wallbox1_48h_JSON', JSON.stringify([ordinary]));
+    await h.advance(55);
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    const dipAt = h.now();
+    h.own('Plan.Wallbox1_48h_JSON', JSON.stringify([{...ordinary, valueW: 1380, currentA: 6, pvGap: gap}]));
+    h.setSurplus(1331);
+    await h.advance(630);
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    assert.equal(h.physical().amps, 6);
+    assert.equal(h.physical().batteryW, -49, h.diagnostic());
+    assert.equal(h.trace.at(-1).gridW, 0);
+    assert.deepEqual(JSON.parse(h.value('Control.EqvPvGap_JSON')), gap);
+    h.own('Plan.Wallbox1_48h_JSON', JSON.stringify([ordinary]));
+    h.setSurplus(1837);
+    await h.advance(35);
+    assert.equal(h.value('Control.EqvPvGap_JSON'), '{}');
+    assert.equal(h.physical().allow, 1, h.diagnostic());
+    assert.equal(h.writes.filter(w => w.id === 'goe.allow' && w.val === 1).length, 1);
+    assert.ok(!h.writes.some(w => w.id === 'goe.allow' && w.val === 0 && w.at >= dipAt), h.diagnostic());
+});
+
+test('a rolling EQV plan cannot enlarge an accepted gap, start an idle car, or spend the pack reserve', async () => {
+    for (const scenario of ['replan', 'idle', 'reserve']) {
+        const h = await daytimeEqvStoragePlant({startDelayS: 10, surplusW: scenario === 'idle' ? 1331 : 1610, soc: 50});
+        const from = h.now();
+        const point = {timestamp: from, valueW: 1380, currentA: 6, phases: 1, gridChargeW: 0};
+        const publish = capsW => h.own('Plan.Wallbox1_48h_JSON', JSON.stringify([{...point, pvGap: {from, capsW}}]));
+        h.own('Plan.BatteryForecastValid', true);
+        h.own('Plan.BatteryTargetSoC_48h_JSON', JSON.stringify([{timestamp: from, value_pct: 70}]));
+        h.own('Control.BatteryPVReachedTarget_JSON', JSON.stringify({day: h.run('localDateKey(new Date())'), target: 70}));
+        if (scenario !== 'idle') await h.advance(90);
+        h.setSurplus(1331);
+        publish([50]);
+        await h.advance(35);
+        if (scenario !== 'idle') {
+            assert.equal(h.physical().batteryW, -49, scenario);
+            if (scenario === 'reserve') h.put(h.mapping.DP_BATTERY_SOC, 20);
+            else {
+                publish([600, 600]);
+                h.setSurplus(1270);
+            }
+            await h.advance(30);
+        }
+        assert.equal(h.physical().allow, 0, scenario);
+        assert.ok(h.physical().batteryW >= 0, scenario);
+        assert.equal(h.value('Control.Wallbox1PriceGridCharge_W'), 0, scenario);
+    }
+});
+
 test('the EQV starts with 800 W of PV and bounded battery support after a fresh two-minute qualification', async () => {
     const h = await daytimeEqvStoragePlant();
     await h.advance(70);
