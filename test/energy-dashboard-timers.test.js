@@ -71,3 +71,20 @@ test('one-off dashboard booking saves all settings in one write and can return t
     assert.throws(() => writes(before, {...after, tripSoc: 44}), /Mindest-SoC/);
     assert.throws(() => writes(before, {...after, date: '2096-03-25', time: '02:30'}), /Zeitumstellung/);
 });
+
+test('each dashboard reserve is editable independently and maintains valid limits through multi-state writes', () => {
+    const base = {reserve: 35, editReserve: true, morning:true, min: 50, max: 80, time:'', date:'', tripSoc:null, editLimits:true};
+    const writes = (from, to) => Array.from(dashboard.planGoalWrites(from, to));
+    assert.deepEqual(writes(base,{...base,reserve:0}), ['reserve']);
+    assert.deepEqual(writes(base,{...base,editLimits:false,reserve:50}), ['reserve']);
+    assert.deepEqual(writes(base,{...base,min:20,reserve:15}), ['reserve','min']);
+    assert.deepEqual(writes(base,{...base,max:95,min:90,reserve:85}), ['max','min','reserve']);
+    assert.throws(()=>writes(base,{...base,reserve:51}), /Mobilitätsreserve/);
+    const booking = {...base,date:'2096-11-30',time:'05:10',tripSoc:40};
+    assert.deepEqual(writes(base,booking), ['trip']);
+    assert.throws(()=>writes(base,{...booking,tripSoc:null}), /Abfahrts-SoC/);
+    assert.throws(()=>writes(base,{...base,time:'17:00'}), /Datum/);
+    const old = {...booking,date:'2018-10-10',tripSoc:null};
+    assert.deepEqual(writes(old,{...old,reserve:40}), ['reserve']);
+    assert.deepEqual(writes(old,base), ['time','trip']);
+});

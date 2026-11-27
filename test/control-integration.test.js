@@ -4181,7 +4181,7 @@ test('an expired start for a non-responsive car restores battery priority', asyn
 async function miiReadinessPlant({minimumSoc = 70, soc = 49, minimumRuntimeS = 0} = {}) {
     const h = await plant({mii: true, wallbox: false, split: false, startDelayS: 0, minimumRuntimeS,
         initialSurplusW: -350, nativeConfig: {wallboxParallelChargingEnabled: true,
-            wb0MinimumSocByDepartureEnabled: true, wb0DeadlineEnabled: true,
+            wallboxMinimumSchedule: 'departure', wb0MinimumSocByDepartureEnabled: true, wb0DeadlineEnabled: true,
             dhwControlEnabled: false}});
     h.own('Devices.MyPV_DHW.ControlEnabled', false);
     h.run("CFG.dp.dynamicEnergyPriceEnabled=''; CFG.dp.dynamicGridFeeEnabled=''");
@@ -4372,7 +4372,7 @@ test('an earned departure PV pause survives a lost forecast and releases an earl
 
 async function eqvDeparturePlant({initialTime, initialSurplusW, soc, count}) {
     const h = await plant({initialTime, initialSurplusW, wallboxIndex: 1, mii: true, startDelayS: 0,
-        split: false, nativeConfig: {wb1DeadlineEnabled: true, wb1MinimumSocByDepartureEnabled: true,
+        split: false, nativeConfig: {wallboxMinimumSchedule: 'departure', wb1DeadlineEnabled: true, wb1MinimumSocByDepartureEnabled: true,
             wallboxParallelChargingEnabled: true, dhwControlEnabled: false}});
     h.own('Devices.MyPV_DHW.Present', false);
     h.own('Config.WallboxParallelChargingEnabled', true);

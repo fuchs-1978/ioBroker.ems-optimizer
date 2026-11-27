@@ -105,6 +105,8 @@ dialog button{background:var(--wash);color:var(--ink);border:1px solid var(--bor
 dialog .priority-choice input{width:1.2rem;height:1.2rem;margin:0;accent-color:var(--accent);flex:none}
 #priority-help{font-size:.83rem;color:var(--muted)}#priority-help:empty{display:none}
 #mii-soc-status[data-error=true]{color:#a24728}[data-theme=night] #mii-soc-status[data-error=true]{color:#ffc199}#mii-goals-heading:not([hidden])+fieldset{margin-top:9px}
+.goal-grid.charge-limits{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:520px){.goal-grid.charge-limits{grid-template-columns:1fr 1fr}.charge-limits label:first-child{grid-column:1 / -1}}
 </style>
 </head>
 <body>
@@ -266,8 +268,9 @@ dialog .priority-choice input{width:1.2rem;height:1.2rem;margin:0;accent-color:v
  <form id="goals-form">
   <h3 id="mii-goals-heading" hidden>Ladeziele</h3>
   <fieldset id="goal-fields" disabled>
-   <div class="goal-grid">
-    <label for="goal-min">Mindest-SoC <span class="goal-input"><input id="goal-min" type="number" inputmode="numeric" min="0" max="100" step="1" required><span>%</span></span></label>
+   <div class="goal-grid charge-limits">
+    <label for="goal-reserve">Mobilitätsreserve <span class="goal-input"><input id="goal-reserve" type="number" inputmode="numeric" min="0" max="100" step="1" required><span>%</span></span></label>
+    <label for="goal-min"><span id="goal-min-label">Mindest-SoC</span> <span class="goal-input"><input id="goal-min" type="number" inputmode="numeric" min="0" max="100" step="1" required><span>%</span></span></label>
     <label for="goal-max">Maximal-SoC <span class="goal-input"><input id="goal-max" type="number" inputmode="numeric" min="0" max="100" step="1" required><span>%</span></span></label>
    </div>
    <label for="goal-time" class="departure-label">Abfahrtszeit</label><div class="departure-input"><input id="goal-time" type="time" step="60" aria-describedby="departure-help"><button id="clear-time" type="button">Abfahrt löschen</button></div>
@@ -545,7 +548,7 @@ const hpKeys = ["Devices.HeatPump.Power_W", "Devices.HeatPump.PowerValid"];
 function vehiclePath(i, key) { return INSTANCE + ".Vehicles.Wallbox" + i + "." + key; }
 function goalIds(i) {
   if(!Number.isInteger(i)||i<0||i>=VEHICLE_NAMES.length) throw Error("Unbekannte Wallbox");
-  return {min:"javascript.0.ev.socmin"+i,max:"javascript.0.ev.socmax"+i,time:vehiclePath(i,"DepartureTime"),trip:vehiclePath(i,"DepartureTrip_JSON")};
+  return {reserve:vehiclePath(i,"MobilityReserve_pct"),min:"javascript.0.ev.socmin"+i,max:"javascript.0.ev.socmax"+i,time:vehiclePath(i,"DepartureTime"),trip:vehiclePath(i,"DepartureTrip_JSON")};
 }
 function normalizedDeparture(value) {
   if(typeof value!=="string") return null;
@@ -570,13 +573,15 @@ function localDepartureMinute(zone, instant = new Date()) {
   return v.year+"-"+v.month+"-"+v.day+"T"+v.hour+":"+v.minute;
 }
 function validateGoals(goals) {
+  if (goals.editReserve && (!Number.isInteger(goals.reserve) || goals.reserve < 0 || goals.reserve > goals.min))
+    throw Error("Die Mobilitätsreserve muss zwischen 0 % und dem Mindest-SoC liegen.");
   if (goals.date) {
     const utc = new Date(goals.date+"T12:00:00Z");
     if (!/^\d{4}-\d{2}-\d{2}$/.test(goals.date) || !Number.isFinite(utc.getTime()) || utc.toISOString().slice(0,10)!==goals.date)
       throw Error("Bitte ein gültiges Abfahrtsdatum wählen.");
     if (!goals.time) throw Error("Für eine datierte Abfahrt bitte die Uhrzeit eintragen.");
-    if (goals.tripSoc != null && (!Number.isInteger(goals.tripSoc) || goals.tripSoc < goals.min || goals.tripSoc > 100))
-      throw Error("Der Abfahrts-SoC muss zwischen Mindest-SoC und 100 % liegen.");
+    if (goals.tripSoc != null && (!Number.isInteger(goals.tripSoc) || goals.tripSoc < (goals.morning ? 0 : goals.min) || goals.tripSoc > 100))
+      throw Error(goals.morning ? "Der Abfahrts-SoC muss zwischen 0 und 100 % liegen." : "Der Abfahrts-SoC muss zwischen Mindest-SoC und 100 % liegen.");
   }
   if(goals.editLimits && (!Number.isInteger(goals.min)||!Number.isInteger(goals.max)||percentage(goals.min)===null||percentage(goals.max)===null)) throw Error("Bitte ganze Prozentwerte zwischen 0 und 100 eingeben.");
   if(goals.editLimits && goals.min>goals.max) throw Error("Der Mindest-SoC muss kleiner oder gleich dem Maximal-SoC sein.");
@@ -585,7 +590,10 @@ function validateGoals(goals) {
 function planGoalWrites(before,after) {
   validateGoals(after);
   const limits=after.editLimits?(after.min>before.max?["max","min"]:["min","max"]):[];
+  if (after.morning && !after.date && after.time && before.time !== after.time)
+    throw Error("Für einen Abfahrtstermin bitte Datum und Abfahrts-SoC eintragen.");
   if (after.date && goalTripText(before)!==goalTripText(after)) {
+    if (after.morning && after.tripSoc == null) throw Error("Für diesen Termin bitte den Abfahrts-SoC eintragen.");
     const clock = after.date+"T"+after.time, zone = after.plan?.zone;
     if (clock <= localDepartureMinute(zone)) throw Error("Bitte einen Abfahrtstermin in der Zukunft wählen.");
     // Try the UTC offsets on both sides of a possible clock change in the EMS zone.
@@ -597,6 +605,10 @@ function planGoalWrites(before,after) {
     if (!exists) throw Error("Diese Ortszeit entfällt durch die Zeitumstellung. Bitte eine andere Uhrzeit wählen.");
   }
   const keys = limits.filter(key=>before[key]!==after[key]);
+  if (after.editReserve && before.reserve !== after.reserve) {
+    if (after.reserve < before.reserve) keys.unshift("reserve");
+    else keys.push("reserve");
+  }
   if (after.date) {
     if (goalTripText(before)!==goalTripText(after)) keys.push("trip");
   } else if (before.date) keys.push("time","trip");
@@ -786,7 +798,7 @@ let lastFrame = 0;
 let model = emptyModel();
 let exampleMiiSoc = null;
 let examplePriority = 2;
-const sampleGoals = VEHICLE_NAMES.map((_,i) => ({min:50, max:i === 1 ? 80 : 90, time:"", editLimits:true,date:"",tripSoc:null,allowGrid:false,tripEnabled:true,controlEnabled:true,gridDefault:false}));
+const sampleGoals = VEHICLE_NAMES.map((_,i) => ({reserve:20,editReserve:true,morning:true,min:50, max:i === 1 ? 80 : 90, time:"", editLimits:true,date:"",tripSoc:null,allowGrid:false,tripEnabled:true,controlEnabled:true,gridDefault:false}));
 let health = "loading";
 let fetchController = null;
 let pollTimer = null;
@@ -1212,8 +1224,8 @@ motionButton();
 
 const goalDialog = $("vehicle-dialog");
 const goalForm = $("goals-form");
-const goalInputs = {min:$("goal-min"), max:$("goal-max"), time:$("goal-time")};
-const goalKeys = ["min", "max", "time"];
+const goalInputs = {reserve:$("goal-reserve"), min:$("goal-min"), max:$("goal-max"), time:$("goal-time")};
+const goalKeys = ["reserve", "min", "max", "time"];
 const tripDate = $("goal-date"), tripSoc = $("goal-trip-soc"), tripGrid = $("goal-trip-grid");
 const priorityInput = $("goal-priority");
 const mappingNote = "Die SoC-Quelle hat sich geändert. Die Abfahrtszeit kannst du hier bearbeiten.";
@@ -1248,11 +1260,11 @@ async function readVehicleGoals(i) {
   if (demo) return {...sampleGoals[i], priority:examplePriority, editPriority:true};
   if (!fileStore) throw Error("Zum Einstellen bitte das Dashboard im ioBroker-Webadapter öffnen.");
   const signal = AbortSignal.timeout(4500);
-  const [data, source, departure, low, high, preference, bookingState, planState] = await Promise.all([
+  const [data, source, departure, low, high, preference, bookingState, planState, reserveState] = await Promise.all([
     settingsSnapshot(signal),
     optionalState(vehiclePath(i, "SocLimitsSource"), signal),
     readState(ids.time, signal), optionalState(ids.min, signal), optionalState(ids.max, signal),
-    optionalState(PRIORITY_ID, signal), optionalState(ids.trip, signal), optionalState(vehiclePath(i,"DeparturePlan_JSON"), signal)
+    optionalState(PRIORITY_ID, signal), optionalState(ids.trip, signal), optionalState(vehiclePath(i,"DeparturePlan_JSON"), signal), optionalState(ids.reserve, signal)
   ]);
   if (!timely(data.ts, Date.now(), SNAPSHOT_MAX_AGE)) throw Error("Der EMS-Messstand ist veraltet. Bitte später erneut öffnen.");
   const wb = data.wallboxes.find(w => w.wb === i);
@@ -1266,9 +1278,11 @@ async function readVehicleGoals(i) {
     throw Error("Die gespeicherte Abfahrt hat ein ungültiges Format. Bitte im EMS prüfen.");
   const min = editLimits ? percentage(settingsValue(low)) : percentage(wb.MinimumSoC_pct);
   const max = editLimits ? percentage(settingsValue(high)) : percentage(plan?.configuredMax ?? wb.TargetSoC_pct);
-  const time = normalizedDeparture(booking?.time ?? settingsValue(departure));
+  const reserve = validState(reserveState) ? percentage(reserveState.val) : null;
+  const morning = Boolean(plan?.morning);
+  const time = normalizedDeparture(booking?.time ?? (morning ? "" : settingsValue(departure)));
   if (time === null) throw Error("Die vorhandene Abfahrt hat ein anderes Zeitformat. Bitte im EMS prüfen.");
-  return {min, max, time, date:booking?.date ?? "", tripSoc:booking?.soc ?? null,
+  return {reserve, editReserve:reserve !== null && min !== null, morning, min, max, time, date:booking?.date ?? "", tripSoc:booking?.soc ?? null,
     allowGrid:booking?.allowGrid ?? (plan?.gridDefault === true), tripEnabled,
     gridDefault:plan?.gridDefault === true, controlEnabled:plan?.controlEnabled === true, plan,
     editLimits:Boolean(editLimits), ...vehiclePriority(data,preference,Date.now())};
@@ -1277,13 +1291,15 @@ function draftGoals() {
   return {
     ...goalBaseline, date:tripDate.value, tripSoc:tripDate.value && tripSoc.value!=="" ? tripSoc.valueAsNumber : null,
     allowGrid:tripDate.value ? tripGrid.checked : goalBaseline.gridDefault,
+    reserve:goalBaseline.editReserve ? goalInputs.reserve.valueAsNumber : goalBaseline.reserve,
     min:goalBaseline.editLimits ? goalInputs.min.valueAsNumber : goalBaseline.min,
     max:goalBaseline.editLimits ? goalInputs.max.valueAsNumber : goalBaseline.max,
     time:goalInputs.time.value, editLimits:goalBaseline.editLimits
   };
 }
 function sameGoals(a, b) {
-  return a.editLimits === b.editLimits && a.time === b.time && (a.date ?? "") === (b.date ?? "") &&
+  return a.morning === b.morning && a.editReserve === b.editReserve && (!a.editReserve || a.reserve === b.reserve) &&
+    a.editLimits === b.editLimits && a.time === b.time && (a.date ?? "") === (b.date ?? "") &&
     (!a.date || (a.tripSoc === b.tripSoc && a.allowGrid === b.allowGrid)) &&
     (!a.editLimits || (a.min === b.min && a.max === b.max));
 }
@@ -1300,15 +1316,22 @@ function syncGoalButtons() {
   $("goal-fields").disabled = !goalBaseline || savingVehicle;
   goalInputs.min.disabled = goalInputs.max.disabled = !goalBaseline?.editLimits;
   tripDate.disabled = !goalBaseline?.tripEnabled || !goalBaseline.controlEnabled || savingVehicle;
+  goalInputs.reserve.disabled = !goalBaseline?.editReserve || savingVehicle;
+  goalInputs.reserve.max = goalInputs.min.value || "100";
+  $("goal-min-label").textContent = goalBaseline?.morning ? "Mindest-SoC bis 06:00" : "Mindest-SoC";
+  goalInputs.time.disabled = Boolean(goalBaseline?.morning && (!tripDate.value || tripDate.disabled));
+  tripSoc.required = Boolean(goalBaseline?.morning && tripDate.value && goalTripText(goalBaseline) !== goalTripText(draftGoals()));
+  tripSoc.placeholder = goalBaseline?.morning ? "" : "optional";
   tripSoc.disabled = tripGrid.disabled = tripDate.disabled || !tripDate.value;
   $("clear-time").disabled = !goalInputs.time.value && !tripDate.value;
   const plan = goalBaseline?.plan;
   $("departure-help").textContent = !goalBaseline ? "" : !goalBaseline.tripEnabled
     ? "Datierte Abfahrten benötigen EMS ab Alpha 338." : !goalBaseline.controlEnabled
     ? "Für einen Termin die Abfahrtsregel dieser Wallbox im EMS-Admin aktivieren." : !tripDate.value
-    ? "Ohne Datum gilt die nächste eingestellte Uhrzeit. Datum und Uhrzeit legen einen einmaligen Termin fest."
+    ? (goalBaseline.morning ? "Für ein Fahrtziel Abfahrtsdatum, Uhrzeit und Abfahrts-SoC eintragen."
+      : "Ohne Datum gilt die nächste eingestellte Uhrzeit. Datum und Uhrzeit legen einen einmaligen Termin fest.")
     : tripDate.value+"T"+goalInputs.time.value <= localDepartureMinute(plan?.zone) ? "Dieser Termin ist abgelaufen. Du kannst ihn ersetzen oder löschen."
-    : (tripSoc.value ? "Das Fahrtziel gilt einmalig, auch über dem normalen Maximal-SoC." : "Ohne Abfahrts-SoC gelten die normalen Ladeziele.") +
+    : (tripSoc.value ? "Das Fahrtziel gilt einmalig, auch über dem normalen Maximal-SoC." : goalBaseline.morning ? "Für diesen Termin bitte den Abfahrts-SoC eintragen." : "Ohne Abfahrts-SoC gelten die normalen Ladeziele.") +
       (tripGrid.checked ? " Fehlende Energie darf aus dem Netz kommen." : " Oberhalb des Mindest-SoC ist PV-Überschuss vorgesehen.") +
       (plan?.latestStart > 0 && plan.clock===tripDate.value+"T"+goalInputs.time.value &&
         plan.target===(tripSoc.value==="" ? goalBaseline.max : tripSoc.valueAsNumber) && plan.allowGrid===tripGrid.checked
@@ -1371,7 +1394,7 @@ async function writeVehicleGoal(i, key, value) {
   if (receipt?.id !== id) throw Error("Schreibbestätigung fehlt.");
 }
 function readbackMessage(actual) {
-  return "Zurückgelesen: " + (actual.min ?? "—") + " % / " + (actual.max ?? "—") +
+  return (actual.reserve == null ? "" : "Reserve " + actual.reserve + " %, ") + "Minimum " + (actual.min ?? "—") + " %, Maximum " + (actual.max ?? "—") +
     " %, " + (actual.date ? "Abfahrt "+tripSummary(actual.date,actual.time,actual.tripSoc)+"." : actual.time ? "Abfahrt " + actual.time + " Uhr." : "keine Abfahrt.") +
     (actual.priority === null ? "" : actual.priority === -1 ? " Automatische Fahrzeugauswahl." : " Vorrang für " + VEHICLE_NAMES[actual.priority] + ".");
 }

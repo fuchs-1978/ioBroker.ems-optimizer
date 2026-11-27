@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.343",
+    "version": "0.17.0-alpha.344",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.344": {
+        "en": "Set each vehicle’s immediate reserve in the dashboard. Schedule its daily minimum by 06:00 using lower tariffs and set a separate charge target for a booked trip.",
+        "de": "Die Mobilitätsreserve je Fahrzeug im Dashboard einstellen. Das EMS plant den Mindest-SoC täglich bis 06:00 Uhr mit günstigen Tarifzeiten und den Abfahrts-SoC zum gebuchten Termin.",
+        "es": "Configura la reserva inmediata de cada vehículo en el panel. El EMS planifica el mínimo diario para las 06:00 según las tarifas y el objetivo de cada viaje por separado.",
+        "fr": "Réglez la réserve immédiate de chaque véhicule dans le tableau de bord. Le minimum quotidien est prévu pour 06:00 selon les tarifs et chaque trajet garde son propre objectif.",
+        "it": "Imposta la riserva immediata di ogni veicolo nel pannello. Il minimo giornaliero è pianificato entro le 06:00 secondo le tariffe, con un obiettivo separato per i viaggi.",
+        "nl": "Stel de directe reserve per voertuig in op het dashboard. Het EMS plant het dagelijkse minimum vóór 06:00 met voordelige tarieven en houdt het vertrekdoel apart.",
+        "pl": "Ustaw rezerwę każdego pojazdu na pulpicie. EMS planuje minimum na 06:00 z uwzględnieniem tańszych taryf oraz osobny poziom na zaplanowany wyjazd.",
+        "pt": "Defina a reserva imediata de cada veículo no painel. O EMS planeia o mínimo diário até às 06:00 com tarifas mais baixas e um objetivo próprio para cada viagem.",
+        "ru": "Задайте резерв каждого автомобиля на панели. EMS планирует ежедневный минимум к 06:00 с учётом дешёвых тарифов и отдельную цель к поездке.",
+        "uk": "Задайте резерв кожного автомобіля на панелі. EMS планує щоденний мінімум до 06:00 з урахуванням дешевих тарифів і окрему ціль для поїздки.",
+        "zh-cn": "可在仪表板上调整每辆车的即时储备电量。EMS 利用低价时段在每天 06:00 前达到最低电量，并为预约出行设置独立目标。"
+      },
       "0.17.0-alpha.343": {
         "en": "Keep a confirmed EV charging current during a SunEnergy telemetry outage while fresh grid and phase measurements permit it.",
         "de": "Bei einer SunEnergy-Messlücke hält die Wallbox den bestätigten Ladestrom, solange die aktuellen NVP- und Phasenmessungen das zulassen.",
@@ -81,19 +94,6 @@
         "ru": "В веб-панели можно за несколько дней задать дату, местное время и желаемый уровень заряда для одной поездки. Для неё можно отдельно разрешить зарядку от сети.",
         "uk": "У вебпанелі можна за кілька днів задати дату, місцевий час і бажаний рівень заряду для однієї поїздки. Для неї можна окремо дозволити заряджання від мережі.",
         "zh-cn": "可在网页面板中提前数天为单次出发设置日期、当地时间和可选目标电量，并可仅为该行程允许从电网充至目标电量。"
-      },
-      "0.17.0-alpha.337": {
-        "en": "When one car is charging to its minimum, the controller filters multi-amp current swings using 45 seconds of sustained solar surplus. Reductions and the required minimum take effect immediately.",
-        "de": "Lädt ein Auto allein bis zum Mindest-SoC, dämpft das EMS Schwankungen um mehrere Ampere. Zum Erhöhen braucht es 45 Sekunden anhaltenden Überschuss. Reduzierungen und der erforderliche Mindeststrom gelten sofort.",
-        "es": "Si un solo coche carga hasta el mínimo, las oscilaciones de varios amperios se filtran con 45 segundos de excedente solar continuo. Las reducciones y el mínimo requerido se aplican de inmediato.",
-        "fr": "Quand un seul véhicule charge jusqu’au minimum, le régulateur filtre les variations de plusieurs ampères en exigeant 45 secondes de surplus solaire continu. Les réductions et le minimum requis sont immédiats.",
-        "it": "Quando una sola auto carica fino al minimo, il regolatore attenua le oscillazioni di più ampere richiedendo 45 secondi di surplus solare continuo. Le riduzioni e il minimo richiesto si applicano subito.",
-        "nl": "Als één auto tot het minimum laadt, dempt de regeling schommelingen van meerdere ampères door 45 seconden zonneoverschot af te wachten. Verlagingen en de minimumstroom gelden direct.",
-        "pl": "Gdy tylko jedno auto ładuje się do minimum, regulator tłumi wahania o kilka amperów, wymagając 45 sekund ciągłej nadwyżki energii słonecznej. Obniżenie prądu i wymagane minimum obowiązują od razu.",
-        "pt": "Quando apenas um veículo carrega até ao mínimo, o regulador atenua oscilações de vários amperes exigindo 45 segundos de excedente solar contínuo. As reduções e o mínimo necessário são imediatos.",
-        "ru": "Если только один автомобиль заряжается до минимума, регулятор сглаживает колебания тока на несколько ампер. Для повышения нужен устойчивый избыток солнечной энергии в течение 45 секунд. Снижение тока и требуемый минимум действуют сразу.",
-        "uk": "Коли лише одне авто заряджається до мінімуму, регулятор згладжує коливання струму на кілька амперів. Для підвищення потрібен сталий надлишок сонячної енергії протягом 45 секунд. Зниження струму та потрібний мінімум діють одразу.",
-        "zh-cn": "只有一辆车充电至最低电量时，控制器会平抑数安培的电流波动。太阳能余量持续 45 秒后才会提高电流。降低电流和所需的最低电流立即生效。"
       }
     },
     "titleLang": {
@@ -171,6 +171,7 @@
     "globalWriteEnabled": false,
     "multiWallboxAlphaArmed": false,
     "wallboxParallelChargingEnabled": true,
+    "wallboxMinimumSchedule": "morning",
     "historyInstance": "",
     "recorderJournalRoot": "",
     "historyDays": 84,

@@ -960,7 +960,7 @@ const morningSurplus = [701.5, 646.5, 575, 851.5, 1978, 1992, 1885, 1928.5, 1857
 const overnightPv = [...Array(53).fill(0), ...morningSurplus.map(w => w + 1000), 3000, 3000];
 
 function twoCarsWithOneDeparture({soc = 60.3, reserve = 20, time = '07:00', enabled = true, config = {}} = {}) {
-    const h = fixture({wb1DeadlineEnabled: true, wb1MinimumSocByDepartureEnabled: enabled,
+    const h = fixture({wallboxMinimumSchedule: 'departure', wb1DeadlineEnabled: true, wb1MinimumSocByDepartureEnabled: enabled,
         wb1CommissioningMaxA: 32, wb2DeadlineEnabled: true, wb2MinimumSocByDepartureEnabled: true,
         ...config}, 2, new Date(2026, 10, 26, 9, 15).getTime());
     car(h, 1, {soc, minimum: 70, target: 90, capacity: 90, phases: 3, priority: true});

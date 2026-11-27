@@ -165,7 +165,22 @@ Bei verzögerten Fahrzeugmeldungen kann **SoC aus gemessener Ladeenergie schätz
 
 Für Fahrzeugmeldung und manuelle Korrektur zählt der **Messzeitpunkt**. Ohne separates Messzeitobjekt verwendet das EMS das native `ts` der SoC-Quelle. Der Treiber muss dort die Fahrzeugmesszeit liefern. Bei gleicher Zeit hat die manuelle Korrektur Vorrang. Ein neuerer Fahrzeugwert kann sie auch mit niedrigerem SoC ablösen. Abstecken beendet die Fortschreibung aus der bisherigen Ladeenergie. Der letzte maßgebliche SoC bleibt über Abstecken und Neustart hinweg vor älteren Meldungen geschützt. [Zeitstempel, Zähler und manuelle Korrektur](docs/admin-reference.de.md#optionale-soc-schätzung-aus-ladeenergie-alle-drei-fahrzeuge)
 
-### Mobilitätsreserve und vorhandene Abfahrtszeit
+### Mobilitätsreserve, Morgenminimum und Abfahrts-SoC
+
+Unter **Wallboxen allgemein → Zeitpunkt für den geplanten Mindest-SoC** ist **Täglich um 06:00 Uhr** voreingestellt. Aktiviere **Mindest-SoC des Fahrzeugs einplanen** an der jeweiligen Wallbox. In der Fahrzeugkachel des Energiefluss-Dashboards kannst du die Mobilitätsreserve zwischen 0 % und dem Mindest-SoC einstellen.
+
+| Ladeziel | Verhalten |
+| --- | --- |
+| Mobilitätsreserve | Sobald das freigegebene Fahrzeug angeschlossen ist und unter der Reserve liegt, fordert es Ladeleistung an. |
+| Mindest-SoC | Bis zum nächsten Morgen um 06:00 Uhr Ortszeit. Das EMS nutzt verfügbaren PV-Überschuss und bevorzugt günstige Tarifviertelstunden, einschließlich Modul 3. Ohne verwertbaren Preisunterschied beginnt die Nachladung rechtzeitig anhand des verbleibenden Energiebedarfs. |
+| Maximal-SoC | Das normale obere Ladeziel für die flexible EMS-Ladung, etwa mit PV-Überschuss. |
+| Abfahrts-SoC | Ein eigenes einmaliges Ziel mit Datum und Uhrzeit. Die Buchung bleibt beim Abstecken erhalten. Mit Netzfreigabe plant das EMS auch den fehlenden Netzbezug für diesen Termin. |
+
+Sind Reserve und Mindest-SoC gleich, wird der gesamte Mindestbedarf sofort angefordert. [Beispiele und Einstellungen](docs/release-0.17.0-alpha.344.md)
+
+### Alternative mit eingestellter Abfahrtszeit
+
+Die folgenden Einstellungen gelten bei **Zeitpunkt für den geplanten Mindest-SoC → Eingestellte Abfahrtszeit**.
 
 Im Web-Dashboard öffnet ein Klick auf die Fahrzeugkachel die Ladeziele. Für eine einzelne Fahrt kannst du **Abfahrtsdatum**, **Abfahrtszeit** und **Abfahrts-SoC** eintragen. Mit der Netzfreigabe für diesen Termin darf das EMS fehlende Energie bis zum Fahrtziel aus dem Netz ergänzen. Nach dem Termin gelten wieder die normalen SoC-Grenzen. [Beispiel und Datenpunkte](docs/release-0.17.0-alpha.338.md)
 
@@ -175,7 +190,7 @@ Ab Alpha 331 beendet der erreichte Mindest-SoC die reguläre Abfahrtsladung. Bei
 
 **PV vor Abfahrt bei ausgeschalteter Preisladung.** Bei geeignetem Fahrplan lädt das Auto nachts nur bis zum nötigen Zwischenstand. Das EMS rechnet höchstens 80 % der bis zur Abfahrt nutzbaren PV an und prüft, ob das Mindestziel auch bei vollständigem PV-Ausfall mit der verbleibenden Netzladezeit erreichbar wäre. Den Zwischenstand und den Beginn des PV-Fensters findest du in `Plan.WallboxN_48h_JSON` unter `departurePv.reservePct` und `departurePv.releaseAt`. Manuelle Mindestströme und Ladestufen bei tiefem SoC können unmittelbar Leistung anfordern. [Abfahrtsladung](docs/release-0.17.0-alpha.306.md) · [PV-Fenster und Rückfall](docs/release-0.17.0-alpha.310.md)
 
-Mit **Mindest-SoC bis zur Abfahrt einplanen** kannst du die Ladung oberhalb der Mobilitätsreserve bis zur Abfahrt verschieben. Dafür braucht das EMS eine aktive Abfahrtsfreigabe, eine Uhrzeit in `Vehicles.WallboxN.DepartureTime` und eine positive `MobilityReserve_pct` unter dem Mindest-SoC. Bei ausgeschalteter Preisladung bekommt ein Auto ohne Termin bis zu seinem Minimum zuerst Leistung. Das Auto mit Termin kann übrigen PV-Überschuss nutzen. Der Fahrplan reserviert genug Zeit, um seinen Mindest-SoC auch ohne Sonne zu erreichen. Bei eingeschalteter Preisladung plant das EMS den Mindestbedarf in geeigneten Preisfenstern. [Einstellungen und Rückfallbedingungen](docs/admin-reference.de.md#mobilitätsreserve-und-vorhandene-abfahrtszeit)
+Mit **Mindest-SoC des Fahrzeugs einplanen** kannst du die Ladung oberhalb der Mobilitätsreserve bis zur Abfahrt verschieben. Dafür braucht das EMS eine aktive Abfahrtsfreigabe, eine Uhrzeit in `Vehicles.WallboxN.DepartureTime` und eine positive `MobilityReserve_pct` unter dem Mindest-SoC. Bei ausgeschalteter Preisladung bekommt ein Auto ohne Termin bis zu seinem Minimum zuerst Leistung. Das Auto mit Termin kann übrigen PV-Überschuss nutzen. Der Fahrplan reserviert genug Zeit, um seinen Mindest-SoC auch ohne Sonne zu erreichen. Bei eingeschalteter Preisladung plant das EMS den Mindestbedarf in geeigneten Preisfenstern. [Einstellungen und Rückfallbedingungen](docs/admin-reference.de.md#mobilitätsreserve-und-vorhandene-abfahrtszeit)
 
 ### Start, Stopp, Übergabe und Phasenwechsel
 

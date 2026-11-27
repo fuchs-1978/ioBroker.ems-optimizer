@@ -388,6 +388,7 @@ test('whole planner preserves immediate minimum with opt-in off, invalid prices,
     for (const mode of ['off', 'missing', 'short', 'ready']) {
         const h = harness();
         h.run("CFG.dp.par14a=''; CFG.dp.lpcState=''; CFG.dp.lpcLimit=''");
+        h.context.nativeConfig.wallboxMinimumSchedule = 'departure';
         h.context.nativeConfig.wb0MinimumSocByDepartureEnabled = mode !== 'off';
         h.context.nativeConfig.wb0DeadlineEnabled = true;
         h.context.nativeConfig.wb0CommissioningMaxA = mode === 'short' ? 6 : 16;
@@ -409,7 +410,7 @@ test('whole planner preserves immediate minimum with opt-in off, invalid prices,
 test('a nearby departure does not turn the immediate reserve into a full-target charge', () => {
     const h = harness();
     h.run("CFG.dp.par14a=''; CFG.dp.lpcState=''; CFG.dp.lpcLimit=''");
-    Object.assign(h.context.nativeConfig, {wb0MinimumSocByDepartureEnabled: true,
+    Object.assign(h.context.nativeConfig, {wallboxMinimumSchedule: 'departure', wb0MinimumSocByDepartureEnabled: true,
         wb0DeadlineEnabled: true, wb0CommissioningMaxA: 16});
     h.put('Config.Wallbox0PriceMax_ct_kWh', 5);
     h.put('Vehicles.Wallbox0.MobilityReserve_pct', 30);
@@ -433,7 +434,7 @@ test('readiness buys only the minimum energy still missing after metered chargin
     for (const [readinessSocPct, expectedGapPct] of [[51, 2], [53.01, 0]]) {
         const h = harness();
         h.run("CFG.dp.par14a=''; CFG.dp.lpcState=''; CFG.dp.lpcLimit=''");
-        Object.assign(h.context.nativeConfig, {wb0MinimumSocByDepartureEnabled: true,
+        Object.assign(h.context.nativeConfig, {wallboxMinimumSchedule: 'departure', wb0MinimumSocByDepartureEnabled: true,
             wb0DeadlineEnabled: true, wb0CommissioningMaxA: 16});
         h.put('Config.Wallbox0PriceMax_ct_kWh', 5);
         h.put('Vehicles.Wallbox0.MobilityReserve_pct', 30);
@@ -463,6 +464,7 @@ test('earlier departure gets the shared price windows before the more flexible c
         const cars = [0, 1].map(index => {
             Object.assign(h.context.nativeConfig, {
                 [`wb${index}CommissioningMaxA`]: 16,
+                wallboxMinimumSchedule: 'departure',
                 [`wb${index}MinimumSocByDepartureEnabled`]: true,
                 [`wb${index}DeadlineEnabled`]: true
             });
