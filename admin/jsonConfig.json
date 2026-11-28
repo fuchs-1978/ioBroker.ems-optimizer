@@ -7584,6 +7584,17 @@
           "lg": 12,
           "xl": 12
         },
+        "batteryLowTariffDischargeBlockEnabled": {
+          "type": "checkbox",
+          "label": "Block battery discharge during the low grid tariff",
+          "default": false,
+          "sm": 12,
+          "newLine": true,
+          "xs": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
+        },
         "batteryPriceChargingEnabled": {
           "type": "checkbox",
           "label": "Allow battery grid charging in selected low-price periods",

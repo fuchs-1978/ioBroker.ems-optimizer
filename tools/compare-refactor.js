@@ -137,6 +137,19 @@ async function worker(tree) {
                 pinned = pinned.replace(bootstrapAnchor, bootstrapAnchor + '\n    `${CFG.root}.Config.BatteryHighTariffReserveEnabled`,');
             }
         }
+        // Only align passive state definitions and the disabled switch subscription.
+        if (basename === 'core.js' && !pinned.includes('BatteryLowTariffDischargeBlockEnabled')) {
+            const cfg = "    configDef(`${r}.Config.BatteryHighTariffReserveEnabled`, false, 'boolean', 'switch.enable', '', 'Vorhandene Speicherenergie für das nächste Hochfenster einplanen');";
+            const soc = "        stateDef(`${r}.Vehicles.Wallbox${wb}.SoCSource`, '', 'string', 'text', '', `SoC-Quelle Wallbox ${wb}`);";
+            assert.ok(pinned.includes(cfg) && pinned.includes(soc));
+            pinned = pinned.replace(cfg, cfg + "\n    configDef(`${r}.Config.BatteryLowTariffDischargeBlockEnabled`, false, 'boolean', 'switch.enable', '', 'Speicherentladung im Modul-3-Niedertarif sperren');")
+                .replace(soc, soc + "\n        stateDef(`${r}.Vehicles.Wallbox${wb}.DepartureMeter_JSON`, '', 'string', 'json', '', 'Gemessene AC-Ladeenergie und SoC für die gebuchte Abfahrt');");
+        }
+        if (basename === 'bootstrap.js' && !pinned.includes('BatteryLowTariffDischargeBlockEnabled')) {
+            const anchor = '    `${CFG.root}.Config.BatteryHighTariffReserveEnabled`,';
+            assert.ok(pinned.includes(anchor));
+            pinned = pinned.replace(anchor, anchor + '\n    `${CFG.root}.Config.BatteryLowTariffDischargeBlockEnabled`,');
+        }
         // alpha.155 represents an unknown initial vehicle SoC as null. Align
         // only the object default; observed reports and all control writes
         // still come from the respective production tree.

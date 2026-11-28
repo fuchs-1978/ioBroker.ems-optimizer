@@ -402,6 +402,7 @@
   "Legacy efficiency per direction": "每个方向的继承效率",
   "Price-based battery charging": "基于价格的电池电池充电",
   "Reserve stored battery energy for the next high tariff period": "为下一个高电价时段预留电池电量",
+  "Block battery discharge during the low grid tariff": "在低电网费时段禁止电池放电",
   "Allow battery grid charging in selected low-price periods": "允许电池电网电池在特定低价期内充电",
   "Maximum SoC from grid charging (PV may charge higher)": "电网电池充电的最大SoC (PV可能会充电更高)",
   "Round-trip efficiency (0 = legacy per-leg setting)": "往返效率 (0 =每腿的传统设置)",

@@ -2734,7 +2734,7 @@ for (const mode of ['single-head', 'sunenergy-heads'])
         await h.replayAt(h.now() + 1, [], {allocate: false, output: false});
         // The allocator still shows the previous grant when the newer meter sample arrives.
         assert.equal(h.value('Control.Targets.Battery_W'), 562);
-        assert.equal(h.run('batteryVehicleSurplusCapW(batteryRegulationState())'), 0);
+        assert.equal(h.run('batteryVehicleOutputCapW(batteryRegulationState())'), 0);
         assert.equal(h.run(mode === 'sunenergy-heads' ? 'batteryHeadsBudget(batteryHeadsRegulationState()).targetW'
             : 'checkQueuedElectricalOutput("Battery",-562).allowed'), mode === 'sunenergy-heads' ? 0 : false);
         await h.advance(35);
@@ -4492,4 +4492,86 @@ test('real output checks apply the morning ceiling and close the late PV excepti
     assert.equal(h.run('batteryRegulationState().maxSoc'), 80);
     h.own('Plan.Valid', false);
     assert.equal(h.run('batteryWallboxFloor(DAYTIME_STORAGE_MIN_SOC)'), 90);
+});
+
+function lowGridTariff(h, until = '06:00') {
+    const year = Number(new Intl.DateTimeFormat('en', {timeZone: 'Europe/Berlin', year: 'numeric'}).format(h.now()));
+    Object.assign(h.config, {gridFeeSource: 'schedule', gridTariffYear: year, gridTariffBasis: 'gross',
+        gridTariffLowCt: 0, gridTariffStandardCt: 8, gridTariffHighCt: 16,
+        gridTariffRules: [1, 2, 3, 4].flatMap(quarter => [
+            {quarter, from: '00:00', to: until, level: 'low'},
+            {quarter, from: until, to: '24:00', level: 'standard'}])});
+    h.run("CFG.dp.dynamicGridFeeEnabled=''");
+    h.own('Config.DynamicGridFeeEnabled', true);
+    h.own('Config.BatteryLowTariffDischargeBlockEnabled', true);
+}
+
+for (const mode of ['single-head', 'sunenergy-heads'])
+    test(`Modul 3 blocks discharge after the price goal and across an idle low quarter (${mode})`, async () => {
+        const h = await plant({battery: true, wallbox: false, initialSurplusW: -1800,
+            initialTime: Date.parse('2026-11-28T05:58:00+01:00'), nativeConfig: {batteryDispatchMode: mode}});
+        h.own('Control.TargetGridPower_W', 0);
+        armPricePlans(h, {wallboxW: 0, floor: 20});
+        lowGridTariff(h);
+        await h.advance(38);
+        assert.ok(h.physical().batteryW > 0, h.diagnostic());
+        h.own('Config.BatteryPriceMaxSoC_pct', 35);
+        await h.advance(25);
+        assert.equal(h.physical().batteryW, 0, h.diagnostic());
+        h.own('Config.BatteryPriceChargingEnabled', false);
+        assert.equal(h.run('batteryPriceDischargeFloor()'), 100);
+        assert.equal(h.run("checkQueuedElectricalOutput('Battery', 500).allowed"), false);
+        await h.advance(52);
+        assert.equal(h.physical().batteryW, 0);
+        assert.ok(h.trace.every(row => row.batteryW >= 0));
+        await h.advance(45);
+        assert.ok(h.physical().batteryW < 0, h.diagnostic());
+    });
+
+for (const mode of ['single-head', 'sunenergy-heads'])
+    test(`forecast grid charging shares low tariff with a confirmed mandatory EV (${mode})`, async () => {
+        const h = await plant({battery: true, startDelayS: 0, minimumRuntimeS: 0, split: false,
+            initialTime: Date.parse('2026-11-28T04:00:00+01:00'), initialSurplusW: -500,
+            nativeConfig: {batteryDispatchMode: mode, dhwControlEnabled: false, wb2CommissioningMaxA: 6}});
+        h.own('Devices.MyPV_DHW.ControlEnabled', false);
+        h.own('Control.TargetGridPower_W', 0);
+        h.put('DP_WB2_SOC', 10);
+        armPricePlans(h, {wallboxW: 0, floor: 20});
+        lowGridTariff(h);
+        await h.advance(90);
+        assert.equal(h.physical().allow, 1, h.diagnostic());
+        assert.equal(h.physical().wbPowerW, 1380);
+        assert.equal(h.value('Control.BatteryPriceGridCharge_W'), 1200, h.diagnostic());
+        assert.ok(h.physical().batteryW > 0, h.diagnostic());
+        assert.ok(h.trace.every(row => row.batteryW === 0 || row.wbW > 0), 'EV starts first');
+        h.run("CFG.dp.lpcState='lpc.state';CFG.dp.lpcLimit='lpc.limit'");
+        h.put('lpc.state', 'limited'); h.put('lpc.limit', 1400);
+        assert.equal(h.run("checkQueuedElectricalOutput('Battery', -1200).allowed"), false);
+        await h.advance(12);
+        assert.ok(h.value('Control.Targets.Battery_W') <= 20, h.diagnostic());
+        h.own('Config.BatteryPriceChargingEnabled', false);
+        await h.advance(12);
+        assert.equal(h.physical().batteryW, 0, h.diagnostic());
+        assert.equal(h.physical().allow, 1);
+    });
+
+test('low discharge protection requires a valid current Modul 3 schedule and is independent of the total price', async () => {
+    const h = await plant({initialTime: Date.parse('2026-11-28T04:00:00+01:00'), battery: true});
+    lowGridTariff(h);
+    h.own('Config.DynamicEnergyPriceEnabled', true);
+    h.own('Plan.Valid', false);
+    assert.equal(h.run('batteryPriceDischargeFloor()'), 100);
+    h.own('Config.BatteryLowTariffDischargeBlockEnabled', false);
+    assert.ok(h.run('batteryPriceDischargeFloor()') < 100, 'can switch off between plan rebuilds');
+    h.own('Config.BatteryLowTariffDischargeBlockEnabled', true);
+    h.own('Config.DynamicGridFeeEnabled', false);
+    assert.ok(h.run('batteryPriceDischargeFloor()') < 100);
+    h.own('Config.DynamicGridFeeEnabled', true);
+    h.config.gridFeeSource = 'external';
+    assert.ok(h.run('batteryPriceDischargeFloor()') < 100);
+    h.config.gridFeeSource = 'schedule';
+    assert.equal(h.run("batteryLowTariffActive(Date.parse('2027-01-01T01:00:00+01:00'))"), false);
+    h.config.gridTariffRules.pop();
+    await h.advance(2);
+    assert.ok(h.run('batteryPriceDischargeFloor()') < 100);
 });

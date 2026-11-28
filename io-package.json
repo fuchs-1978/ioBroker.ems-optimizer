@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.345",
+    "version": "0.17.0-alpha.346",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.346": {
+        "en": "Pace booked departures using metered wallbox energy. Optionally hold stored energy throughout the low grid tariff and charge for forecast demand alongside a mandatory EV charge.",
+        "de": "Terminladungen nutzen die gemessenen Wallbox-kWh. Im Niedertarif kann der Speicher seine Energie halten und parallel zur Fahrzeugpflichtladung prognosegeführt nachladen.",
+        "es": "La carga antes de la salida utiliza la energía medida. Durante la tarifa de red baja, la batería puede conservar su energía y cargarse según la previsión mientras carga el vehículo.",
+        "fr": "La recharge avant départ utilise l’énergie mesurée à la borne. Au tarif réseau réduit, la batterie peut conserver son énergie et se recharger selon la prévision en parallèle du véhicule.",
+        "it": "La ricarica prima della partenza usa l’energia misurata. Con la tariffa di rete ridotta, la batteria può conservare l’energia e caricarsi secondo le previsioni insieme al veicolo.",
+        "nl": "Laden voor vertrek gebruikt de gemeten energie van de laadpaal. Tijdens het lage nettarief kan de accu energie vasthouden en volgens de prognose samen met het voertuig laden.",
+        "pl": "Ładowanie przed wyjazdem wykorzystuje energię zmierzoną przez ładowarkę. Przy niskiej taryfie sieciowej magazyn może zachować energię i ładować się według prognozy równolegle z pojazdem.",
+        "pt": "A carga antes da partida utiliza a energia medida no carregador. Durante a tarifa de rede reduzida, a bateria pode conservar energia e carregar com base na previsão em paralelo com o veículo.",
+        "ru": "Для зарядки к отъезду учитывается энергия по счётчику станции. При низком сетевом тарифе аккумулятор может сохранять энергию и заряжаться по прогнозу одновременно с автомобилем.",
+        "uk": "Заряджання до від’їзду враховує енергію за лічильником станції. За низького мережевого тарифу акумулятор може зберігати енергію й заряджатися за прогнозом одночасно з автомобілем.",
+        "zh-cn": "预约出发充电按充电桩实测电量调节。低电网费时段可禁止储能放电，并按预测需求与必须充电的车辆同时充电。"
+      },
       "0.17.0-alpha.345": {
         "en": "A booked departure credits available solar energy and buys the remaining charge in the lowest-priced feasible periods before departure.",
         "de": "Für eine gebuchte Abfahrt rechnet das EMS nutzbaren PV-Strom an und lädt die fehlende Energie in den günstigsten verfügbaren Viertelstunden vor dem Termin.",
@@ -81,19 +94,6 @@
         "ru": "После достижения дневной цели прогноз направляет оставшийся после потребления дома и автомобиля избыток солнечной энергии в аккумулятор, даже если он успел разрядиться.",
         "uk": "Після досягнення денної цілі прогноз спрямовує залишок сонячної енергії після споживання будинку й автомобіля до акумулятора, навіть якщо він уже частково розрядився.",
         "zh-cn": "达到当天的电池充电目标后，即使电池随后放电，预测仍会安排电池吸收家庭和电动车用电后的剩余光伏电力。"
-      },
-      "0.17.0-alpha.339": {
-        "en": "Reduce peak memory while reading dense SQL history and building multi-day profiles. Diagnostic recording allocates less temporary memory per cycle.",
-        "de": "Geringerer RAM-Spitzenbedarf beim Einlesen dichter SQL-Daten und beim Aufbau der mehrtägigen Historie. Die Diagnoseaufzeichnung benötigt pro Zyklus weniger temporären Speicher.",
-        "es": "Se reduce el pico de memoria al leer datos SQL densos y al construir el historial de varios días. El registro de diagnóstico usa menos memoria temporal por ciclo.",
-        "fr": "Réduction du pic de mémoire lors de la lecture de données SQL denses et de la construction de l’historique sur plusieurs jours. Le diagnostic utilise moins de mémoire temporaire par cycle.",
-        "it": "Picco di memoria ridotto durante la lettura di dati SQL densi e la costruzione dello storico su più giorni. La registrazione diagnostica usa meno memoria temporanea per ciclo.",
-        "nl": "Lager piekgeheugengebruik bij het inlezen van dicht bemonsterde SQL-gegevens en het opbouwen van de meerdaagse historie. Diagnostische registratie gebruikt per cyclus minder tijdelijk geheugen.",
-        "pl": "Mniejsze szczytowe zużycie pamięci przy odczycie gęstych danych SQL i budowaniu wielodniowej historii. Diagnostyka zużywa mniej pamięci tymczasowej w każdym cyklu.",
-        "pt": "Menor pico de memória na leitura de dados SQL densos e na construção do histórico de vários dias. O registo de diagnóstico usa menos memória temporária por ciclo.",
-        "ru": "Снижен пик потребления памяти при чтении частых замеров SQL и построении истории за несколько дней. Для записи диагностики требуется меньше временной памяти на цикл.",
-        "uk": "Знижено пікове споживання пам’яті під час читання частих вимірів SQL і побудови історії за кілька днів. Запис діагностики використовує менше тимчасової пам’яті за цикл.",
-        "zh-cn": "降低了读取高密度 SQL 数据和构建多日历史记录时的内存峰值。每个周期记录诊断信息所需的临时内存更少。"
       }
     },
     "titleLang": {
@@ -469,6 +469,7 @@
     "priceChargingHorizonH": 24,
     "priceChargingMinBlockMin": 30,
     "batteryHighTariffReserveEnabled": false,
+    "batteryLowTariffDischargeBlockEnabled": false,
     "batteryPriceChargingEnabled": false,
     "batteryPriceMaxCt": 0,
     "batteryPriceMinSavingsCt": 2,

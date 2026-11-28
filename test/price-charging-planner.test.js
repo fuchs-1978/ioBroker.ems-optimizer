@@ -486,3 +486,67 @@ test('earlier departure gets the shared price windows before the more flexible c
         }
     }
 });
+
+test('Modul 3 supplies shifted household load directly and buys only the shortage after forecast PV', () => {
+    const h = harness();
+    function night({solar = 0, initialSoc = 20, capW = 750, gridMaxSoc = 100, highLoad = 1500} = {}) {
+        const data = slots(h, [5, 5, 5, 5, 45, 45, 45, 45]);
+        for (const slot of data.slice(0, 4)) Object.assign(slot, {
+            lowTariffDischargeBlocked: true, lowTariffChargeCapW: capW, pauseBattery: true, baseW: 6000});
+        for (const slot of data.slice(4, 6)) slot.pvW = slot.residualPvW = solar;
+        for (const slot of data.slice(6)) slot.baseW = highLoad;
+        return batteryPlan(h, data, {initialSoc, gridMaxSoc});
+    }
+    const dark = night();
+    assert.ok(dark.slots.slice(0, 4).every(p => p.dischargeW === 0 && p.gridChargeW <= 750));
+    assert.ok(dark.report.gridKWh > 0.74 && dark.report.gridKWh <= 0.75, `bounded by the EV budget: ${dark.report.gridKWh} kWh`);
+    assert.ok(dark.slots.slice(6).some(p => p.dischargeW > 0));
+    assert.equal(night({solar: 3000}).report.gridKWh, 0, 'solar energy covers the later demand');
+    assert.equal(night({capW: 0}).report.gridKWh, 0);
+    assert.equal(night({initialSoc: 100}).report.gridKWh, 0);
+    assert.ok(night({initialSoc: 100}).slots.slice(0, 4).every(p => p.socPct === 100 && p.dischargeW === 0));
+    assert.equal(night({gridMaxSoc: 20}).report.gridKWh, 0);
+    assert.equal(night({highLoad: 0}).report.gridKWh, 0, 'shifted night consumption is not later demand');
+});
+
+test('74% EQV to 100% on Monday uses the later identical NT with a steady three-phase command', () => {
+    const h = harness('2026-11-28T10:45:00+01:00'), firstNight = Date.parse('2026-11-28T23:00:00+01:00');
+    const sundayNight = firstNight + 24 * 3600000, monday = Date.parse('2026-11-30T06:00:00+01:00');
+    const data = slots(h, Array(192).fill(30.04));
+    for (const s of data) if ([firstNight, sundayNight].some(start => s.timestamp >= start && s.timestamp < start + 6 * 3600000))
+        s.price = 23.56;
+    h.put('Config.WallboxStartDelay_s', 300);
+    h.context.nativeConfig.wb1CommissioningMaxA = 32;
+    function calculate(prices, solarKWh = 0) {
+        const series = [0, 1, 2].map(() => prices.map(s => ({timestamp: s.timestamp, currentA: 0, phases: 1, valueW: 0})));
+        const fresh = prices.map(slot => ({...slot, wbW: [0, 0, 0], baseW: 750}));
+        if (solarKWh) {
+            const i = fresh.findIndex(s => s.timestamp === sundayNight - 10 * 3600000);
+            Object.assign(fresh[i], {pvW: 750 + 1380, wbW: [0, 1380, 0]});
+            Object.assign(series[1][i], {valueW: 1380, phases: 1, currentA: 6});
+        }
+        const allocation = fresh.map(() => ({wallboxRequestedW: 0, wallboxW: 0, wallboxPvW: 0, wallboxGridW: 0}));
+        const v = {index: 1, capacityKWh: 90, efficiency: 0.9, socPct: 74, targetSocPct: 100, nominalVoltage: 230,
+            minimumSocPct: 50, baseMaxCurrent1pA: 32, baseMaxCurrent3pA: 16, minCurrent1pA: 6, minCurrent3pA: 6,
+            phaseSwitchEnabled: true, phaseControlMode: 'ems', maximumPhases: 3, maximumPowerW: 11000,
+            bookedConnection: h.now - 3600000, datedTrip: {gridGoal: 100, at: monday, key: 'Monday'}};
+        const result = h.context.addBookedTariffPlan(fresh, series, allocation, v, h.now, {valid: true, budgetW: null});
+        assert.ok(result && Math.abs(result.gridKWh + solarKWh - 26) < 1e-5);
+        return series[1].filter(p => p.bookedPurchase);
+    }
+    const normal = calculate(data);
+    assert.ok(normal.length > 20);
+    assert.ok(normal.every(p => p.timestamp >= sundayNight && p.priceChargeUntil <= sundayNight + 6 * 3600000));
+    assert.deepEqual([...new Set(normal.map(p => p.currentA * p.phases * 230))], [4830]);
+    assert.ok(normal.every(p => p.phases === 3 && p.currentA === 7));
+    assert.ok(Math.abs(normal[0].chargingMinutes - 10) < 1e-8);
+    assert.equal(normal[0].timestamp, sundayNight + 30 * 60000);
+    assert.ok(normal.at(-1).priceChargeUntil > sundayNight + (6 * 60 - 3) * 60000);
+    assert.ok(calculate(data, 0.345).every(p => p.timestamp >= sundayNight));
+    const short = data.map(s => ({...s, price: s.timestamp >= sundayNight + 3600000 ? 30.04 : s.price}));
+    const twoNights = calculate(short);
+    assert.ok(twoNights.some(p => p.timestamp < sundayNight) && twoNights.some(p => p.timestamp >= sundayNight));
+    assert.ok(twoNights.every(p => p.priceLimitCt === 23.56));
+    const cheaperFirst = data.map(s => ({...s, price: s.timestamp >= sundayNight && s.price === 23.56 ? 24 : s.price}));
+    assert.ok(calculate(cheaperFirst).every(p => p.timestamp < sundayNight));
+});
