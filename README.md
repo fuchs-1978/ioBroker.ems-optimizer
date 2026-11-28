@@ -96,6 +96,10 @@ npm run test:equivalence
 
 ## Changelog
 
+### 0.17.0-alpha.345 (2026-11-28)
+
+- Use the solar allocation before a booked departure and buy the remaining energy in the cheapest feasible quarters when that trip allows grid charging. [Release notes](docs/release-0.17.0-alpha.345.md)
+
 ### 0.17.0-alpha.344 (2026-11-27)
 
 - Edit each vehicle’s immediate reserve in the dashboard. Schedule the minimum by 06:00 in cheaper tariff windows and set a separate SoC for a booked departure. [Release notes](docs/release-0.17.0-alpha.344.md)

@@ -1,9 +1,22 @@
 {
   "common": {
     "name": "ems-optimizer",
-    "version": "0.17.0-alpha.344",
+    "version": "0.17.0-alpha.345",
     "stopTimeout": 10000,
     "news": {
+      "0.17.0-alpha.345": {
+        "en": "A booked departure credits available solar energy and buys the remaining charge in the lowest-priced feasible periods before departure.",
+        "de": "Für eine gebuchte Abfahrt rechnet das EMS nutzbaren PV-Strom an und lädt die fehlende Energie in den günstigsten verfügbaren Viertelstunden vor dem Termin.",
+        "es": "Para una salida programada, el EMS tiene en cuenta la energía solar disponible y compra la carga restante en los intervalos más baratos antes de salir.",
+        "fr": "Pour un départ programmé, l’EMS tient compte de l’énergie solaire disponible et achète le complément pendant les créneaux les moins chers avant le départ.",
+        "it": "Per una partenza programmata, l’EMS considera l’energia solare disponibile e acquista la carica rimanente nelle fasce più economiche prima della partenza.",
+        "nl": "Bij een geplande rit rekent het EMS de beschikbare zonnestroom mee en koopt het de resterende energie in de goedkoopste beschikbare kwartieren vóór vertrek.",
+        "pl": "Dla zaplanowanego wyjazdu EMS uwzględnia dostępną energię słoneczną i kupuje brakującą energię w najtańszych dostępnych przedziałach przed wyjazdem.",
+        "pt": "Para uma partida agendada, o EMS considera a energia solar disponível e compra a carga em falta nos períodos mais baratos antes da partida.",
+        "ru": "Для запланированной поездки EMS учитывает доступную солнечную энергию и покупает недостающую энергию в самые дешёвые доступные интервалы до выезда.",
+        "uk": "Для запланованої поїздки EMS враховує доступну сонячну енергію та купує решту в найдешевші доступні проміжки часу до виїзду.",
+        "zh-cn": "预约出发时间后，EMS 会先计入可用的光伏电量，再在出发前电价最低的可用时段补充剩余电量。"
+      },
       "0.17.0-alpha.344": {
         "en": "Set each vehicle’s immediate reserve in the dashboard. Schedule its daily minimum by 06:00 using lower tariffs and set a separate charge target for a booked trip.",
         "de": "Die Mobilitätsreserve je Fahrzeug im Dashboard einstellen. Das EMS plant den Mindest-SoC täglich bis 06:00 Uhr mit günstigen Tarifzeiten und den Abfahrts-SoC zum gebuchten Termin.",
@@ -81,19 +94,6 @@
         "ru": "Снижен пик потребления памяти при чтении частых замеров SQL и построении истории за несколько дней. Для записи диагностики требуется меньше временной памяти на цикл.",
         "uk": "Знижено пікове споживання пам’яті під час читання частих вимірів SQL і побудови історії за кілька днів. Запис діагностики використовує менше тимчасової пам’яті за цикл.",
         "zh-cn": "降低了读取高密度 SQL 数据和构建多日历史记录时的内存峰值。每个周期记录诊断信息所需的临时内存更少。"
-      },
-      "0.17.0-alpha.338": {
-        "en": "Set a one-off departure several days ahead with a date, local time and optional charge target in the web dashboard. Grid charging to that target can be allowed for this trip.",
-        "de": "Im Web-Dashboard lässt sich eine einmalige Abfahrt mehrere Tage im Voraus mit Datum, Ortszeit und optionalem Abfahrts-SoC eintragen. Netzladung bis zu diesem Ziel kann für die einzelne Fahrt freigegeben werden.",
-        "es": "El panel web permite programar una salida con varios días de antelación, con fecha, hora local y un nivel de carga opcional. Se puede autorizar la carga de red para ese viaje.",
-        "fr": "Le tableau de bord permet de prévoir un départ plusieurs jours à l’avance avec une date, une heure locale et un niveau de charge facultatif. La recharge sur le réseau peut être autorisée pour ce trajet.",
-        "it": "Nel pannello web si può programmare una singola partenza con diversi giorni di anticipo, indicando data, ora locale e carica desiderata. La ricarica dalla rete può essere autorizzata per quel viaggio.",
-        "nl": "Plan in het webdashboard een eenmalig vertrek dagen van tevoren met datum, lokale tijd en een optioneel laadniveau. Laden via het net tot dat niveau kan voor deze rit worden toegestaan.",
-        "pl": "W panelu można z kilkudniowym wyprzedzeniem zaplanować jednorazowy wyjazd, podając datę, czas lokalny i opcjonalny poziom naładowania. Ładowanie z sieci można włączyć dla tej podróży.",
-        "pt": "O painel web permite agendar uma partida com vários dias de antecedência, com data, hora local e nível de carga opcional. É possível autorizar a carga pela rede para essa viagem.",
-        "ru": "В веб-панели можно за несколько дней задать дату, местное время и желаемый уровень заряда для одной поездки. Для неё можно отдельно разрешить зарядку от сети.",
-        "uk": "У вебпанелі можна за кілька днів задати дату, місцевий час і бажаний рівень заряду для однієї поїздки. Для неї можна окремо дозволити заряджання від мережі.",
-        "zh-cn": "可在网页面板中提前数天为单次出发设置日期、当地时间和可选目标电量，并可仅为该行程允许从电网充至目标电量。"
       }
     },
     "titleLang": {
