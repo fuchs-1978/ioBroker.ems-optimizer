@@ -620,6 +620,29 @@ function localDepartureMinute(zone, instant = new Date()) {
   const v = Object.fromEntries(parts.map(p=>[p.type,p.value]));
   return v.year+"-"+v.month+"-"+v.day+"T"+v.hour+":"+v.minute;
 }
+// Resolve a dashboard clock in the EMS zone, including either side of a DST change.
+function departureInstant(clock, zone) {
+  const nominal = Date.parse(clock+"Z");
+  if (!Number.isFinite(nominal)) return null;
+  const candidates = [-86400000,86400000].map(delta => {
+    const probe = nominal+delta;
+    const offset = Date.parse(localDepartureMinute(zone,probe)+"Z")-probe;
+    return nominal-offset;
+  }).filter(at => localDepartureMinute(zone,at) === clock);
+  return candidates.length ? Math.min(...candidates) : null;
+}
+function departureGoalFields(booking,plan,recurring,now = Date.now()) {
+  const clock = booking && booking.date+"T"+booking.time;
+  const at = clock && plan?.clock === clock && Number.isFinite(plan.at) && plan.at > 0
+    ? plan.at : clock ? departureInstant(clock,plan?.zone) : null;
+  if (booking && at === null) throw Error("Die gespeicherte Abfahrt hat keine gültige Ortszeit.");
+  const active = at > now ? booking : null;
+  // An expired one-off still masks a retained recurring clock in the EMS.
+  const time = normalizedDeparture(active?.time ?? (booking || plan?.morning ? "" : recurring));
+  if (time === null) throw Error("Die vorhandene Abfahrt hat ein anderes Zeitformat. Bitte im EMS prüfen.");
+  return {time,date:active?.date ?? "",tripSoc:active?.soc ?? null,allowGrid:active?.allowGrid ?? (plan?.gridDefault === true),
+    bookingAt:active ? at : 0,expiredTrip:Boolean(booking && !active)};
+}
 function validateGoals(goals) {
   if (goals.editReserve && (!Number.isInteger(goals.reserve) || goals.reserve < 0 || goals.reserve > goals.min))
     throw Error("Die Mobilitätsreserve muss zwischen 0 % und dem Mindest-SoC liegen.");
@@ -643,14 +666,9 @@ function planGoalWrites(before,after) {
   if (after.date && goalTripText(before)!==goalTripText(after)) {
     if (after.morning && after.tripSoc == null) throw Error("Für diesen Termin bitte den Abfahrts-SoC eintragen.");
     const clock = after.date+"T"+after.time, zone = after.plan?.zone;
-    if (clock <= localDepartureMinute(zone)) throw Error("Bitte einen Abfahrtstermin in der Zukunft wählen.");
-    // Try the UTC offsets on both sides of a possible clock change in the EMS zone.
-    const nominal = Date.parse(clock+"Z");
-    const exists = [-86400000,86400000].some(delta => {
-      const probe = nominal+delta, offset = Date.parse(localDepartureMinute(zone,probe)+"Z")-probe;
-      return localDepartureMinute(zone,nominal-offset)===clock;
-    });
-    if (!exists) throw Error("Diese Ortszeit entfällt durch die Zeitumstellung. Bitte eine andere Uhrzeit wählen.");
+    const at = departureInstant(clock,zone);
+    if (at === null) throw Error("Diese Ortszeit entfällt durch die Zeitumstellung. Bitte eine andere Uhrzeit wählen.");
+    if (at <= Date.now()) throw Error("Bitte einen Abfahrtstermin in der Zukunft wählen.");
   }
   const keys = limits.filter(key=>before[key]!==after[key]);
   if (after.editReserve && before.reserve !== after.reserve) {
@@ -659,7 +677,7 @@ function planGoalWrites(before,after) {
   }
   if (after.date) {
     if (goalTripText(before)!==goalTripText(after)) keys.push("trip");
-  } else if (before.date) keys.push("time","trip");
+  } else if (before.date || before.expiredTrip && after.time && before.time !== after.time) keys.push("time","trip");
   else if (before.time!==after.time) keys.push("time");
   return keys;
 }
@@ -1258,11 +1276,13 @@ if(demo) {
   setInterval(()=>{
     if(document.hidden) return;
     const now = Date.now();
+    expireVisibleDeparture(now);
     if(health==="live" && !timely(model.ts,now,SNAPSHOT_MAX_AGE)) {
       health="old";render();
     } else if(isDayAtBolzum(now)!==lastTheme) render();
     else if(health==="live") model.boxes.forEach((car, i) => {
-      if ([car.startDelayUntil, car.stopDelayUntil, car.minimumRunUntil, car.batteryCheckUntil].some(isNumber)) {
+      if ([car.startDelayUntil, car.stopDelayUntil, car.minimumRunUntil, car.batteryCheckUntil].some(isNumber)
+          || car.departurePlan?.at > 0 && now >= car.departurePlan.at) {
         renderCarStatus($("wb" + i), car, true, i === model.priority, now);
       }
     });
@@ -1328,10 +1348,8 @@ async function readVehicleGoals(i) {
   const max = editLimits ? percentage(settingsValue(high)) : percentage(plan?.configuredMax ?? wb.TargetSoC_pct);
   const reserve = validState(reserveState) ? percentage(reserveState.val) : null;
   const morning = Boolean(plan?.morning);
-  const time = normalizedDeparture(booking?.time ?? (morning ? "" : settingsValue(departure)));
-  if (time === null) throw Error("Die vorhandene Abfahrt hat ein anderes Zeitformat. Bitte im EMS prüfen.");
-  return {reserve, editReserve:reserve !== null && min !== null, morning, min, max, time, date:booking?.date ?? "", tripSoc:booking?.soc ?? null,
-    allowGrid:booking?.allowGrid ?? (plan?.gridDefault === true), tripEnabled,
+  return {reserve, editReserve:reserve !== null && min !== null, morning, min, max,
+    ...departureGoalFields(booking,plan,booking || morning ? "" : settingsValue(departure)), tripEnabled,
     gridDefault:plan?.gridDefault === true, controlEnabled:plan?.controlEnabled === true, plan,
     editLimits:Boolean(editLimits), ...vehiclePriority(data,preference,Date.now())};
 }
@@ -1398,6 +1416,16 @@ function syncGoalButtons() {
   priorityInput.disabled = !goalBaseline?.editPriority || savingVehicle;
   $("save-goals").disabled = !goalBaseline || savingVehicle || (sameGoals(goalBaseline, draftGoals()) && requestedPriority() === null);
   $("cancel-goals").disabled = goalDialog.querySelector(".close-dialog").disabled = savingVehicle;
+}
+function expireVisibleDeparture(now) {
+  if (!goalDialog.open || savingVehicle || !goalBaseline?.bookingAt || goalBaseline.bookingAt > now) return;
+  const showingSaved = goalTripText(draftGoals()) === goalTripText(goalBaseline);
+  goalBaseline = {...goalBaseline,...departureGoalFields(null,goalBaseline.plan,"",now),expiredTrip:true};
+  if (showingSaved) {
+    tripDate.value = goalInputs.time.value = tripSoc.value = "";
+    tripGrid.checked = goalBaseline.gridDefault;
+  }
+  syncGoalButtons();
 }
 function fillGoals(goals) {
   goalBaseline = goals;
