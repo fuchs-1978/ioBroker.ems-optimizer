@@ -96,6 +96,10 @@ npm run test:equivalence
 
 ## Changelog
 
+### 0.17.0-alpha.346 (2026-11-28)
+
+- Pace dated EV charging with metered AC energy and spread equal-price purchases in the last feasible tariff window. An optional Modul 3 discharge block lets the battery hold its charge throughout the low tariff and buy forecast demand alongside a charging vehicle. [Release notes](docs/release-0.17.0-alpha.346.md)
+
 ### 0.17.0-alpha.345 (2026-11-28)
 
 - Use the solar allocation before a booked departure and buy the remaining energy in the cheapest feasible quarters when that trip allows grid charging. [Release notes](docs/release-0.17.0-alpha.345.md)

@@ -250,11 +250,11 @@ for (const parallel of [false, true]) test('Hamburg departure uses Modul 3 with 
     assert.equal(h.physical().wbPowerW, 0, h.diagnostic());
 });
 
-test('the first cheap quarter allows for a five-minute startup, even just before the tariff changes', async () => {
+test('the first scheduled cheap quarter allows for a five-minute startup, even just before the tariff changes', async () => {
     const h = await hamburgPlant(date('2026-11-29T22:59'));
     h.own('Config.WallboxStartDelay_s', 300);
     const purchases = forecastTrip(h).filter(p => p.bookedPurchase);
-    assert.equal(purchases[0].timestamp, date('2026-11-29T23:00'));
+    assert.equal(purchases[0].timestamp, date('2026-11-29T23:15'));
     assert.ok(purchases[0].chargingMinutes <= 10.0001);
     assert.ok(purchases.every(p => p.priceChargeUntil <= date('2026-11-30T05:00')));
     assert.ok(Math.abs(purchases.reduce((sum, p) => sum + p.plannedGridEnergyKWh, 0) - 26) < 0.001);
@@ -308,6 +308,9 @@ test('a cheaper night leaves room for the following afternoon PV and ignores ene
 
 test('tariff revision revokes an active trip purchase and stale plans retain the deadline fallback', async () => {
     const h = await hamburgPlant(date('2026-11-30T00:00'), 85);
+    const first = forecastTrip(h).find(p => p.bookedPurchase);
+    assert.ok(first.timestamp >= h.now());
+    await h.replayAt(first.timestamp + 1000, [['DP_WB2_SOC', 85]]);
     forecastTrip(h);
     assert.equal(h.run("priceChargingAuthorization('Wallbox2').allowed"), true);
     h.config.gridTariffLowCt += 10;

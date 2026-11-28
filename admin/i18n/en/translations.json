@@ -402,6 +402,7 @@
   "Legacy efficiency per direction": "Legacy efficiency per direction",
   "Price-based battery charging": "Price-based battery charging",
   "Reserve stored battery energy for the next high tariff period": "Reserve stored battery energy for the next high tariff period",
+  "Block battery discharge during the low grid tariff": "Block battery discharge during the low grid tariff",
   "Allow battery grid charging in selected low-price periods": "Allow battery grid charging in selected low-price periods",
   "Maximum SoC from grid charging (PV may charge higher)": "Maximum SoC from grid charging (PV may charge higher)",
   "Round-trip efficiency (0 = legacy per-leg setting)": "Round-trip efficiency (0 = legacy per-leg setting)",

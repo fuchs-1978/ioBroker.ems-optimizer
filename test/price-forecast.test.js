@@ -509,3 +509,39 @@ test('planner never turns a missing price into grid heat or cheap battery chargi
     assert.ok(allocation[3].dhwW + allocation[3].heatingW + Math.max(0, allocation[3].batteryW) > 0);
     assert.equal(h.states.get('ems.0.Plan.Valid').val, true);
 });
+
+test('production battery and grid forecasts keep shifted load on the grid throughout scheduled NT', () => {
+    const h = schedule({}, '2026-11-28T04:00:00+01:00');
+    h.run("CFG.dp.par14a=''; CFG.dp.lpcState=''; CFG.dp.lpcLimit='';");
+    for (const name of ['Wallbox0', 'Wallbox1', 'Wallbox2', 'MyPV_DHW', 'MyPV_Heating'])
+        h.own(`Devices.${name}.Present`, false);
+    h.own('Devices.Battery.Present', true);
+    h.own('Config.BatteryCapacity_kWh', 10);
+    h.own('Config.BatteryMinSoC_pct', 20);
+    h.own('Config.BatterySelfConsumptionEnabled', true);
+    h.own('Config.BatteryRoundTripEfficiency_pct', 81);
+    h.own('Config.BatteryLowTariffDischargeBlockEnabled', true);
+    h.put('DP_BATTERY_SOC', 55);
+    const prices = h.forecast();
+    const pv = prices.total.slice(0, 8).map(p => ({timestamp: p.timestamp, valueW: 0}));
+    const house = pv.map((_p, i) => ({valueW: i < 4 ? 4200 : 800}));
+    const build = () => {
+        h.run(`buildDevicePlan(${JSON.stringify({pv, house, prices})})`);
+        const read = name => JSON.parse(h.states.get(`ems.0.Plan.${name}_48h_JSON`).val);
+        return {battery: read('BatteryPower'), grid: read('GridPower')};
+    };
+    let plan = build();
+    assert.ok(plan.battery.slice(0, 4).every(p => p.lowTariffDischargeBlocked && p.valueW === 0 && !p.gridChargeW));
+    assert.ok(plan.grid.slice(0, 4).every(p => p.valueW === 4200));
+    assert.ok(plan.battery.slice(4).every(p => !p.lowTariffDischargeBlocked && p.valueW === -800));
+    h.own('Config.BatteryPriceChargingEnabled', true);
+    h.own('Config.BatteryPriceMinSavings_ct_kWh', 0);
+    h.own('Config.BatteryPriceReserve_pct', 0);
+    h.own('Config.BatteryPriceMaxSoC_pct', 100);
+    h.put('DP_BATTERY_SOC', 20);
+    plan = build();
+    assert.ok(plan.battery.slice(0, 4).some(p => p.gridChargeW > 0));
+    assert.ok(plan.grid.slice(0, 4).every((p, i) => Math.abs(p.valueW - (4200 + plan.battery[i].gridChargeW)) <= 1));
+    h.own('Config.BatteryLowTariffDischargeBlockEnabled', false);
+    assert.ok(build().battery.every(p => !p.lowTariffDischargeBlocked));
+});

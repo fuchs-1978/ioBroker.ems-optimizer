@@ -402,6 +402,7 @@
   "Legacy efficiency per direction": "Efektywność dziedzictwa na kierunek",
   "Price-based battery charging": "Wypłata baterii oparta na cenie",
   "Reserve stored battery energy for the next high tariff period": "Rezerwuj energię akumulatora na następny okres wysokiej taryfy",
+  "Block battery discharge during the low grid tariff": "Blokuj rozładowanie akumulatora w czasie niskiej taryfy sieciowej",
   "Allow battery grid charging in selected low-price periods": "Pozwalać na ładowanie baterii sieci elektrycznej w wybranych okresach niskich cen",
   "Maximum SoC from grid charging (PV may charge higher)": "Maksymalny poziom SoC z ładowania akumulatorów sieci elektrycznej (PV może ładować się wyżej)",
   "Round-trip efficiency (0 = legacy per-leg setting)": "Efektywność w podróży powrotnej (0 = ustawienie na jedną nogę)",
