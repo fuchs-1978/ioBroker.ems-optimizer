@@ -18,7 +18,7 @@ const dashboard = vm.runInNewContext([
     section('function normalizedDeparture(', 'function wallboxDelayIds('),
     section('function wallboxDelayIds(', 'function fastIds('),
     section('function renderCountdown(', 'function renderCarStatus('),
-    '({wallboxDelayIds, wallboxDelay, renderRunningCountdown, planGoalWrites, goalTripText})'
+    '({wallboxDelayIds, wallboxDelay, renderRunningCountdown, planGoalWrites, goalTripText, departureGoalFields})'
 ].join('\n'), {INSTANCE: 'ems-optimizer.0', SNAPSHOT_MAX_AGE: 30000});
 
 test('vehicle timers use the correct controller channels for each wallbox', () => {
@@ -87,4 +87,44 @@ test('each dashboard reserve is editable independently and maintains valid limit
     const old = {...booking,date:'2018-10-10',tripSoc:null};
     assert.deepEqual(writes(old,{...old,reserve:40}), ['reserve']);
     assert.deepEqual(writes(old,base), ['time','trip']);
+});
+
+test('the editor clears a past one-off at the booked instant and preserves the next car and recurring clock', () => {
+    const fields = dashboard.departureGoalFields;
+    const now = Date.parse('2026-11-28T10:30:00+01:00');
+    const plan = {zone: 'Europe/Berlin', morning: {target: 50}, gridDefault: false, clock: '', at: 0};
+    const eqe = {date: '2026-11-28', time: '10:30', soc: 60, allowGrid: true};
+    const eqv = {date: '2026-11-30', time: '06:00', soc: 100, allowGrid: true};
+    assert.equal(fields(eqe, plan, '', now - 1).tripSoc, 60);
+    const cleared = fields(eqe, plan, '07:00', now);
+    assert.deepEqual([cleared.date, cleared.time, cleared.tripSoc, cleared.allowGrid, cleared.bookingAt], ['', '', null, false, 0]);
+    assert.equal(fields(eqv, plan, '', now).time, '06:00', 'a newly saved future trip can precede the next plan publication');
+    assert.equal(fields(null, {zone: plan.zone}, '07:00', now).time, '07:00');
+    assert.equal(fields(null, plan, '07:00', now).time, '');
+    const before = {...cleared, min: 40, max: 90, editLimits: true};
+    assert.deepEqual(Array.from(dashboard.planGoalWrites(before, {...before, max: 85})), ['max']);
+    assert.deepEqual(Array.from(dashboard.planGoalWrites(before, {...before, time: '07:30'})), ['time', 'trip']);
+    const repeatedHour = {date: '2026-10-25', time: '02:45', soc: 60};
+    assert.equal(fields(repeatedHour, plan, '', Date.parse('2026-10-25T02:15:00+01:00')).date, '',
+        'the old booking stays expired after clocks fall back in the EMS timezone');
+});
+
+test('an open EQE dialog expires only the saved trip while preserving unsubmitted edits', () => {
+    const now = Date.parse('2026-11-28T10:30:00+01:00');
+    const plan = {zone:'Europe/Berlin', morning:{target:50}, gridDefault:false};
+    const trip = {date:'2026-11-28',time:'10:30',soc:60,allowGrid:true};
+    const base = {...dashboard.departureGoalFields(trip,plan,'',now - 1), plan, gridDefault:false, reserve:20};
+    for (const edited of [false, true]) {
+        const ui = {goalDialog:{open:true}, savingVehicle:false, goalBaseline:{...base},
+            tripDate:{value:edited ? '2026-11-30' : trip.date}, tripSoc:{value:edited ? '100' : '60',valueAsNumber:edited ? 100 : 60},
+            tripGrid:{checked:true}, goalInputs:{time:{value:edited ? '06:00' : trip.time},reserve:{value:'25'}},
+            departureGoalFields:dashboard.departureGoalFields, goalTripText:dashboard.goalTripText, syncGoalButtons() {}};
+        vm.runInNewContext(section('function draftGoals()', 'function sameGoals(')
+            + section('function expireVisibleDeparture(', 'function fillGoals(')
+            + '\nexpireVisibleDeparture(' + now + ');', ui);
+        assert.equal(ui.goalBaseline.expiredTrip, true);
+        assert.equal(ui.goalInputs.reserve.value, '25');
+        assert.deepEqual([ui.tripDate.value,ui.goalInputs.time.value,ui.tripSoc.value],
+            edited ? ['2026-11-30','06:00','100'] : ['','','']);
+    }
 });
