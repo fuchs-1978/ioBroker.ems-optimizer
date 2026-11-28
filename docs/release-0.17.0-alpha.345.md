@@ -1,0 +1,7 @@
+# Alpha 345 – Modul-3-Ladezeiten für gebuchte Abfahrten
+
+Wenn du im Fahrzeugdialog für einen Termin Netzladung erlaubst, nutzt der Fahrplan zuerst den PV-Überschuss, der diesem Fahrzeug vor dem Termin zugeteilt ist. Die fehlende Energie verteilt er auf die günstigsten verfügbaren Viertelstunden nach Gesamtpreis. Die freiwillige Preisladung der Wallbox kann ausgeschaltet bleiben. Die tägliche Mobilitätsreserve und das Morgenminimum gelten unabhängig davon.
+
+Für eine Abfahrt am Montag um 06:00 Uhr berücksichtigt der Fahrplan die bestehende Zeitreserve von 15 Minuten. Passen die fehlenden kWh ins Niedertariffenster von 23:00 bis 05:00 Uhr, kann die Netzladung dort abgeschlossen werden. Reicht die Leistung im Niedertarif nicht aus, ergänzt der Fahrplan die nötigen kWh in weiteren verfügbaren Viertelstunden. Er berücksichtigt Ladeverluste, Ladestromstufen am Ladeende, Anlaufzeit und gemeinsam verfügbare Leistung.
+
+Der Preisplan gilt für die aktuelle Steckverbindung und Buchung. Bei geändertem Termin, entzogener Netzfreigabe oder abgelaufenem Ladefenster prüft der Regler die Freigabe erneut. Liegt der Termin außerhalb der 48-Stunden-Prognose, fehlen verwertbare Preise oder reicht der Preisplan nicht aus, sichert der bisherige späteste Ladebeginn den Termin nach verfügbarer Leistung ab. In `Plan.WallboxN_48h_JSON` kennzeichnen `priceReason: "booked-departure"` und `plannedGridEnergyKWh` die geplanten Termin-Netzbezüge.
